@@ -222,6 +222,53 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   avant que le serveur accepte la photo du dépôt. **« Tout va bien ? »** :
   immobile plus de 3 minutes hors commerce et client, il confirme ou appelle
   le 112, le support reçoit sa position
+- **Course acceptée surveillée** (`surveillance-courses.service.ts`, toutes
+  les 30 s avec la surveillance des livreurs). Commande au commerce : averti à
+  20 min sans y être (ou après 5 min à plus du rayon d'attribution + 3 km),
+  la course lui est **retirée et reproposée** à 30 min (ou 10 min d'écart) —
+  sauf s'il est au commerce, ou à moins de 2 km d'une commande pas encore
+  prête. Elle ne lui revient plus d'office et reste dans son historique,
+  annulée avec le motif. Commande récupérée : à 30 min (4 min/km + 10 min si
+  plus long, + 10 min par autre remise de la tournée) ou 5 min à plus de 5 km
+  de détour, **alerte** au livreur, au commerce, au client et à la plateforme,
+  sans rien retirer. Chaque constat est unique par attribution
+  (`DeliveryIncident`) ; un livreur en incident ne reçoit pas de course en plus
+- **Commande partie avec le livreur** : l'attente du client injoignable (qui
+  ouvre le dépôt en photo) ne se lance qu'à moins de 250 m de l'adresse, sur
+  une position fraîche (`exigerPresenceChezClient`, `NOT_AT_CUSTOMER`,
+  `POSITION_UNKNOWN`) ; un livreur qui quitte l'adresse pendant l'attente
+  redevient surveillé (écart signalé au bout de 5 min). Tant qu'un constat
+  « commande dans le sac » reste ouvert, la plateforme et le livreur sont
+  **relancés toutes les 15 min** (`DeliveryIncident.alertCount`). Déclarer la
+  course échouée **rembourse le client** (paiement en ligne, idempotent) et
+  **suspend le livreur** par défaut, ses courses encore au commerce
+  reproposées ; deux cases permettent de s'en dispenser
+- **Dépôt en photo sous contrôle** : un livreur vu à plus de 500 m de
+  l'adresse pendant l'attente (`OrderDelivery.customerWaitLeftAt`, relevé à
+  chaque position) ne peut plus déposer en photo (`LEFT_DURING_WAIT`), le code
+  du client reste possible. Un dépôt en photo fait pendant un incident de
+  livraison, ou contesté par le client (« Je n'ai pas reçu ma commande »,
+  48 h, une fois : `POST /api/orders/:id/reclamation-livraison`), suspend le
+  paiement de la course (`payoutHold = REVIEW`) jusqu'à la décision de la
+  plateforme : validé, il est payé avec le relevé de la semaine de la
+  validation (`payoutHoldReleasedAt`) ; refusé (`REFUSED`), jamais payé,
+  commande annulée, client remboursé, livreur suspendu
+- **Position de la photo du dépôt** : l'application livreur (et l'espace web)
+  joint au dépôt la position du téléphone au moment de la photo
+  (`positionDepot` : latitude, longitude, précision, heure ; gardée dans la
+  file hors réseau). Stockée (`proofLat`, `proofLng`, `proofAccuracy`,
+  `proofPositionAt`), elle est comparée à l'adresse : à plus de 500 m (plus
+  la précision annoncée, jusqu'à 200 m), le paiement est suspendu pour
+  examen. Un indice, pas une preuve : le dépôt n'est jamais refusé pour ça,
+  et une position absente (anciennes versions) ne bloque rien
+- **Livraison échouée** (course échouée ou dépôt refusé) : la commande passe à
+  `REJECTED`, motif `DELIVERY_FAILED`, et reste **due au commerçant** comme
+  une vente (ligne 130 du relevé) : la plateforme rembourse le client et
+  absorbe la perte. Elle ne compte pas dans les refus du commerce
+- **Le client voit le retard** sur son suivi (`/track`, `/client/orders/:id`,
+  application client) : champ `retard` (`LIVRAISON` ou `NOUVEAU_LIVREUR`,
+  `retard-livraison.ts`), relu en base et poussé en direct, sans détail sur
+  le livreur
 - **Application** : course gardée et étapes mises en file **sans réseau**
   (envoyées au retour, `effectueLe` garde l'heure réelle) ; position en
   **arrière-plan** (expo-location + expo-task-manager) ; course proposée
@@ -255,6 +302,24 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   `EAT`, `DRIVE`) ; `User.platformRole` a disparu. La gestion de l'équipe et
   des rôles reste au superowner seul. Les chiffres financiers ne partent
   qu'aux rôles qui ont `billing`
+- **Incidents de livraison** (`/superowner/incidents-livraison`, section
+  `driver-support`) : les courses qui dérapent, avec livreur, commerce et
+  client à joindre. **Retirer la course** (commande au commerce, elle repart
+  en recherche) ou **la déclarer échouée** (commande partie avec le livreur :
+  `FAILED`, `cancelledBy: PLATFORM`, livreur libéré sans paiement ; le
+  remboursement se fait depuis la facturation), ou **marquer traité** — tout
+  journalisé. Alerte aussi par courriel et webhook (`prevenirPlateforme`,
+  `vigie.service.ts`)
+- **Dossier d'un incident de livraison** (`GET
+  /api/superowner/delivery-incidents/:id/dossier`, page imprimable
+  `/impression/dossier-incident/:id`, bouton « Exporter le dossier ») :
+  chronologie, preuves (code, photo et sa position, attente), échanges
+  support, décisions et conséquences financières, pour une plainte, un avocat
+  ou le droit d'accès du livreur. Section à part `incidents-export`, ouverte
+  au seul SuperAdmin et à l'Administrateur (migration 0037 pour les rôles
+  déjà enregistrés), chaque export journalisé (`EXPORT_INCIDENT_FILE`). Du
+  client, seulement le nom et l'adresse de livraison. L'historique complet des
+  positions n'est pas conservé : seuls les points clés y figurent
 - Commerçants : formule, suspension, fermeture (**section à part**,
   `organizations-close` : elle archive puis efface à 60 jours ; le Support
   suspend et réactive mais ne ferme pas), réouverture depuis sauvegarde
@@ -443,7 +508,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 56 | **1872** |
+| **API** (`backend/scripts/verification/`) | 57 | **1949** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841

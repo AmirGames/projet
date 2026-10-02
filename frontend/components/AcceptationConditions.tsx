@@ -21,6 +21,8 @@ export default function AcceptationConditions({
   documents: Document[];
   clair?: boolean;
 }) {
+  // En clair, les liens suivent le texte (noir) au lieu du bleu global des liens.
+  const lien = `underline hover:no-underline ${clair ? 'font-medium text-gray-900' : ''}`;
   return (
     <label className={`flex items-start gap-2 text-sm ${clair ? 'text-slate-700' : 'text-gray-300'}`}>
       <input
@@ -35,13 +37,13 @@ export default function AcceptationConditions({
         {documents.map((doc, i) => (
           <span key={doc.href}>
             {i > 0 && (i === documents.length - 1 ? ' et ' : ', ')}
-            <Link href={doc.href} target="_blank" className="underline hover:no-underline">
+            <Link href={doc.href} target="_blank" className={lien}>
               {doc.libelle}
             </Link>
           </span>
         ))}
         , et je prends connaissance de la{' '}
-        <Link href="/confidentialite" target="_blank" className="underline hover:no-underline">
+        <Link href="/confidentialite" target="_blank" className={lien}>
           politique de confidentialité
         </Link>
         .

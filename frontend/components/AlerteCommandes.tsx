@@ -135,16 +135,16 @@ export function AlerteCommandes({
   }, [livreursTrouves]);
 
   const bandeauLivreurs = livreursTrouves.length > 0 && (
-    <div role="status" className="border-b border-green-500/60 bg-green-500/15 px-6 py-3">
+    <div role="status" className="border-b border-green-200 bg-green-50 px-4 py-3 sm:px-6">
       {livreursTrouves.map((l) => (
         <div key={l.orderId} className="flex items-center gap-3 text-sm">
-          <Bike size={20} className="text-green-300 flex-shrink-0" />
-          <p className="flex-1 text-green-100">
-            <span className="font-bold text-green-200">Livreur trouvé</span> — {l.livreur} a accepté la commande #{l.numero} et arrive au commerce.
+          <Bike size={20} className="text-green-700 flex-shrink-0" />
+          <p className="flex-1 text-green-900">
+            <span className="font-bold">Livreur trouvé</span> — {l.livreur} a accepté la commande #{l.numero} et arrive au commerce.
           </p>
           <button
             onClick={() => setLivreursTrouves((liste) => liste.filter((x) => x.orderId !== l.orderId))}
-            className="text-green-200 hover:text-white"
+            className="text-green-800 hover:text-green-950"
             aria-label="Fermer"
           >
             <X size={16} />
@@ -228,16 +228,16 @@ export function AlerteCommandes({
     {bandeauLivreurs}
     <div
       role="alert"
-      className="border-b border-yellow-500/60 bg-yellow-500/15 px-6 py-3"
+      className="bg-gray-900 px-4 py-3 text-white sm:px-6"
     >
       <div className="flex flex-wrap items-center gap-3">
-        <BellRing size={22} className="text-yellow-300 flex-shrink-0 animate-pulse" />
+        <BellRing size={22} className="text-orange-400 flex-shrink-0 animate-pulse" />
         <div className="flex-1 min-w-0 text-sm">
-          <p className="font-bold text-yellow-200">
+          <p className="font-extrabold">
             {enAttente.length} nouvelle{enAttente.length > 1 ? 's' : ''} commande
             {enAttente.length > 1 ? 's' : ''} à accepter
           </p>
-          <p className="text-yellow-100/80 truncate">
+          <p className="text-white/70 truncate">
             {enAttente
                 .map((c) => `${c.customerName}${toutesBoutiques && c.store ? ` — ${c.store.name}` : ''}${c.echeance ? ` (${delaiRestant(c.echeance, maintenant)})` : ''}`)
               .join(' · ')}
@@ -246,7 +246,7 @@ export function AlerteCommandes({
         {sonBloque && (
           <button
             onClick={activerLeSon}
-            className="inline-flex items-center gap-1 rounded-lg bg-yellow-600 hover:bg-yellow-500 px-3 py-2 text-sm font-semibold text-gray-900"
+            className="inline-flex items-center gap-1 rounded-full bg-white/10 hover:bg-white/20 px-4 py-2 text-sm font-bold text-white"
           >
             <Volume2 size={16} /> Activer la sonnerie
           </button>
@@ -259,7 +259,7 @@ export function AlerteCommandes({
                 memoriserBoutique(orgId, enAttente[0].store!.id);
                 router.push(`/merchant/${orgId}/orders?filtre=PENDING`);
               }}
-              className="rounded-lg bg-green-600 hover:bg-green-500 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-full bg-orange-600 hover:bg-orange-700 px-5 py-2 text-sm font-extrabold text-white"
             >
               Voir les commandes
             </button>
@@ -267,7 +267,7 @@ export function AlerteCommandes({
         ) : (
         <Link
           href={`/merchant/${orgId}/orders?filtre=PENDING`}
-          className="rounded-lg bg-green-600 hover:bg-green-500 px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-full bg-orange-600 hover:bg-orange-700 px-5 py-2 text-sm font-extrabold text-white"
         >
           Voir les commandes
         </Link>

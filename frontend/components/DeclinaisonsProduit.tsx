@@ -156,12 +156,12 @@ export function DeclinaisonsProduit({
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-700">
+    <div className="mt-4 pt-4 border-t border-gray-200">
       <button
         type="button"
         onClick={() => setOuvert(!ouvert)}
         aria-expanded={ouvert}
-        className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition"
+        className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition"
       >
         <Layers size={16} />
         <span>
@@ -181,7 +181,7 @@ export function DeclinaisonsProduit({
       {ouvert && (
         <div className="mt-4 space-y-4">
           {erreur && (
-            <p className="text-sm text-red-300 bg-red-900/20 border border-red-700/40 rounded px-3 py-2">
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
               {erreur}
             </p>
           )}
@@ -189,7 +189,7 @@ export function DeclinaisonsProduit({
           <div>
             <label
               htmlFor={`choix-${productId}`}
-              className="block text-sm text-gray-400 mb-1"
+              className="block text-sm text-gray-500 mb-1"
             >
               {t('questionLabel')}
             </label>
@@ -199,7 +199,7 @@ export function DeclinaisonsProduit({
                 value={libelleDuChoix}
                 onChange={(e) => setLibelleDuChoix(e.target.value)}
                 placeholder={t('questionPlaceholder')}
-                className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                className="flex-1 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
               />
               <button
                 type="button"
@@ -208,7 +208,7 @@ export function DeclinaisonsProduit({
                 disabled={chargement || libelleDuChoix === libelleEnregistre}
                 className={`px-3 rounded transition ${
                   libelleDuChoix === libelleEnregistre
-                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                     : 'bg-orange-600 hover:bg-orange-700'
                 }`}
                 title="Enregistrer l’intitulé"
@@ -226,7 +226,7 @@ export function DeclinaisonsProduit({
               {declinaisons.map((declinaison, index) => (
                 <li
                   key={declinaison.id}
-                  className="flex items-center gap-2 bg-gray-700/50 rounded px-2 py-2 flex-wrap"
+                  className="flex items-center gap-2 bg-gray-50 rounded px-2 py-2 flex-wrap"
                 >
                   <div className="flex flex-col">
                     <button
@@ -234,7 +234,7 @@ export function DeclinaisonsProduit({
                       onClick={() => deplacer(index, -1)}
                       disabled={index === 0}
                       aria-label={`Monter ${declinaison.label}`}
-                      className="text-gray-400 hover:text-white disabled:opacity-30"
+                      className="text-gray-500 hover:text-gray-900 disabled:opacity-30"
                     >
                       <ChevronUp size={14} />
                     </button>
@@ -243,7 +243,7 @@ export function DeclinaisonsProduit({
                       onClick={() => deplacer(index, 1)}
                       disabled={index === declinaisons.length - 1}
                       aria-label={`Descendre ${declinaison.label}`}
-                      className="text-gray-400 hover:text-white disabled:opacity-30"
+                      className="text-gray-500 hover:text-gray-900 disabled:opacity-30"
                     >
                       <ChevronDown size={14} />
                     </button>
@@ -257,7 +257,7 @@ export function DeclinaisonsProduit({
                         renommer(declinaison, e.target.value.trim());
                       }
                     }}
-                    className="flex-1 min-w-[8rem] bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                    className="flex-1 min-w-[8rem] bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
                   />
 
                   <input
@@ -272,7 +272,7 @@ export function DeclinaisonsProduit({
                       const actuel = declinaison.price === null ? '' : String(declinaison.price);
                       if (valeur !== actuel) retarifer(declinaison, valeur);
                     }}
-                    className="w-24 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                    className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
                   />
 
                   <span className="text-xs text-gray-500 w-20">
@@ -284,8 +284,8 @@ export function DeclinaisonsProduit({
                     onClick={() => basculer(declinaison)}
                     className={`px-2 py-1 rounded text-xs font-medium transition ${
                       declinaison.isAvailable
-                        ? 'bg-orange-600/20 text-orange-300 hover:bg-orange-600/30'
-                        : 'bg-green-600/20 text-green-300 hover:bg-green-600/30'
+                        ? 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+                        : 'bg-green-50 text-green-700 hover:bg-green-100'
                     }`}
                   >
                     {declinaison.isAvailable ? t('depleted') : t('restore')}
@@ -295,7 +295,7 @@ export function DeclinaisonsProduit({
                     type="button"
                     onClick={() => supprimer(declinaison)}
                     aria-label={`Supprimer ${declinaison.label}`}
-                    className="p-1 text-gray-400 hover:text-red-400 transition"
+                    className="p-1 text-gray-500 hover:text-red-600 transition"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -306,7 +306,7 @@ export function DeclinaisonsProduit({
 
           <div className="flex gap-2 items-end flex-wrap">
             <div className="flex-1 min-w-[8rem]">
-              <label htmlFor={`nom-${productId}`} className="block text-xs text-gray-400 mb-1">
+              <label htmlFor={`nom-${productId}`} className="block text-xs text-gray-500 mb-1">
                 {t('newVariantLabel')}
               </label>
               <input
@@ -317,12 +317,12 @@ export function DeclinaisonsProduit({
                   if (e.key === 'Enter') ajouter();
                 }}
                 placeholder={t('newVariantPlaceholder')}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div>
-              <label htmlFor={`prix-${productId}`} className="block text-xs text-gray-400 mb-1">
+              <label htmlFor={`prix-${productId}`} className="block text-xs text-gray-500 mb-1">
                 {t('priceLabel')}
               </label>
               <input
@@ -333,7 +333,7 @@ export function DeclinaisonsProduit({
                 value={nouveauPrix}
                 onChange={(e) => setNouveauPrix(e.target.value)}
                 placeholder={String(prixDuPlat)}
-                className="w-24 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
               />
             </div>
 
@@ -345,7 +345,7 @@ export function DeclinaisonsProduit({
               className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-semibold transition ${
                 nouveauNom.trim()
                   ? 'bg-orange-600 hover:bg-orange-700'
-                  : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-500 cursor-not-allowed'
               }`}
             >
               <Plus size={16} /> {t('addButton')}
@@ -360,7 +360,7 @@ export function DeclinaisonsProduit({
           <button
             type="button"
             onClick={() => setOuvert(false)}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition"
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition"
           >
             <X size={14} /> Replier
           </button>

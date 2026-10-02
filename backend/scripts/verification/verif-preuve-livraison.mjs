@@ -197,6 +197,17 @@ const tropTot = await patch(
 );
 check('sans attente, le dépôt est refusé', tropTot.status === 409, `statut ${tropTot.status}`);
 
+// L'attente ouvre le dépôt en photo : elle ne se lance que devant chez le
+// client. Lancée du commerce, elle laissait un livreur parti avec la commande
+// la « déposer » sans jamais être passé à la porte.
+const deLoin = await post(`/api/drivers/deliveries/${absente.courseId}/attente`, {}, D);
+check(
+  'lancée loin de chez le client, l’attente est refusée',
+  deLoin.status === 409 && (await j(deLoin))?.code === 'NOT_AT_CUSTOMER',
+  `statut ${deLoin.status}`
+);
+await patch('/api/drivers/location', { latitude: 45.7801, longitude: 4.8601 }, D);
+
 const attente = await j(await post(`/api/drivers/deliveries/${absente.courseId}/attente`, {}, D));
 check('l’attente commence', Boolean(attente?.data?.attenteFinLe), JSON.stringify(attente));
 const pendantAttente = await patch(

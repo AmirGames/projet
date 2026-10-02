@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { connexionTempsReel, suivreSalon, useConnexionTempsReel } from '@/lib/temps-reel';
 import { useStockageLocal } from '@/lib/navigateur';
+import type { Retard } from '@/components/RetardLivraison';
 
 interface OrderUpdate {
   orderId: string;
@@ -24,6 +25,8 @@ interface DeliveryUpdate {
   gpsLost?: boolean;
   /** Le livreur est à moins de 300 m : le client peut descendre. */
   livreurProche?: boolean;
+  /** La surveillance des courses a constaté un retard, ou un changement de livreur. */
+  retard?: Retard;
   timestamp: string;
 }
 
@@ -44,6 +47,7 @@ export function useOrderTracking(orderId: string) {
   const isConnected = useConnexionTempsReel(Boolean(orderId) && jetonPresent);
   const [notification, setNotification] = useState<StatusNotification | null>(null);
   const [livreurProche, setLivreurProche] = useState(false);
+  const [retard, setRetard] = useState<Retard | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
@@ -94,6 +98,7 @@ export function useOrderTracking(orderId: string) {
         if (data.eta !== undefined) {
           setEta(data.eta);
         }
+        if (data.retard) setRetard(data.retard);
         // Prévenu une fois, à 300 m : le bandeau, et une notification du
         // téléphone si le client l'a permise — la page est souvent en fond.
         if (data.livreurProche) {
@@ -150,6 +155,8 @@ export function useOrderTracking(orderId: string) {
     gpsPerdu,
     /** Le livreur approche : poussé en direct, en plus de ce que dit la course. */
     livreurProche,
+    /** Retard poussé en direct, en plus de ce que dit la course. */
+    retard,
     isConnected,
     notification,
     updateOrderStatus,

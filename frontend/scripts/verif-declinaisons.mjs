@@ -175,18 +175,29 @@ titre('Le client choisit');
 await page.goto(`${SITE}/store/${slug}`);
 await page.waitForTimeout(3500);
 
-const menu = await page.locator('body').innerText();
-check('le plat est au menu', menu.includes('Pâtes 4 fromages'), menu.slice(0, 400));
+const menuSeul = await page.locator('body').innerText();
+check('le plat est au menu', menuSeul.includes('Pâtes 4 fromages'), menuSeul.slice(0, 400));
+
+// Les déclinaisons se choisissent dans la fiche du plat, qu'ouvre un clic sur
+// sa carte (ou sur son « + », puisqu'il y a un choix à faire).
+const fiche = page.getByRole('dialog');
+const ouvrirFiche = async () => {
+  await page.locator('[role="button"]', { hasText: 'Pâtes 4 fromages' }).first().click();
+  await page.waitForTimeout(500);
+};
+await ouvrirFiche();
+
+const menu = await fiche.innerText();
 check('la question posée est affichée', menu.includes('Type de pâtes'), menu.slice(0, 600));
 
-const choix = page.locator('[role="radio"]');
+const choix = fiche.locator('[role="radio"]');
 check('les trois choix sont proposés', (await choix.count()) === 3, `n=${await choix.count()}`);
 
-const epuise = page.locator(`[role="radio"]:has-text("${nomEpuisee}")`);
+const epuise = fiche.locator(`[role="radio"]:has-text("${nomEpuisee}")`);
 check('la déclinaison épuisée est désactivée', await epuise.first().isDisabled(), 'restée cliquable');
 
 titre('Sans choix, pas de commande');
-const bouton = page.locator('button[aria-label="Ajouter Pâtes 4 fromages au panier"]');
+const bouton = fiche.locator('button[aria-label="Ajouter Pâtes 4 fromages au panier"]');
 check('le bouton est bloqué', await bouton.first().isDisabled(), 'actif à tort');
 check(
   // La vitrine qui reste nomme la question du commerçant plutôt que de parler
@@ -197,10 +208,10 @@ check(
 );
 
 titre('Le prix suit le choix');
-await page.locator('[role="radio"]:has-text("Tagliatelle")').first().click();
+await fiche.locator('[role="radio"]:has-text("Tagliatelle")').first().click();
 await page.waitForTimeout(600);
 
-const avecTagliatelle = await page.locator('body').innerText();
+const avecTagliatelle = await fiche.innerText();
 check('le prix passe à celui des tagliatelle', /16,50/.test(avecTagliatelle), avecTagliatelle.slice(0, 700));
 check('le bouton se débloque', !(await bouton.first().isDisabled()), 'resté bloqué');
 
@@ -222,7 +233,8 @@ titre('Deux déclinaisons font deux lignes');
 // penne, on le rouvre.
 await page.keyboard.press('Escape');
 await page.waitForTimeout(400);
-await page.locator('[role="radio"]:has-text("Penne")').first().click();
+await ouvrirFiche();
+await fiche.locator('[role="radio"]:has-text("Penne")').first().click();
 await page.waitForTimeout(400);
 await bouton.first().click();
 await page.waitForTimeout(800);
@@ -263,7 +275,10 @@ check(
   enDirect.slice(0, 900)
 );
 
-const penneBouton = page.locator('[role="radio"]:has-text("Penne")');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(400);
+await ouvrirFiche();
+const penneBouton = fiche.locator('[role="radio"]:has-text("Penne")');
 check('le choix « Penne » se désactive', await penneBouton.first().isDisabled(), 'resté cliquable');
 
 // ===== La vitrine et la commande =====
@@ -272,17 +287,18 @@ titre('La vitrine propose le même choix');
 await page.goto(`${SITE}/store/${slug}`);
 await page.waitForTimeout(3500);
 
-const vitrine = await page.locator('body').innerText();
+await ouvrirFiche();
+const vitrine = await fiche.innerText();
 check('la question posée y figure', vitrine.includes('Type de pâtes'), vitrine.slice(0, 600));
 
-const choixVitrine = page.locator('[role="radio"]');
+const choixVitrine = fiche.locator('[role="radio"]');
 check('les choix y sont', (await choixVitrine.count()) === 3, `n=${await choixVitrine.count()}`);
 
-const boutonVitrine = page.locator('button[aria-label="Ajouter Pâtes 4 fromages au panier"]');
+const boutonVitrine = fiche.locator('button[aria-label="Ajouter Pâtes 4 fromages au panier"]');
 check('le bouton invite à choisir', /Choisissez : Type de pâtes/.test(vitrine), vitrine.slice(0, 700));
 check('il est bloqué', await boutonVitrine.first().isDisabled(), 'actif à tort');
 
-await page.locator('[role="radio"]:has-text("Tagliatelle")').first().click();
+await fiche.locator('[role="radio"]:has-text("Tagliatelle")').first().click();
 await page.waitForTimeout(500);
 await boutonVitrine.first().click();
 await page.waitForTimeout(800);

@@ -2,17 +2,40 @@ import { encaissePourLaPlateforme, fraisDeServiceDus, totalCommercant } from "..
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { emitWebhook } from "../webhooks/webhook.service";
-import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
+import {
+  OrderAcceptanceService,
+  MOTIF_LIVRAISON_ECHOUEE,
+  echeanceDeReponse,
+  verifierTransition,
+} from "./order-acceptance.service";
 import { TRANSMISE } from "../../utils/commande-transmise";
+import { derniersJoursBruxelles, jourBruxelles } from "../../utils/semaine-bruxelles";
 
 export interface OrderFilterOptions {
   skip?: number;
   take?: number;
-  status?: string;
+  /** Un statut, ou plusieurs (les commandes en cours, pour l'écran de cuisine). */
+  status?: string | string[];
   startDate?: Date;
   endDate?: Date;
   minAmount?: number;
   maxAmount?: number;
+}
+
+/**
+ * Les ventes des derniers jours, jour par jour (heure de Bruxelles), pour le
+ * graphique du tableau de bord. Une commande refusée n'est pas une vente :
+ * elle n'y compte pas, ni en nombre ni en montant.
+ */
+function ventesParJour(
+  commandes: { status: string; createdAt: Date; totalAmount: unknown; feesAmount?: unknown; serviceFeeAmount?: unknown }[],
+  nombre: number
+) {
+  const vendues = commandes.filter((c) => c.status !== "REJECTED");
+  return derniersJoursBruxelles(nombre).map((jour) => {
+    const duJour = vendues.filter((c) => jourBruxelles(c.createdAt) === jour);
+    return { jour, commandes: duJour.length, chiffreAffaires: totalCommercant(duJour) };
+  });
 }
 
 export class OrderManagementService {
@@ -23,7 +46,9 @@ export class OrderManagementService {
 
       const whereClause: any = { storeId, ...TRANSMISE };
       
-      if (options?.status) {
+      if (Array.isArray(options?.status)) {
+        whereClause.status = { in: options.status };
+      } else if (options?.status) {
         whereClause.status = options.status;
       }
 
@@ -292,6 +317,7 @@ export class OrderManagementService {
           deliveryMode: true,
           createdAt: true,
           paymentStatus: true,
+          rejectionReason: true,
         },
       });
 
@@ -314,9 +340,13 @@ export class OrderManagementService {
         preparing: orders.filter(o => o.status === "PREPARING").length,
         ready: orders.filter(o => o.status === "READY").length,
         completed: orders.filter(o => o.status === "COMPLETED").length,
-        rejected: orders.filter(o => o.status === "REJECTED").length,
+        // Refusées par le commerce : une commande perdue en livraison par un
+        // livreur de la plateforme n'est pas de son fait.
+        rejected: orders.filter(o => o.status === "REJECTED" && o.rejectionReason !== MOTIF_LIVRAISON_ECHOUEE).length,
+        deliveryFailed: orders.filter(o => o.rejectionReason === MOTIF_LIVRAISON_ECHOUEE).length,
         paidOrders: orders.filter(o => o.paymentStatus === "SUCCEEDED").length,
         unpaidOrders: orders.filter(o => o.paymentStatus !== "SUCCEEDED").length,
+        parJour: ventesParJour(orders, Math.min(days, 7)),
       };
 
       return stats;

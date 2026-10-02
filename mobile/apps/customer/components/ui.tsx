@@ -2,7 +2,10 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
 export const COLORS = {
-  primary: '#007AFF',
+  // L'orange ZupEat, le même que sur le site ; sa teinte pâle pour les
+  // fonds d'éléments choisis ou mis en avant.
+  primary: '#EA580C',
+  primarySoft: '#FFF1E8',
   bg: '#f5f5f5',
   card: '#fff',
   text: '#333',

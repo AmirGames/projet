@@ -27,10 +27,10 @@ interface Invoice {
 }
 
 const statusColors: Record<string, string> = {
-  SUCCEEDED: 'bg-green-600/20 text-green-400 border-green-600/50',
-  PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
-  FAILED: 'bg-red-600/20 text-red-400 border-red-600/50',
-  REFUNDED: 'bg-gray-600/20 text-gray-300 border-gray-600/50',
+  SUCCEEDED: 'bg-green-50 text-green-600 border-green-200',
+  PENDING: 'bg-yellow-50 text-yellow-600 border-yellow-200',
+  FAILED: 'bg-red-50 text-red-600 border-red-200',
+  REFUNDED: 'bg-gray-600/20 text-gray-700 border-gray-600/50',
 };
 
 export default function InvoicesPage() {
@@ -175,12 +175,12 @@ export default function InvoicesPage() {
 
   if (loading && invoices.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+      <div className="text-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">{t('loading')}</p>
+              <p className="text-gray-500">{t('loading')}</p>
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -197,31 +197,31 @@ export default function InvoicesPage() {
             <h1 className="text-3xl font-bold">{t('title')}</h1>
             <Link
               href={`/merchant/${orgId}/dashboard`}
-              className="text-gray-400 hover:text-gray-300 text-sm"
+              className="text-gray-500 hover:text-gray-700 text-sm"
             >
               {t('backDashboard')}
             </Link>
           </div>
-          <p className="text-gray-400">{t('description')}</p>
+          <p className="text-gray-500">{t('description')}</p>
         </div>
 
         {/* Revenue Stats */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('statsTotalRevenue')}</p>
-              <p className="text-3xl font-bold text-green-400">{euro(stats.totalRevenue)}</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('statsTotalRevenue')}</p>
+              <p className="text-3xl font-bold text-green-600">{euro(stats.totalRevenue)}</p>
             </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('statsNetRevenue')}</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('statsNetRevenue')}</p>
               <p className="text-3xl font-bold">{euro(stats.netRevenue)}</p>
             </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('statsInvoiceCount')}</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('statsInvoiceCount')}</p>
               <p className="text-3xl font-bold">{stats.invoiceCount}</p>
             </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('statsAverageInvoice')}</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('statsAverageInvoice')}</p>
               <p className="text-3xl font-bold">{euro(stats.averageInvoiceAmount)}</p>
             </div>
           </div>
@@ -238,8 +238,8 @@ export default function InvoicesPage() {
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filter === status
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white hover:bg-gray-100 text-gray-500 hover:text-gray-700 border border-gray-200'
               }`}
             >
               {status === 'ALL' ? t('filterAll') : status}
@@ -248,10 +248,10 @@ export default function InvoicesPage() {
         </div>
 
         {/* Invoices Table */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-700 border-b border-gray-600">
+              <thead className="bg-gray-100 border-b border-gray-300">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold">{t('colNumber')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">{t('colCustomer')}</th>
@@ -265,26 +265,26 @@ export default function InvoicesPage() {
               <tbody>
                 {invoices.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       {t('empty')}
                     </td>
                   </tr>
                 ) : (
                   invoices.map((invoice) => (
-                    <tr key={invoice.orderId} className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-100">
+                    <tr key={invoice.orderId} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-gray-900">
                         {invoice.invoiceNumber}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <div>
-                          <p className="font-medium text-gray-100">{invoice.customerName}</p>
-                          <p className="text-xs text-gray-400">{invoice.customerEmail}</p>
+                          <p className="font-medium text-gray-900">{invoice.customerName}</p>
+                          <p className="text-xs text-gray-500">{invoice.customerEmail}</p>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-bold text-green-400">
+                      <td className="px-6 py-4 font-bold text-green-600">
                         {euro(invoice.amount)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-400">
+                      <td className="px-6 py-4 text-sm text-gray-500">
                         {invoice.itemCount} article{invoice.itemCount > 1 ? 's' : ''}
                       </td>
                       <td className="px-6 py-4 text-sm">
@@ -295,24 +295,24 @@ export default function InvoicesPage() {
                           {invoice.status === 'REFUNDED' && 'Remboursée'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-400">
+                      <td className="px-6 py-4 text-sm text-gray-500">
                         {new Date(invoice.date).toLocaleDateString('fr-FR')}
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Link
                             href={`/merchant/${orgId}/invoices/${invoice.orderId}`}
-                            className="p-1 hover:bg-gray-600 rounded transition-colors"
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
                             title={t('actionView')}
                           >
-                            <Eye size={18} className="text-blue-400" />
+                            <Eye size={18} className="text-blue-600" />
                           </Link>
                           <button
                             onClick={() => handleDownloadInvoice(invoice.orderId, invoice.invoiceNumber)}
-                            className="p-1 hover:bg-gray-600 rounded transition-colors"
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
                             title={t('actionDownload')}
                           >
-                            <Download size={18} className="text-green-400" />
+                            <Download size={18} className="text-green-600" />
                           </button>
                         </div>
                       </td>
@@ -325,22 +325,22 @@ export default function InvoicesPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
-              <p className="text-sm text-gray-400">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+              <p className="text-sm text-gray-500">
                 {t('pagination', { page: page + 1, totalPages })}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(0, page - 1))}
                   disabled={page === 0}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
                 >
                   {t('previous')}
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                   disabled={page === totalPages - 1}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
                 >
                   {t('next')}
                 </button>

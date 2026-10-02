@@ -13,7 +13,7 @@ import {
   Session,
 } from '../lib/session';
 import { Carts, CartLine, itemCount, loadCarts, saveCarts, sortedCarts, withLines } from '../lib/carts';
-import { isActive, OrderSummary, orderStatus } from '../lib/orders';
+import { isActive, OrderSummary, orderStatus, RETARD_TEXTE } from '../lib/orders';
 import { useCustomerRealtime } from '../lib/useCustomerRealtime';
 import { useCartSync } from '../lib/useCartSync';
 import { onCustomerNotificationTap, PushCustomerData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
@@ -261,6 +261,9 @@ export default function CustomerApp() {
         setBanner({ orderId: u.orderId, title: 'Votre livreur vous attend', message: 'Il est devant chez vous : descendez vite, il ne peut attendre que 6 minutes.' });
       } else if (u.livreurProche && !viewingOrder(u.orderId)) {
         setBanner({ orderId: u.orderId, title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
+      } else if (u.retard && !viewingOrder(u.orderId)) {
+        const { titre, texte } = RETARD_TEXTE[u.retard.motif];
+        setBanner({ orderId: u.orderId, title: titre, message: texte });
       }
     },
     onNotification: () => {
@@ -980,7 +983,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   menuItemActive: {
-    backgroundColor: '#EAF3FF',
+    backgroundColor: COLORS.primarySoft,
   },
   menuItemLogout: {
     marginTop: 8,
@@ -1078,7 +1081,8 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   loginButton: {
-    backgroundColor: '#0055CC',
+    // Noir sur le fond orange de la marque, comme le bouton du site.
+    backgroundColor: '#111111',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1103,7 +1107,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 1,
   },
-  boxChecked: { backgroundColor: '#0055CC', borderColor: '#0055CC' },
+  boxChecked: { backgroundColor: '#111111', borderColor: '#111111' },
   tick: { color: '#fff', fontWeight: '800', fontSize: 15 },
   acceptText: { flex: 1, fontSize: 14, color: '#fff', lineHeight: 20 },
   lienSite: { color: '#fff', textDecorationLine: 'underline', fontWeight: '700' },
@@ -1122,7 +1126,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   orderChip: {
-    backgroundColor: '#EAF3FF',
+    backgroundColor: COLORS.primarySoft,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,

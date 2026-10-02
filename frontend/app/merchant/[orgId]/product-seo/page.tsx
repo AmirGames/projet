@@ -131,36 +131,36 @@ export default function ProductSeoPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Search className="w-8 h-8" />
           SEO du Produit
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
+        <p className="text-gray-400 mt-1">
           Optimisez les métadonnées SEO et les balises Open Graph
         </p>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded-lg dark:bg-red-900 dark:text-red-200">
+        <div className="p-4 bg-red-100 text-red-700 rounded-lg">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-100 text-green-700 rounded-lg dark:bg-green-900 dark:text-green-200">
+        <div className="p-4 bg-green-100 text-green-700 rounded-lg">
           {success}
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Sélectionner un Produit
         </h2>
         <div className="flex gap-2">
           <select
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
-            className="flex-1 px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="flex-1 px-3 py-2 border rounded-lg"
           >
             <option value="">— Choisir un produit —</option>
             {produits.map((produit) => (
@@ -172,7 +172,7 @@ export default function ProductSeoPage() {
           <button
             onClick={fetchSeo}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-700 dark:hover:bg-blue-600"
+            className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg disabled:opacity-50"
           >
             Charger
           </button>
@@ -185,13 +185,13 @@ export default function ProductSeoPage() {
         </div>
       ) : productId ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="bg-white p-6 rounded-lg shadow space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">
               Métadonnées SEO
             </h2>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Titre Meta
               </label>
               <input
@@ -201,15 +201,15 @@ export default function ProductSeoPage() {
                 onChange={handleInputChange}
                 placeholder="Titre de la page (60 caractères max)"
                 maxLength={60}
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border rounded-lg"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 {formData.metaTitle.length}/60
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description Meta
               </label>
               <textarea
@@ -219,15 +219,15 @@ export default function ProductSeoPage() {
                 placeholder="Description (160 caractères max)"
                 maxLength={160}
                 rows={3}
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border rounded-lg"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 {formData.metaDescription.length}/160
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Mots-clés
               </label>
               <input
@@ -237,12 +237,12 @@ export default function ProductSeoPage() {
                 onChange={handleInputChange}
                 placeholder="Séparés par des virgules"
                 maxLength={200}
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border rounded-lg"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Slug
               </label>
               <input
@@ -251,18 +251,18 @@ export default function ProductSeoPage() {
                 value={formData.slug}
                 onChange={handleInputChange}
                 placeholder="URL amicale (ex: mon-produit)"
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border rounded-lg"
               />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="bg-white p-6 rounded-lg shadow space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">
               Open Graph
             </h2>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Image OG
               </label>
               <input
@@ -271,7 +271,7 @@ export default function ProductSeoPage() {
                 value={formData.ogImage}
                 onChange={handleInputChange}
                 placeholder="https://example.com/image.jpg"
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border rounded-lg"
               />
               {formData.ogImage && (
                 <img
@@ -283,7 +283,7 @@ export default function ProductSeoPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description OG
               </label>
               <textarea
@@ -293,9 +293,9 @@ export default function ProductSeoPage() {
                 placeholder="Description pour les réseaux sociaux"
                 maxLength={200}
                 rows={3}
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border rounded-lg"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 {formData.ogDescription.length}/200
               </p>
             </div>
@@ -303,16 +303,16 @@ export default function ProductSeoPage() {
             <button
               onClick={updateSeo}
               disabled={loading}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
+              className="bg-orange-600 text-white hover:bg-orange-700 w-full px-4 py-2 rounded-lg disabled:opacity-50"
             >
               Enregistrer le SEO
             </button>
           </div>
         </div>
       ) : (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <Search className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-400">
             Sélectionnez un produit pour modifier son SEO
           </p>
         </div>

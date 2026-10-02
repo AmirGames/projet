@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import type { NavStep } from '../lib/navigation';
 
 export interface MapPoint {
   lat: number;
@@ -12,6 +13,11 @@ export interface RouteInfo {
   distanceM: number;
   /** Durée estimée en voiture, en secondes. */
   durationS: number;
+  /**
+   * Le guidage virage par virage jusqu'à la prochaine étape (pas pour une
+   * tournée entière ni pour le trait direct de secours).
+   */
+  steps?: NavStep[];
 }
 
 /**
@@ -23,6 +29,8 @@ export interface RouteInfo {
  * La carte suit le livreur ; il peut la déplacer du doigt, un bouton la
  * recentre. L'itinéraire vient du service public OSRM et se recalcule quand
  * le livreur s'en écarte ; faute de réseau, un trait direct le remplace.
+ * Il porte aussi les manœuvres, pour le guidage virage par virage
+ * (`GuidanceCard`).
  */
 export default function LiveMap({
   driver,
@@ -207,14 +215,23 @@ const HTML = `<!DOCTYPE html>
     if (key === lastRoute.key && moved < 60 && Date.now() - lastRoute.at < 60000) return;
     lastRoute = { key: key, from: from, at: Date.now() };
     var url = 'https://router.project-osrm.org/route/v1/driving/' + from.lng + ',' + from.lat + ';' + to.lng + ',' + to.lat +
-      '?overview=full&geometries=geojson';
+      '?overview=full&geometries=geojson&steps=true';
     fetch(url).then(function (r) { return r.json(); }).then(function (data) {
       var best = data && data.routes && data.routes[0];
       if (!best) { straight(from, to); return; }
       if (line) map.removeLayer(line);
       line = L.polyline(best.geometry.coordinates.map(function (c) { return [c[1], c[0]]; }),
         { color: '#EA580C', weight: 6, opacity: 0.85 }).addTo(map);
-      send({ type: 'route', route: { distanceM: best.distance, durationS: best.duration } });
+      var steps = [];
+      (best.legs || []).forEach(function (leg) {
+        (leg.steps || []).forEach(function (st) {
+          var m = st.maneuver || {};
+          if (!m.location) return;
+          steps.push({ type: m.type || '', modifier: m.modifier, name: st.name || '', exit: m.exit,
+            distance: st.distance || 0, lat: m.location[1], lng: m.location[0] });
+        });
+      });
+      send({ type: 'route', route: { distanceM: best.distance, durationS: best.duration, steps: steps } });
     }).catch(function () { straight(from, to); });
   }
 

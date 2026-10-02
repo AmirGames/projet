@@ -148,9 +148,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-6 py-12">
-      <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
-        <h1 className="text-3xl font-bold text-slate-900 mb-6 text-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
+        <h1 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-gray-900">
           {t("title")}
         </h1>
 
@@ -194,24 +194,24 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-slate-700 font-medium mb-2">{t("email")}</label>
+            <label className="mb-1.5 block text-sm font-semibold text-gray-700">{t("email")}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
               placeholder="your@email.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-slate-700 font-medium mb-2">{t("password")}</label>
+            <label className="mb-1.5 block text-sm font-semibold text-gray-700">{t("password")}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
               placeholder="••••••••"
               required
             />
@@ -220,7 +220,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
+            className="w-full rounded-full bg-gray-900 px-4 py-3.5 font-bold text-white transition hover:bg-gray-800 disabled:opacity-50"
           >
             {loading ? t("connecting") : t("submit")}
           </button>
@@ -230,14 +230,14 @@ export default function LoginPage() {
           <p>
             <Link
               href="/mot-de-passe-oublie"
-              className="text-primary hover:text-primary-hover font-medium transition"
+              className="font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600"
             >
               {t("forgotPassword")}
             </Link>
           </p>
           <p className="text-slate-600">
             {t("noAccount")}{" "}
-            <Link href="/signup" className="text-primary hover:text-primary-hover font-medium transition">
+            <Link href="/signup" className="font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
               {t("signup")}
             </Link>
           </p>

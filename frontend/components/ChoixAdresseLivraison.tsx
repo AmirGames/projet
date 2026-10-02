@@ -19,6 +19,8 @@ interface Props {
    * bouton invite à la saisir (vitrine d'un commerce).
    */
   saisieOuverteSansAdresse?: boolean;
+  /** Sur fond blanc (vitrine) : bordures et bouton sombres au lieu du blanc sur couleur. */
+  clair?: boolean;
 }
 
 /**
@@ -29,7 +31,7 @@ interface Props {
  * Le choix est enregistré dans le navigateur : il vaut pour l'accueil, les
  * vitrines et le tunnel de commande.
  */
-export function ChoixAdresseLivraison({ adresse, onChange, saisieOuverteSansAdresse = false }: Props) {
+export function ChoixAdresseLivraison({ adresse, onChange, saisieOuverteSansAdresse = false, clair = false }: Props) {
   const t = useTranslations('deliveryAddress');
   const [edition, setEdition] = useState(false);
   const [saisie, setSaisie] = useState('');
@@ -71,6 +73,7 @@ export function ChoixAdresseLivraison({ adresse, onChange, saisieOuverteSansAdre
         <div className="relative flex-1">
           <MapPin className="absolute left-4 top-3 z-10 text-gray-400 pointer-events-none" size={20} />
           <AddressAutocomplete
+            clair
             value={saisie}
             onChange={setSaisie}
             onSelect={(choisie) =>
@@ -84,13 +87,15 @@ export function ChoixAdresseLivraison({ adresse, onChange, saisieOuverteSansAdre
               })
             }
             placeholder={t('placeholder')}
-            className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
+            className={`w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none ${clair ? 'border border-gray-300 focus:border-gray-900' : ''}`}
           />
         </div>
         <button
           type="button"
           onClick={parGPS}
-          className="bg-white text-red-600 font-semibold py-3 px-6 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2"
+          className={`font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 ${
+            clair ? 'bg-gray-900 text-white hover:bg-gray-800' : 'bg-white text-red-600 hover:bg-orange-50'
+          }`}
         >
           <Navigation size={18} />
           {t('myLocation')}
@@ -102,7 +107,7 @@ export function ChoixAdresseLivraison({ adresse, onChange, saisieOuverteSansAdre
               setSaisie('');
               setEdition(false);
             }}
-            className="py-3 px-4 rounded-lg text-white/90 hover:bg-white/10"
+            className={`py-3 px-4 rounded-lg ${clair ? 'text-gray-600 hover:bg-gray-100' : 'text-white/90 hover:bg-white/10'}`}
           >
             {t('cancel')}
           </button>
@@ -116,7 +121,9 @@ export function ChoixAdresseLivraison({ adresse, onChange, saisieOuverteSansAdre
       type="button"
       onClick={() => setEdition(true)}
       title={t('change')}
-      className="flex items-center gap-2 bg-white text-gray-900 py-3 px-4 rounded-full hover:bg-orange-50 max-w-full"
+      className={`flex items-center gap-2 text-gray-900 py-3 px-4 rounded-full max-w-full ${
+        clair ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white hover:bg-orange-50'
+      }`}
     >
       <MapPin size={18} className="text-red-600 flex-shrink-0" />
       {adresse ? (

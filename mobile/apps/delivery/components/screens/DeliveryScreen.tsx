@@ -14,10 +14,11 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useKeepAwake } from 'expo-keep-awake';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { isNetworkError, useOnline } from '../../lib/network';
 import { readJson, removeJson, writeJson } from '../../lib/offlineStore';
-import { dismissRejected, enqueueStep, stepLabel, useOutbox, withPendingSteps } from '../../lib/outbox';
+import { dismissRejected, enqueueStep, stepLabel, useOutbox, withPendingSteps, type PositionDepot } from '../../lib/outbox';
 import {
   callPhone,
   Delivery,
@@ -38,6 +39,7 @@ import type { Position, Tracking } from '../../lib/useDriverLocation';
 import SlideToConfirm from '../SlideToConfirm';
 import CompletionSummary from '../CompletionSummary';
 import LiveMap, { RouteInfo } from '../LiveMap';
+import GuidanceCard from '../GuidanceCard';
 import { Card, COLORS, ErrorBox, isDarkTheme, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
@@ -57,6 +59,8 @@ export default function DeliveryScreen({
   token,
   position,
   navigationApp,
+  voiceGuidance,
+  onVoiceGuidanceChange,
   onBack,
   onChanged,
   onTrackingChange,
@@ -68,6 +72,9 @@ export default function DeliveryScreen({
   token: string;
   position: Position | null;
   navigationApp: Prefs['navigationApp'];
+  /** Les consignes du guidage à voix haute, et le bouton qui les coupe. */
+  voiceGuidance: boolean;
+  onVoiceGuidanceChange: (on: boolean) => void;
   onBack: () => void;
   onChanged: () => void;
   /** La prochaine étape et la carte en plein écran décident de la précision du GPS. */
@@ -118,6 +125,9 @@ export default function DeliveryScreen({
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [photoFile, setPhotoFile] = useState<{ uri: string; type: string; name: string } | null>(null);
+  // Où était le téléphone quand la photo du dépôt a été prise : elle part avec
+  // le dépôt, même des heures plus tard depuis la file hors réseau.
+  const [photoPosition, setPhotoPosition] = useState<PositionDepot | null>(null);
   const [photoError, setPhotoError] = useState('');
   // La photo n'a pas pu partir faute de réseau : elle partira avec le dépôt.
   const [photoOffline, setPhotoOffline] = useState(false);
@@ -293,7 +303,7 @@ export default function DeliveryScreen({
   }, [trackingTarget?.lat, trackingTarget?.lng, mapOpen, finished]);
   useEffect(() => () => onTrackingRef.current({ target: null, navigating: false }), []);
 
-  const sendStatus = (status: 'PICKED_UP' | 'DELIVERED', proof?: Record<string, string>) =>
+  const sendStatus = (status: 'PICKED_UP' | 'DELIVERED', proof?: Record<string, unknown>) =>
     apiFetch(`/api/drivers/deliveries/${deliveryId}`, token, { method: 'PATCH', body: { status, ...(proof || {}) } });
 
   /**
@@ -349,7 +359,7 @@ export default function DeliveryScreen({
     try {
       // Photo restée sur le téléphone : le dépôt entier attend le réseau.
       if (!proof.code && !proof.photoUrl) throw new TypeError('Pas de réseau');
-      await sendStatus('DELIVERED', proof);
+      await sendStatus('DELIVERED', proof.photoUrl && photoPosition ? { ...proof, positionDepot: photoPosition } : proof);
       Vibration.vibrate(150);
       await load(true);
       onChanged();
@@ -358,7 +368,15 @@ export default function DeliveryScreen({
         // Sans réseau, la remise est gardée et partira seule. Le code, lui,
         // ne se vérifie qu'au serveur : le livreur est prévenu s'il est refusé.
         if (proof.code) await enqueueStep({ kind: 'handover', deliveryId, code: proof.code });
-        else await enqueueStep({ kind: 'drop', deliveryId, note: proof.note, photoUri: photoFile?.uri || photoUri, photoUrl: proof.photoUrl || undefined });
+        else
+          await enqueueStep({
+            kind: 'drop',
+            deliveryId,
+            note: proof.note,
+            photoUri: photoFile?.uri || photoUri,
+            photoUrl: proof.photoUrl || undefined,
+            position: photoPosition ?? undefined,
+          });
         Vibration.vibrate(150);
         return;
       }
@@ -408,6 +426,16 @@ export default function DeliveryScreen({
     if (result.canceled || !result.assets?.[0]) return;
 
     const asset = result.assets[0];
+    setPhotoPosition(
+      position
+        ? {
+            latitude: position.lat,
+            longitude: position.lng,
+            precision: position.accuracy,
+            releveeLe: new Date(position.at).toISOString(),
+          }
+        : null
+    );
     setPhotoUri(asset.uri);
     setUploading(true);
     const file = await reducePhoto(asset);
@@ -896,6 +924,20 @@ export default function DeliveryScreen({
               <Text style={styles.fullMapCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
+          <StayAwake />
+          {route && !route.steps && (
+            <Text style={styles.noGuidance}>
+              Itinéraire non calculé (réseau ou service indisponible) : pas de guidage virage par virage pour l’instant.
+            </Text>
+          )}
+          {route?.steps && route.steps.length > 1 && (
+            <GuidanceCard
+              steps={route.steps}
+              driver={driverPoint}
+              voice={voiceGuidance}
+              onToggleVoice={() => onVoiceGuidanceChange(!voiceGuidance)}
+            />
+          )}
           <LiveMap
             dark={isDarkTheme()}
             driver={driverPoint}
@@ -920,6 +962,15 @@ export default function DeliveryScreen({
   );
 }
 
+/**
+ * La carte plein écran garde l'écran allumé, comme un GPS : écran éteint, le
+ * guidage et ses annonces vocales s'arrêteraient.
+ */
+function StayAwake() {
+  useKeepAwake('navigation');
+  return null;
+}
+
 /** « 12 min », « 1 h 05 ». */
 function formatDuration(seconds: number) {
   const minutes = Math.max(1, Math.round(seconds / 60));
@@ -941,6 +992,14 @@ const styles = themedStyles(() => ({
   fullMapTitle: { color: COLORS.onHeader, fontSize: 17, fontWeight: '700' },
   fullMapInfo: { color: COLORS.onHeader, opacity: 0.9, fontSize: 14, marginTop: 2 },
   fullMapClose: { marginLeft: 12, padding: 4 },
+  noGuidance: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.warning,
+    backgroundColor: COLORS.warningBg,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
   fullMapCloseText: { color: COLORS.onHeader, fontSize: 22, fontWeight: '700' },
   fullMapAction: {
     position: 'absolute',

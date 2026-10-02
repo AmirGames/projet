@@ -24,6 +24,12 @@ const ESPACES_AVEC_NAVIGATION = [
   '/devenir-chauffeur',
   // Le passage éclair de la connexion unique.
   '/sso',
+  // Le parcours client après la vitrine : il porte l'en-tête client.
+  '/checkout',
+  '/track',
+  '/order-confirmation',
+  // Le passager ZupDrive : son layout porte l'en-tête de la plateforme.
+  '/trajet',
 ];
 
 // Pages du livreur affichées sans session : le layout livreur n'y montre
@@ -40,6 +46,10 @@ function aSaPropreNavigation(pathname: string | null): boolean {
     pathname === prefixe || pathname.startsWith(prefixe + '/');
 
   if (ESPACES_AVEC_NAVIGATION.some(sousChemin)) return true;
+
+  // La vitrine d'un commerce porte l'en-tête du parcours client ; la
+  // création d'une boutique (/store/new) relève de l'espace commerçant.
+  if (sousChemin('/store')) return pathname !== '/store/new';
 
   if (sousChemin('/driver')) {
     return !PAGES_LIVREUR_SANS_NAVIGATION.some(sousChemin);

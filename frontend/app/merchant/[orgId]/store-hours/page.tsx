@@ -238,7 +238,7 @@ export default function HorairesPage() {
 
   if (chargement) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+      <div className="flex items-center justify-center py-24">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500" />
       </div>
     );
@@ -246,8 +246,8 @@ export default function HorairesPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-900 p-8">
-        <p role="status" className="text-slate-400">
+      <div className="text-gray-900">
+        <p role="status" className="text-gray-500">
           {erreur || 'Horaires indisponibles'}
         </p>
       </div>
@@ -255,15 +255,15 @@ export default function HorairesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-8">
+    <div className="text-gray-900">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <Clock className="text-amber-500" />
               Horaires et disponibilité
             </h1>
-            <p className="text-slate-400 mt-2">
+            <p className="text-gray-500 mt-2">
               Vos horaires d&apos;ouverture, et les créneaux de retrait proposés au client.
             </p>
           </div>
@@ -288,21 +288,21 @@ export default function HorairesPage() {
         </div>
 
         {message && (
-          <p role="status" className="mb-4 text-sm text-green-400">
+          <p role="status" className="mb-4 text-sm text-green-600">
             {message}
           </p>
         )}
         {erreur && (
-          <p role="status" className="mb-4 text-sm text-red-400">
+          <p role="status" className="mb-4 text-sm text-red-600">
             {erreur}
           </p>
         )}
 
         {/* Les horaires de la semaine */}
-        <div className="bg-slate-800 rounded-lg p-6 mb-8 border border-slate-700">
-          <h2 className="text-xl font-bold text-white mb-2">Horaires d&apos;ouverture</h2>
+        <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Horaires d&apos;ouverture</h2>
           {/* Le service du midi et celui du soir tiennent dans la même journée. */}
-          <p className="text-sm text-slate-400 mb-6">
+          <p className="text-sm text-gray-500 mb-6">
             Une journée peut compter plusieurs services — midi et soir, par exemple. Une
             fermeture après minuit se saisit telle quelle : 17h30 – 01h00.
           </p>
@@ -316,20 +316,20 @@ export default function HorairesPage() {
                 return (
                   <div
                     key={jour}
-                    className="flex items-center justify-between bg-slate-700 p-4 rounded-lg border border-slate-600"
+                    className="flex items-center justify-between bg-gray-100 p-4 rounded-lg border border-gray-300"
                   >
-                    <p className="text-white font-medium flex-1">{NOM_DU_JOUR[jour]}</p>
+                    <p className="text-gray-900 font-medium flex-1">{NOM_DU_JOUR[jour]}</p>
 
                     <div className="flex items-center gap-4">
                       {horaires?.closed ? (
-                        <span className="text-sm text-red-400">Fermé</span>
+                        <span className="text-sm text-red-600">Fermé</span>
                       ) : (
-                        <span className="text-sm text-green-400">
+                        <span className="text-sm text-green-600">
                           {(horaires?.plages || []).map((plage, index) => (
                             <span key={index} className="ml-3 first:ml-0">
                               {plage.open} – {plage.close}
                               {franchitMinuit(plage) && (
-                                <span className="text-slate-400 text-xs"> (le lendemain)</span>
+                                <span className="text-gray-500 text-xs"> (le lendemain)</span>
                               )}
                             </span>
                           ))}
@@ -341,7 +341,7 @@ export default function HorairesPage() {
                       <button
                         onClick={() => ouvrirLEdition(jour)}
                         aria-label={`Modifier ${NOM_DU_JOUR[jour]}`}
-                        className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition text-sm"
+                        className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded transition text-sm"
                       >
                         Modifier
                       </button>
@@ -353,12 +353,12 @@ export default function HorairesPage() {
               return (
                 <div
                   key={jour}
-                  className="bg-slate-700 p-4 rounded-lg border border-amber-600/60 space-y-3"
+                  className="bg-gray-100 p-4 rounded-lg border border-amber-200 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-white font-medium">{NOM_DU_JOUR[jour]}</p>
+                    <p className="text-gray-900 font-medium">{NOM_DU_JOUR[jour]}</p>
 
-                    <label className="flex items-center gap-2 text-slate-300 text-sm">
+                    <label className="flex items-center gap-2 text-gray-700 text-sm">
                       <input
                         type="checkbox"
                         checked={brouillon?.closed || false}
@@ -393,9 +393,9 @@ export default function HorairesPage() {
                                   : actuel
                               )
                             }
-                            className="px-2 py-1 bg-slate-600 text-white rounded text-sm"
+                            className="px-2 py-1 bg-gray-200 text-gray-900 rounded text-sm"
                           />
-                          <span className="text-slate-400">à</span>
+                          <span className="text-gray-500">à</span>
                           <input
                             type="time"
                             aria-label={`Fermeture ${index + 1} — ${NOM_DU_JOUR[jour]}`}
@@ -412,11 +412,11 @@ export default function HorairesPage() {
                                   : actuel
                               )
                             }
-                            className="px-2 py-1 bg-slate-600 text-white rounded text-sm"
+                            className="px-2 py-1 bg-gray-200 text-gray-900 rounded text-sm"
                           />
 
                           {franchitMinuit(plage) && (
-                            <span className="text-xs text-slate-400">jusqu&apos;au lendemain</span>
+                            <span className="text-xs text-gray-500">jusqu&apos;au lendemain</span>
                           )}
 
                           {(brouillon?.plages.length || 0) > 1 && (
@@ -433,7 +433,7 @@ export default function HorairesPage() {
                                 )
                               }
                               title="Retirer ce service"
-                              className="p-1 text-red-400 hover:text-red-300 transition"
+                              className="p-1 text-red-600 hover:text-red-700 transition"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -454,7 +454,7 @@ export default function HorairesPage() {
                                 : actuel
                             )
                           }
-                          className="flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300 transition"
+                          className="flex items-center gap-1 text-sm text-amber-600 hover:text-amber-700 transition"
                         >
                           <Plus size={16} />
                           Ajouter un service
@@ -468,7 +468,7 @@ export default function HorairesPage() {
                       onClick={() => brouillon && enregistrerLeJour(jour, brouillon)}
                       disabled={envoi}
                       aria-label={`Enregistrer ${NOM_DU_JOUR[jour]}`}
-                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm disabled:opacity-50"
+                      className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded transition text-sm disabled:opacity-50"
                     >
                       Enregistrer
                     </button>
@@ -477,7 +477,7 @@ export default function HorairesPage() {
                         setJourEdite(null);
                         setBrouillon(null);
                       }}
-                      className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-500 transition text-sm"
+                      className="px-3 py-1 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition text-sm"
                     >
                       Annuler
                     </button>
@@ -489,14 +489,14 @@ export default function HorairesPage() {
         </div>
 
         {/* Les créneaux de retrait */}
-        <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+        <div className="bg-white rounded-lg p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">Créneaux de retrait</h2>
+            <h2 className="text-xl font-bold text-gray-900">Créneaux de retrait</h2>
 
             {!formulaireCreneau && (
               <button
                 onClick={() => setFormulaireCreneau(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
+                className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg transition"
               >
                 <Plus size={20} />
                 Ajouter un créneau
@@ -505,10 +505,10 @@ export default function HorairesPage() {
           </div>
 
           {formulaireCreneau && (
-            <div className="bg-slate-700 p-4 rounded-lg mb-4 border border-slate-600">
+            <div className="bg-gray-100 p-4 rounded-lg mb-4 border border-gray-300">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label htmlFor="creneau-debut" className="text-slate-300 text-sm">
+                  <label htmlFor="creneau-debut" className="text-gray-700 text-sm">
                     Début
                   </label>
                   <input
@@ -516,11 +516,11 @@ export default function HorairesPage() {
                     type="time"
                     value={nouveauCreneau.start}
                     onChange={(e) => setNouveauCreneau({ ...nouveauCreneau, start: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-600 text-white rounded text-sm"
+                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded text-sm"
                   />
                 </div>
                 <div>
-                  <label htmlFor="creneau-fin" className="text-slate-300 text-sm">
+                  <label htmlFor="creneau-fin" className="text-gray-700 text-sm">
                     Fin
                   </label>
                   <input
@@ -528,11 +528,11 @@ export default function HorairesPage() {
                     type="time"
                     value={nouveauCreneau.end}
                     onChange={(e) => setNouveauCreneau({ ...nouveauCreneau, end: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-600 text-white rounded text-sm"
+                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded text-sm"
                   />
                 </div>
                 <div>
-                  <label htmlFor="creneau-max" className="text-slate-300 text-sm">
+                  <label htmlFor="creneau-max" className="text-gray-700 text-sm">
                     Commandes maximum
                   </label>
                   <input
@@ -546,7 +546,7 @@ export default function HorairesPage() {
                         maxOrders: parseInt(e.target.value, 10) || 1,
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-600 text-white rounded text-sm"
+                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded text-sm"
                   />
                 </div>
               </div>
@@ -555,13 +555,13 @@ export default function HorairesPage() {
                 <button
                   onClick={ajouterUnCreneau}
                   disabled={envoi}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+                  className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
                 >
                   Ajouter
                 </button>
                 <button
                   onClick={() => setFormulaireCreneau(false)}
-                  className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-500 transition"
+                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition"
                 >
                   Annuler
                 </button>
@@ -574,13 +574,13 @@ export default function HorairesPage() {
               {data.pickupSlots.map((creneau) => (
                 <div
                   key={creneau.id}
-                  className="flex items-center justify-between bg-slate-700 p-4 rounded-lg border border-slate-600"
+                  className="flex items-center justify-between bg-gray-100 p-4 rounded-lg border border-gray-300"
                 >
                   <div className="flex-1">
-                    <p className="text-white font-medium">
+                    <p className="text-gray-900 font-medium">
                       {creneau.start} – {creneau.end}
                     </p>
-                    <p className="text-slate-400 text-sm">
+                    <p className="text-gray-500 text-sm">
                       {creneau.maxOrders} commande{creneau.maxOrders > 1 ? 's' : ''} au maximum
                     </p>
                   </div>
@@ -597,7 +597,7 @@ export default function HorairesPage() {
               ))}
             </div>
           ) : (
-            <p className="text-slate-400 text-center py-8">
+            <p className="text-gray-500 text-center py-8">
               Aucun créneau de retrait. Le client se voit alors proposer les heures
               d&apos;ouverture ci-dessus.
             </p>

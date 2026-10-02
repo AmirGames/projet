@@ -1,4 +1,5 @@
 import { finAttente } from "../drivers/delivery-proof.service";
+import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient, retardPourLeClient } from "../drivers/retard-livraison";
 import { positionLivreurVisible } from "../orders/suivi-commande.service";
 import { presenter } from "../files/fichiers-prives.service";
 import { SupplementService } from "../catalog/supplement.service";
@@ -321,7 +322,8 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           where: { status: "ACTIVE", deletedAt: null },
           include: {
             category: true,
-            media: true,
+            // Dans l'ordre choisi par le commerçant : la vitrine affiche la première.
+            media: { orderBy: { displayOrder: "asc" } },
             variants: true
           },
           // L'ordre voulu par le commerçant d'abord ; le nom ne sert qu'à
@@ -517,7 +519,7 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
       },
       include: {
         category: true,
-        media: true,
+        media: { orderBy: { displayOrder: "asc" } },
         variants: true
       },
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }]
@@ -743,6 +745,8 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         // La note déjà donnée : sans elle l'écran reproposerait les étoiles à
         // chaque visite, pour un enregistrement que le serveur refuse.
         rating: { select: { note: true, commentaire: true, createdAt: true } },
+        // Les constats de la surveillance des courses : la livraison dérape-t-elle ?
+        incidents: INCIDENTS_POUR_LE_CLIENT,
       },
     });
 
@@ -817,6 +821,10 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         // Le livreur est à la porte et n'arrive pas à le joindre : passé cette
         // heure, la commande est déposée en lieu sûr.
         attenteFinLe: course.status === "PICKED_UP" ? finAttente(course) : null,
+        // En retard, ou confiée à un nouveau livreur (voir retard-livraison.ts).
+        retard: retardPourLeClient(course),
+        // « Je n'ai pas reçu ma commande », après un dépôt en photo.
+        reclamation: reclamationPourLeClient(course),
         maintenant: new Date(),
       },
     });
@@ -892,7 +900,9 @@ router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, 
     const notes = await avecLaVraieNote(favoris.map((f) => f.store));
     res.json({
       success: true,
-      data: favoris.map((f, i) => ({ ...f, store: notes[i] }))
+      // La famille (« pizza », « sushi »…) donne au favori sans photo ni logo
+      // l'illustration de sa catégorie, comme sur l'accueil.
+      data: favoris.map((f, i) => ({ ...f, store: { ...notes[i], ...genreDuCommerce(f.store) } }))
     });
   } catch (err) {
     next(err);

@@ -132,6 +132,7 @@ const ROUTES: { prefixe: string; ressource?: string; modele?: string }[] = [
   { prefixe: "/api/admin/tickets", ressource: "tickets", modele: "merchantTicket" },
   { prefixe: "/api/superowner/drivers", ressource: "drivers", modele: "courier" },
   { prefixe: "/api/superowner/driver-support", ressource: "driver-support", modele: "courier" },
+  { prefixe: "/api/superowner/delivery-incidents", ressource: "delivery-incidents" },
   { prefixe: "/api/superowner/payouts", ressource: "payouts", modele: "courierPayout" },
   { prefixe: "/api/superowner/organizations", ressource: "organizations" },
   { prefixe: "/api/admin/merchants", ressource: "organizations" },

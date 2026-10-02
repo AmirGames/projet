@@ -1,82 +1,39 @@
 'use client';
 
 import { signalerErreur } from '@/lib/erreurs';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Clock, CheckCircle, AlertCircle, Package, Eye, Truck } from 'lucide-react';
+import { Search } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
-import { ReponseCommande } from '@/components/ReponseCommande';
-import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
+import { CarteCommandeCuisine, numeroCourt, type CommandeCuisine } from '@/components/CarteCommandeCuisine';
+import { EVENEMENT_COMMANDES_CHANGEES, MOTIFS_POUR_LE_COMMERCANT } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 
-import { euro, montantCommercant } from '@/lib/format';
+import { euro, montantCommercant, sommeEuros } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
-import { useParametreAdresse } from '@/lib/navigateur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface OrderItem {
-  id: string;
-  productId: string;
-  quantity: number;
-  price: number;
-  product: {
-    name: string;
-    sku: string;
-  };
-}
-
-interface Order {
-  id: string;
-  customerName: string;
+interface Order extends CommandeCuisine {
   customerEmail: string;
-  totalAmount: number;
-  feesAmount?: number | string;
-  serviceFeeAmount?: number | string;
-  status: string;
-  paymentStatus: string;
-  deliveryType: string;
-  /** Qui livre, figé à la commande : OWN (le commerçant) ou PLATFORM. */
-  deliveryMode?: 'OWN' | 'PLATFORM' | null;
-  items: OrderItem[];
-  createdAt: string;
-  customerPhone?: string | null;
-  pickupTime?: string | null;
-  /** L'heure limite pour répondre, tant que la commande est en attente. */
-  echeance?: string | null;
-  estimatedReadyAt?: string | null;
-  preparationMinutes?: number | null;
   rejectionReason?: string | null;
-  rejectionNote?: string | null;
-  /** La course, créée dès que la commande passe « En préparation ». */
-  delivery?: {
-    status: string;
-    driverId?: string | null;
-    driver?: { name?: string | null; phone?: string | null } | null;
-  } | null;
 }
 
 type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'REJECTED' | 'READY' | 'COMPLETED';
 
-const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
-  ACCEPTED: 'bg-blue-600/20 text-blue-400 border-blue-600/50',
-  PREPARING: 'bg-orange-600/20 text-orange-400 border-orange-600/50',
-  READY: 'bg-green-600/20 text-green-400 border-green-600/50',
-  COMPLETED: 'bg-purple-600/20 text-purple-400 border-purple-600/50',
-  REJECTED: 'bg-red-600/20 text-red-400 border-red-600/50',
-};
+/** Les commandes qui demandent encore quelque chose à la cuisine. */
+const STATUTS_EN_COURS = 'PENDING,ACCEPTED,PREPARING,READY';
 
-const statusIcons: Record<string, any> = {
-  PENDING: Clock,
-  ACCEPTED: CheckCircle,
-  PREPARING: Clock,
-  READY: Package,
-  COMPLETED: CheckCircle,
-  REJECTED: AlertCircle,
+const pastilleDeStatut: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-900',
+  ACCEPTED: 'bg-sky-100 text-sky-900',
+  PREPARING: 'bg-orange-100 text-orange-900',
+  READY: 'bg-green-100 text-green-900',
+  COMPLETED: 'bg-gray-100 text-gray-700',
+  REJECTED: 'bg-red-100 text-red-800',
 };
 
 /** Explique au commerçant pourquoi aucun livreur n'est listé. */
@@ -94,20 +51,33 @@ function expliquerAbsence(
   return null;
 }
 
+/**
+ * Les commandes du commerce.
+ *
+ * « En cours » est l'écran de cuisine : trois colonnes, de la commande à
+ * accepter à la commande prête, chacune avec son action suivante. Rien n'est
+ * décidé ici : chaque bouton appelle le serveur, qui vérifie l'appartenance au
+ * commerce et la transition, puis la liste se relit.
+ *
+ * « Historique » garde toutes les commandes, filtrables, avec les chiffres.
+ */
 export default function OrdersPage() {
   const t = useTranslations('merchantOrders');
+  const tc = useTranslations('merchantOrders.cuisine');
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
 
+  const [vue, setVue] = useState<'enCours' | 'historique'>('enCours');
+  const [enCours, setEnCours] = useState<Order[]>([]);
+  const [duJour, setDuJour] = useState<Order[]>([]);
+  const [recherche, setRecherche] = useState('');
+  const [maintenant, setMaintenant] = useState(() => Date.now());
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  // Le bandeau des nouvelles commandes mène ici, filtré sur celles à accepter
-  // (?filtre=PENDING) ; un filtre choisi dans la page l'emporte.
-  const filtreAdresse = useParametreAdresse('filtre') === 'PENDING' ? 'PENDING' : 'ALL';
-  const [filtreChoisi, setFilter] = useState<OrderStatus | 'ALL' | null>(null);
-  const filter = filtreChoisi ?? filtreAdresse;
+  const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<any>(null);
@@ -120,19 +90,51 @@ export default function OrdersPage() {
 
   const itemsPerPage = 20;
 
-  const fetchOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
+  const jeton = useCallback(() => {
+    const valeur = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (!valeur) router.push('/login');
+    return valeur;
+  }, [router]);
 
-      const skip = page * itemsPerPage;
+  // Les commandes à traiter, et celles du jour pour le total des terminées.
+  const fetchEnCours = useCallback(async () => {
+    const token = jeton();
+    if (!token) return;
+
+    try {
+      const [reponse, reponseDuJour] = await Promise.all([
+        fetch(`${API_URL}/api/order-management/${storeId}?status=${STATUTS_EN_COURS}&take=100`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/order-management/${storeId}/today`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (!reponse.ok) throw new Error('Failed to fetch orders');
+
+      const donnees = await reponse.json();
+      setEnCours(donnees.data || []);
+
+      if (reponseDuJour.ok) {
+        const jour = await reponseDuJour.json();
+        setDuJour(jour.orders || []);
+      }
+    } catch (error) {
+      signalerErreur('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [jeton, storeId]);
+
+  const fetchOrders = useCallback(async () => {
+    const token = jeton();
+    if (!token) return;
+
+    try {
       const query = new URLSearchParams({
-        skip: skip.toString(),
-        take: itemsPerPage.toString(),
+        skip: String(page * itemsPerPage),
+        take: String(itemsPerPage),
         ...(filter !== 'ALL' && { status: filter }),
       });
 
@@ -140,19 +142,15 @@ export default function OrdersPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders');
-      }
+      if (!response.ok) throw new Error('Failed to fetch orders');
 
       const data = await response.json();
       setOrders(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
       signalerErreur('Error fetching orders:', error);
-    } finally {
-      setLoading(false);
     }
-  }, [filter, page, router, storeId]);
+  }, [filter, page, jeton, storeId]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -162,27 +160,23 @@ export default function OrdersPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch stats');
-      }
+      if (!response.ok) throw new Error('Failed to fetch stats');
 
-      const data = await response.json();
-      setStats(data);
+      setStats(await response.json());
     } catch (error) {
       signalerErreur('Error fetching stats:', error);
     }
   }, [storeId]);
 
+  const relire = useCallback(() => {
+    fetchEnCours();
+    fetchOrders();
+    fetchStats();
+  }, [fetchEnCours, fetchOrders, fetchStats]);
+
   // Ailleurs aussi : un collègue, le livreur, le client, une annulation
   // automatique. La liste suit sans qu'on recharge.
-  useDonneesModifiees(
-    'orders',
-    () => {
-      fetchOrders();
-      fetchStats();
-    },
-    { storeId, actif: Boolean(storeId) }
-  );
+  useDonneesModifiees('orders', relire, { storeId, actif: Boolean(storeId) });
 
   const fetchDeliverySettings = useCallback(async () => {
     try {
@@ -196,9 +190,7 @@ export default function OrdersPage() {
       if (!response.ok) return;
 
       const data = await response.json();
-      const settings = data.settings || {};
-      const delivery = settings.delivery || {};
-      setUseOwnDelivery(delivery.useOwnDelivery || false);
+      setUseOwnDelivery(data.settings?.delivery?.useOwnDelivery || false);
     } catch (error) {
       signalerErreur('Error fetching delivery settings:', error);
     }
@@ -206,24 +198,29 @@ export default function OrdersPage() {
 
   useEffectChargement(() => {
     if (storeId) {
-      fetchOrders();
+      fetchEnCours();
       fetchStats();
       fetchDeliverySettings();
     }
-  }, [storeId, fetchOrders, fetchStats, fetchDeliverySettings]);
+  }, [storeId, fetchEnCours, fetchStats, fetchDeliverySettings]);
+
+  // L'historique ne se charge que s'il est ouvert, et à chaque filtre ou page.
+  useEffectChargement(() => {
+    if (storeId && vue === 'historique') fetchOrders();
+  }, [storeId, vue, fetchOrders]);
 
   // Une commande arrive, ou quelqu'un y répond : la liste se relit seule.
   useEffect(() => {
     if (!storeId) return;
-
-    const relire = () => {
-      fetchOrders();
-      fetchStats();
-    };
-
     window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
     return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
-  }, [storeId, fetchOrders, fetchStats]);
+  }, [storeId, relire]);
+
+  // Les « il y a 4 min » et « prête dans 6 min » avancent tout seuls.
+  useEffect(() => {
+    const minuteur = setInterval(() => setMaintenant(Date.now()), 20000);
+    return () => clearInterval(minuteur);
+  }, []);
 
   const handleCallDelivery = async (orderId: string) => {
     try {
@@ -234,29 +231,10 @@ export default function OrdersPage() {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
-      // Récupérer la commande pour obtenir le storeId
-      const orderResponse = await fetch(`${API_URL}/api/orders/${orderId}`, {
+      // Récupérer la liste des livreurs disponibles (rayon réglé par la plateforme)
+      const response = await fetch(`${API_URL}/api/drivers/available?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!orderResponse.ok) {
-        throw new Error('Failed to fetch order');
-      }
-
-      const orderData = await orderResponse.json();
-      const storeId = orderData.data?.storeId || orderData.storeId;
-
-      if (!storeId) {
-        throw new Error('Store ID not found in order');
-      }
-
-      // Récupérer la liste des livreurs disponibles (rayon réglé par la plateforme)
-      const response = await fetch(
-        `${API_URL}/api/drivers/available?storeId=${storeId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
 
       const data = await response.json().catch(() => null);
 
@@ -306,319 +284,371 @@ export default function OrdersPage() {
       }
 
       setShowDeliveryModal(null);
-      fetchOrders();
+      relire();
     } catch (error) {
       signalerErreur('Error selecting driver:', error);
       setDispatchMessage({ ok: false, text: 'Serveur injoignable.' });
     }
   };
 
+  // La recherche porte sur le numéro et le nom du client des commandes en cours.
+  const visibles = useMemo(() => {
+    const cherche = recherche.trim().toLowerCase().replace(/^#/, '');
+    if (!cherche) return enCours;
+    return enCours.filter(
+      (c) => c.id.toLowerCase().startsWith(cherche) || c.customerName.toLowerCase().includes(cherche)
+    );
+  }, [enCours, recherche]);
+
+  // Les plus anciennes d'abord : c'est l'ordre dans lequel la cuisine travaille.
+  const parAnciennete = (a: Order, b: Order) =>
+    new Date(a.submittedAt || a.createdAt).getTime() - new Date(b.submittedAt || b.createdAt).getTime();
+
+  const colonnes = [
+    {
+      cle: 'aAccepter',
+      pastille: 'bg-amber-500',
+      compteur: 'bg-amber-100 text-amber-900',
+      commandes: visibles.filter((c) => c.status === 'PENDING').sort(parAnciennete),
+      vide: tc('videAAccepter'),
+    },
+    {
+      cle: 'enPreparation',
+      pastille: 'bg-orange-600',
+      compteur: 'bg-orange-100 text-orange-900',
+      commandes: visibles.filter((c) => c.status === 'ACCEPTED' || c.status === 'PREPARING').sort(parAnciennete),
+      vide: tc('videEnPreparation'),
+    },
+    {
+      cle: 'pretes',
+      pastille: 'bg-green-600',
+      compteur: 'bg-green-100 text-green-900',
+      commandes: visibles.filter((c) => c.status === 'READY').sort(parAnciennete),
+      vide: tc('videPretes'),
+    },
+  ];
+
+  const terminees = duJour.filter((c) => c.status === 'COMPLETED');
   const totalPages = Math.ceil(total / itemsPerPage);
 
-  if (loading && orders.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">{t('loading')}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Qui livre cette commande : figé à la commande, sinon le réglage du commerce.
+  const parLaPlateforme = (c: Order) => (c.deliveryMode ? c.deliveryMode === 'PLATFORM' : !useOwnDelivery);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">{t('title')}</h1>
-            <Link
-              href={`/merchant/${orgId}/dashboard`}
-              className="text-gray-400 hover:text-gray-300 text-sm"
-            >
-              {t('backToDashboard')}
-            </Link>
-          </div>
-          <p className="text-gray-400">{t('description')}</p>
-        </div>
-
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-              <p className="text-gray-400 text-xs mb-1">{t('statsTotal')}</p>
-              <p className="text-2xl font-bold">{stats.totalOrders}</p>
-            </div>
-            <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
-              <p className="text-yellow-400 text-xs mb-1">{t('statsPending')}</p>
-              <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
-            </div>
-            <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-              <p className="text-blue-400 text-xs mb-1">{t('statsAccepted')}</p>
-              <p className="text-2xl font-bold text-blue-400">{stats.accepted}</p>
-            </div>
-            <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
-              <p className="text-orange-400 text-xs mb-1">En préparation</p>
-              <p className="text-2xl font-bold text-orange-400">{stats.preparing || 0}</p>
-            </div>
-            <div className="bg-green-600/20 border border-green-600/50 rounded-lg p-4">
-              <p className="text-green-400 text-xs mb-1">{t('statsReady')}</p>
-              <p className="text-2xl font-bold text-green-400">{stats.ready}</p>
-            </div>
-            <div className="bg-purple-600/20 border border-purple-600/50 rounded-lg p-4">
-              <p className="text-purple-400 text-xs mb-1">{t('statsCompleted')}</p>
-              <p className="text-2xl font-bold text-purple-400">{stats.completed}</p>
-            </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-              <p className="text-gray-400 text-xs mb-1">{t('statsRevenue')}</p>
-              <p className="text-2xl font-bold">{euro(stats.totalRevenue, 0)}</p>
-              {/* Ce que le commerçant a encaissé pour les livreurs de la
-                  plateforme : hors de son chiffre, à reverser avec la commission. */}
-              {stats.platformDeliveryFees > 0 && (
-                <p className="text-xs text-amber-300 mt-1">
-                  hors {euro(stats.platformDeliveryFees)} de livraison à reverser
-                </p>
-              )}
-              {stats.platformServiceFees > 0 && (
-                <p className="text-xs text-amber-300 mt-1">
-                  hors {euro(stats.platformServiceFees)} de frais de service à reverser
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Filter Buttons */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {(['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
+    // La page passe au thème clair de la maquette ; elle recouvre la marge du
+    // cadre pour que le fond aille d'un bord à l'autre.
+    <div className="-m-6 min-h-[calc(100vh-4.5rem)] bg-[#F7F7F6] text-gray-900">
+      <div className="flex flex-wrap items-center gap-3 border-b border-[#ECECEA] bg-white px-6 py-4 lg:px-8">
+        <h1 className="text-2xl font-extrabold tracking-tight">{t('title')}</h1>
+        <div role="tablist" aria-label={t('title')} className="flex gap-1 rounded-full bg-gray-100 p-1">
+          {(['enCours', 'historique'] as const).map((cle) => (
             <button
-              key={status}
-              onClick={() => {
-                setFilter(status);
-                setPage(0);
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === status
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
+              key={cle}
+              type="button"
+              role="tab"
+              aria-selected={vue === cle}
+              onClick={() => setVue(cle)}
+              className={`rounded-full px-4 py-1.5 text-sm transition ${
+                vue === cle ? 'bg-white font-bold shadow-sm' : 'font-semibold text-gray-600 hover:text-gray-900'
               }`}
             >
-              {status === 'ALL' ? t('filterAll') : t(`statusLabel.${status}`)}
+              {tc(cle)}
             </button>
           ))}
         </div>
+        {vue === 'enCours' && (
+          <label className="ml-auto flex w-full items-center gap-2 rounded-full bg-gray-100 px-4 py-2 sm:w-72">
+            <Search size={16} className="shrink-0 text-gray-500" aria-hidden="true" />
+            <span className="sr-only">{tc('rechercher')}</span>
+            <input
+              type="search"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              placeholder={tc('rechercher')}
+              className="w-full bg-transparent text-sm outline-none placeholder:text-gray-500"
+            />
+          </label>
+        )}
+      </div>
 
-        {/* Orders List */}
-        <div className="space-y-4">
-          {orders.length === 0 ? (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
-              {t('empty')}
-            </div>
-          ) : (
-            orders.map((order) => {
-              const StatusIcon = statusIcons[order.status];
-              return (
-                <div
-                  key={order.id}
-                  className={`bg-gray-800 border rounded-lg p-6 ${
-                    order.status === 'PENDING' ? 'border-yellow-500/70' : 'border-gray-700'
-                  }`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Order Info */}
-                    <div>
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <p className="text-sm text-gray-400 mb-1">{t('orderNumber', { id: order.id.slice(0, 8) })}</p>
-                          <p className="text-lg font-bold">{order.customerName}</p>
-                          <p className="text-sm text-gray-400">{order.customerEmail}</p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${statusColors[order.status]}`}>
-                          <StatusIcon size={14} />
-                          {t(`statusLabel.${order.status}`)}
-                        </span>
-                      </div>
-
-                      <div className="text-sm mb-4">
-                        <p className="text-gray-400">
-                          <span className="font-semibold text-gray-300">{order.items.length}</span> {order.items.length > 1 ? t('orderItems_plural') : t('orderItems_singular')}
-                        </p>
-                        <p className="text-gray-400">
-                          {t('orderAmount')} <span className="text-green-400 font-bold">{euro(montantCommercant(order))}</span>
-                          {/* Il livre lui-même : la livraison est à lui, mais à part. */}
-                          {order.deliveryMode === 'OWN' && Number(order.feesAmount) > 0 && (
-                            <span className="text-xs"> + {euro(order.feesAmount)} de livraison</span>
-                          )}
-                        </p>
-                        <p className="text-gray-400 text-xs mt-2">
-                          {new Date(order.createdAt).toLocaleDateString('fr-FR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-2 flex-wrap">
-                        <Link
-                          href={`/merchant/${orgId}/orders/${order.id}`}
-                          className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded text-xs font-medium hover:bg-blue-600/30 transition-colors"
-                        >
-                          <Eye size={14} className="inline mr-1" />
-                          {t('orderDetails')}
-                        </Link>
-                        {/* Le livreur de la plateforme est cherché dès « En préparation ».
-                            Le bouton ne reste que pour choisir un livreur précis tant
-                            que personne n'a accepté. */}
-                        {order.deliveryType === 'DELIVERY' &&
-                          (order.deliveryMode ? order.deliveryMode === 'PLATFORM' : !useOwnDelivery) &&
-                          (order.status === 'PREPARING' || order.status === 'READY') && (
-                          order.delivery?.driverId ? (
-                            <span className="px-3 py-1 bg-green-600/20 text-green-400 rounded text-xs font-medium">
-                              <Truck size={14} className="inline mr-1" />
-                              {order.delivery.status === 'PICKED_UP'
-                                ? `En route avec ${order.delivery.driver?.name?.split(' ')[0] || 'le livreur'}`
-                                : `Livreur trouvé : ${order.delivery.driver?.name?.split(' ')[0] || 'en route'}`}
-                            </span>
-                          ) : (
-                            <>
-                              <span className="px-3 py-1 bg-amber-600/20 text-amber-400 rounded text-xs font-medium">
-                                🔎 Recherche d&apos;un livreur…
-                              </span>
-                              <button
-                                onClick={() => handleCallDelivery(order.id)}
-                                className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-xs font-medium hover:bg-gray-600 transition-colors"
-                              >
-                                Choisir un livreur
-                              </button>
-                            </>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Répondre à la commande, puis la faire avancer. */}
-                    <div>
-                      <p className="text-sm font-semibold text-gray-300 mb-3">
-                        {order.status === 'PENDING' ? 'Nouvelle commande' : t('statusChange')}
-                      </p>
-                      {storeId && (
-                        <ReponseCommande
-                          storeId={storeId}
-                          commande={order}
-                          surChangement={() => {
-                            fetchOrders();
-                            fetchStats();
-                          }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-8 px-6 py-4 bg-gray-800 border border-gray-700 rounded-lg">
-            <p className="text-sm text-gray-400">
-              {t('paginationPage', { page: page + 1, totalPages })}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
-              >
-                {t('paginationPrev')}
-              </button>
-              <button
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
-              >
-                {t('paginationNext')}
-              </button>
+      {vue === 'enCours' ? (
+        loading ? (
+          <div className="flex h-96 items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-b-2 border-orange-600" />
+              <p className="text-gray-500">{t('loading')}</p>
             </div>
           </div>
-        )}
+        ) : (
+          <div className="grid items-start gap-5 px-6 pb-10 pt-6 lg:grid-cols-3 lg:px-8">
+            {colonnes.map((colonne) => (
+              <section key={colonne.cle} aria-labelledby={`colonne-${colonne.cle}`} className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 px-1">
+                  <span className={`h-2.5 w-2.5 rounded-full ${colonne.pastille}`} aria-hidden="true" />
+                  <h2 id={`colonne-${colonne.cle}`} className="text-base font-extrabold">
+                    {tc(colonne.cle)}
+                  </h2>
+                  <span className={`rounded-full px-2 text-xs font-extrabold tabular-nums ${colonne.compteur}`}>
+                    {colonne.commandes.length}
+                  </span>
+                </div>
 
-        {/* Delivery Modal */}
-        {showDeliveryModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full">
-              <div className="p-6 border-b border-gray-700">
-                <h2 className="text-xl font-bold text-gray-100">Livreurs disponibles</h2>
-                <p className="text-sm text-gray-400 mt-1">Sélectionnez un livreur à proximité</p>
-              </div>
-
-              <div className="p-6">
-                {loadingDeliveryMen ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-2"></div>
-                    <p className="text-gray-400 text-sm">Recherche de livreurs...</p>
-                  </div>
-                ) : availableDeliveryMen.length === 0 ? (
-                  <div className="space-y-3">
-                    <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 text-center">
-                      <p className="text-red-400 text-sm">Aucun livreur disponible à proximité</p>
-                      {driversDiagnostic && (
-                        <p className="text-gray-300 text-xs mt-2">{driversDiagnostic}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleSelectDriver(null, showDeliveryModal)}
-                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
-                    >
-                      Relancer la recherche automatique
-                    </button>
-                  </div>
+                {colonne.commandes.length === 0 ? (
+                  <p className="rounded-[18px] border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
+                    {colonne.vide}
+                  </p>
                 ) : (
-                  <div className="space-y-2">
-                    {availableDeliveryMen.map((delivery) => (
-                      <button
-                        key={delivery.id}
-                        onClick={() => handleSelectDriver(delivery.id, showDeliveryModal)}
-                        className="w-full p-3 text-left bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg transition-colors"
-                      >
-                        <p className="font-medium text-gray-100">{delivery.name}</p>
-                        <p className="text-xs text-gray-400">{delivery.phone}</p>
-                        <p className="text-xs text-green-400 mt-1">Distance: {delivery.distance?.toFixed(1)} km</p>
-                      </button>
-                    ))}
+                  colonne.commandes.map((commande) => (
+                    <CarteCommandeCuisine
+                      key={commande.id}
+                      storeId={storeId as string}
+                      orgId={orgId}
+                      commande={commande}
+                      maintenant={maintenant}
+                      livreurDeLaPlateforme={parLaPlateforme(commande)}
+                      surChangement={relire}
+                      surChoisirLivreur={handleCallDelivery}
+                    />
+                  ))
+                )}
+
+                {colonne.cle === 'pretes' && (
+                  <div className="flex justify-between rounded-[18px] border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500">
+                    <span>{tc('termineesAujourdhui')}</span>
+                    <b className="tabular-nums text-gray-900">
+                      {terminees.length} · {euro(sommeEuros(terminees, montantCommercant))}
+                    </b>
                   </div>
                 )}
-              </div>
-
-              {dispatchMessage && (
-                <div className="px-6 pb-2">
-                  <p className={`text-sm ${dispatchMessage.ok ? 'text-green-400' : 'text-amber-400'}`}>
-                    {dispatchMessage.text}
-                  </p>
+              </section>
+            ))}
+          </div>
+        )
+      ) : (
+        <div className="space-y-6 px-6 pb-10 pt-6 lg:px-8">
+          {stats && (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+              {[
+                { libelle: t('statsTotal'), valeur: stats.totalOrders },
+                { libelle: t('statsPending'), valeur: stats.pending },
+                { libelle: t('statsAccepted'), valeur: stats.accepted },
+                { libelle: t('statusLabel.PREPARING'), valeur: stats.preparing || 0 },
+                { libelle: t('statsReady'), valeur: stats.ready },
+                { libelle: t('statsCompleted'), valeur: stats.completed },
+              ].map((chiffre) => (
+                <div key={chiffre.libelle} className="rounded-[18px] border border-[#ECECEA] bg-white p-4">
+                  <p className="mb-1 text-xs font-semibold text-gray-500">{chiffre.libelle}</p>
+                  <p className="text-2xl font-extrabold tabular-nums">{chiffre.valeur}</p>
                 </div>
-              )}
+              ))}
+              <div className="rounded-[18px] border border-[#ECECEA] bg-white p-4">
+                <p className="mb-1 text-xs font-semibold text-gray-500">{t('statsRevenue')}</p>
+                <p className="text-2xl font-extrabold tabular-nums">{euro(stats.totalRevenue, 0)}</p>
+                {/* Ce que le commerçant a encaissé pour les livreurs de la
+                    plateforme : hors de son chiffre, à reverser avec la commission. */}
+                {stats.platformDeliveryFees > 0 && (
+                  <p className="mt-1 text-xs text-amber-800">
+                    {tc('livraisonAReverser', { montant: euro(stats.platformDeliveryFees) })}
+                  </p>
+                )}
+                {stats.platformServiceFees > 0 && (
+                  <p className="mt-1 text-xs text-amber-800">
+                    {tc('fraisAReverser', { montant: euro(stats.platformServiceFees) })}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
-              <div className="p-6 border-t border-gray-700 flex gap-2 justify-end">
+          <div className="flex flex-wrap gap-2">
+            {(['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map((status) => (
+              <button
+                key={status}
+                type="button"
+                aria-pressed={filter === status}
+                onClick={() => {
+                  setFilter(status);
+                  setPage(0);
+                }}
+                className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                  filter === status
+                    ? 'bg-gray-900 text-white'
+                    : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                {status === 'ALL' ? t('filterAll') : t(`statusLabel.${status}`)}
+              </button>
+            ))}
+          </div>
+
+          <div className="overflow-x-auto rounded-[18px] border border-[#ECECEA] bg-white">
+            {orders.length === 0 ? (
+              <p className="p-8 text-center text-gray-500">{t('empty')}</p>
+            ) : (
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 text-left text-xs font-bold uppercase tracking-wide text-gray-400">
+                    <th className="px-5 py-3">{tc('colonneNumero')}</th>
+                    <th className="px-5 py-3">{t('date')}</th>
+                    <th className="px-5 py-3">{tc('colonneClient')}</th>
+                    <th className="px-5 py-3">{t('status')}</th>
+                    <th className="px-5 py-3 text-right">{t('amount')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                      <td className="px-5 py-3">
+                        <Link
+                          href={`/merchant/${orgId}/orders/${order.id}`}
+                          className="font-extrabold tabular-nums text-gray-900 hover:text-orange-600"
+                        >
+                          {numeroCourt(order.id)}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3 text-gray-500">
+                        {new Date(order.createdAt).toLocaleString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="font-semibold">{order.customerName}</span>
+                        <span className="block text-xs text-gray-500">
+                          {order.items.length}{' '}
+                          {order.items.length > 1 ? t('orderItems_plural') : t('orderItems_singular')}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pastilleDeStatut[order.status] || ''}`}>
+                          {t(`statusLabel.${order.status}`)}
+                        </span>
+                        {order.status === 'REJECTED' && order.rejectionReason && (
+                          <span className="mt-1 block text-xs text-gray-500">
+                            {MOTIFS_POUR_LE_COMMERCANT[order.rejectionReason] || ''}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-right font-bold tabular-nums">
+                        {euro(montantCommercant(order))}
+                        {/* Il livre lui-même : la livraison est à lui, mais à part. */}
+                        {order.deliveryMode === 'OWN' && Number(order.feesAmount) > 0 && (
+                          <span className="block text-xs font-normal text-gray-500">
+                            {tc('plusLivraison', { montant: euro(order.feesAmount) })}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between rounded-[18px] border border-[#ECECEA] bg-white px-5 py-3">
+              <p className="text-sm text-gray-500">{t('paginationPage', { page: page + 1, totalPages })}</p>
+              <div className="flex gap-2">
                 <button
-                  onClick={() => { setShowDeliveryModal(null); setDispatchMessage(null); }}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                  type="button"
+                  onClick={() => setPage(Math.max(0, page - 1))}
+                  disabled={page === 0}
+                  className="rounded-full border border-gray-200 px-4 py-2 text-sm font-bold hover:bg-gray-50 disabled:opacity-40"
                 >
-                  Annuler
+                  {t('paginationPrev')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                  disabled={page === totalPages - 1}
+                  className="rounded-full border border-gray-200 px-4 py-2 text-sm font-bold hover:bg-gray-50 disabled:opacity-40"
+                >
+                  {t('paginationNext')}
                 </button>
               </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {showDeliveryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titre-livreurs"
+            className="w-full max-w-md rounded-3xl bg-white text-gray-900 shadow-2xl"
+          >
+            <div className="border-b border-gray-100 p-6">
+              <h2 id="titre-livreurs" className="text-xl font-extrabold">
+                {tc('livreursDisponibles')}
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">{tc('livreursAProximite')}</p>
+            </div>
+
+            <div className="p-6">
+              {loadingDeliveryMen ? (
+                <div className="py-8 text-center">
+                  <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-orange-600" />
+                  <p className="text-sm text-gray-500">{tc('rechercheLivreur')}</p>
+                </div>
+              ) : availableDeliveryMen.length === 0 ? (
+                <div className="space-y-3">
+                  <div className="rounded-2xl bg-red-50 p-4 text-center">
+                    <p className="text-sm font-bold text-red-800">{tc('aucunLivreur')}</p>
+                    {driversDiagnostic && <p className="mt-2 text-xs text-gray-600">{driversDiagnostic}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDriver(null, showDeliveryModal)}
+                    className="w-full rounded-full bg-gray-900 px-4 py-3 text-sm font-extrabold text-white hover:bg-black"
+                  >
+                    {tc('relancerRecherche')}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {availableDeliveryMen.map((delivery) => (
+                    <button
+                      key={delivery.id}
+                      type="button"
+                      onClick={() => handleSelectDriver(delivery.id, showDeliveryModal)}
+                      className="w-full rounded-2xl border border-gray-200 p-3 text-left transition hover:border-gray-900"
+                    >
+                      <p className="font-bold">{delivery.name}</p>
+                      <p className="text-xs text-gray-500">{delivery.phone}</p>
+                      <p className="mt-1 text-xs font-bold text-green-700">
+                        {tc('distance', { km: delivery.distance?.toFixed(1) ?? '?' })}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {dispatchMessage && (
+              <p className={`px-6 pb-2 text-sm ${dispatchMessage.ok ? 'text-green-700' : 'text-amber-800'}`}>
+                {dispatchMessage.text}
+              </p>
+            )}
+
+            <div className="flex justify-end border-t border-gray-100 p-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeliveryModal(null);
+                  setDispatchMessage(null);
+                }}
+                className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-bold hover:bg-gray-50"
+              >
+                {tc('fermer')}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

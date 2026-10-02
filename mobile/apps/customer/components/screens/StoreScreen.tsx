@@ -20,11 +20,14 @@ import {
   Product,
   productImage,
   StoreDetail,
+  storeBanner,
   storeLogo,
   SupplementGroup,
   Variant,
 } from '../../lib/stores';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { IllustrationFamille } from '../CouvertureCommerce';
+import { visuelDeFamille } from '../../lib/visuels';
 
 /** La vitrine d'un commerce : son menu, rangé par catégorie, et le panier de ce commerce. */
 export default function StoreScreen({
@@ -146,6 +149,7 @@ export default function StoreScreen({
 
   const open = store.isOpenNow !== false && !store.enAttenteDeValidation;
   const logo = storeLogo(store);
+  const banniere = storeBanner(store);
   const rating = formatRating(store.averageRating, store.reviewCount);
   const count = itemCount(lines);
   const storeRef = { id: store.id, name: store.name, logo: store.settings?.logo };
@@ -173,10 +177,25 @@ export default function StoreScreen({
         onScrollToIndexFailed={() => undefined}
         ListHeaderComponent={
           <View>
+            {/* La photo de couverture en bannière, le logo qui la chevauche ;
+                sans photo, l'illustration de la catégorie (une pizza pour une
+                pizzeria). */}
+            <View style={styles.banniere}>
+              {banniere ? (
+                <Image source={{ uri: banniere }} style={styles.banniereImage} resizeMode="cover" />
+              ) : (
+                <IllustrationFamille famille={store.famille} grande />
+              )}
+            </View>
+            <View style={styles.logoFlottant}>
+              {logo ? (
+                <Image source={{ uri: logo }} style={styles.logo} resizeMode="contain" />
+              ) : (
+                // Sans logo : l'emoji de la catégorie plutôt qu'une initiale.
+                <Text style={styles.emojiLogo}>{visuelDeFamille(store.famille).emoji}</Text>
+              )}
+            </View>
             <View style={styles.info}>
-              <View style={styles.logoBox}>
-                {logo ? <Image source={{ uri: logo }} style={styles.logo} resizeMode="contain" /> : <Text style={{ fontSize: 30 }}>🍽️</Text>}
-              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.storeName}>{store.name}</Text>
                 <Text style={styles.meta}>{[store.genreLibelle, rating].filter(Boolean).join(' · ') || 'Nouveau sur ZupEat'}</Text>
@@ -430,20 +449,30 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 20, fontWeight: 'bold', color: '#fff' },
   heart: { fontSize: 22 },
   list: { padding: 12, paddingBottom: 90 },
-  info: { flexDirection: 'row', gap: 12, backgroundColor: COLORS.card, borderRadius: 10, padding: 12, marginBottom: 10 },
-  logoBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 10,
+  banniere: { height: 170, borderRadius: 18, overflow: 'hidden', backgroundColor: COLORS.primarySoft },
+  banniereImage: { width: '100%', height: '100%' },
+  logoFlottant: {
+    width: 76,
+    height: 76,
+    marginTop: -38,
+    marginLeft: 14,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#fff',
     backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
-  logo: { width: 68, height: 68 },
-  storeName: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
+  logo: { width: 66, height: 66 },
+  emojiLogo: { fontSize: 36 },
+  info: { flexDirection: 'row', gap: 12, paddingHorizontal: 4, paddingTop: 10, marginBottom: 10 },
+  storeName: { fontSize: 24, fontWeight: '800', color: '#111', letterSpacing: -0.3 },
   meta: { fontSize: 13, color: '#666', marginTop: 2 },
   openState: { fontSize: 13, fontWeight: '700', marginTop: 4 },
   description: { fontSize: 13, color: '#555', marginBottom: 10, lineHeight: 18 },
@@ -527,7 +556,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginBottom: 6,
   },
-  variantActive: { borderColor: COLORS.primary, backgroundColor: '#EAF3FF' },
+  variantActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySoft },
   radio: { fontSize: 18, color: COLORS.primary, marginRight: 10 },
   variantLabel: { flex: 1, fontSize: 15, color: COLORS.text },
   variantPrice: { fontSize: 14, fontWeight: '600', color: COLORS.text },

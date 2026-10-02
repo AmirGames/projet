@@ -96,6 +96,7 @@ const nextConfig = {
       "driver-support",
       "reviews",
       "notifications",
+      "incidents-livraison",
     ];
 
     return [

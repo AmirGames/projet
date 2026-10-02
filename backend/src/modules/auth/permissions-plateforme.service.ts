@@ -66,6 +66,13 @@ export const SECTIONS: Section[] = [
   { id: "members", label: "Membres (clients, commerçants, livreurs)", groupe: "Membres" },
   { id: "support-tickets", label: "Tickets de support", groupe: "Support" },
   { id: "driver-support", label: "Support livreurs", groupe: "Support" },
+  {
+    // Le dossier d'un incident réunit positions, téléphones, adresse et
+    // décisions : une donnée personnelle sensible, ouverte à part du suivi.
+    id: "incidents-export",
+    label: "Exporter le dossier d'un incident de livraison (données personnelles)",
+    groupe: "Support",
+  },
   { id: "reviews", label: "Avis signalés", groupe: "Support" },
   { id: "notifications", label: "Notifications", groupe: "Support" },
   { id: "api-keys", label: "Clés API", groupe: "Plateforme" },
@@ -148,6 +155,10 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/financial-reports/, "financial-reports"],
     [/^\/support-tickets/, "support-tickets"],
     [/^\/driver-support/, "driver-support"],
+    // Avant la règle suivante : l'export du dossier a sa propre section.
+    [/^\/delivery-incidents\/[^/]+\/dossier/, "incidents-export"],
+    // Les courses qui dérapent : le support livreurs les suit et les traite.
+    [/^\/delivery-incidents/, "driver-support"],
     [/^\/review-reports/, "reviews"],
     [/^\/api-keys/, "api-keys"],
     [/^\/webhooks/, "webhooks"],

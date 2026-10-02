@@ -54,7 +54,7 @@ function Confirmation() {
   if (etat === 'en-cours') {
     return (
       <div className="text-center space-y-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto" />
         <p className="text-slate-600">Confirmation en cours...</p>
       </div>
     );
@@ -63,8 +63,8 @@ function Confirmation() {
   if (etat === 'confirme') {
     return (
       <div className="text-center space-y-4">
-        <CheckCircle2 size={48} className="mx-auto text-primary" />
-        <h1 className="text-2xl font-bold text-slate-900">Adresse confirmée</h1>
+        <CheckCircle2 size={48} className="mx-auto text-gray-900" />
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Adresse confirmée</h1>
         {message && (
           <p className="text-slate-600">
             <strong className="text-slate-900">{message}</strong> est bien la vôtre.
@@ -72,7 +72,7 @@ function Confirmation() {
         )}
         <Link
           href="/login"
-          className="inline-block bg-accent hover:bg-accent-hover text-white font-bold py-2 px-6 rounded-full transition"
+          className="inline-block rounded-full bg-gray-900 px-6 py-3 font-bold text-white transition hover:bg-gray-800 hover:no-underline"
         >
           Se connecter
         </Link>
@@ -83,13 +83,13 @@ function Confirmation() {
   return (
     <div className="text-center space-y-4">
       <XCircle size={48} className="mx-auto text-red-500" />
-      <h1 className="text-2xl font-bold text-slate-900">Confirmation impossible</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Confirmation impossible</h1>
       <p className="text-slate-600">{message}</p>
       <p className="text-sm text-slate-500">
         Un lien de confirmation expire au bout de 24 heures. Connectez-vous pour en demander un
         nouveau.
       </p>
-      <Link href="/login" className="inline-block text-primary hover:text-primary-hover font-medium transition">
+      <Link href="/login" className="inline-block font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
         Retour à la connexion
       </Link>
     </div>
@@ -98,8 +98,8 @@ function Confirmation() {
 
 export default function VerifierEmail() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
-      <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
         <Suspense fallback={<p className="text-center text-slate-600">Chargement...</p>}>
           <Confirmation />

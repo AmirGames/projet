@@ -157,7 +157,7 @@ Une pièce peut exister en plusieurs versions (`DocumentChauffeurDrive`, sans co
 
 Un chauffeur ZupDrive roule **soit en indépendant** (avec sa propre licence, son entreprise et son véhicule : tout ce qui précède), **soit pour une société**, et pour une seule à la fois. La société détient les licences et les véhicules, et ses chauffeurs roulent pour elle. Leurs courses lui sont attribuées ; le reversement viendra avec le paiement en ligne (V2).
 
-Code : `backend/src/modules/zupdrive/societe-drive.service.ts` (métier), `societe.routes.ts` (gérant), `chauffeur.admin.routes.ts` (équipe) et `pieces-drive.ts` (versions de pièces, communes aux chauffeurs, sociétés et véhicules). Modèles : `SocieteDrive`, `VehiculeDrive`, `InvitationSocieteDrive`, et `societeId` / `vehiculeId` sur `ChauffeurDrive` et `CourseDrive`. Migration `0033_zupdrive_societes`, purement additive.
+Code : `backend/src/modules/zupdrive/societe-drive.service.ts` (métier), `societe.routes.ts` (gérant), `chauffeur.admin.routes.ts` (équipe) et `pieces-drive.ts` (versions de pièces, communes aux chauffeurs, sociétés et véhicules). Modèles : `SocieteDrive`, `VehiculeDrive`, `InvitationSocieteDrive`, et `societeId` / `vehiculeId` sur `ChauffeurDrive` et `CourseDrive`. Migration `0038_zupdrive_societes`, purement additive.
 
 ### Qui porte quelle pièce
 

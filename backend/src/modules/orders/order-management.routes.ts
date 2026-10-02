@@ -7,9 +7,22 @@ import { logger } from "../../config/logger";
 
 const router = Router();
 
+const STATUTS_DE_COMMANDE = ["PENDING", "ACCEPTED", "PREPARING", "REJECTED", "READY", "COMPLETED"] as const;
+
 const updateStatusSchema = z.object({
-  status: z.enum(["PENDING", "ACCEPTED", "PREPARING", "REJECTED", "READY", "COMPLETED"]),
+  status: z.enum(STATUTS_DE_COMMANDE),
 });
+
+/**
+ * Le filtre de la liste : un statut, ou plusieurs séparés par des virgules
+ * (« PENDING,ACCEPTED,PREPARING,READY » pour l'écran des commandes en cours).
+ * Un statut inconnu est refusé plutôt que transmis tel quel à la base.
+ */
+const filtreStatutSchema = z
+  .string()
+  .optional()
+  .transform((valeur) => (valeur ? valeur.split(",").map((statut) => statut.trim()) : undefined))
+  .pipe(z.array(z.enum(STATUTS_DE_COMMANDE)).min(1).max(STATUTS_DE_COMMANDE.length).optional());
 
 const acceptSchema = z.object({
   preparationMinutes: z.number().int().min(1).max(240),
@@ -30,7 +43,9 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
     const storeId = req.params.storeId as string;
     const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
     const take = req.query.take ? parseInt(req.query.take as string) : 50;
-    const status = req.query.status as string | undefined;
+    const statuts = filtreStatutSchema.parse(req.query.status);
+    // Un seul statut garde la forme d'avant ; plusieurs deviennent une liste.
+    const status = statuts && statuts.length === 1 ? statuts[0] : statuts;
 
     logger.info("Fetching orders", { storeId, skip, take, status });
 

@@ -84,7 +84,7 @@ export function DelaiAnnulation({
         </h2>
 
         <div className="flex gap-4 border-b border-gray-200 pb-4">
-          <MapPin className="shrink-0 mt-0.5 text-gray-600" size={22} />
+          <MapPin className="shrink-0 mt-0.5 text-gray-400" size={22} />
           <div className="min-w-0">
             <p className="font-medium truncate">{lieu}</p>
             {precisionLieu && <p className="text-sm text-gray-500 truncate">{precisionLieu}</p>}
@@ -92,12 +92,12 @@ export function DelaiAnnulation({
         </div>
 
         <div className="flex gap-4 border-b border-gray-200 pb-4">
-          <Clock className="shrink-0 mt-0.5 text-gray-600" size={22} />
+          <Clock className="shrink-0 mt-0.5 text-gray-400" size={22} />
           <p className="font-medium">{horaire}</p>
         </div>
 
         <div className="flex gap-4">
-          <ShoppingBag className="shrink-0 mt-0.5 text-gray-600" size={22} />
+          <ShoppingBag className="shrink-0 mt-0.5 text-gray-400" size={22} />
           <div className="min-w-0 space-y-1">
             <p className="font-medium">{boutique}</p>
             <ul className="text-sm text-gray-500 space-y-0.5 max-h-40 overflow-y-auto">
@@ -115,7 +115,7 @@ export function DelaiAnnulation({
         <button
           type="button"
           onClick={partir}
-          className="relative w-full overflow-hidden rounded-xl bg-gray-700 py-4 text-lg font-semibold text-white"
+          className="relative w-full overflow-hidden rounded-xl bg-gray-100 py-4 text-lg font-semibold text-gray-900"
         >
           {/* La barre se remplit à mesure que le délai s'écoule. */}
           <span

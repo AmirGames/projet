@@ -184,34 +184,34 @@ export default function ProductMediaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <ImageIcon className="w-8 h-8" />
           Médias des Produits
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
+        <p className="text-gray-400 mt-1">
           Gérez les images et vidéos de vos produits
         </p>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded-lg dark:bg-red-900 dark:text-red-200">
+        <div className="p-4 bg-red-100 text-red-700 rounded-lg">
           {error}
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Charger un média
         </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Produit
             </label>
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border rounded-lg"
             >
               <option value="">— Choisir un produit —</option>
               {produits.map((produit) => (
@@ -225,7 +225,7 @@ export default function ProductMediaPage() {
           {productId && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   URL du Média
                 </label>
                 <input
@@ -233,12 +233,12 @@ export default function ProductMediaPage() {
                   value={mediaUrl}
                   onChange={(e) => setMediaUrl(e.target.value)}
                   placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Texte Alternatif
                 </label>
                 <input
@@ -246,18 +246,18 @@ export default function ProductMediaPage() {
                   value={mediaAlt}
                   onChange={(e) => setMediaAlt(e.target.value)}
                   placeholder="Description du média"
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Type de Média
                 </label>
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value as "image" | "video")}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full px-3 py-2 border rounded-lg"
                 >
                   <option value="image">Image</option>
                   <option value="video">Vidéo</option>
@@ -267,13 +267,13 @@ export default function ProductMediaPage() {
               <div className="flex gap-2">
                 <button
                   onClick={addMedia}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 rounded-lg"
                 >
                   Ajouter le Média
                 </button>
                 <button
                   onClick={fetchMedia}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 rounded-lg"
                 >
                   Charger les Médias
                 </button>
@@ -288,9 +288,9 @@ export default function ProductMediaPage() {
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : media.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Aucun média pour ce produit</p>
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <ImageIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-400">Aucun média pour ce produit</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -301,9 +301,9 @@ export default function ProductMediaPage() {
               onDragStart={() => handleDragStart(item.id)}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(item.id)}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden cursor-move hover:shadow-lg transition"
+              className="bg-white rounded-lg shadow overflow-hidden cursor-move hover:shadow-lg transition"
             >
-              <div className="relative aspect-square bg-gray-100 dark:bg-gray-700">
+              <div className="relative aspect-square bg-gray-100">
                 {item.type === "image" ? (
                   <img
                     src={item.url}
@@ -317,24 +317,24 @@ export default function ProductMediaPage() {
                   />
                 )}
                 <div className="absolute top-2 left-2 flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 bg-gray-900 bg-opacity-50 text-white p-1 rounded" />
-                  <span className="px-2 py-1 bg-gray-900 bg-opacity-50 text-white text-xs rounded">
+                  <GripVertical className="w-4 h-4 bg-white ring-1 ring-gray-200 bg-opacity-50 text-gray-900 p-1 rounded" />
+                  <span className="px-2 py-1 bg-white ring-1 ring-gray-200 bg-opacity-50 text-gray-900 text-xs rounded">
                     {item.type}
                   </span>
                 </div>
               </div>
               <div className="p-3">
                 {item.alt && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                  <p className="text-sm text-gray-400 truncate">
                     {item.alt}
                   </p>
                 )}
-                <p className="text-xs text-gray-500 dark:text-gray-500">
+                <p className="text-xs text-gray-500">
                   Ordre: {item.displayOrder}
                 </p>
                 <button
                   onClick={() => deleteMedia(item.id)}
-                  className="mt-2 w-full p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 flex items-center justify-center gap-2"
+                  className="mt-2 w-full p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
                   Supprimer

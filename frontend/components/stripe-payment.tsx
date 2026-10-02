@@ -132,7 +132,7 @@ function StripePaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="bg-gray-700 p-4 rounded-lg">
+      <div className="bg-gray-100 p-4 rounded-lg">
         <CardElement
           onChange={(ev) => {
             setCarteComplete(ev.complete);
@@ -155,12 +155,12 @@ function StripePaymentForm({
         />
       </div>
 
-      {error && <div className="text-red-400 text-sm">{error}</div>}
+      {error && <div className="text-red-600 text-sm">{error}</div>}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
+        className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-semibold py-3 rounded-lg transition"
       >
         {loading ? t('loading') : t('payButton', { amount: euro(amount) })}
       </button>
@@ -171,7 +171,7 @@ function StripePaymentForm({
 export function StripePayment(props: StripePaymentProps) {
   if (!stripePromise) {
     return (
-      <p className="text-red-400 text-sm">
+      <p className="text-red-600 text-sm">
         Le paiement par carte n&apos;est pas configuré (clé publique Stripe manquante).
       </p>
     );

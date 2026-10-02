@@ -13,7 +13,7 @@ type Montant = number | string | null | undefined;
  */
 export default function DetailDuTotal({
   commande,
-  couleurTotal = 'text-white',
+  couleurTotal = 'text-gray-900',
 }: {
   commande: {
     totalAmount: Montant;
@@ -37,35 +37,35 @@ export default function DetailDuTotal({
 
   return (
     <div className="space-y-2 text-sm">
-      <div className="flex justify-between text-gray-400">
+      <div className="flex justify-between text-gray-500">
         <span>Sous-total</span>
         <span>{euro(sousTotal)}</span>
       </div>
       {commande.deliveryType === 'DELIVERY' && (
-        <div className="flex justify-between text-gray-400">
+        <div className="flex justify-between text-gray-500">
           <span>Livraison</span>
           <span>{Number(commande.feesAmount) > 0 ? euro(commande.feesAmount) : 'Offerte'}</span>
         </div>
       )}
       {Number(commande.serviceFeeAmount) > 0 && (
-        <div className="flex justify-between text-gray-400">
+        <div className="flex justify-between text-gray-500">
           <span>Frais de service</span>
           <span>{euro(commande.serviceFeeAmount)}</span>
         </div>
       )}
       {Number(commande.discountAmount) > 0 && (
-        <div className="flex justify-between text-green-400">
+        <div className="flex justify-between text-green-600">
           <span>Remise{commande.promoCode ? ` (${commande.promoCode})` : ''}</span>
           <span>− {euro(commande.discountAmount)}</span>
         </div>
       )}
       {Number(commande.tipAmount) > 0 && (
-        <div className="flex justify-between text-gray-400">
+        <div className="flex justify-between text-gray-500">
           <span>Pourboire du livreur</span>
           <span>{euro(commande.tipAmount)}</span>
         </div>
       )}
-      <div className="flex justify-between items-center pt-2 border-t border-gray-700 text-lg font-bold text-white">
+      <div className="flex justify-between items-center pt-2 border-t border-gray-200 text-lg font-bold text-gray-900">
         <span>Total</span>
         {/* Ce que le client a payé : la commande et le pourboire, gardé à part. */}
         <span className={`text-2xl ${couleurTotal}`}>

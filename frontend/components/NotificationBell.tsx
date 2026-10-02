@@ -6,7 +6,8 @@ import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/lib/use-notifications';
 
-export function NotificationBell() {
+/** `clair` : sur un en-tête blanc, la cloche passe en sombre. */
+export function NotificationBell({ clair = false }: { clair?: boolean } = {}) {
   const t = useTranslations('notificationBell');
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -46,7 +47,7 @@ export function NotificationBell() {
     <div className="relative" ref={conteneur}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 text-gray-300 hover:text-white transition"
+        className={`relative p-2 transition ${clair ? 'text-gray-700 hover:text-gray-900' : 'text-gray-300 hover:text-white'}`}
         aria-label={
           unreadCount > 0 ? `${t('notifications')}, ${unreadCount} ${t('unread', { count: unreadCount })}` : t('notifications')
         }
@@ -62,13 +63,13 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-          <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h3 className="font-semibold text-white">{t('notifications')}</h3>
+        <div className={`absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto border ${clair ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'}`}>
+          <div className={`p-4 border-b flex justify-between items-center ${clair ? 'border-gray-100' : 'border-gray-700'}`}>
+            <h3 className={`font-semibold ${clair ? 'text-gray-900' : 'text-white'}`}>{t('notifications')}</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-xs text-orange-500 hover:text-orange-400"
+                className={`text-xs font-semibold ${clair ? 'text-orange-700 hover:text-orange-800' : 'text-orange-500 hover:text-orange-400'}`}
               >
                 {t('markAllAsRead')}
               </button>
@@ -76,21 +77,27 @@ export function NotificationBell() {
           </div>
 
           {notifications.length === 0 ? (
-            <div className="p-4 text-center text-gray-400">{t('noNotifications')}</div>
+            <div className={`p-4 text-center ${clair ? 'text-gray-500' : 'text-gray-400'}`}>{t('noNotifications')}</div>
           ) : (
-            <div className="divide-y divide-gray-700">
+            <div className={`divide-y ${clair ? 'divide-gray-100' : 'divide-gray-700'}`}>
               {notifications.map((notif) => (
                 <div
                   key={notif.id}
                   onClick={() => handleClick(notif)}
                   className={`p-3 cursor-pointer transition ${
-                    notif.isRead ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-700/60 hover:bg-gray-700'
+                    clair
+                      ? notif.isRead
+                        ? 'bg-white hover:bg-gray-50'
+                        : 'bg-orange-50/60 hover:bg-orange-50'
+                      : notif.isRead
+                        ? 'bg-gray-800 hover:bg-gray-700'
+                        : 'bg-gray-700/60 hover:bg-gray-700'
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1">
-                      <p className="font-semibold text-white text-sm">{notif.title}</p>
-                      <p className="text-gray-400 text-xs mt-1">{notif.message}</p>
+                      <p className={`font-semibold text-sm ${clair ? 'text-gray-900' : 'text-white'}`}>{notif.title}</p>
+                      <p className={`text-xs mt-1 ${clair ? 'text-gray-600' : 'text-gray-400'}`}>{notif.message}</p>
                       <p className="text-gray-500 text-xs mt-2">
                         {new Date(notif.createdAt).toLocaleString('fr-FR')}
                       </p>

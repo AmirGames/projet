@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/server.ts",
+    "src/cli/*.ts",
+    "src/**/__tests__/**/*.ts",
+    "scripts/**/*.{mjs,ts}",
+    "prisma.config.ts"
+  ],
+  "project": ["src/**/*.ts", "scripts/**/*.{mjs,ts}"],
+  "ignoreBinaries": ["tail"],
+  "ignoreDependencies": ["prisma", "tsx", "esbuild"]
+}

@@ -133,12 +133,12 @@ export default function CustomersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+      <div className="text-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">{t('loading')}</p>
+              <p className="text-gray-500">{t('loading')}</p>
             </div>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -155,27 +155,27 @@ export default function CustomersPage() {
             <h1 className="text-3xl font-bold">{t('title')}</h1>
             <Link
               href={`/merchant/${orgId}/dashboard`}
-              className="text-gray-400 hover:text-gray-300 text-sm"
+              className="text-gray-500 hover:text-gray-700 text-sm"
             >
               ← {t('backDashboard')}
             </Link>
           </div>
-          <p className="text-gray-400">{t('description')}</p>
+          <p className="text-gray-500">{t('description')}</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-1">{t('statsTotalClients')}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-500 text-sm mb-1">{t('statsTotalClients')}</p>
             <p className="text-3xl font-bold">{total}</p>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-1">{t('statsActiveClients')}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-500 text-sm mb-1">{t('statsActiveClients')}</p>
             <p className="text-3xl font-bold">{customers.filter(c => c.status === 'ACTIVE').length}</p>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-1">{t('statsBlockedClients')}</p>
-            <p className="text-3xl font-bold text-red-400">{customers.filter(c => c.status === 'BLOCKED').length}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-500 text-sm mb-1">{t('statsBlockedClients')}</p>
+            <p className="text-3xl font-bold text-red-600">{customers.filter(c => c.status === 'BLOCKED').length}</p>
           </div>
         </div>
 
@@ -191,16 +191,16 @@ export default function CustomersPage() {
                 setSearch(e.target.value);
                 setPage(0);
               }}
-              className="w-full pl-12 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+              className="w-full pl-12 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
             />
           </div>
         </div>
 
         {/* Customers Table */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-700 border-b border-gray-600">
+              <thead className="bg-gray-100 border-b border-gray-300">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold">{t('colName')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">{t('colEmail')}</th>
@@ -214,28 +214,28 @@ export default function CustomersPage() {
               <tbody>
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       {t('empty')}
                     </td>
                   </tr>
                 ) : (
                   customers.map((customer) => (
-                    <tr key={customer.id} className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                    <tr key={customer.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <Link
                           href={`/merchant/${orgId}/customers/${customer.id}`}
-                          className="text-red-400 hover:text-red-300 font-medium"
+                          className="text-red-600 hover:text-red-700 font-medium"
                         >
                           {customer.name}
                         </Link>
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <div className="flex items-center gap-2 text-gray-300">
+                        <div className="flex items-center gap-2 text-gray-700">
                           <Mail size={16} />
                           {customer.email}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
+                      <td className="px-6 py-4 text-sm text-gray-700">
                         {customer.phone ? (
                           <div className="flex items-center gap-2">
                             <Phone size={16} />
@@ -245,19 +245,19 @@ export default function CustomersPage() {
                           <span className="text-gray-500">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
+                      <td className="px-6 py-4 text-sm text-gray-700">
                         {customer.totalOrders}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-300">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-700">
                         {euro(customer.totalSpent)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           customer.status === 'ACTIVE'
-                            ? 'bg-green-600/20 text-green-400'
+                            ? 'bg-green-50 text-green-600'
                             : customer.status === 'BLOCKED'
-                            ? 'bg-red-600/20 text-red-400'
-                            : 'bg-gray-600/20 text-gray-400'
+                            ? 'bg-red-50 text-red-600'
+                            : 'bg-gray-600/20 text-gray-500'
                         }`}>
                           {customer.status === 'ACTIVE' && `✓ ${t('statusActive')}`}
                           {customer.status === 'BLOCKED' && `✕ ${t('statusBlocked')}`}
@@ -268,26 +268,26 @@ export default function CustomersPage() {
                         <div className="flex items-center justify-center gap-2">
                           <Link
                             href={`/merchant/${orgId}/customers/${customer.id}`}
-                            className="p-1 hover:bg-gray-600 rounded transition-colors"
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
                             title={t('actionView')}
                           >
-                            <Eye size={18} className="text-blue-400" />
+                            <Eye size={18} className="text-blue-600" />
                           </Link>
                           {customer.status === 'ACTIVE' && (
                             <button
                               onClick={() => handleBlockCustomer(customer.id)}
-                              className="p-1 hover:bg-gray-600 rounded transition-colors"
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
                               title={t('actionBlock')}
                             >
-                              <Lock size={18} className="text-orange-400" />
+                              <Lock size={18} className="text-orange-600" />
                             </button>
                           )}
                           <button
                             onClick={() => setShowDeleteModal(customer.id)}
-                            className="p-1 hover:bg-gray-600 rounded transition-colors"
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
                             title={t('actionDelete')}
                           >
-                            <Trash2 size={18} className="text-red-400" />
+                            <Trash2 size={18} className="text-red-600" />
                           </button>
                         </div>
                       </td>
@@ -300,21 +300,21 @@ export default function CustomersPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
-              <p className="text-sm text-gray-400">{t('paginationPage', { page: page + 1, totalPages })}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+              <p className="text-sm text-gray-500">{t('paginationPage', { page: page + 1, totalPages })}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(Math.max(0, page - 1))}
                   disabled={page === 0}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
                 >
                   {t('paginationPrev')}
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                   disabled={page === totalPages - 1}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
                 >
                   {t('paginationNext')}
                 </button>
@@ -326,22 +326,22 @@ export default function CustomersPage() {
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-sm mx-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-sm mx-4">
               <h3 className="text-xl font-bold mb-4">{t('confirmDelete')}</h3>
-              <p className="text-gray-400 mb-6">
+              <p className="text-gray-500 mb-6">
                 {t('deleteWarning')}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteModal(null)}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
                 >
                   {t('cancel')}
                 </button>
                 <button
                   onClick={() => handleDelete(showDeleteModal)}
                   disabled={deleting}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 rounded-lg font-medium transition-colors"
+                  className="flex-1 px-4 py-2 bg-red-600 text-white hover:bg-red-700 disabled:bg-red-600/50 rounded-lg font-medium transition-colors"
                 >
                   {deleting ? t('deleting') : t('actionDelete')}
                 </button>

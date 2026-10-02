@@ -138,7 +138,7 @@ export function PaniersAccueil() {
         onClick={() => setOuvert((o) => !o)}
         aria-label={`Paniers (${paniers.length})`}
         aria-expanded={ouvert}
-        className="relative p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-700"
+        className="relative p-2 rounded-lg text-gray-900 hover:bg-gray-100"
       >
         <ShoppingCart size={22} />
         {paniers.length > 0 && (
@@ -149,11 +149,11 @@ export function PaniersAccueil() {
       </button>
 
       {ouvert && (
-        <div className="absolute right-0 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50">
           {paniers.length === 0 ? (
-            <p className="px-4 py-6 text-center text-gray-400 text-sm">Vos paniers sont vides</p>
+            <p className="px-4 py-6 text-center text-gray-500 text-sm">Vos paniers sont vides</p>
           ) : (
-            <ul className="divide-y divide-gray-700 max-h-[70vh] overflow-y-auto">
+            <ul className="divide-y divide-gray-100 max-h-[70vh] overflow-y-auto">
               {paniers.map((panier) => (
                 <li key={panier.storeId}>
                   {/* Retour à la vitrine, panier ouvert : on peut y ajouter
@@ -164,7 +164,7 @@ export function PaniersAccueil() {
                       e.preventDefault();
                       allerAuCommerce(panier);
                     }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700/60 transition"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition"
                   >
                     {logos[panier.storeId] ? (
                       <img
@@ -178,10 +178,10 @@ export function PaniersAccueil() {
                       </span>
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-white truncate">
+                      <span className="block font-semibold text-gray-900 truncate">
                         {panier.storeName || 'Commerce'}
                       </span>
-                      <span className="block text-sm text-gray-400">
+                      <span className="block text-sm text-gray-500">
                         Sous-total : {euro(totalDuPanier(panier.lignes))}
                       </span>
                       {adresse && (

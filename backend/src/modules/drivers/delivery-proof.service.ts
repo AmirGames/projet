@@ -4,6 +4,8 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { cheminRelatif, presenter } from "../files/fichiers-prives.service";
+import { z } from "zod";
+import { distanceKm, estUnPoint, Point } from "../../utils/geo";
 
 /**
  * La preuve de la remise.
@@ -64,6 +66,146 @@ export function exigerAttenteTerminee(course: { customerWaitStartedAt: Date | nu
   }
 }
 
+/**
+ * À cette distance de l'adresse, le livreur est chez le client. Plus large que
+ * les 150 m de l'application : en ville, le GPS dérive de plusieurs dizaines
+ * de mètres au pied d'un immeuble.
+ */
+export const RAYON_CHEZ_CLIENT_KM = 0.25;
+
+/**
+ * L'attente du client injoignable ne se lance que devant chez lui.
+ *
+ * C'est elle qui ouvre le dépôt en lieu sûr : lancée de n'importe où, elle
+ * laissait un livreur parti avec la commande la « déposer » en photo au bout
+ * de six minutes, être payé, et faire taire la surveillance. Le contrôle se
+ * fait ici, au lancement, parce que l'attente ne part qu'en ligne : le dépôt,
+ * lui, peut arriver bien plus tard depuis la file hors réseau du téléphone.
+ *
+ * `position` est la dernière position reçue, encore fraîche, ou null.
+ * Une adresse non située ne peut pas être vérifiée : elle passe.
+ */
+export function exigerPresenceChezClient(
+  position: Point | null,
+  course: { deliveryLat: number | null; deliveryLng: number | null }
+) {
+  const adresse = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+  if (!estUnPoint(adresse)) return;
+
+  if (!position) {
+    throw new ApiError(
+      409,
+      "Votre position n'arrive pas au serveur : activez la localisation pour lancer l'attente. Le client peut aussi vous donner son code ; sinon, écrivez au support.",
+      "POSITION_UNKNOWN"
+    );
+  }
+
+  const distance = distanceKm(position, adresse);
+  if (distance > RAYON_CHEZ_CLIENT_KM) {
+    throw new ApiError(
+      409,
+      `Vous êtes à ${distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1).replace(".", ",")} km`} de l'adresse du client : l'attente se lance devant chez lui.`,
+      "NOT_AT_CUSTOMER"
+    );
+  }
+}
+
+/**
+ * Pendant l'attente, le livreur reste devant chez le client : au-delà de cette
+ * distance, il est reparti (marge pour le GPS au pied d'un immeuble).
+ */
+export const RAYON_ATTENTE_CLIENT_KM = 0.5;
+
+/** L'attente est en cours et cette position est loin de l'adresse du client. */
+export function quitteLAdressePendantLAttente(
+  position: Point,
+  course: {
+    status: string;
+    customerWaitStartedAt: Date | null;
+    deliveryLat: number | null;
+    deliveryLng: number | null;
+  }
+) {
+  const adresse = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+  return (
+    course.status === "PICKED_UP" &&
+    Boolean(course.customerWaitStartedAt) &&
+    estUnPoint(adresse) &&
+    distanceKm(position, adresse) > RAYON_ATTENTE_CLIENT_KM
+  );
+}
+
+/**
+ * Le dépôt en photo est refusé au livreur qui a quitté l'adresse pendant
+ * l'attente : l'attente lancée à la porte ne vaut plus présence. Il lui reste
+ * le code du client, ou le support.
+ */
+export function exigerResteChezClient(course: { customerWaitLeftAt: Date | null }) {
+  if (course.customerWaitLeftAt) {
+    throw new ApiError(
+      409,
+      "Vous avez quitté l'adresse du client pendant l'attente : le dépôt en photo n'est plus possible. Remettez la commande contre le code du client, ou écrivez au support.",
+      "LEFT_DURING_WAIT"
+    );
+  }
+}
+
+/**
+ * La position du téléphone quand la photo du dépôt a été prise, envoyée avec
+ * le dépôt (qui peut partir bien plus tard, de la file hors réseau).
+ */
+export const schemaPositionDepot = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  /** Précision annoncée par le téléphone, en mètres. */
+  precision: z.number().min(0).max(100000).nullish(),
+  /** Quand elle a été relevée (heure du téléphone). */
+  releveeLe: z.string().datetime({ offset: true }).nullish(),
+});
+export type PositionDepot = z.infer<typeof schemaPositionDepot>;
+
+/** Lit la position jointe au dépôt ; absente, rien. Mal formée : 400. */
+export function lirePositionDepot(brut: unknown): PositionDepot | null {
+  if (brut == null) return null;
+  const lu = schemaPositionDepot.safeParse(brut);
+  if (!lu.success) throw new ApiError(400, "Position du dépôt illisible", "INVALID_PROOF_POSITION");
+  return lu.data;
+}
+
+/** Une position relevée plus longtemps avant la photo ne dit plus où elle a été prise. */
+const POSITION_DEPOT_VALABLE_MS = 15 * 60 * 1000;
+
+/**
+ * La photo du dépôt a-t-elle été prise loin de l'adresse du client ?
+ *
+ * Un indice : la position se falsifie, et un GPS dérive au pied d'un
+ * immeuble. La précision annoncée par le téléphone s'ajoute à la marge
+ * (jusqu'à 200 m). Rend la distance quand elle est suspecte, sinon null —
+ * position absente, trop ancienne, ou adresse non située compris.
+ */
+export function photoPriseLoinDuClient(course: {
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  proofLat: number | null;
+  proofLng: number | null;
+  proofAccuracy: number | null;
+  proofPositionAt: Date | null;
+  proofAt: Date | null;
+  /** L'heure réelle de la remise (étape faite hors réseau comprise). */
+  deliveryTime?: Date | null;
+}): number | null {
+  const adresse = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+  const prise = { latitude: course.proofLat, longitude: course.proofLng };
+  if (!estUnPoint(adresse) || !estUnPoint(prise)) return null;
+  const remise = course.deliveryTime ?? course.proofAt;
+  if (course.proofPositionAt && remise && remise.getTime() - course.proofPositionAt.getTime() > POSITION_DEPOT_VALABLE_MS) {
+    return null;
+  }
+  const marge = RAYON_ATTENTE_CLIENT_KM + Math.min((course.proofAccuracy ?? 0) / 1000, 0.2);
+  const distance = distanceKm(prise, adresse);
+  return distance > marge ? distance : null;
+}
+
 export const TYPES_PREUVE = ["CODE", "PHOTO"] as const;
 export type TypePreuve = (typeof TYPES_PREUVE)[number];
 
@@ -77,6 +219,23 @@ export function genererCode() {
   return String(randomInt(0, 10000)).padStart(4, "0");
 }
 
+/**
+ * Les colonnes de la position jointe au dépôt. Une heure de relevé dans le
+ * futur (horloge du téléphone déréglée) n'est pas crue : l'heure de réception
+ * la remplace.
+ */
+function positionDuDepot(position: PositionDepot | null | undefined, maintenant: Date) {
+  if (!position) return {};
+  const declaree = position.releveeLe ? new Date(position.releveeLe) : null;
+  const releveeLe = declaree && declaree.getTime() <= maintenant.getTime() + 60_000 ? declaree : maintenant;
+  return {
+    proofLat: position.latitude,
+    proofLng: position.longitude,
+    proofAccuracy: position.precision ?? null,
+    proofPositionAt: releveeLe,
+  };
+}
+
 export class DeliveryProofService {
   /**
    * Vérifie la preuve fournie par le livreur et l'enregistre.
@@ -86,11 +245,11 @@ export class DeliveryProofService {
    */
   static async verifier(
     deliveryId: string,
-    preuve: { code?: string; photoUrl?: string; note?: string }
+    preuve: { code?: string; photoUrl?: string; note?: string; position?: PositionDepot | null }
   ): Promise<TypePreuve> {
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
-      select: { id: true, deliveryCode: true, codeAttempts: true, customerWaitStartedAt: true },
+      select: { id: true, deliveryCode: true, codeAttempts: true, customerWaitStartedAt: true, customerWaitLeftAt: true },
     });
 
     if (!course) {
@@ -173,8 +332,11 @@ export class DeliveryProofService {
         }
       }
 
+      const maintenant = new Date();
       // Le dépôt se photographie quand le client n'est pas venu, pas avant.
       exigerAttenteTerminee(course);
+      // Et seulement par un livreur resté à la porte.
+      exigerResteChezClient(course);
 
       await db.orderDelivery.update({
         where: { id: deliveryId },
@@ -182,7 +344,8 @@ export class DeliveryProofService {
           proofType: "PHOTO",
           proofPhoto: photo,
           proofNote: preuve.note?.trim() || null,
-          proofAt: new Date(),
+          proofAt: maintenant,
+          ...positionDuDepot(preuve.position, maintenant),
         },
       });
 

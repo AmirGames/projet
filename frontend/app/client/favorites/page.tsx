@@ -9,6 +9,8 @@ import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { IllustrationFamille } from '@/components/IllustrationFamille';
+import { visuelDeFamille } from '@/lib/visuels-familles';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,7 +30,9 @@ interface FavoriteStore {
     totalRatings?: number;
     deliveryCost?: number;
     distance?: number;
-    settings?: { logo?: string | null } | null;
+    settings?: { logo?: string | null; banner?: string | null } | null;
+    /** La famille (« pizza », « sushi »…), pour l'illustration sans photo. */
+    famille?: string | null;
   };
 }
 
@@ -85,34 +89,34 @@ export default function FavoritesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="pt-4">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-400 mb-4">
+          <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
             <ArrowLeft size={20} />
             {t('back')}
           </Link>
-          <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {error && (
-          <div className="bg-red-900 border border-red-700 rounded-lg p-4 mb-6 text-red-200">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-800">
             {error}
           </div>
         )}
 
         {loading ? (
           <div className="text-center py-20">
-            <p className="text-white text-lg">{t('loading')}</p>
+            <p className="text-gray-900 text-lg">{t('loading')}</p>
           </div>
         ) : favorites.length === 0 ? (
-          <div className="text-center py-20 bg-gray-800 rounded-lg">
-            <Heart size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-white text-xl mb-4">{t('noFavorites')}</p>
-            <Link href="/client" className="text-orange-500 hover:text-orange-400">
+          <div className="text-center py-20 bg-white ring-1 ring-gray-200 rounded-lg">
+            <Heart size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-900 text-xl mb-4">{t('noFavorites')}</p>
+            <Link href="/client" className="text-orange-500 hover:text-orange-600">
               {t('discoverRestaurants')}
             </Link>
           </div>
@@ -121,24 +125,29 @@ export default function FavoritesPage() {
             {favorites.map(favorite => {
               const store = favorite.store;
               return (
-                <div key={favorite.id} className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition">
-                  {/* Le logo du commerce, comme sur l'accueil ; à défaut, son initiale. */}
-                  <div
-                    className={`relative h-40 flex items-center justify-center ${
-                      store.settings?.logo ? 'bg-white' : 'bg-gradient-to-r from-orange-500 to-red-500'
-                    }`}
-                  >
-                    {store.settings?.logo ? (
-                      <img
-                        src={store.settings.logo}
-                        alt={store.name}
-                        className="absolute inset-0 h-full w-full object-contain p-3"
-                      />
+                <div key={favorite.id} className="bg-white ring-1 ring-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
+                  {/* Comme sur l'accueil : la photo de couverture, ou l'illustration
+                      de la catégorie ; le logo en pastille, ou l'emoji de la
+                      catégorie sur une photo. */}
+                  <div className="relative h-40 overflow-hidden bg-gray-100">
+                    {store.settings?.banner ? (
+                      <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
                     ) : (
-                      <div className="text-center">
-                        <div className="text-white text-4xl font-bold opacity-50">
-                          {store.name.charAt(0)}
-                        </div>
+                      <IllustrationFamille famille={store.famille} />
+                    )}
+                    {(store.settings?.logo || store.settings?.banner) && (
+                      <div className="absolute bottom-3 left-3">
+                        {store.settings?.logo ? (
+                          <img
+                            src={store.settings.logo}
+                            alt={store.name}
+                            className="h-12 w-12 rounded-xl bg-white object-contain p-1 shadow-md"
+                          />
+                        ) : (
+                          <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-2xl shadow-md">
+                            {visuelDeFamille(store.famille).emoji}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -146,17 +155,17 @@ export default function FavoritesPage() {
                   <div className="p-4">
                     {/* Name & Remove Button */}
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-bold text-white flex-1">{store.name}</h3>
+                      <h3 className="text-lg font-bold text-gray-900 flex-1">{store.name}</h3>
                       <button
                         onClick={() => removeFavorite(store.id)}
-                        className="text-red-500 hover:text-red-400 p-1"
+                        className="text-red-500 hover:text-red-600 p-1"
                       >
                         <Trash2 size={18} />
                       </button>
                     </div>
 
                     {/* Description */}
-                    <p className="text-sm text-gray-400 mb-3 line-clamp-2">
+                    <p className="text-sm text-gray-500 mb-3 line-clamp-2">
                       {store.description}
                     </p>
 
@@ -166,7 +175,7 @@ export default function FavoritesPage() {
                         <>
                           <div className="flex items-center gap-1">
                             <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                            <span className="text-white font-semibold">
+                            <span className="text-gray-900 font-semibold">
                               {Number(store.rating).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                             </span>
                           </div>
@@ -180,14 +189,14 @@ export default function FavoritesPage() {
                     {/* Location & Delivery */}
                     <div className="space-y-2 text-sm mb-4">
                       {store.address && (
-                        <div className="flex items-center gap-2 text-gray-400">
+                        <div className="flex items-center gap-2 text-gray-500">
                           <MapPin size={14} />
                           <span>{store.address}</span>
                         </div>
                       )}
 
                       {store.deliveryCost !== undefined && (
-                        <div className="text-gray-400">
+                        <div className="text-gray-500">
                           {t('deliveryCost')} {euro(store.deliveryCost)}
                         </div>
                       )}
