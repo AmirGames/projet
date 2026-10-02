@@ -33,6 +33,8 @@ export const ENTETE_TRANSPORT = { 'X-Refresh-Transport': 'cookie' } as const;
 const memoire = new Map<string, string>();
 let minuteur: ReturnType<typeof setTimeout> | undefined;
 let demarrage: Promise<void> | null = null;
+/** La session à retrouver au chargement a été refusée par le serveur. */
+let perdueAuDemarrage = false;
 
 type Stockage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 let reel: Stockage | null = null;
@@ -183,6 +185,18 @@ export function sessionPrete(): Promise<void> {
   return demarrage ?? Promise.resolve();
 }
 
+/**
+ * La session qu'on attendait au chargement a-t-elle été refusée (401 ou 403) ?
+ *
+ * Une base remise à zéro ou un compte supprimé pendant l'absence : le cookie
+ * ne vaut plus rien. Sans ce signal, la session était effacée en silence et la
+ * page renvoyait vers une connexion vide, sans dire pourquoi. À lire une fois
+ * `sessionPrete()` résolue.
+ */
+export function sessionPerdueAuDemarrage(): boolean {
+  return perdueAuDemarrage;
+}
+
 /** Une session est-elle à retrouver ? (donc les pages doivent attendre) */
 export function sessionARetrouver(): boolean {
   if (typeof window === 'undefined' || !reel) return false;
@@ -261,6 +275,7 @@ function installer() {
       // Migration faite, ou session morte : plus rien de tel dans le stockage.
       // Si l'API était injoignable, on garde tout pour réessayer au prochain
       // chargement.
+      if (resultat.statut === 401 || resultat.statut === 403) perdueAuDemarrage = true;
       if (resultat.ok || resultat.statut === 401 || resultat.statut === 403) {
         ecrireReel('refreshToken', null);
         ecrireReel('accessToken', null);

@@ -13,7 +13,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees, plateformeSiAucune } from './inscription.mjs';
+import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees, plateformeSiAucune, connecterNavigateur } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -104,16 +104,24 @@ const idA = await creerPlat(platA, 10);
 
 const nav = await chromium.launch();
 
-const ouvrir = async (jeton, chemin, panier = null) => {
+// Les comptes qui ouvrent des écrans : la session passe par le cookie, comme
+// dans un vrai navigateur (voir connecterNavigateur).
+const COMMERCANT = { email: `m-${uniq}@t.fr`, password: MDP };
+const PLATEFORME = { email: `p-${uniq}@t.fr`, password: MDP };
+
+const ouvrir = async (compte, chemin, panier = null) => {
   const page = await (await nav.newContext()).newPage();
   await page.addInitScript(
-    ([t, s, p]) => {
-      if (t) localStorage.setItem('accessToken', t);
+    ([s, p]) => {
       localStorage.setItem('storeId', s);
       if (p) localStorage.setItem('zupeat-paniers', p);
     },
-    [jeton, storeId, panier]
+    [storeId, panier]
   );
+  if (compte) {
+    const statut = await connecterNavigateur(page, SITE, compte);
+    if (statut !== 200) throw new Error(`Connexion du navigateur refusée (${statut}) pour ${compte.email}`);
+  }
   await page.goto(SITE + chemin, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
   return page;
@@ -125,8 +133,8 @@ const contient = (page, texte) => async () => (await page.locator('body').innerT
 
 titre('Le catalogue du commerçant');
 
-const pProduits = await ouvrir(T, `/merchant/${orgId}/products`);
-const pCategories = await ouvrir(T, `/merchant/${orgId}/categories`);
+const pProduits = await ouvrir(COMMERCANT, `/merchant/${orgId}/products`);
+const pCategories = await ouvrir(COMMERCANT, `/merchant/${orgId}/categories`);
 
 // Un visiteur anonyme, avec deux lasagnes au panier.
 const panier = JSON.stringify({
@@ -192,8 +200,8 @@ const sujet1 = `Imprimante ${uniq}`;
 const ticket1 = await creerTicket(sujet1);
 check('le commerçant ouvre un ticket', Boolean(ticket1));
 
-const pSupport = await ouvrir(T, `/merchant/${orgId}/support`);
-const pTickets = await ouvrir(TP, '/superowner/zupeat/support-tickets');
+const pSupport = await ouvrir(COMMERCANT, `/merchant/${orgId}/support`);
+const pTickets = await ouvrir(PLATEFORME, '/superowner/zupeat/support-tickets');
 
 // La conversation du ticket, ouverte chez le commerçant.
 await pSupport.getByText(sujet1).first().click();
@@ -219,8 +227,8 @@ check('un nouveau ticket apparaît chez la plateforme', await attendre(pTickets,
 
 titre('La plateforme');
 
-const pLivreurs = await ouvrir(TP, '/superowner/zupeat/drivers');
-const pOrganisations = await ouvrir(TP, '/superowner/zupeat/organizations');
+const pLivreurs = await ouvrir(PLATEFORME, '/superowner/zupeat/drivers');
+const pOrganisations = await ouvrir(PLATEFORME, '/superowner/zupeat/organizations');
 
 const livreur = `Livreur ${uniq}`;
 const inscription = await appeler('/api/drivers/register', {

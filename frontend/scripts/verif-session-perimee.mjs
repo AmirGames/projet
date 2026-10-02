@@ -98,15 +98,17 @@ check('sa session est ouverte', !!jeton, 'aucun jeton');
 titre('Sa session cesse d’être valable');
 /**
  * Le cas réel : la base est remise à zéro pendant qu'un onglet reste ouvert, et
- * le navigateur garde un jeton signé pour un compte disparu. On le reproduit en
- * remplaçant les deux jetons par des jetons que le serveur refusera — la cause
- * exacte importe peu, c'est le chemin qui compte : 401, renouvellement
- * impossible, session effacée.
+ * le navigateur garde une session pour un compte disparu. La session vit dans
+ * le cookie httpOnly de renouvellement (le jeton d'accès n'est qu'en mémoire,
+ * voir lib/jeton-session.ts) : on le remplace par une valeur que le serveur
+ * refusera. La cause exacte importe peu, c'est le chemin qui compte :
+ * renouvellement refusé (401), session effacée, retour à la connexion.
  */
-await page.evaluate(() => {
-  localStorage.setItem('accessToken', 'jeton-qui-ne-vaut-plus-rien');
-  localStorage.setItem('refreshToken', 'renouvellement-qui-ne-vaut-plus-rien');
-});
+const cookie = (await page.context().cookies()).find((c) => c.name === 'zup_refresh');
+check('la session tient dans le cookie de renouvellement', !!cookie, 'pas de cookie zup_refresh');
+if (cookie) {
+  await page.context().addCookies([{ ...cookie, value: 'renouvellement-qui-ne-vaut-plus-rien' }]);
+}
 
 titre('La page le renvoie vers la connexion');
 await page.goto(`${SITE}/merchant/${orgId}/dashboard`);

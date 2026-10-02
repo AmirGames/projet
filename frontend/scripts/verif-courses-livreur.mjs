@@ -181,6 +181,10 @@ const commande = await appeler('/api/orders', {
     deliveryAddress: '20 rue de la Ré',
     deliveryCity: 'Lyon',
     deliveryPostal: '69002',
+    // L'adresse choisie dans les suggestions arrive avec sa position : sans
+    // elle, l'API refuse la commande (frais de livraison incalculables).
+    deliveryLat: 45.7618,
+    deliveryLng: 4.8336,
     totalAmount: 14,
     items: [{ productId, quantity: 1, price: 14 }],
   },

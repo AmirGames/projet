@@ -14,7 +14,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees, plateformeSiAucune } from './inscription.mjs';
+import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees, plateformeSiAucune, connecterNavigateur } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -118,15 +118,16 @@ check('deux commandes passées', Boolean(acceptee && oubliee));
 
 const nav = await chromium.launch();
 
-const ouvrir = async (jeton, chemin) => {
+// La session passe par le cookie, comme dans un vrai navigateur (voir
+// connecterNavigateur) : un jeton posé dans localStorage ne suffit plus.
+const COMMERCANT = { email: `m-${uniq}@t.fr`, password: MDP };
+const CLIENTE = { email: `c-${uniq}@t.fr`, password: MDP };
+
+const ouvrir = async (compte, chemin) => {
   const page = await (await nav.newContext()).newPage();
-  await page.addInitScript(
-    ([t, s]) => {
-      localStorage.setItem('accessToken', t);
-      localStorage.setItem('storeId', s);
-    },
-    [jeton, storeId]
-  );
+  await page.addInitScript((s) => localStorage.setItem('storeId', s), storeId);
+  const statut = await connecterNavigateur(page, SITE, compte);
+  if (statut !== 200) throw new Error(`Connexion du navigateur refusée (${statut}) pour ${compte.email}`);
   await page.goto(SITE + chemin, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
   return page;
@@ -135,9 +136,9 @@ const ouvrir = async (jeton, chemin) => {
 const texte = (page) => page.locator('body').innerText();
 const enAttente = async (page) => ((await texte(page)).match(/En attente/g) || []).length;
 
-const pCliente = await ouvrir(TC, '/client/orders');
-const pFiche = await ouvrir(T, `/merchant/${orgId}/orders/${oubliee}`);
-const pListe = await ouvrir(T, `/merchant/${orgId}/orders`);
+const pCliente = await ouvrir(CLIENTE, '/client/orders');
+const pFiche = await ouvrir(COMMERCANT, `/merchant/${orgId}/orders/${oubliee}`);
+const pListe = await ouvrir(COMMERCANT, `/merchant/${orgId}/orders`);
 
 const depart = await enAttente(pCliente);
 check('la cliente voit ses deux commandes en attente', depart === 2, `${depart}`);
