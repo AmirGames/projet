@@ -13,7 +13,8 @@ import { TRANSMISE } from "../../utils/commande-transmise";
 export interface OrderFilterOptions {
   skip?: number;
   take?: number;
-  status?: string;
+  /** Un statut, ou plusieurs (les commandes en cours, pour l'écran de cuisine). */
+  status?: string | string[];
   startDate?: Date;
   endDate?: Date;
   minAmount?: number;
@@ -28,7 +29,9 @@ export class OrderManagementService {
 
       const whereClause: any = { storeId, ...TRANSMISE };
       
-      if (options?.status) {
+      if (Array.isArray(options?.status)) {
+        whereClause.status = { in: options.status };
+      } else if (options?.status) {
         whereClause.status = options.status;
       }
 
