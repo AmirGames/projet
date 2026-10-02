@@ -9,6 +9,7 @@ import {
   verifierTransition,
 } from "./order-acceptance.service";
 import { TRANSMISE } from "../../utils/commande-transmise";
+import { derniersJoursBruxelles, jourBruxelles } from "../../utils/semaine-bruxelles";
 
 export interface OrderFilterOptions {
   skip?: number;
@@ -19,6 +20,22 @@ export interface OrderFilterOptions {
   endDate?: Date;
   minAmount?: number;
   maxAmount?: number;
+}
+
+/**
+ * Les ventes des derniers jours, jour par jour (heure de Bruxelles), pour le
+ * graphique du tableau de bord. Une commande refusée n'est pas une vente :
+ * elle n'y compte pas, ni en nombre ni en montant.
+ */
+function ventesParJour(
+  commandes: { status: string; createdAt: Date; totalAmount: unknown; feesAmount?: unknown; serviceFeeAmount?: unknown }[],
+  nombre: number
+) {
+  const vendues = commandes.filter((c) => c.status !== "REJECTED");
+  return derniersJoursBruxelles(nombre).map((jour) => {
+    const duJour = vendues.filter((c) => jourBruxelles(c.createdAt) === jour);
+    return { jour, commandes: duJour.length, chiffreAffaires: totalCommercant(duJour) };
+  });
 }
 
 export class OrderManagementService {
@@ -329,6 +346,7 @@ export class OrderManagementService {
         deliveryFailed: orders.filter(o => o.rejectionReason === MOTIF_LIVRAISON_ECHOUEE).length,
         paidOrders: orders.filter(o => o.paymentStatus === "SUCCEEDED").length,
         unpaidOrders: orders.filter(o => o.paymentStatus !== "SUCCEEDED").length,
+        parJour: ventesParJour(orders, Math.min(days, 7)),
       };
 
       return stats;
