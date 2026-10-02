@@ -519,7 +519,7 @@ export class SurveillanceCoursesService {
         prevenirPlateforme({
           sujet: `🔴 [ZupEat] Toujours sans solution — commande #${numero} (relance ${rang})`,
           texte: `${incident.driver.name} : ${incident.detail}\nCommerce : ${course.order?.store?.name || "?"}.\nOuvert depuis ${depuis} min, la commande est toujours entre les mains du livreur.`,
-          chemin: "/superowner/incidents-livraison",
+          chemin: "/superowner/zupeat/incidents-livraison",
           bouton: "Traiter l'incident",
         })
       );
@@ -673,7 +673,7 @@ export class SurveillanceCoursesService {
     await prevenirPlateforme({
       sujet: `🟠 [ZupEat] ${ecart ? "Livreur hors trajet" : "Livraison en retard"} — commande #${numero}`,
       texte: `${livreur?.name || "Le livreur"} : ${constat.detail}\nCommerce : ${course.order?.store?.name || "?"}.`,
-      chemin: "/superowner/incidents-livraison",
+      chemin: "/superowner/zupeat/incidents-livraison",
       bouton: "Voir les incidents de livraison",
       couleur: "#ea580c",
     });
@@ -1226,7 +1226,7 @@ export class SurveillanceCoursesService {
         texte: `${course.driver?.name || "Le livreur"} : ${motif}\nCommerce : ${course.order?.store?.name || "?"}.\n${
           course.payoutId ? "La course est déjà sur un relevé de versement." : "Le paiement du livreur est suspendu jusqu'à votre décision."
         }`,
-        chemin: "/superowner/incidents-livraison",
+        chemin: "/superowner/zupeat/incidents-livraison",
         bouton: "Examiner le dépôt",
       })
     );

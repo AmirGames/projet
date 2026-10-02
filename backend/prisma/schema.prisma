@@ -47,6 +47,8 @@ model User {
   /// Sans rapport avec `driver` ci-dessus (modèle Courier), le livreur de
   /// repas ZupEat.
   chauffeurDrive ChauffeurDrive?
+  /// La société ZupDrive dont ce compte est le gérant (une au plus).
+  societeDrive   SocieteDrive?
   /// Les trajets commandés comme passager sur ZupDrive.
   coursesDrive  CourseDrive[]
   /// Les notes reçues comme passager ZupDrive, de ses chauffeurs.
@@ -2560,7 +2562,18 @@ model ChauffeurDrive {
   longitude  Float?
   positionLe DateTime?
 
+  /// Chauffeur d'une société (une seule à la fois) : la licence, l'assurance
+  /// et le véhicule sont ceux de la société, à qui ses courses sont
+  /// attribuées. Nul : chauffeur indépendant, avec sa propre licence. Voir
+  /// societe-drive.service.ts.
+  societeId  String?
+  /// Le véhicule de la société qu'il conduit : un véhicule, un chauffeur.
+  vehiculeId String?   @unique
+  rattacheLe DateTime?
+
   user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  societe   SocieteDrive?            @relation(fields: [societeId], references: [id], onDelete: SetNull)
+  vehicule  VehiculeDrive?           @relation(fields: [vehiculeId], references: [id], onDelete: SetNull)
   documents DocumentChauffeurDrive[]
   courses      CourseDrive[]
   propositions PropositionCourseDrive[]
@@ -2570,9 +2583,104 @@ model ChauffeurDrive {
   updatedAt DateTime @updatedAt
 
   @@index([statut])
+  @@index([societeId])
 }
 
-/// Une version d'une pièce du dossier d'un chauffeur ZupDrive.
+/// Une société ZupDrive (taxi, VTC) : elle détient les licences, assure les
+/// véhicules et emploie des chauffeurs, qui roulent pour elle. Son dossier
+/// suit le même cycle que celui d'un chauffeur (BROUILLON, SOUMIS, VALIDE,
+/// REFUSE, SUSPENDU) et se valide par l'équipe ZupDrive.
+model SocieteDrive {
+  id       String @id @default(cuid())
+  /// Le compte ZupOne du gérant : une société par gérant.
+  gerantId String @unique
+
+  raisonSociale    String
+  /// Numéro BCE, 10 chiffres sans points : une société n'est inscrite qu'une fois.
+  numeroEntreprise String? @unique
+  /// BRUXELLES, WALLONIE ou FLANDRE : la région de ses licences. Ses
+  /// chauffeurs roulent dans cette région.
+  region           String?
+  telephone        String?
+
+  /// BROUILLON, SOUMIS, VALIDE, REFUSE, SUSPENDU.
+  statut      String    @default("BROUILLON")
+  motifStatut String?
+  soumisLe    DateTime?
+  valideLe    DateTime?
+  validePar   String?
+
+  /// Restrict : la société et l'historique de ses courses ne partent pas avec
+  /// le compte du gérant (voir customer-account.service.ts).
+  gerant      User                     @relation(fields: [gerantId], references: [id], onDelete: Restrict)
+  documents   DocumentChauffeurDrive[]
+  vehicules   VehiculeDrive[]
+  chauffeurs  ChauffeurDrive[]
+  invitations InvitationSocieteDrive[]
+  courses     CourseDrive[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([statut])
+}
+
+/// Un véhicule d'une société ZupDrive, avec ses pièces (licence, assurance,
+/// contrôle technique, immatriculation). Un chauffeur de société ne roule
+/// qu'avec un véhicule conforme.
+model VehiculeDrive {
+  id        String @id @default(cuid())
+  societeId String
+
+  marque        String
+  modele        String
+  /// En majuscules, sans espaces ni tirets. Unique parmi les véhicules non
+  /// retirés (index partiel, migration 0038).
+  plaque        String
+  numeroLicence String?
+
+  /// Toutes ses pièces exigées sont validées et en cours de validité.
+  /// Recalculé par le serveur à chaque examen et à chaque expiration
+  /// (SocieteDriveService.recalculerVehicule) : ce n'est jamais une saisie.
+  conforme Boolean   @default(false)
+  /// Retiré par la société : gardé pour l'historique des courses.
+  retireLe DateTime?
+
+  societe   SocieteDrive             @relation(fields: [societeId], references: [id], onDelete: Cascade)
+  documents DocumentChauffeurDrive[]
+  chauffeur ChauffeurDrive?
+  courses   CourseDrive[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([societeId])
+}
+
+/// L'invitation d'une société à un chauffeur, par adresse e-mail. Personne
+/// n'est rattaché à une société sans avoir accepté. Au plus une invitation en
+/// attente par société et par adresse (index partiel, migration 0038).
+model InvitationSocieteDrive {
+  id        String    @id @default(cuid())
+  societeId String
+  /// En minuscules.
+  email     String
+  /// EN_ATTENTE, ACCEPTEE, REFUSEE, ANNULEE.
+  statut    String    @default("EN_ATTENTE")
+  reponduLe DateTime?
+
+  societe SocieteDrive @relation(fields: [societeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email, statut])
+  @@index([societeId, statut])
+}
+
+/// Une version d'une pièce ZupDrive : celle d'un chauffeur, d'une société
+/// ou d'un véhicule de société — exactement l'un des trois (contrainte
+/// CHECK, migration 0038).
 ///
 /// Par type, au plus une version « en vigueur » (validée, ou expirée) et une
 /// version déposée en attente d'examen (ou refusée). Renouveler une pièce
@@ -2580,7 +2688,9 @@ model ChauffeurDrive {
 /// l'équipe valide la nouvelle, puis elle est archivée (archiveeLe).
 model DocumentChauffeurDrive {
   id             String    @id @default(cuid())
-  chauffeurId    String
+  chauffeurId    String?
+  societeId      String?
+  vehiculeId     String?
   /// Voir TYPES_PIECE dans chauffeur-onboarding.service.ts.
   type           String
   /// Stockage privé (dossier « chauffeurs »), servi par /api/files.
@@ -2599,12 +2709,16 @@ model DocumentChauffeurDrive {
   /// Gardée pour l'historique ; seules les versions non archivées comptent.
   archiveeLe      DateTime?
 
-  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  chauffeur ChauffeurDrive? @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  societe   SocieteDrive?   @relation(fields: [societeId], references: [id], onDelete: Cascade)
+  vehicule  VehiculeDrive?  @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([chauffeurId, type])
+  @@index([societeId, type])
+  @@index([vehiculeId, type])
   @@index([statut])
   @@index([dateExpiration])
 }
@@ -2646,6 +2760,12 @@ model CourseDrive {
   cleIdempotence String
 
   chauffeurId  String?
+  /// Figés à l'acceptation, dans la même transaction : la société pour qui le
+  /// chauffeur roulait (à qui la course sera reversée, paiement en V2) et le
+  /// véhicule utilisé. Nuls pour un chauffeur indépendant. Un chauffeur qui
+  /// change de société ensuite ne change pas l'historique.
+  societeId    String?
+  vehiculeId   String?
 
   statut       String   @default("RECHERCHE")
   region       String
@@ -2677,6 +2797,8 @@ model CourseDrive {
 
   passager  User?           @relation(fields: [passagerId], references: [id], onDelete: SetNull)
   chauffeur ChauffeurDrive? @relation(fields: [chauffeurId], references: [id], onDelete: SetNull)
+  societe   SocieteDrive?   @relation(fields: [societeId], references: [id], onDelete: SetNull)
+  vehicule  VehiculeDrive?  @relation(fields: [vehiculeId], references: [id], onDelete: SetNull)
   propositions PropositionCourseDrive[]
   notes        NoteCourseDrive[]
 
@@ -2687,6 +2809,7 @@ model CourseDrive {
   @@index([statut])
   @@index([chauffeurId, statut])
   @@index([passagerId, createdAt])
+  @@index([societeId, createdAt])
 }
 
 /// Une course proposée à un chauffeur, qui a quelques secondes pour accepter.

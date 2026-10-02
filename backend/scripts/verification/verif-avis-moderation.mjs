@@ -52,7 +52,7 @@ check('le commerçant voit qu il attend la plateforme', apres.signalement === 'E
 check('filtre « signalés »', (await avisMerchant('signales')).length === 1);
 check(
   'la plateforme est prévenue',
-  (await sqlScalaire(`SELECT count(*) FROM "Notification" WHERE "recipientEmail" = 'p-${uniq}@t.fr' AND link = '/superowner/reviews'`)) >= 1
+  (await sqlScalaire(`SELECT count(*) FROM "Notification" WHERE "recipientEmail" = 'p-${uniq}@t.fr' AND link = '/superowner/zupeat/reviews'`)) >= 1
 );
 
 titre('La plateforme tranche');

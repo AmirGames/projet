@@ -32,33 +32,33 @@ const titre = (texte) => console.log(`\n[${texte}]`);
 
 /** Les anciennes adresses et là où elles doivent désormais mener. */
 const ANCIENNES = {
-  '/admin': '/superowner',
-  '/admin/dashboard': '/superowner',
-  '/admin/super-owner': '/superowner',
-  '/admin/analytics': '/superowner/analytics',
+  '/admin': '/superowner/zupeat',
+  '/admin/dashboard': '/superowner/zupeat',
+  '/admin/super-owner': '/superowner/zupeat',
+  '/admin/analytics': '/superowner/zupeat/analytics',
   '/admin/audit-logs': '/superowner/audit-logs',
-  '/admin/commissions': '/superowner/billing',
-  '/admin/merchants': '/superowner/organizations',
-  '/admin/stores': '/superowner/stores',
-  '/admin/tickets': '/superowner/support-tickets',
+  '/admin/commissions': '/superowner/zupeat/billing',
+  '/admin/merchants': '/superowner/zupeat/organizations',
+  '/admin/stores': '/superowner/zupeat/stores',
+  '/admin/tickets': '/superowner/zupeat/support-tickets',
   '/admin/settings': '/superowner/system-config',
   '/admin/settings/admin-settings': '/superowner/system-config',
   '/admin/orders': '/merchant',
   '/admin/products': '/merchant',
   '/admin/customers': '/merchant',
   '/admin/categories': '/merchant',
-  '/super-admin': '/superowner',
+  '/super-admin': '/superowner/zupeat',
   '/super-admin/access-logs': '/superowner/access-logs',
   '/super-admin/admin-management': '/superowner/user-management',
   '/super-admin/user-management': '/superowner/user-management',
-  '/super-admin/analytics': '/superowner/analytics',
+  '/super-admin/analytics': '/superowner/zupeat/analytics',
   '/super-admin/audit-logs': '/superowner/audit-logs',
-  '/super-admin/commissions': '/superowner/billing',
-  '/super-admin/exports': '/superowner/exports',
-  '/super-admin/merchants': '/superowner/organizations',
-  '/super-admin/notifications': '/superowner/notifications',
+  '/super-admin/commissions': '/superowner/zupeat/billing',
+  '/super-admin/exports': '/superowner/zupeat/exports',
+  '/super-admin/merchants': '/superowner/zupeat/organizations',
+  '/super-admin/notifications': '/superowner/zupeat/notifications',
   '/super-admin/settings': '/superowner/system-config',
-  '/super-admin/tickets': '/superowner/support-tickets',
+  '/super-admin/tickets': '/superowner/zupeat/support-tickets',
 };
 
 const nav = await chromium.launch();
@@ -76,8 +76,9 @@ await page.goto(`${SITE}/login`);
 await page.fill('input[type="email"]', 'super@demo.fr');
 await page.fill('input[type="password"]', 'Password123!');
 await page.click('button[type="submit"]');
-await page.waitForURL('**/superowner', { timeout: 15000 });
-check('la connexion mène à /superowner', page.url().endsWith('/superowner'), page.url());
+// /superowner ouvre la plateforme choisie : ZupEat à la première visite.
+await page.waitForURL((url) => url.pathname === '/superowner/zupeat', { timeout: 15000 });
+check('la connexion mène à l’accueil ZupEat', new URL(page.url()).pathname === '/superowner/zupeat', page.url());
 
 await page.waitForTimeout(2000);
 
@@ -114,20 +115,23 @@ const liensMenu = () => page.locator('aside nav a').evaluateAll((liens) => liens
 
 check('ZupEat est l’onglet du tableau de bord', (await onglet('ZupEat').getAttribute('aria-selected')) === 'true');
 let liens = await liensMenu();
-check('le menu ZupEat n’a pas les chauffeurs', liens.includes('/superowner/drivers') && !liens.some((h) => h.startsWith('/superowner/zupdrive')), liens.join(' '));
+check('le menu ZupEat n’a pas les chauffeurs', liens.includes('/superowner/zupeat/drivers') && !liens.some((h) => h.startsWith('/superowner/zupdrive')), liens.join(' '));
 
 await onglet('ZupDrive').click();
-await page.waitForURL('**/superowner/zupdrive/**', { timeout: 15000 });
+await page.waitForURL((url) => url.pathname === '/superowner/zupdrive', { timeout: 15000 });
 await page.waitForTimeout(800);
 liens = await liensMenu();
-check('l’onglet ZupDrive ouvre sa première page', new URL(page.url()).pathname === '/superowner/zupdrive/chauffeurs', page.url());
+check('l’onglet ZupDrive ouvre son tableau de bord', new URL(page.url()).pathname === '/superowner/zupdrive', page.url());
+await page.waitForSelector('text=Dossiers à examiner', { timeout: 15000 });
+check('qui montre les dossiers et les courses', /Courses/.test(await page.locator('main').innerText()));
 check(
   'et son menu : chauffeurs, courses, tarifs — sans les livreurs ni les boutiques',
   ['/superowner/zupdrive/chauffeurs', '/superowner/zupdrive/courses', '/superowner/zupdrive/tarifs'].every((h) => liens.includes(h)) &&
-    !liens.includes('/superowner/drivers') &&
-    !liens.includes('/superowner/stores'),
+    !liens.includes('/superowner/zupeat/drivers') &&
+    !liens.includes('/superowner/zupeat/stores'),
   liens.join(' ')
 );
+check('aucune page ZupEat dans le menu ZupDrive', !liens.some((h) => h.startsWith('/superowner/zupeat')), liens.join(' '));
 check('les sections communes restent (profil, rôles, supervision)', ['/superowner/profil', '/superowner/roles', '/superowner/health'].every((h) => liens.includes(h)), liens.join(' '));
 
 await page.click('aside nav a[href="/superowner/profil"]');
@@ -140,13 +144,36 @@ await page.waitForSelector('aside [role="tablist"]', { timeout: 15000 });
 check('même après rechargement', (await onglet('ZupDrive').getAttribute('aria-selected')) === 'true');
 
 // Un lien direct (notification, favori) vers une page ZupEat bascule l'onglet.
-await page.goto(`${SITE}/superowner/stores`, { waitUntil: 'domcontentloaded' });
+await page.goto(`${SITE}/superowner/zupeat/stores`, { waitUntil: 'domcontentloaded' });
 await page.waitForSelector('aside [role="tablist"]', { timeout: 15000 });
 check('un lien direct vers une page ZupEat rebascule sur ZupEat', (await onglet('ZupEat').getAttribute('aria-selected')) === 'true');
 
 await onglet('ZupEat').click();
-await page.waitForURL((url) => url.pathname === '/superowner', { timeout: 15000 });
-check('l’onglet ZupEat ramène au tableau de bord', true);
+await page.waitForURL((url) => url.pathname === '/superowner/zupeat', { timeout: 15000 });
+check('l’onglet ZupEat ramène à son tableau de bord', true);
+
+// /superowner rouvre la dernière plateforme choisie.
+await onglet('ZupDrive').click();
+await page.waitForURL((url) => url.pathname === '/superowner/zupdrive', { timeout: 15000 });
+await page.goto(`${SITE}/superowner`, { waitUntil: 'domcontentloaded' });
+await page.waitForURL((url) => url.pathname === '/superowner/zupdrive', { timeout: 15000 });
+check('/superowner rouvre la dernière plateforme choisie', true);
+
+titre('Les anciennes adresses ZupEat mènent à /superowner/zupeat');
+for (const [ancienne, attendue] of [
+  ['/superowner/stores', '/superowner/zupeat/stores'],
+  ['/superowner/organizations', '/superowner/zupeat/organizations'],
+  ['/superowner/support-tickets', '/superowner/zupeat/support-tickets'],
+  ['/superowner/members/clients', '/superowner/zupeat/members/clients'],
+  ['/superowner/members/drivers', '/superowner/zupeat/members/deliveries'],
+]) {
+  await page.goto(SITE + ancienne, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(500);
+  const arrivee = new URL(page.url()).pathname;
+  check(`${ancienne} → ${attendue}`, arrivee === attendue, `arrivé sur ${arrivee}`);
+}
+await onglet('ZupEat').click();
+await page.waitForURL((url) => url.pathname === '/superowner/zupeat', { timeout: 15000 });
 
 titre('Les anciennes adresses mènent toujours quelque part');
 for (const [ancienne, attendue] of Object.entries(ANCIENNES)) {
@@ -158,11 +185,11 @@ for (const [ancienne, attendue] of Object.entries(ANCIENNES)) {
 }
 
 titre('La fiche détaillée d\'un commerçant');
-await page.goto(`${SITE}/superowner/organizations`, { waitUntil: 'domcontentloaded' });
+await page.goto(`${SITE}/superowner/zupeat/organizations`, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
 
 const liensFiche = await page
-  .locator('a[href^="/superowner/organizations/"]')
+  .locator('a[href^="/superowner/zupeat/organizations/"]')
   .evaluateAll((liens) => liens.map((a) => a.getAttribute('href')));
 
 check('la liste mène à la fiche détaillée', liensFiche.length > 0, `n=${liensFiche.length}`);
@@ -189,11 +216,11 @@ for (const disparue of ['/admin/products/new', '/super-admin/merchants/inexistan
 }
 
 // Un commerçant inexistant ramène à la liste plutôt que d'afficher une page vide.
-await page.goto(`${SITE}/superowner/organizations/inexistant`, { waitUntil: 'domcontentloaded' });
+await page.goto(`${SITE}/superowner/zupeat/organizations/inexistant`, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(2500);
 check(
   'une fiche inexistante ramène à la liste',
-  new URL(page.url()).pathname === '/superowner/organizations',
+  new URL(page.url()).pathname === '/superowner/zupeat/organizations',
   new URL(page.url()).pathname
 );
 

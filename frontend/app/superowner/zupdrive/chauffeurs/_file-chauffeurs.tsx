@@ -4,7 +4,7 @@
  * ZupDrive — la file de validation des dossiers chauffeurs (licence LVC).
  *
  * Les chauffeurs transportent des personnes : rien à voir avec les livreurs
- * ZupEat (/superowner/drivers). Tout se décide côté API
+ * ZupEat (/superowner/zupeat/drivers). Tout se décide côté API
  * (/api/zupdrive/admin/chauffeurs), qui applique les permissions de la
  * plateforme ZupDrive et journalise chaque décision : l'écran se contente de
  * relire l'état réel après chaque geste.
@@ -12,10 +12,11 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Car, Check, Eye, X } from 'lucide-react';
+import { Car } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
+import { LignePieceAExaminer, type PieceAExaminer } from '../_ligne-piece';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -33,6 +34,7 @@ interface LigneChauffeur {
   region: string | null;
   raisonSociale: string | null;
   vehiculePlaque: string | null;
+  societe?: SocieteDuChauffeur | null;
   statut: string;
   motifStatut: string | null;
   soumisLe: string | null;
@@ -42,16 +44,12 @@ interface LigneChauffeur {
   note?: { moyenne: number | null; avis: number };
 }
 
-interface Piece {
+type Piece = PieceAExaminer;
+
+/** La société pour qui roule un chauffeur : licence, assurance et véhicule sont les siens. */
+interface SocieteDuChauffeur {
   id: string;
-  type: string;
-  libelle: string;
-  url: string;
-  statut: string;
-  noteExamen: string | null;
-  /** Nouvelle version déposée alors que l'ancienne est encore en vigueur. */
-  renouvellement?: boolean;
-  dateExpiration: string | null;
+  raisonSociale: string;
 }
 
 interface Dossier {
@@ -67,6 +65,8 @@ interface Dossier {
   vehiculeMarque: string | null;
   vehiculeModele: string | null;
   vehiculePlaque: string | null;
+  societe?: SocieteDuChauffeur | null;
+  vehicule?: { marque: string; modele: string; plaque: string; conforme: boolean } | null;
   statut: string;
   motifStatut: string | null;
   soumisLe: string | null;
@@ -83,13 +83,6 @@ const COULEURS: Record<string, string> = {
   VALIDE: 'bg-green-500/20 text-green-300',
   REFUSE: 'bg-red-500/20 text-red-300',
   SUSPENDU: 'bg-red-500/20 text-red-300',
-};
-
-const COULEURS_PIECE: Record<string, string> = {
-  APPROVED: 'text-green-400',
-  REJECTED: 'text-red-400',
-  EXPIRED: 'text-red-400',
-  PENDING: 'text-amber-300',
 };
 
 const jeton = () => localStorage.getItem('accessToken');
@@ -292,7 +285,11 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                   </p>
                   <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
                     {chauffeur.region && <span>{t(`region.${chauffeur.region}`)}</span>}
-                    {chauffeur.vehiculePlaque && <span>{chauffeur.vehiculePlaque}</span>}
+                    {chauffeur.societe ? (
+                      <span>{t('forCompany', { societe: chauffeur.societe.raisonSociale })}</span>
+                    ) : (
+                      chauffeur.vehiculePlaque && <span>{chauffeur.vehiculePlaque}</span>
+                    )}
                     <span>{t('piecesCount', { validees: chauffeur.piecesValidees, exigees: chauffeur.piecesExigees })}</span>
                     {chauffeur.soumisLe && <span>{t('submittedOn', { date: date(chauffeur.soumisLe) })}</span>}
                     {chauffeur.statut === 'VALIDE' && (
@@ -320,25 +317,46 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
   function ficheDossier() {
     if (!dossier) return null;
     const exigees = new Set(dossier.piecesExigees.map((p) => p.type));
-    const champs: [string, string | null][] = [
-      ['email', dossier.email],
-      ['telephone', dossier.telephone],
-      ['region', dossier.region ? t(`region.${dossier.region}`) : null],
-      ['numeroEntreprise', dossier.numeroEntreprise],
-      ['numeroTva', dossier.numeroTva],
-      ['raisonSociale', dossier.raisonSociale],
-      ['numeroLicence', dossier.numeroLicence],
-      ['vehicule', [dossier.vehiculeMarque, dossier.vehiculeModele].filter(Boolean).join(' ') || null],
-      ['vehiculePlaque', dossier.vehiculePlaque],
-      ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe) : null],
-      ['valideLe', dossier.valideLe ? date(dossier.valideLe) : null],
-    ];
+    // Chauffeur de société : entreprise, licence et véhicule sont ceux de la
+    // société (examinés dans son propre dossier), pas les siens.
+    const champs: [string, string | null][] = dossier.societe
+      ? [
+          ['email', dossier.email],
+          ['telephone', dossier.telephone],
+          ['region', dossier.region ? t(`region.${dossier.region}`) : null],
+          ['societe', dossier.societe.raisonSociale],
+          ['vehicule', dossier.vehicule ? `${dossier.vehicule.marque} ${dossier.vehicule.modele}` : null],
+          ['vehiculePlaque', dossier.vehicule?.plaque ?? null],
+          ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe) : null],
+          ['valideLe', dossier.valideLe ? date(dossier.valideLe) : null],
+        ]
+      : [
+          ['email', dossier.email],
+          ['telephone', dossier.telephone],
+          ['region', dossier.region ? t(`region.${dossier.region}`) : null],
+          ['numeroEntreprise', dossier.numeroEntreprise],
+          ['numeroTva', dossier.numeroTva],
+          ['raisonSociale', dossier.raisonSociale],
+          ['numeroLicence', dossier.numeroLicence],
+          ['vehicule', [dossier.vehiculeMarque, dossier.vehiculeModele].filter(Boolean).join(' ') || null],
+          ['vehiculePlaque', dossier.vehiculePlaque],
+          ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe) : null],
+          ['valideLe', dossier.valideLe ? date(dossier.valideLe) : null],
+        ];
     const manquantes = dossier.piecesExigees.filter((p) => !dossier.documents.some((d) => d.type === p.type));
 
     return (
       <div className="space-y-5 border-t border-gray-700 p-5" data-dossier={dossier.id}>
         <div>
           <h4 className="mb-2 font-semibold text-white">{dossier.nomComplet}</h4>
+          {dossier.societe && (
+            <p className="mb-2 text-sm text-gray-300">
+              {t('companyDriver')}{' '}
+              <Link href={`/superowner/zupdrive/societes/${dossier.societe.id}`} className="text-blue-400 hover:underline">
+                {dossier.societe.raisonSociale}
+              </Link>
+            </p>
+          )}
           <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {champs.map(([cle, valeur]) => (
               <div key={cle} className="flex gap-2">
@@ -353,68 +371,17 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
           <h4 className="mb-2 font-semibold text-white">{t('documents')}</h4>
           <ul className="space-y-2">
             {dossier.documents.map((piece) => (
-              <li key={piece.id} className="rounded bg-gray-700/40 px-3 py-2">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-white">
-                      {piece.libelle}
-                      {!exigees.has(piece.type) && <span className="ml-2 text-xs text-gray-400">{t('optional')}</span>}
-                      {piece.renouvellement && <span className="ml-2 text-xs text-blue-300">{t('renewal')}</span>}
-                      {dossier.documents.some((autre) => autre.renouvellement && autre.type === piece.type) && (
-                        <span className="ml-2 text-xs text-gray-400">{t('currentVersion')}</span>
-                      )}
-                      <span className={`ml-2 text-xs ${COULEURS_PIECE[piece.statut] || 'text-gray-400'}`}>
-                        {t(`documentStatus.${piece.statut}`)}
-                      </span>
-                    </p>
-                    {piece.dateExpiration && (
-                      <p className="text-xs text-gray-500">{t('expiresOn', { date: date(piece.dateExpiration) })}</p>
-                    )}
-                    {piece.noteExamen && <p className="text-xs text-red-300">{piece.noteExamen}</p>}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Aperçu dans la page ; l'adresse signée est redemandée à l'ouverture. */}
-                    <button
-                      type="button"
-                      onClick={() => setApercu(piece)}
-                      className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
-                    >
-                      <Eye size={12} />
-                      {t('view')}
-                    </button>
-                    {/* Une version expirée ne se valide pas : il faut la version à jour. */}
-                    {piece.statut !== 'APPROVED' && piece.statut !== 'EXPIRED' && (
-                      <button
-                        onClick={() => examiner(piece, true)}
-                        disabled={envoi}
-                        className="flex items-center gap-1 rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:opacity-50"
-                      >
-                        <Check size={12} />
-                        {t('approveDocument')}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {piece.statut !== 'REJECTED' && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <input
-                      value={notes[piece.id] ?? ''}
-                      onChange={(e) => setNotes({ ...notes, [piece.id]: e.target.value })}
-                      placeholder={t('documentReasonPlaceholder')}
-                      aria-label={`${t('documentReasonPlaceholder')} — ${piece.libelle}`}
-                      className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-white"
-                    />
-                    <button
-                      onClick={() => examiner(piece, false)}
-                      disabled={envoi}
-                      className="flex items-center gap-1 rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-500 disabled:opacity-50"
-                    >
-                      <X size={12} />
-                      {t('rejectDocument')}
-                    </button>
-                  </div>
-                )}
-              </li>
+              <LignePieceAExaminer
+                key={piece.id}
+                piece={piece}
+                facultative={!exigees.has(piece.type)}
+                versionEnVigueur={dossier.documents.some((autre) => autre.renouvellement && autre.type === piece.type)}
+                note={notes[piece.id] ?? ''}
+                envoi={envoi}
+                onNote={(note) => setNotes({ ...notes, [piece.id]: note })}
+                onExaminer={(approuve) => examiner(piece, approuve)}
+                onVoir={() => setApercu(piece)}
+              />
             ))}
           </ul>
           {manquantes.length > 0 && (

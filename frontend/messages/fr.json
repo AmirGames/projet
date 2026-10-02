@@ -84,6 +84,7 @@
       "platformDrive": "ZupDrive",
       "platformChoice": "Plateforme administrée",
       "chauffeurs": "Chauffeurs",
+      "societesDrive": "Sociétés",
       "coursesDrive": "Courses",
       "tarifsDrive": "Tarifs"
     },
@@ -93,7 +94,7 @@
   "superownerDashboard": {
     "loading": "Chargement...",
     "title": "Dashboard Superowner",
-    "subtitle": "Vue d'ensemble complète de la plateforme",
+    "subtitle": "Vue d'ensemble de ZupEat : commerces, livreurs, revenus",
     "criticalAlerts": "{count} Alerte(s) Critique(s)",
     "criticalAlertsSubtitle": "Attention requise immédiate",
     "totalRevenue": "Revenu Total",
@@ -111,9 +112,9 @@
     "quickConfig": "Configuration",
     "quickSecurityAudit": "Audit Sécurité",
     "loggedInAs": "🔐 Vous êtes connecté en tant que Superowner. Vous avez accès complet à tous les systèmes.",
-    "titleRole": "Tableau de bord {role}",
-    "titleGeneric": "Tableau de bord",
-    "subtitleTeam": "Vue d'ensemble de la plateforme, selon les accès de votre rôle",
+    "titleRole": "Tableau de bord ZupEat · {role}",
+    "titleGeneric": "Tableau de bord ZupEat",
+    "subtitleTeam": "Vue d'ensemble de ZupEat, selon les accès de votre rôle",
     "loggedInAsRole": "🔐 Vous êtes connecté en tant que {role}. Vous n'avez accès qu'aux sections ouvertes à votre rôle ; demandez au SuperOwner pour en obtenir d'autres."
   },
   "superownerOrganizations": {
@@ -2526,9 +2527,29 @@
     "creerCompte": "Créer un compte",
     "erreurConnexion": "Serveur injoignable. Réessayez dans un instant.",
     "sectionProfil": "Vous, votre entreprise et votre véhicule",
+    "sectionProfilSociete": "Vos coordonnées",
     "sectionPieces": "Documents",
     "formatsAcceptes": "JPG, PNG, WebP (2 Mo) ou PDF (5 Mo). Le certificat d'immatriculation doit montrer le recto et le verso.",
     "fichierTropLourd": "Fichier trop lourd : {mo} Mo maximum. Pour un PDF, scannez en qualité réduite ou envoyez une photo.",
+    "societe": {
+      "invitations": "Invitations de sociétés",
+      "invite": "{societe} vous invite à rouler pour elle.",
+      "accepter": "Accepter",
+      "refuser": "Refuser",
+      "uneALaFois": "Vous roulez déjà pour une société : quittez-la avant d'en rejoindre une autre.",
+      "rejointe": "Vous roulez désormais pour {societe}.",
+      "invitationRefusee": "Invitation refusée.",
+      "titre": "Vous roulez pour {societe}",
+      "explication": "La licence, l'assurance et le véhicule sont ceux de la société, qui encaisse vos courses. Votre dossier ne contient que vos pièces personnelles.",
+      "enAttente": "La société attend encore sa validation par ZupDrive : vous ne pouvez pas rouler d'ici là.",
+      "suspendue": "La société est suspendue : vous ne pouvez pas rouler pour elle.",
+      "vehicule": "Véhicule attribué : {vehicule} ({plaque}).",
+      "sansVehicule": "La société ne vous a pas encore attribué de véhicule.",
+      "vehiculeNonConforme": "Ce véhicule n'est pas encore en règle.",
+      "quitter": "Quitter la société",
+      "confirmerDepart": "Quitter {societe} ? Vous ne pourrez plus rouler pour elle ; pour rouler en indépendant, il vous faudra votre propre licence.",
+      "quittee": "Vous avez quitté la société."
+    },
     "champ": {
       "nomComplet": "Nom complet",
       "telephone": "Téléphone",
@@ -2627,6 +2648,7 @@
       "numeroLicence": "N° de licence",
       "vehicule": "Véhicule",
       "vehiculePlaque": "Plaque",
+      "societe": "Société",
       "soumisLe": "Soumis le",
       "valideLe": "Validé le"
     },
@@ -2661,7 +2683,9 @@
     "renewal": "(renouvellement)",
     "currentVersion": "(version en vigueur jusqu'à validation du renouvellement)",
     "rating": "{moyenne} ★ ({avis} avis)",
-    "neverRated": "Jamais noté"
+    "neverRated": "Jamais noté",
+    "forCompany": "Roule pour {societe}",
+    "companyDriver": "Chauffeur de la société"
   },
   "zupdriveTrajet": {
     "titre": "Commander un trajet",
@@ -2769,6 +2793,75 @@
       "parKmCentimes": "Par km (€)",
       "parMinuteCentimes": "Par minute (€)",
       "minimumCentimes": "Minimum par course (€)"
+    }
+  },
+  "superownerSocietes": {
+    "title": "Sociétés ZupDrive",
+    "subtitle": "Sociétés de taxi et de VTC : leur dossier, leurs véhicules (licence, assurance, contrôle technique, immatriculation) et leurs chauffeurs. Examinez chaque pièce, puis validez la société.",
+    "filter": "Filtrer les sociétés",
+    "empty": "Aucune société dans cette catégorie.",
+    "loadError": "Impossible de charger les sociétés.",
+    "reasonRequired": "Indiquez un motif : la société doit savoir quoi corriger.",
+    "vehiclesCount": "{conformes}/{total} véhicules en règle",
+    "driversCount": "{n, plural, =0 {aucun chauffeur} one {# chauffeur} other {# chauffeurs}}",
+    "field": {
+      "gerant": "Gérant",
+      "telephone": "Téléphone",
+      "region": "Région des licences",
+      "numeroEntreprise": "N° BCE",
+      "numeroTva": "N° TVA",
+      "soumisLe": "Soumis le",
+      "valideLe": "Validée le"
+    },
+    "companyDocuments": "Pièces de la société",
+    "vehicles": "Véhicules",
+    "noVehicle": "Aucun véhicule inscrit pour l'instant.",
+    "licence": "Licence {numero}",
+    "conforme": "En règle : peut rouler",
+    "nonConforme": "Pas encore en règle",
+    "drivenBy": "Conduit par {nom}",
+    "drivers": "Chauffeurs",
+    "noDriver": "Aucun chauffeur n'a encore rejoint la société.",
+    "online": "en ligne",
+    "pendingInvitations": "Invitations en attente : {liste}",
+    "rejectReasonPlaceholder": "Motif du refus (obligatoire pour refuser), envoyé à la société",
+    "suspendReasonPlaceholder": "Motif de la suspension (obligatoire), envoyé à la société ; ses chauffeurs ne roulent plus",
+    "approve": "Valider la société",
+    "reject": "Refuser le dossier",
+    "suspend": "Suspendre la société",
+    "reactivate": "Rétablir la société",
+    "waiting": {
+      "BROUILLON": "La société n'a pas encore envoyé son dossier.",
+      "REFUSE": "Dossier renvoyé à la société : en attente de ses corrections."
+    }
+  },
+  "superownerZupDrive": {
+    "titre": "Tableau de bord ZupDrive",
+    "sousTitre": "Dossiers des chauffeurs et courses, en un coup d'œil.",
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger le tableau de bord.",
+    "chauffeurs": {
+      "titre": "Chauffeurs",
+      "aExaminer": "Dossiers à examiner",
+      "valides": "Chauffeurs validés",
+      "suspendus": "Suspendus",
+      "brouillons": "Dossiers en cours de saisie",
+      "societesAExaminer": "Sociétés à examiner",
+      "societesValidees": "Sociétés validées",
+      "plusAnciens": "En attente depuis le plus longtemps",
+      "aucunEnAttente": "Aucun dossier à examiner.",
+      "soumisLe": "Envoyé le {date}",
+      "pieces": "{validees}/{exigees} pièces validées"
+    },
+    "courses": {
+      "titre": "Courses",
+      "recherche": "En recherche de chauffeur",
+      "enCours": "En cours",
+      "sansChauffeur": "Sans chauffeur trouvé",
+      "terminees": "Terminées",
+      "dernieres": "Dernières courses",
+      "toutes": "Toutes les courses",
+      "aucune": "Aucune course pour l'instant."
     }
   },
   "superownerCoursesDrive": {

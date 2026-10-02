@@ -357,7 +357,7 @@ export default function IncidentsLivraisonPage() {
                       </a>
                     )}
                     <Link
-                      href="/superowner/driver-support"
+                      href="/superowner/zupeat/driver-support"
                       className="text-orange-300 flex items-center gap-1 hover:underline text-xs"
                     >
                       <MessageCircle size={12} /> {t('chat')}

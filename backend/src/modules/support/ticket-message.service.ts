@@ -182,7 +182,7 @@ export class TicketMessageService {
 
     const titre = `Nouveau ticket — ${ticket.org?.name || "un commerçant"}`;
     const corps = `${ticket.title} (priorité ${ticket.priority})`;
-    const lien = `/superowner/support-tickets`;
+    const lien = `/superowner/zupeat/support-tickets`;
 
     await db.notification.createMany({
       data: destinataires.map((email) => ({
@@ -229,7 +229,7 @@ export class TicketMessageService {
         select: { email: true },
       });
       recipients = admins.map((a) => a.email);
-      link = `/superowner/support-tickets`;
+      link = `/superowner/zupeat/support-tickets`;
     }
 
     const unique = [...new Set(recipients)].filter((email) => email !== authorEmail);

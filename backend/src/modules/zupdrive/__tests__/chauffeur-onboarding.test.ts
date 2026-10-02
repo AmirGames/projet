@@ -110,7 +110,10 @@ const db: any = {
     findFirst: jest.fn(async ({ where }: any) => {
       const piece = tables.documents.find((d) => d.url.endsWith(where.url.endsWith));
       const chauffeur = piece && tables.chauffeurs.find((c) => c.id === piece.chauffeurId);
-      return chauffeur?.userId === where.chauffeur.userId ? { id: piece!.id } : null;
+      // Le propriétaire est cherché parmi plusieurs dossiers (chauffeur,
+      // société, véhicule) : ici, seules existent des pièces de chauffeurs.
+      const userId = where.OR?.find((condition: any) => condition.chauffeur)?.chauffeur.userId;
+      return chauffeur && chauffeur.userId === userId ? { id: piece!.id } : null;
     }),
   },
 };

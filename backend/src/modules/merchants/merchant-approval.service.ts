@@ -140,7 +140,7 @@ export class MerchantApprovalService {
     await this.prevenirLaPlateforme(
       `Dossier à examiner — ${org.name}`,
       "Toutes les pièces exigées ont été déposées : le commerce attend sa validation.",
-      `/superowner/organizations/${orgId}`
+      `/superowner/zupeat/organizations/${orgId}`
     );
   }
 
@@ -216,7 +216,7 @@ export class MerchantApprovalService {
       await this.prevenirLaPlateforme(
         `Pièce expirée — ${piece.org.name}`,
         `${libelle} a expiré. Le commerce reste ouvert : à vous de décider de la suite.`,
-        `/superowner/organizations/${piece.orgId}`
+        `/superowner/zupeat/organizations/${piece.orgId}`
       );
     }
 

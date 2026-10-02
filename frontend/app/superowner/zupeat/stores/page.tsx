@@ -155,7 +155,7 @@ export default function BoutiquesAdminPage() {
                     <td className="px-6 py-4">
                       {/* La liste ne menait nulle part : ni fiche, ni détail. */}
                       <Link
-                        href={`/superowner/stores/${boutique.id}`}
+                        href={`/superowner/zupeat/stores/${boutique.id}`}
                         className="font-semibold text-white hover:text-blue-300 hover:underline"
                       >
                         {boutique.name}
@@ -166,7 +166,7 @@ export default function BoutiquesAdminPage() {
                     </td>
                     <td className="px-6 py-4">
                       <Link
-                        href="/superowner/organizations"
+                        href="/superowner/zupeat/organizations"
                         className="text-blue-400 hover:text-blue-300"
                       >
                         {boutique.organization?.name || '—'}

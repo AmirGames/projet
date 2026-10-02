@@ -93,7 +93,7 @@ export default function MerchantDetailPage() {
       // Un commerçant qui n'existe pas n'est pas un incident : on ramène à la
       // liste sans encombrer la console.
       if (silencieux) return;
-      router.push('/superowner/organizations');
+      router.push('/superowner/zupeat/organizations');
     } finally {
       setLoading(false);
     }
@@ -254,7 +254,7 @@ export default function MerchantDetailPage() {
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/superowner/organizations" className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+        <Link href="/superowner/zupeat/organizations" className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           <ArrowLeft size={20} />
         </Link>
         <div>

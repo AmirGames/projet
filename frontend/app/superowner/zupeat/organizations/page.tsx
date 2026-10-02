@@ -454,7 +454,7 @@ export default function OrganizationsPage() {
                         {/* La fiche détaillée n'était reliée à rien : on y
                             accédait uniquement en tapant l'adresse. */}
                         <Link
-                          href={`/superowner/organizations/${org.id}`}
+                          href={`/superowner/zupeat/organizations/${org.id}`}
                           title={t('viewDetails')}
                           className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
                         >

@@ -38,32 +38,33 @@ const nextConfig = {
    */
   async redirects() {
     const versSuperowner = {
-      "/admin": "/superowner",
-      "/admin/dashboard": "/superowner",
-      "/admin/super-owner": "/superowner",
-      "/admin/analytics": "/superowner/analytics",
+      "/admin": "/superowner/zupeat",
+      "/admin/dashboard": "/superowner/zupeat",
+      "/admin/super-owner": "/superowner/zupeat",
+      "/admin/analytics": "/superowner/zupeat/analytics",
       "/admin/audit-logs": "/superowner/audit-logs",
-      "/admin/commissions": "/superowner/billing",
-      "/admin/merchants": "/superowner/organizations",
-      "/admin/stores": "/superowner/stores",
-      "/admin/tickets": "/superowner/support-tickets",
+      "/admin/commissions": "/superowner/zupeat/billing",
+      "/admin/merchants": "/superowner/zupeat/organizations",
+      "/admin/stores": "/superowner/zupeat/stores",
+      "/admin/tickets": "/superowner/zupeat/support-tickets",
       "/admin/settings": "/superowner/system-config",
       "/admin/settings/admin-settings": "/superowner/system-config",
-      "/super-admin": "/superowner",
+      "/super-admin": "/superowner/zupeat",
       "/super-admin/access-logs": "/superowner/access-logs",
       "/super-admin/admin-management": "/superowner/user-management",
       "/super-admin/user-management": "/superowner/user-management",
-      "/super-admin/analytics": "/superowner/analytics",
+      "/super-admin/analytics": "/superowner/zupeat/analytics",
       "/super-admin/audit-logs": "/superowner/audit-logs",
-      "/super-admin/commissions": "/superowner/billing",
-      "/super-admin/exports": "/superowner/exports",
-      "/super-admin/merchants": "/superowner/organizations",
-      "/super-admin/notifications": "/superowner/notifications",
+      "/super-admin/commissions": "/superowner/zupeat/billing",
+      "/super-admin/exports": "/superowner/zupeat/exports",
+      "/super-admin/merchants": "/superowner/zupeat/organizations",
+      "/super-admin/notifications": "/superowner/zupeat/notifications",
       "/super-admin/settings": "/superowner/system-config",
-      "/super-admin/tickets": "/superowner/support-tickets",
+      "/super-admin/tickets": "/superowner/zupeat/support-tickets",
       // Même liste de livreurs que /superowner/members/deliveries, sous un
       // second « Livreurs » dans le même menu.
-      "/superowner/members/drivers": "/superowner/members/deliveries",
+      "/superowner/members/drivers": "/superowner/zupeat/members/deliveries",
+      "/superowner/zupeat/members/drivers": "/superowner/zupeat/members/deliveries",
     };
 
     const versCommercant = [
@@ -76,7 +77,33 @@ const nextConfig = {
       "/admin/products/:id",
     ];
 
+    // Les pages ZupEat de l'administration vivent sous /superowner/zupeat,
+    // à côté de /superowner/zupdrive. Les anciennes adresses restent
+    // valables : favoris, et liens des notifications déjà envoyées.
+    const pagesZupEat = [
+      "organizations",
+      "stores",
+      "drivers",
+      "payouts",
+      "versements",
+      "analytics",
+      "billing",
+      "formules",
+      "financial-reports",
+      "exports",
+      "members",
+      "support-tickets",
+      "driver-support",
+      "reviews",
+      "notifications",
+      "incidents-livraison",
+    ];
+
     return [
+      ...pagesZupEat.flatMap((page) => [
+        { source: `/superowner/${page}`, destination: `/superowner/zupeat/${page}`, permanent: false },
+        { source: `/superowner/${page}/:reste*`, destination: `/superowner/zupeat/${page}/:reste*`, permanent: false },
+      ]),
       ...Object.entries(versSuperowner).map(([source, destination]) => ({
         source,
         destination,
@@ -84,7 +111,7 @@ const nextConfig = {
       })),
       {
         source: "/super-admin/merchants/:id",
-        destination: "/superowner/organizations/:id",
+        destination: "/superowner/zupeat/organizations/:id",
         permanent: true,
       },
       ...versCommercant.map((source) => ({

@@ -62,20 +62,36 @@ export async function chargerAcces(): Promise<AccesPlateforme> {
 const PAGES: [string, string | null][] = [
   ['/superowner/user-management', null],
   ['/superowner/roles', null],
-  ['/superowner/members', 'members'],
-  ['/superowner/versements', 'payouts'],
-  ['/superowner/reviews', 'reviews'],
-  ['/superowner/incidents-livraison', 'driver-support'],
+  ['/superowner/zupeat/members', 'members'],
+  ['/superowner/zupeat/versements', 'payouts'],
+  ['/superowner/zupeat/reviews', 'reviews'],
+  ['/superowner/zupeat/incidents-livraison', 'driver-support'],
   ['/superowner/zupdrive/chauffeurs', 'chauffeurs'],
+  // Les sociétés et leurs véhicules : les mêmes dossiers LVC que les chauffeurs.
+  ['/superowner/zupdrive/societes', 'chauffeurs'],
   ['/superowner/zupdrive/tarifs', 'courses-drive'],
   ['/superowner/zupdrive/courses', 'courses-drive'],
 ];
 
+/**
+ * Pseudo-sections des accueils : `accueil` (/superowner, qui renvoie vers la
+ * plateforme choisie) est ouvert à tout membre de l'équipe ; `zupdrive`
+ * (tableau de bord ZupDrive) à qui voit au moins une section ZupDrive.
+ */
+export const SECTION_ACCUEIL = 'accueil';
+export const SECTION_ACCUEIL_DRIVE = 'zupdrive';
+
 /** La section d'une page de l'espace, d'après son chemin. */
 export function sectionDuChemin(chemin: string): string | null {
-  if (chemin === '/superowner' || chemin === '/superowner/') return 'dashboard';
+  const propre = chemin.replace(/\/+$/, '') || '/';
+  if (propre === '/superowner') return SECTION_ACCUEIL;
+  if (propre === '/superowner/zupeat') return 'dashboard';
+  if (propre === '/superowner/zupdrive') return SECTION_ACCUEIL_DRIVE;
   const connue = PAGES.find(([prefixe]) => chemin.startsWith(prefixe));
   if (connue) return connue[1];
-  // Les autres pages portent le nom de leur section : /superowner/<section>/…
-  return chemin.split('/')[2] ?? null;
+  // Les autres pages portent le nom de leur section :
+  // /superowner/zupeat/<section>/… pour ZupEat, /superowner/<section>/…
+  // pour les pages communes.
+  const morceaux = chemin.split('/');
+  return (morceaux[2] === 'zupeat' ? morceaux[3] : morceaux[2]) ?? null;
 }

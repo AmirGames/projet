@@ -41,7 +41,7 @@ async function prevenirLaPlateforme(message: string) {
     plateforme.map((u) => u.email),
     "Avis à examiner",
     message,
-    "/superowner/reviews"
+    "/superowner/zupeat/reviews"
   );
 }
 

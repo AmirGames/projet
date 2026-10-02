@@ -92,7 +92,7 @@ const connecter = async (email) => {
 
 titre('La grille, côté plateforme');
 await connecter(`p-${uniq}@t.fr`);
-await page.goto(`${SITE}/superowner/formules`);
+await page.goto(`${SITE}/superowner/zupeat/formules`);
 await page.waitForTimeout(3000);
 
 const grille = await page.locator('body').innerText();
@@ -100,7 +100,7 @@ check('la page s’ouvre', /Formules/.test(grille), grille.slice(0, 200));
 check('les trois formules sont là', /FREE/.test(grille) && /PREMIUM/.test(grille) && /PRO/.test(grille), grille.slice(0, 400));
 check('le nombre d’abonnés est affiché', /abonné/.test(grille), grille.slice(0, 400));
 
-const lienMenu = await page.locator('a[href="/superowner/formules"]').count();
+const lienMenu = await page.locator('a[href="/superowner/zupeat/formules"]').count();
 check('un lien y mène depuis le menu', lienMenu >= 1, `n=${lienMenu}`);
 
 titre('Régler la formule Premium');

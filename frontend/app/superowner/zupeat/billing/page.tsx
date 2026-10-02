@@ -180,7 +180,7 @@ export default function BillingPage() {
         </h1>
         <p className="text-gray-400 mt-2">{t('subtitle')}</p>
         <Link
-          href="/superowner/billing/factures"
+          href="/superowner/zupeat/billing/factures"
           className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300 underline"
         >
           Factures Peppol (e-facturation mensuelle) →
@@ -357,7 +357,7 @@ export default function BillingPage() {
                 <p role="status" className="text-sm text-amber-300 mt-1">
                   {t('incompleteInvoice')} {detail.organization.manquePourFacturer.join(', ')}.{' '}
                   <Link
-                    href={`/superowner/organizations/${detail.organization.id}`}
+                    href={`/superowner/zupeat/organizations/${detail.organization.id}`}
                     className="underline hover:text-amber-200"
                   >
                     {t('seeFiled')}

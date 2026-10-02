@@ -343,7 +343,7 @@ describe("SurveillanceCoursesService", () => {
     expect(bilan).toMatchObject({ alertes: 1, retirees: 0 });
     expect(db.$transaction).not.toHaveBeenCalled();
     expect(prevenirPlateforme).toHaveBeenCalledWith(
-      expect.objectContaining({ chemin: "/superowner/incidents-livraison" })
+      expect.objectContaining({ chemin: "/superowner/zupeat/incidents-livraison" })
     );
     expect(Notifier.pushClient).toHaveBeenCalled();
   });

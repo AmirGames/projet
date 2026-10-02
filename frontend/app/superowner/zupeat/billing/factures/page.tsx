@@ -182,7 +182,7 @@ export default function FacturesPeppolPage() {
             Facture mensuelle de la plateforme à chaque commerçant (commission, livraison, frais de service),
             envoyée en UBL. L’émission est automatique chaque jour pour le mois écoulé.
           </p>
-          <Link href="/superowner/billing" className="text-sm text-blue-400 hover:text-blue-300 underline">
+          <Link href="/superowner/zupeat/billing" className="text-sm text-blue-400 hover:text-blue-300 underline">
             ← Retour à la facturation
           </Link>
         </div>
@@ -259,7 +259,7 @@ export default function FacturesPeppolPage() {
                         {ligne.etat === 'BLOQUEE' && (
                           <span role="status" className="block text-xs font-normal text-amber-300">
                             {ligne.raison}{' '}
-                            <Link href={`/superowner/organizations/${ligne.orgId}`} className="underline hover:text-amber-200">
+                            <Link href={`/superowner/zupeat/organizations/${ligne.orgId}`} className="underline hover:text-amber-200">
                               Voir le dossier
                             </Link>
                           </span>

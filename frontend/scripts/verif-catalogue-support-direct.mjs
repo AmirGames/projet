@@ -193,7 +193,7 @@ const ticket1 = await creerTicket(sujet1);
 check('le commerçant ouvre un ticket', Boolean(ticket1));
 
 const pSupport = await ouvrir(T, `/merchant/${orgId}/support`);
-const pTickets = await ouvrir(TP, '/superowner/support-tickets');
+const pTickets = await ouvrir(TP, '/superowner/zupeat/support-tickets');
 
 // La conversation du ticket, ouverte chez le commerçant.
 await pSupport.getByText(sujet1).first().click();
@@ -219,8 +219,8 @@ check('un nouveau ticket apparaît chez la plateforme', await attendre(pTickets,
 
 titre('La plateforme');
 
-const pLivreurs = await ouvrir(TP, '/superowner/drivers');
-const pOrganisations = await ouvrir(TP, '/superowner/organizations');
+const pLivreurs = await ouvrir(TP, '/superowner/zupeat/drivers');
+const pOrganisations = await ouvrir(TP, '/superowner/zupeat/organizations');
 
 const livreur = `Livreur ${uniq}`;
 const inscription = await appeler('/api/drivers/register', {

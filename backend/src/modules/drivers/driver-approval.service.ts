@@ -129,7 +129,7 @@ export class DriverApprovalService {
     await notifierPlateforme(
       `Nouveau document livreur — ${livreur?.name || livreur?.email || "livreur"}`,
       `${libelleDuDocument(type)} a été mis en ligne et attend votre validation.`,
-      `/superowner/drivers`
+      `/superowner/zupeat/drivers`
     );
   }
 

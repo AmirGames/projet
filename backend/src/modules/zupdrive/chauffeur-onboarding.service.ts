@@ -2,8 +2,8 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitNotification } from "../realtime/socket";
-import { FileUploadService } from "../files/file-upload.service";
 import { notifierPlateforme } from "../notifications/notification.service";
+import { deposerVersion, examinerVersion } from "./pieces-drive";
 
 /**
  * L'inscription d'un chauffeur ZupDrive (licence LVC ou de transport rémunéré
@@ -63,22 +63,39 @@ const LIBELLES_PIECE: Record<TypePiece, string> = {
 export const libelleDeLaPiece = (type: string) => LIBELLES_PIECE[type as TypePiece] || type;
 
 /**
- * Les pièces exigées selon la région de la licence.
+ * Qui porte quelle pièce. Un chauffeur indépendant porte tout son dossier.
+ * Dans une société (voir societe-drive.service.ts), les pièces se répartissent :
+ *   - la société : son numéro de TVA, l'identité de ses associés ;
+ *   - chaque véhicule : sa licence (une licence LVC / vergunning est délivrée
+ *     pour un véhicule), son assurance, son contrôle technique, son
+ *     immatriculation ;
+ *   - le chauffeur de société : ce qui le concerne personnellement.
+ *
+ * Répartition de départ, à faire confirmer par un professionnel du secteur :
+ * elle ne se lit qu'ici, pour se corriger en un seul endroit.
+ */
+export const TYPES_PIECE_SOCIETE: TypePiece[] = ["tva", "actionnaires"];
+export const TYPES_PIECE_VEHICULE: TypePiece[] = ["licence", "assurance", "controle_technique", "immatriculation"];
+export const TYPES_PIECE_CHAUFFEUR_SOCIETE: TypePiece[] = ["identite", "permis", "bestuurderspas", "casier_judiciaire"];
+
+/** Les pièces exigées d'une société pour valider son dossier. */
+export const piecesExigeesSociete = (): TypePiece[] => ["tva"];
+/** Les pièces exigées d'un véhicule de société pour qu'il roule. */
+export const piecesExigeesVehicule = (): TypePiece[] => [...TYPES_PIECE_VEHICULE];
+
+/**
+ * Les pièces exigées d'un chauffeur, selon la région de la licence, et selon
+ * qu'il roule pour une société (licence, assurance et véhicule sont alors
+ * ceux de la société) ou pour lui-même.
  *
  * Le bestuurderspas n'existe qu'en Flandre, l'extrait de casier judiciaire
  * n'est demandé qu'à Bruxelles. L'identité des associés reste facultative :
  * elle ne concerne que les chauffeurs installés en société.
  */
-export function piecesExigees(region: string | null | undefined): TypePiece[] {
-  const communes: TypePiece[] = [
-    "identite",
-    "permis",
-    "tva",
-    "licence",
-    "controle_technique",
-    "assurance",
-    "immatriculation",
-  ];
+export function piecesExigees(region: string | null | undefined, options: { enSociete?: boolean } = {}): TypePiece[] {
+  const communes: TypePiece[] = options.enSociete
+    ? ["identite", "permis"]
+    : ["identite", "permis", "tva", "licence", "controle_technique", "assurance", "immatriculation"];
   if (region === "FLANDRE") return [...communes, "bestuurderspas"];
   if (region === "BRUXELLES") return [...communes, "casier_judiciaire"];
   return communes;
@@ -119,7 +136,7 @@ export interface ProfilChauffeur {
 }
 
 /** Les champs du profil exigés pour soumettre, avec leur libellé. */
-const CHAMPS_EXIGES: [keyof ProfilChauffeur, string][] = [
+const CHAMPS_EXIGES_INDEPENDANT: [keyof ProfilChauffeur, string][] = [
   ["telephone", "téléphone"],
   ["region", "région de la licence"],
   ["numeroEntreprise", "numéro d'entreprise (BCE)"],
@@ -127,6 +144,20 @@ const CHAMPS_EXIGES: [keyof ProfilChauffeur, string][] = [
   ["vehiculeMarque", "marque du véhicule"],
   ["vehiculeModele", "modèle du véhicule"],
   ["vehiculePlaque", "plaque d'immatriculation"],
+];
+
+/** Chauffeur de société : la région, l'entreprise, la licence et le véhicule viennent de la société. */
+const CHAMPS_EXIGES_SOCIETE: [keyof ProfilChauffeur, string][] = [["telephone", "téléphone"]];
+
+/** Les champs que la société fixe pour son chauffeur : il ne les modifie pas lui-même. */
+const CHAMPS_DE_LA_SOCIETE: (keyof ProfilChauffeur)[] = [
+  "region",
+  "numeroEntreprise",
+  "raisonSociale",
+  "numeroLicence",
+  "vehiculeMarque",
+  "vehiculeModele",
+  "vehiculePlaque",
 ];
 
 /** Le chauffeur peut encore modifier son dossier dans ces états. */
@@ -138,20 +169,25 @@ function lireDossier(where: { id: string } | { userId: string }) {
   return db.chauffeurDrive.findUnique({
     where: where as any,
     // Les versions archivées (remplacées) ne comptent plus : historique seul.
-    include: { documents: { where: { archiveeLe: null }, orderBy: { createdAt: "asc" } } },
+    include: {
+      documents: { where: { archiveeLe: null }, orderBy: { createdAt: "asc" } },
+      societe: { select: { id: true, raisonSociale: true, region: true, statut: true } },
+      vehicule: { select: { id: true, marque: true, modele: true, plaque: true, conforme: true } },
+    },
   });
 }
 
 /** Ce qui manque encore au dossier, pour le chauffeur comme pour l'équipe. */
 function etatDuDossier(dossier: Dossier) {
-  const exigees = piecesExigees(dossier.region);
+  const enSociete = Boolean(dossier.societeId);
+  const exigees = piecesExigees(dossier.region, { enSociete });
   const deposees = new Set(
     dossier.documents.filter((piece) => piece.statut !== "EXPIRED").map((piece) => piece.type)
   );
   const validees = new Set(
     dossier.documents.filter((piece) => piece.statut === "APPROVED").map((piece) => piece.type)
   );
-  const champsManquants = CHAMPS_EXIGES.filter(([champ]) => !dossier[champ]).map(([, libelle]) => libelle);
+  const champsManquants = (enSociete ? CHAMPS_EXIGES_SOCIETE : CHAMPS_EXIGES_INDEPENDANT).filter(([champ]) => !dossier[champ]).map(([, libelle]) => libelle);
 
   return {
     numeroTva: numeroTva(dossier.numeroEntreprise),
@@ -210,9 +246,15 @@ export class ChauffeurOnboardingService {
   static async modifier(userId: string, profil: ProfilChauffeur) {
     const dossier = await this.dossierModifiable(userId);
 
+    // Chauffeur de société : la région, la licence et le véhicule sont ceux
+    // de la société, pas une saisie du chauffeur.
+    const saisie = dossier.societeId
+      ? Object.fromEntries(Object.entries(profil).filter(([champ]) => !CHAMPS_DE_LA_SOCIETE.includes(champ as keyof ProfilChauffeur)))
+      : profil;
+
     await db.chauffeurDrive.update({
       where: { id: dossier.id },
-      data: this.donneesDuProfil(profil),
+      data: this.donneesDuProfil(saisie),
     });
 
     return this.monDossier(userId);
@@ -248,46 +290,23 @@ export class ChauffeurOnboardingService {
       );
     }
 
-    const expiration = piece.dateExpiration ? new Date(piece.dateExpiration) : null;
-    if (expiration && Number.isNaN(expiration.getTime())) {
-      throw new ApiError(400, "Date d'expiration invalide", "INVALID_EXPIRY_DATE");
-    }
-    if (expiration && expiration.getTime() < Date.now()) {
+    if (dossier.societeId && !TYPES_PIECE_CHAUFFEUR_SOCIETE.includes(piece.type)) {
       throw new ApiError(
         400,
-        `${libelleDeLaPiece(piece.type)} : ce document est déjà expiré.`,
-        "DOCUMENT_EXPIRED"
+        `${libelleDeLaPiece(piece.type)} : c'est une pièce de votre société, déposée par elle.`,
+        "PIECE_DE_LA_SOCIETE"
       );
     }
-
-    const { url } = await FileUploadService.uploadDocument(
-      piece.file,
-      `chauffeur-${dossier.id}-${piece.type}-${Date.now()}`,
-      "chauffeurs",
-      piece.mimeType
-    );
-
-    const valeurs = {
-      url,
-      dateExpiration: expiration,
-      statut: "PENDING",
-      noteExamen: null,
-      examineLe: null,
-      // Nouvelle pièce, nouvelle échéance : les relances repartent de zéro.
-      rappel30JoursLe: null,
-      rappel10JoursLe: null,
-    };
 
     // La version en vigueur (validée ou expirée) n'est jamais écrasée : elle
     // reste valable jusqu'à ce que l'équipe valide la nouvelle. Seule une
     // version encore à l'examen, ou refusée, est remplacée par ce dépôt.
-    const aRemplacer = dossier.documents
-      .filter((doc) => doc.type === piece.type && (doc.statut === "PENDING" || doc.statut === "REJECTED"))
-      .at(-1);
-
-    const deposee = aRemplacer
-      ? await db.documentChauffeurDrive.update({ where: { id: aRemplacer.id }, data: valeurs })
-      : await db.documentChauffeurDrive.create({ data: { chauffeurId: dossier.id, type: piece.type, ...valeurs } });
+    const deposee = await deposerVersion(
+      { chauffeurId: dossier.id },
+      piece,
+      dossier.documents,
+      `chauffeur-${dossier.id}`
+    );
 
     logger.info("ZupDrive chauffeur document uploaded", { chauffeurId: dossier.id, type: piece.type });
 
@@ -357,41 +376,15 @@ export class ChauffeurOnboardingService {
     if (!piece || piece.chauffeurId !== chauffeurId || piece.archiveeLe) {
       throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
     }
-    if (verdict.approuve && piece.dateExpiration && piece.dateExpiration.getTime() <= Date.now()) {
-      throw new ApiError(400, "Ce document est expiré : il ne peut pas être validé", "DOCUMENT_EXPIRED");
-    }
-    if (!verdict.approuve && !verdict.note?.trim()) {
-      throw new ApiError(400, "Un refus sans motif ne dit pas au chauffeur quoi corriger", "MISSING_REASON");
-    }
-
-    const maintenant = new Date();
     // Validée, la nouvelle version remplace l'ancienne, archivée dans la même
     // transaction : il y a toujours exactement une version en vigueur.
     // Refusée, elle laisse l'ancienne en vigueur, avec son échéance.
-    const [examinee] = await db.$transaction([
-      db.documentChauffeurDrive.update({
-        where: { id: documentId },
-        data: {
-          statut: verdict.approuve ? "APPROVED" : "REJECTED",
-          noteExamen: verdict.note?.trim() || null,
-          examineLe: maintenant,
-        },
-      }),
-      ...(verdict.approuve
-        ? [
-            db.documentChauffeurDrive.updateMany({
-              where: {
-                chauffeurId,
-                type: piece.type,
-                id: { not: documentId },
-                archiveeLe: null,
-                statut: { in: ["APPROVED", "EXPIRED"] },
-              },
-              data: { archiveeLe: maintenant },
-            }),
-          ]
-        : []),
-    ]);
+    const examinee = await examinerVersion(
+      piece,
+      { chauffeurId },
+      verdict,
+      "Un refus sans motif ne dit pas au chauffeur quoi corriger"
+    );
 
     await this.prevenir(
       chauffeurId,
