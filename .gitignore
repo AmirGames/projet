@@ -54,3 +54,4 @@ mobile/apps/*/credentials.json
 *.p12
 *.p8
 *.mobileprovision
+frontend/next-env.d.ts
