@@ -16,6 +16,7 @@ const stripe: any = {
   webhooks: vraiStripe.webhooks,
   paymentIntents: { create: fn(), retrieve: fn(), cancel: fn() },
   refunds: { create: fn() },
+  charges: { retrieve: fn() },
 };
 
 jest.mock("../../../services/db", () => ({ db }));
@@ -42,6 +43,7 @@ const intention = (surcharge: object = {}) => ({
   object: "payment_intent",
   amount: 2350,
   amount_received: 2350,
+  currency: "eur",
   status: "succeeded",
   metadata: { orderId: "cmd-1" },
   ...surcharge,
@@ -61,8 +63,9 @@ const commande = (surcharge: object = {}) => ({
 });
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   db.order.updateMany.mockResolvedValue({ count: 0 });
+  db.payment.findFirst.mockResolvedValue({ id: "pay-1", orderId: "cmd-1", stripeRefundId: "re_1" });
 });
 
 describe("webhook Stripe", () => {
@@ -167,7 +170,8 @@ describe("webhook Stripe", () => {
   });
 
   it("repasse la commande en « payée » si le remboursement échoue", async () => {
-    db.payment.findFirst.mockResolvedValue({ id: "pay-1", orderId: "cmd-1" });
+    db.payment.findFirst.mockResolvedValue({ id: "pay-1", orderId: "cmd-1", stripeRefundId: "re_1" });
+    stripe.paymentIntents.retrieve.mockResolvedValue({ latest_charge: { amount: 2350, amount_refunded: 0 } });
     const { corps, signature } = signe({
       id: "evt_1",
       object: "event",
@@ -219,6 +223,28 @@ describe("rembourserCommande", () => {
 });
 
 describe("createPaymentIntent", () => {
+  it.each(['processing', 'requires_capture', 'succeeded'])("ne crée aucun second paiement pendant %s", async (status) => {
+    db.order.findUnique.mockResolvedValue(commande());
+    stripe.paymentIntents.retrieve.mockResolvedValue(intention({ status }));
+    expect((await paymentService.createPaymentIntent('cmd-1')).id).toBe('pi_1');
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it('deux premières demandes concurrentes utilisent la même clé Stripe', async () => {
+    db.order.findUnique.mockResolvedValue(commande({ payments: [] }));
+    stripe.paymentIntents.create.mockResolvedValue(intention());
+    await Promise.all([paymentService.createPaymentIntent('cmd-1'), paymentService.createPaymentIntent('cmd-1')]);
+    expect(stripe.paymentIntents.create.mock.calls.map((args: any[]) => args[1])).toEqual([
+      { idempotencyKey: 'commande-cmd-1-initial' }, { idempotencyKey: 'commande-cmd-1-initial' },
+    ]);
+  });
+
+  it('montant modifié : aucun second paiement tant que le premier est actif', async () => {
+    db.order.findUnique.mockResolvedValue(commande());
+    stripe.paymentIntents.retrieve.mockResolvedValue(intention({ amount: 1 }));
+    await expect(paymentService.createPaymentIntent('cmd-1')).rejects.toMatchObject({ code: 'PAYMENT_AMOUNT_MISMATCH' });
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
   it("prend le montant de la commande, pas celui du navigateur, et l'enregistre", async () => {
     db.order.findUnique.mockResolvedValue(commande({ payments: [] }));
     stripe.paymentIntents.create.mockResolvedValue({ id: "pi_2", client_secret: "pi_2_secret", status: "requires_payment_method", amount: 2350 });
@@ -229,8 +255,8 @@ describe("createPaymentIntent", () => {
       amount: 2350,
       metadata: { orderId: "cmd-1", storeId: "boutique-1" },
     });
-    expect(db.order.update).toHaveBeenCalledWith({
-      where: { id: "cmd-1" },
+    expect(db.order.updateMany).toHaveBeenCalledWith({
+      where: { id: "cmd-1", paymentStatus: { in: ['PENDING', 'FAILED'] } },
       data: { paymentId: "pi_2", paymentStatus: "PENDING" },
     });
   });
@@ -249,6 +275,61 @@ describe("createPaymentIntent", () => {
     db.order.findUnique.mockResolvedValue(commande({ paymentStatus: "SUCCEEDED" }));
 
     await expect(paymentService.createPaymentIntent("cmd-1")).rejects.toMatchObject({ statusCode: 409 });
+  });
+});
+
+describe('intégrité des événements Stripe', () => {
+  it('un événement partiel ancien utilise le cumul Stripe actuel', async () => {
+    stripe.charges.retrieve.mockResolvedValue({ id: 'ch_1', payment_intent: 'pi_1', amount: 2350, amount_refunded: 2350 });
+    await paymentService.marquerRembourse({ id: 'ch_1', payment_intent: 'pi_1', amount: 2350, amount_refunded: 100 } as any);
+    expect(db.payment.update.mock.calls[0][0].data).toMatchObject({ status: 'REFUNDED', refundedAmount: 23.5 });
+    expect(db.order.update.mock.calls[0][0].data.paymentStatus).toBe('REFUNDED');
+  });
+  it('un échec de remboursement conserve les remboursements partiels réussis', async () => {
+    stripe.paymentIntents.retrieve.mockResolvedValue({ latest_charge: { amount: 2350, amount_refunded: 500 } });
+    await paymentService.remboursementEchoue({ id: 're_1', payment_intent: 'pi_1' } as any);
+    expect(db.payment.update.mock.calls[0][0].data).toMatchObject({ status: 'SUCCEEDED', refundedAmount: 5 });
+  });
+  it('Stripe refuse immédiatement le remboursement : ne marque pas remboursé', async () => {
+    db.order.findUnique.mockResolvedValue(commande({ paymentStatus: 'SUCCEEDED' }));
+    stripe.refunds.create.mockResolvedValue({ id: 're_failed', status: 'failed', amount: 2350 });
+    await expect(paymentService.rembourserCommande('cmd-1', 'test')).rejects.toMatchObject({ code: 'REFUND_FAILED' });
+    expect(db.order.update).not.toHaveBeenCalled(); expect(db.payment.upsert).not.toHaveBeenCalled();
+    expect(db.payment.updateMany).toHaveBeenCalledWith({ where: { orderId: 'cmd-1' }, data: { stripeRefundId: 're_failed' } });
+  });
+  it('après un remboursement échoué, une nouvelle tentative a une autre clé', async () => {
+    db.order.findUnique.mockResolvedValue(commande({ paymentStatus: 'SUCCEEDED', payments: [{ stripePaymentIntentId: 'pi_1', stripeRefundId: 're_failed' }] }));
+    stripe.refunds.create.mockResolvedValue({ id: 're_new', status: 'succeeded', amount: 2350 });
+    await paymentService.rembourserCommande('cmd-1', 'test');
+    expect(stripe.refunds.create.mock.calls[0][1]).toEqual({ idempotencyKey: 'remboursement-cmd-1-re_failed' });
+  });
+  it.each([
+    { amount_received: 1 }, { amount_received: 99999 }, { currency: 'usd' }, { status: 'processing' },
+  ])('refuse le succès incohérent %j sans livrer ni écrire', async (modifications) => {
+    db.order.findUnique.mockResolvedValue(commande());
+    const { corps, signature } = signe({ id: 'evt-invalid', type: 'payment_intent.succeeded', data: { object: intention(modifications) } });
+    await expect(paymentService.handleWebhook(corps, signature)).rejects.toMatchObject({ statusCode: 409 });
+    expect(db.payment.upsert).not.toHaveBeenCalled(); expect(db.order.update).not.toHaveBeenCalled();
+    expect(annoncerAuCommercant).not.toHaveBeenCalled();
+  });
+  it('la métadonnée seule ne rattache pas un paiement inconnu', async () => {
+    db.payment.findFirst.mockResolvedValue(null);
+    expect(await paymentService.marquerPaye(intention() as any)).toBeNull();
+    expect(db.order.findUnique).not.toHaveBeenCalled();
+  });
+  it('la métadonnée ne peut remplacer la commande du paiement enregistré', async () => {
+    await expect(paymentService.marquerPaye(intention({ metadata: { orderId: 'bob' } }) as any))
+      .rejects.toMatchObject({ code: 'PAYMENT_ORDER_MISMATCH' });
+    expect(db.order.update).not.toHaveBeenCalled();
+  });
+  it('échec d’un ancien remboursement : garde le remboursement actuel intact', async () => {
+    db.payment.findFirst.mockResolvedValue({ id: 'pay-1', orderId: 'cmd-1', stripeRefundId: 're-new' });
+    await paymentService.remboursementEchoue({ id: 're-old', payment_intent: 'pi_1' } as any);
+    expect(db.payment.update).not.toHaveBeenCalled(); expect(db.order.update).not.toHaveBeenCalled();
+  });
+  it('signature manquante : aucune écriture', async () => {
+    await expect(paymentService.handleWebhook(Buffer.from('{}'), undefined)).rejects.toMatchObject({ code: 'STRIPE_SIGNATURE_MISSING' });
+    expect(db.order.update).not.toHaveBeenCalled();
   });
 });
 

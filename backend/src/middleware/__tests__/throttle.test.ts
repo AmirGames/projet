@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from "@jest/globals";
-import { limiterCadence } from "../throttle";
+import { limiterCadence, limiterAuthParIp, limiterCourrielsParIp } from "../throttle";
 import { StockageRedis } from "../throttle-stockage";
 
 const passer = async (mw: any, ip = "1.1.1.1") => {
@@ -9,6 +9,17 @@ const passer = async (mw: any, ip = "1.1.1.1") => {
 };
 
 describe("limiterCadence", () => {
+  it.each([[limiterAuthParIp, 50], [limiterCourrielsParIp, 20]] as const)(
+    'changer de destinataire ne contourne pas le budget IP (limite %s)', async (limiteur, max) => {
+      const ip = `audit-${max}`;
+      for (let i = 0; i < max; i++) {
+        const next = jest.fn();
+        await limiteur({ ip, body: { email: `adresse-${i}@example.invalid` } } as any, {} as any, next);
+        expect(next.mock.calls[0]?.[0]).toBeUndefined();
+      }
+      expect((await passer(limiteur, ip)).statusCode).toBe(429);
+      expect(await passer(limiteur, `${ip}-autre`)).toBeUndefined();
+    });
   it("bloque au-delà du maximum (stockage mémoire)", async () => {
     const mw = limiterCadence({ max: 2, fenetreMs: 60000, cle: (r) => r.ip! });
     expect(await passer(mw)).toBeUndefined();

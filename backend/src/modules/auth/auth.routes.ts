@@ -15,6 +15,8 @@ import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "./aut
 import {
   limiterCadence,
   limiterConnexions,
+  limiterAuthParIp,
+  limiterCourrielsParIp,
   limiterInscriptions,
   parDestinataire,
 } from "../../middleware/throttle";
@@ -154,7 +156,7 @@ router.get("/demo", (_req: Request, res: Response) => {
 });
 
 // POST /auth/login
-router.post("/login", limiterConnexions, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/login", limiterAuthParIp, limiterConnexions, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = loginSchema.parse(req.body);
 
@@ -850,6 +852,7 @@ async function envoyerConfirmation(user: { id: string; email: string; name: stri
 // POST /auth/forgot-password - Demande de réinitialisation
 router.post(
   "/forgot-password",
+  limiterCourrielsParIp,
   limiterCadence({
     max: 3,
     fenetreMs: 15 * 60 * 1000,
@@ -1139,6 +1142,7 @@ router.post("/verify-email", async (req: Request, res: Response, next: NextFunct
  */
 router.post(
   "/resend-verification",
+  limiterCourrielsParIp,
   // Compté par compte visé : c'est lui qui reçoit les messages. La session,
   // quand il y en a une, désigne le compte ; sinon c'est l'adresse fournie.
   // Sans l'un ni l'autre la demande n'a pas de destinataire et sera refusée,

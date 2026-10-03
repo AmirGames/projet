@@ -2,8 +2,13 @@ import { Router, Request, Response, NextFunction } from "express";
 import { authMiddleware } from "../auth/auth.middleware";
 import { paymentService } from "./payment.service";
 import { z } from "zod";
+import { limiterCadence } from '../../middleware/throttle';
 
 const router = Router();
+const limiterEnregistrementCartes = limiterCadence({
+  nom: 'enregistrement-cartes', max: 20, fenetreMs: 60_000,
+  cle: (req) => req.userId || req.ip || 'inconnue',
+});
 
 const paymentMethodInput = z.object({
   paymentMethodId: z.string().min(1),
@@ -24,7 +29,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 });
 
 // POST /payment-methods/setup-intent - Préparer l'ajout d'une carte
-router.post("/setup-intent", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/setup-intent", authMiddleware, limiterEnregistrementCartes, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req.user as any)?.userId;
     res.status(201).json({ success: true, data: await paymentService.preparerEnregistrementCarte(userId) });
@@ -34,7 +39,7 @@ router.post("/setup-intent", authMiddleware, async (req: Request, res: Response,
 });
 
 // POST /payment-methods - Save payment method
-router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", authMiddleware, limiterEnregistrementCartes, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req.user as any)?.userId;
     const input = paymentMethodInput.parse(req.body);

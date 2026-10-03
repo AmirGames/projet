@@ -51,7 +51,12 @@ export const paymentService = {
 
     if (existant?.stripePaymentIntentId) {
       const ouverte = await stripe.paymentIntents.retrieve(existant.stripePaymentIntentId);
-      if (INTENTION_EN_COURS.has(ouverte.status) && ouverte.amount === montant) {
+      // Un paiement en traitement ou déjà encaissé ne doit jamais être doublé
+      // pendant que le webhook n'a pas encore mis la base à jour.
+      if (ouverte.status !== "canceled") {
+        if (ouverte.amount !== montant) {
+          throw new ApiError(409, "Le montant du paiement existant diffère de la commande.", "PAYMENT_AMOUNT_MISMATCH");
+        }
         return ouverte;
       }
     }
@@ -62,7 +67,7 @@ export const paymentService = {
       receipt_email: commande.customerEmail || undefined,
       metadata: { orderId: commande.id, storeId: commande.storeId },
       payment_method_types: ["card"],
-    });
+    }, { idempotencyKey: `commande-${commande.id}-${existant?.stripePaymentIntentId || "initial"}` });
 
     await db.payment.upsert({
       where: { orderId: commande.id },
@@ -76,15 +81,14 @@ export const paymentService = {
       },
       update: {
         amount: montantAEncaisser(commande),
-        status: "PENDING",
         stripePaymentIntentId: intention.id,
         stripeClientSecret: intention.client_secret,
         stripeStatus: intention.status,
       },
     });
 
-    await db.order.update({
-      where: { id: commande.id },
+    await db.order.updateMany({
+      where: { id: commande.id, paymentStatus: { in: ['PENDING', 'FAILED'] } },
       data: { paymentId: intention.id, paymentStatus: "PENDING" },
     });
 
@@ -195,14 +199,15 @@ export const paymentService = {
 
   /** La commande de cette intention : par sa métadonnée, sinon par le paiement enregistré. */
   async commandeDeLIntention(intention: Stripe.PaymentIntent) {
-    const orderId =
-      intention.metadata?.orderId ||
-      (await db.payment.findFirst({
-        where: { stripePaymentIntentId: intention.id },
-        select: { orderId: true },
-      }))?.orderId;
+    const orderId = (await db.payment.findFirst({
+      where: { stripePaymentIntentId: intention.id },
+      select: { orderId: true },
+    }))?.orderId;
 
     if (!orderId) return null;
+    if (intention.metadata?.orderId && intention.metadata.orderId !== orderId) {
+      throw new ApiError(409, "Paiement associé à une autre commande.", "PAYMENT_ORDER_MISMATCH");
+    }
     return db.order.findUnique({ where: { id: orderId } });
   },
 
@@ -217,6 +222,9 @@ export const paymentService = {
     if (commande.paymentStatus === "REFUNDED") return commande;
 
     const recu = intention.amount_received ?? intention.amount;
+    if (intention.status !== "succeeded" || intention.currency !== STRIPE_CONFIG.currency) {
+      throw new ApiError(409, "État ou devise du paiement incorrect.", "PAYMENT_INVALID");
+    }
     if (recu !== enCentimes(montantAEncaisser(commande))) {
       logger.error("Montant encaissé différent du total de la commande", {
         orderId: commande.id,
@@ -224,6 +232,7 @@ export const paymentService = {
         recu,
         attendu: enCentimes(montantAEncaisser(commande)),
       });
+      throw new ApiError(409, "Montant encaissé incorrect.", "PAYMENT_AMOUNT_MISMATCH");
     }
 
     const paidAt = new Date();
@@ -374,6 +383,9 @@ export const paymentService = {
 
   /** Un remboursement fait depuis le tableau de bord Stripe arrive aussi par ici. */
   async marquerRembourse(charge: Stripe.Charge) {
+    // Stripe peut livrer les événements dans le désordre : relire le cumul
+    // actuel évite qu'un ancien remboursement partiel écrase le total final.
+    charge = await stripe.charges.retrieve(charge.id);
     const paymentIntentId = idIntention(charge.payment_intent);
     if (!paymentIntentId) return null;
 
@@ -383,22 +395,23 @@ export const paymentService = {
       return null;
     }
 
-    // Un remboursement partiel laisse la commande payée : seul le montant rendu est noté.
+    return this.noterRemboursement(paiement, charge);
+  },
+
+  async noterRemboursement(paiement: { id: string; orderId: string; refundedAt: Date | null }, charge: Stripe.Charge) {
     const total = charge.amount_refunded >= charge.amount;
     await db.payment.update({
       where: { id: paiement.id },
       data: {
-        refundedAmount: charge.amount_refunded / 100,
-        refundedAt: paiement.refundedAt ?? new Date(),
-        ...(total ? { status: "REFUNDED" as const } : {}),
+        refundedAmount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
+        refundedAt: charge.amount_refunded ? paiement.refundedAt ?? new Date() : null,
+        status: total ? "REFUNDED" : "SUCCEEDED",
       },
     });
-    if (total) {
-      await db.order.update({
+    await db.order.update({
         where: { id: paiement.orderId },
-        data: { paymentStatus: "REFUNDED" },
+        data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
       });
-    }
     return paiement;
   },
 
@@ -412,15 +425,13 @@ export const paymentService = {
 
     const paiement = await db.payment.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
     if (!paiement) return null;
+    // Un ancien échec ne doit pas annuler un remboursement plus récent.
+    if (paiement.stripeRefundId !== remboursement.id) return null;
 
-    await db.payment.update({
-      where: { id: paiement.id },
-      data: { status: "SUCCEEDED", refundedAt: null, refundedAmount: null },
-    });
-    await db.order.update({
-      where: { id: paiement.orderId },
-      data: { paymentStatus: "SUCCEEDED" },
-    });
+    const intention = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ['latest_charge'] });
+    const charge = intention.latest_charge;
+    if (!charge) throw new ApiError(503, 'Charge Stripe introuvable.', 'REFUND_RECONCILIATION_FAILED');
+    await this.noterRemboursement(paiement, typeof charge === 'string' ? await stripe.charges.retrieve(charge) : charge);
 
     logger.error("Remboursement Stripe échoué : à rembourser à la main", {
       orderId: paiement.orderId,
@@ -465,9 +476,13 @@ export const paymentService = {
         reason: "requested_by_customer",
         metadata: { orderId, raison: raison.slice(0, 500) },
       },
-      { idempotencyKey: `remboursement-${orderId}` }
+      { idempotencyKey: `remboursement-${orderId}${paiement?.stripeRefundId ? `-${paiement.stripeRefundId}` : ''}` }
     );
 
+    if (remboursement.status === 'failed' || remboursement.status === 'canceled') {
+      await db.payment.updateMany({ where: { orderId }, data: { stripeRefundId: remboursement.id } });
+      throw new ApiError(502, 'Stripe n’a pas effectué le remboursement.', 'REFUND_FAILED');
+    }
     const refundedAt = new Date();
     await db.payment.upsert({
       where: { orderId },

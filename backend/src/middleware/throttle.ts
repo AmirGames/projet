@@ -100,6 +100,16 @@ export const limiterConnexions = limiterCadence({
   cle: parDestinataire,
 });
 
+/** Le compteur IP+destinataire seul se contourne en changeant d'adresse. */
+export const limiterAuthParIp = limiterCadence({
+  nom: 'auth-ip', max: 50, fenetreMs: 15 * 60 * 1000,
+  cle: (req) => req.ip || 'inconnue',
+});
+export const limiterCourrielsParIp = limiterCadence({
+  nom: 'courriels-ip', max: 20, fenetreMs: 15 * 60 * 1000,
+  cle: (req) => req.ip || 'inconnue',
+});
+
 /**
  * Inscriptions : dix comptes par heure et par adresse IP, tous formulaires
  * confondus — client, commerçant et livreur partagent ce même compteur, sinon
