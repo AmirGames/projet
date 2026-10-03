@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
+import { cheminDecode, sousChemin } from "../../utils/chemin";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { verifyToken } from "../auth/auth.middleware";
@@ -62,6 +63,7 @@ async function commerceDemo(userId: string): Promise<string | null> {
 }
 
 export async function compteDemo(req: Request, res: Response, next: NextFunction) {
+  const cheminRequete = cheminDecode(req.path);
   const entete = req.headers.authorization;
   if (!entete?.startsWith("Bearer ")) return next();
 
@@ -84,7 +86,7 @@ export async function compteDemo(req: Request, res: Response, next: NextFunction
   );
 
   if (LECTURE.has(req.method)) return next();
-  if (!CHEMINS_FERMES_EN_ECRITURE.some((chemin) => req.path.startsWith(chemin))) return next();
+  if (!CHEMINS_FERMES_EN_ECRITURE.some((chemin) => sousChemin(cheminRequete, chemin))) return next();
 
   return res.status(403).json({
     error: "Indisponible dans le compte de démonstration.",

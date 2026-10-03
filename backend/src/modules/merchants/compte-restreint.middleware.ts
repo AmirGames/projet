@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
+import { cheminDecode, sousChemin } from "../../utils/chemin";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { verifyToken } from "../auth/auth.middleware";
@@ -122,8 +123,9 @@ export function oublierTousLesStatuts() {
 }
 
 export async function compteRestreint(req: Request, res: Response, next: NextFunction) {
-  if (CHEMINS_OUVERTS.some((chemin) => req.path.startsWith(chemin))) return next();
-  if (CHEMINS_HORS_PORTEE.some((chemin) => req.path.startsWith(chemin))) return next();
+  const cheminRequete = cheminDecode(req.path);
+  if (CHEMINS_OUVERTS.some((chemin) => sousChemin(cheminRequete, chemin))) return next();
+  if (CHEMINS_HORS_PORTEE.some((chemin) => sousChemin(cheminRequete, chemin))) return next();
 
   const entete = req.headers.authorization;
   if (!entete?.startsWith("Bearer ")) return next();
@@ -163,7 +165,7 @@ export async function compteRestreint(req: Request, res: Response, next: NextFun
 
     if (
       statut === "SUSPENDED" &&
-      CHEMINS_OUVERTS_SI_SUSPENDU.some((chemin) => req.path.startsWith(chemin))
+      CHEMINS_OUVERTS_SI_SUSPENDU.some((chemin) => sousChemin(cheminRequete, chemin))
     ) {
       continue;
     }

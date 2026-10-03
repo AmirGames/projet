@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
+import { cheminDecode, sousChemin } from "../../utils/chemin";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { compteDuJeton, verifyToken } from "./auth.middleware";
@@ -189,12 +190,12 @@ function segmentsIdentifiants(chemin: string): string[] {
  * Rend `undefined` quand la route ne désigne pas une ressource connue, et
  * `null` quand la ressource n'existe pas — deux cas à traiter différemment.
  */
-async function orgDeLaRessource(req: Request): Promise<string | null | undefined> {
-  const ressource = RESSOURCES.find((candidate) => req.path.startsWith(candidate.prefixe));
+async function orgDeLaRessource(chemin: string): Promise<string | null | undefined> {
+  const ressource = RESSOURCES.find((candidate) => sousChemin(chemin, candidate.prefixe));
   if (!ressource) return undefined;
 
   // Le segment qui suit le préfixe : l'identifiant, s'il y en a un.
-  const reste = req.path.slice(ressource.prefixe.length).replace(/^\//, "");
+  const reste = chemin.slice(ressource.prefixe.length).replace(/^\//, "");
   const premier = reste.split("/")[0] || "";
 
   // Un segment vide, ou un mot-clé de route plutôt qu'un identifiant.
@@ -214,7 +215,7 @@ async function orgDeLaRessource(req: Request): Promise<string | null | undefined
     // Une ressource dont la forme ne correspond pas : on laisse la route
     // répondre elle-même plutôt que de bloquer à tort.
     logger.warn("Cloisonnement : ressource illisible", {
-      chemin: req.path,
+      chemin,
       error: err instanceof Error ? err.message : err,
     });
     return undefined;
@@ -228,11 +229,12 @@ const refus = (res: Response) =>
   });
 
 export async function cloisonnement(req: Request, res: Response, next: NextFunction) {
-  if (CHEMINS_PUBLICS.some((chemin) => req.path.startsWith(chemin))) return next();
-  if (CHEMINS_HORS_PORTEE.some((chemin) => req.path.startsWith(chemin))) return next();
+  const cheminRequete = cheminDecode(req.path);
+  if (CHEMINS_PUBLICS.some((chemin) => sousChemin(cheminRequete, chemin))) return next();
+  if (CHEMINS_HORS_PORTEE.some((chemin) => sousChemin(cheminRequete, chemin))) return next();
 
   const public_ = GESTES_PUBLICS.some(
-    (geste) => geste.methode === req.method && geste.chemin.test(req.path)
+    (geste) => geste.methode === req.method && geste.chemin.test(cheminRequete.toLowerCase())
   );
   if (public_) return next();
 
@@ -264,10 +266,10 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
       identifiant(req.query?.orgId),
       identifiant(corps.storeId),
       identifiant(corps.orgId),
-      ...segmentsIdentifiants(req.path),
+      ...segmentsIdentifiants(cheminRequete),
     ].filter((valeur): valeur is string => valeur !== null);
 
-    const orgDeLaCible = await orgDeLaRessource(req);
+    const orgDeLaCible = await orgDeLaRessource(cheminRequete);
 
     // Rien à cloisonner sur cette requête.
     if (annonces.length === 0 && orgDeLaCible === undefined) return next();

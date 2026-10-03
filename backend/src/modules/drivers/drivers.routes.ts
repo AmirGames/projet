@@ -56,7 +56,7 @@ async function livreurConnecte(req: Request) {
 }
 
 // Vérifie que la course appartient bien au livreur connecté.
-async function courseDuLivreur(req: Request, deliveryId: string) {
+async function courseDuLivreur(req: Request, deliveryId: string, autoriserProposition = false) {
   const livreur = await livreurConnecte(req);
 
   const course = await db.orderDelivery.findUnique({ where: { id: deliveryId } });
@@ -65,8 +65,18 @@ async function courseDuLivreur(req: Request, deliveryId: string) {
     throw new ApiError(404, "Course introuvable", "DELIVERY_NOT_FOUND");
   }
 
-  if (course.driverId && course.driverId !== livreur.id) {
-    throw new ApiError(403, "Cette course est attribuée à un autre livreur", "FORBIDDEN");
+  if (course.driverId !== livreur.id) {
+    // Une course sans livreur n'est pas publique. Seuls le détail et
+    // l'acceptation admettent une proposition personnelle encore valable.
+    const proposition = autoriserProposition && !course.driverId && course.status === "PENDING"
+      ? await db.deliveryOffer.findFirst({
+          where: { deliveryId, driverId: livreur.id, status: "PENDING", expiresAt: { gt: new Date() } },
+          select: { id: true },
+        })
+      : null;
+    if (!proposition) {
+      throw new ApiError(403, "Cette course ne vous est pas attribuée ou proposée", "FORBIDDEN");
+    }
   }
 
   return { livreur, course };
@@ -973,7 +983,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
 
     // Seul le livreur de la course (ou celui à qui elle est proposée) la lit :
     // elle porte le nom, le téléphone et l'adresse du client.
-    const { livreur } = await courseDuLivreur(req, deliveryId);
+    const { livreur } = await courseDuLivreur(req, deliveryId, true);
 
     const delivery = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
@@ -1057,7 +1067,7 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const deliveryId = req.params.id as string;
-      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+      const { livreur, course } = await courseDuLivreur(req, deliveryId, true);
 
       if (course.driverId === livreur.id) {
         throw new ApiError(409, "Vous avez déjà accepté cette course", "ALREADY_ACCEPTED");
@@ -1473,8 +1483,6 @@ router.patch(
         throw new ApiError(400, "Latitude et longitude requises", "INVALID_INPUT");
       }
 
-      await courseDuLivreur(req, deliveryId);
-
       const { livreur } = await courseDuLivreur(req, deliveryId);
 
       // Écrire ici dans deliveryLat/Lng effaçait l'adresse de livraison du
@@ -1808,17 +1816,27 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
     const reglages = await DispatchService.reglages();
     const radius = Math.min(parseInt(req.query.radius as string) || reglages.maxRadiusKm, 50);
 
-    if (!storeId) {
+    if (typeof storeId !== "string" || !storeId.trim()) {
       throw new ApiError(400, "storeId est requis", "STORE_ID_REQUIRED");
     }
 
     const store = await db.store.findUnique({
       where: { id: storeId },
-      select: { id: true, latitude: true, longitude: true },
+      select: { id: true, orgId: true, latitude: true, longitude: true },
     });
 
     if (!store) {
       throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+    }
+
+    if (!req.compte?.isSuperOwner && !req.compte?.isSystemAdmin) {
+      const membership = await db.membership.findFirst({
+        where: { userId: req.userId as string, orgId: store.orgId },
+        select: { id: true },
+      });
+      if (!membership) {
+        throw new ApiError(403, "Cette boutique n'est pas la vôtre", "FORBIDDEN");
+      }
     }
 
     if (store.latitude == null || store.longitude == null) {

@@ -50,6 +50,13 @@ describe("compte démo", () => {
     expect(res.status).toBe(403);
   });
 
+  it("ferme aussi les écritures avec une casse alternative", async () => {
+    findFirst.mockResolvedValue({ orgId: "demo" });
+    const res = await request(app).put("/API/MERCHANT-PROFILE/iban").set("Authorization", "Bearer demo-casse");
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("DEMO_ACCOUNT");
+  });
+
   it("laisse lire ce qui est fermé en écriture", async () => {
     findFirst.mockResolvedValue({ orgId: "demo" });
     const res = await request(app).get("/api/merchant-profile/iban").set("Authorization", "Bearer demo-3");
