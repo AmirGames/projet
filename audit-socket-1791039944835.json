@@ -1,0 +1,44 @@
+{
+  "target": "https://api.zupeat.com",
+  "startedAt": "2026-10-03T15:05:44.249Z",
+  "checks": [
+    {
+      "name": "Disponibilité HTTP",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "Connexion publique websocket",
+      "actual": true,
+      "expected": true,
+      "ok": true
+    },
+    {
+      "name": "Commande sans jeton websocket",
+      "actual": "FORBIDDEN",
+      "expected": "FORBIDDEN",
+      "ok": true
+    },
+    {
+      "name": "Connexion publique polling",
+      "actual": true,
+      "expected": true,
+      "ok": true
+    },
+    {
+      "name": "Commande sans jeton polling",
+      "actual": "FORBIDDEN",
+      "expected": "FORBIDDEN",
+      "ok": true
+    },
+    {
+      "name": "Jeton invalide refusé",
+      "actual": "Invalid token",
+      "expected": "Invalid token",
+      "ok": true
+    }
+  ],
+  "passed": 6,
+  "failed": 0
+}

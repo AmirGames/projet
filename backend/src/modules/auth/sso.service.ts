@@ -165,10 +165,10 @@ export const SsoService = {
     return { decoded, sid, refreshToken: await this.emettreRefresh(decoded.userId, sid) };
   },
 
-  /** La session est-elle encore ouverte ? Gardé trente secondes par processus. */
-  async sessionActive(sid: string): Promise<boolean> {
+  /** Le temps réel contourne le cache pour les révocations sur une autre instance. */
+  async sessionActive(sid: string, options: { sansCache?: boolean } = {}): Promise<boolean> {
     const connue = sessions.get(sid);
-    if (connue && Date.now() < connue.expireA) return connue.active;
+    if (!options.sansCache && connue && Date.now() < connue.expireA) return connue.active;
 
     const session = await db.sessionConnexion.findUnique({
       where: { id: sid },

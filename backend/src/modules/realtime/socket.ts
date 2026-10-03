@@ -7,7 +7,7 @@ import { logger } from '../../config/logger';
 import { verifyToken } from '../auth/auth.middleware';
 import { AuthenticatedSocket } from '../../types/socket';
 import { db } from '../../services/db';
-import { SsoService } from '../auth/sso.service';
+import { compteSocket, accesCommande, accesSalon } from './socket-access';
 
 // Les notifications sont adressées par e-mail : chaque connexion rejoint donc
 // un salon nominatif, ce qui permet de la pousser au bon destinataire.
@@ -17,61 +17,43 @@ const salonUtilisateur = (email: string) => `user-${email.toLowerCase()}`;
 const SALON_SUPPORT = 'support-livreurs';
 
 /**
- * Salon de toute l'équipe de la plateforme : ses tableaux de bord portent sur
- * l'ensemble des commerçants, ils se tiennent donc à jour de tout.
+ * Flux global du superowner. Les rôles partiels n'ont pas accès à tous
+ * les identifiants et sections que transporte ce flux.
  */
 const SALON_PLATEFORME = 'plateforme';
 
 /** Salon public d'une boutique : disponibilité des produits, horaires. */
 const salonBoutique = (storeId: string) => `store-${storeId}`;
 
-/**
- * Qui a le droit de suivre une commande en direct.
- *
- * Le client qui l'a passée, l'équipe de la boutique, le livreur qui
- * l'apporte, et la plateforme. Personne d'autre.
- */
-async function peutSuivreLaCommande(socket: AuthenticatedSocket, orderId: string) {
-  if (!socket.userId) return false;
-
-  const commande = await db.order.findUnique({
-    where: { id: orderId },
-    select: {
-      customerEmail: true,
-      store: { select: { orgId: true } },
-      delivery: { select: { driver: { select: { userId: true } } } },
-    },
-  });
-
-  if (!commande) return false;
-
-  const utilisateur = await db.user.findUnique({
-    where: { id: socket.userId },
-    select: { email: true, isSuperOwner: true, isSystemAdmin: true },
-  });
-
-  if (!utilisateur) return false;
-  if (utilisateur.isSuperOwner || utilisateur.isSystemAdmin) return true;
-
-  if (
-    commande.customerEmail &&
-    utilisateur.email.toLowerCase() === commande.customerEmail.toLowerCase()
-  ) {
-    return true;
-  }
-
-  if (commande.delivery?.driver?.userId === socket.userId) return true;
-
-  // L'équipe de la boutique suit les commandes de son organisation.
-  const appartenance = await db.membership.findFirst({
-    where: { userId: socket.userId, orgId: commande.store.orgId },
-    select: { id: true },
-  });
-
-  return Boolean(appartenance);
-}
-
 export let io: SocketIOServer;
+
+/** Autorisation au moment de l'envoi, y compris pour les sockets Redis.
+ * Un salon rejoint hier ne constitue pas un droit aujourd'hui.
+ */
+async function envoyerPrive(salons: string[], evenement: string, donnees: unknown) {
+  if (!io || !salons.length) return;
+  try {
+    const connexions = await io.in(salons).fetchSockets();
+    await Promise.all(connexions.map(async (socket) => {
+      try {
+        const compte = await compteSocket(socket.data.jeton);
+        if (!compte) { socket.disconnect(true); return; }
+        let autorise = false;
+        for (const salon of salons) {
+          if (!socket.rooms.has(salon)) continue;
+          if (await accesSalon(compte, salon)) autorise = true;
+          else await socket.leave(salon);
+        }
+        if (autorise) socket.emit(evenement, donnees);
+      } catch (err) {
+        // Une erreur de base/session ne doit jamais ouvrir l'accès.
+        logger.error('Événement privé refusé', { socketId: socket.id, error: String(err) });
+      }
+    }));
+  } catch (err) {
+    logger.error('Impossible de diffuser un événement privé', { evenement, error: String(err) });
+  }
+}
 
 export function initializeSocket(httpServer: HTTPServer) {
   io = new SocketIOServer(httpServer, {
@@ -84,107 +66,68 @@ export function initializeSocket(httpServer: HTTPServer) {
 
   io.use(async (socket: AuthenticatedSocket, next) => {
     const token = socket.handshake.auth.token;
-
-    // Une connexion sans jeton est acceptée, mais reste anonyme : la vitrine
-    // est publique, et exiger un compte pour voir un plat passer en épuisé
-    // priverait de mise à jour la plupart des visiteurs. Ce qu'un anonyme
-    // peut suivre est décidé salon par salon, plus bas.
-    if (!token) {
-      return next();
-    }
-
+    if (!token) return next(); // Les vitrines restent publiques.
     try {
-      const decoded = verifyToken(token);
-      // Une session fermée (déconnexion) ne suit plus rien en direct.
-      if (decoded.sid && !(await SsoService.sessionActive(decoded.sid))) {
-        return next(new Error('Invalid token'));
-      }
-      socket.userId = decoded.userId;
-      // userRole and organizationId are no longer in JWT; load from DB if needed
+      const jeton = verifyToken(token);
+      const compte = await compteSocket(jeton);
+      if (!compte) return next(new Error('Invalid token'));
+      socket.userId = compte.id;
+      socket.data.jeton = jeton;
+      socket.data.compteInitial = compte;
       next();
-    } catch (err) {
-      // Un jeton présent mais invalide est une anomalie, pas un visiteur.
+    } catch {
       next(new Error('Invalid token'));
     }
   });
 
-  io.on('connection', async (socket: AuthenticatedSocket) => {
-    logger.info('User connected', { userId: socket.userId, socketId: socket.id });
-
-    // Le menu d'une boutique est public : n'importe qui peut suivre ses
-    // changements de disponibilité.
-    socket.on('join-store', (storeId: string) => {
-      if (typeof storeId !== 'string' || !storeId) return;
-      socket.join(salonBoutique(storeId));
-    });
-
-    socket.on('leave-store', (storeId: string) => {
-      if (typeof storeId !== 'string' || !storeId) return;
-      socket.leave(salonBoutique(storeId));
-    });
-
-    socket.on('join-order', async (orderId: string) => {
-      // Une commande porte un nom, un téléphone, une adresse et la position
-      // du livreur. N'importe quel connecté pouvait suivre celle d'un
-      // inconnu : il suffisait d'en deviner l'identifiant.
-      if (typeof orderId !== 'string' || !orderId) return;
-
-      if (!(await peutSuivreLaCommande(socket, orderId))) {
-        logger.warn('Suivi de commande refusé', { orderId, userId: socket.userId });
-        // « error » est un nom réservé côté client : un refus envoyé sous ce
-        // nom n'arrive pas de façon fiable.
-        socket.emit('acces-refuse', { salon: 'order', code: 'FORBIDDEN', orderId });
-        return;
-      }
-
-      socket.join(`order-${orderId}`);
-      logger.info('User joined order room', { orderId, socketId: socket.id });
-    });
-
-    socket.on('leave-order', (orderId: string) => {
-      if (typeof orderId !== 'string' || !orderId) return;
-      socket.leave(`order-${orderId}`);
-    });
-
-    socket.on('disconnect', () => {
-      logger.info('User disconnected', { userId: socket.userId, socketId: socket.id });
-    });
-
-    socket.on('error', (error) => {
-      logger.error('Socket error', { error, userId: socket.userId });
-    });
-
-    // Le jeton ne porte que l'identifiant : on résout l'e-mail une fois, à la
-    // connexion, plutôt qu'à chaque notification envoyée.
-    //
-    // Après l'enregistrement des écouteurs, et non avant : attendre la base
-    // ici laissait passer les premiers messages du client — celui-ci émet
-    // dès « connect », et un événement sans écouteur est perdu, pas mis en
-    // attente. Le suivi de commande ratait ainsi son salon par intermittence.
-    if (socket.userId) {
-      try {
-        const utilisateur = await db.user.findUnique({
-          where: { id: socket.userId },
-          select: { email: true, isSuperOwner: true, isSystemAdmin: true },
-        });
-
-        if (utilisateur) {
-          socket.data.email = utilisateur.email;
-          socket.join(salonUtilisateur(utilisateur.email));
-
-          // L'équipe de la plateforme reçoit les messages des livreurs en
-          // direct, sur n'importe quel écran.
-          if (utilisateur.isSuperOwner || utilisateur.isSystemAdmin) {
-            socket.join([SALON_SUPPORT, SALON_PLATEFORME]);
-          }
-        }
-      } catch (err) {
-        logger.error('Impossible de rattacher la connexion à un utilisateur', {
-          socketId: socket.id,
-          error: err instanceof Error ? err.message : err,
-        });
-      }
+  io.on('connection', (socket: AuthenticatedSocket) => {
+    const compte = socket.data.compteInitial;
+    delete socket.data.compteInitial;
+    if (compte) {
+      socket.join(`compte-${compte.id}`);
+      if (compte.emailVerified) socket.join(salonUtilisateur(compte.email));
+      // L'envoi revérifie la permission exacte et les rôles en base.
+      if (compte.isSuperOwner || compte.isSystemAdmin) socket.join([SALON_SUPPORT, SALON_PLATEFORME]);
     }
+
+    socket.use(async (_packet, next) => {
+      try {
+        if (socket.userId && !(await compteSocket(socket.data.jeton))) {
+          socket.disconnect(true);
+          return next(new Error('Invalid token'));
+        }
+        next();
+      } catch {
+        socket.disconnect(true);
+        next(new Error('Invalid token'));
+      }
+    });
+
+    const identifiant = (id: unknown): id is string => typeof id === 'string' && id.length > 0 && id.length <= 128;
+    socket.on('join-store', (storeId: string) => {
+      if (identifiant(storeId) && socket.rooms.size < 100) socket.join(salonBoutique(storeId));
+    });
+    socket.on('leave-store', (storeId: string) => {
+      if (identifiant(storeId)) socket.leave(salonBoutique(storeId));
+    });
+    socket.on('join-order', async (orderId: string, ack?: (result: { ok: boolean }) => void) => {
+      let autorise = false;
+      try {
+        if (identifiant(orderId) && socket.rooms.size < 100) {
+          const actuel = await compteSocket(socket.data.jeton);
+          autorise = !!actuel && await accesCommande(actuel, orderId);
+        }
+        if (autorise) await socket.join(`order-${orderId}`);
+      } catch (err) {
+        logger.error('Impossible de vérifier le suivi de commande', { socketId: socket.id, error: String(err) });
+      }
+      if (!autorise) socket.emit('acces-refuse', { salon: 'order', code: 'FORBIDDEN', orderId });
+      if (typeof ack === 'function') ack({ ok: autorise });
+    });
+    socket.on('leave-order', (orderId: string) => {
+      if (identifiant(orderId)) socket.leave(`order-${orderId}`);
+    });
+    socket.on('error', (error) => logger.error('Socket error', { error, userId: socket.userId }));
   });
 
   return io;
@@ -291,13 +234,13 @@ export async function brancherRedis(url = process.env.REDIS_URL) {
 export function emitNotification(recipientEmail: string, notification: unknown) {
   if (!io || !recipientEmail) return;
 
-  io.to(salonUtilisateur(recipientEmail)).emit('notification', notification);
+  return envoyerPrive([salonUtilisateur(recipientEmail)], 'notification', notification);
 }
 
-export function emitOrderUpdate(orderId: string, status: string, data?: any) {
+export async function emitOrderUpdate(orderId: string, status: string, data?: any) {
   if (!io) return;
 
-  io.to(`order-${orderId}`).emit('order-update', {
+  await envoyerPrive([`order-${orderId}`], 'order-update', {
     orderId,
     status,
     timestamp: new Date().toISOString(),
@@ -307,10 +250,10 @@ export function emitOrderUpdate(orderId: string, status: string, data?: any) {
   void prevenirLaBoutique(orderId, { status });
 }
 
-export function emitDeliveryUpdate(orderId: string, data: any) {
+export async function emitDeliveryUpdate(orderId: string, data: any) {
   if (!io) return;
 
-  io.to(`order-${orderId}`).emit('delivery-update', {
+  await envoyerPrive([`order-${orderId}`], 'delivery-update', {
     orderId,
     timestamp: new Date().toISOString(),
     ...data,
@@ -357,7 +300,7 @@ export function emitStoreEvent(storeId: string, evenement: string, donnees: unkn
  *
  * Le salon public de la boutique ne convient pas — n'importe quel visiteur de
  * la vitrine y est, et une commande porte un nom et un téléphone. On passe
- * donc par le salon nominatif de chaque membre de l'organisation.
+ * donc par l'identifiant de chaque membre, sans dépendre d'un e-mail déclaré.
  */
 export async function emitMerchantEvent(storeId: string, evenement: string, donnees: unknown) {
   if (!io || !storeId) return;
@@ -368,11 +311,11 @@ export async function emitMerchantEvent(storeId: string, evenement: string, donn
 
     const membres = await db.membership.findMany({
       where: { orgId: boutique.orgId },
-      select: { user: { select: { email: true } } },
+      select: { user: { select: { id: true } } },
     });
 
     for (const membre of membres) {
-      io.to(salonUtilisateur(membre.user.email)).emit(evenement, donnees);
+      await envoyerPrive([`compte-${membre.user.id}`], evenement, donnees);
     }
   } catch (err) {
     logger.error("Impossible de prévenir l'équipe de la boutique", {
@@ -390,11 +333,11 @@ export async function emitOrgEvent(orgId: string, evenement: string, donnees: un
   try {
     const membres = await db.membership.findMany({
       where: { orgId },
-      select: { user: { select: { email: true } } },
+      select: { user: { select: { id: true } } },
     });
 
     for (const membre of membres) {
-      io.to(salonUtilisateur(membre.user.email)).emit(evenement, donnees);
+      await envoyerPrive([`compte-${membre.user.id}`], evenement, donnees);
     }
   } catch (err) {
     logger.error("Impossible de prévenir l'organisation", {
@@ -421,11 +364,11 @@ export async function emitOrgStatus(
   try {
     const membres = await db.membership.findMany({
       where: { orgId },
-      select: { user: { select: { email: true } } },
+      select: { user: { select: { id: true } } },
     });
 
     for (const membre of membres) {
-      io.to(salonUtilisateur(membre.user.email)).emit("compte-statut", {
+      await envoyerPrive([`compte-${membre.user.id}`], "compte-statut", {
         orgId,
         ...donnees,
       });
@@ -449,7 +392,7 @@ export async function emitOrgStatus(
 export function emitDriverEvent(email: string, evenement: string, donnees: unknown) {
   if (!io || !email) return;
 
-  io.to(salonUtilisateur(email)).emit(evenement, donnees);
+  return envoyerPrive([salonUtilisateur(email)], evenement, donnees);
 }
 
 /**
@@ -460,14 +403,14 @@ export function emitDriverEvent(email: string, evenement: string, donnees: unkno
 export function emitUserEvent(email: string, evenement: string, donnees: unknown) {
   if (!io || !email) return;
 
-  io.to(salonUtilisateur(email)).emit(evenement, donnees);
+  return envoyerPrive([salonUtilisateur(email)], evenement, donnees);
 }
 
 /** Pousse un événement à l'équipe support (superowners et admins système). */
 export function emitSupportEvent(evenement: string, donnees: unknown) {
   if (!io) return;
 
-  io.to(SALON_SUPPORT).emit(evenement, donnees);
+  return envoyerPrive([SALON_SUPPORT], evenement, donnees);
 }
 
 /** Ce qu'un écran doit savoir pour décider s'il se relit. */
@@ -498,9 +441,8 @@ export interface Destinataires {
 /**
  * Prévient les écrans ouverts qu'une donnée a changé.
  *
- * L'événement ne porte aucune donnée, seulement ce qui a changé et où : chaque
- * écran se relit ensuite par l'API, qui applique ses propres droits. On peut
- * donc le diffuser largement sans rien divulguer.
+ * Les identifiants d'objets et d'organisations restent privés : les salons
+ * sont revérifiés avant diffusion. L'écran relit ensuite les données par l'API.
  *
  * Tous les salons sont visés en un seul envoi : un compte présent dans
  * plusieurs (un superowner membre d'une organisation) ne le reçoit qu'une fois.
@@ -523,15 +465,15 @@ export async function signalerModification(modification: Modification, destinata
     if (orgIds.length > 0) {
       const membres = await db.membership.findMany({
         where: { orgId: { in: orgIds } },
-        select: { user: { select: { email: true } } },
+        select: { user: { select: { id: true } } },
       });
-      for (const membre of membres) salons.add(salonUtilisateur(membre.user.email));
+      for (const membre of membres) salons.add(`compte-${membre.user.id}`);
     }
 
     const evenement = { ...modification, horodatage: new Date().toISOString() };
 
     if (salons.size > 0) {
-      io.to([...salons]).emit('donnees-modifiees', evenement);
+      await envoyerPrive([...salons], 'donnees-modifiees', evenement);
     }
 
     // La vitrine ne reçoit que le nom de la famille et la boutique : ni

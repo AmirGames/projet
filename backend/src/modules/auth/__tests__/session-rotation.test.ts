@@ -131,6 +131,13 @@ describe("rotation des jetons de renouvellement", () => {
     expect(apres.status).toBe(401);
     expect(await code(SsoService.renouveler(refreshToken))).toBe("SESSION_INVALIDE");
   });
+
+  it("le temps réel relit une révocation externe malgré une session active en cache", async () => {
+    const { sid } = await SsoService.connecter("u1");
+    expect(await SsoService.sessionActive(sid)).toBe(true);
+    sessions.find((s) => s.id === sid)!.revokedAt = new Date();
+    expect(await SsoService.sessionActive(sid, { sansCache: true })).toBe(false);
+  });
 });
 
 describe("jetons sans session (sid)", () => {
