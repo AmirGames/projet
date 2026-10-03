@@ -1,5 +1,16 @@
 # Audit HTTP ciblé de production — 3 octobre 2026
 
+## Confirmation après déploiement
+
+L'opérateur a transmis le résultat du nouveau passage sur le VPS au commit
+`c82513c7` : **67 assertions réussies, 0 échec**, rapport
+`audit-idor-1791035627538-46f51e3e.json` sur le VPS. Les deux organisations,
+les tickets et les comptes temporaires ont été supprimés ; les sessions
+renvoient 401. Les quatre échecs ci-dessous décrivent le passage antérieur
+au déploiement, et sont désormais résolus dans ce périmètre.
+
+## Passage initial
+
 Cible : https://api.zupeat.com. Exécution du 3 octobre 2026 à 13:25 UTC
 sur le déploiement correspondant au commit `aece64aa` indiqué par l'opérateur.
 Le commit actif n'est pas attesté par une réponse de l'API.

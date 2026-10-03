@@ -836,19 +836,20 @@ export class DispatchService {
     const acceptees = [proposition, ...compagnes].slice(0, place);
     const laissees = [proposition, ...compagnes].slice(place);
 
-    const livreur = await db.courier.findUnique({ where: { id: driverId }, select: { currentOrderId: true } });
     const maintenant = new Date();
 
     // Tout d'un bloc : sans cela, une course pourrait être attribuée sans que
     // le livreur soit marqué occupé.
-    await db.$transaction([
-      ...acceptees.flatMap((offre) => [
-        db.deliveryOffer.update({
-          where: { id: offre.id },
-          data: { status: "ACCEPTED", respondedAt: maintenant },
-        }),
-        db.orderDelivery.update({
-          where: { id: offre.deliveryId },
+    await db.$transaction(async (tx) => {
+      const livreur = await tx.courier.findUnique({ where: { id: driverId }, select: { currentOrderId: true, status: true } });
+      if (!livreur || livreur.status !== "ACTIVE") {
+        throw new ApiError(403, "Votre compte livreur n'est pas actif", "DRIVER_NOT_ACTIVE");
+      }
+      for (const offre of acceptees) {
+        // Le contrôle initial ne suffit pas : une autre acceptation peut
+        // s'intercaler. Le perdant ne doit jamais écraser l'attribution.
+        const attribuee = await tx.orderDelivery.updateMany({
+          where: { id: offre.deliveryId, driverId: null, status: "PENDING" },
           data: {
             driverId,
             status: "ACCEPTED",
@@ -856,21 +857,27 @@ export class DispatchService {
             distanceKm: offre.distanceKm,
             driverPayout: offre.payout,
           },
-        }),
+        });
+        if (attribuee.count !== 1) throw new ApiError(409, "Cette course n'est plus disponible", "ALREADY_ASSIGNED");
+        const ouverte = await tx.deliveryOffer.updateMany({
+          where: { id: offre.id, driverId, status: "PENDING", expiresAt: { gt: new Date() } },
+          data: { status: "ACCEPTED", respondedAt: maintenant },
+        });
+        if (ouverte.count !== 1) throw new ApiError(409, "Cette proposition n'est plus ouverte", "OFFER_CLOSED");
         // Les propositions encore ouvertes pour cette course n'ont plus lieu d'être.
-        db.deliveryOffer.updateMany({
+        await tx.deliveryOffer.updateMany({
           where: { deliveryId: offre.deliveryId, status: "PENDING", id: { not: offre.id } },
           data: { status: "CANCELLED", respondedAt: maintenant },
-        }),
-      ]),
-      ...laissees.map((offre) =>
-        db.deliveryOffer.update({ where: { id: offre.id }, data: { status: "CANCELLED", respondedAt: maintenant } })
-      ),
-      db.courier.update({
+        });
+      }
+      for (const offre of laissees) {
+        await tx.deliveryOffer.updateMany({ where: { id: offre.id, driverId, status: "PENDING" }, data: { status: "CANCELLED", respondedAt: maintenant } });
+      }
+      await tx.courier.update({
         where: { id: driverId },
         data: { currentOrderId: livreur?.currentOrderId ?? proposition.deliveryId, isAvailable: false },
-      }),
-    ]);
+      });
+    });
 
     for (const offre of acceptees) {
       emitDeliveryUpdate(offre.delivery.orderId, { status: "ACCEPTED" });

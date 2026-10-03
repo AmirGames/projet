@@ -37,7 +37,7 @@ import { z } from "zod";
 import { champEmail, champMotDePasse } from "../../utils/validation";
 import { distanceKm, estUnPoint } from "../../utils/geo";
 import { Prisma } from "@prisma/client";
-import { adresseSignee, cheminRelatif } from "../files/fichiers-prives.service";
+import { adresseDepot, adresseSignee, cheminRelatif } from "../files/fichiers-prives.service";
 import { servirFichierPrive } from "../files/files.routes";
 
 const router = Router();
@@ -1383,7 +1383,7 @@ router.post(
       const relatif = cheminRelatif(url);
       res.status(201).json({
         success: true,
-        data: { photoUrl: url, apercuUrl: relatif ? adresseSignee(relatif) : url },
+        data: { photoUrl: adresseDepot(url, deliveryId), apercuUrl: relatif ? adresseSignee(relatif) : url },
       });
     } catch (err) {
       next(err);

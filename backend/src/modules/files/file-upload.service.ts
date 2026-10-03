@@ -1,5 +1,5 @@
 import { promises as fs } from "fs";
-import { join } from "path";
+import { join, sep } from "path";
 import { randomBytes } from "crypto";
 import { getEnv } from "../../config/env";
 import { logger } from "../../config/logger";
@@ -148,7 +148,7 @@ export class FileUploadService {
       await fs.mkdir(join(UPLOADS_DIR, folder), { recursive: true });
       await fs.writeFile(fullPath, buffer);
 
-      const url = `${API_URL}/uploads/${relativePath}`;
+      const url = `${API_URL}/uploads/${relativePath.split(sep).join("/")}`;
       logger.info("Local file uploaded", { path: relativePath, size: buffer.length, ext });
 
       return {

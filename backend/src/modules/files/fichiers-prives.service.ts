@@ -108,6 +108,38 @@ function signature(relatif: string, expire: number): string {
   return createHmac("sha256", cleDeSignature()).update(`${relatif}\n${expire}`).digest("hex");
 }
 
+// Le reçu de dépôt lie une photo à sa course. Une signature de lecture
+// seule ne doit jamais autoriser le rattachement d'un fichier à une autre course.
+const DUREE_DEPOT_S = 24 * 3600;
+function signatureDepot(url: string, deliveryId: string, exp: string) {
+  return createHmac("sha256", cleDeSignature()).update(`depot\n${deliveryId}\n${url}\n${exp}`).digest("hex");
+}
+export function adresseDepot(url: string, deliveryId: string, maintenant = Date.now()): string {
+  const adresse = new URL(url);
+  adresse.searchParams.delete("depotExp");
+  adresse.searchParams.delete("depotSig");
+  const exp = String(Math.floor(maintenant / 1000) + DUREE_DEPOT_S);
+  const sig = signatureDepot(adresse.href, deliveryId, exp);
+  adresse.searchParams.set("depotExp", exp);
+  adresse.searchParams.set("depotSig", sig);
+  return adresse.href;
+}
+/** Vérifie le reçu avant tout rattachement, puis restitue l'URL de stockage. */
+export function verifierDepot(url: string, deliveryId: string, maintenant = Date.now()): string | null {
+  try {
+    const adresse = new URL(url);
+    if (adresse.searchParams.getAll("depotExp").length !== 1 || adresse.searchParams.getAll("depotSig").length !== 1) return null;
+    const exp = adresse.searchParams.get("depotExp")!;
+    const sig = adresse.searchParams.get("depotSig")!;
+    if (!/^\d{1,12}$/.test(exp) || !/^[a-f0-9]{64}$/.test(sig)) return null;
+    const seconds = Math.floor(maintenant / 1000);
+    if (Number(exp) < seconds || Number(exp) > seconds + DUREE_DEPOT_S) return null;
+    adresse.searchParams.delete("depotExp");
+    adresse.searchParams.delete("depotSig");
+    return timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(signatureDepot(adresse.href, deliveryId, exp), "hex")) ? adresse.href : null;
+  } catch { return null; }
+}
+
 export function signer(relatif: string, maintenant = Date.now()) {
   const exp = Math.floor(maintenant / 1000) + DUREE_SIGNATURE_S;
   return { exp, sig: signature(relatif, exp) };
