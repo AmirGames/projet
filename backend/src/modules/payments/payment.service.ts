@@ -236,28 +236,33 @@ export const paymentService = {
     }
 
     const paidAt = new Date();
-    await db.payment.upsert({
-      where: { orderId: commande.id },
-      create: {
-        orderId: commande.id,
-        amount: recu / 100,
-        status: "SUCCEEDED",
-        stripePaymentIntentId: intention.id,
-        stripeStatus: intention.status,
-        paidAt,
-      },
-      update: {
-        status: "SUCCEEDED",
-        stripePaymentIntentId: intention.id,
-        stripeStatus: intention.status,
-        paidAt,
-      },
-    });
+    const enregistre = await db.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id: commande.id, paymentStatus: { not: 'REFUNDED' } },
+        data: { paymentStatus: 'SUCCEEDED', paymentId: intention.id },
+      });
+      if (!count) return false;
+      await tx.payment.upsert({
+        where: { orderId: commande.id },
+        create: {
+          orderId: commande.id,
+          amount: recu / 100,
+          status: "SUCCEEDED",
+          stripePaymentIntentId: intention.id,
+          stripeStatus: intention.status,
+          paidAt,
+        },
+        update: {
+          status: "SUCCEEDED",
+          stripePaymentIntentId: intention.id,
+          stripeStatus: intention.status,
+          paidAt,
+        },
+      });
 
-    await db.order.update({
-      where: { id: commande.id },
-      data: { paymentStatus: "SUCCEEDED", paymentId: intention.id },
+      return true;
     });
+    if (!enregistre) return commande;
 
     logger.info("Commande payée", { orderId: commande.id, paymentIntentId: intention.id });
 
@@ -286,7 +291,7 @@ export const paymentService = {
    */
   async transmettreAuCommercant(orderId: string) {
     const { count } = await db.order.updateMany({
-      where: { id: orderId, submittedAt: null, status: "PENDING", deletedAt: null },
+      where: { id: orderId, submittedAt: null, status: "PENDING", deletedAt: null, paymentStatus: 'SUCCEEDED' },
       data: { submittedAt: new Date() },
     });
     if (count === 0) return false;
@@ -400,7 +405,12 @@ export const paymentService = {
 
   async noterRemboursement(paiement: { id: string; orderId: string; refundedAt: Date | null }, charge: Stripe.Charge) {
     const total = charge.amount_refunded >= charge.amount;
-    await db.payment.update({
+    await db.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: paiement.orderId },
+          data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
+        });
+      await tx.payment.update({
       where: { id: paiement.id },
       data: {
         refundedAmount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
@@ -408,10 +418,7 @@ export const paymentService = {
         status: total ? "REFUNDED" : "SUCCEEDED",
       },
     });
-    await db.order.update({
-        where: { id: paiement.orderId },
-        data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
-      });
+    });
     return paiement;
   },
 
@@ -484,27 +491,30 @@ export const paymentService = {
       throw new ApiError(502, 'Stripe n’a pas effectué le remboursement.', 'REFUND_FAILED');
     }
     const refundedAt = new Date();
-    await db.payment.upsert({
-      where: { orderId },
-      create: {
-        orderId,
-        amount: montantAEncaisser(commande),
-        status: "REFUNDED",
-        stripePaymentIntentId: paymentIntentId,
-        stripeRefundId: remboursement.id,
-        refundedAmount: remboursement.amount / 100,
-        refundedAt,
-      },
-      update: {
-        status: "REFUNDED",
-        stripeRefundId: remboursement.id,
-        refundedAmount: remboursement.amount / 100,
-        refundedAt,
-      },
-    });
-    await db.order.update({
-      where: { id: orderId },
-      data: { paymentStatus: "REFUNDED" },
+    await db.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: { paymentStatus: "REFUNDED" },
+      });
+
+      await tx.payment.upsert({
+        where: { orderId },
+        create: {
+          orderId,
+          amount: montantAEncaisser(commande),
+          status: "REFUNDED",
+          stripePaymentIntentId: paymentIntentId,
+          stripeRefundId: remboursement.id,
+          refundedAmount: remboursement.amount / 100,
+          refundedAt,
+        },
+        update: {
+          status: "REFUNDED",
+          stripeRefundId: remboursement.id,
+          refundedAmount: remboursement.amount / 100,
+          refundedAt,
+        },
+      });
     });
 
     logger.info("Commande remboursée", {

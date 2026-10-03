@@ -8,6 +8,7 @@ const SECRET = "whsec_test_secret";
 const vraiStripe = new Stripe("sk_test_factice");
 
 const db: any = {
+  $transaction: fn(),
   order: { findUnique: fn(), findMany: fn(), update: fn(), updateMany: fn() },
   payment: { findFirst: fn(), upsert: fn(), update: fn(), updateMany: fn() },
 };
@@ -64,7 +65,8 @@ const commande = (surcharge: object = {}) => ({
 
 beforeEach(() => {
   jest.resetAllMocks();
-  db.order.updateMany.mockResolvedValue({ count: 0 });
+  db.order.updateMany.mockImplementation(async ({ where }: any) => ({ count: where.paymentStatus?.not === 'REFUNDED' ? 1 : 0 }));
+  db.$transaction.mockImplementation(async (traitement: any) => traitement(db));
   db.payment.findFirst.mockResolvedValue({ id: "pay-1", orderId: "cmd-1", stripeRefundId: "re_1" });
 });
 
@@ -87,8 +89,8 @@ describe("webhook Stripe", () => {
 
     await paymentService.handleWebhook(corps, signature);
 
-    expect(db.order.update).toHaveBeenCalledWith({
-      where: { id: "cmd-1" },
+    expect(db.order.updateMany).toHaveBeenCalledWith({
+      where: { id: "cmd-1", paymentStatus: { not: 'REFUNDED' } },
       data: { paymentStatus: "SUCCEEDED", paymentId: "pi_1" },
     });
     expect(db.payment.upsert.mock.calls[0][0].update.status).toBe("SUCCEEDED");
@@ -97,7 +99,11 @@ describe("webhook Stripe", () => {
 
   it("transmet la commande au commerçant une fois payée, une seule fois", async () => {
     db.order.findUnique.mockResolvedValue(commande({ submittedAt: null }));
-    db.order.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValue({ count: 0 });
+    let transmis = false;
+    db.order.updateMany.mockImplementation(async ({ where }: any) => {
+      if (where.paymentStatus?.not === 'REFUNDED') return { count: 1 };
+      const count = transmis ? 0 : 1; transmis = true; return { count };
+    });
     const { corps, signature } = signe({
       id: "evt_1",
       object: "event",
@@ -108,8 +114,8 @@ describe("webhook Stripe", () => {
     await paymentService.handleWebhook(corps, signature);
     await paymentService.handleWebhook(corps, signature);
 
-    expect(db.order.updateMany.mock.calls[0][0]).toMatchObject({
-      where: { id: "cmd-1", submittedAt: null, status: "PENDING", deletedAt: null },
+    expect(db.order.updateMany.mock.calls[1][0]).toMatchObject({
+      where: { id: "cmd-1", submittedAt: null, status: "PENDING", deletedAt: null, paymentStatus: 'SUCCEEDED' },
     });
     expect(annoncerAuCommercant).toHaveBeenCalledTimes(1);
   });
@@ -279,6 +285,17 @@ describe("createPaymentIntent", () => {
 });
 
 describe('intégrité des événements Stripe', () => {
+  it('remboursement concurrent après la lecture : ne réécrit plus payé', async () => {
+    db.order.findUnique.mockResolvedValue(commande());
+    db.order.updateMany.mockResolvedValueOnce({ count: 0 });
+    await paymentService.marquerPaye(intention() as any);
+    expect(db.payment.upsert).not.toHaveBeenCalled();
+    expect(annoncerAuCommercant).not.toHaveBeenCalled();
+    expect(db.order.updateMany).toHaveBeenCalledWith({
+      where: { id: 'cmd-1', paymentStatus: { not: 'REFUNDED' } },
+      data: { paymentStatus: 'SUCCEEDED', paymentId: 'pi_1' },
+    });
+  });
   it('un événement partiel ancien utilise le cumul Stripe actuel', async () => {
     stripe.charges.retrieve.mockResolvedValue({ id: 'ch_1', payment_intent: 'pi_1', amount: 2350, amount_refunded: 2350 });
     await paymentService.marquerRembourse({ id: 'ch_1', payment_intent: 'pi_1', amount: 2350, amount_refunded: 100 } as any);
@@ -347,7 +364,7 @@ describe("abandonnerLesPaiementsNonAboutis", () => {
     db.order.findMany.mockResolvedValue([{ id: "cmd-1", paymentId: "pi_1" }]);
     stripe.paymentIntents.retrieve.mockResolvedValue(intention());
     db.order.findUnique.mockResolvedValue(commande({ submittedAt: null }));
-    db.order.updateMany.mockResolvedValueOnce({ count: 1 });
+    db.order.updateMany.mockResolvedValue({ count: 1 });
 
     expect(await paymentService.abandonnerLesPaiementsNonAboutis()).toBe(0);
     expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
