@@ -1,5 +1,17 @@
 # Audit ciblé livreurs et livraisons — 3 octobre 2026
 
+## Déploiement annoncé ensuite par l'opérateur
+
+L'opérateur a confirmé le déploiement des corrections ; le dépôt local est
+au commit `d5994b8b` (Update drivers). La vérification externe suivante a
+constaté `/health/ready` en 200 et les accès anonymes à `/api/organizations`,
+`/api/drivers/deliveries`, `/api/drivers/documents`,
+`/api/zupdrive/chauffeur/me` et `/api/zupdrive/admin/chauffeurs` en 401.
+Ces sondes sans écriture n'attestent pas le commit actif par l'API et ne
+remplacent pas les scénarios livreurs authentifiés, de concurrence et de
+preuve photo avec une vraie base dédiée. Les mentions « locales, non
+déployées » plus bas décrivent le statut au moment de la correction initiale.
+
 ## Point de départ et périmètre
 
 Le résultat de production support/organisations transmis par l'opérateur est

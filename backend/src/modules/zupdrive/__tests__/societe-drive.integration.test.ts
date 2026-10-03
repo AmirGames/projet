@@ -55,7 +55,9 @@ const fichierPdf = () => ({ file: Buffer.from("%PDF-1.4"), mimeType: "applicatio
 
 async function compte(nom: string) {
   const user = await db.user.create({
-    data: { email: `${nom}-${suffixe}@zupdrive.test`, name: `${nom} Test`, passwordHash: await bcrypt.hash("x", 4) },
+    // Les scénarios légitimes représentent des destinataires ayant confirmé
+    // leur boîte mail ; les adresses non confirmées ont leur régression dédiée.
+    data: { email: `${nom}-${suffixe}@zupdrive.test`, emailVerified: true, name: `${nom} Test`, passwordHash: await bcrypt.hash("x", 4) },
   });
   comptes.push(user.id);
   return { id: user.id, email: user.email };
