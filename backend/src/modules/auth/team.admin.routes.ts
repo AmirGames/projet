@@ -132,6 +132,12 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
       );
     }
 
+    // Une adresse saisie à l'inscription ne prouve pas qui contrôle le compte.
+    // La promotion ciblée par e-mail doit attendre la confirmation de sa boîte.
+    if (!compte.emailVerified) {
+      throw new ApiError(403, "Cette personne doit confirmer son adresse e-mail avant d'entrer dans l'équipe.", "USER_EMAIL_NOT_VERIFIED");
+    }
+
     if (compte.isSuperOwner || compte.isSystemAdmin) {
       throw new ApiError(
         400,

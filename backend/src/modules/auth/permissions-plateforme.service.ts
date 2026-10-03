@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { Plateforme } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { cheminDecode } from "../../utils/chemin";
 
 /**
  * Qui, dans l'équipe du groupe, peut faire quoi, plateforme par plateforme.
@@ -142,6 +143,7 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/dashboard/, "dashboard"],
     [/^\/organizations\/[^/]+\/tier/, "formules"],
     [/^\/organizations\/[^/]+\/commission-promo/, "formules"],
+    [/^\/organizations\/[^/]+\/conditions/, "formules"],
     [/^\/organizations\/[^/]+\/close/, "organizations-close"],
     [/^\/organizations/, "organizations"],
     [/^\/members\/drivers/, "drivers"],
@@ -191,8 +193,17 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
   ],
 };
 
-export function sectionDeLaRoute(routeur: Routeur, chemin: string): string | null {
-  const trouve = ROUTES[routeur].find(([motif]) => motif.test(chemin));
+export function sectionDeLaRoute(routeur: Routeur, chemin: string, methode?: string): string | null {
+  // Express ignore la casse : CLOSE doit avoir le même droit que close,
+  // pas retomber sur la permission plus large « organizations ».
+  const normalise = cheminDecode(chemin).toLowerCase();
+  // Le PATCH historique ne modifie que la formule ; son GET lit le dossier.
+  if (routeur === "admin" && methode === "PATCH" && /^\/merchants\/[^/]+\/?$/.test(normalise)) return "formules";
+  const trouve = ROUTES[routeur].find(([motif]) => {
+    const match = motif.exec(normalise);
+    // Un préfixe ne vaut qu'à la frontière d'un segment, jamais pour tier-autre.
+    return match && (match[0].length === normalise.length || normalise[match[0].length] === "/");
+  });
   return trouve ? trouve[1] : null;
 }
 
@@ -372,7 +383,7 @@ export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT
       const compte = req.compte;
       if (compte?.isSuperOwner) return next();
 
-      const section = sectionDeLaRoute(routeur, req.path);
+      const section = sectionDeLaRoute(routeur, req.path, req.method);
       const permissions = await PermissionsPlateforme.permissionsDu(compte?.acces[plateforme], plateforme);
       const niveau = section ? permissions[section] : undefined;
       const lecture = req.method === "GET" || req.method === "HEAD";

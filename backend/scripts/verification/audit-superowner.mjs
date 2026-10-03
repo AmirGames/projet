@@ -1,6 +1,6 @@
 // Passe en revue chaque fonctionnalité de l'espace superowner.
 
-import { inscription, titre, check, j, uniq, post, get, put, patch, del, terminer, API } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, put, patch, del, terminer, API, sqlExec } from './outils.mjs';
 
 const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const T = sup.accessToken;
@@ -58,6 +58,8 @@ const whSuppr = await del(`/api/superowner/webhooks/${whId}`, null, T);
 check('Webhook — suppression', whSuppr.status < 300, `status=${whSuppr.status}`);
 
 // Administrateurs
+// Le destinataire de cette promotion légitime a confirmé sa boîte mail.
+await sqlExec(`UPDATE "User" SET "emailVerified" = true WHERE email = 'm-${uniq}@t.fr'`);
 const promo = await post('/api/superowner/admins', { email: `m-${uniq}@t.fr` }, T);
 check('Administrateur — promotion', promo.status < 300, `status=${promo.status} ${JSON.stringify(await j(promo))?.slice(0, 150)}`);
 const admins = await j(await get('/api/superowner/admins', T));
