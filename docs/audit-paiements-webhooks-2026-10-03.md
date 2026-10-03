@@ -161,3 +161,76 @@ pas le fonctionnement d'un encaissement ou remboursement complet en production.
 
 Références de conception : [idempotence Stripe](https://docs.stripe.com/api/idempotent_requests)
 et [événements et livraison des webhooks](https://docs.stripe.com/webhooks).
+
+## Contrôles après le déploiement annoncé
+
+Le dépôt local est propre au commit `2b4cf3c0` et contient les derniers
+compléments transactionnels. Le déploiement sur le VPS a été confirmé par
+l'utilisateur ; les sondes ne donnent pas elles-mêmes le SHA du backend distant.
+
+Sondes rejouées sur l'API : **10/10 réussies**, soit les six contrôles Socket.IO
+et les quatre refus de paiement/remboursement/webhook décrits ci-dessus.
+Rapports : `audit-socket-1791061394411.json` et
+`audit-paiements-production-1791061414983.json`.
+
+Reste à valider dans un environnement de test isolé : encaissement Stripe,
+remboursement, livraison/rejeu d'événements réellement signés et concurrence
+sur PostgreSQL réel. Les sondes de refus ne remplacent pas ces scénarios.
+
+## Validation réelle Stripe test et PostgreSQL — terminée
+
+À la demande de l'utilisateur, ces scénarios ont ensuite été exécutés sur le
+même code (`2b4cf3c0`), avec une clé Stripe locale dont `livemode=false` a été
+vérifié par l'API Stripe, PostgreSQL 18 réel et une base neuve dédiée.
+Cette validation remplace la limitation précédente « PostgreSQL/Stripe non
+disponibles ici » pour les scénarios ci-dessous.
+
+**Résultat final : 33 contrôles réussis, aucun échec.** Rapport de référence :
+`audit-stripe-sandbox-1791062125334.json`.
+
+- Deux appels HTTP simultanés ont créé une seule intention Stripe et une seule
+  ligne de paiement PostgreSQL.
+- Deux paiements de 2 € ont été encaissés en mode test avec `pm_card_visa`.
+  Aucun moyen de paiement réel ni opération live n'a été utilisé.
+- Stripe CLI a relayé les véritables événements du compte de test vers l'API
+  locale. Leur signature a été vérifiée par le handler réel, avec réponse 200.
+- Le statut payé et la transmission ont été contrôlés en base. Le rejeu des
+  octets et de la signature reçus n'a pas doublé la transmission au commerçant.
+- Les remboursements ont été déclenchés par la vraie route d'administration,
+  avec JWT et session de fixture. Stripe test confirme `succeeded`, 200 centimes
+  restitués pour chaque paiement, et une seule restitution par intention.
+- Le rejeu du succès initial après remboursement a conservé `REFUNDED`.
+- Deux demandes de remboursement simultanées n'ont produit qu'une restitution
+  Stripe, avec des réponses applicatives autorisées (200 ou 409).
+- Un trigger temporaire a provoqué une vraie erreur PostgreSQL sur l'écriture
+  du paiement. Le webhook a répondu 500 ; commande, paiement et transmission
+  sont restés en attente, prouvant le rollback de la transaction réelle.
+- Après retrait du trigger, le rejeu du même webhook signé a réussi et réparé
+  le paiement, qui a ensuite été remboursé.
+
+Les commandes et le compte d'administration étaient des fixtures créées
+directement dans cette base dédiée. Cette exécution valide le parcours des
+routes de paiement/remboursement et du handler Stripe ; elle ne constitue pas
+un test du formulaire de commande ou de l'interface graphique complète.
+
+**Nettoyage confirmé :** les deux paiements de test sont intégralement
+remboursés, les processus locaux ont été arrêtés et la base temporaire a été
+supprimée. Les bases existantes et le VPS n'ont pas été modifiés. Les objets
+Stripe de test restent dans l'historique du compte, avec leurs remboursements.
+
+Outillage reproductible ajouté :
+`backend/scripts/security/audit-stripe-sandbox.mjs` et
+`backend/scripts/security/stripe-sandbox-server.ts`.
+Depuis `backend` : `node scripts/security/audit-stripe-sandbox.mjs --run`.
+Le runner exige une clé test et un PostgreSQL local, crée une base neuve,
+applique les migrations et nettoie ses fixtures. Il ne lance pas le reset
+général des vérifications et n'affiche aucun secret.
+
+Les premières tentatives ont corrigé uniquement la préparation de ce nouveau
+runner (options locales vides, hash bcrypt requis, format du jeton de suivi).
+Aucune correction supplémentaire du code de production n'a été nécessaire
+pour réussir les 33 scénarios finaux.
+
+La réception d'un événement signé sur le **VPS de production**, avec son
+secret propre et son endpoint configuré dans Stripe, demeure distincte de
+cette validation locale. Elle n'a pas été exécutée ici.

@@ -1,0 +1,34 @@
+{
+  "target": "https://api.zupeat.com",
+  "at": "2026-10-03T21:03:34.983Z",
+  "checks": [
+    {
+      "name": "intention sans possession",
+      "status": 404,
+      "code": "ORDER_NOT_FOUND",
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "name": "confirmation sans possession",
+      "status": 404,
+      "code": "ORDER_NOT_FOUND",
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "name": "remboursement sans session",
+      "status": 401,
+      "code": "MISSING_AUTH",
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "webhook sans signature",
+      "status": 400,
+      "code": "STRIPE_SIGNATURE_MISSING",
+      "expected": 400,
+      "ok": true
+    }
+  ]
+}

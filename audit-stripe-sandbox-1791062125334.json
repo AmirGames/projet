@@ -1,0 +1,231 @@
+{
+  "run": "saas_test_audit_stripe_1791062110178_f4b370",
+  "startedAt": "2026-10-03T21:15:10.178Z",
+  "testMode": true,
+  "checks": [
+    {
+      "name": "Stripe authentifié exclusivement en test",
+      "actual": false,
+      "expected": false,
+      "ok": true
+    },
+    {
+      "name": "migrations sur base temporaire neuve",
+      "actual": 0,
+      "expected": 0,
+      "ok": true
+    },
+    {
+      "name": "API isolée disponible",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "deux créations concurrentes HTTP",
+      "actual": [
+        201,
+        201
+      ],
+      "expected": [
+        201,
+        201
+      ],
+      "ok": true
+    },
+    {
+      "name": "même intention Stripe pour deux appels",
+      "actual": "pi_3UMaH6PAN3AxfbVc18W5e9Rh",
+      "expected": "pi_3UMaH6PAN3AxfbVc18W5e9Rh",
+      "ok": true
+    },
+    {
+      "name": "un seul paiement enregistré",
+      "actual": 1,
+      "expected": 1,
+      "ok": true
+    },
+    {
+      "name": "carte de test encaissée chez Stripe",
+      "actual": "succeeded",
+      "expected": "succeeded",
+      "ok": true
+    },
+    {
+      "name": "aucun mode live",
+      "actual": false,
+      "expected": false,
+      "ok": true
+    },
+    {
+      "name": "webhook réellement reçu et signé accepté",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "montant encaissé exact",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "paiement confirmé en base",
+      "actual": "SUCCEEDED",
+      "expected": "SUCCEEDED",
+      "ok": true
+    },
+    {
+      "name": "rejeu du webhook signé",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "transmission commerçant non doublée",
+      "actual": "2026-10-03T21:15:18.113Z",
+      "expected": "2026-10-03T21:15:18.113Z",
+      "ok": true
+    },
+    {
+      "name": "confirmation client légitime",
+      "actual": true,
+      "expected": true,
+      "ok": true
+    },
+    {
+      "name": "remboursement HTTP autorisé",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "remboursement réellement réussi chez Stripe test",
+      "actual": "succeeded",
+      "expected": "succeeded",
+      "ok": true
+    },
+    {
+      "name": "montant restitué exact",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "commande remboursée en base",
+      "actual": "REFUNDED",
+      "expected": "REFUNDED",
+      "ok": true
+    },
+    {
+      "name": "répétition du remboursement refusée",
+      "actual": 409,
+      "expected": 409,
+      "ok": true
+    },
+    {
+      "name": "une seule restitution Stripe",
+      "actual": 1,
+      "expected": 1,
+      "ok": true
+    },
+    {
+      "name": "ancien succès signé après remboursement",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "rejeu ne ressuscite pas la commande",
+      "actual": "REFUNDED",
+      "expected": "REFUNDED",
+      "ok": true
+    },
+    {
+      "name": "création HTTP intention",
+      "actual": 201,
+      "expected": 201,
+      "ok": true
+    },
+    {
+      "name": "incident SQL : webhook 500 pour réessai",
+      "actual": 500,
+      "expected": 500,
+      "ok": true
+    },
+    {
+      "name": "rollback réel du statut commande",
+      "actual": "PENDING",
+      "expected": "PENDING",
+      "ok": true
+    },
+    {
+      "name": "rollback réel de la transmission",
+      "actual": null,
+      "expected": null,
+      "ok": true
+    },
+    {
+      "name": "paiement non partiellement enregistré",
+      "actual": "PENDING",
+      "expected": "PENDING",
+      "ok": true
+    },
+    {
+      "name": "rejeu signé après réparation SQL",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "récupération après rollback",
+      "actual": "SUCCEEDED",
+      "expected": "SUCCEEDED",
+      "ok": true
+    },
+    {
+      "name": "remboursement concurrent sans erreur interne",
+      "actual": true,
+      "expected": true,
+      "ok": true
+    },
+    {
+      "name": "une restitution malgré la concurrence",
+      "actual": 1,
+      "expected": 1,
+      "ok": true
+    },
+    {
+      "name": "statut final paiement du rollback",
+      "actual": "REFUNDED",
+      "expected": "REFUNDED",
+      "ok": true
+    },
+    {
+      "name": "statut final commande du rollback",
+      "actual": "REFUNDED",
+      "expected": "REFUNDED",
+      "ok": true
+    }
+  ],
+  "stripeObjects": [
+    "pi_3UMaH6PAN3AxfbVc18W5e9Rh",
+    "pi_3UMaHAPAN3AxfbVc2vdOsOc4"
+  ],
+  "cleanup": {
+    "stripe": [
+      {
+        "id": "pi_3UMaH6PAN3AxfbVc18W5e9Rh",
+        "refunded": true
+      },
+      {
+        "id": "pi_3UMaHAPAN3AxfbVc2vdOsOc4",
+        "refunded": true
+      }
+    ],
+    "databaseDropped": true
+  },
+  "finishedAt": "2026-10-03T21:15:25.334Z",
+  "passed": 33,
+  "failed": 0
+}
