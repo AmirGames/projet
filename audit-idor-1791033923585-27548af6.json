@@ -1,0 +1,460 @@
+{
+  "run": "audit-idor-1791033923585-27548af6",
+  "target": "https://api.zupeat.com",
+  "startedAt": "2026-10-03T13:25:23.585Z",
+  "fixtures": [
+    {
+      "name": "alice",
+      "userId": "cmusfcv4r00jm01p1d9f06p2s",
+      "orgId": "cmusfcv8t00jr01p1kckwwwaz",
+      "ticketId": "cmusfcvae00jt01p1hv877f1x"
+    },
+    {
+      "name": "bob",
+      "userId": "cmusfcvdh00jv01p158gzg8a0",
+      "orgId": "cmusfcvfn00k001p1evwecagm",
+      "ticketId": "cmusfcvgr00k201p1ezifda4s"
+    }
+  ],
+  "checks": [
+    {
+      "name": "alice lecture sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice lecture inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice liste sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice liste inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice archives sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice archives inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice création sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice création inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice statut sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice statut inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice suppression sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice suppression inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice messages sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice messages inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice ticket toujours lisible",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "alice statut intact",
+      "actual": "OPEN",
+      "expected": "OPEN",
+      "ok": true
+    },
+    {
+      "name": "alice liste légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "alice un seul ticket",
+      "actual": 1,
+      "expected": 1,
+      "ok": true
+    },
+    {
+      "name": "alice changement légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "alice statut enregistré",
+      "actual": "IN_PROGRESS",
+      "expected": "IN_PROGRESS",
+      "ok": true
+    },
+    {
+      "name": "alice organisation organizations inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice organisation Organizations inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice organisation %6frganizations inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "alice organisation sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice organisation légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "alice liste organisations sans jeton",
+      "actual": 200,
+      "expected": 401,
+      "ok": false
+    },
+    {
+      "name": "alice liste organisations identité injectée ignorée",
+      "actual": false,
+      "expected": true,
+      "ok": false
+    },
+    {
+      "name": "bob lecture sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob lecture inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob liste sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob liste inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob archives sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob archives inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob création sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob création inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob statut sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob statut inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob suppression sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob suppression inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob messages sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob messages inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob ticket toujours lisible",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "bob statut intact",
+      "actual": "OPEN",
+      "expected": "OPEN",
+      "ok": true
+    },
+    {
+      "name": "bob liste légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "bob un seul ticket",
+      "actual": 1,
+      "expected": 1,
+      "ok": true
+    },
+    {
+      "name": "bob changement légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "bob statut enregistré",
+      "actual": "IN_PROGRESS",
+      "expected": "IN_PROGRESS",
+      "ok": true
+    },
+    {
+      "name": "bob organisation organizations inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob organisation Organizations inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob organisation %6frganizations inter-tenant",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob organisation sans jeton",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "bob organisation légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "bob liste organisations sans jeton",
+      "actual": 200,
+      "expected": 401,
+      "ok": false
+    },
+    {
+      "name": "bob liste organisations identité injectée ignorée",
+      "actual": false,
+      "expected": true,
+      "ok": false
+    },
+    {
+      "name": "/api/admin/config compte ordinaire",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "/api/superowner/dashboard compte ordinaire",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "/api/zupdrive/admin/chauffeurs compte ordinaire",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "bob suppression légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "bob ticket supprimé",
+      "actual": 404,
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "name": "bob organisation supprimée",
+      "actual": 404,
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "name": "bob compte supprimé",
+      "actual": true,
+      "expected": true,
+      "ok": true
+    },
+    {
+      "name": "bob session révoquée",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "alice suppression légitime",
+      "actual": 200,
+      "expected": 200,
+      "ok": true
+    },
+    {
+      "name": "alice ticket supprimé",
+      "actual": 404,
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "name": "alice organisation supprimée",
+      "actual": 404,
+      "expected": 404,
+      "ok": true
+    },
+    {
+      "name": "alice compte supprimé",
+      "actual": true,
+      "expected": true,
+      "ok": true
+    },
+    {
+      "name": "alice session révoquée",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    }
+  ],
+  "cleanup": [
+    {
+      "type": "ticket",
+      "id": "cmusfcvgr00k201p1ezifda4s",
+      "status": 200
+    },
+    {
+      "type": "organization",
+      "id": "cmusfcvfn00k001p1evwecagm",
+      "status": 200
+    },
+    {
+      "type": "account",
+      "id": "cmusfcvdh00jv01p158gzg8a0",
+      "status": 200,
+      "entireAccountDeleted": true
+    },
+    {
+      "type": "ticket",
+      "id": "cmusfcvae00jt01p1hv877f1x",
+      "status": 200
+    },
+    {
+      "type": "organization",
+      "id": "cmusfcv8t00jr01p1kckwwwaz",
+      "status": 200
+    },
+    {
+      "type": "account",
+      "id": "cmusfcv4r00jm01p1d9f06p2s",
+      "status": 200,
+      "entireAccountDeleted": true
+    }
+  ],
+  "finishedAt": "2026-10-03T13:25:26.380Z",
+  "passed": 63,
+  "failed": 4
+}

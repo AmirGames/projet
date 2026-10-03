@@ -84,9 +84,11 @@ router.get("/slug/:slug", async (req: Request, res: Response, next: NextFunction
 });
 
 // GET /organizations - Get all for current user
-router.get("/", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.body.userId || "user-123";
+    // Une liste personnelle se sélectionne par la session, jamais par le
+    // corps ou la query : ils permettaient de lire les organisations voisines.
+    const userId = req.userId as string;
 
     const orgs = await OrganizationService.getByUserId(userId);
 
