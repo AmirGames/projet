@@ -4,7 +4,7 @@ import request from "supertest";
 
 const db: any = {
   courier: { findUnique: jest.fn(), update: jest.fn() },
-  orderDelivery: { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+  orderDelivery: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
   deliveryOffer: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
 };
 jest.mock("../../../services/db", () => ({ db }));
@@ -73,6 +73,19 @@ describe("HTTP livreurs : isolation Alice/Bob", () => {
     const r = await request(app).get("/api/drivers/deliveries/course-alice").set("Authorization", "Bearer alice");
     expect(r.status).toBe(200);
     expect(r.body.data.id).toBe("course-alice");
+  });
+  it("conserve l'attente client dans la liste des courses après relecture", async () => {
+    db.orderDelivery.findMany.mockResolvedValue([{
+      id: "course-alice", orderId: "commande-alice", status: "PICKED_UP", driverId: "driver-alice",
+      customerWaitStartedAt: new Date("2026-10-04T12:00:00Z"),
+      order: { items: [], store: { name: "Audit" } },
+    }]);
+    const r = await request(app).get("/api/drivers/deliveries?status=ACTIVE").set("Authorization", "Bearer alice");
+    expect(r.status).toBe(200);
+    expect(r.body.data[0].attenteFinLe).toBe("2026-10-04T12:06:00.000Z");
+    expect(db.orderDelivery.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { driverId: "driver-alice", status: { in: ["ACCEPTED", "PICKED_UP"] } },
+    }));
   });
   it("seule une proposition personnelle en cours ouvre une course non attribuée", async () => {
     db.orderDelivery.findUnique.mockResolvedValue({ id: "course-alice", driverId: null, status: "PENDING", offers: [], order: { items: [] }, deliveryCode: null, codeAttempts: 0, proofPhoto: null });

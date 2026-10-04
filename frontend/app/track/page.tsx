@@ -225,7 +225,9 @@ export default function TrackOrderPage() {
    * « acceptée » ou « annulée » qu'en rechargeant la page.
    */
   useEffect(() => {
-    if (!order?.id || ['COMPLETED', 'REJECTED'].includes(order.status)) return;
+    if (!order?.id) return;
+    const reclamationEnCours = order.reclamation?.deposee && !order.reclamation.traiteeLe;
+    if (['COMPLETED', 'REJECTED'].includes(order.status) && !order.reclamation?.possible && !reclamationEnCours) return;
 
     const minuteur = setInterval(async () => {
       try {
@@ -237,7 +239,7 @@ export default function TrackOrderPage() {
     }, 20000);
 
     return () => clearInterval(minuteur);
-  }, [order?.id, order?.status]);
+  }, [order?.id, order?.status, order?.reclamation?.possible, order?.reclamation?.deposee, order?.reclamation?.traiteeLe]);
 
   const getStatusIndex = (status: string) => {
     return statusSteps.findIndex(s => s.status === status);

@@ -1,0 +1,67 @@
+jest.mock("../../../services/db", () => ({
+  db: { order: { findMany: jest.fn() } },
+}));
+
+import { db } from "../../../services/db";
+import { adressesDuClient } from "../adresses-client.service";
+
+const profil = {
+  id: "client-connecte",
+  address: "Rue Neuve 2",
+  city: "Namur",
+  postalCode: "5000",
+};
+const commande = {
+  deliveryAddress: "Rue Neuve 2",
+  deliveryCity: "Namur",
+  deliveryPostal: "5000",
+  deliveryLat: 50.46,
+  deliveryLng: 4.86,
+};
+
+test("lit uniquement les livraisons du compte, sans limiter l'historique à 50 commandes", async () => {
+  (db.order.findMany as jest.Mock).mockResolvedValue(
+    Array.from({ length: 65 }, (_, i) => ({
+      ...commande,
+      deliveryAddress: `Rue ${i}`,
+    })),
+  );
+  const adresses = await adressesDuClient({ ...profil, address: null });
+  expect(adresses).toHaveLength(65);
+  expect(db.order.findMany).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: {
+        customerId: profil.id,
+        deletedAt: null,
+        deliveryType: "DELIVERY",
+        deliveryAddress: { not: null },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  );
+  expect(
+    (db.order.findMany as jest.Mock).mock.calls.at(-1)[0],
+  ).not.toHaveProperty("take");
+});
+
+test("fusionne le profil et les doublons en gardant les coordonnées de la dernière commande", async () => {
+  (db.order.findMany as jest.Mock).mockResolvedValue([
+    commande,
+    { ...commande, deliveryAddress: "  RUE   NEUVE 2 ", deliveryLat: 51 },
+    { ...commande, deliveryAddress: "Rue Ancienne 4", deliveryCity: "Liège" },
+    { ...commande, deliveryAddress: "   " },
+  ]);
+  const adresses = await adressesDuClient(profil);
+  expect(adresses).toHaveLength(2);
+  expect(adresses[0]).toMatchObject({
+    street: profil.address,
+    source: "saved",
+    latitude: 50.46,
+    longitude: 4.86,
+  });
+  expect(adresses[1]).toMatchObject({
+    street: "Rue Ancienne 4",
+    city: "Liège",
+    source: "order",
+  });
+});

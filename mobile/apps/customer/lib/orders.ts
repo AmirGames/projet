@@ -103,7 +103,13 @@ export interface Tracking {
   /** La livraison dérape : en retard, ou confiée à un nouveau livreur. */
   retard?: Retard | null;
   /** « Je n'ai pas reçu ma commande », après un dépôt en photo (48 h, une fois). */
-  reclamation?: { possible: boolean; deposee: boolean } | null;
+  reclamation?: {
+    possible: boolean;
+    deposee: boolean;
+    deposeeLe?: string;
+    traiteeLe?: string;
+    reponse?: string | null;
+  } | null;
   /** L'heure du serveur à la lecture, pour corriger l'horloge du téléphone. */
   maintenant?: string | null;
 }

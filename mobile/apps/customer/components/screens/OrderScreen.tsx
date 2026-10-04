@@ -70,6 +70,12 @@ export default function OrderScreen({
   }, [load]);
 
   useEffect(() => {
+    if (!tracking?.reclamation?.possible && !(tracking?.reclamation?.deposee && !tracking?.reclamation?.traiteeLe)) return;
+    const timer = setInterval(() => load(), 20000);
+    return () => clearInterval(timer);
+  }, [tracking?.reclamation?.possible, tracking?.reclamation?.deposee, tracking?.reclamation?.traiteeLe, load]);
+
+  useEffect(() => {
     if (order?.status !== 'COMPLETED') return;
     apiFetch<{ data: { aRedemander: boolean; restaurant: unknown } }>(`/api/reviews/commande/${orderId}`, token)
       .then((res) => setReview({ aRedemander: res.data.aRedemander, dejaDonne: Boolean(res.data.restaurant) }))
@@ -302,7 +308,16 @@ export default function OrderScreen({
             <Image source={{ uri: photo }} style={styles.photo} resizeMode="cover" />
             {tracking?.noteDepot ? <Text style={styles.help}>{tracking.noteDepot}</Text> : null}
             {tracking?.reclamation?.deposee ? (
-              <Text style={styles.help}>Votre réclamation est enregistrée : notre équipe examine le dépôt et revient vers vous.</Text>
+              <View>
+                <Text style={styles.help}>
+                  {tracking.reclamation.traiteeLe
+                    ? 'Votre réclamation a été traitée. Réponse de notre équipe :'
+                    : 'Votre réclamation est enregistrée : notre équipe examine le dépôt et revient vers vous.'}
+                </Text>
+                {tracking.reclamation.traiteeLe && tracking.reclamation.reponse ? (
+                  <Text style={styles.help}>{tracking.reclamation.reponse}</Text>
+                ) : null}
+              </View>
             ) : tracking?.reclamation?.possible ? (
               <TouchableOpacity style={styles.claimButton} onPress={reclamer}>
                 <Text style={styles.claimText}>Je n’ai pas reçu ma commande</Text>

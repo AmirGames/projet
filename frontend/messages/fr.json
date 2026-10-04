@@ -2319,6 +2319,7 @@
     "envoyer": "Signaler",
     "annuler": "Annuler",
     "deposee": "Votre réclamation est enregistrée : notre équipe examine le dépôt et revient vers vous.",
+    "traitee": "Votre réclamation a été traitée. Réponse de notre équipe :",
     "erreur": "La réclamation n'a pas pu être envoyée. Réessayez."
   },
   "dossierIncident": {
@@ -2410,6 +2411,18 @@
     "removed": "Retiré"
   },
   "deliveryAddress": {
+    "addresses": "Adresses",
+    "searchAddress": "Rechercher une adresse",
+    "savedAddresses": "Adresses enregistrées",
+    "previousAddresses": "Adresses de vos commandes précédentes",
+    "loadingAddresses": "Chargement de vos adresses…",
+    "loadAddressesError": "Impossible de charger vos anciennes adresses pour le moment.",
+    "retry": "Réessayer",
+    "noSavedAddresses": "Vos adresses apparaîtront ici. Recherchez une adresse pour commencer.",
+    "noMatchingAddresses": "Aucune de vos adresses ne correspond à cette recherche.",
+    "selectedAddress": "Adresse sélectionnée",
+    "locating": "Recherche de votre position…",
+    "close": "Fermer",
     "deliverTo": "Livrer à",
     "change": "Changer d'adresse",
     "enterAddress": "Indiquez votre adresse de livraison",

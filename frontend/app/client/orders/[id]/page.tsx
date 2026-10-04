@@ -137,6 +137,13 @@ export default function OrderTrackingPage() {
     loadOrderData();
   }, [orderId, loadOrderData]);
 
+  // La décision sur un dépôt peut arriver après la livraison, sans changement de statut.
+  useEffect(() => {
+    if (!delivery?.reclamation?.possible && !(delivery?.reclamation?.deposee && !delivery?.reclamation?.traiteeLe)) return;
+    const timer = setInterval(() => loadOrderData(), 20000);
+    return () => clearInterval(timer);
+  }, [delivery?.reclamation?.possible, delivery?.reclamation?.deposee, delivery?.reclamation?.traiteeLe, loadOrderData]);
+
 
   // Le statut change en direct : on relit la commande entière, pour l'heure
   // annoncée à l'acceptation ou le motif d'un refus.

@@ -617,6 +617,13 @@ export default function DeliveryApp() {
     </>
   );
 
+  const deliveryChanged = (change?: { id: string; attenteFinLe: string }) => {
+    if (change) {
+      setActiveDeliveries((list) => list.map((d) => d.id === change.id ? { ...d, attenteFinLe: change.attenteFinLe } : d));
+    }
+    loadAll(token);
+  };
+
   // Delivery Detail Screen
   if (openDeliveryId) {
     return (
@@ -631,7 +638,7 @@ export default function DeliveryApp() {
           voiceGuidance={prefs.voiceGuidance}
           onVoiceGuidanceChange={(voiceGuidance) => updatePrefs({ voiceGuidance })}
           onBack={() => setOpenDeliveryId(null)}
-          onChanged={() => loadAll(token)}
+          onChanged={deliveryChanged}
           onTrackingChange={setTracking}
           todayEarnings={earnings?.today ?? null}
           otherActive={visibleDeliveries.filter((d) => d.id !== openDeliveryId).length}
@@ -714,7 +721,7 @@ export default function DeliveryApp() {
               // Il reste des courses : retour à la tournée (ou à la suivante).
               if (others === 0) back();
             }}
-            onChanged={() => loadAll(token)}
+            onChanged={deliveryChanged}
             onTrackingChange={setTracking}
             todayEarnings={earnings?.today ?? null}
             otherActive={others}

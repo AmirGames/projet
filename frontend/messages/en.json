@@ -2312,6 +2312,7 @@
     "relaisTexte": "The original driver couldn't make it: your order has been handed to another driver."
   },
   "reclamationLivraison": {
+    "traitee": "Your claim has been reviewed. Our team's response:",
     "bouton": "I didn't receive my order",
     "titre": "Didn't receive your order?",
     "explication": "The driver reported dropping it off while you were away. Let us know: our team reviews the drop-off and refunds you if the order wasn't handed to you.",
@@ -2410,6 +2411,18 @@
     "removed": "Removed"
   },
   "deliveryAddress": {
+    "addresses": "Addresses",
+    "searchAddress": "Search for an address",
+    "savedAddresses": "Saved addresses",
+    "previousAddresses": "Addresses from your previous orders",
+    "loadingAddresses": "Loading your addresses…",
+    "loadAddressesError": "Your previous addresses could not be loaded right now.",
+    "retry": "Try again",
+    "noSavedAddresses": "Your addresses will appear here. Search for an address to get started.",
+    "noMatchingAddresses": "None of your addresses match this search.",
+    "selectedAddress": "Selected address",
+    "locating": "Finding your location…",
+    "close": "Close",
     "deliverTo": "Deliver to",
     "change": "Change address",
     "enterAddress": "Enter your delivery address",

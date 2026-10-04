@@ -221,6 +221,30 @@ describe("GET /api/orders/:id", () => {
     expect(reponse.body.codeRemise).toBeNull();
   });
 
+  it("rend la réponse déjà enregistrée à une réclamation au client et au lien de suivi", async () => {
+    const c = commande("DELIVERED");
+    const traiteeLe = new Date("2026-10-04T12:00:00Z");
+    db.order.findFirst.mockResolvedValue({
+      ...c,
+      status: "COMPLETED",
+      delivery: { ...c.delivery, proofType: "PHOTO", deliveryTime: new Date(), incidents: [{
+        type: "RECLAMATION_CLIENT", createdAt: new Date(), closedAt: traiteeLe,
+        resolution: "Dépôt validé : Le livreur a attendu six minutes.",
+      }] },
+    });
+    for (const session of [null, "Bearer user-client"]) {
+      const requete = request(app).get(`${URL_COMMANDE}?t=${jeton}`);
+      if (session) requete.set("Authorization", session);
+      const reponse = await requete;
+      expect(reponse.status).toBe(200);
+      expect(reponse.body.reclamation).toMatchObject({
+        deposee: true, possible: false, traiteeLe: traiteeLe.toISOString(),
+        reponse: "Dépôt validé : Le livreur a attendu six minutes.",
+      });
+      expect(JSON.stringify(reponse.body)).not.toContain("closedBy");
+    }
+  });
+
   it("ne donne jamais le code au livreur de la course", async () => {
     const reponse = await request(app).get(URL_COMMANDE).set("Authorization", "Bearer user-livreur");
     expect(reponse.status).toBe(404);

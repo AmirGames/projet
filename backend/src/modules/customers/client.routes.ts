@@ -18,6 +18,7 @@ import { DeliveryZoneService } from "../delivery/delivery-zone.service";
 import { authMiddleware } from "../auth/auth.middleware";
 import { CustomerAccountService } from "./customer-account.service";
 import { ficheClientDuCompte } from "./fiche-client.service";
+import { adressesDuClient } from "./adresses-client.service";
 import { avisARedemander, avisRestaurantParCommerce } from "../reviews/avis-client.service";
 import { avecLaVraieNote } from "../reviews/review.service";
 import { CustomerCartService, panierSchema } from "../orders/customer-cart.service";
@@ -553,6 +554,16 @@ const profilSchema = z.object({
   address: z.string().optional(),
   city: z.string().optional(),
   postalCode: z.string().optional(),
+});
+
+// GET /api/client/me/addresses - Profil et destinations des commandes du compte.
+router.get("/me/addresses", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    res.json({ success: true, data: await adressesDuClient(client) });
+  } catch (err) {
+    next(err);
+  }
 });
 
 /**

@@ -923,6 +923,8 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
             pickupLng: d.pickupLng ?? d.order?.store?.longitude ?? null,
             latitude: d.deliveryLat ?? null,
             longitude: d.deliveryLng ?? null,
+            // La veille du téléphone lit la liste : elle doit connaître l'attente à la porte.
+            attenteFinLe: finAttente(d),
           }),
     }, etat && STATUTS_EN_COURSE.includes(d.status) ? DispatchService.masquage(etat, d.id) : null));
 

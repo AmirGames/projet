@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag } from 'lucide-react';
 
-import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
+import { RechercheAdresseLivraison } from '@/components/RechercheAdresseLivraison';
 import {
   lireAdresseLivraison,
   useAdresseLivraisonEnregistree,
@@ -304,6 +304,13 @@ export default function ClientHomePage() {
       <title>Accueil client — ZupEat</title>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
+        <RechercheAdresseLivraison
+          adresse={adresse}
+          onChange={(choisie) => {
+            setAdresse(choisie);
+            chargerPour(choisie);
+          }}
+        />
         {/* L'accroche : un grand aplat chaleureux, et l'adresse au centre du
             jeu — sans elle, ni frais ni délais justes. */}
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 px-6 py-10 md:px-12 md:py-14 text-white">
@@ -323,19 +330,6 @@ export default function ClientHomePage() {
           <div className="relative max-w-2xl">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05]">{t('heroTitle')}</h1>
             <p className="mt-4 text-lg md:text-xl text-orange-50/90">{t('heroSubtitle')}</p>
-
-            {/* Adresse de livraison — une fois retenue, elle se résume à une
-                pastille qu'on touche pour la changer. */}
-            <div className="mt-8 flex flex-col md:flex-row md:items-start gap-3">
-              <ChoixAdresseLivraison
-                adresse={adresse}
-                saisieOuverteSansAdresse
-                onChange={(choisie) => {
-                  setAdresse(choisie);
-                  chargerPour(choisie);
-                }}
-              />
-            </div>
 
             <p className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-white/90">
               <Check size={16} className="rounded-full bg-white/20 p-0.5" />

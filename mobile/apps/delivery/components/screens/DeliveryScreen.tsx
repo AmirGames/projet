@@ -76,7 +76,7 @@ export default function DeliveryScreen({
   voiceGuidance: boolean;
   onVoiceGuidanceChange: (on: boolean) => void;
   onBack: () => void;
-  onChanged: () => void;
+  onChanged: (change?: { id: string; attenteFinLe: string }) => void;
   /** La prochaine étape et la carte en plein écran décident de la précision du GPS. */
   onTrackingChange: (tracking: Tracking) => void;
   /** Gains du jour, affichés à la fin de la course. */
@@ -267,6 +267,8 @@ export default function DeliveryScreen({
       setClockOffset(new Date(res.data.maintenant).getTime() - Date.now());
       setTick(Date.now());
       setWaitEnd(new Date(res.data.attenteFinLe).getTime());
+      setDelivery((current) => current ? { ...current, attenteFinLe: res.data.attenteFinLe } : current);
+      onChanged({ id: deliveryId, attenteFinLe: res.data.attenteFinLe });
     } catch (e: any) {
       setRefusal(
         isNetworkError(e)
