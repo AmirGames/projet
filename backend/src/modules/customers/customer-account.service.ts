@@ -134,6 +134,7 @@ export class CustomerAccountService {
             postalCode: null,
             latitude: null,
             longitude: null,
+            savedAddresses: [],
             notes: null,
             userId: null,
             status: "INACTIVE",

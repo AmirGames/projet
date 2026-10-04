@@ -18,6 +18,8 @@ const journaliserLesRequetes = process.env.PRISMA_LOG_QUERIES === "true";
 const prismaClientSingleton = () => {
   return new PrismaClient({
     adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+    // Le carnet personnel ne doit pas sortir avec les fiches client des commerçants ou les avis.
+    omit: { customer: { savedAddresses: true } },
     log: [
       ...(journaliserLesRequetes
         ? [{ emit: "stdout" as const, level: "query" as const }]

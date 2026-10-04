@@ -21,6 +21,9 @@ export interface DeliveryAddress {
   postalCode: string;
   latitude: number | null;
   longitude: number | null;
+  id?: string;
+  kind?: 'HOME' | 'WORK' | 'OTHER';
+  name?: string;
 }
 
 async function read<T>(key: string): Promise<T | null> {

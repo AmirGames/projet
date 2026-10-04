@@ -1,4 +1,12 @@
 {
+  "savedAddresses": {
+    "title": "Mes adresses favorites", "description": "Retrouvez ces adresses au moment de choisir votre livraison.",
+    "home": "Domicile", "work": "Travail", "favorite": "Adresse favorite", "notAdded": "Aucune adresse enregistrée",
+    "add": "Ajouter", "edit": "Modifier", "remove": "Supprimer", "addFavorite": "Ajouter un favori",
+    "name": "Nom du favori", "namePlaceholder": "Maman, chez un ami…", "street": "Numéro et rue", "postalCode": "Code postal", "city": "Ville",
+    "save": "Enregistrer", "saving": "Enregistrement…", "cancel": "Annuler", "saved": "Vos adresses sont enregistrées.",
+    "loading": "Chargement des adresses…", "loadError": "Impossible de charger vos adresses.", "saveError": "Impossible d'enregistrer vos adresses.", "retry": "Réessayer"
+  },
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",

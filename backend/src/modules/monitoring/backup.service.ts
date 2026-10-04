@@ -72,7 +72,7 @@ export class BackupService {
           db.product.findMany(),
           db.category.findMany(),
           db.order.findMany({ include: { items: true } }),
-          db.customer.findMany(),
+          db.customer.findMany({ omit: { savedAddresses: false } }),
           db.user.findMany({
             select: { id: true, email: true, name: true, isSystemAdmin: true, isSuperOwner: true, status: true, createdAt: true },
           }),

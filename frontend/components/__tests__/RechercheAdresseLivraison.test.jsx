@@ -68,6 +68,42 @@ beforeEach(() => {
   });
 });
 
+test("les favoris du compte gardent leur nom et leur icône malgré un historique local plus récent", async () => {
+  enregistrerAdresseLivraison({
+    ...adresse,
+    lastUsedAt: new Date().toISOString(),
+  });
+  const favoris = [
+    { ...adresse, id: "home", kind: "HOME", name: "Domicile", source: "saved" },
+    { ...ancienne, id: "work", kind: "WORK", name: "Travail", source: "saved" },
+    ...Array.from({ length: 6 }, (_, i) => ({
+      ...adresse,
+      id: `favori-${i}`,
+      kind: "OTHER",
+      name: i === 0 ? "Maman" : `Favori ${i}`,
+      street: `Rue Favorite ${i}`,
+      source: "saved",
+    })),
+  ];
+  fetch.mockResolvedValue({ ok: true, json: async () => ({ data: favoris }) });
+  const onChange = jest.fn();
+  render(<RechercheAdresseLivraison adresse={adresse} onChange={onChange} />);
+  fireEvent.click(screen.getByRole("button", { name: /deliverTo/ }));
+  await screen.findByText("home");
+  expect(screen.getByText("work")).toBeTruthy();
+  expect(screen.getByText("Maman")).toBeTruthy();
+  expect(screen.getByText("Favori 5")).toBeTruthy();
+  expect(document.querySelector("svg.lucide-house")).toBeTruthy();
+  expect(document.querySelector("svg.lucide-briefcase-business")).toBeTruthy();
+  expect(document.querySelector("svg.lucide-star")).toBeTruthy();
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "maman" } });
+  expect(screen.queryByText("Favori 5")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /Maman/ }));
+  expect(onChange).toHaveBeenCalledWith(
+    expect.objectContaining({ id: "favori-0", kind: "OTHER", name: "Maman" }),
+  );
+});
+
 test("affiche cinq adresses mémorisées après plusieurs sélections, même sans compte", () => {
   localStorage.removeItem("accessToken");
   for (let i = 1; i <= 6; i++)

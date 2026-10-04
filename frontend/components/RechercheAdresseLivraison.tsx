@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { IconeAdresse } from "@/components/IconeAdresse";
 import { ConfirmationAdresseLocalisee } from "@/components/ConfirmationAdresseLocalisee";
 import {
   localiserAdresse,
@@ -46,6 +47,7 @@ export function RechercheAdresseLivraison({
   onChange: (adresse: AdresseLivraison) => void;
 }) {
   const t = useTranslations("deliveryAddress");
+  const tf = useTranslations("savedAddresses");
   const dialog = useRef<HTMLDialogElement>(null);
   const requete = useRef<AbortController | null>(null);
   const requeteGPS = useRef<AbortController | null>(null);
@@ -100,20 +102,30 @@ export function RechercheAdresseLivraison({
       if (!reponse.ok) throw new Error();
       const donnees = await reponse.json();
       if (!controleur.signal.aborted) {
+        const favorites = (donnees.data || []).filter(
+          (a: AdresseProposee) => a.kind,
+        ) as AdresseProposee[];
+        const lieuxFavoris = new Set(favorites.map(cle));
         const fusion = new Map<string, AdresseProposee>();
         for (const proposee of [
           ...recentes,
           ...(donnees.data || []),
         ] as AdresseProposee[]) {
+          if (proposee.kind || lieuxFavoris.has(cle(proposee))) continue;
+          // Le serveur fait autorité : une ancienne étiquette locale ne recrée pas un favori supprimé.
+          const { id, kind, name, ...recente } = proposee;
+          void id;
+          void kind;
+          void name;
           const connue = fusion.get(cle(proposee));
           if (
             !connue ||
             Date.parse(proposee.lastUsedAt || "") >
               Date.parse(connue.lastUsedAt || "")
           )
-            fusion.set(cle(proposee), proposee);
+            fusion.set(cle(proposee), recente);
         }
-        setAdresses([...fusion.values()]);
+        setAdresses([...favorites, ...fusion.values()]);
       }
     } catch {
       if (!controleur.signal.aborted) setErreur(true);
@@ -157,11 +169,19 @@ export function RechercheAdresseLivraison({
     }
   };
 
-  const toutes = new Map(adresses.map((proposee) => [cle(proposee), proposee]));
+  const toutes = new Map(
+    adresses.map((proposee) => [proposee.id || cle(proposee), proposee]),
+  );
   if (adresse?.street) {
-    const connue = toutes.get(cle(adresse));
-    toutes.set(cle(adresse), {
-      ...adresse,
+    const connue =
+      adresses.find((a) => a.id === adresse.id && a.id) ||
+      adresses.find((a) => cle(a) === cle(adresse));
+    const { id, kind, name, ...lieu } = adresse;
+    void id;
+    void kind;
+    void name;
+    toutes.set(connue?.id || cle(adresse), {
+      ...lieu,
       ...connue,
       latitude: connue?.latitude ?? adresse.latitude,
       longitude: connue?.longitude ?? adresse.longitude,
@@ -170,18 +190,22 @@ export function RechercheAdresseLivraison({
     });
   }
   const recherche = normaliser(saisie);
+  const ordre = (a: AdresseProposee) =>
+    a.kind === "HOME" ? 0 : a.kind === "WORK" ? 1 : a.kind === "OTHER" ? 2 : 3;
+  let recentesVisibles = 0;
   const visibles = [...toutes.values()]
     .sort(
       (a, b) =>
+        ordre(a) - ordre(b) ||
         (Date.parse(b.lastUsedAt || "") || 0) -
-        (Date.parse(a.lastUsedAt || "") || 0),
+          (Date.parse(a.lastUsedAt || "") || 0),
     )
-    .slice(0, 5)
     .filter((proposee) =>
       normaliser(
-        `${proposee.label} ${proposee.street} ${proposee.city} ${proposee.postalCode}`,
+        `${proposee.kind === "HOME" ? tf("home") : proposee.kind === "WORK" ? tf("work") : proposee.name || ""} ${proposee.label} ${proposee.street} ${proposee.city} ${proposee.postalCode}`,
       ).includes(recherche),
-    );
+    )
+    .filter((a) => a.kind || ++recentesVisibles <= 5);
 
   return (
     <>
@@ -326,17 +350,21 @@ export function RechercheAdresseLivraison({
             {visibles.length > 0 && (
               <section className="mb-5">
                 <h3 className="mb-2 text-lg font-bold">
-                  {t("recentAddresses")}
+                  {visibles.some((a) => a.kind)
+                    ? t("addresses")
+                    : t("recentAddresses")}
                 </h3>
                 <ul className="divide-y divide-gray-100">
                   {visibles.map((proposee) => (
-                    <li key={cle(proposee)}>
+                    <li key={proposee.id || cle(proposee)}>
                       <button
                         type="button"
                         onClick={() => retenir(proposee)}
                         className={`flex w-full items-center gap-4 rounded-xl px-3 py-4 text-left hover:bg-gray-100 ${adresse && cle(adresse) === cle(proposee) ? "bg-orange-50" : ""}`}
                       >
-                        {proposee.source === "saved" ? (
+                        {proposee.kind ? (
+                          <IconeAdresse kind={proposee.kind} />
+                        ) : proposee.source === "saved" ? (
                           <MapPin
                             size={22}
                             className="shrink-0 text-gray-500"
@@ -346,6 +374,15 @@ export function RechercheAdresseLivraison({
                         )}
                         <span className="min-w-0 flex-1">
                           <span className="block break-words font-semibold">
+                            {proposee.kind && (
+                              <span className="mr-2">
+                                {proposee.kind === "HOME"
+                                  ? tf("home")
+                                  : proposee.kind === "WORK"
+                                    ? tf("work")
+                                    : proposee.name}
+                              </span>
+                            )}
                             {proposee.street}
                           </span>
                           <span className="block text-sm text-gray-500">

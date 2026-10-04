@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
+import SavedAddressesCard from '../SavedAddressesCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 export interface CustomerProfile {
@@ -147,6 +148,7 @@ export default function AccountScreen({
             </TouchableOpacity>
           </Card>
 
+          <SavedAddressesCard token={token} />
           <ChangePasswordCard token={token} onChanged={onPasswordChanged} />
         </ScrollView>
       )}

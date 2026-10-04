@@ -17,6 +17,9 @@ export interface AdresseLivraison {
   postalCode: string;
   latitude: number | null;
   longitude: number | null;
+  id?: string;
+  kind?: 'HOME' | 'WORK' | 'OTHER';
+  name?: string;
 }
 
 const CLE = "zupeat.adresseLivraison";

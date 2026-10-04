@@ -1,4 +1,12 @@
 {
+  "savedAddresses": {
+    "title": "My favorite addresses", "description": "Find these addresses when choosing your delivery destination.",
+    "home": "Home", "work": "Work", "favorite": "Favorite address", "notAdded": "No address saved",
+    "add": "Add", "edit": "Edit", "remove": "Delete", "addFavorite": "Add a favorite",
+    "name": "Favorite name", "namePlaceholder": "Mom, a friend's place…", "street": "Number and street", "postalCode": "Postal code", "city": "City",
+    "save": "Save", "saving": "Saving…", "cancel": "Cancel", "saved": "Your addresses have been saved.",
+    "loading": "Loading addresses…", "loadError": "Unable to load your addresses.", "saveError": "Unable to save your addresses.", "retry": "Try again"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

@@ -1,4 +1,5 @@
 import { db } from "../../services/db";
+import { lireAdressesFavorites } from "./adresses-favorites";
 
 interface ProfilAdresse {
   id: string;
@@ -6,9 +7,13 @@ interface ProfilAdresse {
   city: string | null;
   postalCode: string | null;
   updatedAt?: Date;
+  savedAddresses?: unknown;
 }
 
 interface Adresse {
+  id?: string;
+  kind?: "HOME" | "WORK" | "OTHER";
+  name?: string;
   label: string;
   street: string;
   city: string;
@@ -84,7 +89,20 @@ export async function adressesDuClient(
       lastUsedAt: precedente?.lastUsedAt || adresse.lastUsedAt,
     });
   }
-  return [...adresses.values()].sort(
-    (a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt),
-  );
+  const rang = { HOME: 0, WORK: 1, OTHER: 2 };
+  const favorites = lireAdressesFavorites(client.savedAddresses)
+    .sort((a, b) => rang[a.kind] - rang[b.kind])
+    .map((adresse) => ({
+      ...adresse,
+      label: [adresse.street, adresse.city].join(", "),
+      source: "saved" as const,
+      lastUsedAt: client.updatedAt?.toISOString() || new Date(0).toISOString(),
+    }));
+  const lieuxFavoris = new Set(favorites.map(cle));
+  return [
+    ...favorites,
+    ...[...adresses.values()]
+      .filter((adresse) => !lieuxFavoris.has(cle(adresse)))
+      .sort((a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt)),
+  ];
 }

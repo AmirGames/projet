@@ -1792,6 +1792,8 @@ model Customer {
   postalCode      String?
   latitude        Float?    // Géolocalisation optionnelle
   longitude       Float?
+  // Domicile, travail et favoris personnels du compte.
+  savedAddresses  Json      @default("[]")
 
   // Customer info
   totalOrders     Int       @default(0)
