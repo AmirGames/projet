@@ -1,5 +1,11 @@
 # Audit des permissions admin/superowner — 3 octobre 2026
 
+**Suivi au 4 octobre 2026 :** des déploiements ultérieurs ont été annoncés,
+et les audits Socket.IO et paiements ont été menés. Les 12 contrôles décrits
+ici sont une sonde de refus, pas une validation des mutations par des membres
+de l'équipe. Les scénarios de révocation et de caches sur plusieurs instances
+restent à compléter. Voir [l'état du projet](etat-projet.md).
+
 ## Périmètre et preuves
 
 Examen des gardes des routes admin, superowner et administration DRIVE,
@@ -95,8 +101,8 @@ dédiée : le lanceur de vérification réinitialise la base de test.
 
 ## Statut et limites
 
-Les nouvelles corrections sont **locales, non publiées et non déployées** au
-moment du rapport. Elles changent les droits requis pour les modifications
+Au moment du passage initial, les nouvelles corrections étaient **locales,
+non publiées et non déployées**. Elles changent les droits requis pour les modifications
 financières : attribuer Formules uniquement aux rôles qui doivent les faire.
 Les comptes existants non confirmés devront confirmer leur adresse avant
 une nouvelle promotion dans l'équipe.
@@ -109,7 +115,8 @@ cours lors d'une révocation et le traitement d'un utilisateur marqué BANNED
 méritent une validation dédiée. Le middleware de restriction commerçant
 concerne les organisations, pas la suspension des membres de l'équipe.
 
-Après validation sur une base dédiée puis publication/déploiement, poursuivre
-Socket.IO : appartenance aux salons et événements, changement de rôle et
-révocation pendant une connexion. Les paiements, remboursements, webhooks et
-abus/rate-limit viennent ensuite dans l'ordre convenu.
+Les audits Socket.IO et paiements/remboursements/webhooks ont ensuite été
+menés et sont consignés dans les rapports correspondants. Les accès avec
+des comptes distincts, le changement de rôle et la révocation pendant une
+connexion sur le déploiement restent des validations complémentaires ;
+voir [l'état courant](etat-projet.md).

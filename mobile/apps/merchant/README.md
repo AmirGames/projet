@@ -1,56 +1,54 @@
-# Welcome to your Expo app 👋
+# ZupEat — application commerçant
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application Expo du commerçant, cliente de l'API ZupOne/ZupEat. La connexion
+exige un compte rattaché à un commerce ; les autorisations et les règles métier
+restent contrôlées par le serveur.
 
-## Get started
+**État au 4 octobre 2026 :** l'application est écrite, sa publication dans les
+stores reste à réaliser. L'API est déjà déployée sur le VPS. Voir
+[l'état du projet](../../../docs/etat-projet.md) pour les validations connues
+et les prochaines étapes.
 
-1. Install dependencies
+## Fonctionnalités présentes
 
-   ```bash
-   npm install
-   ```
+- Tableau de bord et commandes, détail et actions sur leur état.
+- Choix de boutique pour un compte possédant plusieurs commerces.
+- Catalogue, édition des produits et suppléments.
+- Réglages de boutique, statistiques, promotions et avis clients.
+- Notifications de commandes, support, paramètres et compte.
+- Session conservée sur le téléphone et renouvellement des jetons.
 
-2. Start the app
+Les écrans sont dans `components/screens/`, le cadre et la connexion dans
+`app/index.tsx`, les échanges avec l'API dans `lib/api.ts`. Le temps réel et
+les alertes utilisent les modules de `lib/`.
 
-   ```bash
-   npx expo start
-   ```
+## Lancer en développement
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Depuis ce dossier :
 
 ```bash
-npm run reset-project
+npm install
+npm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+`EXPO_PUBLIC_API_URL` fixe l'adresse de l'API, par exemple
+`https://api.zupeat.com` pour le déploiement. Sans cette variable, `lib/api.ts`
+cherche le PC qui sert l'application et utilise le port 3001 ; `localhost`
+sur un téléphone désigne le téléphone lui-même.
 
-### Other setup steps
+```bash
+npm run lint
+npx tsc --noEmit
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Avant publication
 
-## Learn more
+- Tester la connexion et les actions de commande sur un téléphone réel avec
+  une boutique de test dédiée.
+- Vérifier les notifications, la reconnexion et les droits du compte utilisé.
+- Préparer l'identité visuelle, les comptes des stores, les builds et leur
+  configuration pour l'API déployée.
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Le [guide de publication livreur](../delivery/PUBLICATION.md) décrit les étapes
+pour cette autre application ; ses identifiants, autorisations et justificatifs
+ne doivent pas être repris tels quels pour l'application commerçant.

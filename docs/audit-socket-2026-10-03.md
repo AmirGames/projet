@@ -1,7 +1,14 @@
 # Audit Socket.IO — 3 octobre 2026
 
+**Suivi au 4 octobre 2026 :** un déploiement ultérieur a été annoncé ; les
+six sondes Socket.IO ont été rejouées avec succès, comme consigné dans
+l'audit paiements (10/10 en incluant ses quatre refus). Cela ne remplace
+pas les scénarios entre comptes authentifiés, de révocation ou Redis sur
+plusieurs instances. Voir [l'état courant](etat-projet.md).
+
 Base inspectée : branche `claude/awesome-ride-m9lci8`, commit `232e3fbd`.
-Les corrections de ce rapport sont locales, à publier et déployer.
+Au moment du passage initial, les corrections étaient locales, à publier
+et déployer. Le suivi ci-dessus décrit les confirmations ultérieures.
 
 ## Constats et corrections
 
@@ -104,5 +111,5 @@ pentest complet avec comptes privilégiés.
   maintenant une adresse vérifiée. Les flux fondés sur un membership utilisent
   l'identifiant du membre, sans cette exigence et sans bloquer les comptes suspendus.
 
-Prochaine étape de l'ordre convenu après déploiement : paiements,
-remboursements, webhooks et abus/rate-limit.
+L'audit paiements/remboursements/webhooks et abus/rate-limit a ensuite été
+mené. Pour les validations encore ouvertes, voir [l'état du projet](etat-projet.md).

@@ -1,5 +1,11 @@
 # Audit ciblé livreurs et livraisons — 3 octobre 2026
 
+**Suivi au 4 octobre 2026 :** le déploiement a été annoncé et des sondes de
+refus ont réussi. Les parcours authentifiés, la preuve de remise et la
+concurrence des tournées restent à valider dans les environnements indiqués
+ci-dessous. Les audits suivants ont déjà été menés ; voir
+[l'état courant du projet](etat-projet.md).
+
 ## Déploiement annoncé ensuite par l'opérateur
 
 L'opérateur a confirmé le déploiement des corrections ; le dépôt local est
@@ -113,7 +119,8 @@ n'ouvrent pas cette connexion.
 
 ## Limites et reprise
 
-Les corrections de ce passage sont locales, non publiées et non déployées.
+Au moment du passage initial, les corrections étaient locales, non publiées
+et non déployées. Le déploiement annoncé ensuite est consigné en tête.
 L'audit reste ciblé : il ne certifie pas tout `drivers`. La capacité maximale
 de tournée sous acceptations simultanées, les courses réattribuées pendant
 une autre mutation, les changements de statut et les informations nominatives
@@ -121,8 +128,10 @@ dans les propositions avant acceptation méritent des scénarios supplémentaire
 Les propositions exposent notamment une adresse lisible malgré des coordonnées
 obfusquées : cette obfuscation ne protège donc pas à elle seule l'adresse.
 
-Avant validation de production : rejouer sur une base dédiée les parcours
+Pour compléter la validation : rejouer sur une base dédiée les parcours
 livreur, preuve de livraison, attribution et cloisonnement, notamment un lot
-de plusieurs courses ; vérifier la concurrence avec PostgreSQL. Puis publier
-et déployer les corrections. L'audit ZupDrive complet, les permissions
-admin/superowner, Socket.IO et les paiements restent les étapes suivantes.
+de plusieurs courses ; vérifier la concurrence avec PostgreSQL. Compléter
+les scénarios authentifiés sur le déploiement sans réinitialiser sa base.
+Les audits ciblés ZupDrive, admin/superowner, Socket.IO et paiements ont
+depuis été menés ; leurs preuves et limites sont dans les rapports dédiés
+et [l'état du projet](etat-projet.md).

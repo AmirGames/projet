@@ -1,5 +1,12 @@
 # ZupDrive — marche à suivre pour les chauffeurs
 
+**État au 4 octobre 2026 :** les dossiers chauffeurs et sociétés, véhicules,
+invitations, tarifs, devis, courses et notes de la V1 sont écrits. Le paiement
+en ligne et les règles de facturation des courses relèvent de la V2. La
+présentation publique annonce encore « Bientôt disponible ». Ce document
+décrit les parcours et le code ; les validations et le travail restant sont
+dans [l'état du projet](etat-projet.md).
+
 ZupDrive est le domaine lié à la gestion des chauffeurs disposant d'une licence LVC ou d'une licence de transport rémunéré de personnes (Belgique).
 
 Architecture prévue : `zupdrive.com`, `manager.zupdrive.com`, `driver.zupdrive.com`.

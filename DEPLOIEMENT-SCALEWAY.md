@@ -1,12 +1,19 @@
 # Déployer sur un VPS Scaleway
 
+**État au 4 octobre 2026 :** ZupEat est déjà déployé sur un VPS, avec l'API
+à `https://api.zupeat.com`. Ce guide reste la procédure d'installation et
+d'exploitation ; il s'applique aussi à un VPS compatible chez un autre
+hébergeur. Les validations connues et celles restant à faire sont dans
+[docs/etat-projet.md](docs/etat-projet.md).
+
 Toute la plateforme tient sur **un seul VPS** (offre `VPS-START-2-M`), dans
 Docker :
 
 ```
 Internet ──443──> Caddy ──> frontend:3000   site Next.js, tous les domaines
    (HTTPS auto)       └───> backend:3001    API Express + Socket.IO (api.…)
-                                 └──> postgres:5432   jamais exposé
+                                 ├──> postgres:5432   jamais exposé
+                                 └──> redis:6379      réseau interne Docker
 ```
 
 - **Caddy** obtient et renouvelle seul les certificats Let's Encrypt.
@@ -19,7 +26,7 @@ Fichiers utilisés :
 
 | Fichier | Rôle |
 |---|---|
-| `docker-compose.prod.yml` | Les quatre services de production |
+| `docker-compose.prod.yml` | Les cinq services : Caddy, frontend, backend, PostgreSQL, Redis |
 | `deploy/Caddyfile` | Reverse proxy + HTTPS |
 | `deploy/env.production.example` | Modèle de `.env.production` (toutes les variables) |
 | `deploy/installer-serveur.sh` | Prépare un VPS neuf (Docker, pare-feu, swap…) |
@@ -90,7 +97,7 @@ ssh root@<IP du VPS>
 Puis, sur le serveur :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AmirGames/projet/main/deploy/installer-serveur.sh -o installer.sh
+curl -fsSL https://raw.githubusercontent.com/AmirGames/projet/claude/awesome-ride-m9lci8/deploy/installer-serveur.sh -o installer.sh
 bash installer.sh
 ```
 
@@ -116,6 +123,7 @@ ssh deploy@<IP du VPS>
 ```bash
 git clone https://github.com/AmirGames/projet.git
 cd projet
+git switch claude/awesome-ride-m9lci8
 ```
 
 **Dépôt privé** — une *deploy key* en lecture seule :
@@ -135,6 +143,7 @@ Host github.com
 EOF
 git clone git@github.com:AmirGames/projet.git
 cd projet
+git switch claude/awesome-ride-m9lci8
 ```
 
 ## 5. Configurer `.env.production`
@@ -154,7 +163,7 @@ nano .env.production
 | `FRONTEND_URL`, `SITE_URL`, `ALLOWED_ORIGINS` | adresses `https://` du site |
 | `POSTGRES_PASSWORD` | `openssl rand -hex 24` |
 | `JWT_SECRET`, `JWT_REFRESH_SECRET` | deux `openssl rand -hex 32` **différents** |
-| `STRIPE_*` | clés **live** |
+| `STRIPE_*` | clés **TEST** pendant la validation ; clés LIVE après validation du compte Stripe, avec le secret du webhook de ce même mode |
 | `SMTP_*`, `EMAIL_FROM` | votre service d'envoi de courriels |
 | `SUPEROWNER_EMAIL`, `SUPEROWNER_PASSWORD_HASH` | le compte propriétaire de la plateforme, créé au premier démarrage (empreinte bcrypt **entre apostrophes**, commande dans le fichier modèle) |
 

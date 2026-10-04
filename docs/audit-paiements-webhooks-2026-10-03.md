@@ -1,10 +1,30 @@
 # Paiements, remboursements, webhooks et abus — 3 octobre 2026
 
+## Suivi au 4 octobre 2026
+
+Le déploiement a été annoncé. En local isolé, **33/33 contrôles** avec Stripe
+TEST et PostgreSQL réels ont validé paiement, remboursement, concurrence,
+rejeu et rollback, comme détaillé plus bas.
+
+Sur le **VPS**, l'opérateur a ensuite transmis le succès d'un paiement TEST,
+la réception du webhook `payment_intent.succeeded` et son renvoi sans doublon
+visible côté client ou commerçant. Le détail transmis est cohérent :
+32,74 € pour la commande (articles 30,00 €, livraison 2,49 €, service 0,25 €)
+et 3,00 € de pourboire, soit **35,74 € encaissés**. Cette validation manuelle
+ne contrôle pas tous les effets en base et ne valide pas le mode LIVE.
+
+Restent à vérifier sur le VPS : remboursement TEST de la commande et du
+pourboire, réception/rejeu de `charge.refunded`, puis paiement et remboursement
+LIVE après validation et configuration du compte Stripe.
+Voir [l'état du projet et les priorités](etat-projet.md).
+
+## Contexte du passage initial
+
 Branche : `claude/awesome-ride-m9lci8`. Début de l'audit au commit `2b47c983`.
 Pendant le travail, une partie des corrections a été intégrée au commit
 `5a624085` (« Update Socket.IO »). Les derniers compléments transactionnels
-et leurs tests sont encore locaux au moment de la rédaction. Ce rapport
-ne confirme pas leur déploiement.
+et leurs tests étaient encore locaux lors de la rédaction initiale. Les
+sections de suivi consignent les confirmations ultérieures.
 
 ## Corrections
 
@@ -231,6 +251,8 @@ runner (options locales vides, hash bcrypt requis, format du jeton de suivi).
 Aucune correction supplémentaire du code de production n'a été nécessaire
 pour réussir les 33 scénarios finaux.
 
-La réception d'un événement signé sur le **VPS de production**, avec son
-secret propre et son endpoint configuré dans Stripe, demeure distincte de
-cette validation locale. Elle n'a pas été exécutée ici.
+La réception d'un événement signé sur le **VPS**, avec son secret propre et
+son endpoint configuré dans Stripe, est distincte de cette validation locale.
+Elle a ensuite été confirmée manuellement en mode TEST par l'opérateur,
+avec un rejeu sans doublon visible ; voir le suivi du 4 octobre en tête de ce
+rapport. Le remboursement TEST sur le VPS et le mode LIVE restent à valider.

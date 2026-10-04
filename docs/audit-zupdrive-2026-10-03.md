@@ -1,5 +1,11 @@
 # Audit ZupDrive : accès entre comptes — 3 octobre 2026
 
+**Suivi au 4 octobre 2026 :** le déploiement des corrections a été annoncé
+et la sonde ciblée décrite ci-dessous a réussi à **12/12**. Les dossiers,
+sociétés et courses V1 existent ; les parcours entre comptes authentifiés
+et les scénarios de concurrence restent à compléter. Voir
+[l'état courant du projet](etat-projet.md).
+
 ## Confirmation après déploiement
 
 L'opérateur a annoncé le déploiement ; le dépôt local est au commit
@@ -92,8 +98,9 @@ contre la base de production.
 - `docs/audit-drivers-2026-10-03.md` : ajout du déploiement annoncé et des
   sondes HTTP externes.
 
-Le correctif des invitations est **local, non publié et non déployé** au
-moment de ce rapport. Il faut le valider avec la suite société sur une base
-dédiée, puis publier/déployer. Les tests authentifiés de production,
-la concurrence, les permissions admin/superowner, Socket.IO et les scénarios
-paiement/webhook/abus restent à poursuivre selon l'ordre convenu.
+Au moment du passage initial, le correctif des invitations était **local,
+non publié et non déployé**. La confirmation en tête décrit le déploiement
+ultérieur et la sonde ciblée. Compléter la validation avec la suite société
+sur une base dédiée, puis les accès entre comptes authentifiés et la
+concurrence. Les audits admin/superowner, Socket.IO et paiements/webhooks
+ont depuis été menés ; leurs limites figurent dans les rapports dédiés.

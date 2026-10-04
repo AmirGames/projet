@@ -1,5 +1,11 @@
 # Publier ZupEat Livreur
 
+**Suivi au 4 octobre 2026 :** l'API est déployée sur le VPS. La préparation
+présente dans le dépôt ne vaut pas publication ni validation sur appareils
+réels. Les comptes, clés, essais et soumissions ci-dessous restent à finaliser.
+Voir [l'état du projet](../../../docs/etat-projet.md). Les indications de coût
+et de procédure des stores doivent être revérifiées au moment de la soumission.
+
 Ce qui est prêt dans le dépôt, puis ce qui reste à faire (comptes, clés,
 fiches des stores), dans l'ordre.
 

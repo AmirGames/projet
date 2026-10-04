@@ -1,5 +1,10 @@
 # Audit HTTP ciblé de production — 3 octobre 2026
 
+**Suivi au 4 octobre 2026 :** le contrôle support/organisations après
+déploiement est validé à **67/67** dans le périmètre ci-dessous. Les échecs
+du passage initial sont conservés comme historique. Voir
+[l'état courant et les prochaines validations](etat-projet.md).
+
 ## Confirmation après déploiement
 
 L'opérateur a transmis le résultat du nouveau passage sur le VPS au commit
@@ -32,7 +37,7 @@ la même faille sur `GET /api/organizations`, testée dans les deux sens.
 - Un compte ordinaire est refusé en 403 sur `/api/admin/config`,
   `/api/superowner/dashboard` et `/api/zupdrive/admin/chauffeurs`.
 
-## Faille encore présente sur le serveur
+## Faille présente sur le serveur lors du passage initial — corrigée ensuite
 
 `GET /api/organizations` est sans authentification et sélectionne
 `req.body.userId || "user-123"`. Un GET avec un corps JSON peut donc
@@ -45,7 +50,9 @@ par le voisin n'est pas ignorée.
 
 Correction locale : `authMiddleware` sur cette route, puis sélection
 exclusive par `req.userId`. Aucun identifiant client ne choisit la liste.
-**Cette correction n'a pas été publiée ni déployée durant cet audit.**
+**Lors du passage initial, cette correction n'était pas encore publiée ni
+déployée.** La confirmation en tête de ce rapport consigne le passage
+ultérieur à 67/67 après déploiement.
 
 ## Nettoyage et limites
 
@@ -66,7 +73,7 @@ authentifiées de production. Les contrôles antérieurs des comptes suspendus
 étaient locaux. L'audit réseau/TLS et la restauration des sauvegardes ont été
 réalisés séparément ; ils ne garantissent pas toute la sécurité du VPS.
 
-## Validation locale et reprise après déploiement
+## Validation locale et procédure de reprise — résultat obtenu : 67/67
 
 - Régression HTTP Express avec authentification réelle et dépendances
   simulées : 4 tests réussis (anonyme, injections Alice/Bob, accès légitime).

@@ -3,23 +3,24 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour (27 septembre) : la marque ZupEat au sein du groupe
-ZupOne, l'équipe et ses rôles par plateforme sur un seul panneau
-(`/superowner`), les reversements hebdomadaires et le fichier SEPA, les montants
-justes pour chacun (commerçant, livreur, client), la tournée de trois courses,
-l'application livreur prête pour les stores (hors réseau, position en
-arrière-plan, suppression du compte) et la surveillance du site. Puis les
-comptes : une adresse déjà prise refusée en 409 à chaque porte, les adresses
-e-mail sans casse, le mot de passe de 8 caractères avec chiffre, minuscule et
-majuscule, et l'inscription réparée dans l'application client ; la suite
-d'API passe aussi sous Windows.
+Dernière mise à jour : **4 octobre 2026**. Le site est déployé sur un VPS,
+la vitrine ZupOne et les parcours ZupDrive V1 existent. Les audits de sécurité
+du 3 octobre et la validation manuelle Stripe TEST du 4 octobre complètent les
+résultats historiques de vérification. Le remboursement sur le VPS et le mode
+LIVE restent à valider. Les applications mobiles ne sont pas encore publiées.
+
+Le suivi courant est centralisé dans [docs/etat-projet.md](docs/etat-projet.md) :
+preuves, limites et priorités. Les sections ci-dessous conservent le contexte
+métier et l'historique des travaux ; un ancien résultat daté ne vaut pas
+validation de toutes les fonctionnalités sur le déploiement actuel.
 
 ---
 
 ## 1. Le projet
 
 **ZupEat** est une plateforme de commande en ligne pour les commerces de
-proximité, dans l'esprit d'Uber Eats ou Glovo. Trois métiers cohabitent :
+proximité, dans l'esprit d'Uber Eats ou Glovo. Trois métiers et l'équipe de
+la plateforme cohabitent :
 
 - **le client** commande depuis la vitrine d'un commerce, avec ou sans compte ;
 - **le commerçant** tient son catalogue, ses horaires, ses zones et ses commandes ;
@@ -34,18 +35,21 @@ Plusieurs commerçants cohabitent sur la même installation, chacun chez lui
 
 ### Le groupe ZupOne
 
-ZupEat est la première plateforme du groupe **ZupOne** ; **ZupDrive** (courses
-de taxi / VTC) viendra ensuite, sur le même code et le même compte.
+ZupEat est la première plateforme du groupe **ZupOne**. **ZupDrive** (courses
+de taxi / VTC) possède déjà ses dossiers chauffeurs et sociétés, ses tarifs,
+ses devis et ses courses V1, sur le même compte. Le paiement en ligne des
+courses est reporté à la V2 et la présentation publique annonce encore
+« Bientôt disponible ». Voir [docs/zupdrive.md](docs/zupdrive.md).
 
 | Domaine | Rôle |
 |---|---|
-| `zupone.com` | Vitrine du groupe (à faire) |
+| `zupone.com` | Vitrine du groupe (page existante : `frontend/app/zupone/page.tsx`) |
 | `manager.zupone.com` | L'équipe du groupe : un seul panneau (`/superowner`) pour toutes les plateformes |
 | `zupeat.com` | Les clients de ZupEat |
 | `manager.zupeat.com` | Les commerçants |
 | `delivery.zupeat.com` | Les livreurs |
 | `zupdrive.com` | ZupDrive : les clients (passagers) |
-| `manager.zupdrive.com` | ZupDrive : les sociétés qui gèrent plusieurs VTC ou chauffeurs (API prête, pages à faire — voir docs/zupdrive.md, « Sociétés ») |
+| `manager.zupdrive.com` | Domaine prévu pour les sociétés ZupDrive ; API société existante, administration et invitations chauffeur décrites dans docs/zupdrive.md ; un espace gérant complet n'est pas attesté ici |
 | `driver.zupdrive.com` | Les chauffeurs ZupDrive (transport de personnes) — pas les livreurs |
 
 - **Un seul compte ZupOne** par personne (`User`), client sur toutes les
@@ -58,8 +62,10 @@ de taxi / VTC) viendra ensuite, sur le même code et le même compte.
   et l'équipe du groupe.
 
 Le site se répartit sur ces domaines (`NEXT_PUBLIC_DOMAINE_GROUPE`, `_PUBLIC`,
-`_PRO`, `_LIVREUR`) ou tient sur un seul. **Rien n'est déployé : tout se passe
-en local.**
+`_PRO`, `_LIVREUR`, `_VITRINE`, `_DRIVE`, `_CHAUFFEUR`) ou tient sur un seul.
+**ZupEat est déployé sur un VPS**, avec l'API à `https://api.zupeat.com`.
+Cette liste décrit les espaces prévus par le code ; elle n'atteste pas que
+chaque domaine est configuré et opérationnel sur le serveur.
 
 ---
 
@@ -73,7 +79,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Dépôt** | `https://github.com/AmirGames/projet` — le remote a tendance à revenir tout seul sur `AmirGames/saas-project`, qui est injoignable. **Vérifier `git remote set-url origin` avant chaque push.** |
 | **Branche** | `claude/awesome-ride-m9lci8`, qui est aussi la branche par défaut du dépôt. `main` existe en double mais n'est plus suivie. |
 | **Environnement** | Développement sous Windows (`C:\projet`), assistance dans un bac à sable Linux. |
-| **Déploiement** | Aucun. Tout reste local tant que le site n'est pas fini. |
+| **Déploiement** | VPS déjà en exploitation pour les validations ; Docker Compose, Caddy, PostgreSQL et Redis. Suivi dans `docs/etat-projet.md`, exploitation via `deploy/zup.sh`. |
 
 ### Ce qui est volontairement reporté
 
@@ -96,12 +102,12 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Paiement** | Stripe — intention liée à la commande, webhook signé, remboursement au refus |
 | **Virements** | Fichier SEPA `pain.001.001.03` généré chaque semaine, importé à la main dans la banque |
 | **Notifications** | Web Push (VAPID), SMS Twilio, push Expo pour les applications — chacun facultatif |
-| **Mobile** | Expo (React Native) : `mobile/apps/customer`, `merchant`, `delivery` |
+| **Mobile** | Expo (React Native) : `mobile/apps/customer`, `merchant`, `delivery`, `admin` |
 
 ```
-backend/    API REST — 40 fichiers de routes, 69 services (hors tests), 57 modèles Prisma, 14 migrations
-frontend/   Next.js — 116 pages
-mobile/     trois applications Expo
+backend/    API REST — ZupEat, ZupDrive, administration ; migrations dans backend/prisma/migrations/
+frontend/   Next.js — vitrines et espaces des clients, commerçants, livreurs, chauffeurs et équipe
+mobile/     applications Expo client, commerçant, livreur et équipe
 ```
 
 **Aucune inscription ne donne les droits de la plateforme.** Le superowner se
@@ -536,22 +542,25 @@ document.
 
 ## 6. Comment on vérifie — le point le plus important
 
-**Pas de tests unitaires à simulacres.** Le projet se vérifie avec :
+Le projet se vérifie avec :
 
 - des **scripts qui interrogent une vraie API branchée sur une vraie base** ;
-- des scripts qui **pilotent un vrai navigateur** (Playwright).
+- des scripts qui **pilotent un vrai navigateur** (Playwright) ;
+- des tests Jest ciblés, avec dépendances simulées ou PostgreSQL réel selon
+  la suite, notamment pour les régressions de sécurité et la concurrence.
 
-**Un contrôle n'affirme jamais un code HTTP : il relit la donnée pour vérifier
-qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
+**Pour une opération métier, un code HTTP ne suffit pas : vérifier l'état
+enregistré et les effets.** Les sondes de refus et les tests avec dépendances
+simulées sont utiles, mais ne remplacent pas les parcours complets.
 
-### Les totaux actuels
+### Résultats historiques consignés
 
-| | Suites | Contrôles |
-|---|---|---|
-| **API** (`backend/scripts/verification/`) | 57 | **1949** |
-| **Navigateur** (`frontend/scripts/`) | 34 | **942**, toutes vertes le 2 octobre |
+Ces résultats sont datés. Les suites n'ont pas été relancées lors de la mise
+à jour documentaire du 4 octobre ; aucun total courant n'est déduit de la
+seule présence des scripts. Pour les audits et validations du VPS, voir
+[docs/etat-projet.md](docs/etat-projet.md).
 
-Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841
+Passage de la suite d'API consigné le **27 septembre**, tout est vert — 1841
 contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
 à part contre une API à Stripe actif (voir le `LISEZ-MOI`) : son interruption
 dans la suite complète est attendue. Rejouée aussi sous Windows, session
@@ -1108,28 +1117,36 @@ quelconques, `next/image` ne convient pas.
 
 ### À faire ensuite
 
-Le carnet ci-dessous.
+Les priorités et critères de validation sont centralisés dans
+[docs/etat-projet.md](docs/etat-projet.md) : remboursement TEST sur le VPS,
+LIVE après validation Stripe, parcours réels, accès entre comptes,
+reversements/SEPA, pages légales, cartes et publication mobile.
 
 ### Le reste du carnet
 
-- **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
-  ses statistiques.
-- **Des suites pour les derniers chantiers** : reversements commerçants et
-  fichier SEPA, rôles de l'équipe et `exigerPermission`, duplication de
-  boutique, livraison offerte, et côté livreur la pause, la perte du signal,
-  le support en direct et les statistiques.
-- **ZupDrive** et la vitrine du groupe : prévus par `Plateforme.DRIVE` et les
-  domaines, rien d'autre n'est écrit.
+- **Les commandes d'entraînement**, pour qu'un commerçant s'exerce sans
+  polluer ses statistiques ni ses reversements. Le commerce de démonstration
+  existant refuse les commandes ; Stripe TEST ne fournit pas ce mode métier.
+- **Compléter les validations métier** : reversements commerçants et fichier
+  SEPA, duplication de boutique, livraison offerte ; côté livreur, pause,
+  perte du signal, notifications et statistiques. Des suites de support et
+  permissions existent déjà ; leur présence ne vaut pas validation de tous
+  les parcours sur le VPS.
+- **ZupDrive V2** : paiement en ligne et règles de facturation des courses.
+  La vitrine ZupOne et les dossiers/courses ZupDrive V1 sont déjà écrits.
 - **Publier les applications** : icônes définitives, comptes des stores, et un
   service de cartes et d'itinéraires hébergé à la place des serveurs publics
   d'OpenStreetMap et d'OSRM.
 - **Se servir de la note à l'attribution** : elle est écrite et lue, mais le
   dispatch départage toujours à la distance seule.
-- **Prisma 7 → 8**, rien d'urgent : le projet est sur Prisma 7.10, toujours
-  maintenu, et Prisma 8 n'en est qu'aux versions candidates. À planifier quand
-  il sera stable.
-- Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
-  les variables correspondantes sont commentées dans `.env.example`.
+- **Évolution de Prisma** : le projet déclare Prisma 7.10. Planifier une
+  migration majeure selon les besoins, après vérification de la version
+  cible et de ses incompatibilités ; aucun statut de version future n'est
+  attesté par cette documentation.
+- **Fiabilité et exploitation** : outbox persistante pour les notifications
+  après paiement, suivi des erreurs et tests de charge. Les webhooks sortants
+  ont déjà des relances en base. Cloudinary est intégré en option pour le
+  stockage des fichiers ; sa configuration sur le VPS n'est pas attestée ici.
 
 ---
 

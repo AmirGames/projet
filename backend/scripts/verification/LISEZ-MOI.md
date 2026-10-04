@@ -1,5 +1,11 @@
 # Vérifications
 
+**Suivi au 4 octobre 2026 :** le site est déployé, mais ces suites générales
+restent destinées à une **base de test dédiée qu'elles réinitialisent**.
+Ne pas les exécuter sur la base du VPS en exploitation. Les résultats datés,
+les audits ciblés et le travail restant figurent dans
+[l'état du projet](../../../docs/etat-projet.md).
+
 Ces scripts interrogent une **vraie API branchée sur une vraie base**. Ils
 attrapent ce qu'une relecture laisse passer : un champ mal nommé, une route qui
 répond `200` sans rien faire, un montant divisé par cent, une permission qui ne

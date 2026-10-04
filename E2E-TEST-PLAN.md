@@ -1,7 +1,13 @@
 # Plan de tests E2E — identité unifiée, rôles et validations
 
-**Mis à jour** : 27 septembre 2026 (première version : 22 septembre)
-**Environnement** : local
+**Mis à jour** : 4 octobre 2026 (scénarios historiques du 27 septembre ; première version : 22 septembre)
+**Environnement du plan** : local ou environnement de test isolé
+
+Le site est désormais déployé sur un VPS. Ce plan décrit des scénarios à
+exécuter, pas un compte rendu attestant leur réussite. L'état courant et les
+validations connues figurent dans [docs/etat-projet.md](docs/etat-projet.md).
+Les étapes de préparation et les suites générales peuvent vider la base :
+les réserver à une base dédiée, jamais à la base du VPS en exploitation.
 
 Ce plan se déroule **à la main**, dans un navigateur et avec `curl`. Il couvre le
 parcours d'un compte ZupOne : inscription, choix des espaces, passage
