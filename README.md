@@ -431,6 +431,7 @@ Firebase Android/FCM sont configurés et l'opérateur confirme la réception des
 push. La version 1.0.1 ajoute une fenêtre « Nouvelle course » au-dessus des
 autres applications et du verrouillage, ainsi qu'une sonnerie avec le volume
 des alarmes, toutes deux à activer dans les paramètres Android du livreur.
+Le signal de réveil Android est ajouté côté serveur et déployé sur le VPS.
 Les essais de ces alertes et des parcours sur téléphone restent à réaliser ; voir
 [son README](mobile/apps/delivery/README.md) et
 [les résultats de validation](mobile/apps/delivery/VALIDATION.md).

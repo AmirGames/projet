@@ -60,10 +60,11 @@ icône de l'application et sur l'écran de démarrage.
 - **Proposition de course plein écran** : trajet complet sur la carte, montant
   garanti, durée et distance totales, bouton « Accepter » qui se vide avec le
   temps de réponse.
-- **Téléphone verrouillé** (à valider sur le nouvel APK Firebase) : la course proposée sonne 10 s et s'affiche en
-  notification avec un seul bouton, **« Accepter la course »**, qui agit sans
-  déverrouiller ni ouvrir l'application (Android, application en arrière-plan ;
-  iOS, application en fond). Refuser, c'est laisser passer.
+- **Téléphone verrouillé** : push avec « Accepter la course ». Sur Android
+  1.0.1, fenêtre native Accepter/Refuser et sonnerie avec le volume des alarmes
+  après activation des deux options et de l'autorisation d'affichage.
+  L'affichage et les actions restent à essayer sur appareil. Sur iOS, le
+  comportement reste celui de la notification, application en fond.
 - **« Tout va bien ? »** : immobile plus de 3 minutes en pleine course (hors
   commerce et client), le livreur confirme ou appelle le 112 ; le support est
   prévenu.
@@ -169,7 +170,11 @@ elle ne déverrouille pas le téléphone. Les adresses et l'espace du compte ne
 sont pas affichés sur le verrouillage. Accepter/refuser réutilise la tâche Expo
 et les endpoints existants, sans jeton enregistré dans les sources natives.
 L'alerte expire automatiquement et les réglages sont coupés hors ligne ou à
-la déconnexion. Aucun changement serveur n'est nécessaire pour cette fonction.
+la déconnexion. Le serveur conserve la push visible et ajoute, uniquement
+pour une proposition Android identifiée, un signal FCM de données pour réveiller
+la tâche. Cette mise à jour serveur est nécessaire : une push visible seule
+n'exécute pas de code en arrière-plan. Le correctif serveur est appliqué sur
+le VPS et sa santé est vérifiée le 4 octobre. Voir [VALIDATION.md](VALIDATION.md).
 
 Contrôler les données des push, l'expiration et les lots : `npm run test:alerts`
 (testé avec Node 24.21.0 et l'exécution directe de TypeScript).

@@ -18,7 +18,9 @@ Aucun parcours authentifié sur le VPS n'a été exécuté pendant cette prépar
 | Clé FCM V1 dans EAS | Attribuée à l'identifiant Android, projet Firebase `zupeat-a1e82` confirmé dans EAS |
 | Push sur téléphone | Réception d'une push confirmée par l'opérateur après configuration Firebase |
 | Tests des alertes `npm run test:alerts` | 4/4 : formats FCM, payloads rejetés, offres expirées/étrangères, lots |
+| Tests serveur des notifications | 13/13, TypeScript et build backend réussis ; avertissement SMTP de la suite existante |
 | Fenêtre et son en silencieux | Module Android compilé ; affichage et actions à essayer sur téléphone |
+| Déploiement du correctif serveur | Appliqué via SSH ; source compilée vérifiée, API `healthy`, `/health` retourne `status: ok` |
 
 Les 30 avertissements du lint concernent les mises à jour d'état dans des
 effets (20) et les imports `require` (10), notamment les modules natifs chargés
@@ -149,6 +151,13 @@ et écran verrouillé. Le changement de logo ne corrige pas cette configuration 
 
 ## Alertes Android 1.0.1
 
+**APK à installer :** [zupeat-livreur-test-2026-10-04-alertes-arm64.apk](dist/zupeat-livreur-test-2026-10-04-alertes-arm64.apk),
+90 793 522 octets (environ 91 Mo). Compilation réussie ; signature v2 valide,
+même certificat de test que les versions précédentes. Version 1.0.1, code 2,
+Android 10 minimum, ARM64. API et réglages présents dans le bundle ; clé privée
+et fichiers d'identifiants absents de l'APK.
+SHA-256 : `3929B2E77D57F5BB3F744572CC6E857E2889507702CAF74B6BDE0A26F48B5B2D`.
+
 Le module local `modules/course-alerts` est lié par Expo. Android est généré
 avec `versionCode: 2` et le runtime OTA suit la version applicative 1.0.1.
 Les APK 1.0.0 ne peuvent pas recevoir ce nouveau module par une simple mise à
@@ -170,6 +179,52 @@ Expo existante et sa session SecureStore, pas un jeton dans un Intent.
 Le service s'arrête à la réponse/expiration, hors ligne ou à la déconnexion ;
 sa notification permet aussi de couper la sonnerie. La notification push
 habituelle reste le recours si Android bloque le démarrage natif.
+
+Le correctif serveur conserve la push visible et ajoute un message de données
+uniquement pour Android et les propositions avec `offerId`. Il n'inclut aucun
+titre, texte, son ou canal de présentation, pour réveiller la tâche sans seconde
+notification visible. Priorité haute, TTL 60 s ; iOS et les messages courants
+gardent leur comportement. Aucun changement du schéma Prisma.
+Les 13 tests ciblés passent avec données et appels Expo simulés ; un avertissement
+de connexion SMTP apparaît dans la suite existante de formatage des numéros,
+sans appel métier au serveur ni modification de la base.
+
+### Correctif actif sur le VPS
+
+Le 4 octobre, l'accès SSH `deploy` au VPS de l'API a été retrouvé avec une clé
+d'hôte déjà connue. Le fichier notifier initial correspond exactement à la
+base locale (SHA-256 `57018bf3c6ead9f8f64c5d8fba40123ad2f583aa5677b16f33a086be140ae25d`).
+Le dépôt du VPS était au commit `85705d814b10ceb542e7e379211118c4a587bdb0`.
+Seul `backend/src/modules/notifications/notifier.service.ts` y a été remplacé
+par le correctif testé ; il reste une modification locale du dépôt serveur.
+Aucun commit ni `git pull` n'a été effectué pour ce déploiement.
+
+La source présente dans la nouvelle image a été comparée au fichier local :
+SHA-256 `2442089501414ac75c0f6e8b4bbbf5d463ff4930e50dfc21f7f591c41751b879`.
+Image API : `sha256:43323e3a680e901321e9e23fb95e49b5d8984ec6b497cf1a9fdb4e5dd3da6a82`.
+Reconstruction et redémarrage du seul service `backend`, après contrôle des
+40 migrations déjà appliquées. Le conteneur est `healthy` ; l'API publique
+`https://api.zupeat.com/health` retourne `status: ok`.
+Aucune vraie proposition, acceptation ou push de test n'a été créée sur le VPS.
+La réception du signal de réveil, la fenêtre et la sonnerie restent à vérifier
+avec le nouvel APK sur le téléphone.
+
+Sauvegardes conservées sur le serveur :
+
+- source : `/home/deploy/sauvegardes/course-alerts-20261004/notifier.service.ts` ;
+- image précédente : `zupone-backend:before-course-alerts-20261004`, dont le
+  JavaScript a été comparé à celui de l'API qui tournait avant la mise à jour.
+
+Pour revenir à cette version si nécessaire, depuis `/home/deploy/projet` :
+
+```bash
+cp /home/deploy/sauvegardes/course-alerts-20261004/notifier.service.ts backend/src/modules/notifications/notifier.service.ts
+docker tag zupone-backend:before-course-alerts-20261004 zupone-backend:latest
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --no-deps backend
+```
+
+La prochaine synchronisation Git du VPS doit tenir compte de cette
+modification locale du notifier et conserver le correctif dans la version diffusée.
 
 **Essais restant sur appareil** : activer les deux options, accorder
 l'affichage, régler un volume d'alarmes audible, puis « Tester la fenêtre dans

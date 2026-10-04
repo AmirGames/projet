@@ -175,6 +175,12 @@ et corrections des hooks React. Les dépendances sont alignées sur Expo SDK 57.
   par les endpoints existants. Les deux options sont désactivées par défaut ;
   aucun volume système ni règle « Ne pas déranger » n'est changé.
   Tests du payload, des propositions expirées/étrangères et des lots : 4/4.
+  Correctif serveur : signal FCM de données pour réveiller Android, en plus
+  de la notification visible compatible avec les anciennes versions ; 13/13
+  tests ciblés, TypeScript et compilation backend réussis, sans migration.
+  Correctif appliqué au VPS par SSH ; fichier notifier et source de l'image
+  comparés au correctif local. API saine et `/health` répond `status: ok`.
+  La source et l'image précédentes sont conservées pour un retour éventuel.
   L'affichage, le réveil et les actions restent à valider sur le téléphone.
 - **Appareils réels** : l'opérateur dispose d'un Android, aucun téléphone
   connecté pendant la préparation ; installation, GPS, curseur de remise,

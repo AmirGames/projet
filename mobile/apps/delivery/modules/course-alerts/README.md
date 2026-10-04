@@ -14,7 +14,11 @@ Ne pas recopier ses sources dans le dossier Android généré.
   libération du lecteur/audio focus. Le volume des alarmes et DND sont respectés.
 
 La JS utilise `/api/drivers/offers` et la session SecureStore pour valider la
-push. Les actions natives sont sérialisées en réponses Expo et envoyées
+push. `Notifier.pushMobileLivreur` conserve la notification visible pour tous
+les APK et ajoute un message Android de données, sans titre/canal/son, avec
+`priority: high`, `contentAvailable: true` et TTL 60 s. La notification visible
+seule ne lance pas la tâche quand l'application est en arrière-plan.
+Les actions natives sont sérialisées en réponses Expo et envoyées
 explicitement aux tâches de notification enregistrées. La détection de premier
 plan d'Expo voit aussi cette Activity native : le dispatch explicite évite
 qu'une action soit retenue jusqu'au retour dans l'application React.
@@ -29,6 +33,7 @@ L'APK doit être reconstruit après un changement natif. La version applicative
 Références : [restrictions d'ouverture Android](https://developer.android.com/guide/components/activities/secure-bal),
 [audio des alarmes](https://developer.android.com/reference/android/media/AudioAttributes#USAGE_ALARM),
 [services depuis l'arrière-plan](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start).
+Voir aussi [les types de push Expo](https://docs.expo.dev/push-notifications/what-you-need-to-know/).
 
 La compilation ne prouve pas que chaque fabricant laissera démarrer la fenêtre
 ou le service. Utiliser le test différé, puis une vraie push sur un compte
