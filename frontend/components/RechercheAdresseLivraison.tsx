@@ -12,13 +12,23 @@ import {
   X,
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { ConfirmationAdresseLocalisee } from "@/components/ConfirmationAdresseLocalisee";
+import {
+  localiserAdresse,
+  type AdresseLocalisee,
+} from "@/lib/localisation-adresse";
 import {
   enregistrerAdresseLivraison,
+  lireAdressesRecentes,
+  cleAdresse,
   type AdresseLivraison,
 } from "@/lib/adresseLivraison";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-type AdresseProposee = AdresseLivraison & { source: "saved" | "order" };
+type AdresseProposee = AdresseLivraison & {
+  source: "saved" | "order";
+  lastUsedAt?: string;
+};
 const normaliser = (texte: string) =>
   texte
     .normalize("NFD")
@@ -26,8 +36,7 @@ const normaliser = (texte: string) =>
     .toLowerCase()
     .trim()
     .replace(/\s+/g, " ");
-const cle = (adresse: AdresseLivraison) =>
-  normaliser([adresse.street, adresse.city, adresse.postalCode].join("|"));
+const cle = cleAdresse;
 
 export function RechercheAdresseLivraison({
   adresse,
@@ -39,6 +48,7 @@ export function RechercheAdresseLivraison({
   const t = useTranslations("deliveryAddress");
   const dialog = useRef<HTMLDialogElement>(null);
   const requete = useRef<AbortController | null>(null);
+  const requeteGPS = useRef<AbortController | null>(null);
   const rechercheId = useId();
   const titreId = useId();
   const [ouvert, setOuvert] = useState(false);
@@ -47,6 +57,8 @@ export function RechercheAdresseLivraison({
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState(false);
   const [gpsEnCours, setGpsEnCours] = useState(false);
+  const [position, setPosition] = useState<AdresseLocalisee | null>(null);
+  const [erreurGPS, setErreurGPS] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ouvert) return;
@@ -57,11 +69,20 @@ export function RechercheAdresseLivraison({
       document.body.style.overflow = ancien;
     };
   }, [ouvert]);
-  useEffect(() => () => requete.current?.abort(), []);
+  useEffect(
+    () => () => {
+      requete.current?.abort();
+      requeteGPS.current?.abort();
+    },
+    [],
+  );
 
   const charger = async () => {
     requete.current?.abort();
-    setAdresses([]);
+    const recentes: AdresseProposee[] = lireAdressesRecentes().map(
+      (recente) => ({ ...recente, source: "saved" }),
+    );
+    setAdresses(recentes);
     setErreur(false);
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -78,7 +99,22 @@ export function RechercheAdresseLivraison({
       });
       if (!reponse.ok) throw new Error();
       const donnees = await reponse.json();
-      if (!controleur.signal.aborted) setAdresses(donnees.data || []);
+      if (!controleur.signal.aborted) {
+        const fusion = new Map<string, AdresseProposee>();
+        for (const proposee of [
+          ...recentes,
+          ...(donnees.data || []),
+        ] as AdresseProposee[]) {
+          const connue = fusion.get(cle(proposee));
+          if (
+            !connue ||
+            Date.parse(proposee.lastUsedAt || "") >
+              Date.parse(connue.lastUsedAt || "")
+          )
+            fusion.set(cle(proposee), proposee);
+        }
+        setAdresses([...fusion.values()]);
+      }
     } catch {
       if (!controleur.signal.aborted) setErreur(true);
     } finally {
@@ -89,6 +125,9 @@ export function RechercheAdresseLivraison({
   const ouvrir = () => {
     setSaisie("");
     setGpsEnCours(false);
+    requeteGPS.current?.abort();
+    setPosition(null);
+    setErreurGPS(null);
     dialog.current?.showModal();
     setOuvert(true);
     void charger();
@@ -98,31 +137,24 @@ export function RechercheAdresseLivraison({
     onChange(choisie);
     dialog.current?.close();
   };
-  const parGPS = () => {
-    if (!navigator.geolocation) {
-      alert(t("geolocationNotSupported"));
-      return;
-    }
+  const parGPS = async () => {
+    requeteGPS.current?.abort();
+    const controleur = new AbortController();
+    requeteGPS.current = controleur;
     setGpsEnCours(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setGpsEnCours(false);
-        if (dialog.current?.open)
-          retenir({
-            label: t("currentPosition"),
-            street: "",
-            city: "",
-            postalCode: "",
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-          });
-      },
-      () => {
-        setGpsEnCours(false);
-        if (dialog.current?.open) alert(t("cantAccessLocation"));
-      },
-      { timeout: 10000 },
-    );
+    setPosition(null);
+    setErreurGPS(null);
+    try {
+      const trouvee = await localiserAdresse(controleur.signal);
+      if (!controleur.signal.aborted) setPosition(trouvee);
+    } catch (error) {
+      if (!controleur.signal.aborted)
+        setErreurGPS(
+          error instanceof Error ? error.message : "cantAccessLocation",
+        );
+    } finally {
+      if (!controleur.signal.aborted) setGpsEnCours(false);
+    }
   };
 
   const toutes = new Map(adresses.map((proposee) => [cle(proposee), proposee]));
@@ -134,14 +166,22 @@ export function RechercheAdresseLivraison({
       latitude: connue?.latitude ?? adresse.latitude,
       longitude: connue?.longitude ?? adresse.longitude,
       source: connue?.source ?? "saved",
+      lastUsedAt: connue?.lastUsedAt || new Date(0).toISOString(),
     });
   }
   const recherche = normaliser(saisie);
-  const visibles = [...toutes.values()].filter((proposee) =>
-    normaliser(
-      `${proposee.label} ${proposee.street} ${proposee.city} ${proposee.postalCode}`,
-    ).includes(recherche),
-  );
+  const visibles = [...toutes.values()]
+    .sort(
+      (a, b) =>
+        (Date.parse(b.lastUsedAt || "") || 0) -
+        (Date.parse(a.lastUsedAt || "") || 0),
+    )
+    .slice(0, 5)
+    .filter((proposee) =>
+      normaliser(
+        `${proposee.label} ${proposee.street} ${proposee.city} ${proposee.postalCode}`,
+      ).includes(recherche),
+    );
 
   return (
     <>
@@ -172,6 +212,7 @@ export function RechercheAdresseLivraison({
         onClose={() => {
           setOuvert(false);
           requete.current?.abort();
+          requeteGPS.current?.abort();
         }}
         onClick={(event) => {
           if (event.target !== event.currentTarget) return;
@@ -213,7 +254,13 @@ export function RechercheAdresseLivraison({
                 id={rechercheId}
                 clair
                 value={saisie}
-                onChange={setSaisie}
+                onChange={(texte) => {
+                  setSaisie(texte);
+                  setPosition(null);
+                  setErreurGPS(null);
+                  requeteGPS.current?.abort();
+                  setGpsEnCours(false);
+                }}
                 placeholder={t("searchAddress")}
                 className="w-full rounded-full bg-gray-100 py-4 pl-12 pr-5 text-base outline-none focus:ring-2 focus:ring-orange-500"
                 onSelect={(choisie) =>
@@ -236,6 +283,26 @@ export function RechercheAdresseLivraison({
               <Navigation size={20} className="text-orange-600" />
               {gpsEnCours ? t("locating") : t("myLocation")}
             </button>
+            {erreurGPS && (
+              <p role="alert" className="mb-4 text-sm text-orange-800">
+                {t(erreurGPS)}
+              </p>
+            )}
+            {position && (
+              <ConfirmationAdresseLocalisee
+                position={position}
+                onConfirm={() => retenir(position.adresse)}
+                onCorrect={() => {
+                  setSaisie(
+                    [position.adresse.street, position.adresse.city]
+                      .filter(Boolean)
+                      .join(", "),
+                  );
+                  setPosition(null);
+                  dialog.current?.querySelector("input")?.focus();
+                }}
+              />
+            )}
             {chargement && (
               <p role="status" className="py-3 text-sm text-gray-500">
                 {t("loadingAddresses")}
@@ -256,63 +323,50 @@ export function RechercheAdresseLivraison({
                 </button>
               </div>
             )}
-            {(["saved", "order"] as const).map((source) => {
-              const liste = visibles.filter(
-                (proposee) => proposee.source === source,
-              );
-              if (!liste.length) return null;
-              return (
-                <section key={source} className="mb-5">
-                  <h3 className="mb-2 text-lg font-bold">
-                    {t(
-                      source === "saved"
-                        ? "savedAddresses"
-                        : "previousAddresses",
-                    )}
-                  </h3>
-                  <ul className="divide-y divide-gray-100">
-                    {liste.map((proposee) => (
-                      <li key={cle(proposee)}>
-                        <button
-                          type="button"
-                          onClick={() => retenir(proposee)}
-                          className={`flex w-full items-center gap-4 rounded-xl px-3 py-4 text-left hover:bg-gray-100 ${adresse && cle(adresse) === cle(proposee) ? "bg-orange-50" : ""}`}
-                        >
-                          {source === "saved" ? (
-                            <MapPin
-                              size={22}
-                              className="shrink-0 text-gray-500"
-                            />
-                          ) : (
-                            <Clock
-                              size={22}
-                              className="shrink-0 text-gray-500"
-                            />
-                          )}
-                          <span className="min-w-0 flex-1">
-                            <span className="block break-words font-semibold">
-                              {proposee.street}
-                            </span>
-                            <span className="block text-sm text-gray-500">
-                              {[proposee.postalCode, proposee.city]
-                                .filter(Boolean)
-                                .join(" ")}
-                            </span>
+            {visibles.length > 0 && (
+              <section className="mb-5">
+                <h3 className="mb-2 text-lg font-bold">
+                  {t("recentAddresses")}
+                </h3>
+                <ul className="divide-y divide-gray-100">
+                  {visibles.map((proposee) => (
+                    <li key={cle(proposee)}>
+                      <button
+                        type="button"
+                        onClick={() => retenir(proposee)}
+                        className={`flex w-full items-center gap-4 rounded-xl px-3 py-4 text-left hover:bg-gray-100 ${adresse && cle(adresse) === cle(proposee) ? "bg-orange-50" : ""}`}
+                      >
+                        {proposee.source === "saved" ? (
+                          <MapPin
+                            size={22}
+                            className="shrink-0 text-gray-500"
+                          />
+                        ) : (
+                          <Clock size={22} className="shrink-0 text-gray-500" />
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <span className="block break-words font-semibold">
+                            {proposee.street}
                           </span>
-                          {adresse && cle(adresse) === cle(proposee) && (
-                            <Check
-                              size={20}
-                              aria-label={t("selectedAddress")}
-                              className="shrink-0 text-orange-600"
-                            />
-                          )}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              );
-            })}
+                          <span className="block text-sm text-gray-500">
+                            {[proposee.postalCode, proposee.city]
+                              .filter(Boolean)
+                              .join(" ")}
+                          </span>
+                        </span>
+                        {adresse && cle(adresse) === cle(proposee) && (
+                          <Check
+                            size={20}
+                            aria-label={t("selectedAddress")}
+                            className="shrink-0 text-orange-600"
+                          />
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {!chargement && !erreur && visibles.length === 0 && (
               <p className="py-4 text-sm text-gray-500">
                 {t(recherche ? "noMatchingAddresses" : "noSavedAddresses")}

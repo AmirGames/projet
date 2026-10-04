@@ -17,6 +17,7 @@ const commande = {
   deliveryPostal: "5000",
   deliveryLat: 50.46,
   deliveryLng: 4.86,
+  createdAt: new Date("2026-10-04T10:00:00Z"),
 };
 
 test("lit uniquement les livraisons du compte, sans limiter l'historique à 50 commandes", async () => {
@@ -64,4 +65,24 @@ test("fusionne le profil et les doublons en gardant les coordonnées de la derni
     city: "Liège",
     source: "order",
   });
+});
+
+test("range les adresses par dernière utilisation plutôt que de placer un ancien profil avant les commandes récentes", async () => {
+  (db.order.findMany as jest.Mock).mockResolvedValue([
+    {
+      ...commande,
+      deliveryAddress: "Rue Récente 5",
+      createdAt: new Date("2026-10-04T11:00:00Z"),
+    },
+    { ...commande, createdAt: new Date("2026-10-03T11:00:00Z") },
+  ]);
+  const adresses = await adressesDuClient({
+    ...profil,
+    updatedAt: new Date("2026-01-01T11:00:00Z"),
+  });
+  expect(adresses.map((a) => a.street)).toEqual([
+    "Rue Récente 5",
+    "Rue Neuve 2",
+  ]);
+  expect(adresses[1].lastUsedAt).toBe("2026-10-03T11:00:00.000Z");
 });

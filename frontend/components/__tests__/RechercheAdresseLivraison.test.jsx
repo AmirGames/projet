@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { RechercheAdresseLivraison } from "../RechercheAdresseLivraison";
+import { enregistrerAdresseLivraison } from "@/lib/adresseLivraison";
 
 jest.mock("next-intl", () => ({ useTranslations: () => (cle) => cle }));
 jest.mock("@/components/AddressAutocomplete", () => ({
@@ -44,6 +45,16 @@ const ancienne = {
 beforeEach(() => {
   localStorage.clear();
   localStorage.setItem("accessToken", "session");
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: jest.fn((success) =>
+        success({
+          coords: { latitude: 50.460123, longitude: 4.860321, accuracy: 80 },
+        }),
+      ),
+    },
+  });
   HTMLDialogElement.prototype.showModal = function () {
     this.open = true;
   };
@@ -51,12 +62,139 @@ beforeEach(() => {
     this.open = false;
     this.dispatchEvent(new Event("close"));
   };
-  global.fetch = jest
-    .fn()
-    .mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [{ ...adresse, source: "saved" }, ancienne] }),
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ data: [{ ...adresse, source: "saved" }, ancienne] }),
+  });
+});
+
+test("affiche cinq adresses mémorisées après plusieurs sélections, même sans compte", () => {
+  localStorage.removeItem("accessToken");
+  for (let i = 1; i <= 6; i++)
+    enregistrerAdresseLivraison({
+      ...adresse,
+      street: `Rue Test ${i}`,
+      label: `Rue Test ${i}, Namur`,
     });
+  render(<RechercheAdresseLivraison adresse={null} onChange={jest.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "searchAddress" }));
+  expect(screen.getByText("recentAddresses")).toBeTruthy();
+  expect(screen.getAllByRole("button", { name: /Rue Test/ })).toHaveLength(5);
+  expect(screen.queryByText("Rue Test 1")).toBeNull();
+  expect(
+    screen
+      .getAllByRole("button", { name: /Rue Test/ })
+      .map((b) => b.textContent),
+  ).toEqual([6, 5, 4, 3, 2].map((i) => `Rue Test ${i}5000 Namur`));
+});
+
+test("la localisation affiche l’adresse complète et la précision, puis attend le choix du client", async () => {
+  localStorage.removeItem("accessToken");
+  fetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({ adresse, hasHouseNumber: true }),
+  });
+  const onChange = jest.fn();
+  render(<RechercheAdresseLivraison adresse={null} onChange={onChange} />);
+  fireEvent.click(screen.getByRole("button", { name: "searchAddress" }));
+  fireEvent.click(screen.getByRole("button", { name: "myLocation" }));
+  await screen.findByText("detectedAddress");
+  expect(screen.getByText("Rue Neuve 2")).toBeTruthy();
+  expect(screen.getByText("locationAccuracy")).toBeTruthy();
+  expect(screen.getByText("locationImprecise")).toBeTruthy();
+  expect(onChange).not.toHaveBeenCalled();
+  expect(navigator.geolocation.getCurrentPosition).toHaveBeenCalledWith(
+    expect.any(Function),
+    expect.any(Function),
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+  );
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringContaining("lat=50.460123&lon=4.860321"),
+    expect.any(Object),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "useDetectedAddress" }));
+  expect(onChange).toHaveBeenCalledWith(adresse);
+  expect(lireAdresse()).toEqual(adresse);
+});
+
+const lireAdresse = () =>
+  JSON.parse(localStorage.getItem("zupeat.adresseLivraison"));
+
+test("sans numéro, propose de corriger au lieu de retenir une adresse incomplète", async () => {
+  localStorage.removeItem("accessToken");
+  fetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      adresse: { ...adresse, street: "Rue Neuve" },
+      hasHouseNumber: false,
+    }),
+  });
+  const onChange = jest.fn();
+  render(<RechercheAdresseLivraison adresse={null} onChange={onChange} />);
+  fireEvent.click(screen.getByRole("button", { name: "searchAddress" }));
+  fireEvent.click(screen.getByRole("button", { name: "myLocation" }));
+  await screen.findByText("locationMissingNumber");
+  expect(
+    screen.getByRole("button", { name: "useDetectedAddress" }).disabled,
+  ).toBe(true);
+  fireEvent.click(
+    screen.getByRole("button", { name: "correctLocationAddress" }),
+  );
+  expect(screen.getByRole("textbox").value).toBe("Rue Neuve, Namur");
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+test("une panne de localisation garde l’adresse actuelle et laisse la recherche disponible", async () => {
+  localStorage.removeItem("accessToken");
+  fetch.mockResolvedValue({ ok: false });
+  const onChange = jest.fn();
+  render(<RechercheAdresseLivraison adresse={adresse} onChange={onChange} />);
+  fireEvent.click(screen.getByRole("button", { name: /deliverTo/ }));
+  fireEvent.click(screen.getByRole("button", { name: "myLocation" }));
+  await screen.findByText("locationAddressUnavailable");
+  expect(onChange).not.toHaveBeenCalled();
+  expect(screen.getByRole("textbox")).toBeTruthy();
+});
+
+test("les anciennes commandes complètent les cinq adresses récentes sans repousser les sélections plus récentes", async () => {
+  for (let i = 1; i <= 5; i++)
+    enregistrerAdresseLivraison({
+      ...adresse,
+      street: `Rue Test ${i}`,
+      label: `Rue Test ${i}, Namur`,
+    });
+  fetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      data: [{ ...ancienne, lastUsedAt: "2020-01-01T00:00:00Z" }],
+    }),
+  });
+  render(<RechercheAdresseLivraison adresse={null} onChange={jest.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "searchAddress" }));
+  await waitFor(() =>
+    expect(screen.queryByText("loadingAddresses")).toBeNull(),
+  );
+  expect(screen.getAllByRole("button", { name: /Rue Test/ })).toHaveLength(5);
+  expect(screen.queryByText("Rue Ancienne 4")).toBeNull();
+});
+
+test("une ancienne demande GPS ne change pas l’adresse après fermeture et réouverture", async () => {
+  localStorage.removeItem("accessToken");
+  let terminer;
+  navigator.geolocation.getCurrentPosition.mockImplementation((success) => {
+    terminer = success;
+  });
+  const onChange = jest.fn();
+  render(<RechercheAdresseLivraison adresse={null} onChange={onChange} />);
+  fireEvent.click(screen.getByRole("button", { name: "searchAddress" }));
+  fireEvent.click(screen.getByRole("button", { name: "myLocation" }));
+  fireEvent.click(screen.getByRole("button", { name: "close" }));
+  fireEvent.click(screen.getByRole("button", { name: "searchAddress" }));
+  terminer({ coords: { latitude: 50.46, longitude: 4.86, accuracy: 20 } });
+  await Promise.resolve();
+  expect(fetch).not.toHaveBeenCalled();
+  expect(onChange).not.toHaveBeenCalled();
+  expect(screen.queryByText("detectedAddress")).toBeNull();
 });
 
 test("ouvre toutes les anciennes adresses, filtre sans tenir compte des accents et sélectionne une destination", async () => {

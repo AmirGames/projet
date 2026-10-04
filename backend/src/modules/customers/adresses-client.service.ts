@@ -5,6 +5,7 @@ interface ProfilAdresse {
   address: string | null;
   city: string | null;
   postalCode: string | null;
+  updatedAt?: Date;
 }
 
 interface Adresse {
@@ -15,6 +16,7 @@ interface Adresse {
   latitude: number | null;
   longitude: number | null;
   source: "saved" | "order";
+  lastUsedAt: string;
 }
 
 const cle = (adresse: Adresse) =>
@@ -40,6 +42,7 @@ export async function adressesDuClient(
       deliveryPostal: true,
       deliveryLat: true,
       deliveryLng: true,
+      createdAt: true,
     },
   });
   const adresses = new Map<string, Adresse>();
@@ -55,6 +58,7 @@ export async function adressesDuClient(
       latitude: commande.deliveryLat,
       longitude: commande.deliveryLng,
       source: "order",
+      lastUsedAt: commande.createdAt.toISOString(),
     };
     if (!adresses.has(cle(adresse))) adresses.set(cle(adresse), adresse);
   }
@@ -69,6 +73,7 @@ export async function adressesDuClient(
       latitude: null,
       longitude: null,
       source: "saved",
+      lastUsedAt: client.updatedAt?.toISOString() || new Date(0).toISOString(),
     };
     // L'adresse du profil garde les coordonnées de sa dernière commande.
     const precedente = adresses.get(cle(adresse));
@@ -76,9 +81,10 @@ export async function adressesDuClient(
       ...adresse,
       latitude: precedente?.latitude ?? null,
       longitude: precedente?.longitude ?? null,
+      lastUsedAt: precedente?.lastUsedAt || adresse.lastUsedAt,
     });
   }
   return [...adresses.values()].sort(
-    (a, b) => Number(b.source === "saved") - Number(a.source === "saved"),
+    (a, b) => Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt),
   );
 }
