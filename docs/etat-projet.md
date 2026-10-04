@@ -80,7 +80,8 @@ confirmations ultérieures et ce document donnent le suivi actuel.
 - [ ] **Cartes et itinéraires** : préparer un service adapté à l'usage public
   pour remplacer les serveurs de démonstration/publics utilisés actuellement.
 - [ ] **Applications mobiles** : icônes définitives, comptes des stores,
-  configuration EAS et push, essais sur appareils réels, puis soumission.
+  configuration Firebase/push du livreur (accès EAS confirmé),
+  essais sur appareils réels, puis soumission.
   Voir [la préparation de l'application livreur](../mobile/apps/delivery/PUBLICATION.md).
 
 ## Développements complémentaires ou reportés
@@ -118,7 +119,7 @@ sur une **base de test dédiée**, jamais sur la base du VPS en exploitation.
 Les sondes ciblées de `backend/scripts/security/` ont leurs propres prérequis
 et effets, décrits dans les audits correspondants.
 
-## Contrôles de cette mise à jour documentaire
+## Contrôles de la mise à jour documentaire initiale
 
 Le 4 octobre 2026, les liens locaux et les blocs de code des documents
 modifiés ont été vérifiés ; `git diff --check` ne signale pas d'erreur.
@@ -138,3 +139,47 @@ Ces limites concernent l'environnement local et le code existant ; elles
 ne sont pas une preuve d'échec de l'application déployée. Les dépendances et
 la configuration de lint devront être préparées avant de valider les builds
 mobiles. Aucun paquet n'a été installé pour cette mise à jour.
+
+## Préparation mobile livreur — 4 octobre 2026
+
+Après la mise à jour documentaire, la préparation de l'application livreur
+a commencé. Les échecs locaux ci-dessus pour ce dossier ont été corrigés :
+installation de `expo-speech`, ajout d'`expo-dev-client`, configuration ESLint
+et corrections des hooks React. Les dépendances sont alignées sur Expo SDK 57.
+
+- **TypeScript livreur** : réussi.
+- **Lint livreur** : 0 erreur, 30 avertissements conservés et documentés.
+- **Expo Doctor** : 21/21 contrôles réussis.
+- **Export JavaScript Android** : réussi.
+- **APK Android de test** : compilation réussie, ARM64, Android 10 minimum ;
+  signature et présence de l'adresse VPS dans le JavaScript vérifiées.
+  Reconstruit avec le logo bleu « Z Delivery ZupEat » choisi par l'opérateur ;
+  icône inspectée et présence dans l'APK vérifiée.
+- **Profils EAS** : development, preview et production pointent vers le VPS.
+- **Firebase Android** : projet `zupeat-a1e82` créé avec accord de l'opérateur,
+  application livreur enregistrée et API FCM V1 activée. Accès à
+  `@zupone/zupeat-delivery` confirmé et clé FCM V1 attribuée. Le fichier
+  Android fourni est intégré à `app.json` et au projet Android généré.
+  Nouvel APK compilé avec Firebase : ressources du bon projet et signature
+  vérifiées. L'essai de l'APK précédent sur son Android signale
+  « Inactives » et une instance Firebase non initialisée ; les alertes ne
+  fonctionnaient qu'au retour dans l'application. La configuration Firebase/FCM
+  et le nouveau build sont prêts. L'opérateur confirme ensuite la réception
+  d'une push ; l'affichage d'une fenêtre et la sonnerie hors application
+  manquent encore dans cette première version Firebase.
+- **Alertes livreur 1.0.1** : module Expo local Android pour « Nouvelle course »
+  au-dessus des autres applications et sur le verrouillage, après autorisation
+  explicite. Option de sonnerie avec le volume des alarmes en silencieux ;
+  démonstration différée de 5 s, sans action réelle. Les propositions sont
+  relues sur l'API authentifiée avant affichage, avec expiration et réponse
+  par les endpoints existants. Les deux options sont désactivées par défaut ;
+  aucun volume système ni règle « Ne pas déranger » n'est changé.
+  Tests du payload, des propositions expirées/étrangères et des lots : 4/4.
+  L'affichage, le réveil et les actions restent à valider sur le téléphone.
+- **Appareils réels** : l'opérateur dispose d'un Android, aucun téléphone
+  connecté pendant la préparation ; installation, GPS, curseur de remise,
+  notifications et parcours hors connexion restent à essayer.
+
+Voir [le compte rendu du livreur](../mobile/apps/delivery/VALIDATION.md)
+pour la compilation native et les essais à réaliser. Ces corrections ne
+valident ni les autres applications mobiles ni les parcours du VPS.
