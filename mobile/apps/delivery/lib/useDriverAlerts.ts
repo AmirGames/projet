@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Vibration } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { io, Socket } from 'socket.io-client';
 import { API_URL } from './api';
 import { dispatchRealtime } from './realtime';
 import type { Offer } from './deliveries';
+import { CourseAlerts } from './courseAlerts';
 
 const REMINDER_MS = 5_000;
 const VIBRATION_PATTERN = [0, 400, 200, 400];
@@ -20,6 +21,7 @@ const VIBRATION_PATTERN = [0, 400, 200, 400];
 export function useDriverAlerts({
   token,
   soundEnabled,
+  ringInSilentMode,
   pendingOffers,
   onOffer,
   onChanged,
@@ -27,6 +29,7 @@ export function useDriverAlerts({
 }: {
   token: string;
   soundEnabled: boolean;
+  ringInSilentMode: boolean;
   pendingOffers: number;
   onOffer: (offer: Offer) => void;
   onChanged: () => void;
@@ -35,8 +38,12 @@ export function useDriverAlerts({
   const player = useAudioPlayer(require('../assets/sounds/new_course.wav'));
   const [connected, setConnected] = useState(false);
 
-  const callbacks = useRef({ onOffer, onChanged, onNotification, soundEnabled });
-  callbacks.current = { onOffer, onChanged, onNotification, soundEnabled };
+  const callbacks = useRef({ onOffer, onChanged, onNotification, soundEnabled, ringInSilentMode });
+  const playerRef = useRef(player);
+  useLayoutEffect(() => {
+    callbacks.current = { onOffer, onChanged, onNotification, soundEnabled, ringInSilentMode };
+    playerRef.current = player;
+  }, [onOffer, onChanged, onNotification, soundEnabled, ringInSilentMode, player]);
 
   useEffect(() => {
     setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
@@ -44,15 +51,21 @@ export function useDriverAlerts({
 
   const ring = useCallback(() => {
     if (!callbacks.current.soundEnabled) return;
+    if (AppState.currentState !== 'active') return; // Background alerts are driven by FCM, independently of the socket.
     Vibration.vibrate(VIBRATION_PATTERN);
+    if (callbacks.current.ringInSilentMode && CourseAlerts) {
+      CourseAlerts.ring().catch(e => console.warn('Sonnerie des alarmes indisponible', e));
+      return;
+    }
     try {
-      player.volume = 1;
-      player.seekTo(0);
-      player.play();
+      const nativePlayer = playerRef.current;
+      nativePlayer.volume = 1;
+      nativePlayer.seekTo(0);
+      nativePlayer.play();
     } catch (e) {
       console.warn('Sonnerie impossible', e);
     }
-  }, [player]);
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -110,6 +123,13 @@ export function useDriverAlerts({
     const id = setInterval(ring, REMINDER_MS);
     return () => clearInterval(id);
   }, [token, pendingOffers, soundEnabled, ring]);
+
+  useEffect(() => {
+    if (!token || pendingOffers === 0 || !soundEnabled) {
+      CourseAlerts?.silence().catch(() => undefined);
+      player.pause();
+    }
+  }, [token, pendingOffers, soundEnabled, player]);
 
   return { connected, ring };
 }

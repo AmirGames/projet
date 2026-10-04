@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { isRunningInExpoGo } from 'expo';
 import type * as NotificationsModule from 'expo-notifications';
 import { fetchWithSession } from './sessionFetch';
+import { CourseAlerts, presentIncomingCourse } from './courseAlerts';
 
 /**
  * Accepter une course depuis la notification, téléphone verrouillé.
@@ -19,6 +20,7 @@ import { fetchWithSession } from './sessionFetch';
 /** Sans « - » ni « : », que les catégories iOS n'acceptent pas. Le serveur envoie le même nom. */
 export const OFFER_CATEGORY = 'course_proposee';
 export const ACCEPT_ACTION = 'accepter';
+export const DECLINE_ACTION = 'refuser';
 const TASK = 'ZUPEAT_ACTION_COURSE';
 
 let cached: typeof NotificationsModule | null | undefined;
@@ -33,6 +35,7 @@ function notifications(): typeof NotificationsModule | null {
 
 /** Une même course n'est acceptée qu'une fois, même si l'action arrive par deux chemins. */
 const handled = new Set<string>();
+const actionsInProgress = new Set<string>();
 
 /** Accepte la course ; le jeton se renouvelle s'il a expiré (voir fetchWithSession). */
 export async function acceptOfferFromNotification(offerId: string): Promise<{ ok: boolean; message: string; deliveryId?: string }> {
@@ -40,7 +43,7 @@ export async function acceptOfferFromNotification(offerId: string): Promise<{ ok
   handled.add(offerId);
 
   try {
-    const response = await fetchWithSession(`/api/drivers/offers/${offerId}/accept`, { method: 'POST' });
+    const response = await fetchWithSession(`/api/drivers/offers/${encodeURIComponent(offerId)}/accept`, { method: 'POST' });
     if (!response) {
       handled.delete(offerId);
       return { ok: false, message: 'Connectez-vous dans l’application pour accepter les courses.' };
@@ -75,13 +78,31 @@ async function announce(result: { ok: boolean; message: string; deliveryId?: str
 
 /** Traite l'appui sur « Accepter » ; renvoie vrai si c'était bien cette action. */
 export async function handleOfferAction(response: NotificationsModule.NotificationResponse | null | undefined) {
-  if (!response || response.actionIdentifier !== ACCEPT_ACTION) return false;
+  if (!response || ![ACCEPT_ACTION, DECLINE_ACTION].includes(response.actionIdentifier)) return false;
   const data = response.notification.request.content.data as { offerId?: string } | undefined;
   if (!data?.offerId) return false;
 
-  const N = notifications();
-  N?.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
-  await announce(await acceptOfferFromNotification(data.offerId));
+  const id = data.offerId;
+  if (actionsInProgress.has(id)) return true;
+  actionsInProgress.add(id);
+  try {
+    await CourseAlerts?.dismissOffer(id);
+    const N = notifications();
+    N?.dismissNotificationAsync(response.notification.request.identifier).catch(() => undefined);
+    if (response.actionIdentifier === ACCEPT_ACTION) {
+      await announce(await acceptOfferFromNotification(id));
+    } else {
+      const result = await fetchWithSession(`/api/drivers/offers/${encodeURIComponent(id)}/decline`, { method: 'POST' });
+      if (!result?.ok) {
+        const body = await result?.json().catch(() => null);
+        await announce({ ok: false, message: body?.error || 'Refus non confirmé : vérifiez la course dans l’application.' });
+      }
+    }
+  } catch {
+    await announce({ ok: false, message: 'Pas de réseau : vérifiez la course dans l’application.' });
+  } finally {
+    actionsInProgress.delete(id);
+  }
   return true;
 }
 
@@ -108,6 +129,7 @@ export async function registerOfferCategory() {
     TaskManager.defineTask(TASK, async ({ data }) => {
       const payload = data as NotificationsModule.NotificationTaskPayload;
       if (payload && 'actionIdentifier' in payload) await handleOfferAction(payload);
+      else await presentIncomingCourse(payload);
     });
     N.registerTaskAsync(TASK).catch(() => undefined);
   } catch (e) {

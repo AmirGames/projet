@@ -4,7 +4,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import type * as NotificationsModule from 'expo-notifications';
 import { apiFetch } from './api';
-import { ACCEPT_ACTION, handleOfferAction, registerOfferCategory } from './offerNotification';
+import { ACCEPT_ACTION, DECLINE_ACTION, handleOfferAction, registerOfferCategory } from './offerNotification';
 
 /**
  * Même nom que celui envoyé par le serveur pour une course proposée. Un canal
@@ -126,7 +126,7 @@ export function onDriverNotificationTap(callback: (data: PushDriverData) => void
   if (!N) return () => undefined;
 
   const last = N.getLastNotificationResponse();
-  if (last?.actionIdentifier === ACCEPT_ACTION) {
+  if (last && [ACCEPT_ACTION, DECLINE_ACTION].includes(last.actionIdentifier)) {
     N.clearLastNotificationResponse();
     handleOfferAction(last);
   } else {
@@ -139,7 +139,7 @@ export function onDriverNotificationTap(callback: (data: PushDriverData) => void
 
   const sub = N.addNotificationResponseReceivedListener((response) => {
     // « Accepter » depuis la notification : la course est prise sans rien ouvrir.
-    if (response.actionIdentifier === ACCEPT_ACTION) {
+    if ([ACCEPT_ACTION, DECLINE_ACTION].includes(response.actionIdentifier)) {
       handleOfferAction(response);
       return;
     }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -6,7 +6,6 @@ import {
   Modal,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -101,8 +100,15 @@ export default function DeliveryScreen({
   const rejectedHere = outbox.rejected.filter((r) => r.deliveryId === deliveryId);
   // La course était-elle en cours à l'ouverture de l'écran ? Terminée ici,
   // l'écran de fin ramène seul à l'accueil ; ouverte depuis l'historique, non.
-  const activeOnOpen = useRef<boolean | null>(null);
-  if (delivery && activeOnOpen.current == null) activeOnOpen.current = delivery.status !== 'DELIVERED';
+  const [activeOnOpen, setActiveOnOpen] = useState<boolean | null>(null);
+  const openingStatus = delivery?.status;
+  useEffect(() => {
+    if (openingStatus) setActiveOnOpen((active) => active ?? openingStatus !== 'DELIVERED');
+  }, [openingStatus]);
+  const onChangedRef = useRef(onChanged);
+  useLayoutEffect(() => {
+    onChangedRef.current = onChanged;
+  }, [onChanged]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -186,15 +192,15 @@ export default function DeliveryScreen({
   useEffect(() => {
     if (pendingCount < previousPending.current) {
       load(true);
-      onChanged();
+      onChangedRef.current();
     }
     previousPending.current = pendingCount;
-  }, [pendingCount]);
+  }, [pendingCount, load]);
   const wasOnline = useRef(online);
   useEffect(() => {
     if (online && !wasOnline.current) load(true);
     wasOnline.current = online;
-  }, [online]);
+  }, [online, load]);
 
   const pickup =
     delivery?.pickupLat != null && delivery?.pickupLng != null ? { lat: delivery.pickupLat, lng: delivery.pickupLng } : null;
@@ -299,10 +305,17 @@ export default function DeliveryScreen({
   // écran ; ailleurs, il économise la batterie.
   const trackingTarget = finished || waitingOthers ? null : delivery?.status === 'PICKED_UP' ? dropoff : pickup;
   const onTrackingRef = useRef(onTrackingChange);
-  onTrackingRef.current = onTrackingChange;
+  useLayoutEffect(() => {
+    onTrackingRef.current = onTrackingChange;
+  }, [onTrackingChange]);
+  const targetLat = trackingTarget?.lat;
+  const targetLng = trackingTarget?.lng;
   useEffect(() => {
-    onTrackingRef.current({ target: trackingTarget, navigating: mapOpen && !finished });
-  }, [trackingTarget?.lat, trackingTarget?.lng, mapOpen, finished]);
+    onTrackingRef.current({
+      target: targetLat != null && targetLng != null ? { lat: targetLat, lng: targetLng } : null,
+      navigating: mapOpen && !finished,
+    });
+  }, [targetLat, targetLng, mapOpen, finished]);
   useEffect(() => () => onTrackingRef.current({ target: null, navigating: false }), []);
 
   const sendStatus = (status: 'PICKED_UP' | 'DELIVERED', proof?: Record<string, unknown>) =>
@@ -408,7 +421,7 @@ export default function DeliveryScreen({
       const res = await uploadFile(`/api/drivers/deliveries/${deliveryId}/photo`, token, file, 'photo');
       if (res.ok && res.data?.data?.photoUrl) setPhotoUrl(res.data.data.photoUrl);
       else setPhotoError(res.data?.error || `La photo n'a pas pu être envoyée (erreur ${res.status})`);
-    } catch (e: any) {
+    } catch {
       // Pas de réseau : la photo reste sur le téléphone et partira avec le
       // dépôt. Le livreur n'a pas à attendre devant la porte.
       setPhotoOffline(true);
@@ -495,7 +508,7 @@ export default function DeliveryScreen({
           delivery={delivery}
           pending={pendingHere.length > 0}
           todayEarnings={todayEarnings}
-          autoReturn={activeOnOpen.current === true}
+          autoReturn={activeOnOpen === true}
           remaining={otherActive}
           onBack={onBack}
         />

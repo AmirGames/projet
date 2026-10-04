@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Linking, Modal, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { apiFetch } from '../lib/api';
 import { Delivery, distanceM, shortId } from '../lib/deliveries';
@@ -35,7 +35,10 @@ export default function SafetyCheck({
   const [open, setOpen] = useState(false);
   const anchor = useRef<{ lat: number; lng: number; since: number } | null>(null);
   const state = useRef({ deliveries, position, open });
-  state.current = { deliveries, position, open };
+  useLayoutEffect(() => {
+    state.current = { deliveries, position, open };
+  }, [deliveries, position, open]);
+  const hasDelivery = Boolean(delivery);
 
   // Chaque déplacement réel relance le compteur.
   useEffect(() => {
@@ -44,18 +47,18 @@ export default function SafetyCheck({
     if (!a || distanceM(a, position) > MOVED_M) {
       anchor.current = { lat: position.lat, lng: position.lng, since: Date.now() };
     }
-  }, [position?.lat, position?.lng]);
+  }, [position]);
 
   // Plus de course : plus de surveillance.
   useEffect(() => {
-    if (!delivery || waitingForCustomer) {
+    if (!hasDelivery || waitingForCustomer) {
       anchor.current = null;
       setOpen(false);
     }
-  }, [key, waitingForCustomer]);
+  }, [key, hasDelivery, waitingForCustomer]);
 
   useEffect(() => {
-    if (!delivery) return;
+    if (!hasDelivery) return;
     const id = setInterval(() => {
       const { deliveries: list, position: p, open: shown } = state.current;
       const a = anchor.current;
@@ -80,7 +83,7 @@ export default function SafetyCheck({
       Vibration.vibrate([0, 600, 300, 600, 300, 600]);
     }, CHECK_EVERY_MS);
     return () => clearInterval(id);
-  }, [key]);
+  }, [key, hasDelivery]);
 
   const allGood = () => {
     // Trois nouvelles minutes avant de redemander.

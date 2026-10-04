@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 import { distanceM } from './deliveries';
@@ -101,10 +101,12 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
   // « Toujours » a pu changer, le suivi se relance.
   const [recheck, setRecheck] = useState(0);
   const backgroundRef = useRef(background);
-  backgroundRef.current = background;
   const latest = useRef<Position | null>(null);
   const target = useRef(tracking.target);
-  target.current = tracking.target;
+  useLayoutEffect(() => {
+    backgroundRef.current = background;
+    target.current = tracking.target;
+  }, [background, tracking.target]);
 
   const profile: Profile =
     !token || mode === 'off'

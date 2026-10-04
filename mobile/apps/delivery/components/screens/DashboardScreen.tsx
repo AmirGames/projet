@@ -148,7 +148,7 @@ export default function DashboardScreen({
   // redessiner l'écran chaque seconde use la batterie pour rien.
   const [now, setNow] = useState(() => Date.now());
   const pauseEnd = driver?.pausedUntil ? new Date(driver.pausedUntil).getTime() : 0;
-  const ticking = pauseEnd > Date.now();
+  const ticking = pauseEnd > now;
   useEffect(() => {
     if (!ticking) return;
     setNow(Date.now());

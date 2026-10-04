@@ -6,20 +6,33 @@ réels. Les comptes, clés, essais et soumissions ci-dessous restent à finalise
 Voir [l'état du projet](../../../docs/etat-projet.md). Les indications de coût
 et de procédure des stores doivent être revérifiées au moment de la soumission.
 
+La préparation locale du livreur est consignée dans [VALIDATION.md](VALIDATION.md).
+L'accès au projet Expo `@zupone/zupeat-delivery` est confirmé. Le projet
+Firebase `zupeat-a1e82` (ZupEat, forfait Spark) a été créé avec l'accord de
+l'opérateur et l'application Android ZupEat Livreur y est enregistrée.
+Aucune soumission aux stores n'a été effectuée.
+Un APK ARM64 a été construit localement et sa signature vérifiée ; son
+APK Firebase a permis à l'opérateur de recevoir les push. La version 1.0.1
+ajoute les alertes natives, à essayer avec le nouvel APK de [VALIDATION.md](VALIDATION.md).
+
 Ce qui est prêt dans le dépôt, puis ce qui reste à faire (comptes, clés,
 fiches des stores), dans l'ordre.
 
 ## Déjà prêt
 
-- **`app.json`** : nom, icônes (iOS, Android adaptative et monochrome),
-  écran de démarrage orange, icône des notifications et du suivi de position,
+- **`app.json`** : nom, logo « Z Delivery ZupEat » fourni pour les icônes
+  iOS/Android et le favicon, écran de démarrage bleu avec ce même logo,
+  icône des notifications et du suivi de position,
   identifiants `com.amirgames.zupeatdelivery` (iOS) et
   `com.amir_games.zupeatdelivery` (Android), `runtimeVersion`, déclaration de
   chiffrement pour Apple (`ITSAppUsesNonExemptEncryption: false`).
 - **Autorisations réduites au nécessaire**. Android : position (y compris en
   arrière-plan), service au premier plan « localisation », Internet, vibreur,
-  réglages audio, lecture des images. Retirées : micro, superposition
-  d'écran, écriture du stockage, lecture audio en arrière-plan. iOS : appareil
+  réglages audio, lecture des images. La version 1.0.1 ajoute la superposition
+  `SYSTEM_ALERT_WINDOW` (accord explicite dans les réglages du téléphone) et
+  un service `mediaPlayback` borné à la durée de la proposition, pour la
+  sonnerie en silencieux choisie dans l'application. Retirées : micro et
+  écriture du stockage. iOS : appareil
   photo, photos, position (à l'usage et « Toujours ») ; modes d'arrière-plan
   `location` et `fetch` seulement.
 - **`eas.json`** : profils `development` (build de développement),
@@ -33,11 +46,13 @@ fiches des stores), dans l'ordre.
   immédiate, demande transmise au support de la plateforme, données effacées
   sous 30 jours sauf obligations légales).
 
-> Les icônes sont **provisoires** (un « Z » blanc sur l'orange ZupEat) :
-> remplacez les fichiers de `assets/images/` par le vrai logo en gardant les
-> mêmes noms et tailles (icône 1024 × 1024 sans transparence ; premier plan
-> Android 1024 × 1024 transparent, logo dans le cercle central de 66 % ;
-> icônes de notification 96 × 96 blanches sur fond transparent).
+Le logo choisi est `output/mobile-icons/zupeat-delivery-app-v2.png`, copié
+à l'identique dans `assets/images/icon.png` (PNG carré opaque de 1254 × 1254).
+Expo génère les tailles natives. Android utilise l'icône complète pour
+préserver le dessin et les textes ; l'ancienne configuration adaptative et
+monochrome n'est plus référencée. Le lancement utilise un fond bleu `#2161EF`.
+Les petites icônes blanches des notifications et du suivi de position restent
+des ressources système distinctes du logo couleur.
 
 ## 1. À vérifier dans `eas.json`
 
@@ -55,25 +70,46 @@ version publiée).
 | Google Play Console | play.google.com/console | 25 $ une fois |
 | Projet Firebase (notifications Android) | console.firebase.google.com | gratuit |
 
-## 3. Relier le projet à EAS
+## 3. Vérifier l'accès au projet EAS existant
+
+`app.json` contient déjà le projet
+`face34d3-1569-4bfa-ab6f-2b830dffa311`, également utilisé par `updates.url`.
+Se connecter au compte qui possède ce projet et vérifier son accès :
 
 ```bash
 cd mobile/apps/delivery
 npx eas-cli@latest login
-npx eas-cli@latest init        # ajoute extra.eas.projectId dans app.json : à commiter
+npx eas-cli@latest project:info
 ```
 
-Sans `projectId`, les notifications push ne s'activent pas (voir `lib/push.ts`).
+Conserver cet identifiant. Ne relancer `init` que pour une migration volontaire
+du projet. Sa présence ne prouve pas que les clés push sont configurées.
 
 ## 4. Notifications push
 
-- **Android** : dans Firebase, ajoutez une application Android
-  `com.amir_games.zupeatdelivery`, téléchargez `google-services.json`, placez-le
-  dans `mobile/apps/delivery/`, et ajoutez dans `app.json` :
-  `"android": { "googleServicesFile": "./google-services.json", … }`.
-  Puis `npx eas-cli@latest credentials` › Android › *Google Service Account
-  Key for Push Notifications (FCM V1)* : envoyez la clé JSON du compte de
-  service Firebase.
+**État vérifié le 4 octobre :** le projet Firebase `zupeat-a1e82` contient
+ZupEat Livreur (`com.amir_games.zupeatdelivery`) et l'API Cloud Messaging V1
+est activée. L'accès au projet EAS existant est confirmé et la clé FCM V1
+du compte `firebase-adminsdk-fbsvc@zupeat-a1e82.iam.gserviceaccount.com` est
+attribuée à `com.amir_games.zupeatdelivery` dans EAS. Le fichier Android `google-services.json`
+fourni par l'opérateur est intégré au dossier de l'application et relié par
+`android.googleServicesFile: "./google-services.json"` dans `app.json`.
+La configuration a été copiée dans Android par Expo Prebuild, puis vérifiée
+dans l'APK compilé. L'opérateur confirme désormais la réception des push.
+
+- **Android** : l'application `com.amir_games.zupeatdelivery` et son fichier
+  `google-services.json` sont configurés. Pour un autre environnement, utiliser
+  un fichier Firebase correspondant exactement au package et au projet visés.
+  La clé a été attribuée avec `npx eas-cli@latest credentials` › Android › *Google Service Account
+  Key for Push Notifications (FCM V1)*, après accord de l'opérateur.
+  L'application a été reconstruite après l'ajout de `google-services.json`.
+  Installer la version 1.0.1 pour essayer également la fenêtre native et la
+  sonnerie avec le volume des alarmes : voir [README.md](README.md#alertes-android-sur-les-autres-écrans).
+  Guide : [configuration FCM officielle Expo](https://docs.expo.dev/push-notifications/fcm-credentials/).
+  `google-services.json` contient la configuration publique de l'application.
+  La clé privée JSON du compte de service est un fichier distinct : la conserver
+  dans `.expo/credentials/` (ignoré par Git), puis l'attribuer dans EAS au
+  projet `@zupone/zupeat-delivery`. Ne jamais la placer dans l'APK ni le dépôt.
 - **iOS** : `npx eas-cli@latest credentials` crée la clé APNs lors du premier
   build ; rien d'autre à faire.
 
@@ -96,6 +132,11 @@ qu'il propose.
   reçu par le support.
 - Téléphone verrouillé : une course proposée sonne ; « Accepter » depuis la
   notification ; la position continue (pastille qui bouge côté client).
+- Fenêtre Android : autorisation accordée puis retirée, autre application et
+  écran verrouillé ; accepter, refuser, expiration, aucun doublon au retour.
+- Sonnerie en silencieux : volume des alarmes positif puis nul, « Ne pas
+  déranger » avec alarmes autorisées puis bloquées ; arrêt de la sonnerie à
+  la réponse, à l'expiration, hors ligne et à la déconnexion.
 - Course complète : retrait (à moins de 150 m), code, dépôt avec photo, écran
   de fin.
 - Mode avion pendant une course : prise en charge et remise enregistrées,

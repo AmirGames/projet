@@ -11,6 +11,10 @@ export interface Session {
 
 export interface Prefs {
   soundEnabled: boolean;
+  /** Android : proposition au-dessus des autres apps et du verrouillage. */
+  coursePopupEnabled: boolean;
+  /** Android : sonnerie avec le volume des alarmes. */
+  ringInSilentMode: boolean;
   /**
    * Ce que fait « Itinéraire » : la carte de l'application (par défaut), ou
    * une application de navigation extérieure.
@@ -27,6 +31,8 @@ export interface Prefs {
 
 export const DEFAULT_PREFS: Prefs = {
   soundEnabled: true,
+  coursePopupEnabled: false,
+  ringInSilentMode: false,
   navigationApp: 'zupeat',
   theme: 'dark',
   voiceGuidance: true,

@@ -4,6 +4,18 @@ Application mobile du livreur, construite sur le même modèle que l'application
 commerçant (`../merchant`) : même connexion, même barre du bas (Menu · Accueil ·
 Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`).
 
+**Préparation au 4 octobre 2026 :** dépendances Expo SDK 57 alignées,
+TypeScript validé et lint sans erreur (30 avertissements). Un APK Android ARM64
+de test a été compilé ; les profils EAS visent le VPS.
+Firebase Android est intégré et la clé FCM V1 est attribuée dans Expo.
+L'opérateur confirme la réception des push sur son Android. La version 1.0.1
+ajoute une fenêtre native « Nouvelle course » et une sonnerie avec le volume
+des alarmes ; ces deux fonctions restent à essayer sur son téléphone.
+Voir [le compte rendu de validation](VALIDATION.md).
+
+Le logo bleu « Z Delivery ZupEat » choisi le 4 octobre est utilisé comme
+icône de l'application et sur l'écran de démarrage.
+
 ## Ce que fait l'application
 
 - **Connexion** avec un compte livreur (un compte commerçant ou client est refusé),
@@ -48,9 +60,9 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
 - **Proposition de course plein écran** : trajet complet sur la carte, montant
   garanti, durée et distance totales, bouton « Accepter » qui se vide avec le
   temps de réponse.
-- **Téléphone verrouillé** : la course proposée sonne 10 s et s'affiche en
+- **Téléphone verrouillé** (à valider sur le nouvel APK Firebase) : la course proposée sonne 10 s et s'affiche en
   notification avec un seul bouton, **« Accepter la course »**, qui agit sans
-  déverrouiller ni ouvrir l'application (Android, même application fermée ;
+  déverrouiller ni ouvrir l'application (Android, application en arrière-plan ;
   iOS, application en fond). Refuser, c'est laisser passer.
 - **« Tout va bien ? »** : immobile plus de 3 minutes en pleine course (hors
   commerce et client), le livreur confirme ou appelle le 112 ; le support est
@@ -83,17 +95,22 @@ La position est envoyée à `PATCH /api/drivers/location` tant que le livreur es
 en ligne ou sur une course, **même téléphone verrouillé** : avec la
 localisation « Toujours autoriser », une tâche en arrière-plan
 (`lib/backgroundLocation.ts`) prend le relais. Sur Android, une notification
-ZupEat le signale tant qu'elle tourne, et elle continue si l'application est
-balayée pendant une course. Elle s'arrête hors ligne, à la déconnexion, ou
+ZupEat le signale tant qu'elle tourne. Après retrait de l'application des
+applications récentes, sa continuité dépend du téléphone et doit être testée ;
+un arrêt forcé interrompt le suivi. Elle s'arrête hors ligne, à la déconnexion, ou
 quand le serveur répond que le livreur est passé hors ligne ailleurs. Sans
 « Toujours » (ou dans Expo Go), la position ne part qu'application ouverte :
 l'accueil le signale et mène aux réglages du téléphone.
 
 ## Lancer
 
+Utiliser Node.js 22.13 ou supérieur et les dépendances verrouillées du dépôt.
+
 ```bash
-npm install
-npx expo start
+npm ci
+npm run typecheck
+npm run lint
+npx expo start --dev-client
 ```
 
 L'adresse du serveur se trouve toute seule en développement : c'est le PC qui
@@ -101,10 +118,61 @@ sert l'application (Metro), port 3001. Pour une autre machine ou la
 production, définir `EXPO_PUBLIC_API_URL` (par exemple dans un fichier `.env` :
 `EXPO_PUBLIC_API_URL=https://api.zupeat.com`). Voir `lib/api.ts`.
 
-Les notifications push, la localisation et l'appareil photo demandent une
-**build de développement** (`npx expo run:android` ou
-`npx eas-cli@latest build --profile development`) : Expo Go ne reçoit pas les
-push. Le projet EAS doit être configuré (`npx eas-cli@latest init`).
+Pour tester les notifications push et la localisation en arrière-plan,
+installer une **build de développement** (`npx expo run:android` ou
+`npx eas-cli@latest build --profile development --platform android`).
+`expo-dev-client` est installé ; Expo Go ne valide pas ces fonctions.
+Le projet EAS est déjà référencé dans `app.json` :
+`face34d3-1569-4bfa-ab6f-2b830dffa311`. L'accès au projet
+`@zupone/zupeat-delivery` est confirmé. Firebase `zupeat-a1e82` est créé et
+l'application Android y est enregistrée. Son fichier `google-services.json`
+est intégré et relié dans `app.json` ; la clé FCM V1 est attribuée à Expo.
+Voir [la configuration push](PUBLICATION.md#4-notifications-push).
+
+Pour viser le VPS avec Metro, définir dans `.env` :
+
+```dotenv
+EXPO_PUBLIC_API_URL=https://api.zupeat.com
+EXPO_PUBLIC_SITE_URL=https://zupeat.com
+```
+
+Ces deux adresses sont aussi fixées dans les trois profils de `eas.json`.
+Les fichiers Android/iOS sont générés par Expo ; les réglages natifs se font
+dans `app.json`, ses plugins et le module local `modules/course-alerts`.
+
+## Alertes Android sur les autres écrans
+
+Installer le nouvel APK indiqué dans [VALIDATION.md](VALIDATION.md), puis dans
+**Paramètres › Courses proposées** :
+
+1. Activer **Fenêtre Nouvelle course** et autoriser l'affichage au-dessus des
+   autres applications dans l'écran Android qui s'ouvre.
+2. Activer **Sonner même en silencieux**, en gardant « Sonnerie et vibration »
+   activée. Régler le **volume des alarmes** au-dessus de zéro.
+3. Toucher **Tester la fenêtre dans 5 s**, puis ouvrir une autre application
+   ou verrouiller le téléphone. Le test disparaît après 15 s ; ses boutons
+   n'acceptent ni ne refusent de vraie course.
+4. Avec un compte validé en ligne, essayer ensuite une vraie proposition,
+   l'acceptation, le refus et l'expiration sur les deux écrans.
+
+Ces deux options sont désactivées par défaut. Le son utilise `USAGE_ALARM`
+sans modifier le volume système, le mode silencieux ou « Ne pas déranger ».
+Un volume d'alarme nul et un mode « Ne pas déranger » qui bloque les alarmes
+restent silencieux. Si Android empêche la fenêtre ou le service, la push
+habituelle reste disponible. L'arrêt forcé de l'application et les restrictions
+d'arrière-plan de certains téléphones doivent être vérifiés sur appareil.
+
+La tâche Expo existante reçoit la push, relit `/api/drivers/offers` avec la
+session chiffrée et n'affiche que la proposition encore valable pour ce compte.
+La fenêtre expose le commerce, les villes, le montant, le délai et les actions ;
+elle ne déverrouille pas le téléphone. Les adresses et l'espace du compte ne
+sont pas affichés sur le verrouillage. Accepter/refuser réutilise la tâche Expo
+et les endpoints existants, sans jeton enregistré dans les sources natives.
+L'alerte expire automatiquement et les réglages sont coupés hors ligne ou à
+la déconnexion. Aucun changement serveur n'est nécessaire pour cette fonction.
+
+Contrôler les données des push, l'expiration et les lots : `npm run test:alerts`
+(testé avec Node 24.21.0 et l'exécution directe de TypeScript).
 
 ## Publier
 
@@ -124,6 +192,8 @@ lib/api.ts                 appels au serveur, format des montants
 lib/session.ts             session et préférences (SecureStore)
 lib/deliveries.ts          types, statuts, distances, lancement du GPS
 lib/useDriverAlerts.ts     connexion temps réel et sonnerie des courses
+lib/courseAlerts.ts        réception en arrière-plan et validation de la proposition
+modules/course-alerts/     écran Android verrouillé et sonnerie des alarmes
 lib/useDriverLocation.ts   suivi de la position, précision selon le moment
 lib/backgroundLocation.ts  position téléphone verrouillé (tâche en arrière-plan)
 lib/sessionFetch.ts        appels hors écran, jeton renouvelé au besoin

@@ -1,17 +1,18 @@
 {
   "name": "delivery-app",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dependencies": {
-    "@expo/ui": "~57.0.20",
+    "@expo/ui": "~57.0.21",
     "@react-native-async-storage/async-storage": "^2.0.0",
-    "expo": "~57.0.25",
+    "expo": "~57.0.26",
     "expo-asset": "~57.0.18",
     "expo-audio": "~57.0.5",
     "expo-build-properties": "~57.0.22",
     "expo-constants": "~57.0.19",
+    "expo-dev-client": "~57.0.19",
     "expo-device": "~57.0.2",
-    "expo-document-picker": "~57.0.2",
+    "expo-document-picker": "~57.0.3",
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
     "expo-glass-effect": "~57.0.4",
@@ -23,14 +24,14 @@
     "expo-location": "~57.0.20",
     "expo-network": "~57.0.2",
     "expo-notifications": "~57.0.21",
-    "expo-router": "~57.0.23",
+    "expo-router": "~57.0.24",
     "expo-secure-store": "~57.0.4",
     "expo-speech": "~57.0.3",
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.3",
     "expo-system-ui": "~57.0.4",
-    "expo-task-manager": "~57.0.20",
+    "expo-task-manager": "~57.0.21",
     "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
@@ -47,6 +48,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -54,7 +57,12 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint app components lib modules/course-alerts/src",
+    "typecheck": "tsc --noEmit",
+    "test:alerts": "node --experimental-strip-types --test tests/course-alerts.test.cjs"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   },
   "private": true
 }

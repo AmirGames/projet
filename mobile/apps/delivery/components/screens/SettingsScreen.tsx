@@ -7,6 +7,7 @@ import type { Prefs } from '../../lib/session';
 import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
 import { checkVoice, say, VOICE_HELP, VoiceCheck } from '../../lib/voice';
 import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
+import CourseAlertSettings from '../CourseAlertSettings';
 
 const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
   { key: 'zupeat', label: 'Carte ZupEat' },
@@ -211,7 +212,7 @@ export default function SettingsScreen({
           <View style={styles.switchRow}>
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={styles.switchLabel}>Sonnerie et vibration</Text>
-              <Text style={styles.help}>Sonne à chaque course proposée, puis toutes les 5 s tant qu'elle attend votre réponse.</Text>
+              <Text style={styles.help}>Sonne à chaque course proposée, puis toutes les 5 s tant qu&apos;elle attend votre réponse.</Text>
             </View>
             <Switch
               value={prefs.soundEnabled}
@@ -229,6 +230,7 @@ export default function SettingsScreen({
             </Text>
           </View>
           {!pushEnabled && pushInfo ? <Text style={styles.help}>{pushInfo}</Text> : null}
+          <CourseAlertSettings prefs={prefs} onChange={onChangePrefs} />
         </Card>
 
         <Card title="Navigation">
@@ -275,7 +277,7 @@ export default function SettingsScreen({
             </Text>
           </View>
           <Text style={styles.help}>
-            Votre position n'est transmise que lorsque vous êtes en ligne ou sur une course.{' '}
+            Votre position n&apos;est transmise que lorsque vous êtes en ligne ou sur une course.{' '}
             {background === 'unavailable'
               ? 'Cette version de l’application ne la transmet qu’à l’écran : gardez-la ouverte pendant vos courses.'
               : `Avec la localisation « Toujours autoriser », elle continue téléphone rangé${

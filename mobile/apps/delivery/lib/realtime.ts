@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 type Handler = (payload: any) => void;
 
@@ -29,6 +29,8 @@ export function subscribeRealtime(event: string, handler: Handler) {
  */
 export function useRealtimeEvent(event: string, handler: Handler) {
   const ref = useRef(handler);
-  ref.current = handler;
+  useLayoutEffect(() => {
+    ref.current = handler;
+  }, [handler]);
   useEffect(() => subscribeRealtime(event, (payload) => ref.current(payload)), [event]);
 }

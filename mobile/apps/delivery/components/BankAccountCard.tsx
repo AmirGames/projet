@@ -55,7 +55,7 @@ export default function BankAccountCard({
         <>
           <Row label="Compte" value={`…${compte.ibanFin}`} />
           <Row label="Titulaire" value={compte.titulaire || '—'} last={compte.valide} />
-          {!compte.valide && <Text style={styles.error}>Cet IBAN n'est pas valide : corrigez-le pour être payé.</Text>}
+          {!compte.valide && <Text style={styles.error}>Cet IBAN n&apos;est pas valide : corrigez-le pour être payé.</Text>}
           <TouchableOpacity onPress={() => setEditing(true)}>
             <Text style={styles.link}>Modifier</Text>
           </TouchableOpacity>

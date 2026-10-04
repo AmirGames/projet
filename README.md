@@ -422,7 +422,18 @@ npx expo start
 En développement, l'application trouve seule l'API sur le PC qui la sert
 (port 3001) ; `EXPO_PUBLIC_API_URL` la fixe pour une autre machine ou la
 production. La préparation de la publication de l'application livreur est
-décrite dans `mobile/apps/delivery/PUBLICATION.md`.
+décrite dans [son guide de publication](mobile/apps/delivery/PUBLICATION.md).
+
+Le livreur est la première application en cours de validation : Expo SDK 57
+aligné, TypeScript réussi, lint sans erreur avec 30 avertissements. Pour ses
+fonctions natives, utiliser une build de développement avec `expo-dev-client`.
+Firebase Android/FCM sont configurés et l'opérateur confirme la réception des
+push. La version 1.0.1 ajoute une fenêtre « Nouvelle course » au-dessus des
+autres applications et du verrouillage, ainsi qu'une sonnerie avec le volume
+des alarmes, toutes deux à activer dans les paramètres Android du livreur.
+Les essais de ces alertes et des parcours sur téléphone restent à réaliser ; voir
+[son README](mobile/apps/delivery/README.md) et
+[les résultats de validation](mobile/apps/delivery/VALIDATION.md).
 
 ## Mise en production
 
