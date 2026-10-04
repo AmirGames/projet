@@ -5,6 +5,12 @@ const emailConfig = {
   host: process.env.SMTP_HOST || "localhost",
   port: parseInt(process.env.SMTP_PORT || "1025"),
   secure: process.env.SMTP_SECURE === "true",
+  // Ce relais OVH refuse la négociation TLS par défaut ; TLS 1.2 a été
+  // vérifié depuis le conteneur de production, avec validation du certificat.
+  tls:
+    process.env.SMTP_HOST === "ssl0.ovh.net"
+      ? { minVersion: "TLSv1.2" as const, maxVersion: "TLSv1.2" as const }
+      : undefined,
   auth:
     process.env.SMTP_USER && process.env.SMTP_PASSWORD
       ? {
