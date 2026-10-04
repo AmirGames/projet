@@ -513,7 +513,7 @@ export default function SurveillancePage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-4">
             {/* Le serveur */}
             <Section titre={t('serverTitle')} icone={<Server size={18} className="text-gray-500" />}>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -540,7 +540,7 @@ export default function SurveillancePage() {
                 <div>
                   <dt className="text-gray-500 flex items-center gap-1.5"><MemoryStick size={14} />{t('diskSpace')}</dt>
                   <dd className={`text-lg font-semibold tabular-nums ${processus.systeme.disque.pourcentUtilise >= 85 ? 'text-amber-600' : ''}`}>
-                    {processus.systeme.disque.libreMo} / {processus.systeme.disque.totaleMo} Mo
+                    {processus.systeme.disque.utiliseMo} / {processus.systeme.disque.totaleMo} Mo
                   </dd>
                   <div className="mt-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
@@ -548,6 +548,9 @@ export default function SurveillancePage() {
                       style={{ width: `${Math.min(100, processus.systeme.disque.pourcentUtilise)}%` }}
                     />
                   </div>
+                  <p className="mt-1 text-xs text-gray-500 tabular-nums">
+                    {t('diskSpaceValue', { free: processus.systeme.disque.libreMo, total: processus.systeme.disque.totaleMo })}
+                  </p>
                 </div>
                 <div>
                   <dt className="text-gray-500">{t('load')}</dt>

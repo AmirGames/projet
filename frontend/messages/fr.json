@@ -327,7 +327,7 @@
     "cores": "{n} cœurs",
     "systemMemory": "Mémoire de la machine",
     "systemMemoryValue": "{free} Mo libres sur {total} Mo",
-    "diskSpace": "Espace disque",
+    "diskSpace": "Espace disque utilisé",
     "diskSpaceValue": "{free} Mo libres sur {total} Mo",
     "dependenciesTitle": "Services externes",
     "tasksTitle": "Tâches de fond",
