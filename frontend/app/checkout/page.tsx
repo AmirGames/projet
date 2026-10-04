@@ -12,9 +12,9 @@
  * vient le panier.
  */
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -34,6 +34,35 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<ChargementPanier />}>
+      <CheckoutAdresse />
+    </Suspense>
+  );
+}
+
+function ChargementPanier() {
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <EnTeteClient />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-gray-500">Chargement de votre panier…</p>
+      </div>
+    </div>
+  );
+}
+
+function CheckoutAdresse() {
+  const parametres = useSearchParams();
+  const demandee = parametres.get('boutique') || '';
+
+  // La navigation fournit la bonne adresse dès le rendu, même avant sa mise
+  // à jour dans window.location. Changer de panier réinitialise aussi le
+  // formulaire, les frais et la confirmation de la commande précédente.
+  return <CheckoutPanier key={demandee} demandee={demandee} />;
+}
+
+function CheckoutPanier({ demandee }: { demandee: string }) {
   const t = useTranslations('common');
   const router = useRouter();
 
@@ -53,18 +82,17 @@ export default function CheckoutPage() {
    * gardé en favori, un retour en arrière — on se rabat sur le panier en cours
    * s'il n'y en a qu'un, et on demande sinon.
    *
-   * La requête est lue ici et non par `useSearchParams`, qui obligerait à
-   * envelopper la page d'une frontière Suspense pour se construire.
+   * Le paramètre vient de la navigation ; seul le stockage attend que le
+   * navigateur soit disponible.
    */
   const hydrate = useHydrate();
   const [panierLu, setPanierLu] = useState(false);
   const [boutiqueRetenue, setBoutiqueRetenue] = useState<string | null>(null);
 
-  // Lu une fois, dans le navigateur : l'adresse de la page et les paniers
-  // n'existent pas au rendu serveur.
+  // Lu une fois par choix de boutique : les paniers n'existent pas au rendu
+  // serveur. CheckoutAdresse recrée ce composant si le choix change.
   if (hydrate && !panierLu) {
     setPanierLu(true);
-    const demandee = new URLSearchParams(window.location.search).get('boutique') || '';
     const paniers = autresPaniers(undefined);
 
     const retenu = demandee
@@ -112,14 +140,7 @@ export default function CheckoutPage() {
   }, [boutiqueRetenue]);
 
   if (chargement) {
-    return (
-      <div className="min-h-screen bg-gray-50 text-gray-900">
-        <EnTeteClient />
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-gray-500">Chargement de votre panier…</p>
-        </div>
-      </div>
-    );
+    return <ChargementPanier />;
   }
 
   return (

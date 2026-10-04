@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test:checkout": "jest app/checkout/__tests__/page.test.jsx --runInBand",
     "format": "prettier --write .",
     "verif:domaines": "node scripts/verif-domaines.mjs",
     "verif:menu": "node scripts/verif-menu-merchant.mjs",
