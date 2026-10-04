@@ -63,6 +63,13 @@ export interface MessageExpo {
   categoryId?: string;
 }
 
+/** Android delivery wakeup: no presentation fields, so FCM starts the background task. */
+interface MessageExpoWakeup {
+  wakeUp: true;
+  data: Record<string, unknown>;
+  ttl: number;
+}
+
 export interface MessagePush {
   title: string;
   body: string;
@@ -183,7 +190,7 @@ export class Notifier {
    * Les jetons refusés (application désinstallée, compte déconnecté) sont
    * retirés : les garder ferait échouer chaque envoi suivant.
    */
-  static async expoPush(tokens: string[], message: MessageExpo) {
+  static async expoPush(tokens: string[], message: MessageExpo | MessageExpoWakeup) {
     const valides = [...new Set(tokens)].filter((t) => /^Expo(nent)?PushToken\[.+\]$/.test(t));
     if (valides.length === 0) return 0;
 
@@ -201,12 +208,16 @@ export class Notifier {
           body: JSON.stringify(
             lot.map((to) => ({
               to,
-              title: message.title,
-              body: message.body,
               data: message.data || {},
-              sound: message.sound || "default",
-              channelId: message.channelId,
-              ...(message.categoryId ? { categoryId: message.categoryId } : {}),
+              ...("wakeUp" in message
+                ? { contentAvailable: true }
+                : {
+                    title: message.title,
+                    body: message.body,
+                    sound: message.sound || "default",
+                    channelId: message.channelId,
+                    ...(message.categoryId ? { categoryId: message.categoryId } : {}),
+                  }),
               priority: "high",
               ttl: message.ttl ?? 600,
             }))
@@ -299,14 +310,14 @@ export class Notifier {
 
     const appareils = await db.pushDevice.findMany({
       where: { userId, app: "delivery" },
-      select: { token: true },
+      select: { token: true, platform: true },
     });
     if (appareils.length === 0) return 0;
 
     const deliveryId = message.url?.match(/\/driver\/deliveries\/([^/?#]+)/)?.[1];
     const proposee = message.tag === "course-proposee";
 
-    return this.expoPush(
+    const notification = this.expoPush(
       appareils.map((a) => a.token),
       {
         title: message.title,
@@ -329,6 +340,20 @@ export class Notifier {
           : {}),
       }
     );
+
+    // A notification message is displayed by Android without running JS in
+    // background. Keep it for old APKs and as fallback, and send a second,
+    // data-only high-priority signal to wake the new native course alert.
+    // No title/message inside data: Expo could present a duplicate otherwise.
+    const reveil = proposee && message.offerId
+      ? this.expoPush(appareils.filter(a => a.platform === "android").map(a => a.token), {
+          wakeUp: true,
+          data: { tag: "course-proposee", offerId: message.offerId },
+          ttl: 60,
+        })
+      : Promise.resolve(0);
+    const [envoyes, reveilles] = await Promise.all([notification, reveil]);
+    return Math.max(envoyes, reveilles);
   }
 
   /**
