@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from "@jest/globals";
-import { limiterCadence, limiterAuthParIp, limiterCourrielsParIp } from "../throttle";
+import { limiterCadence, limiterAuthParIp, limiterCourrielsParIp, limiterConnexions } from "../throttle";
 import { StockageRedis } from "../throttle-stockage";
 
 const passer = async (mw: any, ip = "1.1.1.1") => {
@@ -31,9 +31,12 @@ describe("limiterCadence", () => {
   it("compte dans le stockage partagé (Redis simulé)", async () => {
     const valeurs = new Map<string, number>();
     const client: any = {
-      incr: jest.fn(async (k: string) => valeurs.set(k, (valeurs.get(k) ?? 0) + 1).get(k)),
-      pExpire: jest.fn(async () => true),
-      pTTL: jest.fn(async () => 30000),
+      eval: jest.fn(async (_script: string, { keys }: any) => {
+        const k = keys[0];
+        valeurs.set(k, (valeurs.get(k) ?? 0) + 1);
+        return [valeurs.get(k), 30000];
+      }),
+      del: jest.fn(async (k: string) => valeurs.delete(k)),
     };
     const stockage = new StockageRedis(client);
     const a = limiterCadence({ max: 1, fenetreMs: 60000, cle: (r) => r.ip!, stockage });
@@ -42,7 +45,7 @@ describe("limiterCadence", () => {
     expect((await passer(a)).statusCode).toBe(429);
     // Un autre limiteur ne partage pas ce compteur.
     expect(await passer(b)).toBeUndefined();
-    expect(client.pExpire).toHaveBeenCalledTimes(2);
+    expect(client.eval).toHaveBeenCalledTimes(3);
   });
 
   it("retombe sur la mémoire si le stockage échoue", async () => {
@@ -51,4 +54,30 @@ describe("limiterCadence", () => {
     expect(await passer(mw)).toBeUndefined();
     expect((await passer(mw)).statusCode).toBe(429);
   });
+});
+
+
+it("bloque un compte après cinq échecs réservés et libère le budget après succès", async () => {
+  const req = { ip: "phase0-ip", body: { email: "phase0@example.test" } } as any;
+  const run = async () => {
+    const next = jest.fn();
+    await limiterConnexions(req, { setHeader: jest.fn() } as any, next);
+    return next.mock.calls[0]?.[0] as any;
+  };
+  for (let i = 0; i < 5; i++) expect(await run()).toBeUndefined();
+  req.ip = "autre-ip";
+  req.body.email = " PHASE0@EXAMPLE.TEST ";
+  expect((await run()).statusCode).toBe(429);
+  await limiterConnexions.reinitialiser(req);
+  expect(await run()).toBeUndefined();
+});
+
+it("refuse plutôt que de perdre le quota partagé en production", async () => {
+  const ancien = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    const stockage = { incrementer: async () => { throw new Error("Redis down"); } };
+    const mw = limiterCadence({ max: 1, fenetreMs: 60000, cle: () => "test", stockage: stockage as any });
+    expect((await passer(mw)).statusCode).toBe(503);
+  } finally { process.env.NODE_ENV = ancien; }
 });

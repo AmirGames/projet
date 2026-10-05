@@ -8,16 +8,19 @@ import { logger } from "../config/logger";
  * - Redis : partagé entre les instances, dès que REDIS_URL est défini. Sans
  *   lui, la limite serait multipliée par le nombre d'instances.
  *
- * Si Redis ne répond pas, la requête retombe sur la mémoire : mieux vaut une
- * limite par instance que pas de limite, ou un site qui refuse tout.
+ * En production, les appelants refusent les opérations si Redis ne répond pas.
+ * Le repli mémoire est réservé au développement et aux tests.
  */
 export interface Stockage {
   /** Compte un appel dans la fenêtre de `cle` ; rend le total et l'instant où elle se rouvre. */
   incrementer(cle: string, fenetreMs: number): Promise<{ compte: number; reprendLe: number }>;
+  reinitialiser(cle: string): Promise<void>;
 }
 
 export class StockageMemoire implements Stockage {
   private compteurs = new Map<string, { compte: number; reprendLe: number }>();
+
+  async reinitialiser(cle: string) { this.compteurs.delete(cle); }
 
   async incrementer(cle: string, fenetreMs: number) {
     const maintenant = Date.now();
@@ -38,26 +41,32 @@ export class StockageMemoire implements Stockage {
   }
 }
 
-/** Ce que le stockage utilise du client Redis (plus simple à simuler). */
+/** Un script atomique évite une clé sans expiration après un crash. */
 export interface CommandesRedis {
-  incr(cle: string): Promise<number>;
-  pExpire(cle: string, ms: number): Promise<unknown>;
-  pTTL(cle: string): Promise<number>;
+  eval(script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown>;
+  del(cle: string): Promise<unknown>;
 }
+
+const INCREMENTER = `
+local total = redis.call('INCR', KEYS[1])
+local ttl = redis.call('PTTL', KEYS[1])
+if ttl < 0 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+  ttl = tonumber(ARGV[1])
+end
+return {total, ttl}
+`;
 
 export class StockageRedis implements Stockage {
   constructor(private client: CommandesRedis) {}
 
+  async reinitialiser(cle: string) { await this.client.del(cle); }
+
   async incrementer(cle: string, fenetreMs: number) {
-    const compte = await this.client.incr(cle);
-    if (compte === 1) await this.client.pExpire(cle, fenetreMs);
-    let reste = await this.client.pTTL(cle);
-    if (reste < 0) {
-      // Clé sans échéance (crash entre INCR et PEXPIRE) : on la remet.
-      await this.client.pExpire(cle, fenetreMs);
-      reste = fenetreMs;
-    }
-    return { compte, reprendLe: Date.now() + reste };
+    const [compte, reste] = await this.client.eval(INCREMENTER, {
+      keys: [cle], arguments: [String(fenetreMs)],
+    }) as [number, number];
+    return { compte: Number(compte), reprendLe: Date.now() + Number(reste) };
   }
 }
 
@@ -79,7 +88,7 @@ export function stockageRedis(): StockageRedis | null {
     client.on("error", (err) => {
       if (signale) return;
       signale = true;
-      logger.error("Limitation de cadence : incident Redis, repli sur la mémoire", {
+      logger.error("Limitation de cadence : incident Redis", {
         error: err instanceof Error ? err.message : err,
       });
     });

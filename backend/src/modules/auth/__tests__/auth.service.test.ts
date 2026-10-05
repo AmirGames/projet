@@ -1,3 +1,5 @@
+import jwt from "jsonwebtoken";
+import { getEnv } from "../../../config/env";
 import { describe, it, expect } from '@jest/globals';
 import { AuthService } from '../auth.service';
 
@@ -126,5 +128,28 @@ describe('AuthService', () => {
         AuthService.verifyRefreshToken(invalidToken);
       }).toThrow();
     });
+  });
+});
+
+
+describe('politique JWT Phase 0', () => {
+  it('émet réellement un access de 15 minutes et un refresh de 7 jours', () => {
+    const access = AuthService.verifyAccessToken(AuthService.generateAccessToken('u1', 's1'));
+    const refresh = AuthService.verifyRefreshToken(AuthService.generateRefreshToken('u1', 's1', 'j1'));
+    expect(access.exp! - access.iat!).toBe(900);
+    expect(refresh.exp! - refresh.iat!).toBe(604800);
+  });
+  it('refuse un ancien access de 7 jours, même correctement signé', () => {
+    const token = jwt.sign({ userId: 'u1', sid: 's1' }, getEnv().JWT_SECRET, { expiresIn: '7d' });
+    expect(() => AuthService.verifyAccessToken(token)).toThrow();
+  });
+  it('refuse un ancien refresh de 30 jours, même correctement signé', () => {
+    const token = jwt.sign({ userId: 'u1', sid: 's1', jti: 'j1' }, getEnv().JWT_REFRESH_SECRET, { expiresIn: '30d' });
+    expect(() => AuthService.verifyRefreshToken(token)).toThrow();
+  });
+  it('refuse les tokens sans expiration ou déjà expirés', () => {
+    const secret = getEnv().JWT_SECRET;
+    expect(() => AuthService.verifyAccessToken(jwt.sign({ userId: 'u1' }, secret))).toThrow();
+    expect(() => AuthService.verifyAccessToken(jwt.sign({ userId: 'u1' }, secret, { expiresIn: -1 }))).toThrow();
   });
 });

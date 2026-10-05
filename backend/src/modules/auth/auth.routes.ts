@@ -192,6 +192,10 @@ router.post("/login", limiterAuthParIp, limiterConnexions, async (req: Request, 
       throw new ApiError(401, "Email ou mot de passe incorrect", "INVALID_CREDENTIALS");
     }
 
+    if (user.status && user.status !== "ACTIVE") {
+      throw new ApiError(401, "Email ou mot de passe incorrect", "INVALID_CREDENTIALS");
+    }
+
     // Exigée d'office en production (voir confirmationExigee). Une instance
     // dont des comptes existants ne sont pas confirmés peut la suspendre avec
     // REQUIRE_EMAIL_VERIFICATION=false, le temps que chacun confirme.
@@ -223,6 +227,7 @@ router.post("/login", limiterAuthParIp, limiterConnexions, async (req: Request, 
     // invalide sur tous les domaines (voir sso.service.ts).
     const { accessToken, refreshToken } = await SsoService.connecter(user.id);
 
+    await limiterConnexions.reinitialiser(req);
     res.json({
       message: "Connexion réussie",
       accessToken,
@@ -235,7 +240,7 @@ router.post("/login", limiterAuthParIp, limiterConnexions, async (req: Request, 
 });
 
 // POST /auth/refresh
-router.post("/refresh", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/refresh", limiterAuthParIp, async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Le jeton vient du corps (mobile, ancien web) ou du cookie httpOnly. Par le
     // cookie, la requête part toute seule : l'origine doit être un domaine du site.
@@ -920,6 +925,7 @@ router.post(
 // POST /auth/reset-password - Nouveau mot de passe via le lien reçu
 router.post(
   "/reset-password",
+  limiterAuthParIp,
   // Compté par jeton : ce qu'on protège ici, c'est une tentative de deviner
   // un lien précis. Compter par IP mettrait tous les utilisateurs d'un même
   // réseau dans le même seau, sans rien empêcher de plus — un jeton de 32
@@ -972,21 +978,26 @@ router.post(
 
       const passwordHash = await AuthService.hashPassword(body.password);
 
-      await db.user.update({
-        where: { id: user.id },
-        data: {
-          passwordHash,
-          // Quelqu'un d'autre avait peut-être le mot de passe : ses sessions
-          // tombent avec lui.
-          passwordChangedAt: new Date(),
-          // Un jeton ne sert qu'une fois.
-          resetTokenHash: null,
-          resetTokenExpiresAt: null,
-          // Recevoir ce lien prouve que l'adresse est bien la sienne.
-          emailVerified: true,
-          emailTokenHash: null,
-          emailTokenExpiresAt: null,
-        },
+      await db.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            passwordHash,
+            // Quelqu'un d'autre avait peut-être le mot de passe : ses sessions
+            // tombent avec lui.
+            passwordChangedAt: new Date(),
+            // Un jeton ne sert qu'une fois.
+            resetTokenHash: null,
+            resetTokenExpiresAt: null,
+            // Recevoir ce lien prouve que l'adresse est bien la sienne.
+            emailVerified: true,
+            emailTokenHash: null,
+            emailTokenExpiresAt: null,
+          },
+        });
+        await tx.sessionConnexion.updateMany({
+          where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() },
+        });
       });
 
       // L'adresse étant prouvée, la fiche client invité rejoint le compte.
@@ -1002,7 +1013,6 @@ router.post(
       oublierCompte(user.id);
       // Toutes les sessions, cookie de zupone.com compris : celui qui avait le
       // mot de passe volé ne se fait plus remettre de jetons neufs.
-      await SsoService.fermerToutes(user.id);
       logger.info("Mot de passe réinitialisé", { userId: user.id });
 
       res.json({ message: "Mot de passe modifié. Vous pouvez vous connecter." });
@@ -1049,20 +1059,24 @@ router.post(
         throw new ApiError(400, "Le nouveau mot de passe doit être différent de l'actuel.", "SAME_PASSWORD");
       }
 
-      // Arrondi à la seconde, comme `iat` : les jetons remis ci-dessous, émis
-      // dans la même seconde, restent valables ; ceux d'avant ne le sont plus.
+      // La révocation en transaction ferme aussi les jetons émis dans cette seconde.
       const changeLe = new Date(Math.floor(Date.now() / 1000) * 1000);
 
-      await db.user.update({
-        where: { id: user.id },
-        data: {
-          passwordHash: await AuthService.hashPassword(body.newPassword),
-          // Ferme les sessions ouvertes ailleurs.
-          passwordChangedAt: changeLe,
-          // Un lien de réinitialisation en attente ne doit plus servir.
-          resetTokenHash: null,
-          resetTokenExpiresAt: null,
-        },
+      await db.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            passwordHash: await AuthService.hashPassword(body.newPassword),
+            // Ferme les sessions ouvertes ailleurs.
+            passwordChangedAt: changeLe,
+            // Un lien de réinitialisation en attente ne doit plus servir.
+            resetTokenHash: null,
+            resetTokenExpiresAt: null,
+          },
+        });
+        await tx.sessionConnexion.updateMany({
+          where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() },
+        });
       });
 
       await SecurityEventService.record({
@@ -1073,16 +1087,8 @@ router.post(
       });
 
       oublierCompte(user.id);
-      // Les autres sessions ferment aussi pour la connexion unique ; celle-ci
-      // reste ouverte, sur tous ses domaines, avec des jetons neufs.
-      await SsoService.fermerToutes(user.id, req.user?.sid);
-
-      // Cette session-ci reste ouverte avec des jetons neufs.
-      res.json({
-        message: "Mot de passe modifié. Vos autres sessions ont été déconnectées.",
-        accessToken: AuthService.generateAccessToken(user.id, req.user?.sid),
-        refreshToken: await SsoService.refreshPour(user.id, req.user?.sid),
-      });
+      effacerCookieRefresh(res);
+      res.json({ message: "Mot de passe modifié. Toutes vos sessions ont été déconnectées." });
     } catch (err) {
       next(err);
     }
@@ -1090,7 +1096,7 @@ router.post(
 );
 
 // POST /auth/verify-email - Confirmation d'adresse via le lien reçu
-router.post("/verify-email", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/verify-email", limiterAuthParIp, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = z.object({ jeton: z.string().min(32) }).parse(req.body);
 
@@ -1143,6 +1149,8 @@ router.post("/verify-email", async (req: Request, res: Response, next: NextFunct
 router.post(
   "/resend-verification",
   limiterCourrielsParIp,
+  (req: Request, res: Response, next: NextFunction) =>
+    req.headers.authorization ? authMiddleware(req, res, next) : next(),
   // Compté par compte visé : c'est lui qui reçoit les messages. La session,
   // quand il y en a une, désigne le compte ; sinon c'est l'adresse fournie.
   // Sans l'un ni l'autre la demande n'a pas de destinataire et sera refusée,
@@ -1150,28 +1158,13 @@ router.post(
   limiterCadence({
     max: 3,
     fenetreMs: 15 * 60 * 1000,
-    cle: (req) => {
-      const session = req.headers.authorization || "";
-      if (session) return `renvoi|session|${session}`;
-
-      const email = typeof req.body?.email === "string" ? req.body.email.toLowerCase() : "";
-      return email ? `renvoi|${req.ip}|${email}` : `renvoi|sans-destinataire|${Math.random()}`;
-    },
+    cle: (req) => req.userId || parDestinataire(req),
   }),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Une session, si elle existe, prime sur l'adresse fournie : sinon
       // n'importe qui pourrait viser le compte d'un autre.
-      const entete = req.headers.authorization;
-      let userId: string | null = null;
-
-      if (entete?.startsWith("Bearer ")) {
-        try {
-          userId = AuthService.verifyAccessToken(entete.slice(7)).userId;
-        } catch {
-          throw new ApiError(401, "Session expirée", "INVALID_TOKEN");
-        }
-      }
+      const userId = req.userId || null;
 
       const demande = z.object({ email: champEmail().optional() }).parse(req.body || {});
 

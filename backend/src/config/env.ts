@@ -5,9 +5,9 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
-  JWT_EXPIRES_IN: z.string().default("15m"),
+  JWT_EXPIRES_IN: z.literal("15m").default("15m"),
   JWT_REFRESH_SECRET: z.string().min(32),
-  JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
+  JWT_REFRESH_EXPIRES_IN: z.literal("7d").default("7d"),
   API_URL: z.string().url(),
   FRONTEND_URL: z.string().url(),
   // Domaines supplémentaires autorisés à appeler l'API, séparés par des
@@ -62,6 +62,13 @@ const envSchema = z.object({
   OSRM_API_URL: z.string().url().optional(),
   ENABLE_STRIPE: z.string().default("true").transform((v) => v === "true"),
   ENABLE_EMAIL_VERIFICATION: z.string().default("true").transform((v) => v === "true"),
+}).superRefine((config, contexte) => {
+  if (config.JWT_SECRET === config.JWT_REFRESH_SECRET) {
+    contexte.addIssue({ code: "custom", path: ["JWT_REFRESH_SECRET"], message: "Les secrets access et refresh doivent être distincts" });
+  }
+  if (config.NODE_ENV === "production" && !config.REDIS_URL) {
+    contexte.addIssue({ code: "custom", path: ["REDIS_URL"], message: "Redis est obligatoire pour les quotas partagés en production" });
+  }
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -1,3 +1,4 @@
+import { filtrerDonneesFinancieres } from "./financial-data";
 import { Request, Response, NextFunction } from "express";
 import { Plateforme } from "@prisma/client";
 import { db } from "../../services/db";
@@ -241,14 +242,8 @@ export interface RoleConnu {
   permissions: Permissions;
 }
 
-// Lu à chaque requête de l'équipe : gardé quelques secondes, oublié dès qu'un
-// rôle change.
-const DUREE_CACHE_MS = 30000;
-const cache = new Map<Plateforme, { roles: Record<string, RoleConnu>; expireA: number }>();
-
-export function oublierRoles() {
-  cache.clear();
-}
+/** Les permissions sont relues sur chaque requête, y compris sur une autre instance. */
+export function oublierRoles() {}
 
 export const PermissionsPlateforme = {
   /**
@@ -286,21 +281,8 @@ export const PermissionsPlateforme = {
 
   async role(code: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<RoleConnu | null> {
     if (!code) return null;
-    let connu = cache.get(plateforme);
-    if (!connu || Date.now() >= connu.expireA) {
-      const roles = await this.lister(plateforme);
-      connu = {
-        roles: Object.fromEntries(
-          roles.map((r) => [
-            r.code,
-            { code: r.code, label: r.label, permissions: nettoyerPermissions(r.permissions) },
-          ])
-        ),
-        expireA: Date.now() + DUREE_CACHE_MS,
-      };
-      cache.set(plateforme, connu);
-    }
-    return connu.roles[code] ?? null;
+    const role = (await this.lister(plateforme)).find((role) => role.code === code);
+    return role ? { code: role.code, label: role.label, permissions: nettoyerPermissions(role.permissions) } : null;
   },
 
   async permissionsDu(code: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<Permissions> {
@@ -398,6 +380,10 @@ export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT
         );
       }
 
+      if (!permissions.billing) {
+        const json = _res.json.bind(_res);
+        _res.json = (corps) => json(filtrerDonneesFinancieres(corps));
+      }
       next();
     } catch (err) {
       next(err);

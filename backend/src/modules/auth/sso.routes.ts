@@ -93,7 +93,7 @@ router.post("/deconnexion", authMiddleware, async (req: Request, res: Response, 
 });
 
 // POST /sso/central/ouvrir — zupone.com pose son cookie central
-router.post("/central/ouvrir", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/central/ouvrir", limiterEchanges, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const centrale = exigerSso();
     const { code } = codeSchema.parse(req.body);
@@ -108,7 +108,7 @@ router.post("/central/ouvrir", async (req: Request, res: Response, next: NextFun
 });
 
 // POST /sso/central/code — zupone.com tire du cookie central un code pour un domaine
-router.post("/central/code", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/central/code", limiterEchanges, async (req: Request, res: Response, next: NextFunction) => {
   try {
     exigerSso();
     const { jeton } = jetonSchema.parse(req.body);

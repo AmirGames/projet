@@ -203,6 +203,8 @@ async function equipeHabilitee(compte: Compte | undefined, dossier: DossierPrive
   if (!compte.isSystemAdmin) return false;
 
   for (const [plateforme, role] of Object.entries(compte.acces || {})) {
+    // Une permission DRIVE ne donne aucun accès aux pièces ZupEat.
+    if (plateforme !== (dossier === "chauffeurs" ? "DRIVE" : "EAT")) continue;
     const permissions = await PermissionsPlateforme.permissionsDu(role, plateforme as Plateforme);
     if (SECTIONS_DU_DOSSIER[dossier].some((section) => permissions[section])) return true;
   }
@@ -222,7 +224,17 @@ export async function peutLire(
   const dossier = relatif.split("/")[0];
   if (!estDossierPrive(dossier)) return false;
 
-  if (await equipeHabilitee(appelant.compte, dossier)) return true;
+  if (await equipeHabilitee(appelant.compte, dossier)) {
+    if (dossier !== "merchants" || appelant.compte?.isSuperOwner) return true;
+    const piece = await db.organizationDocument.findFirst({
+      where: { documentUrl: reference(relatif) }, select: { type: true },
+    });
+    if (!piece) return false;
+    if (piece.type !== "bank") return true;
+    const permissions = await PermissionsPlateforme.permissionsDu(appelant.compte?.acces.EAT, "EAT");
+    if (permissions.billing) return true;
+    // Le propriétaire éventuel peut encore lire sa propre pièce, ci-dessous.
+  }
 
   if (dossier === "drivers") {
     const piece = await db.courierDocument.findFirst({

@@ -21,6 +21,13 @@ export interface RefreshPayload {
 }
 
 export class AuthService {
+  private static chargeValide(decoded: string | jwt.JwtPayload, dureeMax: number): boolean {
+    return typeof decoded === "object" && typeof decoded.userId === "string" && decoded.userId.length > 0 &&
+      Number.isInteger(decoded.iat) && Number.isInteger(decoded.exp) &&
+      decoded.exp! > decoded.iat! && decoded.exp! - decoded.iat! <= dureeMax &&
+      decoded.iat! <= Math.floor(Date.now() / 1000) &&
+      (decoded.sid === undefined || (typeof decoded.sid === "string" && decoded.sid.length > 0));
+  }
   /**
    * Hash password using bcrypt
    */
@@ -72,6 +79,9 @@ export class AuthService {
       const decoded = jwt.verify(token, env.JWT_SECRET, {
         algorithms: ["HS256"],
       });
+      if (!this.chargeValide(decoded, 15 * 60)) {
+        throw new jwt.JsonWebTokenError("Invalid access token claims");
+      }
       return decoded as JwtPayload;
     } catch (err) {
       if (err instanceof jwt.TokenExpiredError) {
@@ -93,6 +103,9 @@ export class AuthService {
       const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET, {
         algorithms: ["HS256"],
       });
+      if (!this.chargeValide(decoded, 7 * 24 * 60 * 60)) {
+        throw new jwt.JsonWebTokenError("Invalid refresh token claims");
+      }
       return decoded as RefreshPayload;
     } catch (err) {
       if (err instanceof jwt.TokenExpiredError) {

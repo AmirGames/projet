@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 import { cheminDecode, sousChemin } from "../../utils/chemin";
 import { db } from "../../services/db";
+import { SecurityEventService } from "./security-event.service";
 import { logger } from "../../config/logger";
 import { compteDuJeton, verifyToken } from "./auth.middleware";
 
@@ -212,21 +213,23 @@ async function orgDeLaRessource(chemin: string): Promise<string | null | undefin
 
     return trouvee ? trouvee.store?.orgId ?? null : null;
   } catch (err) {
-    // Une ressource dont la forme ne correspond pas : on laisse la route
-    // répondre elle-même plutôt que de bloquer à tort.
+    // Une lecture impossible ne constitue jamais une autorisation.
     logger.warn("Cloisonnement : ressource illisible", {
       chemin,
       error: err instanceof Error ? err.message : err,
     });
-    return undefined;
+    throw err;
   }
 }
 
-const refus = (res: Response) =>
-  res.status(403).json({
+const refus = (req: Request, res: Response) => {
+  SecurityEventService.record({ action: "CROSS_TENANT_DENIED", actor: req.userId || "anonymous",
+    severity: "HIGH", status: "FAILED", ipAddress: req.ip, details: req.path });
+  return res.status(403).json({
     error: "Cette ressource appartient à un autre commerçant",
     code: "CROSS_TENANT_DENIED",
   });
+};
 
 export async function cloisonnement(req: Request, res: Response, next: NextFunction) {
   const cheminRequete = cheminDecode(req.path);
@@ -256,8 +259,9 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
     // compte est lu par le même cache que le middleware d'authentification, qui
     // passera juste après : la requête ne le lit donc qu'une fois.
     const compte = await compteDuJeton(charge.userId);
+    req.userId = charge.userId;
 
-    if (compte?.isSuperOwner || compte?.isSystemAdmin) return next();
+    if (compte?.isSuperOwner) return next();
 
     const corps = (req.body || {}) as Record<string, unknown>;
 
@@ -289,7 +293,7 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
           id,
           userId: charge.userId,
         });
-        return refus(res);
+        return refus(req, res);
       }
     }
 
@@ -299,7 +303,7 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
         chemin: req.path,
         userId: charge.userId,
       });
-      return refus(res);
+      return refus(req, res);
     }
 
     return next();
@@ -310,6 +314,6 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
       chemin: req.path,
       error: err instanceof Error ? err.message : err,
     });
-    return refus(res);
+    return refus(req, res);
   }
 }
