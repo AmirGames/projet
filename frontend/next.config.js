@@ -9,8 +9,7 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Le package-lock.json vide à la racine du dépôt ferait prendre `projet/`
-  // pour la racine de l'application.
+  // Fixer explicitement le dossier du frontend comme racine de l'application.
   outputFileTracingRoot: __dirname,
   images: {
     remotePatterns: [
