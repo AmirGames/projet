@@ -1,0 +1,40 @@
+[
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "widget": {
+      "x": 980,
+      "y": 300,
+      "width": 440,
+      "height": 680
+    },
+    "errors": [],
+    "htmlSafe": true,
+    "handoff": true,
+    "guidedFaq": true,
+    "guidedFollowup": true,
+    "keyboard": true,
+    "reducedViewport": false
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "widget": {
+      "x": 8,
+      "y": 156,
+      "width": 374,
+      "height": 680
+    },
+    "errors": [],
+    "htmlSafe": true,
+    "handoff": true,
+    "guidedFaq": true,
+    "guidedFollowup": true,
+    "keyboard": true,
+    "reducedViewport": true
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "authenticatedManager": true,
+  "storeIsolation": true,
+  "noMutationBeforeConfirmation": true,
+  "confirmedMutation": true,
+  "errors": []
+}

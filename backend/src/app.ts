@@ -64,6 +64,7 @@ import variantRouter from "./modules/catalog/variant.routes";
 import addressRouter from "./modules/customers/address.routes";
 import privacyRouter from "./modules/privacy/privacy.routes";
 import { privacyAuditMiddleware } from "./modules/privacy/audit.middleware";
+import assistantRouter from "./modules/assistant/routes";
 
 export function createApp(): Express {
   const app = express();
@@ -77,7 +78,10 @@ export function createApp(): Express {
   // proxys à traverser pour retrouver l'adresse du visiteur (1 avec Caddy).
   // Vide : on n'en croit aucun, un en-tête X-Forwarded-For se forge.
   const proxysDeConfiance = Number(process.env.TRUST_PROXY);
-  if (Number.isInteger(proxysDeConfiance) && proxysDeConfiance > 0) {
+  const proxysAutorises = (process.env.TRUST_PROXY_CIDRS || "").split(",").map(p => p.trim()).filter(Boolean);
+  if (proxysAutorises.length) {
+    app.set("trust proxy", proxysAutorises);
+  } else if (Number.isInteger(proxysDeConfiance) && proxysDeConfiance > 0) {
     app.set("trust proxy", proxysDeConfiance);
   }
 
@@ -268,6 +272,7 @@ export function createApp(): Express {
   app.use("/api/zupdrive/societe", zupdriveSocieteRouter);
   app.use("/api/notifications", notificationsApiRouter);
   app.use("/api/support", supportRouter);
+  app.use("/api/assistant", assistantRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/merchant-profile", merchantProfileRouter);
   app.use("/api/merchant-payouts", merchantPayoutRouter);

@@ -120,6 +120,7 @@ export class CustomerAccountService {
 
     const maintenant = new Date();
     await db.$transaction(async (tx) => {
+      await tx.assistantConversation.deleteMany({ where: { ownerId: userId, service: "EAT", category: "customer", actions: { none: { state: "EXECUTING" } } } });
       const compte = await tx.user.findUnique({ where: { id: userId }, select: { emailVerified: true } });
       const clients = await tx.customer.findMany({ where: { OR: [{ userId }, ...(compte?.emailVerified ? [{ email: apercu._email, userId: null }] : [])] }, select: { id: true } });
       for (const { id } of clients) {

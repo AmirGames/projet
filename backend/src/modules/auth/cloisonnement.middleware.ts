@@ -59,6 +59,7 @@ const CHEMINS_HORS_PORTEE = [
   "/api/zupdrive",
   "/api/notifications",
   "/api/support",
+  "/api/assistant", // Session, conversations et chaque outil contrôlés localement.
 ];
 
 /**

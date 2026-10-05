@@ -29,6 +29,7 @@ const CHEMINS_OUVERTS = [
   "/api/auth",
   "/api/sso",
   "/api/support",
+  "/api/assistant", // Support ouvert ; les outils de modification revalident le statut.
   "/api/notifications",
 ];
 

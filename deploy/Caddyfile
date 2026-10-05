@@ -8,6 +8,9 @@
 # L'API et le temps réel (Socket.IO : Caddy relaie les WebSockets tout seul).
 {$DOMAINE_API} {
 	encode zstd gzip
+	# L'assistant passe par le relais Next.js signé, jamais par l'API publique.
+	@assistant path /api/assistant /api/assistant/*
+	respond @assistant 404
 	# Photos de produits, pièces justificatives : 10 Mo côté API, un peu de marge ici.
 	request_body {
 		max_size 25MB
@@ -37,5 +40,11 @@
 	@www header_regexp www Host ^www\.(.+)$
 	redir @www https://{re.www.1}{uri} permanent
 
-	reverse_proxy frontend:3000
+	reverse_proxy frontend:3000 {
+		# Ces en-têtes ne sont créés que par le serveur Next.js après vérification.
+		header_up -X-Assistant-Time
+		header_up -X-Assistant-Host
+		header_up -X-Assistant-Surface
+		header_up -X-Assistant-Signature
+	}
 }

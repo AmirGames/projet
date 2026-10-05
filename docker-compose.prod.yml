@@ -77,6 +77,12 @@ services:
       API_URL: https://${DOMAINE_API:?DOMAINE_API manquant dans .env.production}
       # Un seul proxy devant l'API : Caddy.
       TRUST_PROXY: 1
+      # Si renseigné, remplace le compte de sauts par les IP/CIDR réels des proxys.
+      TRUST_PROXY_CIDRS: ${TRUST_PROXY_CIDRS:-}
+      # Gratuit local par défaut ; le profil assistant-local reste optionnel.
+      ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-ollama}
+      ASSISTANT_OLLAMA_URL: ${ASSISTANT_OLLAMA_URL:-http://ollama:11434}
+      ASSISTANT_OLLAMA_MODEL: ${ASSISTANT_OLLAMA_MODEL:-}
       # Horaires d'ouverture, créneaux de retrait, arrêtés hebdomadaires : le
       # code compte en heure locale. Sans ce réglage le conteneur compte en
       # UTC, et une boutique ouverte « 11:00 » l'était à 13:00 à Paris.
@@ -92,6 +98,19 @@ services:
       timeout: 5s
       start_period: 60s
       retries: 3
+
+  # Aucun port publié. Modèles cloud et recherche web désactivés.
+  ollama:
+    profiles: ["assistant-local"]
+    image: ${ASSISTANT_OLLAMA_IMAGE:-ollama/ollama:latest}
+    restart: unless-stopped
+    environment:
+      OLLAMA_NO_CLOUD: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_CONTEXT_LENGTH: "8192"
+    volumes:
+      - ollama_models:/root/.ollama
 
   frontend:
     build:
@@ -115,6 +134,9 @@ services:
       # Côté serveur (connexion unique, plan du site), l'API se joint
       # directement, sans ressortir par Internet.
       API_INTERNAL_URL: http://backend:3001
+      # Serveur uniquement ; jamais NEXT_PUBLIC. Même mapping/secret que l'API.
+      ASSISTANT_HOSTS: ${ASSISTANT_HOSTS:-}
+      ASSISTANT_GATEWAY_SECRET: ${ASSISTANT_GATEWAY_SECRET:-}
     depends_on:
       - backend
 
@@ -148,3 +170,4 @@ volumes:
   backups:
   caddy_data:
   caddy_config:
+  ollama_models:

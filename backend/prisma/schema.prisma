@@ -102,11 +102,113 @@ model User {
   ticketMessages TicketMessage[]
   pushDevices   PushDevice[]
   sessionsConnexion SessionConnexion[]
+  assistantConversations AssistantConversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
+}
+
+/// Assistant ZupOne : un domaine et un propriétaire/session par conversation.
+model AssistantConversation {
+  id String @id @default(cuid())
+  ownerId String?
+  owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  guestHash String?
+  host String
+  service String
+  category String?
+  agentId String?
+  orgId String?
+  storeId String?
+  segment Int @default(0)
+  revision Int @default(0)
+  state String @default("OPEN")
+  busyUntil DateTime?
+  expiresAt DateTime
+  messages AssistantMessage[]
+  actions AssistantAction[]
+  executions AssistantToolExecution[]
+  handoffs AssistantHandoff[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([ownerId, host, updatedAt])
+  @@index([guestHash, host])
+  @@index([expiresAt])
+}
+
+model AssistantMessage {
+  id String @id @default(cuid())
+  conversationId String
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  clientKey String
+  author String
+  content String
+  service String
+  agentId String?
+  segment Int
+  state String @default("COMPLETE")
+  mode String
+  createdAt DateTime @default(now())
+  @@unique([conversationId, clientKey, author])
+  @@index([conversationId, segment, createdAt])
+}
+
+model AssistantAction {
+  id String @id @default(cuid())
+  conversationId String
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  actorId String
+  tool String
+  params Json
+  target String
+  summary String
+  segment Int
+  state String @default("PENDING")
+  expiresAt DateTime
+  confirmedAt DateTime?
+  result Json?
+  idempotencyKey String @unique
+  createdAt DateTime @default(now())
+  @@index([conversationId, state])
+}
+
+model AssistantToolExecution {
+  id String @id @default(cuid())
+  conversationId String
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  actorId String?
+  tool String
+  target String?
+  status String
+  code String?
+  startedAt DateTime @default(now())
+  completedAt DateTime @default(now())
+  @@index([conversationId, startedAt])
+}
+
+/// Extension du support pour les visiteurs/clients/chauffeurs sans organisation.
+/// Les commerçants conservent un lien vers MerchantTicket.
+model AssistantHandoff {
+  id String @id @default(cuid())
+  conversationId String
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  segment Int
+  service String
+  specialty String
+  reason String
+  priority String @default("MEDIUM")
+  summary String
+  verified Boolean
+  ticketId String?
+  state String @default("OPEN")
+  reply String?
+  repliedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([conversationId, segment])
+  @@index([service, state, createdAt])
 }
 
 /// Un groupe de l'équipe de la plateforme et ce qu'il peut faire dans l'espace
