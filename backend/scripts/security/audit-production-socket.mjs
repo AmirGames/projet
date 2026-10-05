@@ -1,6 +1,6 @@
 // Sondes sans compte ni mutation : disponibilité et refus des accès privés.
 import { io } from '../../node_modules/socket.io-client/build/esm-debug/index.js';
-import { writeFile } from 'node:fs/promises';
+import { writeAuditReport } from './audit-report.mjs';
 import { randomUUID } from 'node:crypto';
 
 const cible = new URL(process.argv[2] || 'https://api.zupeat.com');
@@ -46,8 +46,7 @@ try {
   clients.forEach((socket) => socket.disconnect());
   rapport.passed = rapport.checks.filter((c) => c.ok).length;
   rapport.failed = rapport.checks.filter((c) => !c.ok).length;
-  const fichier = `audit-socket-${Date.now()}.json`;
-  await writeFile(fichier, JSON.stringify(rapport, null, 2));
+  const fichier = await writeAuditReport(`audit-socket-${Date.now()}.json`, rapport);
   console.log(`Rapport : ${fichier} ; ${rapport.passed} réussis, ${rapport.failed} échoués`);
   if (rapport.error || rapport.failed) process.exitCode = 1;
 }

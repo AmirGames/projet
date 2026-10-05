@@ -13,7 +13,7 @@ L'opérateur a annoncé le déploiement ; le dépôt local est au commit
 nouvellement inscrit a obtenu 403 `EMAIL_NOT_VERIFIED` sur les invitations,
 ainsi que les refus administratifs attendus. Bilan **12/12**, suppression du
 compte et révocation de session confirmées. Preuve sans secrets :
-`audit-admin-1791038849047-821f07d9.json` à la racine du dépôt.
+[audit-admin-1791038849047-821f07d9.json](audits/audit-admin-1791038849047-821f07d9.json) dans `docs/audits/`.
 Cette sonde n'a créé ni chauffeur, ni société, ni invitation par courriel,
 ni course ; elle ne remplace pas le pentest complet. Les mentions de correctif
 local/non déployé ci-dessous décrivent le passage initial.

@@ -21,7 +21,7 @@ supprimé et session révoquée. Le correctif précédent des invitations renvoi
 403 `EMAIL_NOT_VERIFIED`. Les routes config admin, membres de l'équipe, rôles
 et administration chauffeurs refusent le visiteur (401) et le compte ordinaire
 (403). Aucune mutation d'administration n'a été tentée en production.
-Rapport : `audit-admin-1791038849047-821f07d9.json` à la racine du dépôt.
+Rapport : [audit-admin-1791038849047-821f07d9.json](audits/audit-admin-1791038849047-821f07d9.json) dans `docs/audits/`.
 
 ## Corrections locales
 

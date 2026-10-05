@@ -1,7 +1,7 @@
 // Sonde autorisée : un compte client temporaire, aucune mutation d'administration.
 // node backend/scripts/security/audit-production-admin.mjs https://api.zupeat.com --run
 import { randomBytes } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
+import { writeAuditReport } from './audit-report.mjs';
 const origin = new URL(process.argv[2] || 'https://api.zupeat.com');
 if (!process.argv.includes('--run') || origin.protocol !== 'https:' || origin.username || origin.password || origin.pathname !== '/' || origin.search || origin.hash) throw new Error('Origine HTTPS et --run requis');
 const run = `audit-admin-${Date.now()}-${randomBytes(4).toString('hex')}`;
@@ -43,8 +43,7 @@ try {
   }
   report.finishedAt = new Date().toISOString();
   report.failed = report.checks.filter(c => !c.ok).length;
-  const output = `${run}.json`;
-  await writeFile(output, JSON.stringify(report, null, 2) + '\n');
+  const output = await writeAuditReport(`${run}.json`, report);
   console.log(`Rapport : ${output} ; ${report.checks.length - report.failed} réussis, ${report.failed} échoués`);
   if (report.error || report.cleanupError || report.failed) process.exitCode = 1;
 }

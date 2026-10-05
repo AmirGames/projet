@@ -88,7 +88,7 @@ qui importent les routes d'authentification ; aucune suite n'a échoué.
 Sur `https://api.zupeat.com`, sans création ni mutation de données :
 **6/6 contrôles réussis** : health ready HTTP 200 ; connexion anonyme et refus
 de commande privée en WebSocket et polling ; jeton invalide refusé.
-Rapport local : `audit-socket-1791039944835.json`.
+Rapport local : [audit-socket-1791039944835.json](audits/audit-socket-1791039944835.json).
 
 Cette sonde confirme la disponibilité du déploiement existant. Elle ne valide
 pas les nouvelles corrections avant leur déploiement et ne constitue pas un

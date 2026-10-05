@@ -4,7 +4,7 @@
 import https from 'node:https';
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
+import { writeAuditReport } from './audit-report.mjs';
 
 const target = new URL(process.argv[2] || 'https://api.zupeat.com');
 if (!process.argv.includes('--run')) throw new Error('Exécution explicite requise : URL --run');
@@ -159,8 +159,7 @@ try {
   report.finishedAt = new Date().toISOString();
   report.passed = report.checks.filter(c => c.ok).length;
   report.failed = report.checks.filter(c => !c.ok).length;
-  const output = `${run}.json`;
-  await writeFile(output, JSON.stringify(report, null, 2) + '\n');
+  const output = await writeAuditReport(`${run}.json`, report);
   console.log(`Rapport : ${output} ; ${report.passed} réussis, ${report.failed} échoués`);
   if (report.error || report.failed || report.cleanup.some(c => c.type === 'error')) process.exitCode = 1;
 }

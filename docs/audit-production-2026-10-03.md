@@ -97,6 +97,6 @@ ticket peut notifier les administrateurs et les webhooks configurés.
 Résultat attendu après déploiement : **67 réussites, 0 échec**, nettoyage
 complet signalé, code de sortie 0.
 
-Preuve de cette exécution : `audit-idor-1791033923585-27548af6.json` à la
-racine du dépôt ; identifiants des fixtures, assertions et nettoyage,
+Preuve de cette exécution : [audit-idor-1791033923585-27548af6.json](audits/audit-idor-1791033923585-27548af6.json) dans
+`docs/audits/` ; identifiants des fixtures, assertions et nettoyage,
 sans jetons, mots de passe ni contenu client.

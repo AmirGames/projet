@@ -152,10 +152,10 @@ sont simulés.
 ## Sondes du déploiement existant
 
 - Socket.IO : **6/6**, santé HTTP, WebSocket/polling publics, refus de suivi
-  anonyme et de jeton invalide. Rapport `audit-socket-1791040293410.json`.
+  anonyme et de jeton invalide. Rapport [audit-socket-1791040293410.json](audits/audit-socket-1791040293410.json).
 - Paiements : **4/4**, création/confirmation sans possession sur identifiant
   inexistant : 404 ; remboursement sans session : 401 ; webhook sans signature :
-  400 `STRIPE_SIGNATURE_MISSING`. Rapport `audit-paiements-production-20261003.json`.
+  400 `STRIPE_SIGNATURE_MISSING`. Rapport [audit-paiements-production-20261003.json](audits/audit-paiements-production-20261003.json).
 
 Aucune commande réelle, carte, charge, restitution d'argent ou destination
 de webhook réelle n'a été créée ou modifiée par ces sondes. Elles ne prouvent
@@ -190,8 +190,8 @@ l'utilisateur ; les sondes ne donnent pas elles-mêmes le SHA du backend distant
 
 Sondes rejouées sur l'API : **10/10 réussies**, soit les six contrôles Socket.IO
 et les quatre refus de paiement/remboursement/webhook décrits ci-dessus.
-Rapports : `audit-socket-1791061394411.json` et
-`audit-paiements-production-1791061414983.json`.
+Rapports : [audit-socket-1791061394411.json](audits/audit-socket-1791061394411.json) et
+[audit-paiements-production-1791061414983.json](audits/audit-paiements-production-1791061414983.json).
 
 Reste à valider dans un environnement de test isolé : encaissement Stripe,
 remboursement, livraison/rejeu d'événements réellement signés et concurrence
@@ -206,7 +206,7 @@ Cette validation remplace la limitation précédente « PostgreSQL/Stripe non
 disponibles ici » pour les scénarios ci-dessous.
 
 **Résultat final : 33 contrôles réussis, aucun échec.** Rapport de référence :
-`audit-stripe-sandbox-1791062125334.json`.
+[audit-stripe-sandbox-1791062125334.json](audits/audit-stripe-sandbox-1791062125334.json).
 
 - Deux appels HTTP simultanés ont créé une seule intention Stripe et une seule
   ligne de paiement PostgreSQL.

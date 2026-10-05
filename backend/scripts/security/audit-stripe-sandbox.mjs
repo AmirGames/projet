@@ -12,6 +12,7 @@ import pg from 'pg';
 import Stripe from 'stripe';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import { writeAuditReport } from './audit-report.mjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
@@ -223,8 +224,7 @@ try {
   await admin.end();
   report.finishedAt = new Date().toISOString();
   report.passed = report.checks.filter((c) => c.ok).length; report.failed = report.checks.filter((c) => !c.ok).length;
-  const file = path.join(root, '..', `audit-stripe-sandbox-${Date.now()}.json`);
-  await fs.writeFile(file, JSON.stringify(report, null, 2));
-  console.log(`Rapport : ${path.basename(file)} ; ${report.passed} réussis, ${report.failed} échoués`);
+  const file = await writeAuditReport(`audit-stripe-sandbox-${Date.now()}.json`, report);
+  console.log(`Rapport : ${file} ; ${report.passed} réussis, ${report.failed} échoués`);
   if (report.error || report.failed || report.cleanup.databaseDropped === false || report.cleanup.stripe.some((r) => r.error || (!r.refunded && !r.canceled))) process.exitCode = 1;
 }
