@@ -17,7 +17,8 @@ Aucun parcours authentifié sur le VPS n'a été exécuté pendant cette prépar
 | Signature et contenu APK | Signature v2 valide ; JavaScript, adresse VPS et ressources Firebase vérifiés ; même certificat que l'APK précédent |
 | Clé FCM V1 dans EAS | Attribuée à l'identifiant Android, projet Firebase `zupeat-a1e82` confirmé dans EAS |
 | Push sur téléphone | Réception d'une push confirmée par l'opérateur après configuration Firebase |
-| Tests des alertes `npm run test:alerts` | 4/4 : formats FCM, payloads rejetés, offres expirées/étrangères, lots |
+| Tests des alertes `npm run test:alerts` | 6/6 : formats FCM, payloads rejetés, offres expirées/étrangères, lots, coordonnées et arrêts |
+| Rendu de la fenêtre 1.0.2 | Vérifié dans le navigateur avec les ressources embarquées : 390 × 780 et 320 × 568, course simple, lot, adresses longues et points absents |
 | Tests serveur des notifications | 13/13, TypeScript et build backend réussis ; avertissement SMTP de la suite existante |
 | Fenêtre et son en silencieux | Module Android compilé ; affichage et actions à essayer sur téléphone |
 | Déploiement du correctif serveur | Appliqué via SSH ; source compilée vérifiée, API `healthy`, `/health` retourne `status: ok` |
@@ -149,7 +150,44 @@ pour le projet Expo. Une push est désormais reçue. Les boutons et les nouvelle
 alertes doivent être essayés pendant qu'une autre application est affichée
 et écran verrouillé. Le changement de logo ne corrige pas cette configuration manquante.
 
-## Alertes Android 1.0.1
+## Nouvelle présentation Android 1.0.2
+
+**APK actuel à installer :** [zupeat-livreur-1.0.2-carte-verrouillage-arm64.apk](dist/zupeat-livreur-1.0.2-carte-verrouillage-arm64.apk).
+90 848 319 octets, Android 10 minimum, ARM64, version 1.0.2 / code 3.
+Signature v2 vérifiée, même certificat de test que les précédents APK : mise
+à jour possible sans désinstaller l'application. Runtime OTA 1.0.2.
+SHA-256 : `88C33751896D9337E6CB78FE6FBB76DC089E6A54DBB08335CB52C82F757C4F0E`.
+
+La fenêtre Android initiale était une liste de textes et boutons sur fond
+bleu. Elle reprend maintenant la disposition de `OfferSheet` : carte sombre,
+fiche arrondie avec contour orange, montant garanti, durée estimée et distance,
+adresses de retrait/livraison, arrêts, acceptation avec délai et refus.
+Les points de livraison obfusqués sont conservés tels quels ; aucun géocodage
+des adresses n'est ajouté. Un lot partage les retraits identiques et garde
+chaque destination. Sur petit écran, les détails défilent et les actions restent
+visibles. Fermer coupe la sonnerie sans envoyer une réponse ; la démo ne
+répond jamais à une vraie proposition.
+
+Contrôles effectués : TypeScript réussi, lint inchangé (0 erreur / 30
+avertissements), 6/6 tests des alertes, syntaxe du JavaScript embarqué,
+compilation `assembleRelease` et signature. Les six ressources cartographiques
+dans l'APK ont été comparées aux sources par SHA-256. L'adresse API de production
+et le nouveau payload sont dans le bundle ; aucune clé privée ne s'y trouve.
+Le journal final est `.expo/android-build-course-map-final.log` (52 s après
+la première reconstruction de 5 min 37 s).
+
+Vérification visuelle des ressources réellement embarquées, dans le navigateur :
+course simple à 390 × 780 ; lot de trois courses et adresses longues à
+320 × 568, sans débordement horizontal, bouton principal entièrement visible.
+Avec des points absents, les actions restent disponibles. Du texte ressemblant
+à du HTML est affiché littéralement, sans création d'image ou de script.
+Aperçu : [nouvelle fiche](../../../output/mobile-icons/zupeat-nouvelle-course-apercu.jpg).
+Cette vérification du rendu ne valide pas l'ouverture ni les actions dans la
+WebView Android sur un vrai écran verrouillé : utiliser la démo différée,
+puis une proposition réelle sur le téléphone. Le serveur déjà mis à jour
+pour 1.0.1 suffit ; aucune nouvelle mise à jour du VPS n'a été effectuée.
+
+## Historique : alertes Android 1.0.1
 
 **APK à installer :** [zupeat-livreur-test-2026-10-04-alertes-arm64.apk](dist/zupeat-livreur-test-2026-10-04-alertes-arm64.apk),
 90 793 522 octets (environ 91 Mo). Compilation réussie ; signature v2 valide,

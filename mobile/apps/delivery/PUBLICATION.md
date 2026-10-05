@@ -14,6 +14,8 @@ Aucune soumission aux stores n'a été effectuée.
 Un APK ARM64 a été construit localement et sa signature vérifiée ; son
 APK Firebase a permis à l'opérateur de recevoir les push. La version 1.0.1
 ajoute les alertes natives, à essayer avec le nouvel APK de [VALIDATION.md](VALIDATION.md).
+La version 1.0.2 reprend leur présentation avec carte et fiche de course ;
+installer l'APK 1.0.2 pour les prochains essais.
 
 Ce qui est prêt dans le dépôt, puis ce qui reste à faire (comptes, clés,
 fiches des stores), dans l'ordre.
@@ -103,7 +105,7 @@ dans l'APK compilé. L'opérateur confirme désormais la réception des push.
   La clé a été attribuée avec `npx eas-cli@latest credentials` › Android › *Google Service Account
   Key for Push Notifications (FCM V1)*, après accord de l'opérateur.
   L'application a été reconstruite après l'ajout de `google-services.json`.
-  Installer la version 1.0.1 pour essayer également la fenêtre native et la
+  Installer la version 1.0.2 pour essayer également la fenêtre native et la
   sonnerie avec le volume des alarmes : voir [README.md](README.md#alertes-android-sur-les-autres-écrans).
   Guide : [configuration FCM officielle Expo](https://docs.expo.dev/push-notifications/fcm-credentials/).
   `google-services.json` contient la configuration publique de l'application.

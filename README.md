@@ -432,6 +432,9 @@ push. La version 1.0.1 ajoute une fenêtre « Nouvelle course » au-dessus des
 autres applications et du verrouillage, ainsi qu'une sonnerie avec le volume
 des alarmes, toutes deux à activer dans les paramètres Android du livreur.
 Le signal de réveil Android est ajouté côté serveur et déployé sur le VPS.
+La version 1.0.2 reprend une carte sombre et une fiche de proposition comme
+dans l'application, avec montant, trajet, arrêts et compte à rebours ; nouvel
+APK compilé et rendu vérifié, y compris sur petit écran.
 Les essais de ces alertes et des parcours sur téléphone restent à réaliser ; voir
 [son README](mobile/apps/delivery/README.md) et
 [les résultats de validation](mobile/apps/delivery/VALIDATION.md).

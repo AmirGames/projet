@@ -165,9 +165,15 @@ d'arrière-plan de certains téléphones doivent être vérifiés sur appareil.
 
 La tâche Expo existante reçoit la push, relit `/api/drivers/offers` avec la
 session chiffrée et n'affiche que la proposition encore valable pour ce compte.
-La fenêtre expose le commerce, les villes, le montant, le délai et les actions ;
-elle ne déverrouille pas le téléphone. Les adresses et l'espace du compte ne
-sont pas affichés sur le verrouillage. Accepter/refuser réutilise la tâche Expo
+La version 1.0.2 reprend la présentation de la proposition dans l'application :
+carte sombre en plein écran, fiche arrondie orange, montant garanti, distance,
+arrêts et bouton « Accepter » avec compte à rebours. Les adresses de la
+proposition sont affichées ; les points de livraison restent ceux de l'API,
+approximatifs avant acceptation. Les détails défilent sur les petits écrans,
+en gardant les boutons visibles. La carte utilise Leaflet embarqué ; si le
+réseau manque, la fiche et ses actions restent disponibles.
+La fenêtre ne déverrouille pas le téléphone ni n'ouvre l'espace du compte.
+Accepter/refuser réutilise la tâche Expo
 et les endpoints existants, sans jeton enregistré dans les sources natives.
 L'alerte expire automatiquement et les réglages sont coupés hors ligne ou à
 la déconnexion. Le serveur conserve la push visible et ajoute, uniquement

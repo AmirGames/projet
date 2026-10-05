@@ -8,7 +8,8 @@ Ne pas recopier ses sources dans le dossier Android généré.
 - `CourseAlertController` : actif seulement en ligne et connecté (hors démo),
   contrôle de l'expiration, suppression des doublons et arrêt des alertes.
 - `CourseAlertActivity` : tâche séparée, visible sur le verrouillage sans le
-  lever ; commerce/villes/montant et actions, sans coordonnées du client.
+  lever ; carte et fiche de proposition avec montant, adresses, arrêts et
+  actions. Les coordonnées de livraison restent obfusquées par l'API.
 - `CourseAlertService` : lecture `USAGE_ALARM` via un service `mediaPlayback`,
   notification visible avec bouton d'arrêt, délai réel et limite de 120 s,
   libération du lecteur/audio focus. Le volume des alarmes et DND sont respectés.
@@ -28,7 +29,22 @@ Le module dépend des API Android d'`expo-notifications` 57 : sa dépendance de
 compilation suit la publication AAR installée ou le sous-projet si compilé
 depuis les sources. Vérifier cette intégration à chaque migration Expo.
 L'APK doit être reconstruit après un changement natif. La version applicative
-1.0.1 sépare son runtime OTA de celui des anciens APK 1.0.0.
+1.0.2 sépare son runtime OTA de ceux des anciens APK 1.0.0 et 1.0.1.
+
+L'écran 1.0.2 utilise les fichiers `android/src/main/assets/course-alert/` :
+HTML/CSS/JS locaux et Leaflet 1.9.4 embarqué (licence BSD et empreintes du CDN
+officiel contrôlées). Le fond de carte vient d'OpenStreetMap et l'itinéraire
+d'OSRM, comme la carte de l'application ; un trait direct reste visible si
+OSRM ne répond pas. Les arrêts viennent uniquement de l'offre API authentifiée ;
+aucune adresse n'est géocodée pour retrouver un point client exact.
+
+La WebView utilise une origine HTTPS réservée `.invalid`, avec interception
+des seules ressources locales autorisées et CSP. L'accès aux fichiers et
+contenus Android est désactivé, sans stockage DOM ni `addJavascriptInterface`.
+Les textes API passent par `textContent` ; seuls trois liens de commande
+locaux dans le cadre principal sont consommés : accepter, refuser, fermer.
+Aucun jeton n'est transmis à la page. L'expiration est contrôlée par Android,
+y compris si le JavaScript ou le réseau cartographique ne répond plus.
 
 Références : [restrictions d'ouverture Android](https://developer.android.com/guide/components/activities/secure-bal),
 [audio des alarmes](https://developer.android.com/reference/android/media/AudioAttributes#USAGE_ALARM),

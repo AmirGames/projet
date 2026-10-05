@@ -15,6 +15,7 @@ import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import org.json.JSONObject
+import org.json.JSONArray
 
 class CourseAlertsModule : Module() {
   private val context: Context get() = requireNotNull(appContext.reactContext)
@@ -54,9 +55,13 @@ class CourseAlertsModule : Module() {
         // A demo never invokes a server action and also works while offline.
         CourseAlertController.present(app, JSONObject()
           .put("id", "demo-${System.currentTimeMillis()}").put("demo", true)
-          .put("expiresAtMs", System.currentTimeMillis() + 15000)
-          .put("pickupStore", "Commerce de démonstration").put("pickupCity", "Votre ville")
-          .put("deliveryCity", "Destination de démonstration").put("payout", 6.50).put("count", 1))
+          .put("createdAtMs", System.currentTimeMillis()).put("expiresAtMs", System.currentTimeMillis() + 15000)
+          .put("pickupStore", "Commerce de démonstration").put("pickupCity", "Paris")
+          .put("deliveryCity", "Paris").put("payout", 6.50).put("count", 1).put("totalKm", 3.2)
+          .put("pickups", JSONArray().put(JSONObject().put("name", "Commerce de démonstration")
+            .put("address", "Place de la République, Paris").put("point", JSONObject().put("lat", 48.8675).put("lng", 2.3639))))
+          .put("dropoffs", JSONArray().put(JSONObject().put("address", "Quartier Bastille, Paris")
+            .put("point", JSONObject().put("lat", 48.8530).put("lng", 2.3690)))))
       }, 5000)
     }.runOnQueue(Queues.MAIN)
   }

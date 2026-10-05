@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org; connect-src https://router.project-osrm.org; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>Nouvelle course · ZupEat</title>
+  <link rel="stylesheet" href="leaflet.css">
+  <link rel="stylesheet" href="course-alert.css">
+  <script src="leaflet.js" defer></script>
+  <script src="course-alert.js" defer></script>
+</head>
+<body>
+  <div id="map" aria-label="Carte du trajet proposé"></div>
+  <div class="shade" aria-hidden="true"></div>
+  <header class="brand"><span class="brand-dot" aria-hidden="true"></span><b>ZupEat</b><span>Livreur</span></header>
+  <p id="map-status" class="map-status" role="status">Le trajet se charge…</p>
+  <article id="card" class="card" aria-label="Proposition de course">
+    <div class="tags"><span id="tag" class="tag">Nouvelle course</span><span id="demo" class="demo" hidden>TEST</span></div>
+    <button id="close" class="close" aria-label="Fermer la fenêtre et couper la sonnerie">×</button>
+    <p id="amount" class="amount">— €</p>
+    <p id="guaranteed" class="guaranteed">Montant garanti</p>
+    <div class="details">
+      <p class="journey"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg><span id="journey">Trajet estimé</span></p>
+      <div id="stops" class="stops"></div>
+      <span id="stop-count" class="stop-count"></span>
+    </div>
+    <p id="error" class="error" role="alert" hidden></p>
+    <button id="accept" class="accept"><span id="progress" class="progress" aria-hidden="true"></span><span id="accept-label">Accepter</span><span id="countdown" class="countdown"></span></button>
+    <button id="decline" class="decline">Refuser la course</button>
+  </article>
+</body>
+</html>

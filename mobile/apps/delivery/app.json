@@ -2,7 +2,7 @@
   "expo": {
     "name": "ZupEat Livreur",
     "slug": "zupeat-delivery",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
@@ -25,7 +25,7 @@
     "android": {
       "package": "com.amir_games.zupeatdelivery",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 2,
+      "versionCode": 3,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.WRITE_EXTERNAL_STORAGE"

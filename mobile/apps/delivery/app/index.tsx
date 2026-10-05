@@ -29,8 +29,8 @@ import SupportScreen from '../components/screens/SupportScreen';
 import SettingsScreen from '../components/screens/SettingsScreen';
 import AccountScreen from '../components/screens/AccountScreen';
 
-/** Filet de sécurité si la connexion temps réel tombe : les propositions sont relues. */
-const OFFERS_POLL_MS = 10_000;
+/** A connected socket can still miss an event; recheck offers while the app is visible. */
+const OFFERS_POLL_MS = 5_000;
 
 const DRAWER_ITEMS = [
   { tab: 'history', label: '🗂️ Historique' },
@@ -349,26 +349,34 @@ export default function DeliveryApp() {
     token,
     soundEnabled: prefs.soundEnabled,
     ringInSilentMode: prefs.ringInSilentMode,
-    pendingOffers: offers.length,
+    offers,
     onOffer: (offer) => {
       // Elle s'affiche en plein écran, par-dessus l'écran en cours.
       setOffers((list) => (list.some((o) => o.id === offer.id) ? list : [...list, offer]));
     },
     onChanged: scheduleReload,
+    onOffersChanged: () => { loadOffers(token); },
     onNotification: () => {
       loadUnread(token);
       setNotifRefreshKey((k) => k + 1);
     },
   });
 
-  // Filet de sécurité : les propositions ne sont relues que si la connexion
-  // temps réel est coupée. Connectée, elle les apporte d'elle-même, et la
-  // reconnexion recharge tout (onChanged).
+  // A successful socket connection does not prove every proposal arrived.
+  // Push receipt fetches immediately; this check also covers a lost signal.
+  // Background delivery is handled separately by FCM, without polling.
   useEffect(() => {
-    if (!token || !driver?.isOnline || connected) return;
-    const id = setInterval(() => loadOffers(token), OFFERS_POLL_MS);
-    return () => clearInterval(id);
-  }, [token, driver?.isOnline, connected, loadOffers]);
+    if (!token || !driver?.isOnline) return;
+    let loading = false;
+    const check = async () => {
+      if (AppState.currentState !== 'active' || loading) return;
+      loading = true;
+      try { await loadOffers(token); } finally { loading = false; }
+    };
+    const id = setInterval(check, OFFERS_POLL_MS);
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') check(); });
+    return () => { clearInterval(id); sub.remove(); };
+  }, [token, driver?.isOnline, loadOffers]);
 
   useRealtimeEvent('mis-hors-ligne', (e: { raison?: string; message?: string }) => {
     patchDriver({ isOnline: false, isAvailable: false });

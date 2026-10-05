@@ -182,6 +182,15 @@ et corrections des hooks React. Les dépendances sont alignées sur Expo SDK 57.
   comparés au correctif local. API saine et `/health` répond `status: ok`.
   La source et l'image précédentes sont conservées pour un retour éventuel.
   L'affichage, le réveil et les actions restent à valider sur le téléphone.
+- **Présentation livreur 1.0.2** : la fenêtre Android reprend la carte sombre
+  et la fiche de proposition orange de l'application, avec montant garanti,
+  trajet, adresses, arrêts et bouton d'acceptation avec délai. Leaflet embarqué,
+  conservation des points de livraison obfusqués, actions visibles sur petits
+  écrans. Rendu vérifié à 390 × 780 et 320 × 568 (lot et adresses longues),
+  tests des alertes 6/6, TypeScript et compilation Android réussis, lint sans
+  erreur avec 30 avertissements existants. APK ARM64 code 3 signé et comparé
+  aux ressources sources ; essai sur téléphone encore nécessaire. Le correctif
+  serveur déjà déployé suffit, sans nouveau déploiement.
 - **Appareils réels** : l'opérateur dispose d'un Android, aucun téléphone
   connecté pendant la préparation ; installation, GPS, curseur de remise,
   notifications et parcours hors connexion restent à essayer.

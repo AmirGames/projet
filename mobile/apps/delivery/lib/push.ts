@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import type * as NotificationsModule from 'expo-notifications';
 import { apiFetch } from './api';
+import { incomingOfferId } from './courseAlertPayload';
 import { ACCEPT_ACTION, DECLINE_ACTION, handleOfferAction, registerOfferCategory } from './offerNotification';
 
 /**
@@ -20,6 +21,7 @@ export type PushSetup =
 export interface PushDriverData {
   /** course-proposee, pause, gps, support… */
   tag?: string;
+  offerId?: string;
   deliveryId?: string;
   url?: string;
 }
@@ -115,6 +117,22 @@ export async function unregisterPush(accessToken: string, token: string) {
 function dataFromResponse(response: NotificationsModule.NotificationResponse | null): PushDriverData | null {
   const data = response?.notification.request.content.data as PushDriverData | undefined;
   return data?.tag || data?.deliveryId ? data : null;
+}
+
+/** Receipt is independent of tapping the notification and of the socket connection. */
+export function onDriverNotificationReceived(callback: (data: PushDriverData) => void): () => void {
+  const N = notifications();
+  if (!N) return () => undefined;
+  const sub = N.addNotificationReceivedListener(notification => {
+    const offerId = incomingOfferId(notification);
+    if (offerId) {
+      callback({ tag: 'course-proposee', offerId });
+      return;
+    }
+    const data = notification.request.content.data as PushDriverData | undefined;
+    if (data?.tag || data?.deliveryId) callback(data);
+  });
+  return () => sub.remove();
 }
 
 /**
