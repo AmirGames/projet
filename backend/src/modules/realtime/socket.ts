@@ -1,3 +1,4 @@
+import { SecurityEventService } from "../auth/security-event.service";
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
@@ -121,7 +122,12 @@ export function initializeSocket(httpServer: HTTPServer) {
       } catch (err) {
         logger.error('Impossible de vérifier le suivi de commande', { socketId: socket.id, error: String(err) });
       }
-      if (!autorise) socket.emit('acces-refuse', { salon: 'order', code: 'FORBIDDEN', orderId });
+      if (!autorise) {
+        SecurityEventService.record({ action: "SOCKET_ACCESS_DENIED", actor: socket.userId || "anonymous",
+          severity: "MEDIUM", status: "FAILED", target: typeof orderId === "string" ? orderId.slice(0, 128) : "invalid",
+          ipAddress: socket.handshake.address });
+        socket.emit('acces-refuse', { salon: 'order', code: 'FORBIDDEN', orderId });
+      }
       if (typeof ack === 'function') ack({ ok: autorise });
     });
     socket.on('leave-order', (orderId: string) => {

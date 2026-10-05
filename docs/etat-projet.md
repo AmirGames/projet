@@ -7,6 +7,16 @@ ni interrogé le VPS. Les contrôles locaux de documentation et mobiles sont
 consignés en fin de fichier.
 Un déploiement annoncé ne prouve pas à lui seul le commit actif du serveur.
 
+## Bloc prioritaire — Phase 0 sécurité
+
+Le 5 octobre 2026, les correctifs locaux de la Phase 0 ont été ajoutés.
+**La phase n'est pas validée** : 42 contrôles locaux avec dépendances simulées
+passent, mais les suites complètes et le build sont bloqués par l'absence des
+dépendances. L'énumération lors de l'inscription et la révocation des liens
+signés restent ouvertes. Aucune nouvelle fonctionnalité métier ni ouverture
+à grande échelle avant validation complète. Voir
+[les corrections, preuves et blocages](phase-0-securite.md).
+
 ## Ce qui existe
 
 - **ZupEat** : catalogue, commande avec ou sans compte, paiement Stripe,

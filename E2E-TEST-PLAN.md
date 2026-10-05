@@ -245,9 +245,10 @@ Attendu :
 ❌ Ni orgId, ni rôle, ni storeIds : tout se relit en base à chaque requête
 ```
 
-Durées : 15 minutes par défaut pour le jeton d'accès (`JWT_EXPIRES_IN`,
-`backend/src/config/env.ts`) — `.env.example` le règle à 7 jours —, 30 jours
-pour le jeton de renouvellement (`JWT_REFRESH_EXPIRES_IN`). Le site renouvelle
+Durées imposées : 15 minutes pour le jeton d'accès (`JWT_EXPIRES_IN`,
+`backend/src/config/env.ts`), 7 jours pour le jeton de renouvellement
+(`JWT_REFRESH_EXPIRES_IN`). Les anciens jetons ayant une durée supérieure
+sont refusés ; une nouvelle connexion est nécessaire après le déploiement. Le site renouvelle
 le jeton d'accès en silence avant son échéance.
 
 ### Test 2.2 : session expirée ou révoquée

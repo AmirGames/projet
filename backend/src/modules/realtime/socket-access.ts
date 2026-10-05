@@ -6,17 +6,17 @@ import { nettoyerPermissions } from '../auth/permissions-plateforme.service';
 /** Lu sans cache : une connexion ouverte ne conserve pas des droits retirés. */
 export async function compteSocket(jeton: JwtPayload | undefined) {
   if (!jeton || (jeton.exp !== undefined && jeton.exp * 1000 <= Date.now())) return null;
-  if (!jeton.sid && process.env.NODE_ENV === 'production') return null;
+  if (!jeton.sid && process.env.NODE_ENV !== 'test') return null;
   if (jeton.sid && !(await SsoService.sessionActive(jeton.sid, { sansCache: true }))) return null;
   const compte = await db.user.findUnique({
     where: { id: jeton.userId },
     select: {
-      id: true, email: true, emailVerified: true, passwordChangedAt: true,
+      id: true, email: true, emailVerified: true, passwordChangedAt: true, status: true,
       isSuperOwner: true, isSystemAdmin: true,
       accesEquipe: { select: { plateforme: true, role: true } },
     },
   });
-  if (!compte) return null;
+  if (!compte || (compte.status && compte.status !== 'ACTIVE')) return null;
   if (compte.passwordChangedAt &&
       (jeton.iat === undefined || jeton.iat < Math.floor(compte.passwordChangedAt.getTime() / 1000))) return null;
   return compte;

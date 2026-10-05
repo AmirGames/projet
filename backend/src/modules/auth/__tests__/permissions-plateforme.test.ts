@@ -40,7 +40,7 @@ const rolesDrive = [
 
 async function passer(routeur: any, compte: any, method: string, path: string, plateforme?: any) {
   let erreur: any;
-  await exigerPermission(routeur, plateforme)({ compte, method, path } as any, {} as any, (e?: any) => {
+  await exigerPermission(routeur, plateforme)({ compte, method, path } as any, { json: jest.fn() } as any, (e?: any) => {
     erreur = e;
   });
   return erreur ? erreur.statusCode ?? 403 : 200;

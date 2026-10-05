@@ -15,24 +15,30 @@ export class SecurityEventService {
     details?: string;
     ipAddress?: string;
   }) {
-    db.securityEvent
-      .create({
-        data: {
-          action: params.action,
-          actor: params.actor,
-          target: params.target || "",
-          severity: params.severity || "LOW",
-          status: params.status || "SUCCESS",
-          details: params.details || "",
-          ipAddress: params.ipAddress,
-        },
-      })
-      .catch((err) =>
-        logger.error("Security event not recorded", {
-          action: params.action,
-          error: err instanceof Error ? err.message : err,
+    const niveau = params.severity === "HIGH" || params.severity === "CRITICAL" ? "error" : "warn";
+    logger[niveau]("security_event", params);
+    try {
+      db.securityEvent
+        .create({
+          data: {
+            action: params.action,
+            actor: params.actor,
+            target: params.target || "",
+            severity: params.severity || "LOW",
+            status: params.status || "SUCCESS",
+            details: params.details || "",
+            ipAddress: params.ipAddress,
+          },
         })
-      );
+        .catch((err) =>
+          logger.error("Security event not recorded", {
+            action: params.action,
+            error: err instanceof Error ? err.message : err,
+          })
+        );
+    } catch {
+      logger.error("Security event not recorded", { action: params.action });
+    }
   }
 
   static async list(params: { limit?: number; offset?: number; severity?: string }) {

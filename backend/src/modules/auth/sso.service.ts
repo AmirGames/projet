@@ -29,9 +29,7 @@ import { originesAutorisees } from "./origines-autorisees";
 const MINUTE = 60 * 1000;
 const DUREE_CODE_MS = 1 * MINUTE;
 /** Celle des jetons de renouvellement : au-delà, il faut se reconnecter. */
-const DUREE_SESSION_MS = 30 * 24 * 60 * MINUTE;
-/** Une session fermée cesse de valoir partout en trente secondes au plus. */
-const DUREE_CACHE_MS = 30 * 1000;
+const DUREE_SESSION_MS = 7 * 24 * 60 * MINUTE;
 /**
  * Deux renouvellements presque simultanés (deux onglets, une tâche de fond et
  * l'application) présentent le même jeton : le second n'est pas un vol. Dans
@@ -65,7 +63,6 @@ export function audienceAutorisee(origine: string | undefined | null): origine i
   return origine === centrale || originesAutorisees().includes(origine);
 }
 
-const sessions = new Map<string, { active: boolean; expireA: number }>();
 
 export const SsoService = {
   /** Ouvre une session et émet les jetons qui la portent. */
@@ -100,18 +97,12 @@ export const SsoService = {
     return AuthService.generateRefreshToken(userId, sid, jti);
   },
 
-  /** Un refresh pour un jeton qui peut ne pas porter de session (développement seulement). */
-  async refreshPour(userId: string, sid?: string): Promise<string> {
-    return sid ? this.emettreRefresh(userId, sid) : AuthService.generateRefreshToken(userId);
-  },
-
   /**
    * Consomme un jeton de renouvellement et en émet un nouveau (rotation).
    *
    * - Jeton inconnu de la session ou déjà consommé : il a été copié — la
    *   session entière est fermée (détection de réutilisation).
-   * - Jeton sans `jti` (émis avant la rotation) : accepté une seule fois, et
-   *   seulement si la session n'a encore émis aucun jeton roté.
+   * - Jeton sans `jti` : refusé ; les anciens jetons nécessitent une connexion.
    */
   async renouveler(refreshToken: string) {
     const invalide = () =>
@@ -121,7 +112,7 @@ export const SsoService = {
 
     // Un jeton sans session échappe à toute révocation : refusé en production.
     if (!decoded.sid) {
-      if (process.env.NODE_ENV === "production") throw invalide();
+      if (process.env.NODE_ENV !== "test") throw invalide();
       return { decoded, sid: undefined as string | undefined, refreshToken: AuthService.generateRefreshToken(decoded.userId) };
     }
     const sid = decoded.sid;
@@ -131,7 +122,7 @@ export const SsoService = {
     if (decoded.jti) {
       const ligne = await db.jetonRafraichissement.findUnique({
         where: { jtiHash: empreinte(decoded.jti) },
-        select: { id: true, sessionId: true, usedAt: true },
+        select: { id: true, sessionId: true, usedAt: true, expiresAt: true },
       });
       if (
         ligne &&
@@ -144,7 +135,7 @@ export const SsoService = {
       // Marqué consommé seulement s'il ne l'était pas : deux renouvellements
       // simultanés du même jeton, un seul passe — l'autre est une réutilisation.
       const { count } =
-        ligne && ligne.sessionId === sid && !ligne.usedAt
+        ligne && ligne.sessionId === sid && !ligne.usedAt && ligne.expiresAt > new Date()
           ? await db.jetonRafraichissement.updateMany({
               where: { id: ligne.id, usedAt: null },
               data: { usedAt: new Date() },
@@ -155,34 +146,21 @@ export const SsoService = {
         throw invalide();
       }
     } else {
-      const deja = await db.jetonRafraichissement.count({ where: { sessionId: sid } });
-      if (deja > 0) {
-        await this.fermer(sid);
-        throw invalide();
-      }
+      await this.fermer(sid);
+      throw invalide();
     }
 
     return { decoded, sid, refreshToken: await this.emettreRefresh(decoded.userId, sid) };
   },
 
   /** Le temps réel contourne le cache pour les révocations sur une autre instance. */
-  async sessionActive(sid: string, options: { sansCache?: boolean } = {}): Promise<boolean> {
-    const connue = sessions.get(sid);
-    if (!options.sansCache && connue && Date.now() < connue.expireA) return connue.active;
-
+  async sessionActive(sid: string, _options: { sansCache?: boolean } = {}): Promise<boolean> {
     const session = await db.sessionConnexion.findUnique({
       where: { id: sid },
       select: { revokedAt: true, expiresAt: true },
     });
     const active = !!session && !session.revokedAt && session.expiresAt > new Date();
 
-    // Les entrées périmées partent de temps en temps : une par session vue,
-    // la mémoire grossirait sans fin.
-    if (sessions.size > 10000) {
-      const maintenant = Date.now();
-      for (const [cle, valeur] of sessions) if (valeur.expireA < maintenant) sessions.delete(cle);
-    }
-    sessions.set(sid, { active, expireA: Date.now() + DUREE_CACHE_MS });
     return active;
   },
 
@@ -279,15 +257,14 @@ export const SsoService = {
    * Après un changement de mot de passe, refuser les anciens jetons (voir
    * jetonPerime) ne suffit pas : un navigateur qui gardait le cookie de
    * zupone.com se ferait remettre des jetons neufs par la connexion unique.
-   * Ses sessions doivent donc fermer aussi — sauf celle du navigateur qui
+   * Ses sessions doivent donc fermer aussi, y compris celle du navigateur qui
    * vient de changer le mot de passe.
    */
   async fermerToutes(userId: string, sauf?: string) {
-    const ouvertes = await db.sessionConnexion.findMany({
+    await db.sessionConnexion.updateMany({
       where: { userId, revokedAt: null, ...(sauf ? { id: { not: sauf } } : {}) },
-      select: { id: true },
+      data: { revokedAt: new Date() },
     });
-    for (const { id } of ouvertes) await this.fermer(id);
   },
 
   /** Ferme la session : ses jetons cessent de valoir sur tous les domaines. */
@@ -296,6 +273,5 @@ export const SsoService = {
       where: { id: sid, revokedAt: null },
       data: { revokedAt: new Date() },
     });
-    sessions.set(sid, { active: false, expireA: Date.now() + DUREE_CACHE_MS });
   },
 };

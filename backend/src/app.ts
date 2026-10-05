@@ -14,7 +14,7 @@ import { compteDemo } from "./modules/merchants/compte-demo.middleware";
 import { cloisonnement } from "./modules/auth/cloisonnement.middleware";
 import { diffusionModifications } from "./modules/realtime/diffusion.middleware";
 import { mesurerRequetes } from "./modules/monitoring/surveillance.middleware";
-import { limiterCadence } from "./middleware/throttle";
+import { limiterCadence, limiterStripeWebhook, limiterApiPublique } from "./middleware/throttle";
 import { Surveillance } from "./modules/monitoring/surveillance.service";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import authRouter from "./modules/auth/auth.routes";
@@ -105,7 +105,7 @@ export function createApp(): Express {
   // Avant le lecteur JSON : Stripe signe le corps brut, et une fois relu en
   // objet il ne se vérifie plus. Avant aussi la maintenance et les verrous de
   // compte : un encaissement doit être noté quoi qu'il arrive au site.
-  app.post("/api/payments/webhook", express.raw({ type: "application/json" }), stripeWebhookHandler);
+  app.post("/api/payments/webhook", limiterStripeWebhook, express.raw({ type: "application/json" }), stripeWebhookHandler);
 
   // ===== Body parsing =====
   app.use(lecteursDeCorps);
@@ -215,6 +215,9 @@ export function createApp(): Express {
   app.use("/uploads", (_req, res) => {
     res.status(404).json({ error: "Fichier introuvable", code: "FILE_NOT_FOUND" });
   });
+
+  // Budget commun : couvre aussi les endpoints publics ajoutés aux routeurs.
+  app.use("/api", limiterApiPublique);
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);

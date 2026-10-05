@@ -1,3 +1,6 @@
+import { createHash } from "crypto";
+import { StockageMemoire, stockageRedis } from "../../middleware/throttle-stockage";
+import { SecurityEventService } from "../auth/security-event.service";
 import webpush, { PushSubscription } from "web-push";
 import { Prisma } from "@prisma/client";
 
@@ -47,6 +50,7 @@ const smsPret = Boolean(
   process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM
 );
 
+const budgetsSms = new StockageMemoire();
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 export interface MessageExpo {
@@ -117,6 +121,26 @@ export class Notifier {
 
   static async sms(numero: string | null | undefined, texte: string) {
     if (!smsPret || !numero) return false;
+
+    // Budget par destinataire et global : tous les déclencheurs métier passent ici.
+    try {
+      const partage = stockageRedis();
+      if (!partage && process.env.NODE_ENV === "production") throw new Error("Redis indisponible");
+      const stockage = partage ?? budgetsSms;
+      const cle = createHash("sha256").update(numeroInternational(numero)).digest("hex");
+      const destinataire = await stockage.incrementer(`sms:dest:${cle}`, 15 * 60_000);
+      const global = await stockage.incrementer("sms:global", 60 * 60_000);
+      if (destinataire.compte > 10 || global.compte > 1000) {
+        if (destinataire.compte === 11 || global.compte === 1001) {
+          SecurityEventService.record({ action: "SMS_RATE_LIMIT_BLOCKED", actor: "system",
+            severity: "HIGH", status: "FAILED", details: "Budget d'envoi SMS atteint" });
+        }
+        return false;
+      }
+    } catch {
+      logger.error("Envoi SMS bloqué : compteur de sécurité indisponible");
+      return false;
+    }
 
     const sid = process.env.TWILIO_ACCOUNT_SID!;
     const corps = new URLSearchParams({
