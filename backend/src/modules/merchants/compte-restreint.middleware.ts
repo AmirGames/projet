@@ -24,10 +24,12 @@ import { verifyToken } from "../auth/auth.middleware";
  * l'authentification, pour se connecter et se déconnecter. Rien d'autre.
  */
 const CHEMINS_OUVERTS = [
+  "/api/privacy",
   "/health",
   "/api/auth",
   "/api/sso",
   "/api/support",
+  "/api/assistant", // Support ouvert ; les outils de modification revalident le statut.
   "/api/notifications",
 ];
 

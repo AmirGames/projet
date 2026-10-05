@@ -15,6 +15,17 @@
 name: zupone
 
 services:
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 180s
+      retries: 10
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -52,15 +63,26 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      clamav:
+        condition: service_healthy
     env_file: .env.production
     environment:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-zupone}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zupone}?schema=public
       REDIS_URL: redis://redis:6379
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      PRIVATE_DOCUMENTS_DIR: /app/private-documents
       API_URL: https://${DOMAINE_API:?DOMAINE_API manquant dans .env.production}
       # Un seul proxy devant l'API : Caddy.
       TRUST_PROXY: 1
+      # Si renseigné, remplace le compte de sauts par les IP/CIDR réels des proxys.
+      TRUST_PROXY_CIDRS: ${TRUST_PROXY_CIDRS:-}
+      # Gratuit local par défaut ; le profil assistant-local reste optionnel.
+      ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-ollama}
+      ASSISTANT_OLLAMA_URL: ${ASSISTANT_OLLAMA_URL:-http://ollama:11434}
+      ASSISTANT_OLLAMA_MODEL: ${ASSISTANT_OLLAMA_MODEL:-}
       # Horaires d'ouverture, créneaux de retrait, arrêtés hebdomadaires : le
       # code compte en heure locale. Sans ce réglage le conteneur compte en
       # UTC, et une boutique ouverte « 11:00 » l'était à 13:00 à Paris.
@@ -68,12 +90,27 @@ services:
     volumes:
       - uploads:/app/uploads
       - backups:/app/backups
+      - private_documents:/app/private-documents
+      - ./logs/backend:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health || exit 1"]
       interval: 30s
       timeout: 5s
       start_period: 60s
       retries: 3
+
+  # Aucun port publié. Modèles cloud et recherche web désactivés.
+  ollama:
+    profiles: ["assistant-local"]
+    image: ${ASSISTANT_OLLAMA_IMAGE:-ollama/ollama:latest}
+    restart: unless-stopped
+    environment:
+      OLLAMA_NO_CLOUD: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_CONTEXT_LENGTH: "8192"
+    volumes:
+      - ollama_models:/root/.ollama
 
   frontend:
     build:
@@ -97,6 +134,9 @@ services:
       # Côté serveur (connexion unique, plan du site), l'API se joint
       # directement, sans ressortir par Internet.
       API_INTERNAL_URL: http://backend:3001
+      # Serveur uniquement ; jamais NEXT_PUBLIC. Même mapping/secret que l'API.
+      ASSISTANT_HOSTS: ${ASSISTANT_HOSTS:-}
+      ASSISTANT_GATEWAY_SECRET: ${ASSISTANT_GATEWAY_SECRET:-}
     depends_on:
       - backend
 
@@ -123,8 +163,11 @@ services:
       - caddy_config:/config
 
 volumes:
+  clamav_data:
+  private_documents:
   postgres_data:
   uploads:
   backups:
   caddy_data:
   caddy_config:
+  ollama_models:

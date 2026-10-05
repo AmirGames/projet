@@ -95,9 +95,10 @@ router.post("/backups", authMiddleware, isSuperOwner, async (req: Request, res: 
 router.get("/backups/:backupId/download", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const backupId = req.params.backupId as string;
-    const { nom, contenu } = await BackupService.read(backupId);
+    const { nom, contenu } = await BackupService.readEncrypted(backupId);
 
-    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("Content-Disposition", `attachment; filename="${nom}"`);
     res.send(contenu);
   } catch (err) {

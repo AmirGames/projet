@@ -7,8 +7,11 @@
   "scripts": {
     "predev": "prisma migrate deploy && prisma generate",
     "dev": "tsx watch src/server.ts",
-    "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/server.js && esbuild src/cli/create-superowner.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/create-superowner.js",
+    "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/server.js && esbuild src/cli/create-superowner.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/create-superowner.js && esbuild src/cli/privacy-storage.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/privacy-storage.js",
     "create-superowner": "tsx src/cli/create-superowner.ts",
+    "privacy:check": "tsx src/cli/privacy-storage.ts --check",
+    "privacy:migrate": "tsx src/cli/privacy-storage.ts --apply",
+    "privacy:rotate": "tsx src/cli/privacy-storage.ts --rotate",
     "start": "node dist/server.js",
     "test": "jest --runInBand --detectOpenHandles",
     "test:watch": "jest --watch",
@@ -18,7 +21,11 @@
     "prisma:studio": "npx prisma studio",
     "format": "prettier --write .",
     "lint": "eslint src --ext .ts",
-    "verif": "node scripts/verification/tout.mjs"
+    "verif": "node scripts/verification/tout.mjs",
+    "privacy:inventory": "node --import tsx scripts/privacy-inventory.ts",
+    "test:assistant": "jest src/modules/assistant/__tests__ --runInBand",
+    "test:assistant:integration": "node scripts/verification/assistant-database.mjs",
+    "assistant:check-local": "tsx src/cli/assistant-local.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

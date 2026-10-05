@@ -238,6 +238,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: t('nav.sectionTeam'),
       items: [
         { label: t('nav.profile'), icon: UserCircle, href: '/superowner/profil', section: 'profil' },
+        { label: 'Relais Assistant ZupOne', icon: MessageCircle, href: '/superowner/assistant', section: 'assistant-support' },
         { label: t('nav.userManagement'), icon: Users, href: '/superowner/user-management', section: null },
         { label: t('nav.roles'), icon: ShieldCheck, href: '/superowner/roles', section: null },
       ],
@@ -273,6 +274,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const autorise = (section: string | null) =>
     acces.isSuperOwner ||
     section === 'profil' ||
+    (section === 'assistant-support' && !!acces.assistantSupport) ||
     section === SECTION_ACCUEIL ||
     (section === SECTION_ACCUEIL_DRIVE && !!(acces.permissions.chauffeurs || acces.permissions['courses-drive'])) ||
     (section !== null && !!acces.permissions[section]);

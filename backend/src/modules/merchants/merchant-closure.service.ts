@@ -1,4 +1,5 @@
 import { db } from "../../services/db";
+import { Prisma } from "@prisma/client";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitWebhook } from "../webhooks/webhook.service";
@@ -161,12 +162,11 @@ export class MerchantClosureService {
 
     const storeIds = org.stores.map((s) => s.id);
 
+
     // Snapshot complet avant toute suppression
-    const [categories, products, orders, customers] = await Promise.all([
+    const [categories, products] = await Promise.all([
       db.category.findMany({ where: { storeId: { in: storeIds } } }),
       db.product.findMany({ where: { storeId: { in: storeIds } } }),
-      db.order.findMany({ where: { storeId: { in: storeIds } }, include: { items: true } }),
-      db.customer.findMany({ where: { orders: { some: { storeId: { in: storeIds } } } } }),
     ]);
 
     const closureDate = new Date();
@@ -183,8 +183,8 @@ export class MerchantClosureService {
         organizationData: org as any,
         storesData: org.stores as any,
         productsData: { categories, products } as any,
-        ordersData: orders as any,
-        customersData: customers as any,
+        ordersData: Prisma.DbNull,
+        customersData: Prisma.DbNull,
       },
       update: {
         reason,
@@ -193,8 +193,8 @@ export class MerchantClosureService {
         organizationData: org as any,
         storesData: org.stores as any,
         productsData: { categories, products } as any,
-        ordersData: orders as any,
-        customersData: customers as any,
+        ordersData: Prisma.DbNull,
+        customersData: Prisma.DbNull,
         isRestored: false,
         restoredAt: null,
         restoredByAdminId: null,
@@ -275,7 +275,14 @@ export class MerchantClosureService {
 
     // Ordre imposé par les FK : OrderItem.product est en Restrict, donc les
     // commandes (et leurs items en cascade) partent avant les produits.
-    await db.order.deleteMany({ where: { storeId: { in: storeIds } } });
+    // Une fermeture à 60 jours ne peut détruire les écritures comptables.
+    const accounting = await db.order.count({ where: { storeId: { in: storeIds } } });
+    if (accounting > 0) {
+      await db.organization.update({ where: { id: orgId }, data: { isArchivedPermanently: true } });
+      await db.merchantArchive.deleteMany({ where: { organizationId: orgId } });
+      logger.info("Fermeture : historique comptable conservé, archive de restauration purgée", { orgId });
+      return true;
+    }
     await db.product.deleteMany({ where: { storeId: { in: storeIds } } });
     await db.category.deleteMany({ where: { storeId: { in: storeIds } } });
     await db.store.deleteMany({ where: { orgId } });

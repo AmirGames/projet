@@ -1,5 +1,9 @@
 # ZupEat
 
+L’assistant central et sa configuration sont documentés dans
+[Assistant ZupOne](docs/assistant-zupone.md) : widget web, agents spécialisés,
+outils autorisés, confirmations, relais humain et modes sans fournisseur IA.
+
 Une plateforme de commande en ligne pour les commerces de proximité : le
 commerçant tient son catalogue et ses commandes, le client commande depuis sa
 vitrine, un livreur assure la course. Plusieurs commerçants cohabitent sur la

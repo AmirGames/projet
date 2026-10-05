@@ -8,6 +8,8 @@ export interface AccesPlateforme {
   role: string;
   roleLabel?: string;
   permissions: Record<string, Niveau>;
+  /** Vue dérivée de la permission support-tickets de EAT ou DRIVE. */
+  assistantSupport?: boolean;
 }
 
 /** Les sections de l'espace qui relèvent de ZupDrive, et non de ZupEat. */
@@ -54,12 +56,14 @@ export async function chargerAcces(): Promise<AccesPlateforme> {
     role: base?.role ?? '',
     roleLabel: base?.roleLabel,
     permissions,
+    assistantSupport: lu.isSuperOwner || Boolean(eat?.permissions['support-tickets'] || drive?.permissions['support-tickets']),
   };
 }
 
 // Chaque page de l'espace et la section qui l'ouvre. `null` : réservée au
 // superowner (l'équipe et ses droits).
 const PAGES: [string, string | null][] = [
+  ['/superowner/assistant', 'assistant-support'],
   ['/superowner/user-management', null],
   ['/superowner/roles', null],
   ['/superowner/zupeat/members', 'members'],

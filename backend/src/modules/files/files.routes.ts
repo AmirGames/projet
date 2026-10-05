@@ -1,7 +1,9 @@
-import fs from "fs";
 import { Router, Request, Response, NextFunction } from "express";
 
-import { authMiddleware } from "../auth/auth.middleware";
+import { authMiddleware, compteDuJeton } from "../auth/auth.middleware";
+import { db } from "../../services/db";
+import { readPrivate } from "./private-storage";
+import { recordAudit } from "../privacy/audit";
 import { ApiError } from "../../middleware/errorHandler";
 import {
   DUREE_SIGNATURE_S,
@@ -10,8 +12,8 @@ import {
   cheminSurDisque,
   peutLire,
   signatureValable,
-  typeDuFichier,
 } from "./fichiers-prives.service";
+import { detecterType } from "../../utils/file-type";
 
 /**
  * Les pièces privées du stockage local : permis et RIB des livreurs, pièces
@@ -48,22 +50,35 @@ export async function servirFichierPrive(relatif: string | null, req: Request, r
     if (!relatif || !complet) throw introuvable();
 
     if (req.query.sig !== undefined || req.query.exp !== undefined) {
-      if (!signatureValable(relatif, req.query.exp, req.query.sig)) {
+      const u = typeof req.query.u === "string" ? req.query.u : "";
+      const s = typeof req.query.s === "string" ? req.query.s : "";
+      if (!u || !s || !signatureValable(relatif, req.query.exp, req.query.sig, Date.now(), u, s)) {
         throw new ApiError(403, "Lien expiré ou invalide", "INVALID_SIGNATURE");
       }
+      const session = await db.sessionConnexion.findFirst({ where: { id: s, userId: u, revokedAt: null, expiresAt: { gt: new Date() } }, select: { id: true } });
+      const compte = await compteDuJeton(u, true);
+      if (!session || !compte || !(await peutLire({ userId: u, compte }, relatif))) throw introuvable();
+      req.userId = u;
     } else {
       await exigerSession(req, res);
       if (!(await peutLire(req, relatif))) throw introuvable();
     }
 
-    if (!fs.existsSync(complet)) throw introuvable();
+    let content: Buffer;
+    try { content = await readPrivate(relatif); } catch { throw introuvable(); }
+    const type = detecterType(content);
+    if (!type) throw introuvable();
+    await recordAudit(req.userId!, req.query.download === "1" ? "DOCUMENT_DOWNLOAD" : "DOCUMENT_VIEW", relatif);
 
     // Le back-office est servi sur une autre origine : sans cela helmet
     // l'empêche d'afficher la pièce dans une balise <img>.
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-    res.setHeader("Content-Type", typeDuFichier(complet));
-    res.setHeader("Content-Disposition", "inline");
-    return res.sendFile(complet, { cacheControl: false, lastModified: false, etag: false });
+    res.setHeader("Content-Type", type);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "sandbox; default-src 'none'");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    res.setHeader("Content-Disposition", req.query.download === "1" ? "attachment" : "inline");
+    return res.send(content);
   } catch (err) {
     return next(err);
   }
@@ -84,7 +99,8 @@ router.get("/signed-url", authMiddleware, async (req: Request, res: Response, ne
     }
     if (!(await peutLire(req, relatif))) throw introuvable();
 
-    res.json({ success: true, data: { url: adresseSignee(relatif), expiresIn: DUREE_SIGNATURE_S } });
+    await recordAudit(req.userId!, "DOCUMENT_LINK_ISSUED", relatif);
+    res.json({ success: true, data: { url: adresseSignee(relatif, Date.now(), { userId: req.userId, sessionId: req.user?.sid }), expiresIn: DUREE_SIGNATURE_S } });
   } catch (err) {
     next(err);
   }

@@ -360,9 +360,8 @@ export class MerchantProfileService {
       );
     }
 
-    if (!/^https?:\/\//i.test(piece.documentUrl.trim())) {
-      throw new ApiError(400, "Donnez un lien vers le document", "INVALID_URL");
-    }
+    const reference = await db.organizationDocument.findFirst({ where: { orgId, documentUrl: piece.documentUrl.trim() }, select: { documentUrl: true } });
+    if (!reference) throw new ApiError(400, "Utilisez le dépôt de fichier sécurisé ; les liens externes et les pièces d'autrui sont refusés", "EXTERNAL_DOCUMENT_FORBIDDEN");
 
     // Une pièce corrigée après un refus ne doit pas laisser l'ancienne traîner
     // dans le dossier : elle prend sa place.
@@ -372,7 +371,7 @@ export class MerchantProfileService {
     });
 
     const valeurs = {
-      documentUrl: piece.documentUrl.trim(),
+      documentUrl: reference.documentUrl,
       fileName: piece.fileName?.trim() || null,
       expiryDate: expire,
       status: "PENDING",

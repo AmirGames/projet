@@ -4,17 +4,8 @@ import { logger } from "../config/logger";
 import { ZodError } from "zod";
 import { MulterError } from "multer";
 import { Surveillance } from "../modules/monitoring/surveillance.service";
-
-export class ApiError extends Error {
-  constructor(
-    public statusCode: number,
-    message: string,
-    public code?: string
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
+import { ApiError } from "./api-error";
+export { ApiError } from "./api-error";
 
 /**
  * Les champs, en français.

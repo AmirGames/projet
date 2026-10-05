@@ -37,6 +37,7 @@ export class CustomerAccountService {
         isSystemAdmin: true,
         _count: { select: { memberships: true, accesEquipe: true } },
         driver: { select: { id: true, suppressionDemandeeLe: true } },
+        chauffeurDrive: { select: { id: true } },
         societeDrive: { select: { id: true } },
       },
     });
@@ -74,6 +75,7 @@ export class CustomerAccountService {
     // Gérant d'une société ZupDrive : la société et l'historique de ses
     // courses ne partent pas avec lui (relation Restrict).
     const societeDrive = Boolean(utilisateur.societeDrive);
+    const chauffeurDrive = Boolean(utilisateur.chauffeurDrive);
     const equipe = utilisateur.isSuperOwner || utilisateur.isSystemAdmin || utilisateur._count.accesEquipe > 0;
 
     return {
@@ -85,9 +87,10 @@ export class CustomerAccountService {
         livreurEnSuppression: Boolean(utilisateur.driver?.suppressionDemandeeLe),
         commercant,
         societeDrive,
+        chauffeurDrive,
       },
       // Personne d'autre ne s'en sert : la connexion part avec ZupEat.
-      compteEntierSupprime: !livreur && !commercant && !equipe && !societeDrive,
+      compteEntierSupprime: !livreur && !commercant && !equipe && !societeDrive && !chauffeurDrive,
       _clientId: client?.id ?? null,
       _email: utilisateur.email,
     };
@@ -117,8 +120,18 @@ export class CustomerAccountService {
 
     const maintenant = new Date();
     await db.$transaction(async (tx) => {
-      if (apercu._clientId) {
-        const id = apercu._clientId;
+      await tx.assistantConversation.deleteMany({ where: { ownerId: userId, service: "EAT", category: "customer", actions: { none: { state: "EXECUTING" } } } });
+      const compte = await tx.user.findUnique({ where: { id: userId }, select: { emailVerified: true } });
+      const clients = await tx.customer.findMany({ where: { OR: [{ userId }, ...(compte?.emailVerified ? [{ email: apercu._email, userId: null }] : [])] }, select: { id: true } });
+      for (const { id } of clients) {
+        const commandes = await tx.order.findMany({ where: { customerId: id }, select: { id: true } });
+        const orderIds = commandes.map((commande) => commande.id);
+        await tx.orderTrackingToken.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.orderDelivery.updateMany({ where: { orderId: { in: orderIds } }, data: { deliveryLat: null, deliveryLng: null, deliveryLatObfusquee: null, deliveryLngObfusquee: null, driverLat: null, driverLng: null, deliveryCode: null, proofNote: null } });
+        await tx.erasureRecord.upsert({ where: { subjectId_scope: { subjectId: id, scope: "CUSTOMER" } }, create: { subjectId: id, scope: "CUSTOMER" }, update: {} });
+        await tx.order.updateMany({ where: { customerId: id }, data: { customerId: null, customerName: "Client supprimé", customerEmail: "supprime@zupeat.invalid", customerPhone: "", deliveryAddress: null, deliveryCity: null, deliveryPostal: null, deliveryLat: null, deliveryLng: null, notes: null, rejectionNote: null, trackingTokenHash: null } });
+        await tx.review.deleteMany({ where: { customerId: id } });
+        await tx.courierRating.deleteMany({ where: { customerId: id } });
         await tx.favoriteStore.deleteMany({ where: { customerId: id } });
         await tx.customerCart.deleteMany({ where: { customerId: id } });
         // La fiche reste pour les commandes passées qui y renvoient, mais ne
@@ -147,6 +160,9 @@ export class CustomerAccountService {
       await tx.pushDevice.deleteMany({ where: { userId, app: "customer" } });
 
       if (apercu.compteEntierSupprime) {
+        await tx.courseDrive.updateMany({ where: { passagerId: userId }, data: { passagerId: null, departAdresse: "Effacé", arriveeAdresse: "Effacé", departLatitude: 0, departLongitude: 0, arriveeLatitude: 0, arriveeLongitude: 0, motifAnnulation: null } });
+        await tx.erasureRecord.upsert({ where: { subjectId_scope: { subjectId: userId, scope: "USER" } }, create: { subjectId: userId, scope: "USER" }, update: {} });
+        await tx.acceptationConditions.updateMany({ where: { userId }, data: { userId: null, email: "supprime@zupeat.invalid", ip: null, userAgent: null } });
         await tx.notification.deleteMany({ where: { recipientEmail: apercu._email } });
         // Les commandes et la preuve d'acceptation des conditions gardent leur
         // trace sans compte (relations SetNull) ; appareils et messages partent
@@ -161,7 +177,7 @@ export class CustomerAccountService {
     logger.warn("Compte client ZupEat supprimé", {
       userId,
       compteEntier: apercu.compteEntierSupprime,
-      motif: motif?.trim() || undefined,
+      motifFourni: Boolean(motif?.trim()),
     });
 
     return apercu;
@@ -179,6 +195,7 @@ export class CustomerAccountService {
           : "Votre compte livreur reste actif."),
       apercu.restent.commercant && "Votre espace commerçant reste actif.",
       apercu.restent.societeDrive && "Votre société ZupDrive reste active.",
+      apercu.restent.chauffeurDrive && "Votre profil chauffeur ZupDrive reste actif.",
     ].filter(Boolean);
     return `${base} ${autres.join(" ")} Vous vous y connectez avec la même adresse e-mail et le même mot de passe.`;
   }

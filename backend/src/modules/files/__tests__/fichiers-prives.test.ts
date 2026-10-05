@@ -33,6 +33,8 @@ const db: any = {
   orderDelivery: { findFirst: jest.fn() },
   membership: { findFirst: jest.fn() },
   platformRole: { findMany: jest.fn(async () => []), createMany: jest.fn() },
+  privacyAuditEvent: { create: jest.fn(async () => ({})) },
+  sessionConnexion: { findFirst: jest.fn(async () => ({ id: "session-test" })) },
 };
 
 jest.mock("../../../services/db", () => ({ db }));
@@ -66,18 +68,22 @@ jest.mock("../../auth/auth.middleware", () => {
     }
     const userId = entete.slice(7);
     req.userId = userId;
+    req.user = { userId, sid: "session-test" };
     req.compte = { id: userId, isSuperOwner: userId === "user-plateforme", isSystemAdmin: false, acces: {} };
     next();
   };
   return {
     ...(jest.requireActual("../../auth/auth.middleware") as object),
     authMiddleware: authentifier,
+    compteDuJeton: async (id: string) => ({ id, isSuperOwner: id === "user-plateforme", isSystemAdmin: false, acces: {} }),
     authFacultative: (_req: any, _res: any, next: any) => next(),
   };
 });
 
 import { createApp } from "../../../app";
 import { FileUploadService } from "../file-upload.service";
+import { privateRoot } from "../private-storage";
+import { encrypt } from "../../privacy/crypto";
 
 const RACINE = join(process.cwd(), "uploads");
 const PERMIS = "drivers/0123456789abcdef0123456789abcdef.jpg";
@@ -92,9 +98,10 @@ let app: ReturnType<typeof createApp>;
 
 beforeAll(() => {
   for (const relatif of FICHIERS) {
-    const complet = join(RACINE, relatif);
+    const complet = join(relatif.startsWith("stores/") ? RACINE : privateRoot(), relatif);
     fs.mkdirSync(join(complet, ".."), { recursive: true });
-    fs.writeFileSync(complet, Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]));
+    const content = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    fs.writeFileSync(complet, relatif.startsWith("stores/") ? content : encrypt(content, `file:${relatif}`));
     crees.push(complet);
   }
   app = createApp();
@@ -105,6 +112,7 @@ afterAll(() => {
 });
 
 beforeEach(() => {
+  db.sessionConnexion.findFirst.mockResolvedValue({ id: "session-test" });
   db.systemConfig.findFirst.mockResolvedValue(null);
   // Le permis appartient au livreur dont le compte est « user-livreur ».
   db.courierDocument.findFirst.mockImplementation(async ({ where }: any) =>
@@ -220,10 +228,22 @@ describe("adresses signées", () => {
     expect(signee.pathname).toBe(`/api/files/${ANCIEN_PERMIS}`);
     expect(Number(signee.searchParams.get("exp")) - Date.now() / 1000).toBeLessThanOrEqual(300);
 
-    // Une balise <img> n'envoie pas de jeton : l'adresse suffit.
+    // Une balise <img> utilise la signature ; le serveur revérifie la session et les droits.
     const image = await request(app).get(`${signee.pathname}${signee.search}`);
     expect(image.status).toBe(200);
     expect(image.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("refuse une signature après révocation de la session", async () => {
+    const response = await request(app).get("/api/files/signed-url").query({ url: `/uploads/${PERMIS}` }).set("Authorization", "Bearer user-livreur");
+    const url = new URL(response.body.data.url);
+    db.sessionConnexion.findFirst.mockResolvedValueOnce(null);
+    expect((await request(app).get(url.pathname + url.search)).status).toBe(404);
+  });
+
+  it("n'envoie aucune pièce si le journal sécurisé est indisponible", async () => {
+    db.privacyAuditEvent.create.mockRejectedValueOnce(new Error("audit down"));
+    expect((await request(app).get(`/api/files/${PERMIS}`).set("Authorization", "Bearer user-livreur")).status).toBe(500);
   });
 
   it("ne se délivrent pas sans jeton ni à un autre livreur", async () => {
@@ -287,7 +307,7 @@ describe("noms de fichiers", () => {
   it("128 bits aléatoires, sans horodatage", async () => {
     const { url } = await FileUploadService.uploadDocument(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]), "permis.jpg", "drivers", "image/jpeg");
     const nom = url.split("/").pop()!;
-    crees.push(join(RACINE, "drivers", nom));
+    crees.push(join(privateRoot(), "drivers", nom));
     expect(nom).toMatch(/^[a-f0-9]{32}\.jpg$/);
   });
 

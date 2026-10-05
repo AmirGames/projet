@@ -127,6 +127,14 @@ export function lireLeJour(brut: unknown): DayHours {
   };
 }
 
+/** Normalisation commune aux modifications classiques et confirmées par l'assistant. */
+export function preparerJour(brut: Partial<DayHours>): DayHours {
+  const lu = lireLeJour(brut);
+  return lu.closed
+    ? { ...jour(lu.plages.length ? lu.plages : [{ open: '09:00', close: '22:00' }]), closed: true }
+    : jour(verifierLesPlages(lu.plages));
+}
+
 function lireLesHoraires(brut: unknown): OperatingHours {
   const lu = (brut || {}) as Record<string, unknown>;
   const horaires = {} as OperatingHours;
@@ -320,13 +328,7 @@ export class StoreHoursService {
       throw new ApiError(400, "Invalid day of week", "INVALID_DAY");
     }
 
-    const lu = lireLeJour(dayHours);
-
-    // Une journée fermée garde ses plages : les rouvrir ne doit pas obliger à
-    // tout ressaisir.
-    const retenu: DayHours = lu.closed
-      ? { ...jour(lu.plages.length ? lu.plages : [{ open: "09:00", close: "22:00" }]), closed: true }
-      : jour(verifierLesPlages(lu.plages));
+    const retenu = preparerJour(dayHours);
 
     const current = await this.getHours(storeId);
 

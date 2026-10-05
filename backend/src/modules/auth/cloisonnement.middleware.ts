@@ -51,12 +51,15 @@ const CHEMINS_PUBLICS = [
  * compte connecté, et son administration (permissions de la plateforme DRIVE).
  */
 const CHEMINS_HORS_PORTEE = [
+  "/api/privacy",
+  "/api/files",
   "/api/superowner",
   "/api/admin",
   "/api/drivers",
   "/api/zupdrive",
   "/api/notifications",
   "/api/support",
+  "/api/assistant", // Session, conversations et chaque outil contrôlés localement.
 ];
 
 /**

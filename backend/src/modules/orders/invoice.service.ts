@@ -91,8 +91,6 @@ export class InvoiceService {
 
     const destinataire = {
       name:  order.customerName,
-      email: order.customerEmail,
-      phone: order.customerPhone,
     };
 
     // ── Lignes ───────────────────────────────────────────────────────────────
