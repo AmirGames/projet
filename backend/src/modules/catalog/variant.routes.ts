@@ -1,9 +1,11 @@
+import { exigerBoutique } from "../auth/autorisation-boutique";
+import { CataloguePublicService } from "./catalogue-public.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../auth/auth.middleware";
+import { authMiddleware, authFacultative } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 import { VariantService } from "./variant.service";
 import { SupplementService, schemaGroupes } from "./supplement.service";
@@ -26,21 +28,14 @@ const router = Router();
 async function exigerLePlat(productId: string, req: Request) {
   const produit = await db.product.findUnique({
     where: { id: productId },
-    select: { id: true, name: true, deletedAt: true, store: { select: { orgId: true } } },
+    select: { id: true, name: true, storeId: true, deletedAt: true, store: { select: { orgId: true } } },
   });
 
   if (!produit || produit.deletedAt) {
     throw new ApiError(404, "Produit introuvable", "PRODUCT_NOT_FOUND");
   }
 
-  const appartenance = await db.membership.findFirst({
-    where: { userId: req.userId, orgId: produit.store.orgId },
-    select: { id: true },
-  });
-
-  if (!appartenance) {
-    throw new ApiError(403, "Ce produit n'est pas le vôtre", "FORBIDDEN");
-  }
+  await exigerBoutique(req, produit.storeId, req.method === "GET" ? "read" : "manage");
 
   return produit;
 }
@@ -72,16 +67,13 @@ const schemaVariante = z.object({
 // GET /products/:productId/variants - Les déclinaisons d'un plat (public)
 //
 // Publique : la vitrine en a besoin, et un visiteur n'a pas de compte.
-router.get("/:productId/variants", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:productId/variants", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const productId = req.params.productId as string;
 
-    const [variantes, produit] = await Promise.all([
-      VariantService.lister(productId),
-      db.product.findUnique({ where: { id: productId }, select: { variantLabel: true } }),
-    ]);
-
-    res.json({ success: true, data: { libelleDuChoix: produit?.variantLabel || null, variantes } });
+    const produit = await CataloguePublicService.productById(productId, req);
+    const variantes = await CataloguePublicService.variants(productId, req);
+    res.json({ success: true, data: { libelleDuChoix: produit.variantLabel || null, variantes } });
   } catch (err) {
     next(err);
   }

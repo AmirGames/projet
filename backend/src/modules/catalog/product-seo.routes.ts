@@ -1,3 +1,4 @@
+import { autoriserCatalogue } from "../auth/autorisation-boutique";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ProductSeoService } from "./product-seo.service";
@@ -15,7 +16,7 @@ const updateSeoSchema = z.object({
   ogDescription: z.string().max(200).optional(),
 });
 
-router.get("/:storeId/:productId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/:productId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const productId = req.params.productId as string;
@@ -29,7 +30,7 @@ router.get("/:storeId/:productId", authMiddleware, async (req: Request, res: Res
   }
 });
 
-router.patch("/:storeId/:productId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:storeId/:productId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const productId = req.params.productId as string;

@@ -569,6 +569,8 @@ router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Res
 router.post("/me/become-driver", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).userId;
+    const sid = req.user?.sid;
+    if (!sid) throw new ApiError(401, "Session requise", "SESSION_INVALIDE");
 
     if (!userId) {
       throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
@@ -624,8 +626,8 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
 
     // Generate new tokens to reflect driver status — dans la même session :
     // devenir livreur n'est pas une nouvelle connexion.
-    const accessToken = AuthService.generateAccessToken(userId, req.user?.sid);
-    const refreshToken = await SsoService.refreshPour(userId, req.user?.sid);
+    const accessToken = AuthService.generateAccessToken(userId, sid);
+    const refreshToken = await SsoService.emettreRefresh(userId, sid);
 
     res.status(201).json({
       message: "Candidature de livreur soumise avec succès",

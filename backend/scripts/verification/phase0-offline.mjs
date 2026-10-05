@@ -40,8 +40,8 @@ const db={
  user:{findUnique:async()=>user},
  store:{findUnique:async({where})=>where.id===storeA?{orgId:orgA}:where.id===storeB?{orgId:orgB}:null},
  organization:{findUnique:async({where})=>[orgA,orgB].includes(where.id)?{id:where.id}:null},
- membership:{findMany:async()=>[{orgId:orgA}]},
- product:{findUnique:async()=>{if(unreadable)throw Error('DB down');return{store:{orgId:orgB}};}},
+ membership:{findMany:async()=>[{orgId:orgA,role:'ADMIN',storeIds:[]}]},
+ product:{findUnique:async()=>{if(unreadable)throw Error('DB down');return{storeId:storeB,store:{orgId:orgB}};}},
  sessionConnexion:{
   create:async({data})=>{const s={id:`s${++nextId}`,revokedAt:null,...data};sessions.set(s.id,s);return s;},
   findUnique:async({where})=>sessions.get(where.id)||null,

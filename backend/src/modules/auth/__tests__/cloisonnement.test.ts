@@ -12,8 +12,8 @@ const record = jest.fn();
 const db: any = {
   store: { findUnique: jest.fn(async ({ where }: any) => where.id === storeA ? { orgId: orgA } : where.id === storeB ? { orgId: orgB } : null) },
   organization: { findUnique: jest.fn(async ({ where }: any) => [orgA, orgB].includes(where.id) ? { id: where.id } : null) },
-  membership: { findMany: jest.fn(async () => [{ orgId: orgA }]) },
-  product: { findUnique: jest.fn(async () => ({ store: { orgId: orgB } })) },
+  membership: { findMany: jest.fn(async () => [{ orgId: orgA, role: "ADMIN", storeIds: [] }]) },
+  product: { findUnique: jest.fn(async () => ({ storeId: storeB, store: { orgId: orgB } })) },
 };
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({ logger: { warn: jest.fn(), error: jest.fn() } }));
@@ -32,7 +32,7 @@ const api = (method: "get" | "post" | "put", path: string) => request(app)[metho
 beforeEach(() => {
   admin = false;
   [storeA, storeB, orgA, orgB].forEach(oublierIdentifiant);
-  db.product.findUnique.mockImplementation(async () => ({ store: { orgId: orgB } }));
+  db.product.findUnique.mockImplementation(async () => ({ storeId: storeB, store: { orgId: orgB } }));
 });
 describe("cloisonnement commerçant, y compris comptes support/admin", () => {
   it("conserve l'accès aux factures de sa boutique", async () => {

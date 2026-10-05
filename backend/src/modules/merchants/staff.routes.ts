@@ -32,7 +32,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 
     logger.info("Creating staff member", { email: body.email, storeId: body.storeId });
 
-    const staff = await StaffService.create(body);
+    const staff = await StaffService.create(body, req);
 
     res.status(201).json({
       message: "Staff member created",
@@ -48,7 +48,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
   try {
     const id = req.params.id as string;
 
-    const staff = await StaffService.getById(id);
+    const staff = await StaffService.getById(id, req);
 
     res.json(staff);
   } catch (err) {
@@ -63,7 +63,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
     const orgId = req.query.orgId as string;
 
     if (orgId) {
-      const staff = await StaffService.getByOrgId(orgId);
+      const staff = await StaffService.getByOrgId(orgId, req);
       return res.json({
         staff,
         total: staff.length,
@@ -74,9 +74,9 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
       throw new ApiError(400, "Parameter 'storeId' or 'orgId' required", "MISSING_PARAM");
     }
 
-    const staff = await StaffService.getByStoreId(storeId);
-    const total = await StaffService.countByStoreId(storeId);
-    const active = await StaffService.countActiveByStoreId(storeId);
+    const staff = await StaffService.getByStoreId(storeId, req);
+    const total = await StaffService.countByStoreId(storeId, req);
+    const active = await StaffService.countActiveByStoreId(storeId, req);
 
     return res.json({
       staff,
@@ -96,7 +96,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 
     logger.info("Updating staff member", { id });
 
-    const staff = await StaffService.update(id, body);
+    const staff = await StaffService.update(id, body, req);
 
     res.json({
       message: "Staff member updated",
@@ -115,7 +115,7 @@ router.patch("/:id/status", authMiddleware, async (req: Request, res: Response, 
 
     logger.info("Updating staff status", { id, status });
 
-    const staff = await StaffService.updateStatus(id, status);
+    const staff = await StaffService.updateStatus(id, status, req);
 
     res.json({
       message: "Staff status updated",
@@ -131,7 +131,7 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: 
   try {
     const id = req.params.id as string;
 
-    const staff = await StaffService.getById(id);
+    const staff = await StaffService.getById(id, req);
 
     if (!staff) {
       throw new ApiError(404, "Staff member not found", "STAFF_NOT_FOUND");
@@ -139,7 +139,7 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: 
 
     logger.info("Deleting staff member", { id });
 
-    await StaffService.delete(id);
+    await StaffService.delete(id, req);
 
     res.json({
       message: "Staff member deleted",

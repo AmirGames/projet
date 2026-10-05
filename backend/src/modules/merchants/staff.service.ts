@@ -1,3 +1,4 @@
+import { perimetreBoutiques, exigerBoutique, type Acteur } from "../auth/autorisation-boutique";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 
@@ -13,7 +14,8 @@ export interface StaffData {
 }
 
 export class StaffService {
-  static async create(data: StaffData) {
+  static async create(data: StaffData, acteur: Acteur) {
+    await exigerBoutique(acteur, data.storeId, "manage");
     try {
       if (!data.name || !data.email) {
         throw new ApiError(400, "Name and email are required", "MISSING_FIELDS");
@@ -39,9 +41,10 @@ export class StaffService {
     }
   }
 
-  static async getById(id: string) {
+  static async getById(id: string, acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     const staff = await db.staff.findUnique({
-      where: { id },
+      where: { id, store: scope },
     });
 
     if (!staff) {
@@ -51,17 +54,19 @@ export class StaffService {
     return staff;
   }
 
-  static async getByStoreId(storeId: string) {
+  static async getByStoreId(storeId: string, acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     return await db.staff.findMany({
-      where: { storeId },
+      where: { storeId, store: scope },
       orderBy: { createdAt: "desc" },
     });
   }
 
-  static async getByOrgId(orgId: string) {
+  static async getByOrgId(orgId: string, acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     return await db.staff.findMany({
       where: {
-        store: { orgId },
+        store: { AND: [{ orgId }, scope] },
       },
       include: {
         store: {
@@ -72,10 +77,11 @@ export class StaffService {
     });
   }
 
-  static async update(id: string, data: Partial<StaffData>) {
+  static async update(id: string, data: Partial<StaffData>, acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     try {
       return await db.staff.update({
-        where: { id },
+        where: { id, store: scope },
         data: {
           ...(data.name && { name: data.name }),
           ...(data.email && { email: data.email.toLowerCase() }),
@@ -95,10 +101,11 @@ export class StaffService {
     }
   }
 
-  static async updateStatus(id: string, status: "ACTIVE" | "INACTIVE" | "SUSPENDED") {
+  static async updateStatus(id: string, status: "ACTIVE" | "INACTIVE" | "SUSPENDED", acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     try {
       return await db.staff.update({
-        where: { id },
+        where: { id, store: scope },
         data: { status },
       });
     } catch (error: any) {
@@ -109,10 +116,11 @@ export class StaffService {
     }
   }
 
-  static async delete(id: string) {
+  static async delete(id: string, acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     try {
       return await db.staff.delete({
-        where: { id },
+        where: { id, store: scope },
       });
     } catch (error: any) {
       if (error.code === "P2025") {
@@ -122,15 +130,17 @@ export class StaffService {
     }
   }
 
-  static async countByStoreId(storeId: string) {
+  static async countByStoreId(storeId: string, acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     return await db.staff.count({
-      where: { storeId },
+      where: { storeId, store: scope },
     });
   }
 
-  static async countActiveByStoreId(storeId: string) {
+  static async countActiveByStoreId(storeId: string, acteur: Acteur) {
+    const scope = await perimetreBoutiques(acteur, "manage");
     return await db.staff.count({
-      where: { storeId, status: "ACTIVE" },
+      where: { storeId, status: "ACTIVE", store: scope },
     });
   }
 }

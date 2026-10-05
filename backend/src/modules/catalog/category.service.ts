@@ -1,3 +1,6 @@
+import type { Prisma } from "@prisma/client";
+import { exigerBoutique, type Acteur } from "../auth/autorisation-boutique";
+import { validerOrdre, exigerLotComplet } from "./reordonnancement";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 
@@ -98,19 +101,17 @@ export class CategoryService {
     }
   }
 
-  static async reorder(storeId: string, ordering: { id: string; displayOrder: number }[]) {
-    try {
+  static async reorder(storeId: string, value: unknown, acteur: Acteur) {
+    await exigerBoutique(acteur, storeId, "manage");
+    const ordering = validerOrdre(value);
+    await db.$transaction(async tx => {
+      exigerLotComplet(ordering.length, await tx.category.count({ where: { storeId, id: { in: ordering.map(item => item.id) } } }));
       for (const item of ordering) {
-        await db.category.update({
-          where: { id: item.id },
-          data: { displayOrder: item.displayOrder },
-        });
+        const result = await tx.category.updateMany({ where: { id: item.id, storeId }, data: { displayOrder: item.displayOrder } });
+        exigerLotComplet(1, result.count);
       }
-
-      return await this.getByStoreId(storeId);
-    } catch (err) {
-      throw err;
-    }
+    });
+    return this.getByStoreId(storeId);
   }
 
   static async delete(id: string) {
@@ -132,10 +133,10 @@ export class CategoryService {
     });
   }
 
-  static async getByOrgId(orgId: string) {
+  static async getByOrgId(orgId: string, scope: Prisma.StoreWhereInput = {}) {
     return await db.category.findMany({
       where: {
-        store: { orgId },
+        store: { AND: [{ orgId }, scope] },
       },
       include: {
         products: true,
@@ -145,10 +146,10 @@ export class CategoryService {
     });
   }
 
-  static async countByOrgId(orgId: string) {
+  static async countByOrgId(orgId: string, scope: Prisma.StoreWhereInput = {}) {
     return await db.category.count({
       where: {
-        store: { orgId },
+        store: { AND: [{ orgId }, scope] },
       },
     });
   }

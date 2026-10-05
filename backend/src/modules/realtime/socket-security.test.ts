@@ -20,6 +20,7 @@ jest.mock('../auth/origines-autorisees', () => ({ originesAutorisees: () => ['ht
 jest.mock('../../config/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 
 const utilisateur = (id: string) => ({
+  status: "ACTIVE",
   id, email: `${id}@example.invalid`, emailVerified: true, passwordChangedAt: null as Date | null,
   isSuperOwner: false, isSystemAdmin: false,
   accesEquipe: [] as { plateforme: 'EAT' | 'DRIVE'; role: string }[],

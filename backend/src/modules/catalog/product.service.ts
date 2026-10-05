@@ -1,3 +1,6 @@
+import type { Prisma } from "@prisma/client";
+import { exigerBoutique, type Acteur } from "../auth/autorisation-boutique";
+import { validerOrdre, exigerLotComplet } from "./reordonnancement";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 
@@ -185,10 +188,10 @@ export class ProductService {
     });
   }
 
-  static async getByOrgId(orgId: string, limit: number = 100, offset: number = 0) {
+  static async getByOrgId(orgId: string, limit: number = 100, offset: number = 0, scope: Prisma.StoreWhereInput = {}) {
     return await db.product.findMany({
       where: {
-        store: { orgId },
+        store: { AND: [{ orgId }, scope] },
         deletedAt: null,
       },
       include: {
@@ -202,10 +205,10 @@ export class ProductService {
     });
   }
 
-  static async countByOrgId(orgId: string) {
+  static async countByOrgId(orgId: string, scope: Prisma.StoreWhereInput = {}) {
     return await db.product.count({
       where: {
-        store: { orgId },
+        store: { AND: [{ orgId }, scope] },
         deletedAt: null,
       },
     });
@@ -233,10 +236,10 @@ export class ProductService {
     });
   }
 
-  static async getLowStockProductsByOrgId(orgId: string) {
+  static async getLowStockProductsByOrgId(orgId: string, scope: Prisma.StoreWhereInput = {}) {
     return await db.product.findMany({
       where: {
-        store: { orgId },
+        store: { AND: [{ orgId }, scope] },
         status: "ACTIVE",
       },
       include: {
@@ -266,33 +269,33 @@ export class ProductService {
     }
   }
 
-  static async reorder(storeId: string, ordering: { id: string; displayOrder: number }[]) {
-    try {
+  static async reorder(storeId: string, value: unknown, acteur: Acteur) {
+    await exigerBoutique(acteur, storeId, "manage");
+    const ordering = validerOrdre(value);
+    await db.$transaction(async tx => {
+      const where = { storeId, deletedAt: null, id: { in: ordering.map(item => item.id) } };
+      exigerLotComplet(ordering.length, await tx.product.count({ where }));
       for (const item of ordering) {
-        await db.product.update({
-          where: { id: item.id },
-          data: { displayOrder: item.displayOrder },
-        });
+        const result = await tx.product.updateMany({ where: { id: item.id, storeId, deletedAt: null }, data: { displayOrder: item.displayOrder } });
+        exigerLotComplet(1, result.count);
       }
-
-      return await this.getByStoreId(storeId);
-    } catch (err) {
-      throw err;
-    }
+    });
+    return this.getByStoreId(storeId);
   }
 
-  static async reorderByCategory(categoryId: string, ordering: { id: string; displayOrder: number }[]) {
-    try {
+  static async reorderByCategory(categoryId: string, value: unknown, acteur: Acteur) {
+    const category = await db.category.findUnique({ where: { id: categoryId }, select: { storeId: true } });
+    if (!category) throw new ApiError(404, "Catégorie introuvable", "CATEGORY_NOT_FOUND");
+    await exigerBoutique(acteur, category.storeId, "manage");
+    const ordering = validerOrdre(value);
+    await db.$transaction(async tx => {
+      const scope = { storeId: category.storeId, categoryId, deletedAt: null };
+      exigerLotComplet(ordering.length, await tx.product.count({ where: { ...scope, id: { in: ordering.map(item => item.id) } } }));
       for (const item of ordering) {
-        await db.product.update({
-          where: { id: item.id },
-          data: { displayOrder: item.displayOrder },
-        });
+        const result = await tx.product.updateMany({ where: { ...scope, id: item.id }, data: { displayOrder: item.displayOrder } });
+        exigerLotComplet(1, result.count);
       }
-
-      return await this.getByCategoryId(categoryId);
-    } catch (err) {
-      throw err;
-    }
+    });
+    return this.getByCategoryId(categoryId);
   }
 }

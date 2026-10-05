@@ -1,8 +1,10 @@
+import { autoriserCatalogue, perimetreBoutiques } from "../auth/autorisation-boutique";
+import { CataloguePublicService } from "./catalogue-public.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ProductService } from "./product.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware, checkOrgStatus } from "../auth/auth.middleware";
+import { authMiddleware, authFacultative, checkOrgStatus } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 
 import { emitStoreEvent } from "../realtime/socket";
@@ -33,7 +35,7 @@ const updateProductSchema = z.object({
 });
 
 // POST /products - Create product (protected)
-router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", authMiddleware, autoriserCatalogue, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createProductSchema.parse(req.body);
 
@@ -51,11 +53,11 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
 });
 
 // GET /products/:id - Get product by ID
-router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:id", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 
-    const product = await ProductService.getById(id);
+    const product = await CataloguePublicService.productById(id, req);
 
     if (!product) {
       throw new ApiError(404, "Produit non trouvé", "NOT_FOUND");
@@ -68,7 +70,7 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /products?orgId=:orgId or ?storeId=:storeId - Get products by organization or store (protected)
-router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.query.orgId as string;
     const storeId = req.query.storeId as string;
@@ -87,8 +89,8 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
       products = await ProductService.getByStoreId(storeId, limit, offset);
       total = await ProductService.countByStoreId(storeId);
     } else {
-      products = await ProductService.getByOrgId(orgId, limit, offset);
-      total = await ProductService.countByOrgId(orgId);
+      products = await ProductService.getByOrgId(orgId, limit, offset, await perimetreBoutiques(req));
+      total = await ProductService.countByOrgId(orgId, await perimetreBoutiques(req));
     }
 
     res.json({
@@ -105,14 +107,13 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 });
 
 // GET /products/store/:storeId - Get products by store
-router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/store/:storeId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = parseInt(req.query.offset as string) || 0;
 
-    const products = await ProductService.getByStoreId(storeId, limit, offset);
-    const total = await ProductService.countByStoreId(storeId);
+    const { products, total } = await CataloguePublicService.productsByStore(storeId, limit, offset, req);
 
     res.json({
       products,
@@ -128,13 +129,13 @@ router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunc
 });
 
 // GET /products/category/:categoryId - Get products by category
-router.get("/category/:categoryId", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/category/:categoryId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const categoryId = req.params.categoryId as string;
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = parseInt(req.query.offset as string) || 0;
 
-    const products = await ProductService.getByCategoryId(categoryId, limit, offset);
+    const products = await CataloguePublicService.productsByCategory(categoryId, limit, offset, req);
 
     res.json({
       products,
@@ -149,7 +150,7 @@ router.get("/category/:categoryId", async (req: Request, res: Response, next: Ne
 });
 
 // GET /products/search/:storeId - Search products
-router.get("/search/:storeId", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/search/:storeId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const q = req.query.q as string;
@@ -158,7 +159,7 @@ router.get("/search/:storeId", async (req: Request, res: Response, next: NextFun
       throw new ApiError(400, "Paramètre 'q' requis", "INVALID_INPUT");
     }
 
-    const products = await ProductService.search(storeId, q, 50);
+    const products = await CataloguePublicService.search(storeId, q, 50, req);
 
     res.json({
       query: q,
@@ -171,7 +172,7 @@ router.get("/search/:storeId", async (req: Request, res: Response, next: NextFun
 });
 
 // PUT /products/:id - Update product (protected)
-router.put("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.put("/:id", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = updateProductSchema.parse(req.body);
@@ -194,7 +195,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 });
 
 // PATCH /products/:id/availability - Marquer disponible ou épuisé
-router.patch("/:id/availability", authMiddleware, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:id/availability", authMiddleware, autoriserCatalogue, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const schema = z.object({ isAvailable: z.boolean() });
@@ -232,7 +233,7 @@ router.patch("/:id/availability", authMiddleware, checkOrgStatus, async (req: Re
 });
 
 // PATCH /products/:id/stock - Update product stock (protected)
-router.patch("/:id/stock", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:id/stock", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const { quantity } = req.body;
@@ -259,7 +260,7 @@ router.patch("/:id/stock", authMiddleware, async (req: Request, res: Response, n
 });
 
 // PATCH /products/:id/low-stock-threshold - Update low stock threshold (protected)
-router.patch("/:id/low-stock-threshold", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:id/low-stock-threshold", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const { threshold } = req.body;
@@ -282,7 +283,7 @@ router.patch("/:id/low-stock-threshold", authMiddleware, async (req: Request, re
 });
 
 // GET /products/low-stock/by-store/:storeId - Get low stock products (protected)
-router.get("/low-stock/by-store/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/low-stock/by-store/:storeId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
 
@@ -300,13 +301,13 @@ router.get("/low-stock/by-store/:storeId", authMiddleware, async (req: Request, 
 });
 
 // GET /products/low-stock/by-org/:orgId - Get low stock products by organization (protected)
-router.get("/low-stock/by-org/:orgId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/low-stock/by-org/:orgId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.params.orgId as string;
 
     logger.info("Fetching low stock products by org", { orgId });
 
-    const products = await ProductService.getLowStockProductsByOrgId(orgId);
+    const products = await ProductService.getLowStockProductsByOrgId(orgId, await perimetreBoutiques(req));
 
     res.json({
       products,
@@ -318,7 +319,7 @@ router.get("/low-stock/by-org/:orgId", authMiddleware, async (req: Request, res:
 });
 
 // POST /products/reorder - Reorder products (protected)
-router.post("/reorder", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/reorder", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { storeId, ordering } = req.body;
 
@@ -328,7 +329,7 @@ router.post("/reorder", authMiddleware, async (req: Request, res: Response, next
 
     logger.info("Reordering products", { storeId });
 
-    const products = await ProductService.reorder(storeId, ordering);
+    const products = await ProductService.reorder(storeId, ordering, req);
 
     res.json({
       message: "Produits réordonnés",
@@ -340,7 +341,7 @@ router.post("/reorder", authMiddleware, async (req: Request, res: Response, next
 });
 
 // POST /products/reorder-by-category - Reorder products by category (protected)
-router.post("/reorder-by-category", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/reorder-by-category", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { categoryId, ordering } = req.body;
 
@@ -350,7 +351,7 @@ router.post("/reorder-by-category", authMiddleware, async (req: Request, res: Re
 
     logger.info("Reordering products by category", { categoryId });
 
-    const products = await ProductService.reorderByCategory(categoryId, ordering);
+    const products = await ProductService.reorderByCategory(categoryId, ordering, req);
 
     res.json({
       message: "Produits réordonnés",
@@ -362,7 +363,7 @@ router.post("/reorder-by-category", authMiddleware, async (req: Request, res: Re
 });
 
 // DELETE /products/:id - Delete product (protected)
-router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:id", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 
