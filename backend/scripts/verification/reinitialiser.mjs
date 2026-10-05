@@ -43,6 +43,7 @@ export async function reinitialiser() {
     const tables = await prisma.$queryRaw`
       SELECT tablename FROM pg_tables
       WHERE schemaname = 'public' AND tablename NOT LIKE '_prisma%'
+        AND tablename <> 'PrivacyAuditEvent'
     `;
 
     if (tables.length === 0) return 0;

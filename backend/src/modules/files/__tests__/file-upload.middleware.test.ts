@@ -22,6 +22,14 @@ const envoyer = (contenu: Buffer, nom: string, type: string) =>
   request(app).post("/upload").attach("file", contenu, { filename: nom, contentType: type });
 
 describe("upload : contrôle du contenu réel", () => {
+  it("refuse une extension exécutable et une double extension", async () => {
+    expect((await envoyer(jpeg(), "photo.exe", "image/jpeg")).body.code).toBe("INVALID_FILE_EXTENSION");
+    expect((await envoyer(jpeg(), "photo.exe.jpg", "image/jpeg")).body.code).toBe("INVALID_FILE_EXTENSION");
+  });
+  it("refuse une archive renommée et un ZIP", async () => {
+    expect((await envoyer(Buffer.from("PK\x03\x04zip"), "photo.jpg", "image/jpeg")).status).toBe(400);
+    expect((await envoyer(Buffer.from("PK\x03\x04zip"), "archive.zip", "application/zip")).status).toBe(400);
+  });
   it("refuse un HTML renommé en .jpg déclaré image/jpeg", async () => {
     const res = await envoyer(Buffer.from("<html><script>alert(1)</script></html>"), "x.jpg", "image/jpeg");
     expect(res.status).toBe(400);

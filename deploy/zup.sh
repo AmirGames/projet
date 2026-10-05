@@ -51,23 +51,23 @@ case "${1:-}" in
   restart) shift; dc restart "$@" ;;
   psql)  dc exec postgres psql -U "$PGU" -d "$PGD" ;;
   backup)
+    command -v age >/dev/null || { echo "Installer age avant toute sauvegarde (voir docs/rgpd/exploitation.md)"; exit 1; }
+    destinataire="$(valeur AGE_BACKUP_RECIPIENT)"
+    [ -n "$destinataire" ] || { echo "AGE_BACKUP_RECIPIENT requis : aucune sauvegarde en clair"; exit 1; }
+    umask 077
     mkdir -p "$SAUVEGARDES"
     horodatage="$(date +%Y%m%d-%H%M%S)"
-    dc exec -T postgres pg_dump -U "$PGU" -d "$PGD" --no-owner | gzip > "$SAUVEGARDES/base-$horodatage.sql.gz"
-    dc exec -T backend tar czf - -C /app uploads > "$SAUVEGARDES/uploads-$horodatage.tar.gz"
+    dc exec -T postgres pg_dump -U "$PGU" -d "$PGD" --no-owner | gzip | age -r "$destinataire" > "$SAUVEGARDES/base-$horodatage.sql.gz.age.partial"
+    mv "$SAUVEGARDES/base-$horodatage.sql.gz.age.partial" "$SAUVEGARDES/base-$horodatage.sql.gz.age"
+    dc exec -T backend tar czf - -C /app uploads private-documents backups | age -r "$destinataire" > "$SAUVEGARDES/uploads-$horodatage.tar.gz.age.partial"
+    mv "$SAUVEGARDES/uploads-$horodatage.tar.gz.age.partial" "$SAUVEGARDES/uploads-$horodatage.tar.gz.age"
     # 14 jours gardés sur le serveur.
-    find "$SAUVEGARDES" -name '*.gz' -mtime +14 -delete
+    find "$SAUVEGARDES" -name '*.age' -mtime +14 -delete
     echo "✅ Sauvegarde : $SAUVEGARDES/*-$horodatage.*"
     ;;
   restore)
-    fichier="${2:?Usage : $0 restore <base-....sql.gz>}"
-    read -r -p "⚠️  Écraser la base $PGD avec $fichier ? (oui/non) " rep
-    [ "$rep" = "oui" ] || exit 1
-    dc stop backend
-    dc exec -T postgres psql -U "$PGU" -d postgres -c "DROP DATABASE IF EXISTS \"$PGD\" WITH (FORCE);" -c "CREATE DATABASE \"$PGD\" OWNER \"$PGU\";"
-    gunzip -c "$fichier" | dc exec -T postgres psql -q -U "$PGU" -d "$PGD"
-    dc start backend
-    echo "✅ Base restaurée."
+    echo "Restauration en base isolée requise : réconcilier les effacements postérieurs avant de remettre l'API en service. Voir docs/rgpd/exploitation.md."
+    exit 1
     ;;
   vapid)
     # Les clés ne se changent pas à la légère : les abonnements déjà pris

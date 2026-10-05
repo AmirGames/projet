@@ -5,6 +5,51 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/// Journal RGPD indépendant du compte ; acteur pseudonymisé par HMAC.
+/// La migration interdit les modifications et la suppression avant 180 jours.
+model PrivacyAuditEvent {
+  id        String @id @default(cuid())
+  actor     String
+  action    String
+  target    String
+  outcome   String
+  integrity String
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+  @@index([actor, createdAt])
+}
+
+/// Empêche la réintroduction d'un profil effacé lors d'une restauration.
+model ErasureRecord {
+  id        String @id @default(cuid())
+  subjectId String
+  scope     String
+  erasedAt  DateTime @default(now())
+  @@unique([subjectId, scope])
+  @@index([erasedAt])
+}
+
+model PrivacyErasureRequest {
+  userId      String @id
+  status      String @default("PENDING")
+  requestedAt DateTime @default(now())
+  completedAt DateTime?
+  @@index([status, requestedAt])
+}
+
+/// Gel ciblé et réexaminable, jamais un report indéfini de toute suppression.
+model PrivacyLegalHold {
+  id        String @id @default(cuid())
+  model     String
+  recordId  String
+  reason    String
+  createdBy String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@unique([model, recordId])
+  @@index([expiresAt])
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -1426,6 +1471,8 @@ model MerchantPayout {
 model CourierPayout {
   id              String    @id @default(cuid())
   driverId        String
+  /// Identité minimale du bénéficiaire au moment de l'arrêté, archive comptable chiffrée.
+  beneficiaryJson Json @default("{}")
 
   /// La période couverte, bornes incluses côté début, exclues côté fin.
   periodStart     DateTime

@@ -21,6 +21,8 @@ export interface Origine {
   userAgent?: string;
   /** L'instant où la requête est arrivée, pour mesurer sa durée. */
   debutA?: number;
+  userId?: string;
+  sessionId?: string;
 }
 
 const contexte = new AsyncLocalStorage<Origine>();
@@ -28,6 +30,11 @@ const contexte = new AsyncLocalStorage<Origine>();
 /** L'origine de la requête en cours, vide hors requête (tâche de fond, script). */
 export function origineActuelle(): Origine {
   return contexte.getStore() || {};
+}
+
+export function lierIdentite(userId: string, sessionId?: string) {
+  const origine = contexte.getStore();
+  if (origine) { origine.userId = userId; origine.sessionId = sessionId; }
 }
 
 /**

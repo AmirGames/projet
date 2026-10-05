@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { encryptionExtension } from "../modules/privacy/encrypted-fields";
 
 import { dureeDeLaRequete, origineActuelle } from "../modules/auth/origine";
 
@@ -26,9 +27,10 @@ const prismaClientSingleton = () => {
         : []),
       { emit: "stdout", level: "info" },
       { emit: "stdout", level: "warn" },
-      { emit: "stdout", level: "error" },
+      // Les erreurs Prisma peuvent inclure les arguments : elles passent par le gestionnaire expurgé.
+      { emit: "event", level: "error" },
     ],
-  });
+  }).$extends(encryptionExtension);
 };
 
 /**

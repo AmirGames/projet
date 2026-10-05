@@ -15,6 +15,17 @@
 name: zupone
 
 services:
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 180s
+      retries: 10
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -52,12 +63,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      clamav:
+        condition: service_healthy
     env_file: .env.production
     environment:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-zupone}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zupone}?schema=public
       REDIS_URL: redis://redis:6379
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      PRIVATE_DOCUMENTS_DIR: /app/private-documents
       API_URL: https://${DOMAINE_API:?DOMAINE_API manquant dans .env.production}
       # Un seul proxy devant l'API : Caddy.
       TRUST_PROXY: 1
@@ -68,6 +84,8 @@ services:
     volumes:
       - uploads:/app/uploads
       - backups:/app/backups
+      - private_documents:/app/private-documents
+      - ./logs/backend:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health || exit 1"]
       interval: 30s
@@ -123,6 +141,8 @@ services:
       - caddy_config:/config
 
 volumes:
+  clamav_data:
+  private_documents:
   postgres_data:
   uploads:
   backups:

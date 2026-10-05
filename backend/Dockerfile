@@ -19,7 +19,7 @@ COPY prisma ./prisma
 COPY prisma.config.ts ./
 # Photos, documents et sauvegardes : montés en volumes pour survivre aux
 # reconstructions de l'image.
-RUN mkdir -p uploads backups
+RUN mkdir -p uploads backups private-documents logs && chmod 700 private-documents backups logs
 ENV NODE_ENV=production
 EXPOSE 3001
 # Les migrations passent avant l'API : une migration en échec arrête le

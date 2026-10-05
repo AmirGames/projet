@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertPrivacyConfiguration } from "../modules/privacy/crypto";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -87,6 +88,7 @@ export function loadEnv(): Env {
   }
 
   env = result.data;
+  if (env.NODE_ENV === "production") assertPrivacyConfiguration();
   console.log(`✅ Environment loaded: ${env.NODE_ENV}`);
   return env;
 }

@@ -89,6 +89,7 @@ export class DriverApprovalService {
     // existant AVANT d'écrire, sinon le dépôt rendrait lisible la pièce voisine.
     let documentUrl = piece.documentUrl;
     const relatif = cheminRelatif(documentUrl);
+    if (!relatif) throw new ApiError(400, "Les liens externes sont refusés : utilisez le dépôt de fichier sécurisé", "EXTERNAL_DOCUMENT_FORBIDDEN");
     if (relatif) {
       const possedee = relatif.startsWith("drivers/")
         ? await db.courierDocument.findFirst({

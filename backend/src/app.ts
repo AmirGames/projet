@@ -62,6 +62,8 @@ import merchantPayoutRouter from "./modules/payouts/merchant-payout.routes";
 import pushDevicesRouter from "./modules/notifications/push-devices.routes";
 import variantRouter from "./modules/catalog/variant.routes";
 import addressRouter from "./modules/customers/address.routes";
+import privacyRouter from "./modules/privacy/privacy.routes";
+import { privacyAuditMiddleware } from "./modules/privacy/audit.middleware";
 
 export function createApp(): Express {
   const app = express();
@@ -186,6 +188,7 @@ export function createApp(): Express {
   // toutes les routes, et non route par route : deux routeurs sur vingt-cinq
   // faisaient le contrôle.
   app.use(cloisonnement);
+  app.use(privacyAuditMiddleware);
 
   // Après chaque écriture réussie, les écrans concernés sont prévenus et se
   // relisent : le site suit en direct sans recharger.
@@ -221,6 +224,7 @@ export function createApp(): Express {
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);
+  app.use("/api/privacy", privacyRouter);
   app.use("/api/files", filesRouter);
   app.use("/api/sso", ssoRouter);
   app.use("/api/organizations", organizationRouter);

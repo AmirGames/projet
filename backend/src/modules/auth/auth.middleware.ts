@@ -4,6 +4,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { db } from "../../services/db";
 import { SsoService } from "./sso.service";
 import type { Acces } from "./permissions-plateforme.service";
+import { lierIdentite } from "./origine";
 
 /** Ce que le jeton ne dit pas : le compte existe-t-il encore, et qu'est-il. */
 export interface Compte {
@@ -35,7 +36,8 @@ export function oublierCompte(_userId: string) {
   // Conservé pour les appelants historiques ; aucun droit n'est mis en cache.
 }
 
-export async function compteDuJeton(userId: string): Promise<Compte | null> {
+// Compatibilité avec les lectures sensibles : le compte est toujours relu en base.
+export async function compteDuJeton(userId: string, _fresh = false): Promise<Compte | null> {
   const utilisateur = await db.user.findUnique({
     where: { id: userId },
     select: {
@@ -138,6 +140,7 @@ async function authentifier(req: Request) {
   // orgId, storeIds, and role are no longer in JWT; routes must load them from DB
   req.user = payload;
   req.compte = compte;
+  lierIdentite(payload.userId, payload.sid);
 }
 
 export function requireRole(...roles: string[]) {

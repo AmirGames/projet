@@ -23,6 +23,7 @@ async function viderLaBase() {
   const tables = await db.$queryRaw<{ tablename: string }[]>`
     SELECT tablename FROM pg_tables
     WHERE schemaname = 'public' AND tablename NOT LIKE '_prisma%'
+      AND tablename <> 'PrivacyAuditEvent'
   `;
   if (tables.length === 0) return;
   await db.$executeRawUnsafe(

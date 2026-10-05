@@ -2,6 +2,7 @@ import multer from "multer";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { ApiError } from "../../middleware/errorHandler";
 import { detecterType, normaliserTypeAnnonce, type TypeFichier } from "../../utils/file-type";
+import { extname } from "node:path";
 
 const MESSAGE_TYPE = "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou PDF.";
 
@@ -21,7 +22,7 @@ const MAX_FILE_SIZE = Math.max(...Object.values(TAILLE_MAX));
 
 const multerBase = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE },
+  limits: { fileSize: MAX_FILE_SIZE, files: 5, fields: 20, parts: 25, fieldSize: 64 * 1024 },
 });
 
 /**
@@ -39,6 +40,13 @@ export function verifierContenu(req: Request, _res: Response, next: NextFunction
     const detecte = detecterType(fichier.buffer);
     if (!detecte || normaliserTypeAnnonce(fichier.mimetype) !== detecte) {
       return next(new ApiError(400, MESSAGE_TYPE, "INVALID_FILE_TYPE"));
+    }
+    const extensions: Record<TypeFichier, string[]> = {
+      "image/jpeg": [".jpg", ".jpeg"], "image/png": [".png"],
+      "image/webp": [".webp"], "application/pdf": [".pdf"],
+    };
+    if (!extensions[detecte].includes(extname(fichier.originalname).toLowerCase()) || /\.(?:exe|com|bat|cmd|scr|js|mjs|php|sh|ps1|dll|zip|rar|7z|tar|gz)(?:\.|$)/i.test(fichier.originalname)) {
+      return next(new ApiError(400, MESSAGE_TYPE, "INVALID_FILE_EXTENSION"));
     }
     if (fichier.size > TAILLE_MAX[detecte]) {
       const limite = TAILLE_MAX[detecte] / MO;

@@ -1,6 +1,7 @@
 import winston from "winston";
 import Transport from "winston-transport";
 import { getEnv } from "./env";
+import { redact } from "../modules/privacy/redaction";
 
 /**
  * La console du serveur, gardée en mémoire pour la page « Console » du
@@ -22,12 +23,12 @@ export function ajouterLigneConsole(niveau: string, message: string, meta?: Reco
   let metaStr: string | undefined;
   if (meta && Object.keys(meta).length > 0) {
     try {
-      metaStr = JSON.stringify(meta);
+      metaStr = JSON.stringify(redact(meta));
     } catch {
       metaStr = "[meta illisible]";
     }
   }
-  lignesConsole.push({ id: prochainId++, date: new Date().toISOString(), niveau, message: String(message), meta: metaStr });
+  lignesConsole.push({ id: prochainId++, date: new Date().toISOString(), niveau, message: redact(String(message)), meta: metaStr });
   if (lignesConsole.length > TAILLE_CONSOLE) lignesConsole.splice(0, lignesConsole.length - TAILLE_CONSOLE);
 }
 
@@ -77,16 +78,21 @@ const createLogger = () => {
         filename: "logs/error.log",
         level: "error",
         format: winston.format.json(),
+        maxsize: 5 * 1024 * 1024,
+        maxFiles: 5,
       }),
       new winston.transports.File({
         filename: "logs/combined.log",
         format: winston.format.json(),
+        maxsize: 5 * 1024 * 1024,
+        maxFiles: 10,
       })
     );
   }
 
   return winston.createLogger({
     level: env.LOG_LEVEL,
+    format: winston.format((info) => { for (const key of Object.keys(info)) info[key] = key === "level" ? info[key] : key === "message" ? redact(info[key]) : redact({ [key]: info[key] })[key]; return info; })(),
     transports,
   });
 };
