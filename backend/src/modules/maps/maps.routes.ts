@@ -20,10 +20,19 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return parseFloat(distance.toFixed(2));
 }
 
-// Estimate delivery time based on distance
+/** Vitesse moyenne d'une livraison en ville (circulation, arrêts compris). */
+const VITESSE_MOYENNE_KMH = 20;
+
+/** Rayon de recherche : au plus 50 km, 5 km par défaut. */
+const RAYON_DEFAUT_KM = 5;
+const RAYON_MAX_KM = 50;
+/** Boutiques rendues au plus : la page n'en affiche pas davantage. */
+const RESULTATS_MAX = 50;
+
+// Délai estimé : préparation + trajet à la vitesse moyenne.
+// L'ancienne formule divisait par 0,05 km/min, soit 3 km/h : 20 minutes par km.
 function estimateDeliveryTime(distanceKm: number, preparationMinutes: number = 15): number {
-  // Assume delivery at ~3 km/minute average (accounting for traffic, stops)
-  const deliveryMinutes = Math.ceil(distanceKm / 0.05);
+  const deliveryMinutes = Math.ceil((distanceKm / VITESSE_MOYENNE_KMH) * 60);
   return preparationMinutes + deliveryMinutes;
 }
 
@@ -31,7 +40,7 @@ function estimateDeliveryTime(distanceKm: number, preparationMinutes: number = 1
 // Get all stores near a location with distance and ETA
 router.get("/nearby-stores", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { latitude, longitude, radius = 5 } = req.query;
+    const { latitude, longitude, radius = RAYON_DEFAUT_KM } = req.query;
 
     if (!latitude || !longitude) {
       throw new ApiError(400, "Latitude and longitude are required", "INVALID_REQUEST");
@@ -46,20 +55,45 @@ router.get("/nearby-stores", async (req: Request, res: Response, next: NextFunct
       throw new ApiError(400, "Invalid latitude or longitude", "INVALID_COORDINATES");
     }
 
+    // Un rayon illisible, nul ou démesuré chargerait toutes les boutiques.
+    if (!Number.isFinite(maxRadius) || maxRadius <= 0 || maxRadius > RAYON_MAX_KM) {
+      throw new ApiError(400, `Le rayon doit être compris entre 0 et ${RAYON_MAX_KM} km`, "INVALID_RADIUS");
+    }
+
+    // Boîte englobante : la base ne rend que les boutiques du voisinage.
+    const ecartLat = maxRadius / 111.32;
+    const ecartLng = maxRadius / (111.32 * Math.max(Math.cos(lat * (Math.PI / 180)), 0.01));
+
     // Get all active stores with location
     const stores = await db.store.findMany({
       where: {
         isOpen: true,
+        deletedAt: null,
         org: { status: "ACTIVE", approvedAt: { not: null } },
-        latitude: { not: null },
-        longitude: { not: null }
+        latitude: { gte: lat - ecartLat, lte: lat + ecartLat },
+        longitude: { gte: lng - ecartLng, lte: lng + ecartLng },
       },
-      include: {
+      take: 500,
+      // Route publique : seulement ce qui décrit le commerce aux clients (ni
+      // TVA, ni réglages, ni coordonnées de contact de gestion).
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        address: true,
+        city: true,
+        postalCode: true,
+        businessType: true,
+        cuisineType: true,
+        isOpen: true,
+        latitude: true,
+        longitude: true,
         org: {
           select: { id: true, name: true, slug: true }
         },
         products: {
-          where: { status: "ACTIVE" },
+          where: { status: "ACTIVE", deletedAt: null },
           select: { id: true, name: true, price: true },
           take: 3
         }
@@ -81,7 +115,8 @@ router.get("/nearby-stores", async (req: Request, res: Response, next: NextFunct
         }
       }))
       .filter(store => store.distance <= maxRadius)
-      .sort((a, b) => a.distance - b.distance);
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, RESULTATS_MAX);
 
     res.json({
       success: true,
@@ -105,12 +140,12 @@ router.get("/route", async (req: Request, res: Response, next: NextFunction) => 
       throw new ApiError(400, "Start and end coordinates are required", "INVALID_REQUEST");
     }
 
-    const distance = calculateDistance(
-      parseFloat(startLat as string),
-      parseFloat(startLng as string),
-      parseFloat(endLat as string),
-      parseFloat(endLng as string)
-    );
+    const points = [startLat, startLng, endLat, endLng].map((v) => parseFloat(v as string));
+    if (points.some((v) => !Number.isFinite(v)) || points.slice(0, 4).some((v, i) => Math.abs(v) > (i % 2 === 0 ? 90 : 180))) {
+      throw new ApiError(400, "Invalid coordinates", "INVALID_COORDINATES");
+    }
+
+    const distance = calculateDistance(points[0], points[1], points[2], points[3]);
 
     const estimatedTime = estimateDeliveryTime(distance, 0);
 

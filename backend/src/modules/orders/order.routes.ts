@@ -6,7 +6,7 @@ import { OrderService } from "./order.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authFacultative, authMiddleware } from "../auth/auth.middleware";
 import { limiterCadence } from "../../middleware/throttle";
-import { courseVisible, estLeClientDeLaCommande, type Appelant } from "./suivi-commande.service";
+import { commandeVisible, courseVisible, estLeClientDeLaCommande, type Appelant } from "./suivi-commande.service";
 import { logger } from "../../config/logger";
 import { emitOrderUpdate } from "../realtime/socket";
 import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
@@ -134,25 +134,46 @@ router.post("/", authFacultative, async (req: Request, res: Response, next: Next
   }
 });
 
+/** Le pourboire est un paiement : rythme borné par IP, en plus du budget public. */
+const limiterPourboire = limiterCadence({
+  nom: "pourboire",
+  max: 20,
+  fenetreMs: 60 * 1000,
+  message: "Trop de demandes de pourboire. Réessayez dans un instant.",
+  cle: (req) => `pourboire|${req.ip || "inconnue"}`,
+});
+
 /**
- * GET /api/orders/:id/pourboire — le pourboire après livraison est-il proposé.
- *
- * Public comme le suivi : l'identifiant de la commande est le lien que reçoit
- * un client sans compte.
+ * Le pourboire se demande avec ce qui ouvre le suivi de la commande : la
+ * session de son client, ou le jeton de suivi (`?t=`). Le seul numéro de
+ * commande ne suffit plus — il révélait le prénom du livreur et laissait
+ * créer des paiements Stripe. Tout autre appelant reçoit 404, comme le suivi.
  */
-router.get("/:id/pourboire", async (req: Request, res: Response, next: NextFunction) => {
+async function exigerAccesCommande(req: Request, res: Response) {
+  const id = req.params.id as string;
+  const appelant = await appelantFacultatif(req, res);
+  const commande = await commandeVisible(id, appelant, jetonDeSuivi(req));
+  if (!commande) throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+  return id;
+}
+
+/** GET /api/orders/:id/pourboire — le pourboire après livraison est-il proposé. */
+router.get("/:id/pourboire", limiterPourboire, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json({ success: true, data: await PourboireService.situation(req.params.id as string) });
+    const id = await exigerAccesCommande(req, res);
+    res.set("Cache-Control", "no-store");
+    res.json({ success: true, data: await PourboireService.situation(id) });
   } catch (err) {
     next(err);
   }
 });
 
 // POST /api/orders/:id/pourboire — l'intention de paiement du pourboire.
-router.post("/:id/pourboire", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:id/pourboire", limiterPourboire, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const id = await exigerAccesCommande(req, res);
     const { montant } = z.object({ montant: z.number().positive().max(1000) }).parse(req.body);
-    const intention = await PourboireService.creerIntention(req.params.id as string, montant);
+    const intention = await PourboireService.creerIntention(id, montant);
     res.status(201).json({ success: true, clientSecret: intention.clientSecret, montant: intention.montant });
   } catch (err) {
     next(err);

@@ -14,7 +14,7 @@ import { compteDemo } from "./modules/merchants/compte-demo.middleware";
 import { cloisonnement } from "./modules/auth/cloisonnement.middleware";
 import { diffusionModifications } from "./modules/realtime/diffusion.middleware";
 import { mesurerRequetes } from "./modules/monitoring/surveillance.middleware";
-import { limiterCadence, limiterStripeWebhook, limiterApiPublique } from "./middleware/throttle";
+import { limiterCadence, limiterStripeWebhook, limiterApiPublique, limiterAdresses, limiterCartes } from "./middleware/throttle";
 import { Surveillance } from "./modules/monitoring/surveillance.service";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import authRouter from "./modules/auth/auth.routes";
@@ -264,7 +264,7 @@ export function createApp(): Express {
   app.use("/api/superowner", superOwnerRouter);
   app.use("/api/pages-legales", pagesLegalesRouter);
   app.use("/api/client", clientRouter);
-  app.use("/api/maps", mapsRouter);
+  app.use("/api/maps", limiterCartes, mapsRouter);
   app.use("/api/drivers", driversRouter);
   app.use("/api/zupdrive/chauffeur", zupdriveChauffeurRouter);
   app.use("/api/zupdrive/admin", zupdriveAdminRouter);
@@ -277,7 +277,7 @@ export function createApp(): Express {
   app.use("/api/merchant-profile", merchantProfileRouter);
   app.use("/api/merchant-payouts", merchantPayoutRouter);
   app.use("/api/push-devices", pushDevicesRouter);
-  app.use("/api/addresses", addressRouter);
+  app.use("/api/addresses", limiterAdresses, addressRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);
