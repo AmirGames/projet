@@ -90,7 +90,7 @@ export default function InscriptionLivreurPage() {
       if (await confierSessionCentrale(donnees.accessToken, '/driver')) return;
       router.push('/driver');
     } catch {
-      setErreur('Erreur de connexion au serveur');
+      setErreur(t('erreurServeur'));
     } finally {
       setEnvoi(false);
     }

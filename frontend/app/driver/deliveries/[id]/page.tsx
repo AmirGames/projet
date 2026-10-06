@@ -683,7 +683,7 @@ export default function DeliveryTrackingPage() {
                           />
                           {updating && (
                             <span className="flex items-center gap-2 text-sm text-gray-500">
-                              <Loader size={16} className="animate-spin" /> Vérification…
+                              <Loader size={16} className="animate-spin" /> {t('verification')}
                             </span>
                           )}
                         </div>

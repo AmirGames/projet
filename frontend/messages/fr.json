@@ -140,7 +140,8 @@
     "titleRole": "Tableau de bord ZupEat · {role}",
     "titleGeneric": "Tableau de bord ZupEat",
     "subtitleTeam": "Vue d'ensemble de ZupEat, selon les accès de votre rôle",
-    "loggedInAsRole": "🔐 Vous êtes connecté en tant que {role}. Vous n'avez accès qu'aux sections ouvertes à votre rôle ; demandez au SuperOwner pour en obtenir d'autres."
+    "loggedInAsRole": "🔐 Vous êtes connecté en tant que {role}. Vous n'avez accès qu'aux sections ouvertes à votre rôle ; demandez au SuperOwner pour en obtenir d'autres.",
+    "ongletTitre": "Administration — ZupEat"
   },
   "superownerOrganizations": {
     "title": "Organisations",
@@ -614,7 +615,8 @@
     "saving": "Enregistrement…",
     "save": "Enregistrer",
     "merchantView": "Vue commerçant : {name} — {weeklyPrice} / semaine (facturé {price} / mois), {stores, plural, one {# boutique} other {# boutiques}}, {commission}% de commission sur les ventes avec sa propre livraison, {platformCommission}% avec les livreurs de la plateforme.",
-    "footerNote": "Le code d'une formule ne change pas : il rattache les commerçants déjà abonnés. Un quota ne peut pas passer sous ce que des commerçants exploitent déjà — faites-les migrer d'abord."
+    "footerNote": "Le code d'une formule ne change pas : il rattache les commerçants déjà abonnés. Un quota ne peut pas passer sous ce que des commerçants exploitent déjà — faites-les migrer d'abord.",
+    "argumentN": "Argument {n} de {code}"
   },
   "superownerAdvancedSettings": {
     "title": "Paramètres Avancés",
@@ -851,6 +853,11 @@
       "iban": " (IBAN •••{fin}).",
       "ibanManquant": " — IBAN manquant ou invalide.",
       "nEffacezPas": "N’effacez pas ses données avant ce versement."
+    },
+    "vehicules": {
+      "car": "Voiture",
+      "scooter": "Scooter",
+      "bike": "Vélo"
     }
   },
   "superownerOrganizationDetail": {
@@ -936,7 +943,8 @@
     "joursAvantSuppression": "{n} j avant suppression permanente",
     "suppressionPrevue": "Suppression prévue le {date}",
     "boutiquesN": "Boutiques ({n})",
-    "equipeN": "Équipe ({n})"
+    "equipeN": "Équipe ({n})",
+    "reactivation": "Réactivation..."
   },
   "superownerWebhooks": {
     "title": "Webhooks",
@@ -1000,7 +1008,8 @@
     "secret_warning": "Copiez ce secret maintenant : il ne sera plus jamais affiché.",
     "testError": "❌ Essai impossible",
     "testSending": "Envoi d’essai en cours…",
-    "test_send_label": "Envoi d’essai vers {url}"
+    "test_send_label": "Envoi d’essai vers {url}",
+    "echec": "échec"
   },
   "superownerStoreDetail": {
     "title": "Détail de la boutique",
@@ -1103,7 +1112,13 @@
     "aucuneZone": "Aucune zone : la boutique facture {frais} partout, à partir de {minimum}.",
     "zoneRayon": "{km} km",
     "zonePolygone": "polygone ({n} pts)",
-    "inactive": " (inactive)"
+    "inactive": " (inactive)",
+    "formuleInconnue": "Formule inconnue — migration non appliquée",
+    "nonFacturee": "Commande non encore facturée",
+    "legendeTaux": "<bleu>Bleu</bleu> = taux figé à la commande. <jaune>Jaune</jaune> = commande ancienne, taux estimé.",
+    "quiContacter": "Qui contacter",
+    "aucunCompte": "Aucun compte rattaché.",
+    "aucuneCommande": "Aucune commande pour l'instant."
   },
   "superownerNotifications": {
     "title": "Notifications & Alertes",
@@ -1820,7 +1835,8 @@
     "reorderNone": "Aucun de ces articles n'est disponible aujourd'hui.",
     "reorderUnavailable": "Ce commerce n'est pas joignable pour le moment.",
     "reorderSeeCart": "Voir le panier",
-    "commandeNumero": "Commande {numero}"
+    "commandeNumero": "Commande {numero}",
+    "produitSupprime": "Produit supprimé"
   },
   "clientOrderDetail": {
     "statusPending": "En attente",
@@ -1851,7 +1867,12 @@
     "refusee": "Le restaurant a refusé votre commande.",
     "minutes": "{n} min",
     "aLInstant": "À l'instant",
-    "commandeNumero": "Commande {numero}"
+    "commandeNumero": "Commande {numero}",
+    "statusAccepted": "Acceptée",
+    "statusReady": "Prête",
+    "statusCompleted": "Terminée",
+    "statusRejected": "Refusée",
+    "produitSupprime": "Produit supprimé"
   },
   "accesDemo": {
     "titre": "Essayer l'espace commerçant",
@@ -2032,7 +2053,8 @@
       "inscrire": "S'inscrire ici",
       "besoinAide": "Besoin d'aide ?",
       "contacter": "Contactez le support"
-    }
+    },
+    "erreurServeur": "Erreur de connexion au serveur"
   },
   "driverDashboard": {
     "loading": "Chargement...",
@@ -2149,7 +2171,8 @@
       "errorConnection": "Erreur de connexion",
       "emailPlaceholder": "vous@exemple.fr",
       "demandeEnvoyee": "Demande envoyée.",
-      "injoignable": "Serveur injoignable. Réessayez dans un instant."
+      "injoignable": "Serveur injoignable. Réessayez dans un instant.",
+      "sessionExpiree": "Votre session n'est plus valable. Reconnectez-vous."
     },
     "signup": {
       "title": "S'inscrire",
@@ -2199,7 +2222,21 @@
     "error": "Erreur lors de la réinitialisation",
     "passwordsMismatch": "Les mots de passe ne correspondent pas",
     "backToLogin": "Retour à la connexion",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "lienIncomplet": "Lien incomplet",
+    "sansJeton": "Cette adresse ne contient pas de jeton. Ouvrez le lien depuis l'e-mail reçu, ou demandez-en un nouveau.",
+    "nouveauLien": "Demander un nouveau lien",
+    "modifie": "Mot de passe modifié",
+    "redirection": "Vous allez être redirigé vers la connexion.",
+    "seConnecter": "Se connecter maintenant",
+    "nouveauMdp": "Nouveau mot de passe",
+    "regles": "Au moins 8 caractères, dont un chiffre, une minuscule et une majuscule.",
+    "mdp": "Mot de passe",
+    "confirmation": "Confirmation",
+    "chargement": "Chargement...",
+    "differents": "Les deux mots de passe ne sont pas identiques.",
+    "plusValable": "Ce lien n'est plus valable.",
+    "injoignable": "Serveur injoignable. Vérifiez votre connexion."
   },
   "emailVerification": {
     "title": "Vérifiez votre email",
@@ -2359,7 +2396,8 @@
     "loadingError": "Erreur lors du chargement des favoris",
     "noFavorites": "Aucun restaurant favori",
     "title": "Mes restaurants favoris",
-    "viewMenu": "Voir le menu →"
+    "viewMenu": "Voir le menu →",
+    "pasDAvis": "Pas encore d'avis"
   },
   "merchantcustomers": {
     "active": "Actif",
@@ -2636,7 +2674,8 @@
     "imprimerTicket": "Imprimer le ticket",
     "voirFacture": "Voir la facture",
     "chargementCommande": "Impossible de charger la commande",
-    "noteEnregistree": "✅ Note enregistrée"
+    "noteEnregistree": "✅ Note enregistrée",
+    "produitSupprime": "Produit supprimé"
   },
   "merchantpaymentmethods": {
     "active": "Actif",
@@ -3284,7 +3323,8 @@
     "descendre": "Descendre {nom}",
     "nomDe": "Nom de {nom}",
     "prixDe": "Prix de {nom}",
-    "supprimerNom": "Supprimer {nom}"
+    "supprimerNom": "Supprimer {nom}",
+    "replier": "Replier"
   },
   "mesVersements": {
     "alreadyPaid": "Déjà versé",
@@ -4372,7 +4412,12 @@
     "introuvable": "Commande introuvable. Ouvrez le lien de suivi reçu par e-mail ou SMS, ou connectez-vous au compte qui a passé la commande.",
     "remiseParCode": "Remise confirmée par votre code.",
     "depotParPhoto": "Dépôt confirmé par photo, en votre absence.",
-    "photoDepot": "Photo du dépôt de votre commande"
+    "photoDepot": "Photo du dépôt de votre commande",
+    "deposee": "Déposée : {note}",
+    "quantite": "Quantité : {n}",
+    "livreurProcheTitre": "Votre livreur est bientôt là",
+    "livreurProcheTexte": "Vous pouvez descendre devant la porte.",
+    "produitSupprime": "Produit supprimé"
   },
   "motifsRefus": {
     "client": {
@@ -4692,7 +4737,9 @@
     "dossierIncident": "Dossier d'incident",
     "zupdrive": "Transport avec chauffeur, bientôt disponible",
     "zupdriveDescription": "ZupDrive prépare son service de transport de personnes avec chauffeur (VTC). Chauffeurs, faites-vous connaître dès maintenant.",
-    "connexionEnCours": "Connexion en cours"
+    "connexionEnCours": "Connexion en cours",
+    "siteTitre": "ZupEat — Commandez chez vos commerces de proximité",
+    "siteDescription": "La plateforme qui relie commerçants, clients et livreurs de proximité."
   },
   "bandeauCommande": {
     "acceptee": "Commande acceptée",
@@ -4727,7 +4774,13 @@
     "voirTous": "Voir tous les commerces"
   },
   "selecteurEspace": {
-    "changer": "Changer d'espace"
+    "changer": "Changer d'espace",
+    "espaces": {
+      "client": "Espace client",
+      "driver": "Espace livreur",
+      "merchant": "Espace commerçant",
+      "superowner": "Super Owner"
+    }
   },
   "livraisonLivreur": {
     "introuvable": "Livraison non trouvée",
@@ -4796,7 +4849,8 @@
     "client": "Client",
     "preuveRemise": "Preuve de la remise",
     "completee": "✓ Livraison complétée !",
-    "retourDans": "Retour au tableau de bord dans 2 secondes..."
+    "retourDans": "Retour au tableau de bord dans 2 secondes...",
+    "verification": "Vérification…"
   },
   "propositionsCourses": {
     "horsLigne": "Vous avez été mis hors ligne.",
@@ -5028,7 +5082,8 @@
     "historique": "Historique",
     "support": "Support",
     "livreur": "Livreur",
-    "espace": "Espace Livreur"
+    "espace": "Espace Livreur",
+    "deconnexion": "Déconnexion"
   },
   "dossierLivreur": {
     "depotImpossible": "Dépôt impossible",
@@ -5071,7 +5126,11 @@
       "REJECTED": "Refusée",
       "EXPIRED": "Expirée",
       "PENDING": "En attente d'examen"
-    }
+    },
+    "choisirPiece": "Choisissez une pièce",
+    "choisirFichier": "Choisissez un fichier",
+    "donnerLien": "Donnez un lien vers le document",
+    "erreurConnexion": "Erreur de connexion"
   },
   "factureCommercant": {
     "introuvableBoutique": "Facture introuvable pour la boutique sélectionnée",
@@ -5327,7 +5386,12 @@
       "REJECTED": "Refusé",
       "PENDING": "En attente d'examen",
       "EXPIRED": "Expiré"
-    }
+    },
+    "justificatifs": "Justificatifs",
+    "aucunePiece": "Aucune pièce déposée.",
+    "serveurMuet": "Le serveur ne répond pas",
+    "choisirPieceFichier": "Choisissez une pièce et un fichier",
+    "erreurConnexion": "Erreur de connexion"
   },
   "facturesPeppol": {
     "chargementImpossible": "Chargement impossible",
@@ -5450,7 +5514,8 @@
     "commercant": "Commerçant",
     "livreur": "Livreur",
     "commandes": "{n, plural, one {# commande} other {# commandes}}",
-    "ibanManquant": "IBAN manquant ou invalide"
+    "ibanManquant": "IBAN manquant ou invalide",
+    "lotVerse": "Lot versé : {commercants} commerçant(s), {livreurs} livreur(s)."
   },
   "choixRole": {
     "erreurRoles": "Erreur lors du chargement des rôles",
@@ -5524,7 +5589,10 @@
     "annuler": "Annuler",
     "erreurAuth": "Erreur d'authentification",
     "bloqueRaison": "Vous ne pouvez pas créer de boutique. Raison : {raison}. Contactez le support pour rétablir votre compte.",
-    "nonSpecifiee": "non spécifiée"
+    "nonSpecifiee": "non spécifiée",
+    "aucuneOrganisation": "Aucune organisation trouvée",
+    "erreurConnexion": "Erreur de connexion",
+    "villeExemple": "Liège"
   },
   "assistant": {
     "imageNonPriseEnCharge": "[Image non prise en charge]",
@@ -5699,7 +5767,8 @@
     "remiseCode": "Remise ({code})",
     "paiementRegle": "Paiement : réglé",
     "paiementEnAttente": "Paiement : en attente",
-    "aucuneBoutique": "Aucune boutique indiquée : ajoutez ?storeId=... à l'adresse."
+    "aucuneBoutique": "Aucune boutique indiquée : ajoutez ?storeId=... à l'adresse.",
+    "chargementImpossible": "Impossible de charger le document"
   },
   "accueilZupdrive": {
     "sujetPrevenir": "Prévenez-moi de l’ouverture de ZupDrive",
@@ -5740,5 +5809,78 @@
     "adminTexte": "Gérez l'ensemble de la plateforme, utilisateurs et paramètres",
     "adminLien": "Accéder à l'admin →",
     "bienvenue": "Bienvenue, {email}"
+  },
+  "verifierEmail": {
+    "enCours": "Confirmation en cours...",
+    "confirmee": "Adresse confirmée",
+    "seConnecter": "Se connecter",
+    "impossible": "Confirmation impossible",
+    "expire": "Un lien de confirmation expire au bout de 24 heures. Connectez-vous pour en demander un nouveau.",
+    "retour": "Retour à la connexion",
+    "chargement": "Chargement...",
+    "sansJeton": "Cette adresse ne contient pas de jeton. Ouvrez le lien depuis l'e-mail reçu.",
+    "plusValable": "Ce lien de confirmation n'est pas valable.",
+    "injoignable": "Serveur injoignable. Vérifiez votre connexion.",
+    "estLaVotre": "<fort>{adresse}</fort> est bien la vôtre."
+  },
+  "selecteurTheme": {
+    "titre": "Thème de l'interface",
+    "choisir": "Choisir un thème",
+    "aide": "Le thème change immédiatement et est sauvegardé automatiquement.",
+    "themes": {
+      "dark": {
+        "nom": "Sombre (Défaut)",
+        "description": "Thème sombre classique avec fond gris foncé"
+      },
+      "ocean": {
+        "nom": "Océan",
+        "description": "Thème bleu océan avec accents turquoise"
+      },
+      "forest": {
+        "nom": "Forêt",
+        "description": "Thème vert naturel avec accents de bois"
+      },
+      "sunset": {
+        "nom": "Coucher de soleil",
+        "description": "Thème chaud avec dégradé orange-rouge"
+      },
+      "neon": {
+        "nom": "Néon",
+        "description": "Thème futuriste avec couleurs lumineuses"
+      },
+      "professional": {
+        "nom": "Professionnel",
+        "description": "Thème sobre et minimaliste pour les affaires"
+      }
+    }
+  },
+  "profilEquipe": {
+    "titre": "Mon profil"
+  },
+  "fichiers": {
+    "pdfTropLourd": "Le PDF ne doit pas dépasser 5 Mo",
+    "imageTropLourde": "L'image ne doit pas dépasser 2 Mo"
+  },
+  "apercuDocument": {
+    "chargement": "Chargement…",
+    "impossible": "Impossible d'afficher ce fichier ici.",
+    "ouvrir": "Ouvrir dans un nouvel onglet"
+  },
+  "ancienneGestionBoutique": {
+    "ouverture": "Ouverture de votre boutique..."
+  },
+  "boutiquesCourantes": {
+    "erreurServeur": "Erreur serveur : impossible de charger les boutiques.",
+    "erreur": "Erreur : impossible de charger les boutiques.",
+    "erreurReseau": "Erreur réseau : impossible de charger les boutiques."
+  },
+  "notificationsHook": {
+    "serveurCharger": "Erreur serveur : impossible de charger les notifications.",
+    "charger": "Erreur : impossible de charger les notifications.",
+    "reseau": "Erreur réseau : vérifiez votre connexion.",
+    "serveurLu": "Erreur serveur : impossible de marquer comme lu.",
+    "reseauLu": "Erreur réseau : impossible de marquer comme lu.",
+    "serveurTous": "Erreur serveur : impossible de marquer tous comme lus.",
+    "reseauTous": "Erreur réseau : impossible de marquer tous comme lus."
   }
 }

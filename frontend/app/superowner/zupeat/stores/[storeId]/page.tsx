@@ -599,7 +599,7 @@ export default function FicheBoutiquePage() {
             </h2>
 
             {(!fiche.dernieresCommandes || fiche.dernieresCommandes.length === 0) ? (
-              <p className="text-sm text-gray-500">Aucune commande pour l&apos;instant.</p>
+              <p className="text-sm text-gray-500">{t('aucuneCommande')}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -629,7 +629,7 @@ export default function FicheBoutiquePage() {
                               {c.tierAtOrder}
                             </span>
                           ) : (
-                            <span className="text-xs bg-gray-50 px-2 py-0.5 rounded text-gray-500" title="Formule inconnue — migration non appliquée">
+                            <span className="text-xs bg-gray-50 px-2 py-0.5 rounded text-gray-500" title={t('formuleInconnue')}>
                               ~{c.commissionPercent.toFixed(0)} %
                             </span>
                           )}
@@ -638,7 +638,7 @@ export default function FicheBoutiquePage() {
                           {c.commissionAmount > 0 ? (
                             <span className="text-blue-600">{c.commissionPercent.toFixed(2)} %</span>
                           ) : (
-                            <span className="text-yellow-600" title="Commande non encore facturée">
+                            <span className="text-yellow-600" title={t('nonFacturee')}>
                               ~{c.commissionPercent.toFixed(2)} %
                             </span>
                           )}
@@ -661,18 +661,20 @@ export default function FicheBoutiquePage() {
                   </tfoot>
                 </table>
                 <p className="text-xs text-gray-500 mt-2">
-                  <span className="text-blue-600">Bleu</span> = taux figé à la commande. &nbsp;
-                  <span className="text-yellow-600">Jaune</span> = commande ancienne, taux estimé.
+                  {t.rich('legendeTaux', {
+                    bleu: (morceau) => <span className="text-blue-600">{morceau}</span>,
+                    jaune: (morceau) => <span className="text-yellow-600">{morceau}</span>,
+                  })}
                 </p>
               </div>
             )}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-gray-900">Qui contacter</h2>
+            <h2 className="font-semibold text-gray-900">{t('quiContacter')}</h2>
 
             {fiche.org.memberships.length === 0 ? (
-              <p className="text-sm text-gray-500">Aucun compte rattaché.</p>
+              <p className="text-sm text-gray-500">{t('aucunCompte')}</p>
             ) : (
               <ul className="text-sm space-y-2">
                 {fiche.org.memberships.map((adhesion) => (

@@ -70,7 +70,7 @@ function DocumentImprimable() {
 
       setFacture(donnees);
     } catch {
-      setErreur('Impossible de charger le document');
+      setErreur(t('chargementImpossible'));
     } finally {
       setChargement(false);
     }

@@ -81,10 +81,11 @@ const COULEURS: Record<string, string> = {
   INACTIVE: 'bg-gray-100 text-gray-700',
 };
 
-const VEHICULES: Record<string, { icone: typeof Car; libelle: string }> = {
-  car: { icone: Car, libelle: 'Voiture' },
-  scooter: { icone: Truck, libelle: 'Scooter' },
-  bike: { icone: Bike, libelle: 'Vélo' },
+// Libellé de chaque véhicule : `vehicules.<type>` des traductions.
+const VEHICULES: Record<string, { icone: typeof Car }> = {
+  car: { icone: Car },
+  scooter: { icone: Truck },
+  bike: { icone: Bike },
 };
 
 export default function LivreursPage() {
@@ -299,9 +300,11 @@ export default function LivreursPage() {
         <div className="space-y-3">
           {livreurs.map((livreur) => {
             const ouvert = dossier?.driver.id === livreur.id;
-            const vehicule = VEHICULES[livreur.vehicleType] || {
-              icone: Car,
-              libelle: livreur.vehicleType,
+            const vehicule = {
+              icone: VEHICULES[livreur.vehicleType]?.icone ?? Car,
+              libelle: VEHICULES[livreur.vehicleType]
+                ? t(`vehicules.${livreur.vehicleType}`)
+                : livreur.vehicleType,
             };
             const IconeVehicule = vehicule.icone;
 

@@ -182,7 +182,7 @@ export default function FavoritesPage() {
                           <span className="text-gray-500 text-sm">({store.totalRatings} avis)</span>
                         </>
                       ) : (
-                        <span className="text-gray-500 text-sm">Pas encore d&apos;avis</span>
+                        <span className="text-gray-500 text-sm">{t('pasDAvis')}</span>
                       )}
                     </div>
 

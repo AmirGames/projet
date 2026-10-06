@@ -80,6 +80,7 @@ function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) 
 
 export function DossierCommercant({ orgId }: { orgId: string }) {
   const t = useTranslations('dossierCommercant');
+  const tFichiers = useTranslations('fichiers');
   const locale = useLocale();
   const dateCourte = (iso: string) => new Date(iso).toLocaleDateString(locale);
   const [dossier, setDossier] = useState<Dossier | null>(null);
@@ -181,7 +182,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       setMotif((actuel) => ({ ...actuel, [piece.id]: '' }));
       await charger();
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur(t('serveurMuet'));
     } finally {
       setEnCours('');
     }
@@ -208,7 +209,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
 
       await charger();
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur(t('serveurMuet'));
     } finally {
       setEnCours('');
     }
@@ -219,14 +220,14 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     setErreurUpload('');
 
     if (!typePiece || !fichier) {
-      setErreurUpload('Choisissez une pièce et un fichier');
+      setErreurUpload(t('choisirPieceFichier'));
       return;
     }
 
     const aEnvoyer = await reduireImage(fichier);
     const trop = erreurDeTaille(aEnvoyer);
     if (trop) {
-      setErreurUpload(trop);
+      setErreurUpload(tFichiers(trop));
       return;
     }
 
@@ -259,7 +260,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       setAfficherFormulaire(false);
       await charger();
     } catch {
-      setErreurUpload('Erreur de connexion');
+      setErreurUpload(t('erreurConnexion'));
     } finally {
       setEnvoi(false);
     }
@@ -352,7 +353,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
 
       <div className="border-t border-gray-200 pt-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">Justificatifs</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{t('justificatifs')}</h3>
           <button
             type="button"
             onClick={() => setAfficherFormulaire(!afficherFormulaire)}
@@ -431,7 +432,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
         )}
 
         {dossier.documents.length === 0 ? (
-          <p className="text-sm text-gray-500">Aucune pièce déposée.</p>
+          <p className="text-sm text-gray-500">{t('aucunePiece')}</p>
         ) : (
           <ul className="space-y-2">
             {dossier.documents.map((piece) => {

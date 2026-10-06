@@ -109,7 +109,7 @@ export default function DriverLayout({
                   className="w-full flex items-center gap-3 rounded-[10px] px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   <LogOut size={20} />
-                  Déconnexion
+                  {t('deconnexion')}
                 </button>
               </div>
             )}
@@ -153,7 +153,7 @@ export default function DriverLayout({
                   className="flex items-center gap-2 rounded-full px-4 py-2 font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   <LogOut size={18} />
-                  Déconnexion
+                  {t('deconnexion')}
                 </button>
                 <LanguageSwitcher clair />
               </div>

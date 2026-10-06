@@ -138,7 +138,7 @@ export default function VersementsSepaPage() {
       });
       const lu = await rep.json();
       if (!rep.ok) throw new Error(lu?.error || t('marquerImpossible'));
-      setMessage(`Lot versé : ${lu.data.commercants} commerçant(s), ${lu.data.livreurs} livreur(s).`);
+      setMessage(t('lotVerse', { commercants: lu.data.commercants, livreurs: lu.data.livreurs }));
       await charger();
     } catch (e) {
       setErreur(e instanceof Error ? e.message : t('erreur'));

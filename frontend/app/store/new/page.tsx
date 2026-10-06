@@ -138,7 +138,7 @@ export default function CreateStorePage() {
       const orgId = meData.organizations?.[0]?.id;
 
       if (!orgId) {
-        setError('Aucune organisation trouvée');
+        setError(t('aucuneOrganisation'));
         return;
       }
 
@@ -177,7 +177,7 @@ export default function CreateStorePage() {
 
       router.push(espaceDAccueilLocal());
     } catch (err) {
-      setError('Erreur de connexion');
+      setError(t('erreurConnexion'));
       signalerErreur(err);
     } finally {
       setLoading(false);
@@ -360,7 +360,7 @@ export default function CreateStorePage() {
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      placeholder="Liège"
+                      placeholder={t('villeExemple')}
                       className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

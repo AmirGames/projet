@@ -482,7 +482,7 @@ export default function ReviewPage() {
                       <div key={item.productId} className="bg-gray-100 rounded-lg p-4">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <p className="text-gray-900 font-semibold">{item.name}</p>
+                            <p className="text-gray-900 font-semibold">{item.name || t('produitSupprime')}</p>
                             <p className="text-gray-500 text-sm">x{item.quantity} • {euro(item.total)}</p>
                           </div>
                         </div>

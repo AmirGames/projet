@@ -13,9 +13,9 @@ import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const VEHICULES = [
-  { valeur: 'bike', libelle: 'Vélo', icone: Bike },
-  { valeur: 'scooter', libelle: 'Scooter', icone: Truck },
-  { valeur: 'car', libelle: 'Voiture', icone: Car },
+  { valeur: 'bike', icone: Bike },
+  { valeur: 'scooter', icone: Truck },
+  { valeur: 'car', icone: Car },
 ];
 
 interface FormData {

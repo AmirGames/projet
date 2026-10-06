@@ -366,7 +366,7 @@ export default function MerchantDetailPage() {
               disabled={saving}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2 text-white"
             >
-              {saving ? 'Réactivation...' : t('reactivate')}
+              {saving ? t('reactivation') : t('reactivate')}
             </button>
           )}
 

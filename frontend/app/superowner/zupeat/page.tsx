@@ -89,7 +89,7 @@ export default function SuperOwnerDashboard() {
 
   return (
     <div className="space-y-6">
-      <title>Administration — ZupEat</title>
+      <title>{t('ongletTitre')}</title>
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">

@@ -162,11 +162,11 @@ export default function OrderTrackingPage() {
   const getStatusInfo = (status: string) => {
     const statuses: Record<string, { label: string; color: string; icon: string }> = {
       PENDING: { label: t('statusPending'), color: 'yellow', icon: '⏳' },
-      ACCEPTED: { label: 'Acceptée', color: 'blue', icon: '✓' },
+      ACCEPTED: { label: t('statusAccepted'), color: 'blue', icon: '✓' },
       PREPARING: { label: t('statusPreparing'), color: 'orange', icon: '👨‍🍳' },
-      READY: { label: 'Prête', color: 'yellow-green', icon: '📦' },
-      COMPLETED: { label: 'Complétée', color: 'green', icon: '✓✓' },
-      REJECTED: { label: 'Refusée', color: 'red', icon: '✗' },
+      READY: { label: t('statusReady'), color: 'yellow-green', icon: '📦' },
+      COMPLETED: { label: t('statusCompleted'), color: 'green', icon: '✓✓' },
+      REJECTED: { label: t('statusRejected'), color: 'red', icon: '✗' },
     };
     return statuses[status] || { label: status, color: 'gray', icon: '?' };
   };
@@ -408,7 +408,7 @@ export default function OrderTrackingPage() {
                           </p>
                         )}
                         <p className="text-gray-900 font-semibold">
-                          {intituleDeLaLigne(item).plat}
+                          {intituleDeLaLigne(item).plat || t('produitSupprime')}
                           {intituleDeLaLigne(item).declinaison && (
                             <span className="text-orange-600">
                               {' '}

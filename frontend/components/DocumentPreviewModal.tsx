@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 
 import { adresseLisible, ouvrirPiece } from '@/lib/fichiers-prives';
+import { useTranslations } from 'next-intl';
 
 interface DocumentPreviewModalProps {
   documentUrl: string;
@@ -36,6 +37,7 @@ function typeDuFichier(octets: Uint8Array, typeAnnonce: string): string {
 }
 
 export function DocumentPreviewModal({ documentUrl, libelle, onClose }: DocumentPreviewModalProps) {
+  const t = useTranslations('apercuDocument');
   const [apercu, setApercu] = useState<Apercu>({ etat: 'chargement' });
 
   // Le fichier est téléchargé puis affiché depuis une copie locale : les
@@ -98,7 +100,7 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
 
         <div className="flex-1 overflow-auto bg-white flex items-center justify-center">
           {apercu.etat === 'chargement' && (
-            <p className="p-8 text-gray-500">Chargement…</p>
+            <p className="p-8 text-gray-500">{t('chargement')}</p>
           )}
 
           {apercu.etat === 'pret' && apercu.type === 'application/pdf' && (
@@ -123,7 +125,7 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
               apercu.type !== 'application/pdf' &&
               !apercu.type.startsWith('image/'))) && (
             <div className="p-8 text-center text-gray-700">
-              <p>Impossible d&apos;afficher ce fichier ici.</p>
+              <p>{t('impossible')}</p>
               <a
                 href={apercu.etat === 'pret' ? apercu.url : documentUrl}
                 target="_blank"
@@ -135,7 +137,7 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
                 }}
                 className="mt-2 inline-block text-blue-600 underline"
               >
-                Ouvrir dans un nouvel onglet
+                {t('ouvrir')}
               </a>
             </div>
           )}

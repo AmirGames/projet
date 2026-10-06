@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -14,6 +15,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * on mémorise la boutique choisie afin que le sélecteur se positionne dessus.
  */
 export default function AncienneGestionBoutique() {
+  const t = useTranslations('ancienneGestionBoutique');
   const router = useRouter();
   const params = useParams();
   const storeId = params?.id as string;
@@ -52,7 +54,7 @@ export default function AncienneGestionBoutique() {
     <div className="min-h-screen bg-[#F7F7F6] flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mx-auto mb-4" />
-        <p className="text-gray-500">Ouverture de votre boutique...</p>
+        <p className="text-gray-500">{t('ouverture')}</p>
       </div>
     </div>
   );

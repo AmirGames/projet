@@ -140,7 +140,8 @@
     "titleRole": "ZupEat dashboard · {role}",
     "titleGeneric": "ZupEat dashboard",
     "subtitleTeam": "ZupEat overview, within your role's access",
-    "loggedInAsRole": "🔐 You are logged in as {role}. You can only access the sections open to your role; ask the SuperOwner for more."
+    "loggedInAsRole": "🔐 You are logged in as {role}. You can only access the sections open to your role; ask the SuperOwner for more.",
+    "ongletTitre": "Administration — ZupEat"
   },
   "superownerOrganizations": {
     "title": "Organizations",
@@ -614,7 +615,8 @@
     "saving": "Saving…",
     "save": "Save",
     "merchantView": "Merchant view: {name} — {weeklyPrice} / week (billed {price} / month), {stores, plural, one {# store} other {# stores}}, {commission}% commission on sales with own delivery, {platformCommission}% with platform drivers.",
-    "footerNote": "A plan's code never changes: it links already-subscribed merchants. A quota can't drop below what merchants already use — migrate them first."
+    "footerNote": "A plan's code never changes: it links already-subscribed merchants. A quota can't drop below what merchants already use — migrate them first.",
+    "argumentN": "Point {n} of {code}"
   },
   "superownerAdvancedSettings": {
     "title": "Advanced Settings",
@@ -851,6 +853,11 @@
       "iban": " (IBAN •••{fin}).",
       "ibanManquant": " — missing or invalid IBAN.",
       "nEffacezPas": "Do not erase their data before this payout."
+    },
+    "vehicules": {
+      "car": "Car",
+      "scooter": "Scooter",
+      "bike": "Bike"
     }
   },
   "superownerOrganizationDetail": {
@@ -936,7 +943,8 @@
     "joursAvantSuppression": "{n} days before permanent deletion",
     "suppressionPrevue": "Deletion scheduled on {date}",
     "boutiquesN": "Shops ({n})",
-    "equipeN": "Team ({n})"
+    "equipeN": "Team ({n})",
+    "reactivation": "Reactivating..."
   },
   "superownerWebhooks": {
     "title": "Webhooks",
@@ -1000,7 +1008,8 @@
     "secret_warning": "Copy this secret now: it will never be shown again.",
     "testError": "❌ Test failed",
     "testSending": "Sending test…",
-    "test_send_label": "Test delivery to {url}"
+    "test_send_label": "Test delivery to {url}",
+    "echec": "failed"
   },
   "superownerStoreDetail": {
     "title": "Store Details",
@@ -1103,7 +1112,13 @@
     "aucuneZone": "No zone: the shop charges {frais} everywhere, from {minimum}.",
     "zoneRayon": "{km} km",
     "zonePolygone": "polygon ({n} pts)",
-    "inactive": " (inactive)"
+    "inactive": " (inactive)",
+    "formuleInconnue": "Unknown plan — migration not applied",
+    "nonFacturee": "Order not invoiced yet",
+    "legendeTaux": "<bleu>Blue</bleu> = rate fixed at order time. <jaune>Yellow</jaune> = older order, estimated rate.",
+    "quiContacter": "Who to contact",
+    "aucunCompte": "No linked account.",
+    "aucuneCommande": "No orders yet."
   },
   "superownerNotifications": {
     "title": "Notifications & Alerts",
@@ -1820,7 +1835,8 @@
     "reorderNone": "None of these items is available today.",
     "reorderUnavailable": "This shop can't be reached right now.",
     "reorderSeeCart": "See basket",
-    "commandeNumero": "Order {numero}"
+    "commandeNumero": "Order {numero}",
+    "produitSupprime": "Deleted product"
   },
   "clientOrderDetail": {
     "statusPending": "Pending",
@@ -1851,7 +1867,12 @@
     "refusee": "The restaurant declined your order.",
     "minutes": "{n} min",
     "aLInstant": "Just now",
-    "commandeNumero": "Order {numero}"
+    "commandeNumero": "Order {numero}",
+    "statusAccepted": "Accepted",
+    "statusReady": "Ready",
+    "statusCompleted": "Completed",
+    "statusRejected": "Rejected",
+    "produitSupprime": "Deleted product"
   },
   "accesDemo": {
     "titre": "Try the merchant space",
@@ -2032,7 +2053,8 @@
       "inscrire": "Sign up here",
       "besoinAide": "Need help?",
       "contacter": "Contact support"
-    }
+    },
+    "erreurServeur": "Server connection error"
   },
   "driverDashboard": {
     "loading": "Loading...",
@@ -2149,7 +2171,8 @@
       "errorConnection": "Connection error",
       "emailPlaceholder": "you@example.com",
       "demandeEnvoyee": "Request sent.",
-      "injoignable": "Server unreachable. Try again in a moment."
+      "injoignable": "Server unreachable. Try again in a moment.",
+      "sessionExpiree": "Your session is no longer valid. Please log in again."
     },
     "signup": {
       "title": "Sign up",
@@ -2199,7 +2222,21 @@
     "error": "Error resetting password",
     "passwordsMismatch": "Passwords do not match",
     "backToLogin": "Back to login",
-    "save": "Save"
+    "save": "Save",
+    "lienIncomplet": "Incomplete link",
+    "sansJeton": "This address contains no token. Open the link from the email you received, or request a new one.",
+    "nouveauLien": "Request a new link",
+    "modifie": "Password changed",
+    "redirection": "You will be redirected to the login page.",
+    "seConnecter": "Log in now",
+    "nouveauMdp": "New password",
+    "regles": "At least 8 characters, including a digit, a lowercase and an uppercase letter.",
+    "mdp": "Password",
+    "confirmation": "Confirmation",
+    "chargement": "Loading...",
+    "differents": "The two passwords do not match.",
+    "plusValable": "This link is no longer valid.",
+    "injoignable": "Server unreachable. Check your connection."
   },
   "emailVerification": {
     "title": "Verify your email",
@@ -2359,7 +2396,8 @@
     "loadingError": "Error loading favorites",
     "noFavorites": "No favorite restaurants",
     "title": "My favorite restaurants",
-    "viewMenu": "View menu →"
+    "viewMenu": "View menu →",
+    "pasDAvis": "No reviews yet"
   },
   "merchantcustomers": {
     "active": "Active",
@@ -2636,7 +2674,8 @@
     "imprimerTicket": "Print the receipt",
     "voirFacture": "View the invoice",
     "chargementCommande": "Unable to load the order",
-    "noteEnregistree": "✅ Note saved"
+    "noteEnregistree": "✅ Note saved",
+    "produitSupprime": "Deleted product"
   },
   "merchantpaymentmethods": {
     "active": "Active",
@@ -3284,7 +3323,8 @@
     "descendre": "Move {nom} down",
     "nomDe": "Name of {nom}",
     "prixDe": "Price of {nom}",
-    "supprimerNom": "Delete {nom}"
+    "supprimerNom": "Delete {nom}",
+    "replier": "Collapse"
   },
   "mesVersements": {
     "alreadyPaid": "Already paid",
@@ -4372,7 +4412,12 @@
     "introuvable": "Order not found. Open the tracking link received by email or text, or log in to the account that placed the order.",
     "remiseParCode": "Handover confirmed with your code.",
     "depotParPhoto": "Drop-off confirmed by photo, while you were away.",
-    "photoDepot": "Photo of your order's drop-off"
+    "photoDepot": "Photo of your order's drop-off",
+    "deposee": "Left: {note}",
+    "quantite": "Quantity: {n}",
+    "livreurProcheTitre": "Your courier is almost there",
+    "livreurProcheTexte": "You can go down to the door.",
+    "produitSupprime": "Deleted product"
   },
   "motifsRefus": {
     "client": {
@@ -4692,7 +4737,9 @@
     "dossierIncident": "Incident file",
     "zupdrive": "Chauffeur-driven transport, coming soon",
     "zupdriveDescription": "ZupDrive is preparing its chauffeur-driven passenger service. Drivers, sign up now.",
-    "connexionEnCours": "Logging in"
+    "connexionEnCours": "Logging in",
+    "siteTitre": "ZupEat — Order from your local shops",
+    "siteDescription": "The platform connecting local merchants, customers and couriers."
   },
   "bandeauCommande": {
     "acceptee": "Order accepted",
@@ -4727,7 +4774,13 @@
     "voirTous": "See all shops"
   },
   "selecteurEspace": {
-    "changer": "Switch space"
+    "changer": "Switch space",
+    "espaces": {
+      "client": "Customer area",
+      "driver": "Courier area",
+      "merchant": "Merchant area",
+      "superowner": "Super Owner"
+    }
   },
   "livraisonLivreur": {
     "introuvable": "Delivery not found",
@@ -4796,7 +4849,8 @@
     "client": "Customer",
     "preuveRemise": "Proof of handover",
     "completee": "✓ Delivery completed!",
-    "retourDans": "Back to the dashboard in 2 seconds..."
+    "retourDans": "Back to the dashboard in 2 seconds...",
+    "verification": "Checking…"
   },
   "propositionsCourses": {
     "horsLigne": "You have been set offline.",
@@ -5028,7 +5082,8 @@
     "historique": "History",
     "support": "Support",
     "livreur": "Courier",
-    "espace": "Courier space"
+    "espace": "Courier space",
+    "deconnexion": "Log out"
   },
   "dossierLivreur": {
     "depotImpossible": "Upload failed",
@@ -5071,7 +5126,11 @@
       "REJECTED": "Rejected",
       "EXPIRED": "Expired",
       "PENDING": "Awaiting review"
-    }
+    },
+    "choisirPiece": "Choose a document type",
+    "choisirFichier": "Choose a file",
+    "donnerLien": "Give a link to the document",
+    "erreurConnexion": "Connection error"
   },
   "factureCommercant": {
     "introuvableBoutique": "Invoice not found for the selected shop",
@@ -5327,7 +5386,12 @@
       "REJECTED": "Rejected",
       "PENDING": "Awaiting review",
       "EXPIRED": "Expired"
-    }
+    },
+    "justificatifs": "Supporting documents",
+    "aucunePiece": "No document uploaded.",
+    "serveurMuet": "The server is not responding",
+    "choisirPieceFichier": "Choose a document type and a file",
+    "erreurConnexion": "Connection error"
   },
   "facturesPeppol": {
     "chargementImpossible": "Unable to load",
@@ -5450,7 +5514,8 @@
     "commercant": "Merchant",
     "livreur": "Courier",
     "commandes": "{n, plural, one {# order} other {# orders}}",
-    "ibanManquant": "Missing or invalid IBAN"
+    "ibanManquant": "Missing or invalid IBAN",
+    "lotVerse": "Batch paid: {commercants} merchant(s), {livreurs} courier(s)."
   },
   "choixRole": {
     "erreurRoles": "Error loading roles",
@@ -5524,7 +5589,10 @@
     "annuler": "Cancel",
     "erreurAuth": "Authentication error",
     "bloqueRaison": "You cannot create a shop. Reason: {raison}. Contact support to restore your account.",
-    "nonSpecifiee": "not specified"
+    "nonSpecifiee": "not specified",
+    "aucuneOrganisation": "No organisation found",
+    "erreurConnexion": "Connection error",
+    "villeExemple": "Liège"
   },
   "assistant": {
     "imageNonPriseEnCharge": "[Image not supported]",
@@ -5699,7 +5767,8 @@
     "remiseCode": "Discount ({code})",
     "paiementRegle": "Payment: paid",
     "paiementEnAttente": "Payment: pending",
-    "aucuneBoutique": "No shop given: add ?storeId=... to the address."
+    "aucuneBoutique": "No shop given: add ?storeId=... to the address.",
+    "chargementImpossible": "Unable to load the document"
   },
   "accueilZupdrive": {
     "sujetPrevenir": "Let me know when ZupDrive opens",
@@ -5740,5 +5809,78 @@
     "adminTexte": "Manage the whole platform, users and settings",
     "adminLien": "Go to admin →",
     "bienvenue": "Welcome, {email}"
+  },
+  "verifierEmail": {
+    "enCours": "Confirming...",
+    "confirmee": "Address confirmed",
+    "seConnecter": "Log in",
+    "impossible": "Confirmation failed",
+    "expire": "A confirmation link expires after 24 hours. Log in to request a new one.",
+    "retour": "Back to login",
+    "chargement": "Loading...",
+    "sansJeton": "This address contains no token. Open the link from the email you received.",
+    "plusValable": "This confirmation link is not valid.",
+    "injoignable": "Server unreachable. Check your connection.",
+    "estLaVotre": "<fort>{adresse}</fort> is confirmed as yours."
+  },
+  "selecteurTheme": {
+    "titre": "Interface theme",
+    "choisir": "Choose a theme",
+    "aide": "The theme changes immediately and is saved automatically.",
+    "themes": {
+      "dark": {
+        "nom": "Dark (default)",
+        "description": "Classic dark theme with a dark grey background"
+      },
+      "ocean": {
+        "nom": "Ocean",
+        "description": "Ocean blue theme with turquoise accents"
+      },
+      "forest": {
+        "nom": "Forest",
+        "description": "Natural green theme with wood accents"
+      },
+      "sunset": {
+        "nom": "Sunset",
+        "description": "Warm theme with an orange-red gradient"
+      },
+      "neon": {
+        "nom": "Neon",
+        "description": "Futuristic theme with bright colours"
+      },
+      "professional": {
+        "nom": "Professional",
+        "description": "Sober, minimalist business theme"
+      }
+    }
+  },
+  "profilEquipe": {
+    "titre": "My profile"
+  },
+  "fichiers": {
+    "pdfTropLourd": "The PDF must not exceed 5 MB",
+    "imageTropLourde": "The image must not exceed 2 MB"
+  },
+  "apercuDocument": {
+    "chargement": "Loading…",
+    "impossible": "This file cannot be displayed here.",
+    "ouvrir": "Open in a new tab"
+  },
+  "ancienneGestionBoutique": {
+    "ouverture": "Opening your shop..."
+  },
+  "boutiquesCourantes": {
+    "erreurServeur": "Server error: unable to load shops.",
+    "erreur": "Error: unable to load shops.",
+    "erreurReseau": "Network error: unable to load shops."
+  },
+  "notificationsHook": {
+    "serveurCharger": "Server error: unable to load notifications.",
+    "charger": "Error: unable to load notifications.",
+    "reseau": "Network error: check your connection.",
+    "serveurLu": "Server error: unable to mark as read.",
+    "reseauLu": "Network error: unable to mark as read.",
+    "serveurTous": "Server error: unable to mark all as read.",
+    "reseauTous": "Network error: unable to mark all as read."
   }
 }

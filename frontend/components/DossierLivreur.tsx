@@ -67,6 +67,7 @@ const MARQUES: Record<string, { icone: typeof Check; classe: string }> = {
 
 export function DossierLivreur({ surChangement }: { surChangement?: () => void }) {
   const t = useTranslations('dossierLivreur');
+  const tFichiers = useTranslations('fichiers');
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
@@ -107,24 +108,24 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
     setErreur('');
 
     if (!formulaire.type) {
-      setErreur('Choisissez une pièce');
+      setErreur(t('choisirPiece'));
       return;
     }
 
     if (modeUpload === 'file' && !fichier) {
-      setErreur('Choisissez un fichier');
+      setErreur(t('choisirFichier'));
       return;
     }
 
     if (modeUpload === 'link' && !formulaire.documentUrl) {
-      setErreur('Donnez un lien vers le document');
+      setErreur(t('donnerLien'));
       return;
     }
 
     const aEnvoyer = modeUpload === 'file' ? await reduireImage(fichier!) : null;
     const trop = aEnvoyer && erreurDeTaille(aEnvoyer);
     if (trop) {
-      setErreur(trop);
+      setErreur(tFichiers(trop));
       return;
     }
 
@@ -173,7 +174,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
       await charger();
       surChangement?.();
     } catch {
-      setErreur('Erreur de connexion');
+      setErreur(t('erreurConnexion'));
     } finally {
       setEnvoi(false);
     }

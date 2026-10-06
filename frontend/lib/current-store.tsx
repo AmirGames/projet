@@ -3,6 +3,7 @@
 import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -51,6 +52,7 @@ export function CurrentStoreProvider({
   orgId: string;
   children: React.ReactNode;
 }) {
+  const t = useTranslations('boutiquesCourantes');
   const [stores, setStores] = useState<MerchantStore[]>([]);
   const [storeId, setStoreId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -68,9 +70,9 @@ export function CurrentStoreProvider({
 
       if (!response.ok) {
         if (response.status >= 500) {
-          setError('Erreur serveur : impossible de charger les boutiques.');
+          setError(t('erreurServeur'));
         } else {
-          setError('Erreur : impossible de charger les boutiques.');
+          setError(t('erreur'));
         }
         signalerErreur('Failed to load stores:', response.status);
         return;
@@ -86,14 +88,14 @@ export function CurrentStoreProvider({
     } catch (error) {
       signalerErreur('Error loading stores:', error);
       if (estErreurReseau(error)) {
-        setError('Erreur réseau : impossible de charger les boutiques.');
+        setError(t('erreurReseau'));
       } else {
-        setError('Erreur : impossible de charger les boutiques.');
+        setError(t('erreur'));
       }
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, t]);
 
   // Une autre organisation : ses boutiques restent à lire.
   const [orgVue, setOrgVue] = useState(orgId);

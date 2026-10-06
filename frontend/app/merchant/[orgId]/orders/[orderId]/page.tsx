@@ -286,7 +286,7 @@ export default function DetailCommandePage() {
                             {intituleDeLaLigne(ligne).categorie}
                           </span>
                         )}
-                        {intituleDeLaLigne(ligne).plat}
+                        {intituleDeLaLigne(ligne).plat || t('produitSupprime')}
                         {intituleDeLaLigne(ligne).declinaison && (
                           <span className="text-orange-600">
                             {' '}

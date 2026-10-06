@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -12,6 +13,7 @@ type Etat = 'en-cours' | 'confirme' | 'echec';
 
 /** Confirmation d'adresse : le lien reçu suffit, rien à saisir. */
 function Confirmation() {
+  const t = useTranslations('verifierEmail');
   const jeton = useSearchParams().get('jeton') || '';
 
   const [etat, setEtat] = useState<Etat>('en-cours');
@@ -20,7 +22,7 @@ function Confirmation() {
   const confirmer = useCallback(async () => {
     if (!jeton) {
       setEtat('echec');
-      setMessage("Cette adresse ne contient pas de jeton. Ouvrez le lien depuis l'e-mail reçu.");
+      setMessage(t('sansJeton'));
       return;
     }
 
@@ -35,7 +37,7 @@ function Confirmation() {
 
       if (!reponse.ok) {
         setEtat('echec');
-        setMessage(donnees.error || "Ce lien de confirmation n'est pas valable.");
+        setMessage(donnees.error || t('plusValable'));
         return;
       }
 
@@ -43,9 +45,9 @@ function Confirmation() {
       setMessage(donnees.email || '');
     } catch {
       setEtat('echec');
-      setMessage('Serveur injoignable. Vérifiez votre connexion.');
+      setMessage(t('injoignable'));
     }
-  }, [jeton]);
+  }, [jeton, t]);
 
   useEffectChargement(() => {
     confirmer();
@@ -55,7 +57,7 @@ function Confirmation() {
     return (
       <div className="text-center space-y-4">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto" />
-        <p className="text-slate-600">Confirmation en cours...</p>
+        <p className="text-slate-600">{t('enCours')}</p>
       </div>
     );
   }
@@ -64,17 +66,20 @@ function Confirmation() {
     return (
       <div className="text-center space-y-4">
         <CheckCircle2 size={48} className="mx-auto text-gray-900" />
-        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Adresse confirmée</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('confirmee')}</h1>
         {message && (
           <p className="text-slate-600">
-            <strong className="text-slate-900">{message}</strong> est bien la vôtre.
+            {t.rich('estLaVotre', {
+              adresse: message,
+              fort: (morceau) => <strong className="text-slate-900">{morceau}</strong>,
+            })}
           </p>
         )}
         <Link
           href="/login"
           className="inline-block rounded-full bg-gray-900 px-6 py-3 font-bold text-white transition hover:bg-gray-800 hover:no-underline"
         >
-          Se connecter
+          {t('seConnecter')}
         </Link>
       </div>
     );
@@ -83,25 +88,25 @@ function Confirmation() {
   return (
     <div className="text-center space-y-4">
       <XCircle size={48} className="mx-auto text-red-500" />
-      <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Confirmation impossible</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('impossible')}</h1>
       <p className="text-slate-600">{message}</p>
       <p className="text-sm text-slate-500">
-        Un lien de confirmation expire au bout de 24 heures. Connectez-vous pour en demander un
-        nouveau.
+        {t('expire')}
       </p>
       <Link href="/login" className="inline-block font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
-        Retour à la connexion
+        {t('retour')}
       </Link>
     </div>
   );
 }
 
 export default function VerifierEmail() {
+  const t = useTranslations('verifierEmail');
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
-        <Suspense fallback={<p className="text-center text-slate-600">Chargement...</p>}>
+        <Suspense fallback={<p className="text-center text-slate-600">{t('chargement')}</p>}>
           <Confirmation />
         </Suspense>
       </div>

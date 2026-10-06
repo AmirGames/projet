@@ -522,7 +522,7 @@ export default function WebhooksPage() {
                                 <span className="text-green-600">{envoi.statusCode}</span>
                               ) : (
                                 <span className="text-red-600">
-                                  {envoi.statusCode || envoi.error || 'échec'}
+                                  {envoi.statusCode || envoi.error || t('echec')}
                                 </span>
                               )}
                             </td>

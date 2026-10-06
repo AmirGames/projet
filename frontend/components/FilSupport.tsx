@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Send, Check, CheckCheck, Package } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 export interface MessageSupport {
   id: string;
@@ -26,12 +26,13 @@ interface Props {
   clair?: boolean;
 }
 
-const heure = (iso: string) =>
-  new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const heure = (iso: string, locale: string) =>
+  new Date(iso).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** Un fil de discussion livreur ↔ support, commun aux deux espaces. */
 export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]', clair = false }: Props) {
   const t = useTranslations('filSupport');
+  const locale = useLocale();
   const [texte, setTexte] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const bas = useRef<HTMLDivElement>(null);
@@ -83,7 +84,7 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
                       <Package size={11} /> {t('course')}
                     </span>
                   )}
-                  <span>{heure(m.createdAt)}</span>
+                  <span>{heure(m.createdAt, locale)}</span>
                   {deMoi && (m.readAt ? <CheckCheck size={13} aria-label={t('lu')} /> : <Check size={13} aria-label={t('envoye')} />)}
                 </div>
               </div>

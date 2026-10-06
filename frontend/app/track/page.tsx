@@ -506,7 +506,7 @@ export default function TrackOrderPage() {
                     className="w-full max-h-80 object-cover rounded-lg border border-gray-200"
                   />
                   {order.noteDepot && (
-                    <p className="text-sm text-gray-500">Déposée : {order.noteDepot}</p>
+                    <p className="text-sm text-gray-500">{t('deposee', { note: order.noteDepot })}</p>
                   )}
                 </div>
               )}
@@ -553,7 +553,7 @@ export default function TrackOrderPage() {
                         <p className="text-xs text-gray-500">{intituleDeLaLigne(item).categorie}</p>
                       )}
                       <p className="font-semibold">
-                        {intituleDeLaLigne(item).plat}
+                        {intituleDeLaLigne(item).plat || t('produitSupprime')}
                         {intituleDeLaLigne(item).declinaison && (
                           <span className="text-orange-600"> — {intituleDeLaLigne(item).declinaison}</span>
                         )}
@@ -561,7 +561,7 @@ export default function TrackOrderPage() {
                       {intituleDeLaLigne(item).supplements && (
                         <p className="text-xs text-gray-500">+ {intituleDeLaLigne(item).supplements}</p>
                       )}
-                      <p className="text-sm text-gray-500">Quantité: {item.quantity}</p>
+                      <p className="text-sm text-gray-500">{t('quantite', { n: item.quantity })}</p>
                     </div>
                     <p className="text-orange-600 font-semibold">
                       {euro(Number(item.price) * item.quantity)}

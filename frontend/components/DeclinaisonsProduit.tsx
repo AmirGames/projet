@@ -361,7 +361,7 @@ export function DeclinaisonsProduit({
             onClick={() => setOuvert(false)}
             className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition"
           >
-            <X size={14} /> Replier
+            <X size={14} /> {t('replier')}
           </button>
         </div>
       )}

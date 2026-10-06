@@ -3,19 +3,21 @@
 import { Mail, UserCircle } from 'lucide-react';
 import ChangerMotDePasse from '@/components/ChangerMotDePasse';
 import { useAuth } from '@/lib/auth-context';
+import { useTranslations } from 'next-intl';
 
 /**
  * Le compte du membre de l'équipe connecté : qui il est, et de quoi changer
  * son mot de passe sans passer par un lien envoyé par e-mail.
  */
 export default function ProfilEquipe() {
+  const t = useTranslations('profilEquipe');
   const { user } = useAuth();
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
         <UserCircle size={28} className="text-red-500" />
-        Mon profil
+        {t('titre')}
       </h1>
 
       {user && (

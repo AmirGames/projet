@@ -120,7 +120,7 @@ export function SelecteurEspace({
                 }`}
               >
                 <Icone size={18} className="flex-shrink-0" />
-                <span className="flex-1 text-left">{espace.libelle}</span>
+                <span className="flex-1 text-left">{espace.libelle || t(`espaces.${espace.id}`)}</span>
                 {estActuel && <Check size={16} className="text-orange-500" />}
               </button>
             );
