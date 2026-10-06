@@ -82,9 +82,9 @@ export function horsReversements() {
 export const reversementsDepuis = () => debutDesReversements();
 
 /** Les commandes d'une organisation qui attendent d'être reversées. */
-function commandesAReverser(orgId: string, fin: Date) {
+function commandesAReverser(orgId: string, fin: Date, client: Pick<typeof db, "order"> = db) {
   const debut = debutDesReversements();
-  return db.order.findMany({
+  return client.order.findMany({
     where: {
       store: { orgId, org: { isDemo: false } },
       ...DUES_AU_COMMERCANT,
@@ -111,20 +111,26 @@ export class MerchantPayoutService {
       throw new ApiError(400, "La fin de période précède son début", "INVALID_PERIOD");
     }
 
-    const [commandes, reportes] = await Promise.all([
-      commandesAReverser(orgId, periodEnd),
-      db.merchantPayout.findMany({ where: { orgId, status: "CARRIED", carriedToId: null } }),
-    ]);
-
-    if (commandes.length === 0 && reportes.length === 0) return null;
-
-    const report = reportes.reduce((s, r) => s + Number(r.amount), 0);
-    const { lignes, net } = lignesDuReversement(commandes, report);
-
-    // Plus de retenues que de ventes : le solde se reporte, il ne se vire pas.
-    const status = net > 0 ? "PENDING" : net < 0 ? "CARRIED" : "PAID";
-
     const releve = await db.$transaction(async (tx) => {
+      // Un seul arrêté à la fois par commerçant : deux passages simultanés
+      // (deux instances, un clic double) lisaient les mêmes commandes et
+      // créaient chacun un relevé. Le verrou tient jusqu'à la fin de la
+      // transaction ; le second passage relit alors des commandes déjà rattachées.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`releve-commercant:${orgId}`}))`;
+
+      const [commandes, reportes] = await Promise.all([
+        commandesAReverser(orgId, periodEnd, tx),
+        tx.merchantPayout.findMany({ where: { orgId, status: "CARRIED", carriedToId: null } }),
+      ]);
+
+      if (commandes.length === 0 && reportes.length === 0) return null;
+
+      const report = reportes.reduce((s, r) => s + Number(r.amount), 0);
+      const { lignes, net } = lignesDuReversement(commandes, report);
+
+      // Plus de retenues que de ventes : le solde se reporte, il ne se vire pas.
+      const status = net > 0 ? "PENDING" : net < 0 ? "CARRIED" : "PAID";
+
       const cree = await tx.merchantPayout.create({
         data: {
           orgId,
@@ -138,24 +144,35 @@ export class MerchantPayoutService {
         },
       });
 
+      // Rattachement conditionnel : « encore non rattachée ». Si le nombre de
+      // lignes touchées diffère, quelqu'un d'autre est passé : la transaction
+      // est annulée plutôt que d'écraser son relevé.
       if (commandes.length > 0) {
-        await tx.order.updateMany({
-          where: { id: { in: commandes.map((c) => c.id) } },
+        const { count } = await tx.order.updateMany({
+          where: { id: { in: commandes.map((c) => c.id) }, merchantPayoutId: null },
           data: { merchantPayoutId: cree.id },
         });
+        if (count !== commandes.length) {
+          throw new ApiError(409, "Des commandes ont été rattachées à un autre relevé.", "PAYOUT_CONFLICT");
+        }
       }
 
       if (reportes.length > 0) {
-        await tx.merchantPayout.updateMany({
-          where: { id: { in: reportes.map((r) => r.id) } },
+        const { count } = await tx.merchantPayout.updateMany({
+          where: { id: { in: reportes.map((r) => r.id) }, carriedToId: null },
           data: { carriedToId: cree.id },
         });
+        if (count !== reportes.length) {
+          throw new ApiError(409, "Un solde reporté a été repris par un autre relevé.", "PAYOUT_CONFLICT");
+        }
       }
 
       return cree;
     });
 
-    logger.info("Merchant payout drawn up", { orgId, payoutId: releve.id, net, status });
+    if (!releve) return null;
+
+    logger.info("Merchant payout drawn up", { orgId, payoutId: releve.id, net: Number(releve.amount), status: releve.status });
     return releve;
   }
 
