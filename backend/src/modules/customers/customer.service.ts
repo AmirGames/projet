@@ -43,17 +43,28 @@ function vueBoutique<T extends { notes?: string | null; status?: string }>(
   return { ...client, notes: entree?.notes ?? null, status: entree?.status ?? "ACTIVE" };
 }
 
+/**
+ * Les clients d'une boutique : ceux qui y ont commandé, et ceux que le
+ * commerçant a ajoutés à son carnet (rattachement explicite). Un client
+ * retiré du carnet de cette boutique en est exclu, quoi qu'il ait commandé.
+ */
+function clientsDeLaBoutique(storeId: string) {
+  return {
+    deletedAt: null,
+    OR: [
+      { orders: { some: { storeId, deletedAt: null } } },
+      { storeEntries: { some: { storeId, hiddenAt: null } } },
+    ],
+    // Retiré du carnet de cette boutique : introuvable pour elle seule.
+    storeEntries: { none: { storeId, hiddenAt: { not: null } } },
+  };
+}
+
 export class CustomerService {
-  /** Un client appartient à la boutique dès lors qu'il y a passé commande. */
+  /** Un client appartient à la boutique s'il y a commandé ou si son carnet l'a ajouté. */
   private static async assurerRattachement(storeId: string, customerId: string) {
     const client = await db.customer.findFirst({
-      where: {
-        id: customerId,
-        deletedAt: null,
-        orders: { some: { storeId, deletedAt: null } },
-        // Retiré du carnet de cette boutique : introuvable pour elle seule.
-        storeEntries: { none: { storeId, hiddenAt: { not: null } } },
-      },
+      where: { id: customerId, ...clientsDeLaBoutique(storeId) },
       include: { storeEntries: { where: { storeId }, take: 1 } },
     });
 
@@ -69,16 +80,17 @@ export class CustomerService {
     const take = options?.take || 50;
     const search = options?.search || "";
 
-    const whereClause: any = {
-      deletedAt: null,
-      orders: { some: { storeId, deletedAt: null } },
-      storeEntries: { none: { storeId, hiddenAt: { not: null } } },
-    };
+    const whereClause: any = clientsDeLaBoutique(storeId);
 
     if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
+      // Le OR du rattachement reste intact : la recherche s'y ajoute.
+      whereClause.AND = [
+        {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+          ],
+        },
       ];
     }
 
