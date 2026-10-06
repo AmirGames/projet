@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { lignesDuReversement } from "../reversement";
+import { ajustementRemboursement, lignesDuReversement } from "../reversement";
 import { debutDeSemaine, semaineEcoulee } from "../semaine-bruxelles";
 import { fichierSepa, ibanValide, texteSepa } from "../sepa";
 
@@ -154,5 +154,53 @@ describe("SEPA", () => {
     expect(fichier).toContain("<Nm>Pizzeria Roma</Nm>");
     // Lundi 00 h 05 à Bruxelles, encore dimanche en UTC : la date est lundi.
     expect(fichier).toContain("<ReqdExctnDt>2026-09-28</ReqdExctnDt>");
+  });
+});
+
+
+describe("ajustementRemboursement — remboursements clients (C-07)", () => {
+  // 15 € d'articles + 5 € livreur plateforme + 0,25 € de service : payé 20,25 €, commission 1,20 €.
+  const vente = commande({ totalAmount: 20.25, feesAmount: 5, serviceFeeAmount: 0.25, commissionAmount: 1.2, deliveryMode: "PLATFORM" });
+
+  it("un remboursement total rend exactement la part du commerçant et la commission", () => {
+    expect(ajustementRemboursement(vente, 20.25, 0)).toEqual({ partCommercant: -15, commission: 1.2 });
+  });
+
+  it("un remboursement partiel est proratisé sur le montant payé", () => {
+    // 10,125 € sur 20,25 € = la moitié : 7,50 € de ventes, 0,60 € de commission.
+    expect(ajustementRemboursement(vente, 10.125, 0)).toEqual({ partCommercant: -7.5, commission: 0.6 });
+  });
+
+  it("plusieurs remboursements partiels totalisent le même résultat qu'un seul", () => {
+    let repercute = 0;
+    let part = 0;
+    let commission = 0;
+    for (const cumul of [3.33, 7.01, 12.5, 20.25]) {
+      const a = ajustementRemboursement(vente, cumul, repercute);
+      part += a.partCommercant;
+      commission += a.commission;
+      repercute = cumul;
+    }
+    expect(Number(part.toFixed(2))).toBe(-15);
+    expect(Number(commission.toFixed(2))).toBe(1.2);
+  });
+
+  it("rien à corriger quand tout est déjà répercuté", () => {
+    expect(ajustementRemboursement(vente, 5, 5)).toEqual({ partCommercant: 0, commission: 0 });
+  });
+
+  it("jamais plus que le montant payé", () => {
+    expect(ajustementRemboursement(vente, 99, 0)).toEqual({ partCommercant: -15, commission: 1.2 });
+  });
+
+  it("une commande payée sur place ou perdue en livraison n'a pas d'ajustement", () => {
+    expect(ajustementRemboursement(commande({ ...vente, paymentId: null }), 20.25, 0)).toEqual({ partCommercant: 0, commission: 0 });
+    expect(ajustementRemboursement(commande({ ...vente, priseEnCharge: true }), 20.25, 0)).toEqual({ partCommercant: 0, commission: 0 });
+  });
+
+  it("le relevé montre le remboursement sur ses lignes 310 et 210", () => {
+    const { lignes, net } = lignesDuReversement([], 0, { partCommercant: -7.5, commission: 0.6, nombre: 1 });
+    expect(lignes.map((l) => [l.code, l.montant])).toEqual([["210", 0.6], ["310", -7.5]]);
+    expect(net).toBe(-6.9);
   });
 });

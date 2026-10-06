@@ -1207,6 +1207,10 @@ model Payment {
   refundedAt      DateTime?
   refundedAmount  Decimal?     @db.Decimal(10, 2)
   stripeRefundId  String?
+  /// La part du remboursement déjà répercutée sur un relevé de reversement
+  /// commerçant. La différence avec refundedAmount reste à corriger au
+  /// prochain relevé (ligne 310), jamais en retouchant un relevé passé.
+  refundAccountedAmount Decimal @default(0) @db.Decimal(10, 2)
 
   // Relations
   order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)

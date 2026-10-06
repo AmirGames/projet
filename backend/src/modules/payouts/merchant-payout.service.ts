@@ -3,7 +3,13 @@ import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { getEnv } from "../../config/env";
 import { emitNotification } from "../realtime/socket";
-import { LIBELLES_REVERSEMENT, LigneReversement, lignesDuReversement } from "../../utils/reversement";
+import {
+  AjustementRemboursement,
+  LIBELLES_REVERSEMENT,
+  LigneReversement,
+  ajustementRemboursement,
+  lignesDuReversement,
+} from "../../utils/reversement";
 import { dateBruxelles, fichierSepa, ibanNormalise, ibanValide, VirementSepa } from "../../utils/sepa";
 import { debutDeSemaine, semaineEcoulee } from "../../utils/semaine-bruxelles";
 import { DriverPayoutService, MOYENS_VERSEMENT } from "./driver-payout.service";
@@ -96,6 +102,50 @@ function commandesAReverser(orgId: string, fin: Date, client: Pick<typeof db, "o
   }).then((commandes) => commandes.map((c) => ({ ...c, priseEnCharge: c.status === "REJECTED" })));
 }
 
+/**
+ * Les remboursements clients pas encore répercutés : sur des commandes déjà
+ * versées (relevé passé) ou sur celles de ce relevé. Une commande remboursée
+ * avant d'être reversée n'entre pas dans les commandes dues : rien à corriger.
+ */
+async function remboursementsARepercuter(
+  orgId: string,
+  commandes: { id: string }[],
+  client: Pick<typeof db, "order">,
+) {
+  const debut = debutDesReversements();
+  const candidates = await client.order.findMany({
+    where: {
+      store: { orgId, org: { isDemo: false } },
+      status: "COMPLETED",
+      deletedAt: null,
+      ...(debut ? { createdAt: { gte: debut } } : {}),
+      payments: { some: { refundedAmount: { gt: 0 } } },
+      OR: [{ merchantPayoutId: { not: null } }, { id: { in: commandes.map((c) => c.id) } }],
+    },
+    select: {
+      ...SELECTION_COMMANDE,
+      payments: { select: { id: true, refundedAmount: true, refundAccountedAmount: true } },
+    },
+  });
+
+  const ajustement: AjustementRemboursement = { partCommercant: 0, commission: 0, nombre: 0 };
+  const paiements: { id: string; ancien: number; nouveau: number }[] = [];
+  for (const commande of candidates) {
+    const paiement = commande.payments[0];
+    if (!paiement) continue;
+    const rembourse = Number(paiement.refundedAmount ?? 0);
+    const ancien = Number(paiement.refundAccountedAmount ?? 0);
+    if (rembourse <= ancien) continue;
+    const { partCommercant, commission } = ajustementRemboursement(commande, rembourse, ancien);
+    paiements.push({ id: paiement.id, ancien, nouveau: rembourse });
+    if (partCommercant === 0 && commission === 0) continue;
+    ajustement.partCommercant += partCommercant;
+    ajustement.commission += commission;
+    ajustement.nombre += 1;
+  }
+  return { ajustement, paiements };
+}
+
 /** La légende du relevé : chaque code présent, expliqué. */
 function legende(lignes: LigneReversement[]) {
   return lignes.map((l) => ({ code: l.code, explication: LIBELLES_REVERSEMENT[l.code].explication }));
@@ -123,10 +173,12 @@ export class MerchantPayoutService {
         tx.merchantPayout.findMany({ where: { orgId, status: "CARRIED", carriedToId: null } }),
       ]);
 
-      if (commandes.length === 0 && reportes.length === 0) return null;
+      const { ajustement, paiements } = await remboursementsARepercuter(orgId, commandes, tx);
+
+      if (commandes.length === 0 && reportes.length === 0 && ajustement.nombre === 0) return null;
 
       const report = reportes.reduce((s, r) => s + Number(r.amount), 0);
-      const { lignes, net } = lignesDuReversement(commandes, report);
+      const { lignes, net } = lignesDuReversement(commandes, report, ajustement);
 
       // Plus de retenues que de ventes : le solde se reporte, il ne se vire pas.
       const status = net > 0 ? "PENDING" : net < 0 ? "CARRIED" : "PAID";
@@ -167,6 +219,18 @@ export class MerchantPayoutService {
         }
       }
 
+      // Ces remboursements sont désormais comptés : le même ne l'est pas deux
+      // fois. Conditionnel sur l'ancienne valeur, comme le rattachement.
+      for (const paiement of paiements) {
+        const { count } = await tx.payment.updateMany({
+          where: { id: paiement.id, refundAccountedAmount: paiement.ancien },
+          data: { refundAccountedAmount: paiement.nouveau },
+        });
+        if (count !== 1) {
+          throw new ApiError(409, "Un remboursement a été répercuté par un autre relevé.", "PAYOUT_CONFLICT");
+        }
+      }
+
       return cree;
     });
 
@@ -178,7 +242,7 @@ export class MerchantPayoutService {
 
   /** Arrête les relevés de tous les commerçants qui ont quelque chose à reverser. */
   static async arreterTous(periodStart: Date, periodEnd: Date) {
-    const [avecCommandes, avecReport] = await Promise.all([
+    const [avecCommandes, avecReport, avecRemboursement] = await Promise.all([
       db.order.findMany({
         where: {
           store: { org: { isDemo: false } },
@@ -194,6 +258,21 @@ export class MerchantPayoutService {
         where: { status: "CARRIED", carriedToId: null },
         select: { orgId: true },
       }),
+      // Un remboursement sur une commande déjà versée se corrige au relevé
+      // suivant, même sans nouvelle vente. `arreter` ne crée rien si tout
+      // est déjà répercuté.
+      db.order.findMany({
+        where: {
+          store: { org: { isDemo: false } },
+          status: "COMPLETED",
+          deletedAt: null,
+          merchantPayoutId: { not: null },
+          ...(debutDesReversements() ? { createdAt: { gte: debutDesReversements() as Date } } : {}),
+          payments: { some: { refundedAmount: { gt: 0 } } },
+        },
+        select: { store: { select: { orgId: true } } },
+        distinct: ["storeId"],
+      }),
     ]);
 
     // Reprise après échec partiel : un commerçant qui a déjà son relevé pour
@@ -202,7 +281,11 @@ export class MerchantPayoutService {
       (await db.merchantPayout.findMany({ where: { periodEnd }, select: { orgId: true } })).map((r) => r.orgId)
     );
     const orgIds = [
-      ...new Set([...avecCommandes.map((c) => c.store.orgId), ...avecReport.map((r) => r.orgId)]),
+      ...new Set([
+        ...avecCommandes.map((c) => c.store.orgId),
+        ...avecReport.map((r) => r.orgId),
+        ...avecRemboursement.map((c) => c.store.orgId),
+      ]),
     ].filter((orgId) => !dejaArretes.has(orgId));
 
     const releves = [];
