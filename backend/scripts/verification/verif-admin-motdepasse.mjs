@@ -13,6 +13,12 @@ const email = `admin-${uniq}@t.fr`;
 const compte = await post('/api/auth/signup', { conditionsAcceptees: true, email, name: 'Admin Test', password: 'MotDePasse123!' });
 check('compte du futur membre créé', compte.status === 201, `status=${compte.status}`);
 
+const nonConfirme = await post('/api/superowner/admins', { email, role: 'ADMIN', plateforme: 'EAT' }, S);
+check('adresse non confirmée : promotion refusée', nonConfirme.status === 403, `status=${nonConfirme.status}`);
+check('aucun droit attribué avant confirmation', (await sqlScalaire(`SELECT "isSystemAdmin"::text FROM "User" WHERE email = '${email}'`)) === 'false');
+// Fixture de la base dédiée : simule une confirmation, pas une exemption du contrôle.
+await sqlExec(`UPDATE "User" SET "emailVerified" = true WHERE email = '${email}'`);
+
 const creation = await post('/api/superowner/admins', { email, role: 'ADMIN', plateforme: 'EAT' }, S);
 check('entré dans l\'équipe', creation.status === 201, `status=${creation.status} ${JSON.stringify(await j(creation))?.slice(0, 150)}`);
 check('admin système en base', (await sqlScalaire(`SELECT "isSystemAdmin"::text FROM "User" WHERE email = '${email}'`)) === 'true');

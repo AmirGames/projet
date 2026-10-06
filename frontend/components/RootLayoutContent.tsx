@@ -9,6 +9,7 @@ import PiedDeGroupe from './PiedDeGroupe';
 import { separerRegion } from '@/i18n/chemins-regionaux';
 import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
+import AssistantWidget from './assistant/AssistantWidget';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -126,6 +127,7 @@ export default function RootLayoutContent({
       {!hideNavbar && <Navbar />}
       {children}
       {!sansPied && <PiedDeGroupe />}
+      {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && <AssistantWidget />}
     </>
   );
 }

@@ -1,5 +1,9 @@
 # ZupEat
 
+L’assistant central et sa configuration sont documentés dans
+[Assistant ZupOne](docs/assistant-zupone.md) : widget web, agents spécialisés,
+outils autorisés, confirmations, relais humain et modes sans fournisseur IA.
+
 Une plateforme de commande en ligne pour les commerces de proximité : le
 commerçant tient son catalogue et ses commandes, le client commande depuis sa
 vitrine, un livreur assure la course. Plusieurs commerçants cohabitent sur la
@@ -8,17 +12,24 @@ même installation, chacun chez lui.
 Restaurants, boulangeries, épiceries — tout commerce qui vend des articles à
 emporter ou à livrer.
 
-> **État du projet.** Fonctionnel de bout en bout en local : on crée un compte,
+> **État au 4 octobre 2026.** ZupEat est déployé sur un VPS. On crée un compte,
 > une boutique, un menu, on commande sans compte, le commerçant suit sa commande
 > et un livreur — une fois son dossier validé par la plateforme — la prend en
 > charge. Le paiement en ligne par carte (Stripe) est confirmé par webhook et
 > remboursé automatiquement quand une commande est refusée ; chaque lundi, la
 > plateforme arrête ce qu'elle doit aux commerçants et aux livreurs et en tire
-> un fichier de virements SEPA. Rien n'est encore déployé.
+> un fichier de virements SEPA. Le paiement Stripe TEST et le rejeu du webhook
+> ont été confirmés sur le VPS sans doublon visible ; le remboursement sur
+> ce déploiement et le passage en LIVE restent à valider.
 >
 > ZupEat est la première plateforme du groupe **ZupOne** : un seul compte ZupOne
 > par personne, et une seule équipe qui administre toutes les plateformes du
-> groupe (ZupDrive, les courses VTC, viendra ensuite).
+> groupe. ZupDrive possède déjà ses dossiers chauffeurs et sociétés et ses
+> courses V1, sans paiement en ligne ; sa présentation publique annonce encore
+> « Bientôt disponible ». La vitrine ZupOne existe aussi.
+>
+> Voir [l'état du projet et les priorités restantes](docs/etat-projet.md), qui
+> distingue code existant, tests locaux et validations du déploiement.
 
 ## Ce que fait la plateforme
 
@@ -290,12 +301,12 @@ emporter ou à livrer.
 | **Cartes** | Leaflet, fond de carte OpenStreetMap (sans clé ni compte) |
 | **Paiement** | Stripe — intention de paiement, webhook signé (`POST /api/payments/webhook`), remboursement |
 
-Un seul dépôt, deux applications :
+Un seul dépôt, un site, une API et des applications mobiles :
 
 ```
-backend/    API REST — 40 fichiers de routes, 69 services (hors tests), 57 modèles Prisma
-frontend/   Next.js — 120 pages
-mobile/     Expo — applications client, commerçant et livreur (apps/customer, merchant, delivery)
+backend/    API REST — domaines ZupEat, ZupDrive et administration ZupOne
+frontend/   Next.js — vitrines et espaces client, commerçant, livreur, chauffeur, équipe
+mobile/     Expo — client, commerçant, livreur et équipe (apps/customer, merchant, delivery, admin)
 ```
 
 ## Démarrer
@@ -329,9 +340,10 @@ la main.
 
 L'historique des migrations part d'une migration de référence,
 `0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
-changement de schéma ajoute ensuite sa propre migration (`0002` à `0020`
-aujourd'hui, `npx prisma migrate dev --name <nom>`), à committer avec le
-schéma.
+changement de schéma ajoute ensuite sa propre migration
+(`npx prisma migrate dev --name <nom>`), à committer avec le schéma.
+L'historique présent dans `backend/prisma/migrations/` va jusqu'à
+`0039_adresses_favorites_client` à la date de cette mise à jour.
 
 Une base créée **avant** cette remise à plat (par `db push` ou par
 l'ancienne chaîne de migrations) a déjà toutes les tables : il suffit, une
@@ -414,29 +426,47 @@ npx expo start
 En développement, l'application trouve seule l'API sur le PC qui la sert
 (port 3001) ; `EXPO_PUBLIC_API_URL` la fixe pour une autre machine ou la
 production. La préparation de la publication de l'application livreur est
-décrite dans `mobile/apps/delivery/PUBLICATION.md`.
+décrite dans [son guide de publication](mobile/apps/delivery/PUBLICATION.md).
+
+Le livreur est la première application en cours de validation : Expo SDK 57
+aligné, TypeScript réussi, lint sans erreur avec 30 avertissements. Pour ses
+fonctions natives, utiliser une build de développement avec `expo-dev-client`.
+Firebase Android/FCM sont configurés et l'opérateur confirme la réception des
+push. La version 1.0.1 ajoute une fenêtre « Nouvelle course » au-dessus des
+autres applications et du verrouillage, ainsi qu'une sonnerie avec le volume
+des alarmes, toutes deux à activer dans les paramètres Android du livreur.
+Le signal de réveil Android est ajouté côté serveur et déployé sur le VPS.
+La version 1.0.2 reprend une carte sombre et une fiche de proposition comme
+dans l'application, avec montant, trajet, arrêts et compte à rebours ; nouvel
+APK compilé et rendu vérifié, y compris sur petit écran.
+Les essais de ces alertes et des parcours sur téléphone restent à réaliser ; voir
+[son README](mobile/apps/delivery/README.md) et
+[les résultats de validation](mobile/apps/delivery/VALIDATION.md).
 
 ## Mise en production
 
-Un seul VPS (Scaleway, Ubuntu 24.04), Docker Compose et Caddy pour le HTTPS :
-voir [DEPLOIEMENT-SCALEWAY.md](DEPLOIEMENT-SCALEWAY.md).
+Le site est déjà déployé sur un VPS, avec l'API à `https://api.zupeat.com`.
+L'infrastructure du dépôt utilise Docker Compose, Caddy pour le HTTPS,
+PostgreSQL et Redis. Voir [DEPLOIEMENT-SCALEWAY.md](DEPLOIEMENT-SCALEWAY.md)
+pour l'installation et l'exploitation ; les validations connues figurent
+dans [l'état du projet](docs/etat-projet.md).
 
 ## Vérifications
 
-Le projet ne se vérifie pas avec des tests unitaires à simulacres, mais avec des
-**scripts qui interrogent une vraie API branchée sur une vraie base**, et des
-scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un code
-HTTP : il relit la donnée pour vérifier qu'elle a bougé.
+Le projet combine des **scripts qui interrogent une vraie API branchée sur
+une vraie base**, des scripts qui **pilotent un vrai navigateur**, et des
+tests Jest ciblés, dont certains simulent les dépendances. Pour une opération
+métier, vérifier aussi l'état enregistré et les effets, au-delà du code HTTP.
 
 ```bash
-# API : 1912 contrôles, 57 suites
+# API : suites métier sur une base de test dédiée
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 34 suites (942 contrôles, tous verts le 2 octobre)
+# Navigateur : exemple de suite, commande sans compte
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -445,8 +475,12 @@ VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run
 `backend/scripts/verification/LISEZ-MOI.md` et `frontend/scripts/LISEZ-MOI.md`
 détaillent chaque suite et ses prérequis.
 
-Au dernier passage de l'API (27 septembre), tout est vert. `verif-paiement` se
-joue contre une API où Stripe est actif (voir le `LISEZ-MOI`).
+Les résultats historiques consignés sont un passage API au vert le
+27 septembre et **942 contrôles dans 34 suites navigateur le 2 octobre**.
+Ils ne constituent pas une nouvelle exécution de toutes les suites sur le
+commit actuel. Les audits du 3 octobre et la validation manuelle Stripe TEST
+du 4 octobre sont détaillés dans [l'état du projet](docs/etat-projet.md).
+`verif-paiement` se joue contre une API où Stripe est actif (voir le `LISEZ-MOI`).
 
 > La base visée est **vidée** à chaque script. Un garde-fou refuse de s'exécuter
 > si son nom ne contient pas `test`.
@@ -556,33 +590,28 @@ règle par `SEPA_DEBTOR_NAME`, `SEPA_DEBTOR_IBAN` et `SEPA_DEBTOR_BIC`
 
 ## Ce qui n'est pas terminé
 
-Par honnêteté, ce qui manque encore :
+Le suivi détaillé et les critères de validation sont dans
+[docs/etat-projet.md](docs/etat-projet.md). Les priorités sont :
 
-- **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
-  ses statistiques.
-- **Les vérifications des derniers chantiers** : côté livreur, pause, perte du
-  signal, notifications, support en direct, statistiques, nouveaux tours
-  d'attribution et paiement à la distance ; côté commerçant et plateforme,
-  reversements hebdomadaires et fichier SEPA, rôles de l'équipe, duplication
-  de boutique et livraison offerte n'ont pas encore leur suite. La tournée et
-  les suppressions de compte ont la leur.
-- **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
-  la disponibilité se bascule à la main, plat par plat.
-- **Le texte des pages légales** : les pages existent et se modifient depuis
-  l'espace superowner, mais le texte de départ garde des champs entre crochets
-  à remplir avant d'ouvrir au public.
-- **Les applications mobiles** (`mobile/apps/merchant`, `delivery`, `customer`)
-  sont écrites mais pas encore publiées. Celle du livreur est prête pour les
-  stores (icônes provisoires, profils EAS, autorisations réduites, suppression
-  du compte) ; celle du client ne commande qu'avec un compte, créé dans
-  l'application avec l'acceptation des conditions (le site garde la
-  commande sans compte). Leurs cartes s'appuient sur les serveurs publics
-  d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou hébergé avant
-  l'ouverture au public.
-- **ZupDrive** (courses VTC) et la vitrine du groupe (`zupone.com`) : les rôles
-  de l'équipe et les domaines les prévoient, rien d'autre n'est écrit.
-- Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
-  les variables correspondantes sont commentées dans `.env.example`.
+- **Paiements sur le VPS** : remboursement en TEST, y compris le pourboire et
+  le rejeu ; paiement LIVE après validation et configuration du compte Stripe.
+- **Parcours réels et sécurité** : commande complète sur téléphone, cas de
+  livraison difficiles, deux comptes distincts pour les livreurs, ZupDrive
+  et Socket.IO, révocation de droits et concurrence des acceptations.
+- **Reversements** : valider les relevés commerçants/livreurs et le fichier
+  SEPA sur des données de test dédiées.
+- **Pages légales** : contrôler les versions publiées et compléter les champs
+  du texte par défaut avant l'ouverture aux clients.
+- **Applications mobiles et cartes** : essais sur appareils réels,
+  configuration push/EAS, icônes définitives et publication dans les stores ;
+  service de cartes et d'itinéraires adapté à l'usage public.
+
+En complément : commandes d'entraînement exclues des statistiques (distinctes
+du commerce de démonstration existant et de Stripe TEST), paiement et
+facturation ZupDrive V2, persistance des notifications après paiement, suivi
+des erreurs et essais de charge. Le stockage externe des images possède une
+intégration Cloudinary optionnelle ; son activation n'est pas attestée ici.
+Le stock par ingrédient reste volontairement reporté.
 
 ## Licence
 

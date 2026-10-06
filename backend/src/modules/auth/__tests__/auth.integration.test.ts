@@ -65,7 +65,9 @@ jest.mock("../../../middleware/throttle", () => {
   const passer = (_req: any, _res: any, next: any) => next();
   return {
     limiterCadence: () => passer,
-    limiterConnexions: passer,
+    limiterConnexions: Object.assign(passer, { reinitialiser: jest.fn(async () => undefined) }),
+    limiterAuthParIp: passer,
+    limiterCourrielsParIp: passer,
     limiterInscriptions: passer,
     parDestinataire: () => "",
   };

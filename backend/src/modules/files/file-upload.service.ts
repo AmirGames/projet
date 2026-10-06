@@ -1,10 +1,13 @@
 import { promises as fs } from "fs";
-import { join } from "path";
+import { join, sep } from "path";
 import { randomBytes } from "crypto";
 import { getEnv } from "../../config/env";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
 import { detecterType, extensionDuType } from "../../utils/file-type";
+import { scanFile } from "./antivirus";
+import { writePrivate, removePrivate } from "./private-storage";
+import { TAILLE_MAX } from "./file-upload.middleware";
 
 const env = getEnv();
 const UPLOADS_DIR = join(process.cwd(), "uploads");
@@ -61,11 +64,15 @@ export class FileUploadService {
     folder: "drivers" | "merchants" | "deliveries" | "chauffeurs",
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
-    if (isCloudinaryConfigured()) {
-      return this.uploadToCloudinary(buffer, filename, folder);
-    } else {
-      return this.uploadLocal(buffer, filename, folder, mimeType);
-    }
+    const type = detecterType(buffer);
+    if (!type || (mimeType && mimeType !== type)) throw new ApiError(400, "Type de fichier invalide", "INVALID_FILE_TYPE");
+    if (buffer.length > TAILLE_MAX[type]) throw new ApiError(413, "Fichier trop lourd", "LIMIT_FILE_SIZE");
+    await scanFile(buffer);
+    const name = `${randomBytes(16).toString("hex")}.${extensionDuType(type)}`;
+    const relative = `${folder}/${name}`;
+    await writePrivate(relative, buffer);
+    void filename;
+    return { url: `${API_URL}/uploads/${relative}`, publicId: relative };
   }
 
   /**
@@ -79,6 +86,10 @@ export class FileUploadService {
     filename: string,
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
+    const type = detecterType(buffer);
+    if (!type?.startsWith("image/") || (mimeType && mimeType !== type)) throw new ApiError(400, "Image invalide", "INVALID_FILE_TYPE");
+    if (buffer.length > TAILLE_MAX[type]) throw new ApiError(413, "Image trop lourde", "LIMIT_FILE_SIZE");
+    await scanFile(buffer);
     if (isCloudinaryConfigured()) {
       return this.uploadToCloudinary(buffer, filename, "stores", true);
     }
@@ -148,7 +159,7 @@ export class FileUploadService {
       await fs.mkdir(join(UPLOADS_DIR, folder), { recursive: true });
       await fs.writeFile(fullPath, buffer);
 
-      const url = `${API_URL}/uploads/${relativePath}`;
+      const url = `${API_URL}/uploads/${relativePath.split(sep).join("/")}`;
       logger.info("Local file uploaded", { path: relativePath, size: buffer.length, ext });
 
       return {
@@ -162,6 +173,8 @@ export class FileUploadService {
   }
 
   static async deleteDocument(publicId: string): Promise<void> {
+    if (/^(drivers|merchants|deliveries|chauffeurs)\//.test(publicId)) return removePrivate(publicId);
+    if (publicId.includes("..") || !/^(?:public\/stores\/|stores\/)?[A-Za-z0-9_-]+(?:\.[A-Za-z0-9]{1,8})?$/.test(publicId)) throw new ApiError(400, "Référence de fichier invalide", "INVALID_FILE_REFERENCE");
     if (isCloudinaryConfigured()) {
       try {
         const cloud = await getCloudinary();
@@ -174,7 +187,7 @@ export class FileUploadService {
       }
     } else {
       try {
-        const fullPath = join(UPLOADS_DIR, publicId);
+        const fullPath = join(UPLOADS_DIR, "stores", publicId.replace(/^stores\//, ""));
         await fs.unlink(fullPath);
         logger.info("Local file deleted", { publicId });
       } catch (error) {

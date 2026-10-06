@@ -18,6 +18,8 @@ import { DeliveryZoneService } from "../delivery/delivery-zone.service";
 import { authMiddleware } from "../auth/auth.middleware";
 import { CustomerAccountService } from "./customer-account.service";
 import { ficheClientDuCompte } from "./fiche-client.service";
+import { adressesDuClient } from "./adresses-client.service";
+import { adressesFavoritesSchema } from "./adresses-favorites";
 import { avisARedemander, avisRestaurantParCommerce } from "../reviews/avis-client.service";
 import { avecLaVraieNote } from "../reviews/review.service";
 import { CustomerCartService, panierSchema } from "../orders/customer-cart.service";
@@ -553,6 +555,29 @@ const profilSchema = z.object({
   address: z.string().optional(),
   city: z.string().optional(),
   postalCode: z.string().optional(),
+});
+
+// GET /api/client/me/addresses - Profil et destinations des commandes du compte.
+router.get("/me/addresses", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    const carnet = await db.customer.findUnique({ where: { id: client.id }, select: { savedAddresses: true } });
+    res.json({ success: true, data: await adressesDuClient({ ...client, savedAddresses: carnet?.savedAddresses }) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Le carnet est toujours celui du compte connecté, jamais un identifiant fourni par le navigateur.
+router.put("/me/addresses", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    const { addresses } = z.object({ addresses: adressesFavoritesSchema }).parse(req.body);
+    await db.customer.update({ where: { id: client.id }, data: { savedAddresses: addresses } });
+    res.json({ success: true, data: addresses.map((adresse) => ({ ...adresse, label: [adresse.street, adresse.city].join(", ") })) });
+  } catch (err) {
+    next(err);
+  }
 });
 
 /**

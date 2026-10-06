@@ -22,6 +22,7 @@ import { paymentService } from "../payments/payment.service";
 import { emitWebhook } from "../webhooks/webhook.service";
 import { MOTIF_LIVRAISON_ECHOUEE } from "../orders/order-acceptance.service";
 import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient } from "./retard-livraison";
+import { notifierPlateforme } from "../notifications/notification.service";
 
 /**
  * Surveillance des courses acceptées.
@@ -577,6 +578,13 @@ export class SurveillanceCoursesService {
       skipDuplicates: true,
     });
     if (count > 0) {
+      if (!cloture) {
+        await notifierPlateforme(
+          constat.type === "RECLAMATION_CLIENT" ? "Commande non reçue : réclamation client" : "Nouvel incident de livraison",
+          constat.detail,
+          "/superowner/zupeat/incidents-livraison"
+        );
+      }
       emitSupportEvent("incident-livraison", { deliveryId, driverId, type: constat.type });
       logger.warn("Incident de course", { deliveryId, driverId, type: constat.type, detail: constat.detail });
     }
@@ -1329,6 +1337,19 @@ export class SurveillanceCoursesService {
     emitSupportEvent("incident-livraison", { deliveryId, driverId, type: valide ? "DEPOT_VALIDE" : "DEPOT_REFUSE" });
 
     if (valide) {
+      emitOrderUpdate(course.orderId, course.order?.status || "COMPLETED", {
+        title: "Réclamation traitée : dépôt validé",
+        message: resolution,
+      });
+      if (course.order) {
+        enArrierePlan(this.prevenirClient(
+          course.orderId,
+          course.order.customerEmail,
+          "SUPPORT_MESSAGE",
+          "Réclamation traitée : dépôt validé",
+          resolution
+        ));
+      }
       enArrierePlan(
         Notifier.pushLivreur(driverId, {
           title: "Dépôt validé",
@@ -1378,8 +1399,8 @@ export class SurveillanceCoursesService {
           "DELIVERY_CANCELLED",
           "Votre réclamation est acceptée",
           remboursement === "REMBOURSEE" || remboursement === "DEJA_REMBOURSEE"
-            ? "Nous avons reconnu que votre commande ne vous a pas été remise. Vous êtes intégralement remboursé : le montant réapparaît sur votre compte sous quelques jours, selon votre banque."
-            : "Nous avons reconnu que votre commande ne vous a pas été remise. Notre équipe revient vers vous pour la suite."
+            ? `${resolution}. Vous êtes intégralement remboursé : le montant réapparaît sur votre compte sous quelques jours, selon votre banque.`
+            : `${resolution}. Notre équipe revient vers vous pour la suite.`
         )
       );
     }
@@ -1623,7 +1644,7 @@ export class SurveillanceCoursesService {
   private static async prevenirClient(
     orderId: string,
     email: string | null,
-    type: "DELIVERY_LATE" | "DRIVER_REPLACED" | "DELIVERY_CANCELLED",
+    type: "DELIVERY_LATE" | "DRIVER_REPLACED" | "DELIVERY_CANCELLED" | "SUPPORT_MESSAGE",
     titre: string,
     message: string
   ) {

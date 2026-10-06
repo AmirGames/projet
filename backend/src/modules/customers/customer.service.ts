@@ -66,7 +66,6 @@ export class CustomerService {
       whereClause.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
-        { phone: { contains: search, mode: "insensitive" } },
       ];
     }
 

@@ -15,6 +15,7 @@ import * as Location from 'expo-location';
 import { apiFetch } from '../../lib/api';
 import type { DeliveryAddress } from '../../lib/session';
 import { COLORS, ScreenHeader } from '../ui';
+import { addressIcon, addressName, type SavedAddress } from '../../lib/saved-addresses';
 
 interface Suggestion {
   label: string;
@@ -44,18 +45,31 @@ export default function AddressScreen({
   current,
   onBack,
   onSave,
+  token,
 }: {
   current: DeliveryAddress | null;
   onBack: () => void;
   onSave: (address: DeliveryAddress) => void;
+  token?: string;
 }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [favorites, setFavorites] = useState<SavedAddress[]>([]);
+  const [favoritesError, setFavoritesError] = useState(false);
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    apiFetch<{ data: SavedAddress[] }>('/api/client/me/addresses', token)
+      .then((res) => { if (!cancelled) setFavorites(res.data.filter((a) => a.kind)); })
+      .catch(() => { if (!cancelled) setFavoritesError(true); });
+    return () => { cancelled = true; };
+  }, [token]);
   const [hint, setHint] = useState<{ lat: number; lon: number } | null>(
     current?.latitude != null && current?.longitude != null ? { lat: current.latitude, lon: current.longitude } : null
   );
+  const matchingFavorites = favorites.filter((a) => `${addressName(a)} ${a.street} ${a.postalCode} ${a.city}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
 
   // Sans temporisation, chaque frappe interrogerait le service d'adresses.
   useEffect(() => {
@@ -150,8 +164,15 @@ export default function AddressScreen({
           data={suggestions}
           keyExtractor={(s, i) => `${s.label}-${i}`}
           keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={<View>
+            {favoritesError ? <Text style={styles.empty}>Vos favoris ne sont pas disponibles pour le moment.</Text> : null}
+            {matchingFavorites.map((a) => <TouchableOpacity key={a.id} style={styles.suggestion} onPress={() => onSave(a)}>
+              <Text style={styles.suggestionText}>{addressIcon(a.kind)} {addressName(a)}</Text>
+              <Text style={styles.currentLabel}>{a.street}, {a.postalCode} {a.city}</Text>
+            </TouchableOpacity>)}
+          </View>}
           ListEmptyComponent={
-            query.trim().length >= 3 && !searching ? (
+            query.trim().length >= 3 && !searching && matchingFavorites.length === 0 ? (
               <Text style={styles.empty}>Aucune adresse trouvée. Essayez avec le code postal ou la ville.</Text>
             ) : null
           }

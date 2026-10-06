@@ -3,6 +3,7 @@ import path from "path";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
+import { encrypt, decrypt, isEncrypted } from "../privacy/crypto";
 
 const DOSSIER = process.env.BACKUP_DIR || path.join(process.cwd(), "backups");
 
@@ -56,14 +57,14 @@ export class BackupService {
   // un accès disque que l'application n'a pas nécessairement en production.
   static async create(createdById?: string) {
     const horodatage = new Date().toISOString().replace(/[:.]/g, "-");
-    const nom = `sauvegarde-${horodatage}.json`;
+    const nom = `sauvegarde-${horodatage}.json.zupenc`;
 
     const enregistrement = await db.backup.create({
       data: { name: nom, createdById, status: "IN_PROGRESS" },
     });
 
     try {
-      await fs.mkdir(DOSSIER, { recursive: true });
+      await fs.mkdir(DOSSIER, { recursive: true, mode: 0o700 });
 
       const [organisations, boutiques, produits, categories, commandes, clients, utilisateurs] =
         await Promise.all([
@@ -72,7 +73,7 @@ export class BackupService {
           db.product.findMany(),
           db.category.findMany(),
           db.order.findMany({ include: { items: true } }),
-          db.customer.findMany(),
+          db.customer.findMany({ omit: { savedAddresses: false } }),
           db.user.findMany({
             select: { id: true, email: true, name: true, isSystemAdmin: true, isSuperOwner: true, status: true, createdAt: true },
           }),
@@ -95,8 +96,9 @@ export class BackupService {
       );
 
       const chemin = path.join(DOSSIER, nom);
-      await fs.writeFile(chemin, contenu, "utf-8");
-      const taille = Buffer.byteLength(contenu, "utf-8");
+      const encrypted = encrypt(contenu, `backup:${enregistrement.id}`);
+      await fs.writeFile(chemin, encrypted, { encoding: "utf-8", mode: 0o600, flag: "wx" });
+      const taille = Buffer.byteLength(encrypted, "utf-8");
 
       logger.info("Backup created", { id: enregistrement.id, taille });
 
@@ -142,7 +144,8 @@ export class BackupService {
 
     try {
       const contenu = await fs.readFile(sauvegarde.filePath, "utf-8");
-      return { nom: sauvegarde.name, contenu };
+      if (!isEncrypted(contenu)) throw new Error("Migration de sauvegarde requise");
+      return { nom: sauvegarde.name, contenu: decrypt(contenu, `backup:${id}`).toString("utf8") };
     } catch {
       throw new ApiError(410, "Le fichier de sauvegarde n'existe plus sur le disque", "FILE_MISSING");
     }
@@ -163,6 +166,9 @@ export class BackupService {
   // Réinsère le contenu d'une sauvegarde sans toucher à ce qui existe déjà :
   // les enregistrements encore présents sont ignorés, jamais écrasés.
   static async restore(id: string) {
+    const snapshot = await this.get(id);
+    const laterErasure = await db.erasureRecord.findFirst({ where: { erasedAt: { gte: snapshot.createdAt } }, select: { id: true } });
+    if (laterErasure) throw new ApiError(409, "Cette sauvegarde précède un effacement RGPD : restauration interdite sans réconciliation des effacements", "RESTORE_ERASURE_CONFLICT");
     const { contenu } = await this.read(id);
 
     let donnees: any;
@@ -215,5 +221,13 @@ export class BackupService {
 
     logger.info("Backup restored", { id, ...resultats });
     return resultats;
+  }
+
+  static async readEncrypted(id: string) {
+    const backup = await this.get(id);
+    if (!backup.filePath || backup.status !== "COMPLETED") throw new ApiError(400, "Sauvegarde indisponible", "BACKUP_INCOMPLETE");
+    const contenu = await fs.readFile(backup.filePath, "utf8");
+    if (!isEncrypted(contenu)) throw new ApiError(409, "Migration de sauvegarde requise", "BACKUP_NOT_ENCRYPTED");
+    return { nom: backup.name, contenu };
   }
 }

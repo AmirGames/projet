@@ -1,13 +1,14 @@
 import { z } from "zod";
+import { assertPrivacyConfiguration } from "../modules/privacy/crypto";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
-  JWT_EXPIRES_IN: z.string().default("15m"),
+  JWT_EXPIRES_IN: z.literal("15m").default("15m"),
   JWT_REFRESH_SECRET: z.string().min(32),
-  JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
+  JWT_REFRESH_EXPIRES_IN: z.literal("7d").default("7d"),
   API_URL: z.string().url(),
   FRONTEND_URL: z.string().url(),
   // Domaines supplémentaires autorisés à appeler l'API, séparés par des
@@ -62,6 +63,29 @@ const envSchema = z.object({
   OSRM_API_URL: z.string().url().optional(),
   ENABLE_STRIPE: z.string().default("true").transform((v) => v === "true"),
   ENABLE_EMAIL_VERIFICATION: z.string().default("true").transform((v) => v === "true"),
+  ASSISTANT_MODE: z.enum(['auto', 'real', 'degraded', 'simulation']).default('auto'),
+  ASSISTANT_PROVIDER: z.enum(['ollama', 'openai']).default('ollama'),
+  ASSISTANT_OLLAMA_URL: z.string().url().default('http://127.0.0.1:11434'),
+  ASSISTANT_OLLAMA_MODEL: z.string().max(100).optional(),
+  ASSISTANT_HOSTS: z.string().optional(),
+  ASSISTANT_GATEWAY_SECRET: z.string().optional().refine(v => !v || v.length >= 32, 'Secret de relais : au moins 32 caractères'),
+  ASSISTANT_OPENAI_KEY: z.string().optional(),
+  ASSISTANT_OPENAI_MODEL: z.string().max(100).optional(),
+  ASSISTANT_DAILY_MESSAGES: z.coerce.number().int().min(1).max(1000000).default(1000),
+  ASSISTANT_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  ASSISTANT_GUEST_DAYS: z.coerce.number().int().min(1).max(365).default(1),
+  ASSISTANT_PRIVACY_URL: z.string().optional(),
+  ASSISTANT_DISABLED_AGENTS: z.string().optional(),
+}).superRefine((config, contexte) => {
+  if (config.NODE_ENV === 'production' && config.ASSISTANT_MODE === 'simulation') {
+    contexte.addIssue({ code: 'custom', path: ['ASSISTANT_MODE'], message: 'La simulation est interdite en production' });
+  }
+  if (config.JWT_SECRET === config.JWT_REFRESH_SECRET) {
+    contexte.addIssue({ code: "custom", path: ["JWT_REFRESH_SECRET"], message: "Les secrets access et refresh doivent être distincts" });
+  }
+  if (config.NODE_ENV === "production" && !config.REDIS_URL) {
+    contexte.addIssue({ code: "custom", path: ["REDIS_URL"], message: "Redis est obligatoire pour les quotas partagés en production" });
+  }
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -80,6 +104,7 @@ export function loadEnv(): Env {
   }
 
   env = result.data;
+  if (env.NODE_ENV === "production") assertPrivacyConfiguration();
   console.log(`✅ Environment loaded: ${env.NODE_ENV}`);
   return env;
 }

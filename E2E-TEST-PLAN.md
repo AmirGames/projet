@@ -1,7 +1,13 @@
 # Plan de tests E2E — identité unifiée, rôles et validations
 
-**Mis à jour** : 27 septembre 2026 (première version : 22 septembre)
-**Environnement** : local
+**Mis à jour** : 4 octobre 2026 (scénarios historiques du 27 septembre ; première version : 22 septembre)
+**Environnement du plan** : local ou environnement de test isolé
+
+Le site est désormais déployé sur un VPS. Ce plan décrit des scénarios à
+exécuter, pas un compte rendu attestant leur réussite. L'état courant et les
+validations connues figurent dans [docs/etat-projet.md](docs/etat-projet.md).
+Les étapes de préparation et les suites générales peuvent vider la base :
+les réserver à une base dédiée, jamais à la base du VPS en exploitation.
 
 Ce plan se déroule **à la main**, dans un navigateur et avec `curl`. Il couvre le
 parcours d'un compte ZupOne : inscription, choix des espaces, passage
@@ -239,9 +245,10 @@ Attendu :
 ❌ Ni orgId, ni rôle, ni storeIds : tout se relit en base à chaque requête
 ```
 
-Durées : 15 minutes par défaut pour le jeton d'accès (`JWT_EXPIRES_IN`,
-`backend/src/config/env.ts`) — `.env.example` le règle à 7 jours —, 30 jours
-pour le jeton de renouvellement (`JWT_REFRESH_EXPIRES_IN`). Le site renouvelle
+Durées imposées : 15 minutes pour le jeton d'accès (`JWT_EXPIRES_IN`,
+`backend/src/config/env.ts`), 7 jours pour le jeton de renouvellement
+(`JWT_REFRESH_EXPIRES_IN`). Les anciens jetons ayant une durée supérieure
+sont refusés ; une nouvelle connexion est nécessaire après le déploiement. Le site renouvelle
 le jeton d'accès en silence avant son échéance.
 
 ### Test 2.2 : session expirée ou révoquée

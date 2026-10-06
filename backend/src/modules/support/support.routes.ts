@@ -23,14 +23,7 @@ router.get("/compte/:orgId", authMiddleware, async (req: Request, res: Response,
   try {
     const orgId = req.params.orgId as string;
 
-    const appartenance = await db.membership.findFirst({
-      where: { userId: req.userId, orgId },
-      select: { id: true },
-    });
-
-    if (!appartenance) {
-      throw new ApiError(403, "Accès refusé à ce commerçant", "FORBIDDEN");
-    }
+    await assertOrganizationAccess(orgId, req);
 
     const organisation = await db.organization.findUnique({
       where: { id: orgId },
@@ -60,22 +53,28 @@ router.get("/compte/:orgId", authMiddleware, async (req: Request, res: Response,
   }
 });
 
-// Un membre ne peut agir que sur les tickets de son organisation.
+// Le support reste accessible aux comptes suspendus : seule l'appartenance
+// est vérifiée, sans contrôle du statut de l'organisation.
+async function assertOrganizationAccess(orgId: string, req: Request) {
+  // Défense en profondeur : un userId absent ne doit jamais être omis par Prisma.
+  if (!req.userId) {
+    throw new ApiError(401, "Authentification requise", "MISSING_AUTH");
+  }
+  const membership = await db.membership.findFirst({
+    where: { userId: req.userId, orgId },
+    select: { id: true },
+  });
+  if (!membership) {
+    throw new ApiError(403, "Accès refusé à cette organisation", "FORBIDDEN");
+  }
+}
+
 async function assertTicketAccess(ticketId: string, req: Request) {
   const ticket = await db.merchantTicket.findUnique({ where: { id: ticketId } });
-
   if (!ticket) {
     throw new ApiError(404, "Ticket non trouvé", "NOT_FOUND");
   }
-
-  const membership = await db.membership.findFirst({
-    where: { userId: req.userId, orgId: ticket.orgId },
-  });
-
-  if (!membership) {
-    throw new ApiError(403, "Accès refusé à ce ticket", "FORBIDDEN");
-  }
-
+  await assertOrganizationAccess(ticket.orgId, req);
   return ticket;
 }
 
@@ -91,6 +90,7 @@ const createTicketSchema = z.object({
 router.post("/tickets", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createTicketSchema.parse(req.body);
+    await assertOrganizationAccess(body.orgId, req);
 
     logger.info("Creating support ticket", {
       subject: body.subject,
@@ -139,9 +139,11 @@ router.get("/tickets", authMiddleware, async (req: Request, res: Response, next:
   try {
     const orgId = req.query.orgId as string;
 
-    if (!orgId) {
+    if (typeof orgId !== "string" || !orgId.trim()) {
       throw new ApiError(400, "Paramètre 'orgId' requis", "MISSING_PARAM");
     }
+
+    await assertOrganizationAccess(orgId, req);
 
     logger.info("Fetching support tickets", { orgId });
 
@@ -168,17 +170,11 @@ router.get("/tickets", authMiddleware, async (req: Request, res: Response, next:
 });
 
 // GET /support/tickets/:id - Get ticket by ID
-router.get("/tickets/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/tickets/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 
-    const ticket = await db.merchantTicket.findUnique({
-      where: { id },
-    });
-
-    if (!ticket) {
-      throw new ApiError(404, "Ticket non trouvé", "NOT_FOUND");
-    }
+    const ticket = await assertTicketAccess(id, req);
 
     res.json(ticket);
   } catch (err) {
@@ -196,6 +192,8 @@ router.patch("/tickets/:id/status", authMiddleware, async (req: Request, res: Re
     if (!validStatuses.includes(status)) {
       throw new ApiError(400, "Statut invalide", "INVALID_INPUT");
     }
+
+    await assertTicketAccess(id, req);
 
     logger.info("Updating ticket status", { id, status });
 
@@ -252,13 +250,7 @@ router.delete("/tickets/:id", authMiddleware, async (req: Request, res: Response
   try {
     const id = req.params.id as string;
 
-    const ticket = await db.merchantTicket.findUnique({
-      where: { id },
-    });
-
-    if (!ticket) {
-      throw new ApiError(404, "Ticket non trouvé", "NOT_FOUND");
-    }
+    await assertTicketAccess(id, req);
 
     logger.info("Deleting support ticket", { id });
 

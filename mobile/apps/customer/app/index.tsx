@@ -536,7 +536,7 @@ export default function CustomerApp() {
         />
       );
     } else if (page.kind === 'address') {
-      content = <AddressScreen current={address} onBack={popPage} onSave={changeAddress} />;
+      content = <AddressScreen token={token} current={address} onBack={popPage} onSave={changeAddress} />;
     }
 
     return (

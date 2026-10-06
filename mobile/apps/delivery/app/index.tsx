@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, AppState, ScrollView, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +6,7 @@ import { API_URL, ApiError, apiFetch, setUnauthorizedHandler } from '../lib/api'
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
 import { Delivery, Driver, Offer } from '../lib/deliveries';
 import { useDriverAlerts } from '../lib/useDriverAlerts';
+import { configureCourseAlerts, CourseAlerts } from '../lib/courseAlerts';
 import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
 import { isNetworkError, useOnline } from '../lib/network';
@@ -28,8 +29,8 @@ import SupportScreen from '../components/screens/SupportScreen';
 import SettingsScreen from '../components/screens/SettingsScreen';
 import AccountScreen from '../components/screens/AccountScreen';
 
-/** Filet de sécurité si la connexion temps réel tombe : les propositions sont relues. */
-const OFFERS_POLL_MS = 10_000;
+/** A connected socket can still miss an event; recheck offers while the app is visible. */
+const OFFERS_POLL_MS = 5_000;
 
 const DRAWER_ITEMS = [
   { tab: 'history', label: '🗂️ Historique' },
@@ -78,9 +79,11 @@ export default function DeliveryApp() {
 
   const token = session?.accessToken || '';
   const sessionRef = useRef(session);
-  sessionRef.current = session;
   const tabRef = useRef(tab);
-  tabRef.current = tab;
+  useLayoutEffect(() => {
+    sessionRef.current = session;
+    tabRef.current = tab;
+  }, [session, tab]);
   const pushTokenRef = useRef<string | null>(null);
 
   const updatePrefs = (patch: Partial<Prefs>) => {
@@ -178,6 +181,7 @@ export default function DeliveryApp() {
    * partiront une fois le livreur reconnecté.
    */
   const handleLogout = useCallback((forget = false) => {
+    CourseAlerts?.configure(false, false, false, false).catch(() => undefined);
     if (forget) {
       clearOutbox().then(clearOfflineStore);
     }
@@ -287,7 +291,7 @@ export default function DeliveryApp() {
     if (tab === 'course' && singleId && !courseSel) setCourseSel(singleId);
     // Ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
     if (tab !== 'course') setCourseSel(null);
-  }, [tab, singleId]);
+  }, [tab, singleId, courseSel]);
 
   // Les étapes faites sans réseau partent au lancement, au retour dans
   // l'application et à la reconnexion (le retour du réseau, lui, est suivi
@@ -306,7 +310,7 @@ export default function DeliveryApp() {
   useEffect(() => {
     if (pendingCount < previousPending.current && token) loadAll(token);
     previousPending.current = pendingCount;
-  }, [pendingCount]);
+  }, [pendingCount, token, loadAll]);
 
   // Position : transmise tant que le livreur est en ligne ou sur une course,
   // avec la précision qu'il faut à ce moment-là (voir useDriverLocation).
@@ -316,6 +320,11 @@ export default function DeliveryApp() {
   const dutyMode: DutyMode =
     visibleDeliveries.length > 0 ? 'delivery' : driver ? (driver.isOnline ? 'idle' : 'off') : token ? 'loading' : 'off';
   const { position, gps, background } = useDriverLocation(token, dutyMode, tracking);
+
+  useEffect(() => {
+    if (booting || (token && !driver)) return;
+    configureCourseAlerts(Boolean(token && driver?.isOnline), prefs);
+  }, [booting, token, driver, prefs]);
 
   // Une proposition expirée disparaît d'elle-même, et la sonnerie avec : un
   // seul réveil, à l'échéance de la plus proche.
@@ -339,26 +348,35 @@ export default function DeliveryApp() {
   const { connected, ring } = useDriverAlerts({
     token,
     soundEnabled: prefs.soundEnabled,
-    pendingOffers: offers.length,
+    ringInSilentMode: prefs.ringInSilentMode,
+    offers,
     onOffer: (offer) => {
       // Elle s'affiche en plein écran, par-dessus l'écran en cours.
       setOffers((list) => (list.some((o) => o.id === offer.id) ? list : [...list, offer]));
     },
     onChanged: scheduleReload,
+    onOffersChanged: () => { loadOffers(token); },
     onNotification: () => {
       loadUnread(token);
       setNotifRefreshKey((k) => k + 1);
     },
   });
 
-  // Filet de sécurité : les propositions ne sont relues que si la connexion
-  // temps réel est coupée. Connectée, elle les apporte d'elle-même, et la
-  // reconnexion recharge tout (onChanged).
+  // A successful socket connection does not prove every proposal arrived.
+  // Push receipt fetches immediately; this check also covers a lost signal.
+  // Background delivery is handled separately by FCM, without polling.
   useEffect(() => {
-    if (!token || !driver?.isOnline || connected) return;
-    const id = setInterval(() => loadOffers(token), OFFERS_POLL_MS);
-    return () => clearInterval(id);
-  }, [token, driver?.isOnline, connected, loadOffers]);
+    if (!token || !driver?.isOnline) return;
+    let loading = false;
+    const check = async () => {
+      if (AppState.currentState !== 'active' || loading) return;
+      loading = true;
+      try { await loadOffers(token); } finally { loading = false; }
+    };
+    const id = setInterval(check, OFFERS_POLL_MS);
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') check(); });
+    return () => { clearInterval(id); sub.remove(); };
+  }, [token, driver?.isOnline, loadOffers]);
 
   useRealtimeEvent('mis-hors-ligne', (e: { raison?: string; message?: string }) => {
     patchDriver({ isOnline: false, isAvailable: false });
@@ -383,10 +401,10 @@ export default function DeliveryApp() {
     if (m?.sender === 'SUPPORT' && tabRef.current !== 'support') setSupportUnread((n) => n + 1);
   });
 
-  const openDelivery = (deliveryId: string) => {
+  const openDelivery = useCallback((deliveryId: string) => {
     setMenuOpen(false);
     setOpenDeliveryId(deliveryId);
-  };
+  }, []);
 
   useEffect(() => {
     if (!pendingOpen || !session) return;
@@ -401,8 +419,7 @@ export default function DeliveryApp() {
       setTab('dashboard');
       loadAll(token);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingOpen, session]);
+  }, [pendingOpen, session, openDelivery, token, loadAll]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -477,6 +494,7 @@ export default function DeliveryApp() {
         method: 'POST',
       });
       // Un lot se répond d'un geste : toutes ses courses quittent l'écran.
+      CourseAlerts?.dismissOffer(offer.id).catch(() => undefined);
       setOffers((list) => list.filter((o) => o.id !== offer.id && !(offer.batchId && o.batchId === offer.batchId)));
       if (answer === 'accept') {
         await loadAll(token);
@@ -617,6 +635,13 @@ export default function DeliveryApp() {
     </>
   );
 
+  const deliveryChanged = (change?: { id: string; attenteFinLe: string }) => {
+    if (change) {
+      setActiveDeliveries((list) => list.map((d) => d.id === change.id ? { ...d, attenteFinLe: change.attenteFinLe } : d));
+    }
+    loadAll(token);
+  };
+
   // Delivery Detail Screen
   if (openDeliveryId) {
     return (
@@ -631,7 +656,7 @@ export default function DeliveryApp() {
           voiceGuidance={prefs.voiceGuidance}
           onVoiceGuidanceChange={(voiceGuidance) => updatePrefs({ voiceGuidance })}
           onBack={() => setOpenDeliveryId(null)}
-          onChanged={() => loadAll(token)}
+          onChanged={deliveryChanged}
           onTrackingChange={setTracking}
           todayEarnings={earnings?.today ?? null}
           otherActive={visibleDeliveries.filter((d) => d.id !== openDeliveryId).length}
@@ -714,7 +739,7 @@ export default function DeliveryApp() {
               // Il reste des courses : retour à la tournée (ou à la suivante).
               if (others === 0) back();
             }}
-            onChanged={() => loadAll(token)}
+            onChanged={deliveryChanged}
             onTrackingChange={setTracking}
             todayEarnings={earnings?.today ?? null}
             otherActive={others}

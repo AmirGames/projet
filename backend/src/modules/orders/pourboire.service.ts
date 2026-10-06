@@ -148,6 +148,23 @@ export class PourboireService {
     }
 
     const driverId = commande.delivery!.driverId!;
+    const precedente = commande.pourboireApres?.stripePaymentIntentId;
+    if (precedente) {
+      let existante = await stripe.paymentIntents.retrieve(precedente);
+      if (existante.status !== 'canceled') {
+        if (existante.amount !== enCentimes(montant)) {
+          if (!['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existante.status)) {
+            throw new ApiError(409, 'Ce pourboire est déjà en cours de traitement.', 'TIP_PAYMENT_IN_PROGRESS');
+          }
+          existante = await stripe.paymentIntents.update(precedente, { amount: enCentimes(montant) });
+          await db.courierTip.updateMany({
+            where: { orderId, stripePaymentIntentId: precedente, status: { not: 'PAID' } },
+            data: { amount: montant },
+          });
+        }
+        return { clientSecret: existante.client_secret, paymentIntentId: existante.id, montant };
+      }
+    }
     const intention = await stripe.paymentIntents.create({
       amount: enCentimes(montant),
       currency: STRIPE_CONFIG.currency,
@@ -156,7 +173,7 @@ export class PourboireService {
       // `pourboire` aiguille le webhook : ce n'est pas le paiement de la commande.
       metadata: { orderId: commande.id, pourboire: "1", driverId },
       payment_method_types: ["card"],
-    });
+    }, { idempotencyKey: `pourboire-${commande.id}-${precedente || 'initial'}` });
 
     await db.courierTip.upsert({
       where: { orderId: commande.id },
@@ -196,16 +213,18 @@ export class PourboireService {
 
     // Le montant encaissé fait foi, pas celui demandé.
     const montant = (intention.amount_received ?? intention.amount) / 100;
-    const { count } = await db.courierTip.updateMany({
-      where: { id: pourboire.id, status: { not: "PAID" } },
-      data: { status: "PAID", amount: montant, paidAt: new Date() },
+    const { count } = await db.$transaction(async (tx) => {
+      const resultat = await tx.courierTip.updateMany({
+        where: { id: pourboire.id, status: { not: "PAID" } },
+        data: { status: "PAID", amount: montant, paidAt: new Date() },
+      });
+      if (resultat.count) await tx.courier.update({
+        where: { id: pourboire.driverId },
+        data: { totalEarnings: { increment: montant } },
+      });
+      return resultat;
     });
     if (count === 0) return pourboire;
-
-    await db.courier.update({
-      where: { id: pourboire.driverId },
-      data: { totalEarnings: { increment: montant } },
-    });
 
     logger.info("Pourboire après livraison encaissé", { orderId: pourboire.orderId, montant });
 

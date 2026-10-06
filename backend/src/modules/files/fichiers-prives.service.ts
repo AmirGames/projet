@@ -1,6 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import fs from "fs";
-import { resolve, sep } from "path";
 
 import type { Plateforme } from "@prisma/client";
 import { getEnv } from "../../config/env";
@@ -8,6 +7,8 @@ import type { Compte } from "../auth/auth.middleware";
 import { detecterType, OCTETS_DE_SIGNATURE } from "../../utils/file-type";
 import { db } from "../../services/db";
 import { PermissionsPlateforme } from "../auth/permissions-plateforme.service";
+import { origineActuelle } from "../auth/origine";
+import { privatePath } from "./private-storage";
 
 /**
  * Les pièces déposées sur le serveur (stockage local), et qui peut les lire.
@@ -32,7 +33,6 @@ export type DossierPrive = (typeof DOSSIERS_PRIVES)[number];
 /** Durée de vie d'une adresse signée. */
 export const DUREE_SIGNATURE_S = 300;
 
-const RACINE = resolve(process.cwd(), "uploads");
 
 /** Un nom de fichier tel que l'upload les écrit : ni séparateur, ni « .. ». */
 const FORME_DU_NOM = /^[A-Za-z0-9][A-Za-z0-9_-]*(\.[A-Za-z0-9]{1,8})?$/;
@@ -76,8 +76,7 @@ export function cheminRelatif(adresse: unknown): string | null {
 
 /** Le fichier sur le disque, sans jamais sortir du dossier des dépôts. */
 export function cheminSurDisque(relatif: string): string | null {
-  const complet = resolve(RACINE, relatif);
-  return complet.startsWith(RACINE + sep) ? complet : null;
+  try { return privatePath(relatif); } catch { return null; }
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +95,7 @@ function cleDeSignature(): Buffer {
     } catch {
       secret = undefined;
     }
-    secret = secret || process.env.JWT_SECRET;
+    secret = process.env.FILE_SIGNING_SECRET || secret || process.env.JWT_SECRET;
     cle = secret
       ? createHmac("sha256", secret).update("fichiers-prives").digest()
       : randomBytes(32);
@@ -104,17 +103,51 @@ function cleDeSignature(): Buffer {
   return cle;
 }
 
-function signature(relatif: string, expire: number): string {
-  return createHmac("sha256", cleDeSignature()).update(`${relatif}\n${expire}`).digest("hex");
+function signature(relatif: string, expire: number, userId = "", sessionId = ""): string {
+  return createHmac("sha256", cleDeSignature()).update(`${relatif}\n${expire}\n${userId}\n${sessionId}`).digest("hex");
 }
 
-export function signer(relatif: string, maintenant = Date.now()) {
+// Le reçu de dépôt lie une photo à sa course. Une signature de lecture
+// seule ne doit jamais autoriser le rattachement d'un fichier à une autre course.
+const DUREE_DEPOT_S = 24 * 3600;
+function signatureDepot(url: string, deliveryId: string, exp: string) {
+  return createHmac("sha256", cleDeSignature()).update(`depot\n${deliveryId}\n${url}\n${exp}`).digest("hex");
+}
+export function adresseDepot(url: string, deliveryId: string, maintenant = Date.now()): string {
+  const adresse = new URL(url);
+  adresse.searchParams.delete("depotExp");
+  adresse.searchParams.delete("depotSig");
+  const exp = String(Math.floor(maintenant / 1000) + DUREE_DEPOT_S);
+  const sig = signatureDepot(adresse.href, deliveryId, exp);
+  adresse.searchParams.set("depotExp", exp);
+  adresse.searchParams.set("depotSig", sig);
+  return adresse.href;
+}
+/** Vérifie le reçu avant tout rattachement, puis restitue l'URL de stockage. */
+export function verifierDepot(url: string, deliveryId: string, maintenant = Date.now()): string | null {
+  try {
+    const adresse = new URL(url);
+    if (adresse.searchParams.getAll("depotExp").length !== 1 || adresse.searchParams.getAll("depotSig").length !== 1) return null;
+    const exp = adresse.searchParams.get("depotExp")!;
+    const sig = adresse.searchParams.get("depotSig")!;
+    if (!/^\d{1,12}$/.test(exp) || !/^[a-f0-9]{64}$/.test(sig)) return null;
+    const seconds = Math.floor(maintenant / 1000);
+    if (Number(exp) < seconds || Number(exp) > seconds + DUREE_DEPOT_S) return null;
+    adresse.searchParams.delete("depotExp");
+    adresse.searchParams.delete("depotSig");
+    return timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(signatureDepot(adresse.href, deliveryId, exp), "hex")) ? adresse.href : null;
+  } catch { return null; }
+}
+
+export function signer(relatif: string, maintenant = Date.now(), identity = origineActuelle()) {
   const exp = Math.floor(maintenant / 1000) + DUREE_SIGNATURE_S;
-  return { exp, sig: signature(relatif, exp) };
+  const u = identity.userId || "", s = identity.sessionId || "";
+  if (process.env.NODE_ENV === "production" && (!u || !s)) throw new Error("Session requise pour signer un document");
+  return { exp, u, s, sig: signature(relatif, exp, u, s) };
 }
 
 /** La signature correspond, n'est pas échue, et ne dépasse pas cinq minutes. */
-export function signatureValable(relatif: string, exp: unknown, sig: unknown, maintenant = Date.now()): boolean {
+export function signatureValable(relatif: string, exp: unknown, sig: unknown, maintenant = Date.now(), userId = "", sessionId = ""): boolean {
   if (typeof exp !== "string" || !/^\d{1,12}$/.test(exp)) return false;
   if (typeof sig !== "string" || !/^[a-f0-9]{64}$/.test(sig)) return false;
 
@@ -122,7 +155,7 @@ export function signatureValable(relatif: string, exp: unknown, sig: unknown, ma
   const secondes = Math.floor(maintenant / 1000);
   if (echeance < secondes || echeance > secondes + DUREE_SIGNATURE_S) return false;
 
-  return timingSafeEqual(Buffer.from(signature(relatif, echeance), "hex"), Buffer.from(sig, "hex"));
+  return timingSafeEqual(Buffer.from(signature(relatif, echeance, userId, sessionId), "hex"), Buffer.from(sig, "hex"));
 }
 
 function baseApi(): string {
@@ -136,9 +169,9 @@ function baseApi(): string {
 }
 
 /** L'adresse signée d'une pièce, à mettre dans une balise <img> ou un lien. */
-export function adresseSignee(relatif: string, maintenant = Date.now()): string {
-  const { exp, sig } = signer(relatif, maintenant);
-  return `${baseApi()}/api/files/${relatif}?exp=${exp}&sig=${sig}`;
+export function adresseSignee(relatif: string, maintenant = Date.now(), identity = origineActuelle()): string {
+  const { exp, sig, u, s } = signer(relatif, maintenant, identity);
+  return `${baseApi()}/api/files/${relatif}?exp=${exp}&sig=${sig}&u=${encodeURIComponent(u)}&s=${encodeURIComponent(s)}`;
 }
 
 /**
@@ -149,7 +182,7 @@ export function adresseSignee(relatif: string, maintenant = Date.now()): string 
 export function presenter(adresse: string | null | undefined): string | null {
   if (!adresse) return adresse ?? null;
   const relatif = cheminRelatif(adresse);
-  return relatif ? adresseSignee(relatif) : adresse;
+  return relatif ? adresseSignee(relatif) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,6 +204,8 @@ async function equipeHabilitee(compte: Compte | undefined, dossier: DossierPrive
   if (!compte.isSystemAdmin) return false;
 
   for (const [plateforme, role] of Object.entries(compte.acces || {})) {
+    // Une permission DRIVE ne donne aucun accès aux pièces ZupEat.
+    if (plateforme !== (dossier === "chauffeurs" ? "DRIVE" : "EAT")) continue;
     const permissions = await PermissionsPlateforme.permissionsDu(role, plateforme as Plateforme);
     if (SECTIONS_DU_DOSSIER[dossier].some((section) => permissions[section])) return true;
   }
@@ -190,7 +225,17 @@ export async function peutLire(
   const dossier = relatif.split("/")[0];
   if (!estDossierPrive(dossier)) return false;
 
-  if (await equipeHabilitee(appelant.compte, dossier)) return true;
+  if (await equipeHabilitee(appelant.compte, dossier)) {
+    if (dossier !== "merchants" || appelant.compte?.isSuperOwner) return true;
+    const piece = await db.organizationDocument.findFirst({
+      where: { documentUrl: reference(relatif) }, select: { type: true },
+    });
+    if (!piece) return false;
+    if (piece.type !== "bank") return true;
+    const permissions = await PermissionsPlateforme.permissionsDu(appelant.compte?.acces.EAT, "EAT");
+    if (permissions.billing) return true;
+    // Le propriétaire éventuel peut encore lire sa propre pièce, ci-dessous.
+  }
 
   if (dossier === "drivers") {
     const piece = await db.courierDocument.findFirst({

@@ -4,6 +4,7 @@ import { logger } from "../../config/logger";
 import { emitNotification } from "../realtime/socket";
 import { FileUploadService } from "../files/file-upload.service";
 import { notifierPlateforme } from "../notifications/notification.service";
+import { cheminRelatif } from "../files/fichiers-prives.service";
 
 /**
  * Le dossier d'un livreur, et sa validation par la plateforme.
@@ -84,6 +85,23 @@ export class DriverApprovalService {
     driverId: string,
     piece: { type: TypeDocument; documentUrl: string; expiryDate?: string | null }
   ) {
+    // Une URL n'est pas une preuve de propriété. Vérifier le rattachement
+    // existant AVANT d'écrire, sinon le dépôt rendrait lisible la pièce voisine.
+    let documentUrl = piece.documentUrl;
+    const relatif = cheminRelatif(documentUrl);
+    if (!relatif) throw new ApiError(400, "Les liens externes sont refusés : utilisez le dépôt de fichier sécurisé", "EXTERNAL_DOCUMENT_FORBIDDEN");
+    if (relatif) {
+      const possedee = relatif.startsWith("drivers/")
+        ? await db.courierDocument.findFirst({
+            where: { driverId, documentUrl: { endsWith: `/uploads/${relatif}` } },
+            select: { documentUrl: true },
+          })
+        : null;
+      if (!possedee) {
+        throw new ApiError(403, "Cette pièce privée ne vous appartient pas. Utilisez l'envoi de fichier.", "DOCUMENT_FORBIDDEN");
+      }
+      documentUrl = possedee.documentUrl;
+    }
     const expire = piece.expiryDate ? new Date(piece.expiryDate) : null;
 
     if (expire && expire.getTime() < Date.now()) {
@@ -102,7 +120,7 @@ export class DriverApprovalService {
     });
 
     const valeurs = {
-      documentUrl: piece.documentUrl,
+      documentUrl,
       expiryDate: expire,
       status: "PENDING",
       reviewNote: null,

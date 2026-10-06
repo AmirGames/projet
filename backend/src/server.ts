@@ -20,6 +20,8 @@ import { PlatformInvoiceJobs } from "./modules/invoicing/platform-invoice.jobs";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import { Disponibilite } from "./modules/monitoring/disponibilite.service";
 import { amorcerSuperowner } from "./modules/auth/amorcer-superowner.service";
+import { PrivacyJobs } from "./modules/privacy/privacy.jobs";
+import { purgeAssistantConversations } from "./modules/assistant/retention";
 
 // Load environment variables
 const env = loadEnv();
@@ -72,14 +74,20 @@ const start = async () => {
     PayoutJobs.start();
     PlatformInvoiceJobs.start();
     OrderJobs.start();
+    PrivacyJobs.start();
 
     // Après les tâches : la vigie les surveille dès son premier passage.
     Vigie.demarrer();
     Disponibilite.demarrer();
+    const assistantRetention = setInterval(() => {
+      void purgeAssistantConversations().catch(() => logger.warn("Assistant retention unavailable"));
+    }, 3600000);
+    assistantRetention.unref();
 
     // Graceful shutdown
     const gracefulShutdown = async () => {
       logger.info("Shutting down gracefully...");
+      clearInterval(assistantRetention);
       ClosureJobs.stopJobs();
       DispatchJobs.stop();
       WebhookJobs.stop();
@@ -90,6 +98,7 @@ const start = async () => {
       PayoutJobs.stop();
       PlatformInvoiceJobs.stop();
       OrderJobs.stop();
+      PrivacyJobs.stop();
       DriverJobs.stop();
       Vigie.arreter();
       Disponibilite.arreter();

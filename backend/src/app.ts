@@ -14,7 +14,7 @@ import { compteDemo } from "./modules/merchants/compte-demo.middleware";
 import { cloisonnement } from "./modules/auth/cloisonnement.middleware";
 import { diffusionModifications } from "./modules/realtime/diffusion.middleware";
 import { mesurerRequetes } from "./modules/monitoring/surveillance.middleware";
-import { limiterCadence } from "./middleware/throttle";
+import { limiterCadence, limiterStripeWebhook, limiterApiPublique } from "./middleware/throttle";
 import { Surveillance } from "./modules/monitoring/surveillance.service";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import authRouter from "./modules/auth/auth.routes";
@@ -62,6 +62,9 @@ import merchantPayoutRouter from "./modules/payouts/merchant-payout.routes";
 import pushDevicesRouter from "./modules/notifications/push-devices.routes";
 import variantRouter from "./modules/catalog/variant.routes";
 import addressRouter from "./modules/customers/address.routes";
+import privacyRouter from "./modules/privacy/privacy.routes";
+import { privacyAuditMiddleware } from "./modules/privacy/audit.middleware";
+import assistantRouter from "./modules/assistant/routes";
 
 export function createApp(): Express {
   const app = express();
@@ -75,7 +78,10 @@ export function createApp(): Express {
   // proxys à traverser pour retrouver l'adresse du visiteur (1 avec Caddy).
   // Vide : on n'en croit aucun, un en-tête X-Forwarded-For se forge.
   const proxysDeConfiance = Number(process.env.TRUST_PROXY);
-  if (Number.isInteger(proxysDeConfiance) && proxysDeConfiance > 0) {
+  const proxysAutorises = (process.env.TRUST_PROXY_CIDRS || "").split(",").map(p => p.trim()).filter(Boolean);
+  if (proxysAutorises.length) {
+    app.set("trust proxy", proxysAutorises);
+  } else if (Number.isInteger(proxysDeConfiance) && proxysDeConfiance > 0) {
     app.set("trust proxy", proxysDeConfiance);
   }
 
@@ -105,7 +111,7 @@ export function createApp(): Express {
   // Avant le lecteur JSON : Stripe signe le corps brut, et une fois relu en
   // objet il ne se vérifie plus. Avant aussi la maintenance et les verrous de
   // compte : un encaissement doit être noté quoi qu'il arrive au site.
-  app.post("/api/payments/webhook", express.raw({ type: "application/json" }), stripeWebhookHandler);
+  app.post("/api/payments/webhook", limiterStripeWebhook, express.raw({ type: "application/json" }), stripeWebhookHandler);
 
   // ===== Body parsing =====
   app.use(lecteursDeCorps);
@@ -186,6 +192,7 @@ export function createApp(): Express {
   // toutes les routes, et non route par route : deux routeurs sur vingt-cinq
   // faisaient le contrôle.
   app.use(cloisonnement);
+  app.use(privacyAuditMiddleware);
 
   // Après chaque écriture réussie, les écrans concernés sont prévenus et se
   // relisent : le site suit en direct sans recharger.
@@ -216,8 +223,12 @@ export function createApp(): Express {
     res.status(404).json({ error: "Fichier introuvable", code: "FILE_NOT_FOUND" });
   });
 
+  // Budget commun : couvre aussi les endpoints publics ajoutés aux routeurs.
+  app.use("/api", limiterApiPublique);
+
   // ===== API Routes =====
   app.use("/api/auth", authRouter);
+  app.use("/api/privacy", privacyRouter);
   app.use("/api/files", filesRouter);
   app.use("/api/sso", ssoRouter);
   app.use("/api/organizations", organizationRouter);
@@ -261,6 +272,7 @@ export function createApp(): Express {
   app.use("/api/zupdrive/societe", zupdriveSocieteRouter);
   app.use("/api/notifications", notificationsApiRouter);
   app.use("/api/support", supportRouter);
+  app.use("/api/assistant", assistantRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/merchant-profile", merchantProfileRouter);
   app.use("/api/merchant-payouts", merchantPayoutRouter);

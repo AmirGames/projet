@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import type { NavStep } from '../lib/navigation';
@@ -64,13 +64,26 @@ export default function LiveMap({
   const web = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
   const onRouteRef = useRef(onRoute);
-  onRouteRef.current = onRoute;
+  useLayoutEffect(() => {
+    onRouteRef.current = onRoute;
+  }, [onRoute]);
+  const driverLat = driver?.lat;
+  const driverLng = driver?.lng;
+  const pickupLat = pickup?.lat;
+  const pickupLng = pickup?.lng;
+  const dropoffLat = dropoff?.lat;
+  const dropoffLng = dropoff?.lng;
 
   useEffect(() => {
     if (!ready) return;
-    const data = JSON.stringify({ driver, pickup, dropoff, target, follow, dark: !!dark, bottomInset });
+    const data = JSON.stringify({
+      driver: driverLat != null && driverLng != null ? { lat: driverLat, lng: driverLng } : null,
+      pickup: pickupLat != null && pickupLng != null ? { lat: pickupLat, lng: pickupLng } : null,
+      dropoff: dropoffLat != null && dropoffLng != null ? { lat: dropoffLat, lng: dropoffLng } : null,
+      target, follow, dark: !!dark, bottomInset,
+    });
     web.current?.injectJavaScript(`window.maj && window.maj(${data}); true;`);
-  }, [ready, driver?.lat, driver?.lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, target, follow, dark, bottomInset]);
+  }, [ready, driverLat, driverLng, pickupLat, pickupLng, dropoffLat, dropoffLng, target, follow, dark, bottomInset]);
 
   const onMessage = (e: WebViewMessageEvent) => {
     try {

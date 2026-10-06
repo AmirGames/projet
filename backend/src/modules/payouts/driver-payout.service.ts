@@ -309,6 +309,7 @@ export class DriverPayoutService {
           periodStart,
           periodEnd,
           deliveryCount: courses.length,
+          beneficiaryJson: { name: livreur.accountHolder || livreur.name },
           amount: montant,
           status: "PENDING",
         },

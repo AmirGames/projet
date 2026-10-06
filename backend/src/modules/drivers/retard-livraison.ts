@@ -16,9 +16,8 @@ export const INCIDENTS_POUR_LE_CLIENT = {
   where: {
     OR: [{ closedAt: null, phase: "LIVRAISON" }, { type: { in: ["COURSE_RETIREE", "RECLAMATION_CLIENT"] } }],
   },
-  select: { type: true, driverId: true, assignedAt: true, createdAt: true },
+  select: { type: true, driverId: true, assignedAt: true, createdAt: true, closedAt: true, resolution: true },
   orderBy: { createdAt: "asc" as const },
-  take: 10,
 };
 
 /**
@@ -72,15 +71,24 @@ export function reclamationPourLeClient(
     status: string;
     proofType: string | null;
     deliveryTime: Date | null;
-    incidents?: { type: string }[];
+    incidents?: { type: string; createdAt?: Date; closedAt?: Date | null; resolution?: string | null }[];
   },
   maintenant = new Date()
-): { possible: boolean; deposee: boolean } {
-  const deposee = (course.incidents ?? []).some((i) => i.type === "RECLAMATION_CLIENT");
+): {
+  possible: boolean;
+  deposee: boolean;
+  deposeeLe?: Date;
+  traiteeLe?: Date;
+  reponse?: string | null;
+} {
+  const reclamation = (course.incidents ?? []).find((i) => i.type === "RECLAMATION_CLIENT");
+  const deposee = Boolean(reclamation);
   const dansLeDelai =
     Boolean(course.deliveryTime) && maintenant.getTime() - course.deliveryTime!.getTime() <= RECLAMATION_DELAI_MS;
   return {
     possible: !deposee && course.status === "DELIVERED" && course.proofType === "PHOTO" && dansLeDelai,
     deposee,
+    ...(reclamation?.createdAt ? { deposeeLe: reclamation.createdAt } : {}),
+    ...(reclamation?.closedAt ? { traiteeLe: reclamation.closedAt, reponse: reclamation.resolution ?? null } : {}),
   };
 }

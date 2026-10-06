@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
+import { cheminDecode, sousChemin } from "../../utils/chemin";
 import { db } from "../../services/db";
+import { SecurityEventService } from "./security-event.service";
 import { logger } from "../../config/logger";
 import { compteDuJeton, verifyToken } from "./auth.middleware";
 
@@ -13,9 +15,9 @@ import { compteDuJeton, verifyToken } from "./auth.middleware";
  * commandes, changer ses horaires, retarifer son catalogue. Deux routeurs sur
  * vingt-cinq faisaient le contrôle.
  *
- * Le corriger route par route aurait demandé une centaine de retouches, chacune
- * susceptible d'être oubliée. Le verrou est donc posé une fois, devant toute
- * l'API, et il cherche l'identifiant là où il se trouve :
+ * Ce verrou global reste une protection supplémentaire. Le personnel et le
+ * catalogue appliquent aussi leurs contrôles locaux avec le périmètre de
+ * boutiques et le rôle de l'appelant. Ici, on cherche l'identifiant :
  *
  * - dans le chemin, à n'importe quel segment (`/api/store-hours/:storeId/day`,
  *   `/api/products/low-stock/by-store/:storeId`),
@@ -49,12 +51,15 @@ const CHEMINS_PUBLICS = [
  * compte connecté, et son administration (permissions de la plateforme DRIVE).
  */
 const CHEMINS_HORS_PORTEE = [
+  "/api/privacy",
+  "/api/files",
   "/api/superowner",
   "/api/admin",
   "/api/drivers",
   "/api/zupdrive",
   "/api/notifications",
   "/api/support",
+  "/api/assistant", // Session, conversations et chaque outil contrôlés localement.
 ];
 
 /**
@@ -113,6 +118,7 @@ const RESSOURCES: {
   /** Nom du délégué Prisma. */
   modele: string;
 }[] = [
+  { prefixe: "/api/staff", modele: "staff" },
   { prefixe: "/api/products", modele: "product" },
   { prefixe: "/api/categories", modele: "category" },
   { prefixe: "/api/orders", modele: "order" },
@@ -120,46 +126,17 @@ const RESSOURCES: {
   { prefixe: "/api/delivery-zones", modele: "deliveryZone" },
 ];
 
-// Le lien entre un identifiant et son organisation ne change jamais : le garder
-// évite plusieurs requêtes par appel d'API.
-const DUREE_CACHE_MS = 60000;
-const orgParIdentifiant = new Map<string, { orgId: string | null; expireA: number }>();
+interface Cible { orgId: string; storeId?: string }
 
-export function oublierIdentifiant(id: string) {
-  orgParIdentifiant.delete(id);
-}
+/** Compatibilité avec les appelants historiques ; le propriétaire n'est plus mis en cache. */
+export function oublierIdentifiant(_id: string) {}
 
-/**
- * L'organisation derrière un identifiant, qu'il désigne une boutique ou une
- * organisation. `null` quand il ne désigne ni l'une ni l'autre — un produit,
- * une commande, un mot de passe oublié : ce n'est pas notre affaire ici.
- */
-async function orgDeLIdentifiant(id: string): Promise<string | null> {
-  const connu = orgParIdentifiant.get(id);
-  if (connu && Date.now() < connu.expireA) return connu.orgId;
-
-  const boutique = await db.store.findUnique({ where: { id }, select: { orgId: true } });
-
-  let orgId = boutique?.orgId ?? null;
-
-  if (!orgId) {
-    const organisation = await db.organization.findUnique({ where: { id }, select: { id: true } });
-    orgId = organisation?.id ?? null;
-  }
-
-  orgParIdentifiant.set(id, { orgId, expireA: Date.now() + DUREE_CACHE_MS });
-
-  return orgId;
-}
-
-/** Les organisations de l'appelant, résolues une fois par requête. */
-async function sesOrganisations(userId: string): Promise<Set<string>> {
-  const appartenances = await db.membership.findMany({
-    where: { userId },
-    select: { orgId: true },
-  });
-
-  return new Set(appartenances.map((appartenance) => appartenance.orgId));
+// Relire le propriétaire : une ressource déplacée ne conserve pas son ancien périmètre.
+async function cibleDeLIdentifiant(id: string): Promise<Cible | null> {
+  const store = await db.store.findUnique({ where: { id }, select: { id: true, orgId: true } });
+  if (store) return { orgId: store.orgId, storeId: id };
+  const organization = await db.organization.findUnique({ where: { id }, select: { id: true } });
+  return organization ? { orgId: organization.id } : null;
 }
 
 /** Une valeur qui ressemble à un identifiant, ou rien. */
@@ -189,12 +166,12 @@ function segmentsIdentifiants(chemin: string): string[] {
  * Rend `undefined` quand la route ne désigne pas une ressource connue, et
  * `null` quand la ressource n'existe pas — deux cas à traiter différemment.
  */
-async function orgDeLaRessource(req: Request): Promise<string | null | undefined> {
-  const ressource = RESSOURCES.find((candidate) => req.path.startsWith(candidate.prefixe));
+async function cibleDeLaRessource(chemin: string): Promise<Cible | null | undefined> {
+  const ressource = RESSOURCES.find((candidate) => sousChemin(chemin, candidate.prefixe));
   if (!ressource) return undefined;
 
   // Le segment qui suit le préfixe : l'identifiant, s'il y en a un.
-  const reste = req.path.slice(ressource.prefixe.length).replace(/^\//, "");
+  const reste = chemin.slice(ressource.prefixe.length).replace(/^\//, "");
   const premier = reste.split("/")[0] || "";
 
   // Un segment vide, ou un mot-clé de route plutôt qu'un identifiant.
@@ -202,37 +179,42 @@ async function orgDeLaRessource(req: Request): Promise<string | null | undefined
 
   try {
     const delegue = (db as any)[ressource.modele];
-    if (!delegue?.findUnique) return undefined;
+    if (!delegue?.findUnique) throw new Error("Ressource non vérifiable");
 
     const trouvee = await delegue.findUnique({
       where: { id: premier },
-      select: { store: { select: { orgId: true } } },
+      select: { storeId: true, store: { select: { orgId: true } } },
     });
 
-    return trouvee ? trouvee.store?.orgId ?? null : null;
+    if (!trouvee) return null;
+    if (!trouvee.store?.orgId || !trouvee.storeId) throw new Error("Propriétaire de la ressource inconnu");
+    return { orgId: trouvee.store.orgId, storeId: trouvee.storeId };
   } catch (err) {
-    // Une ressource dont la forme ne correspond pas : on laisse la route
-    // répondre elle-même plutôt que de bloquer à tort.
+    // Un contrôle illisible ne doit pas autoriser la requête.
     logger.warn("Cloisonnement : ressource illisible", {
-      chemin: req.path,
+      chemin,
       error: err instanceof Error ? err.message : err,
     });
-    return undefined;
+    throw err;
   }
 }
 
-const refus = (res: Response) =>
-  res.status(403).json({
-    error: "Cette ressource appartient à un autre commerçant",
+const refus = (req: Request, res: Response) => {
+  SecurityEventService.record({ action: "CROSS_TENANT_DENIED", actor: req.userId || "anonymous",
+    severity: "HIGH", status: "FAILED", ipAddress: req.ip, details: req.path });
+  return res.status(403).json({
+    error: "Accès à cette ressource refusé",
     code: "CROSS_TENANT_DENIED",
   });
+};
 
 export async function cloisonnement(req: Request, res: Response, next: NextFunction) {
-  if (CHEMINS_PUBLICS.some((chemin) => req.path.startsWith(chemin))) return next();
-  if (CHEMINS_HORS_PORTEE.some((chemin) => req.path.startsWith(chemin))) return next();
+  const cheminRequete = cheminDecode(req.path);
+  if (CHEMINS_PUBLICS.some((chemin) => sousChemin(cheminRequete, chemin))) return next();
+  if (CHEMINS_HORS_PORTEE.some((chemin) => sousChemin(cheminRequete, chemin))) return next();
 
   const public_ = GESTES_PUBLICS.some(
-    (geste) => geste.methode === req.method && geste.chemin.test(req.path)
+    (geste) => geste.methode === req.method && geste.chemin.test(cheminRequete.toLowerCase())
   );
   if (public_) return next();
 
@@ -254,8 +236,9 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
     // compte est lu par le même cache que le middleware d'authentification, qui
     // passera juste après : la requête ne le lit donc qu'une fois.
     const compte = await compteDuJeton(charge.userId);
+    req.userId = charge.userId;
 
-    if (compte?.isSuperOwner || compte?.isSystemAdmin) return next();
+    if (compte?.isSuperOwner) return next();
 
     const corps = (req.body || {}) as Record<string, unknown>;
 
@@ -264,41 +247,38 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
       identifiant(req.query?.orgId),
       identifiant(corps.storeId),
       identifiant(corps.orgId),
-      ...segmentsIdentifiants(req.path),
+      ...segmentsIdentifiants(cheminRequete),
     ].filter((valeur): valeur is string => valeur !== null);
 
-    const orgDeLaCible = await orgDeLaRessource(req);
+    const cibleRessource = await cibleDeLaRessource(cheminRequete);
 
     // Rien à cloisonner sur cette requête.
-    if (annonces.length === 0 && orgDeLaCible === undefined) return next();
+    if (annonces.length === 0 && cibleRessource === undefined) return next();
 
-    const siennes = await sesOrganisations(charge.userId);
-
+    const memberships = await db.membership.findMany({
+      where: { userId: charge.userId },
+      select: { orgId: true, role: true, storeIds: true },
+    });
+    const personnel = sousChemin(cheminRequete, "/api/staff");
+    const gestionCatalogue = req.method !== "GET" &&
+      ["/api/products", "/api/categories"].some(prefix => sousChemin(cheminRequete, prefix));
+    // Ces agrégats sont filtrés par boutique dans leurs services.
+    const agregatFiltre = req.method === "GET" &&
+      (/^\/api\/(staff|products|categories)\/?$/i.test(cheminRequete) ||
+       /^\/api\/products\/low-stock\/by-org\/[^/]+$/i.test(cheminRequete));
+    const autorisee = (cible: Cible) => memberships.some(membership => {
+      if (membership.orgId !== cible.orgId) return false;
+      if (membership.role === "ADMIN") return true;
+      if (membership.role !== "STORE_MANAGER" && membership.role !== "STORE_STAFF") return false;
+      if ((personnel || gestionCatalogue) && membership.role !== "STORE_MANAGER") return false;
+      if (cible.storeId) return membership.storeIds.includes(cible.storeId);
+      return agregatFiltre && membership.storeIds.length > 0;
+    });
     for (const id of new Set(annonces)) {
-      const orgId = await orgDeLIdentifiant(id);
-
-      // Un identifiant qui ne désigne ni boutique ni organisation, ou qui
-      // n'existe pas : ce n'est pas une intrusion, la route rendra son 404.
-      if (orgId === null) continue;
-
-      if (!siennes.has(orgId)) {
-        logger.warn("Cloisonnement : maison d'un autre commerçant", {
-          chemin: req.path,
-          id,
-          userId: charge.userId,
-        });
-        return refus(res);
-      }
+      const cible = await cibleDeLIdentifiant(id);
+      if (cible && !autorisee(cible)) return refus(req, res);
     }
-
-    // La ressource désignée par son propre identifiant.
-    if (orgDeLaCible && !siennes.has(orgDeLaCible)) {
-      logger.warn("Cloisonnement : ressource d'un autre commerçant", {
-        chemin: req.path,
-        userId: charge.userId,
-      });
-      return refus(res);
-    }
+    if (cibleRessource && !autorisee(cibleRessource)) return refus(req, res);
 
     return next();
   } catch (err) {
@@ -308,6 +288,6 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
       chemin: req.path,
       error: err instanceof Error ? err.message : err,
     });
-    return refus(res);
+    return refus(req, res);
   }
 }

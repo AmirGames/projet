@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
-import { cheminRelatif, presenter } from "../files/fichiers-prives.service";
+import { cheminRelatif, presenter, verifierDepot } from "../files/fichiers-prives.service";
 import { z } from "zod";
 import { distanceKm, estUnPoint, Point } from "../../utils/geo";
 
@@ -258,7 +258,7 @@ export class DeliveryProofService {
 
     const bloque = course.codeAttempts >= ESSAIS_MAX;
     const code = preuve.code?.trim();
-    const photo = preuve.photoUrl?.trim();
+    let photo = preuve.photoUrl?.trim();
 
     // Une course d'avant le code n'en a pas : la photo est alors la seule
     // preuve possible, et l'exiger est plus juste que de laisser passer.
@@ -319,17 +319,27 @@ export class DeliveryProofService {
       if (photo.includes("/api/files/") || photo.includes("/documents/file/")) {
         throw new ApiError(400, "Envoyez l'adresse rendue par l'envoi de la photo", "INVALID_PHOTO");
       }
+      // Les uploads hébergés ailleurs reçoivent le même reçu ; le retirer
+      // après vérification évite de conserver une autorisation temporaire.
+      if (photo.includes("depotExp=") || photo.includes("depotSig=")) {
+        const stockage = verifierDepot(photo, deliveryId);
+        if (!stockage) throw new ApiError(400, "Cette photo ne correspond pas à un dépôt", "INVALID_PHOTO");
+        // Le contrôle local ci-dessous doit encore pouvoir vérifier ce reçu.
+        if (!stockage.includes("/uploads/")) photo = stockage;
+      }
       if (photo.includes("/uploads/")) {
         const relatif = cheminRelatif(photo);
+        const stockage = verifierDepot(photo, deliveryId);
         const dejaPrise =
           relatif?.startsWith("deliveries/") &&
           (await db.orderDelivery.findFirst({
             where: { id: { not: deliveryId }, proofPhoto: { endsWith: `/uploads/${relatif}` } },
             select: { id: true },
           }));
-        if (!relatif || !relatif.startsWith("deliveries/") || dejaPrise) {
+        if (!relatif || !relatif.startsWith("deliveries/") || dejaPrise || !stockage) {
           throw new ApiError(400, "Cette photo ne correspond pas à un dépôt", "INVALID_PHOTO");
         }
+        photo = stockage;
       }
 
       const maintenant = new Date();

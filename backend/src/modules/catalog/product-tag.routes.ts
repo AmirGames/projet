@@ -1,3 +1,4 @@
+import { autoriserCatalogue } from "../auth/autorisation-boutique";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ProductTagService } from "./product-tag.service";
@@ -18,7 +19,7 @@ const updateTagSchema = z.object({
   color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
 });
 
-router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
@@ -33,7 +34,7 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
   }
 });
 
-router.get("/:storeId/:tagId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/:tagId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const tagId = req.params.tagId as string;
@@ -47,7 +48,7 @@ router.get("/:storeId/:tagId", authMiddleware, async (req: Request, res: Respons
   }
 });
 
-router.post("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:storeId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const body = createTagSchema.parse(req.body);
@@ -64,7 +65,7 @@ router.post("/:storeId", authMiddleware, async (req: Request, res: Response, nex
   }
 });
 
-router.patch("/:storeId/:tagId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:storeId/:tagId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const tagId = req.params.tagId as string;
@@ -82,7 +83,7 @@ router.patch("/:storeId/:tagId", authMiddleware, async (req: Request, res: Respo
   }
 });
 
-router.delete("/:storeId/:tagId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:storeId/:tagId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const tagId = req.params.tagId as string;
@@ -98,7 +99,7 @@ router.delete("/:storeId/:tagId", authMiddleware, async (req: Request, res: Resp
   }
 });
 
-router.post("/:storeId/:tagId/products/:productId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:storeId/:tagId/products/:productId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const tagId = req.params.tagId as string;
@@ -116,7 +117,7 @@ router.post("/:storeId/:tagId/products/:productId", authMiddleware, async (req: 
   }
 });
 
-router.delete("/:storeId/:tagId/products/:productId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:storeId/:tagId/products/:productId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const tagId = req.params.tagId as string;

@@ -19,7 +19,7 @@ import { origineCentrale } from "./sso.service";
  */
 export const NOM_COOKIE_REFRESH = "zup_refresh";
 const CHEMIN = "/api/auth";
-const TRENTE_JOURS_MS = 30 * 24 * 60 * 60 * 1000;
+const SEPT_JOURS_MS = 7 * 24 * 60 * 60 * 1000;
 
 const options = () => ({
   httpOnly: true,
@@ -47,7 +47,7 @@ export function lireCookieRefresh(req: Request): string | undefined {
  */
 export function livrerRefresh(req: Request, res: Response, refreshToken: string, force = false): string | undefined {
   if (!force && !veutLeCookie(req)) return refreshToken;
-  res.cookie(NOM_COOKIE_REFRESH, refreshToken, { ...options(), maxAge: TRENTE_JOURS_MS });
+  res.cookie(NOM_COOKIE_REFRESH, refreshToken, { ...options(), maxAge: SEPT_JOURS_MS });
   return undefined;
 }
 

@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+import { SecurityEventService } from "../modules/auth/security-event.service";
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "./errorHandler";
 import { Stockage, StockageMemoire, stockageRedis } from "./throttle-stockage";
@@ -10,8 +12,8 @@ import { Stockage, StockageMemoire, stockageRedis } from "./throttle-stockage";
  * appartient pas, et faire classer le domaine comme indésirable.
  *
  * Les compteurs vivent dans Redis quand REDIS_URL est défini (partagés entre
- * les instances), sinon en mémoire — « par processus » : la limite est alors
- * multipliée par le nombre d'instances, ce qui suffit en développement. Une
+ * les instances). En développement uniquement, la mémoire suffit. En production,
+ * sans compteur partagé prêt, l'appel est refusé (503). Une
  * attaque distribuée relève du pare-feu applicatif, en amont.
  */
 
@@ -37,12 +39,10 @@ interface Options {
   stockage?: Stockage;
 }
 
-/** Par adresse IP et par destinataire, pour les routes qui envoient un courriel. */
+/** Par destinataire toutes IP confondues ; le limiteur IP complète ce budget. */
 export const parDestinataire = (req: Request) => {
-  const email = typeof req.body?.email === "string" ? req.body.email.toLowerCase() : "";
-  // L'IP seule laisserait un client bloquer tout un réseau partagé ;
-  // l'adresse seule laisserait un attaquant tourner sur des milliers d'adresses.
-  return `${req.ip}|${email}`;
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  return email || req.ip || "inconnue";
 };
 
 let numero = 0;
@@ -53,51 +53,74 @@ export function limiterCadence(options: Options) {
   const espace = `rl:${options.nom ?? ++numero}:`;
   const memoire = new StockageMemoire();
 
-  return async (req: Request, _res: Response, next: NextFunction) => {
-    if (options.active && !options.active()) return next();
-
-    const cle = options.cle(req);
-    let fenetre: { compte: number; reprendLe: number };
-
-    try {
-      const partage = options.stockage ?? stockageRedis();
-      fenetre = partage
-        ? await partage.incrementer(espace + cle, options.fenetreMs)
-        : await memoire.incrementer(cle, options.fenetreMs);
-    } catch {
-      // Redis a lâché en cours de route : la mémoire prend le relais.
-      fenetre = await memoire.incrementer(cle, options.fenetreMs);
+  const cleDe = (req: Request) => espace + createHash("sha256").update(options.cle(req)).digest("hex");
+  const choisirStockage = () => {
+    const partage = options.stockage ?? stockageRedis();
+    if (!partage && process.env.NODE_ENV === "production") {
+      throw new ApiError(503, "Protection de sécurité temporairement indisponible", "SECURITY_UNAVAILABLE");
     }
+    return partage ?? memoire;
+  };
 
+  const middleware = async (req: Request, res: Response, next: NextFunction) => {
+    if (options.active && !options.active()) return next();
+    let fenetre: { compte: number; reprendLe: number };
+    try {
+      fenetre = await choisirStockage().incrementer(cleDe(req), options.fenetreMs);
+    } catch (err) {
+      if (process.env.NODE_ENV === "production") {
+        return next(new ApiError(503, "Protection de sécurité temporairement indisponible", "SECURITY_UNAVAILABLE"));
+      }
+      fenetre = await memoire.incrementer(cleDe(req), options.fenetreMs);
+    }
     if (fenetre.compte > options.max) {
       const secondes = Math.max(1, Math.ceil((fenetre.reprendLe - Date.now()) / 1000));
-
-      return next(
-        new ApiError(
-          429,
-          options.message || `Trop de tentatives. Réessayez dans ${secondes} secondes.`,
-          "TOO_MANY_REQUESTS"
-        )
-      );
+      res.setHeader?.("Retry-After", String(secondes));
+      if (fenetre.compte === options.max + 1 || fenetre.compte === options.max + 10) {
+        const recidive = fenetre.compte === options.max + 10;
+        SecurityEventService.record({
+          action: recidive ? "BRUTEFORCE_RECURRENCE" : "RATE_LIMIT_BLOCKED",
+          actor: req.userId || "anonymous", target: espace,
+          severity: recidive ? "HIGH" : "MEDIUM", status: "FAILED",
+          ipAddress: req.ip, details: `Limite atteinte (${options.max}); blocage ${secondes}s`,
+        });
+        if (recidive && process.env.NODE_ENV !== "test") {
+          // Aucun contenu du client n'entre dans le courriel d'alerte.
+          void import("../modules/monitoring/vigie.service").then(({ prevenirPlateforme }) =>
+            prevenirPlateforme({ sujet: "Alerte sécurité : tentatives répétées",
+              texte: "Des tentatives répétées ont été bloquées. Consultez le journal de sécurité.",
+              chemin: "/superowner/security-audit", bouton: "Journal de sécurité" })
+          ).catch(() => undefined);
+        }
+      }
+      return next(new ApiError(429, options.message || `Trop de tentatives. Réessayez dans ${secondes} secondes.`, "TOO_MANY_REQUESTS"));
     }
-
     next();
   };
+  middleware.reinitialiser = async (req: Request) => {
+    await choisirStockage().reinitialiser(cleDe(req));
+    await memoire.reinitialiser(cleDe(req));
+  };
+  return middleware;
 }
 
-/**
- * Connexion : dix essais par quart d'heure, par adresse IP et par compte.
- *
- * De quoi se tromper plusieurs fois de mot de passe sans être gêné, pas de
- * quoi en essayer des milliers. Compter par compte seul laisserait n'importe
- * qui bloquer la connexion d'un autre en tapant son adresse ; par IP seule,
- * un réseau partagé se bloquerait lui-même.
+/** Cinq échecs consécutifs par compte, toutes IP confondues, blocage 15 minutes.
+ * Les essais sont réservés avant bcrypt et effacés après une connexion réussie.
  */
 export const limiterConnexions = limiterCadence({
-  max: 10,
-  fenetreMs: 15 * 60 * 1000,
+  nom: "login-account", max: 5, fenetreMs: 15 * 60 * 1000,
   message: "Trop de tentatives de connexion. Réessayez dans quelques minutes.",
-  cle: parDestinataire,
+  cle: (req) => typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "inconnue",
+});
+
+/** Le compteur IP+destinataire seul se contourne en changeant d'adresse. */
+export const limiterAuthParIp = limiterCadence({
+  nom: 'auth-ip', max: 50, fenetreMs: 15 * 60 * 1000,
+  cle: (req) => req.ip || 'inconnue',
+});
+export const limiterCourrielsParIp = limiterCadence({
+  nom: 'courriels-ip', max: 20, fenetreMs: 15 * 60 * 1000,
+  cle: (req) => req.ip || 'inconnue',
 });
 
 /**
@@ -115,4 +138,16 @@ export const limiterInscriptions = limiterCadence({
   message: "Trop de comptes créés depuis cette connexion. Réessayez plus tard.",
   cle: (req) => req.ip || "inconnue",
   active: () => process.env.NODE_ENV === "production",
+});
+
+/** Webhook avant lecture du corps : budget dédié, sans bloquer les routes d'auth. */
+export const limiterStripeWebhook = limiterCadence({
+  nom: "stripe-webhook", max: 300, fenetreMs: 60_000,
+  cle: (req) => req.ip || "inconnue",
+});
+
+/** Budget commun aux appels publics coûteux, y compris les variantes d'URL. */
+export const limiterApiPublique = limiterCadence({
+  nom: "public-api", max: 120, fenetreMs: 60_000,
+  cle: (req) => req.ip || "inconnue",
 });

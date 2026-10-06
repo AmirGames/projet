@@ -1,0 +1,6 @@
+const nextJest = require('next/jest');
+
+module.exports = nextJest({ dir: './' })({
+  testEnvironment: 'jsdom',
+  moduleNameMapper: { '^@/(.*)$': '<rootDir>/$1' },
+});

@@ -27,6 +27,9 @@ const roles = [
   { code: "SUPPORT", label: "Support", permissions: { "support-tickets": "write", organizations: "read" } },
   { code: "MODERATION", label: "Modération", permissions: { organizations: "write" } },
   { code: "FACTURATION", label: "Facturation", permissions: { billing: "write", payouts: "read" } },
+  { code: "GESTION_ORG", label: "Gestion organisations", permissions: { organizations: "write" } },
+  { code: "SUPPORT_LIVREURS", label: "Support livreurs", permissions: { "driver-support": "write" } },
+  { code: "FORMULES", label: "Formules", permissions: { formules: "write" } },
 ];
 
 const rolesDrive = [
@@ -37,7 +40,7 @@ const rolesDrive = [
 
 async function passer(routeur: any, compte: any, method: string, path: string, plateforme?: any) {
   let erreur: any;
-  await exigerPermission(routeur, plateforme)({ compte, method, path } as any, {} as any, (e?: any) => {
+  await exigerPermission(routeur, plateforme)({ compte, method, path } as any, { json: jest.fn() } as any, (e?: any) => {
     erreur = e;
   });
   return erreur ? erreur.statusCode ?? 403 : 200;
@@ -151,5 +154,45 @@ describe("export du dossier d'incident", () => {
     expect(PERMISSIONS_PAR_DEFAUT.SUPER_ADMIN["incidents-export"]).toBe("write");
     expect(PERMISSIONS_PAR_DEFAUT.ADMIN["incidents-export"]).toBe("write");
     expect(PERMISSIONS_PAR_DEFAUT.SUPPORT["incidents-export"]).toBeUndefined();
+  });
+});
+
+describe("permissions indépendantes de la casse et du codage de l'URL", () => {
+  beforeEach(() => {
+    oublierRoles();
+    db.platformRole.findMany.mockImplementation(async () => roles);
+  });
+  it.each(["close", "CLOSE", "%63lose", "ClOsE"])("fermeture %s exige le droit spécifique", async segment => {
+    expect(sectionDeLaRoute("superowner", `/organizations/OrgAbC/${segment}`)).toBe("organizations-close");
+    expect(await passer("superowner", membre("GESTION_ORG"), "POST", `/organizations/OrgAbC/${segment}`)).toBe(403);
+  });
+  it.each(["tier", "TIER", "%74ier", "commission-promo", "COMMISSION-PROMO", "conditions", "CONDITIONS"])("formule %s ne se modifie pas avec le seul droit organisation", async segment => {
+    expect(await passer("superowner", membre("GESTION_ORG"), "PATCH", `/organizations/OrgAbC/${segment}`)).toBe(403);
+  });
+  it("le PATCH historique exige Formules, tandis que le GET conserve Organisations", async () => {
+    expect(await passer("admin", membre("GESTION_ORG"), "PATCH", "/Merchants/OrgAbC")).toBe(403);
+    expect(await passer("admin", membre("FORMULES"), "PATCH", "/Merchants/OrgAbC")).toBe(200);
+    expect(await passer("admin", membre("GESTION_ORG"), "GET", "/Merchants/OrgAbC")).toBe(200);
+    expect(await passer("superowner", membre("FORMULES"), "PATCH", "/Organizations/OrgAbC/Conditions")).toBe(200);
+  });
+  it.each(["dossier", "DOSSIER", "%64ossier"])("export %s n'est pas couvert par le support livreur", async segment => {
+    expect(sectionDeLaRoute("superowner", `/delivery-incidents/incident/${segment}`)).toBe("incidents-export");
+    expect(await passer("superowner", membre("SUPPORT_LIVREURS"), "GET", `/delivery-incidents/incident/${segment}`)).toBe(403);
+  });
+  it.each(["CLOSE", "RESTORE-FROM-BACKUP"])("route admin %s exige le droit de fermeture", async segment => {
+    expect(await passer("admin", membre("GESTION_ORG"), "POST", `/merchants/OrgAbC/${segment}`)).toBe(403);
+  });
+  it.each(["/ADMINS", "/RoLeS", "/%72oles"])("la gestion d'équipe %s reste réservée au superowner", async path => {
+    expect(await passer("superowner", membre("SUPER_ADMIN"), "PUT", path)).toBe(403);
+  });
+  it("un nom de route voisin n'hérite pas d'une permission", () => {
+    expect(sectionDeLaRoute("superowner", "/organizations-autre")).toBeNull();
+    expect(sectionDeLaRoute("superowner", "/api-keys-autre")).toBeNull();
+    expect(sectionDeLaRoute("zupdrive", "/courses-autre")).toBeNull();
+  });
+  it("les opérations légitimes restent accessibles avec leur permission", async () => {
+    expect(await passer("superowner", membre("GESTION_ORG"), "PATCH", "/Organizations/OrgAbC")).toBe(200);
+    expect(await passer("superowner", membre("SUPPORT_LIVREURS"), "POST", "/DRIVER-SUPPORT/incident")).toBe(200);
+    expect(await passer("superowner", membre("ADMIN"), "HEAD", "/ORGANIZATIONS/OrgAbC")).toBe(200);
   });
 });

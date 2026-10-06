@@ -1,3 +1,6 @@
+import { createHash } from "crypto";
+import { StockageMemoire, stockageRedis } from "../../middleware/throttle-stockage";
+import { SecurityEventService } from "../auth/security-event.service";
 import webpush, { PushSubscription } from "web-push";
 import { Prisma } from "@prisma/client";
 
@@ -47,6 +50,7 @@ const smsPret = Boolean(
   process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM
 );
 
+const budgetsSms = new StockageMemoire();
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 export interface MessageExpo {
@@ -61,6 +65,13 @@ export interface MessageExpo {
   ttl?: number;
   /** Catégorie déclarée par l'application : elle porte les boutons d'action. */
   categoryId?: string;
+}
+
+/** Android delivery wakeup: no presentation fields, so FCM starts the background task. */
+interface MessageExpoWakeup {
+  wakeUp: true;
+  data: Record<string, unknown>;
+  ttl: number;
 }
 
 export interface MessagePush {
@@ -110,6 +121,26 @@ export class Notifier {
 
   static async sms(numero: string | null | undefined, texte: string) {
     if (!smsPret || !numero) return false;
+
+    // Budget par destinataire et global : tous les déclencheurs métier passent ici.
+    try {
+      const partage = stockageRedis();
+      if (!partage && process.env.NODE_ENV === "production") throw new Error("Redis indisponible");
+      const stockage = partage ?? budgetsSms;
+      const cle = createHash("sha256").update(numeroInternational(numero)).digest("hex");
+      const destinataire = await stockage.incrementer(`sms:dest:${cle}`, 15 * 60_000);
+      const global = await stockage.incrementer("sms:global", 60 * 60_000);
+      if (destinataire.compte > 10 || global.compte > 1000) {
+        if (destinataire.compte === 11 || global.compte === 1001) {
+          SecurityEventService.record({ action: "SMS_RATE_LIMIT_BLOCKED", actor: "system",
+            severity: "HIGH", status: "FAILED", details: "Budget d'envoi SMS atteint" });
+        }
+        return false;
+      }
+    } catch {
+      logger.error("Envoi SMS bloqué : compteur de sécurité indisponible");
+      return false;
+    }
 
     const sid = process.env.TWILIO_ACCOUNT_SID!;
     const corps = new URLSearchParams({
@@ -183,7 +214,7 @@ export class Notifier {
    * Les jetons refusés (application désinstallée, compte déconnecté) sont
    * retirés : les garder ferait échouer chaque envoi suivant.
    */
-  static async expoPush(tokens: string[], message: MessageExpo) {
+  static async expoPush(tokens: string[], message: MessageExpo | MessageExpoWakeup) {
     const valides = [...new Set(tokens)].filter((t) => /^Expo(nent)?PushToken\[.+\]$/.test(t));
     if (valides.length === 0) return 0;
 
@@ -201,12 +232,16 @@ export class Notifier {
           body: JSON.stringify(
             lot.map((to) => ({
               to,
-              title: message.title,
-              body: message.body,
               data: message.data || {},
-              sound: message.sound || "default",
-              channelId: message.channelId,
-              ...(message.categoryId ? { categoryId: message.categoryId } : {}),
+              ...("wakeUp" in message
+                ? { contentAvailable: true }
+                : {
+                    title: message.title,
+                    body: message.body,
+                    sound: message.sound || "default",
+                    channelId: message.channelId,
+                    ...(message.categoryId ? { categoryId: message.categoryId } : {}),
+                  }),
               priority: "high",
               ttl: message.ttl ?? 600,
             }))
@@ -299,14 +334,14 @@ export class Notifier {
 
     const appareils = await db.pushDevice.findMany({
       where: { userId, app: "delivery" },
-      select: { token: true },
+      select: { token: true, platform: true },
     });
     if (appareils.length === 0) return 0;
 
     const deliveryId = message.url?.match(/\/driver\/deliveries\/([^/?#]+)/)?.[1];
     const proposee = message.tag === "course-proposee";
 
-    return this.expoPush(
+    const notification = this.expoPush(
       appareils.map((a) => a.token),
       {
         title: message.title,
@@ -329,6 +364,20 @@ export class Notifier {
           : {}),
       }
     );
+
+    // A notification message is displayed by Android without running JS in
+    // background. Keep it for old APKs and as fallback, and send a second,
+    // data-only high-priority signal to wake the new native course alert.
+    // No title/message inside data: Expo could present a duplicate otherwise.
+    const reveil = proposee && message.offerId
+      ? this.expoPush(appareils.filter(a => a.platform === "android").map(a => a.token), {
+          wakeUp: true,
+          data: { tag: "course-proposee", offerId: message.offerId },
+          ttl: 60,
+        })
+      : Promise.resolve(0);
+    const [envoyes, reveilles] = await Promise.all([notification, reveil]);
+    return Math.max(envoyes, reveilles);
   }
 
   /**

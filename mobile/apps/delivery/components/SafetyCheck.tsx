@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Linking, Modal, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { apiFetch } from '../lib/api';
 import { Delivery, distanceM, shortId } from '../lib/deliveries';
@@ -9,8 +9,8 @@ import { COLORS, themedStyles } from './ui';
 const STILL_AFTER_MS = 3 * 60 * 1000;
 /** En deçà de ce déplacement, il n'a pas bougé (le GPS dérive de quelques mètres). */
 const MOVED_M = 40;
-/** Attendre au commerce ou chez le client est normal : pas d'alerte à moins de 200 m. */
-const STOP_RADIUS_M = 200;
+/** Même marge GPS que l'attente validée par le serveur au pied d'un immeuble. */
+const STOP_RADIUS_M = 500;
 const CHECK_EVERY_MS = 15_000;
 
 /**
@@ -30,11 +30,15 @@ export default function SafetyCheck({
 }) {
   const delivery = deliveries[0] ?? null;
   // Une clé stable : la surveillance ne repart pas à chaque rendu.
-  const key = deliveries.map((d) => `${d.id}:${d.status}`).join(',');
+  const key = deliveries.map((d) => `${d.id}:${d.status}:${d.attenteFinLe ?? ''}`).join(',');
+  const waitingForCustomer = deliveries.some((d) => d.status === 'PICKED_UP' && Boolean(d.attenteFinLe));
   const [open, setOpen] = useState(false);
   const anchor = useRef<{ lat: number; lng: number; since: number } | null>(null);
   const state = useRef({ deliveries, position, open });
-  state.current = { deliveries, position, open };
+  useLayoutEffect(() => {
+    state.current = { deliveries, position, open };
+  }, [deliveries, position, open]);
+  const hasDelivery = Boolean(delivery);
 
   // Chaque déplacement réel relance le compteur.
   useEffect(() => {
@@ -43,21 +47,22 @@ export default function SafetyCheck({
     if (!a || distanceM(a, position) > MOVED_M) {
       anchor.current = { lat: position.lat, lng: position.lng, since: Date.now() };
     }
-  }, [position?.lat, position?.lng]);
+  }, [position]);
 
   // Plus de course : plus de surveillance.
   useEffect(() => {
-    if (!delivery) {
+    if (!hasDelivery || waitingForCustomer) {
       anchor.current = null;
       setOpen(false);
     }
-  }, [key]);
+  }, [key, hasDelivery, waitingForCustomer]);
 
   useEffect(() => {
-    if (!delivery) return;
+    if (!hasDelivery) return;
     const id = setInterval(() => {
       const { deliveries: list, position: p, open: shown } = state.current;
       const a = anchor.current;
+      if (list.some((d) => d.status === 'PICKED_UP' && Boolean(d.attenteFinLe))) return;
       if (list.length === 0 || !p || !a || shown) return;
       if (Date.now() - a.since < STILL_AFTER_MS) return;
 
@@ -69,13 +74,16 @@ export default function SafetyCheck({
         if (d.latitude != null && d.longitude != null && d.status === 'PICKED_UP') pts.push({ lat: d.latitude, lng: d.longitude });
         return pts;
       });
-      if (stops.some((stop) => distanceM(p, stop) <= STOP_RADIUS_M)) return;
+      if (stops.some((stop) => distanceM(p, stop) <= STOP_RADIUS_M)) {
+        anchor.current = { lat: p.lat, lng: p.lng, since: Date.now() };
+        return;
+      }
 
       setOpen(true);
       Vibration.vibrate([0, 600, 300, 600, 300, 600]);
     }, CHECK_EVERY_MS);
     return () => clearInterval(id);
-  }, [key]);
+  }, [key, hasDelivery]);
 
   const allGood = () => {
     // Trois nouvelles minutes avant de redemander.

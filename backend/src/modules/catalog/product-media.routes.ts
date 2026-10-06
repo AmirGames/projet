@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ProductMediaService } from "./product-media.service";
 import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
+import { autoriserCatalogue } from "../auth/autorisation-boutique";
 
 const router = Router();
 
@@ -12,7 +13,7 @@ const addMediaSchema = z.object({
   type: z.enum(["image", "video"]).optional(),
 });
 
-router.get("/:storeId/:productId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/:productId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const productId = req.params.productId as string;
@@ -26,7 +27,7 @@ router.get("/:storeId/:productId", authMiddleware, async (req: Request, res: Res
   }
 });
 
-router.post("/:storeId/:productId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:storeId/:productId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const productId = req.params.productId as string;
@@ -44,7 +45,7 @@ router.post("/:storeId/:productId", authMiddleware, async (req: Request, res: Re
   }
 });
 
-router.delete("/:storeId/:mediaId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:storeId/:mediaId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const mediaId = req.params.mediaId as string;
@@ -58,7 +59,7 @@ router.delete("/:storeId/:mediaId", authMiddleware, async (req: Request, res: Re
   }
 });
 
-router.patch("/:storeId/:productId/reorder", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:storeId/:productId/reorder", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const productId = req.params.productId as string;
@@ -66,7 +67,7 @@ router.patch("/:storeId/:productId/reorder", authMiddleware, async (req: Request
 
     logger.info("Reordering media", { storeId, productId });
 
-    await ProductMediaService.reorderMedia(storeId, productId, mediaOrder);
+    await ProductMediaService.reorderMedia(storeId, productId, mediaOrder, req);
     res.json({ message: "Media reordered successfully" });
   } catch (err) {
     next(err);

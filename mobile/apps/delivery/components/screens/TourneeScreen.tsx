@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { Delivery, distanceM, formatDistance, MAX_COURSES, openNavigation, shortId, Stop } from '../../lib/deliveries';
@@ -89,7 +89,9 @@ export default function TourneeScreen({
 
   // Le GPS s'affine à l'approche du prochain arrêt.
   const onTrackingRef = useRef(onTrackingChange);
-  onTrackingRef.current = onTrackingChange;
+  useLayoutEffect(() => {
+    onTrackingRef.current = onTrackingChange;
+  }, [onTrackingChange]);
   useEffect(() => {
     onTrackingRef.current({
       target: next?.lat != null && next?.lng != null ? { lat: next.lat, lng: next.lng } : null,

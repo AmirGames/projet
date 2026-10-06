@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, PanResponder, Text, View } from 'react-native';
 import { COLORS, themedStyles } from './ui';
 
@@ -23,15 +23,18 @@ export default function SlideToConfirm({
   color?: string;
 }) {
   const [width, setWidth] = useState(0);
-  const x = useRef(new Animated.Value(0)).current;
+  const [x] = useState(() => new Animated.Value(0));
   const max = Math.max(0, width - KNOB - PADDING * 2);
   const state = useRef({ max, disabled, loading, onConfirm });
-  state.current = { max, disabled, loading, onConfirm };
+  useLayoutEffect(() => {
+    state.current = { max, disabled, loading, onConfirm };
+  }, [max, disabled, loading, onConfirm]);
 
-  const reset = () => Animated.spring(x, { toValue: 0, useNativeDriver: false }).start();
-
-  const responder = useRef(
-    PanResponder.create({
+  const [responder, setResponder] = useState<ReturnType<typeof PanResponder.create> | null>(null);
+  // Les gestes lisent les réglages de l'écran validé, jamais un rendu abandonné.
+  useLayoutEffect(() => {
+    const reset = () => Animated.spring(x, { toValue: 0, useNativeDriver: false }).start();
+    setResponder(PanResponder.create({
       onStartShouldSetPanResponder: () => !state.current.disabled && !state.current.loading,
       onMoveShouldSetPanResponder: () => !state.current.disabled && !state.current.loading,
       onPanResponderMove: (_, g) => x.setValue(Math.min(Math.max(0, g.dx), state.current.max)),
@@ -46,8 +49,8 @@ export default function SlideToConfirm({
         }
       },
       onPanResponderTerminate: reset,
-    })
-  ).current;
+    }));
+  }, [x]);
 
   const textOpacity = max > 0 ? x.interpolate({ inputRange: [0, max], outputRange: [1, 0.1] }) : 1;
 
@@ -61,7 +64,7 @@ export default function SlideToConfirm({
       </Animated.Text>
       <Animated.View
         style={[styles.knob, disabled && { backgroundColor: COLORS.card }, { transform: [{ translateX: x }] }]}
-        {...responder.panHandlers}
+        {...responder?.panHandlers}
       >
         {loading ? <ActivityIndicator color={color} /> : <Text style={[styles.arrow, { color: disabled ? COLORS.muted : color }]}>»</Text>}
       </Animated.View>

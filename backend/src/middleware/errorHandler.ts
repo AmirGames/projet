@@ -1,19 +1,11 @@
+import { SecurityEventService } from "../modules/auth/security-event.service";
 import { Express, Request, Response, NextFunction } from "express";
 import { logger } from "../config/logger";
 import { ZodError } from "zod";
 import { MulterError } from "multer";
 import { Surveillance } from "../modules/monitoring/surveillance.service";
-
-export class ApiError extends Error {
-  constructor(
-    public statusCode: number,
-    message: string,
-    public code?: string
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
+import { ApiError } from "./api-error";
+export { ApiError } from "./api-error";
 
 /**
  * Les champs, en français.
@@ -181,6 +173,11 @@ export const errorHandler = (
   }
 
   if (err instanceof ApiError) {
+    if (err.statusCode === 401 || err.statusCode === 403 || err.code === "FILE_NOT_FOUND") {
+      SecurityEventService.record({ action: "ACCESS_DENIED", actor: req.userId || "anonymous",
+        severity: "MEDIUM", status: "FAILED", target: err.code,
+        ipAddress: req.ip, details: `${req.method} ${req.path}` });
+    }
     return res.status(err.statusCode).json({
       error: err.message,
       code: err.code,

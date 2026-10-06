@@ -3,6 +3,18 @@ import { AddressService, completerIndice, fournisseurActif, indiceValide } from 
 
 const router = Router();
 
+// GET /addresses/reverse?lat=...&lon=... - Adresse détectée à vérifier par le client.
+router.get('/reverse', async (req: Request, res: Response) => {
+  const lat = req.query.lat;
+  const lon = req.query.lon;
+  if (typeof lat !== 'string' || !lat.trim() || typeof lon !== 'string' || !lon.trim() ||
+    !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon)) || Math.abs(Number(lat)) > 90 || Math.abs(Number(lon)) > 180) {
+    res.status(400).json({ error: 'Coordonnées invalides' });
+    return;
+  }
+  res.json(await AddressService.inverser(Number(lat), Number(lon)));
+});
+
 /**
  * Relais vers le service de recherche d'adresses.
  *

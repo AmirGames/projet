@@ -142,13 +142,13 @@ function StripePaymentForm({
             style: {
               base: {
                 fontSize: '16px',
-                color: '#fff',
+                color: '#111827',
                 '::placeholder': {
-                  color: '#aab7c4',
+                  color: '#6b7280',
                 },
               },
               invalid: {
-                color: '#fa755a',
+                color: '#b91c1c',
               },
             },
           }}

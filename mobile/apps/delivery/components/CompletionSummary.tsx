@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { formatEuros } from '../lib/api';
 import { Delivery, formatKm, hhmm, shortId } from '../lib/deliveries';
@@ -50,6 +50,10 @@ export default function CompletionSummary({
   // Le retour automatique ne part qu'une fois le bilan affiché, et s'arrête
   // dès que le livreur touche l'écran : il lit peut-être encore.
   const [countdown, setCountdown] = useState<number | null>(null);
+  const onBackRef = useRef(onBack);
+  useLayoutEffect(() => {
+    onBackRef.current = onBack;
+  }, [onBack]);
   const ready = Boolean(bilan) && !pending;
   useEffect(() => {
     if (ready && autoReturn) setCountdown(AUTO_RETURN_S);
@@ -57,7 +61,7 @@ export default function CompletionSummary({
   useEffect(() => {
     if (countdown == null) return;
     if (countdown <= 0) {
-      onBack();
+      onBackRef.current();
       return;
     }
     const id = setTimeout(() => setCountdown((c) => (c == null ? c : c - 1)), 1000);

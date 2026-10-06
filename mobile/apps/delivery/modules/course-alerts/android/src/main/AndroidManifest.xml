@@ -1,0 +1,16 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <application>
+    <activity android:name=".CourseAlertActivity" android:exported="false"
+      android:taskAffinity="${applicationId}.courseAlerts"
+      android:launchMode="singleTask" android:excludeFromRecents="true"
+      android:showWhenLocked="true" android:turnScreenOn="true"
+      android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+    <service android:name=".CourseAlertService" android:exported="false"
+      android:foregroundServiceType="mediaPlayback" />
+    <receiver android:name=".StopCourseAlertReceiver" android:exported="false" />
+  </application>
+</manifest>

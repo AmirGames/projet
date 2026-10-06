@@ -1,3 +1,4 @@
+import { autoriserCatalogue } from "../auth/autorisation-boutique";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { TaxService } from "./tax.service";
@@ -22,7 +23,7 @@ const updateTaxSettingSchema = z.object({
   productIds: z.array(z.string()).optional(),
 });
 
-router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
@@ -38,7 +39,7 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
   }
 });
 
-router.get("/:storeId/:taxSettingId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/:taxSettingId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const taxSettingId = req.params.taxSettingId as string;
@@ -52,7 +53,7 @@ router.get("/:storeId/:taxSettingId", authMiddleware, async (req: Request, res: 
   }
 });
 
-router.post("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:storeId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const body = createTaxSettingSchema.parse(req.body);
@@ -69,7 +70,7 @@ router.post("/:storeId", authMiddleware, async (req: Request, res: Response, nex
   }
 });
 
-router.patch("/:storeId/:taxSettingId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:storeId/:taxSettingId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const taxSettingId = req.params.taxSettingId as string;
@@ -87,7 +88,7 @@ router.patch("/:storeId/:taxSettingId", authMiddleware, async (req: Request, res
   }
 });
 
-router.delete("/:storeId/:taxSettingId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:storeId/:taxSettingId", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const taxSettingId = req.params.taxSettingId as string;
@@ -103,7 +104,7 @@ router.delete("/:storeId/:taxSettingId", authMiddleware, async (req: Request, re
   }
 });
 
-router.post("/:storeId/calculate", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:storeId/calculate", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const { amount, categoryIds, productIds } = req.body;

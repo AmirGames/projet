@@ -44,7 +44,7 @@ import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
-import { useAdresseLivraisonEnregistree } from '@/lib/adresseLivraison';
+import { enregistrerAdresseLivraison, useAdresseLivraisonEnregistree } from '@/lib/adresseLivraison';
 import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
@@ -557,6 +557,16 @@ export function TunnelCommande({
       }
 
       const recue = await response.json();
+      if (checkoutForm.deliveryType === 'DELIVERY' && checkoutForm.deliveryAddress) {
+        enregistrerAdresseLivraison({
+          label: [checkoutForm.deliveryAddress, checkoutForm.deliveryCity].filter(Boolean).join(', '),
+          street: checkoutForm.deliveryAddress,
+          city: checkoutForm.deliveryCity,
+          postalCode: checkoutForm.deliveryPostal,
+          latitude: checkoutForm.deliveryLat ?? null,
+          longitude: checkoutForm.deliveryLng ?? null,
+        });
+      }
       const id = recue.order?.id || recue.id;
       // Rendu une seule fois : sans lui, un client invité ne peut plus suivre
       // sa commande depuis ce navigateur.

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Text, TouchableOpacity, View } from 'react-native';
 import { formatEuros } from '../lib/api';
 import { formatDistance, Offer } from '../lib/deliveries';
@@ -37,7 +37,7 @@ export default function OfferSheet({
   // Le temps de réponse total, mesuré à la première apparition de l'offre.
   // Clé sur l'échéance aussi : une course refusée puis reproposée garde son
   // identifiant, mais c'est une nouvelle proposition, avec un nouveau délai.
-  const firstSeen = useRef(new Map<string, number>());
+  const [firstSeen, setFirstSeen] = useState(() => new Map<string, number>());
 
   const live = offers.filter((o) => new Date(o.expiresAt).getTime() > now);
   const offer = live[0];
@@ -48,13 +48,13 @@ export default function OfferSheet({
 
   useEffect(() => {
     if (!offerKey) return;
-    if (!firstSeen.current.has(offerKey)) firstSeen.current.set(offerKey, Date.now());
+    setFirstSeen((seen) => seen.has(offerKey) ? seen : new Map(seen).set(offerKey, Date.now()));
     setNow(Date.now());
     setRoute(null);
   }, [offerKey]);
 
   useEffect(() => {
-    if (!offer) return;
+    if (!offerKey) return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [offerKey]);
@@ -62,7 +62,7 @@ export default function OfferSheet({
   if (!offer) return null;
 
   const expires = new Date(offer.expiresAt).getTime();
-  const start = firstSeen.current.get(`${offer.id}|${offer.expiresAt}`) ?? now;
+  const start = firstSeen.get(`${offer.id}|${offer.expiresAt}`) ?? now;
   const total = Math.max(1, expires - start);
   const remaining = Math.max(0, expires - now);
   const fraction = Math.min(1, remaining / total);

@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { encryptionExtension } from "../modules/privacy/encrypted-fields";
 
 import { dureeDeLaRequete, origineActuelle } from "../modules/auth/origine";
 
@@ -18,15 +19,18 @@ const journaliserLesRequetes = process.env.PRISMA_LOG_QUERIES === "true";
 const prismaClientSingleton = () => {
   return new PrismaClient({
     adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+    // Le carnet personnel ne doit pas sortir avec les fiches client des commerçants ou les avis.
+    omit: { customer: { savedAddresses: true } },
     log: [
       ...(journaliserLesRequetes
         ? [{ emit: "stdout" as const, level: "query" as const }]
         : []),
       { emit: "stdout", level: "info" },
       { emit: "stdout", level: "warn" },
-      { emit: "stdout", level: "error" },
+      // Les erreurs Prisma peuvent inclure les arguments : elles passent par le gestionnaire expurgé.
+      { emit: "event", level: "error" },
     ],
-  });
+  }).$extends(encryptionExtension);
 };
 
 /**

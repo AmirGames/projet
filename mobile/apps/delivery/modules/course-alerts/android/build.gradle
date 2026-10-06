@@ -1,0 +1,31 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.coursealerts'
+version = '0.1.0'
+
+dependencies {
+  compileOnly 'com.facebook.react:react-android'
+  // SDK 57 normally uses Expo's prebuilt AARs instead of Gradle subprojects.
+  def notificationProject = findProject(':expo-notifications')
+  if (notificationProject != null) {
+    compileOnly notificationProject
+  } else {
+    def config = new groovy.json.JsonSlurper().parse(file('../../../node_modules/expo-notifications/expo-module.config.json'))
+    def publication = config.android.publication
+    compileOnly "${publication.groupId}:${publication.artifactId}:${publication.version}"
+  }
+}
+
+android {
+  namespace "expo.modules.coursealerts"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}

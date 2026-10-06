@@ -1,5 +1,12 @@
 # Vérifications du site
 
+**Suivi au 4 octobre 2026 :** le site est déployé. Ces suites restent des
+parcours sur un environnement de test dédié ; certaines préparent leurs
+données en réinitialisant la base. Le passage historique du 2 octobre
+(34 suites, 942 contrôles) ne garantit pas tout le déploiement actuel.
+Les validations et priorités sont dans
+[l'état du projet](../../docs/etat-projet.md).
+
 Ces scripts pilotent un **vrai navigateur** sur un site qui tourne. Ils
 attrapent ce que les vérifications d'API ne voient pas : un lien mort, une
 barre latérale en double, un bouton qui ne fait rien, un message d'erreur qui

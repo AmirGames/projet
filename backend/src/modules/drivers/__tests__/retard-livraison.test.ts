@@ -74,4 +74,26 @@ describe("reclamationPourLeClient", () => {
       deposee: true,
     });
   });
+
+  it("conserve la réponse d'une réclamation déjà traitée, même après 48 h", () => {
+    const traitee = apres(60000);
+    expect(reclamationPourLeClient(course({ incidents: [{
+      type: "RECLAMATION_CLIENT",
+      createdAt: livree,
+      closedAt: traitee,
+      resolution: "Dépôt validé : Le livreur a attendu les six minutes.",
+    }] }), apres(RECLAMATION_DELAI_MS + 1))).toEqual({
+      possible: false,
+      deposee: true,
+      deposeeLe: livree,
+      traiteeLe: traitee,
+      reponse: "Dépôt validé : Le livreur a attendu les six minutes.",
+    });
+  });
+
+  it("ne communique pas les résolutions des autres incidents au client", () => {
+    expect(reclamationPourLeClient(course({ incidents: [{
+      type: "DEPOT_CONTESTE", closedAt: apres(60000), resolution: "Note interne",
+    }] }), apres(60000))).toEqual({ possible: true, deposee: false });
+  });
 });

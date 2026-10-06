@@ -75,4 +75,29 @@ describe("Notifier.pushLivreur vers l'application livreur", () => {
     expect(envoye).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("réveille uniquement Android pour une proposition, en conservant la notification visible pour tous", async () => {
+    db.pushDevice.findMany.mockResolvedValue([
+      { token: "ExponentPushToken[android]", platform: "android" },
+      { token: "ExponentPushToken[ios]", platform: "ios" },
+    ]);
+    await Notifier.pushLivreur("livreur-1", { title: "Nouvelle course", body: "Répondez", tag: "course-proposee", offerId: "offre-7" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const lots = fetchMock.mock.calls.map(call => JSON.parse(call[1].body));
+    const visibles = lots.find(lot => lot[0].title);
+    expect(visibles).toHaveLength(2);
+    const [reveil] = lots.find(lot => lot[0].contentAvailable);
+    expect(reveil).toEqual({
+      to: "ExponentPushToken[android]", data: { tag: "course-proposee", offerId: "offre-7" },
+      contentAvailable: true, priority: "high", ttl: 60,
+    });
+  });
+
+  it("ne réveille pas Android pour un message courant ou une proposition sans identifiant", async () => {
+    db.pushDevice.findMany.mockResolvedValue([{ token: "ExponentPushToken[android]", platform: "android" }]);
+    await Notifier.pushLivreur("livreur-1", { title: "Commande prête", body: "…", tag: "commande-prete" });
+    await Notifier.pushLivreur("livreur-1", { title: "Nouvelle course", body: "…", tag: "course-proposee" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.every(call => JSON.parse(call[1].body)[0].contentAvailable === undefined)).toBe(true);
+  });
 });

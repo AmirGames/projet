@@ -544,7 +544,7 @@ export class SocieteDriveService {
 
   /** Les invitations en attente adressées à l'e-mail de ce compte. */
   static async invitationsDuCompte(userId: string) {
-    const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
+    const user = await this.comptePourInvitations(userId);
     if (!user) return [];
     return db.invitationSocieteDrive.findMany({
       where: { email: user.email.toLowerCase(), statut: "EN_ATTENTE" },
@@ -852,12 +852,22 @@ export class SocieteDriveService {
 
   /** Une invitation en attente, adressée à l'e-mail de CE compte. */
   private static async invitationDuCompte(userId: string, invitationId: string) {
-    const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
+    const user = await this.comptePourInvitations(userId);
     const invitation = await db.invitationSocieteDrive.findUnique({ where: { id: invitationId } });
     if (!user || !invitation || invitation.email !== user.email.toLowerCase() || invitation.statut !== "EN_ATTENTE") {
       throw new ApiError(404, "Invitation introuvable ou déjà traitée", "INVITATION_NOT_FOUND");
     }
     return invitation;
+  }
+
+  private static async comptePourInvitations(userId: string) {
+    const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, emailVerified: true } });
+    // Le signup ouvre une session avant confirmation : l'adresse saisie ne
+    // suffit donc pas à établir la propriété d'une invitation adressée par e-mail.
+    if (user && !user.emailVerified) {
+      throw new ApiError(403, "Confirmez votre adresse e-mail pour consulter ou répondre aux invitations de société.", "EMAIL_NOT_VERIFIED");
+    }
+    return user;
   }
 
   private static motifExige(motif: string) {

@@ -40,6 +40,7 @@ jest.mock("../../notifications/notifier.service", () => ({
 }));
 jest.mock("../../orders/suivi-commande.service", () => ({ lienDeSuivi: jest.fn(async () => "https://suivi") }));
 jest.mock("../../monitoring/vigie.service", () => ({ prevenirPlateforme: jest.fn(async () => undefined) }));
+jest.mock("../../notifications/notification.service", () => ({ notifierPlateforme: jest.fn(async () => undefined) }));
 jest.mock("../dispatch.service", () => ({
   STATUTS_EN_COURSE: ["ACCEPTED", "PICKED_UP"],
   MAX_SOLLICITATIONS: 3,
@@ -74,8 +75,9 @@ import { DispatchService } from "../dispatch.service";
 import { DriverApprovalService } from "../driver-approval.service";
 import { paymentService } from "../../payments/payment.service";
 import { Notifier } from "../../notifications/notifier.service";
-import { emitDriverEvent } from "../../realtime/socket";
+import { emitDriverEvent, emitOrderUpdate } from "../../realtime/socket";
 import { prevenirPlateforme } from "../../monitoring/vigie.service";
+import { notifierPlateforme } from "../../notifications/notification.service";
 
 const MIN = 60000;
 const maintenant = new Date("2026-10-01T12:00:00Z");
@@ -324,6 +326,7 @@ describe("SurveillanceCoursesService", () => {
 
     expect(db.deliveryIncident.createMany).toHaveBeenCalledTimes(2);
     expect(Notifier.pushLivreur).toHaveBeenCalledTimes(1);
+    expect(notifierPlateforme).toHaveBeenCalledTimes(1);
     expect(db.$transaction).not.toHaveBeenCalled();
   });
 
@@ -573,12 +576,18 @@ describe("SurveillanceCoursesService", () => {
       expect(db.orderDelivery.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ payoutHold: "REVIEW" }) })
       );
+      expect(notifierPlateforme).toHaveBeenCalledWith(
+        "Commande non reçue : réclamation client",
+        expect.stringContaining("Rien devant ma porte"),
+        "/superowner/zupeat/incidents-livraison"
+      );
 
       db.orderDelivery.findUnique.mockResolvedValue(livree({ incidents: [{ type: "RECLAMATION_CLIENT" }] }));
       await expect(SurveillanceCoursesService.reclamationClient("commande-abcdef", undefined)).rejects.toMatchObject({
         statusCode: 409,
         code: "CLAIM_ALREADY_FILED",
       });
+      expect(notifierPlateforme).toHaveBeenCalledTimes(1);
     });
 
     it("refuse la réclamation d'une remise contre le code", async () => {
@@ -601,6 +610,18 @@ describe("SurveillanceCoursesService", () => {
       });
       expect(tx.order.updateMany).not.toHaveBeenCalled();
       expect(paymentService.rembourserCommande).not.toHaveBeenCalled();
+      await new Promise((r) => setImmediate(r));
+      expect(emitOrderUpdate).toHaveBeenCalledWith(
+        "commande-abcdef",
+        expect.any(String),
+        expect.objectContaining({ message: "Dépôt validé : Photo probante" })
+      );
+      expect(Notifier.email).toHaveBeenCalledWith(
+        expect.any(String),
+        "Réclamation traitée : dépôt validé",
+        "Dépôt validé : Photo probante",
+        "https://suivi"
+      );
     });
 
     it("refusé : jamais payée, commande annulée, client remboursé, livreur suspendu", async () => {

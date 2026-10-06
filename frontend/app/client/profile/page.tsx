@@ -10,6 +10,7 @@ import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import ChangerMotDePasse from '@/components/ChangerMotDePasse';
+import { MesAdressesClient } from '@/components/MesAdressesClient';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Profil {
@@ -252,6 +253,7 @@ export default function ProfilClientPage() {
             </button>
           </form>
 
+          <MesAdressesClient />
           <ChangerMotDePasse clair />
         </>
       )}

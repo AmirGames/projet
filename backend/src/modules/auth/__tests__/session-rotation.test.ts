@@ -15,6 +15,7 @@ let jetons: Jeton[] = [];
 let n = 0;
 
 const db: any = {
+  $transaction: jest.fn(async (action: any) => action(db)),
   sessionConnexion: {
     create: jest.fn(async ({ data }: any) => {
       const s = { id: `sess-${++n}`, revokedAt: null, ...data };
@@ -23,7 +24,8 @@ const db: any = {
     }),
     findUnique: jest.fn(async ({ where }: any) => sessions.find((s) => s.id === where.id) ?? null),
     updateMany: jest.fn(async ({ where, data }: any) => {
-      const l = sessions.filter((s) => s.id === where.id && (where.revokedAt === null ? !s.revokedAt : true));
+      const l = sessions.filter((s) => (!where.id || s.id === where.id) &&
+        (!where.userId || s.userId === where.userId) && (where.revokedAt === null ? !s.revokedAt : true));
       l.forEach((s) => Object.assign(s, data));
       return { count: l.length };
     }),
@@ -42,6 +44,7 @@ const db: any = {
     deleteMany: jest.fn(async () => ({ count: 0 })),
   },
   user: {
+    update: jest.fn(async ({ data }: any) => data),
     findUnique: jest.fn(async ({ where }: any) => ({
       id: where.id,
       isSuperOwner: false,
@@ -130,6 +133,14 @@ describe("rotation des jetons de renouvellement", () => {
     const apres = await request(app).get("/protege").set("Authorization", `Bearer ${accessToken}`);
     expect(apres.status).toBe(401);
     expect(await code(SsoService.renouveler(refreshToken))).toBe("SESSION_INVALIDE");
+  });
+
+  it("REST et temps réel relisent une révocation externe sans cache", async () => {
+    const { sid } = await SsoService.connecter("u1");
+    expect(await SsoService.sessionActive(sid)).toBe(true);
+    sessions.find((s) => s.id === sid)!.revokedAt = new Date();
+    expect(await SsoService.sessionActive(sid)).toBe(false);
+    expect(await SsoService.sessionActive(sid, { sansCache: true })).toBe(false);
   });
 });
 
@@ -253,4 +264,35 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
     expect(res.body.refreshToken).not.toBe(refreshToken);
     expect(cookieDe(res)).toBeUndefined();
   });
+});
+
+
+it("changement de mot de passe : ferme toutes les sessions, sans remettre de jetons", async () => {
+  process.env.NODE_ENV = "test";
+  const fixture = {
+    id: "password-user", email: "password@example.test", status: "ACTIVE", emailVerified: true,
+    passwordHash: await AuthService.hashPassword("AncienMotDePasse123!"),
+    isSuperOwner: false, isSystemAdmin: false, accesEquipe: [], passwordChangedAt: null,
+  };
+  const original = db.user.findUnique.getMockImplementation();
+  db.user.findUnique.mockImplementation(async () => fixture);
+  try {
+    const actuelle = await SsoService.connecter(fixture.id);
+    const autre = await SsoService.connecter(fixture.id);
+    const auth = express();
+    auth.use(express.json());
+    auth.use("/api/auth", require("../auth.routes").default);
+    auth.use(errorHandler);
+    const response = await request(auth).post("/api/auth/change-password")
+      .set("Authorization", `Bearer ${actuelle.accessToken}`)
+      .send({ currentPassword: "AncienMotDePasse123!", newPassword: "NouveauMotDePasse123!" });
+    expect(response.status).toBe(200);
+    expect(response.body.accessToken).toBeUndefined();
+    expect(response.body.refreshToken).toBeUndefined();
+    expect(db.$transaction).toHaveBeenCalled();
+    expect(await SsoService.sessionActive(actuelle.sid)).toBe(false);
+    expect(await SsoService.sessionActive(autre.sid)).toBe(false);
+    expect((await request(app).get("/protege").set("Authorization", `Bearer ${actuelle.accessToken}`)).status).toBe(401);
+    expect(await code(SsoService.renouveler(autre.refreshToken))).toBe("SESSION_INVALIDE");
+  } finally { db.user.findUnique.mockImplementation(original); }
 });

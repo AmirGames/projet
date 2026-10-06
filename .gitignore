@@ -49,8 +49,12 @@ backend/backups/
 
 # Clés de signature Android et identifiants EAS (secrets : ne jamais committer)
 mobile/apps/*/credentials.json
+/mobile/apps/delivery/google-services.json
+# Dossier de clé créé avec un point manquant avant .expo : garder les secrets hors Git.
+mobile/apps/delivery.expo/credentials/
 *.keystore
 *.jks
 *.p12
 *.p8
 *.mobileprovision
+frontend/next-env.d.ts

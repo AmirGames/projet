@@ -1,7 +1,9 @@
+import { filtrerDonneesFinancieres } from "./financial-data";
 import { Request, Response, NextFunction } from "express";
 import { Plateforme } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { cheminDecode } from "../../utils/chemin";
 
 /**
  * Qui, dans l'équipe du groupe, peut faire quoi, plateforme par plateforme.
@@ -142,6 +144,7 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/dashboard/, "dashboard"],
     [/^\/organizations\/[^/]+\/tier/, "formules"],
     [/^\/organizations\/[^/]+\/commission-promo/, "formules"],
+    [/^\/organizations\/[^/]+\/conditions/, "formules"],
     [/^\/organizations\/[^/]+\/close/, "organizations-close"],
     [/^\/organizations/, "organizations"],
     [/^\/members\/drivers/, "drivers"],
@@ -191,8 +194,17 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
   ],
 };
 
-export function sectionDeLaRoute(routeur: Routeur, chemin: string): string | null {
-  const trouve = ROUTES[routeur].find(([motif]) => motif.test(chemin));
+export function sectionDeLaRoute(routeur: Routeur, chemin: string, methode?: string): string | null {
+  // Express ignore la casse : CLOSE doit avoir le même droit que close,
+  // pas retomber sur la permission plus large « organizations ».
+  const normalise = cheminDecode(chemin).toLowerCase();
+  // Le PATCH historique ne modifie que la formule ; son GET lit le dossier.
+  if (routeur === "admin" && methode === "PATCH" && /^\/merchants\/[^/]+\/?$/.test(normalise)) return "formules";
+  const trouve = ROUTES[routeur].find(([motif]) => {
+    const match = motif.exec(normalise);
+    // Un préfixe ne vaut qu'à la frontière d'un segment, jamais pour tier-autre.
+    return match && (match[0].length === normalise.length || normalise[match[0].length] === "/");
+  });
   return trouve ? trouve[1] : null;
 }
 
@@ -230,14 +242,8 @@ export interface RoleConnu {
   permissions: Permissions;
 }
 
-// Lu à chaque requête de l'équipe : gardé quelques secondes, oublié dès qu'un
-// rôle change.
-const DUREE_CACHE_MS = 30000;
-const cache = new Map<Plateforme, { roles: Record<string, RoleConnu>; expireA: number }>();
-
-export function oublierRoles() {
-  cache.clear();
-}
+/** Les permissions sont relues sur chaque requête, y compris sur une autre instance. */
+export function oublierRoles() {}
 
 export const PermissionsPlateforme = {
   /**
@@ -275,21 +281,8 @@ export const PermissionsPlateforme = {
 
   async role(code: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<RoleConnu | null> {
     if (!code) return null;
-    let connu = cache.get(plateforme);
-    if (!connu || Date.now() >= connu.expireA) {
-      const roles = await this.lister(plateforme);
-      connu = {
-        roles: Object.fromEntries(
-          roles.map((r) => [
-            r.code,
-            { code: r.code, label: r.label, permissions: nettoyerPermissions(r.permissions) },
-          ])
-        ),
-        expireA: Date.now() + DUREE_CACHE_MS,
-      };
-      cache.set(plateforme, connu);
-    }
-    return connu.roles[code] ?? null;
+    const role = (await this.lister(plateforme)).find((role) => role.code === code);
+    return role ? { code: role.code, label: role.label, permissions: nettoyerPermissions(role.permissions) } : null;
   },
 
   async permissionsDu(code: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<Permissions> {
@@ -372,7 +365,7 @@ export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT
       const compte = req.compte;
       if (compte?.isSuperOwner) return next();
 
-      const section = sectionDeLaRoute(routeur, req.path);
+      const section = sectionDeLaRoute(routeur, req.path, req.method);
       const permissions = await PermissionsPlateforme.permissionsDu(compte?.acces[plateforme], plateforme);
       const niveau = section ? permissions[section] : undefined;
       const lecture = req.method === "GET" || req.method === "HEAD";
@@ -387,6 +380,10 @@ export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT
         );
       }
 
+      if (!permissions.billing) {
+        const json = _res.json.bind(_res);
+        _res.json = (corps) => json(filtrerDonneesFinancieres(corps));
+      }
       next();
     } catch (err) {
       next(err);

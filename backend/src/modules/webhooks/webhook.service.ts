@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
+import { destinationWebhook, posterWebhook } from './webhook-destination';
 
 /**
  * Les webhooks : prévenir un système extérieur de ce qui se passe ici.
@@ -21,7 +22,6 @@ import { logger } from "../../config/logger";
 
 // Nombre d'envois définitivement abandonnés avant de couper l'abonnement.
 const SEUIL_ECHECS = 5;
-const DELAI_MS = 5000;
 
 /**
  * Les relances, en millisecondes après l'échec précédent : une minute, cinq,
@@ -78,6 +78,7 @@ export class WebhookService {
   }
 
   static async create(params: { url: string; events: string[]; createdById?: string }) {
+    await destinationWebhook(params.url);
     // Un événement inconnu était accepté sans un mot : l'abonnement paraissait
     // en place et n'envoyait rien. Il est maintenant refusé, en nommant ce qui
     // ne va pas.
@@ -210,12 +211,7 @@ export class WebhookService {
     let error: string | null = null;
 
     try {
-      const controleur = new AbortController();
-      const minuterie = setTimeout(() => controleur.abort(), DELAI_MS);
-
-      const reponse = await fetch(abonnement.url, {
-        method: "POST",
-        headers: {
+      const reponse = await posterWebhook(abonnement.url, {
           "Content-Type": "application/json",
           "X-Webhook-Event": envoi.event,
           "X-Webhook-Signature": signature,
@@ -224,12 +220,7 @@ export class WebhookService {
           // compter deux fois la même commande.
           "X-Webhook-Id": envoi.id,
           "X-Webhook-Attempt": String(tentative),
-        },
-        body: corps,
-        signal: controleur.signal,
-      });
-
-      clearTimeout(minuterie);
+        }, corps);
       statusCode = reponse.status;
       success = reponse.ok;
 

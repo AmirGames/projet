@@ -1,0 +1,82 @@
+{
+  "run": "audit-admin-1791038849047-821f07d9",
+  "target": "https://api.zupeat.com",
+  "startedAt": "2026-10-03T14:47:29.047Z",
+  "checks": [
+    {
+      "name": "invitations adresse non confirmée",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "motif de refus adresse non confirmée",
+      "actual": "EMAIL_NOT_VERIFIED",
+      "expected": "EMAIL_NOT_VERIFIED",
+      "ok": true
+    },
+    {
+      "name": "/api/admin/config sans token",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "/api/admin/config compte ordinaire",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "/api/superowner/admins sans token",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "/api/superowner/admins compte ordinaire",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "/api/superowner/roles sans token",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "/api/superowner/roles compte ordinaire",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "/api/zupdrive/admin/chauffeurs sans token",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    },
+    {
+      "name": "/api/zupdrive/admin/chauffeurs compte ordinaire",
+      "actual": 403,
+      "expected": 403,
+      "ok": true
+    },
+    {
+      "name": "compte temporaire supprimé",
+      "actual": true,
+      "expected": true,
+      "ok": true
+    },
+    {
+      "name": "session révoquée",
+      "actual": 401,
+      "expected": 401,
+      "ok": true
+    }
+  ],
+  "userId": "cmusiafk9003201mwif3r5h8h",
+  "finishedAt": "2026-10-03T14:47:29.757Z",
+  "failed": 0
+}

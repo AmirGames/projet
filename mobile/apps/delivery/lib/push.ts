@@ -4,7 +4,8 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import type * as NotificationsModule from 'expo-notifications';
 import { apiFetch } from './api';
-import { ACCEPT_ACTION, handleOfferAction, registerOfferCategory } from './offerNotification';
+import { incomingOfferId } from './courseAlertPayload';
+import { ACCEPT_ACTION, DECLINE_ACTION, handleOfferAction, registerOfferCategory } from './offerNotification';
 
 /**
  * Même nom que celui envoyé par le serveur pour une course proposée. Un canal
@@ -20,6 +21,7 @@ export type PushSetup =
 export interface PushDriverData {
   /** course-proposee, pause, gps, support… */
   tag?: string;
+  offerId?: string;
   deliveryId?: string;
   url?: string;
 }
@@ -117,6 +119,22 @@ function dataFromResponse(response: NotificationsModule.NotificationResponse | n
   return data?.tag || data?.deliveryId ? data : null;
 }
 
+/** Receipt is independent of tapping the notification and of the socket connection. */
+export function onDriverNotificationReceived(callback: (data: PushDriverData) => void): () => void {
+  const N = notifications();
+  if (!N) return () => undefined;
+  const sub = N.addNotificationReceivedListener(notification => {
+    const offerId = incomingOfferId(notification);
+    if (offerId) {
+      callback({ tag: 'course-proposee', offerId });
+      return;
+    }
+    const data = notification.request.content.data as PushDriverData | undefined;
+    if (data?.tag || data?.deliveryId) callback(data);
+  });
+  return () => sub.remove();
+}
+
 /**
  * Prévient quand une notification est touchée, y compris celle qui a lancé
  * l'application. Renvoie la fonction de désabonnement.
@@ -126,7 +144,7 @@ export function onDriverNotificationTap(callback: (data: PushDriverData) => void
   if (!N) return () => undefined;
 
   const last = N.getLastNotificationResponse();
-  if (last?.actionIdentifier === ACCEPT_ACTION) {
+  if (last && [ACCEPT_ACTION, DECLINE_ACTION].includes(last.actionIdentifier)) {
     N.clearLastNotificationResponse();
     handleOfferAction(last);
   } else {
@@ -139,7 +157,7 @@ export function onDriverNotificationTap(callback: (data: PushDriverData) => void
 
   const sub = N.addNotificationResponseReceivedListener((response) => {
     // « Accepter » depuis la notification : la course est prise sans rien ouvrir.
-    if (response.actionIdentifier === ACCEPT_ACTION) {
+    if ([ACCEPT_ACTION, DECLINE_ACTION].includes(response.actionIdentifier)) {
       handleOfferAction(response);
       return;
     }

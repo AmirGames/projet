@@ -33,6 +33,7 @@ jest.mock("../../auth/auth.middleware", () => ({
 import paymentMethodRouter from "../payment-method.routes";
 import paymentMethodsApiRouter from "../payment-methods-api.routes";
 import { errorHandler } from "../../../middleware/errorHandler";
+import { paymentService } from '../payment.service';
 
 const app = express();
 app.use(express.json());
@@ -44,6 +45,20 @@ app.use(errorHandler);
 // pm_B appartient à B.
 const moyens = [{ id: "m-b", stripePaymentMethodId: "pm_B", userId: "user-b" },
   { id: "m-a", stripePaymentMethodId: "pm_A", userId: "user-a" }];
+
+it('le budget de cartes est lié au compte authentifié, pas à un userId injecté', async () => {
+  const preparer = jest.spyOn(paymentService, 'preparerEnregistrementCarte').mockResolvedValue({ clientSecret: 'secret' } as any);
+  try {
+    for (let i = 0; i < 20; i++) {
+      const r = await request(app).post('/api/payment-methods/setup-intent')
+        .set('x-test-user', 'budget-cartes').send({ userId: `injecte-${i}` });
+      expect(r.status).toBe(201);
+    }
+    const refuse = await request(app).post('/api/payment-methods/setup-intent').set('x-test-user', 'budget-cartes');
+    expect(refuse.status).toBe(429); expect(preparer).toHaveBeenCalledTimes(20);
+    expect((await request(app).post('/api/payment-methods/setup-intent').set('x-test-user', 'autre-budget')).status).toBe(201);
+  } finally { preparer.mockRestore(); }
+});
 
 beforeEach(() => {
   jest.clearAllMocks();

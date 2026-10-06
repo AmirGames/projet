@@ -12,6 +12,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 export interface EtatReclamation {
   possible: boolean;
   deposee: boolean;
+  deposeeLe?: string;
+  traiteeLe?: string;
+  reponse?: string | null;
 }
 
 /**
@@ -36,12 +39,14 @@ export function ReclamationLivraison({
   const [message, setMessage] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
-  const [deposee, setDeposee] = useState(etat.deposee);
+  const [commandeDeposee, setCommandeDeposee] = useState<string | null>(null);
+  const deposee = etat.deposee || commandeDeposee === orderId;
 
   if (deposee) {
     return (
       <div role="status" className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-800">
-        {t('deposee')}
+        <p className="font-semibold">{etat.traiteeLe ? t('traitee') : t('deposee')}</p>
+        {etat.traiteeLe && etat.reponse && <p className="mt-2 whitespace-pre-wrap">{etat.reponse}</p>}
       </div>
     );
   }
@@ -59,7 +64,7 @@ export function ReclamationLivraison({
       });
       const donnees = await reponse.json().catch(() => null);
       if (!reponse.ok && donnees?.code !== 'CLAIM_ALREADY_FILED') throw new Error(donnees?.error || t('erreur'));
-      setDeposee(true);
+      setCommandeDeposee(orderId);
       onDeposee?.();
     } catch (e) {
       setErreur(e instanceof Error && e.message ? e.message : t('erreur'));

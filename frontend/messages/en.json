@@ -1,4 +1,12 @@
 {
+  "savedAddresses": {
+    "title": "My favorite addresses", "description": "Find these addresses when choosing your delivery destination.",
+    "home": "Home", "work": "Work", "favorite": "Favorite address", "notAdded": "No address saved",
+    "add": "Add", "edit": "Edit", "remove": "Delete", "addFavorite": "Add a favorite",
+    "name": "Favorite name", "namePlaceholder": "Mom, a friend's place…", "street": "Number and street", "postalCode": "Postal code", "city": "City",
+    "save": "Save", "saving": "Saving…", "cancel": "Cancel", "saved": "Your addresses have been saved.",
+    "loading": "Loading addresses…", "loadError": "Unable to load your addresses.", "saveError": "Unable to save your addresses.", "retry": "Try again"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -319,7 +327,7 @@
     "cores": "{n} cores",
     "systemMemory": "Machine memory",
     "systemMemoryValue": "{free} MB free of {total} MB",
-    "diskSpace": "Disk space",
+    "diskSpace": "Disk space used",
     "diskSpaceValue": "{free} MB free of {total} MB",
     "dependenciesTitle": "External services",
     "tasksTitle": "Background jobs",
@@ -2411,6 +2419,7 @@
     "relaisTexte": "The original driver couldn't make it: your order has been handed to another driver."
   },
   "reclamationLivraison": {
+    "traitee": "Your claim has been reviewed. Our team's response:",
     "bouton": "I didn't receive my order",
     "titre": "Didn't receive your order?",
     "explication": "The driver reported dropping it off while you were away. Let us know: our team reviews the drop-off and refunds you if the order wasn't handed to you.",
@@ -2509,6 +2518,27 @@
     "removed": "Removed"
   },
   "deliveryAddress": {
+    "addresses": "Addresses",
+    "recentAddresses": "Your 5 most recent addresses",
+    "detectedAddress": "Address detected nearby",
+    "verifyLocationAddress": "Check the street and house number before choosing this address.",
+    "locationAccuracy": "Accuracy reported by your device: about {meters} m.",
+    "locationImprecise": "Your location is approximate: the suggested address may belong to a nearby building.",
+    "locationMissingNumber": "The house number was not found. Complete the address for an accurate delivery.",
+    "useDetectedAddress": "Use this address",
+    "correctLocationAddress": "Correct the address",
+    "locationAddressUnavailable": "Your address could not be determined. Enter the street and house number in the search.",
+    "searchAddress": "Search for an address",
+    "savedAddresses": "Saved addresses",
+    "previousAddresses": "Addresses from your previous orders",
+    "loadingAddresses": "Loading your addresses…",
+    "loadAddressesError": "Your previous addresses could not be loaded right now.",
+    "retry": "Try again",
+    "noSavedAddresses": "Your addresses will appear here. Search for an address to get started.",
+    "noMatchingAddresses": "None of your addresses match this search.",
+    "selectedAddress": "Selected address",
+    "locating": "Finding your location…",
+    "close": "Close",
     "deliverTo": "Deliver to",
     "change": "Change address",
     "enterAddress": "Enter your delivery address",

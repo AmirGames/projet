@@ -1,4 +1,5 @@
 import { logger } from "../../config/logger";
+import { distanceKm } from "../../utils/geo";
 
 /**
  * Recherche d'adresses, avec des fournisseurs interchangeables.
@@ -339,6 +340,40 @@ function ecart(a: { latitude: number; longitude: number }, b: Suggestion): numbe
 }
 
 export class AddressService {
+  /** Adresse voisine d'un point, avec ses coordonnées complètes (sans arrondi au kilomètre). */
+  static async inverser(latitude: number, longitude: number): Promise<{
+    adresse: Suggestion | null; available: boolean; hasHouseNumber: boolean;
+  }> {
+    const vide = { adresse: null, available: true, hasHouseNumber: false };
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return vide;
+    const controleur = new AbortController();
+    const minuteur = setTimeout(() => controleur.abort(), DELAI_MS);
+    try {
+      const base = process.env.PHOTON_REVERSE_API_URL || new URL('../reverse', (process.env.PHOTON_API_URL || 'https://photon.komoot.io/api/').replace(/\/?$/, '/')).href;
+      const url = new URL(base);
+      url.searchParams.set('lat', String(latitude));
+      url.searchParams.set('lon', String(longitude));
+      url.searchParams.set('radius', '0.1');
+      url.searchParams.set('limit', '5');
+      url.searchParams.set('lang', 'fr');
+      const reponse = await fetch(url.href, { signal: controleur.signal, headers: { 'User-Agent': 'ZupEat/1.0' } });
+      if (!reponse.ok) throw new Error();
+      const donnees = await reponse.json() as { features?: any[] };
+      const proches = (donnees.features || []).filter(dansLePerimetre)
+        .filter((entite) => entite.properties?.street || entite.properties?.type === 'street' || entite.properties?.osm_key === 'highway')
+        .map((entite) => ({
+        adresse: normaliserPhoton(entite),
+        hasHouseNumber: Boolean(entite.properties?.housenumber && entite.properties?.street),
+      })).filter(({ adresse }) => adresse.street && adresse.latitude !== null && adresse.longitude !== null &&
+        distanceKm({ latitude, longitude }, { latitude: adresse.latitude, longitude: adresse.longitude }) <= 0.1);
+      proches.sort((a, b) => ecart({ latitude, longitude }, a.adresse) - ecart({ latitude, longitude }, b.adresse));
+      const choisie = proches.find((p) => p.hasHouseNumber) || proches[0];
+      return choisie ? { ...choisie, available: true } : vide;
+    } catch {
+      // Ne jamais journaliser les coordonnées précises de la personne.
+      return { ...vide, available: false };
+    } finally { clearTimeout(minuteur); }
+  }
   /**
    * Suggestions pour une saisie.
    *

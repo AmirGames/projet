@@ -1,8 +1,10 @@
+import { autoriserCatalogue, perimetreBoutiques } from "../auth/autorisation-boutique";
+import { CataloguePublicService } from "./catalogue-public.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { CategoryService } from "./category.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../auth/auth.middleware";
+import { authMiddleware, authFacultative } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 
 const router = Router();
@@ -20,7 +22,7 @@ const updateCategorySchema = z.object({
 });
 
 // POST /categories - Create category (protected)
-router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createCategorySchema.parse(req.body);
 
@@ -38,11 +40,11 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 });
 
 // GET /categories/:id - Get category by ID
-router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:id", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 
-    const category = await CategoryService.getById(id);
+    const category = await CataloguePublicService.categoryById(id, req);
 
     if (!category) {
       throw new ApiError(404, "Catégorie non trouvée", "NOT_FOUND");
@@ -55,7 +57,7 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /categories?orgId=:orgId or ?storeId=:storeId - Get categories by organization or store (protected)
-router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.query.orgId as string;
     const storeId = req.query.storeId as string;
@@ -71,8 +73,8 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
       categories = await CategoryService.getByStoreId(storeId);
       total = await CategoryService.countByStoreId(storeId);
     } else {
-      categories = await CategoryService.getByOrgId(orgId);
-      total = await CategoryService.countByOrgId(orgId);
+      categories = await CategoryService.getByOrgId(orgId, await perimetreBoutiques(req));
+      total = await CategoryService.countByOrgId(orgId, await perimetreBoutiques(req));
     }
 
     res.json({
@@ -85,12 +87,12 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 });
 
 // GET /categories/store/:storeId - Get categories by store
-router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/store/:storeId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
 
-    const categories = await CategoryService.getByStoreId(storeId);
-    const total = await CategoryService.countByStoreId(storeId);
+    const categories = await CataloguePublicService.categoriesByStore(storeId, req);
+    const total = categories.length;
 
     res.json({
       categories,
@@ -102,7 +104,7 @@ router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunc
 });
 
 // PUT /categories/:id - Update category (protected)
-router.put("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.put("/:id", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = updateCategorySchema.parse(req.body);
@@ -125,7 +127,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 });
 
 // POST /categories/reorder - Reorder categories (protected)
-router.post("/reorder", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/reorder", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { storeId, ordering } = req.body;
 
@@ -135,7 +137,7 @@ router.post("/reorder", authMiddleware, async (req: Request, res: Response, next
 
     logger.info("Reordering categories", { storeId });
 
-    const categories = await CategoryService.reorder(storeId, ordering);
+    const categories = await CategoryService.reorder(storeId, ordering, req);
 
     res.json({
       message: "Catégories réordonnées",
@@ -147,7 +149,7 @@ router.post("/reorder", authMiddleware, async (req: Request, res: Response, next
 });
 
 // DELETE /categories/:id - Delete category (protected)
-router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:id", authMiddleware, autoriserCatalogue, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 

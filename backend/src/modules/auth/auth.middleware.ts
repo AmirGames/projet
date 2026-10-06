@@ -4,6 +4,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { db } from "../../services/db";
 import { SsoService } from "./sso.service";
 import type { Acces } from "./permissions-plateforme.service";
+import { lierIdentite } from "./origine";
 
 /** Ce que le jeton ne dit pas : le compte existe-t-il encore, et qu'est-il. */
 export interface Compte {
@@ -30,30 +31,13 @@ declare global {
   }
 }
 
-/**
- * Le compte derrière un jeton.
- *
- * Un jeton reste valable jusqu'à son échéance, même si le compte a disparu
- * entre-temps — base remise à zéro, utilisateur supprimé. Les routes tombaient
- * alors sur des refus trompeurs : « User not found » en 404 sur `/auth/me`,
- * « Accès refusé » en 403 sur l'espace d'administration, là où le compte
- * n'existait simplement plus. Le navigateur, lui, n'y voyait pas une session à
- * refaire, et réessayait.
- *
- * Gardé trente secondes : la même requête traverse plusieurs contrôles qui ont
- * tous besoin de cette réponse.
- */
-const DUREE_CACHE_MS = 30000;
-const comptes = new Map<string, { compte: Compte | null; expireA: number }>();
-
-export function oublierCompte(userId: string) {
-  comptes.delete(userId);
+/** Les droits et l'existence du compte sont relus sans cache inter-requêtes. */
+export function oublierCompte(_userId: string) {
+  // Conservé pour les appelants historiques ; aucun droit n'est mis en cache.
 }
 
-export async function compteDuJeton(userId: string): Promise<Compte | null> {
-  const connu = comptes.get(userId);
-  if (connu && Date.now() < connu.expireA) return connu.compte;
-
+// Compatibilité avec les lectures sensibles : le compte est toujours relu en base.
+export async function compteDuJeton(userId: string, _fresh = false): Promise<Compte | null> {
   const utilisateur = await db.user.findUnique({
     where: { id: userId },
     select: {
@@ -62,10 +46,11 @@ export async function compteDuJeton(userId: string): Promise<Compte | null> {
       isSystemAdmin: true,
       accesEquipe: { select: { plateforme: true, role: true } },
       passwordChangedAt: true,
+      status: true,
     },
   });
 
-  const compte: Compte | null = utilisateur
+  const compte: Compte | null = utilisateur && (!utilisateur.status || utilisateur.status === "ACTIVE")
     ? {
         id: utilisateur.id,
         isSuperOwner: utilisateur.isSuperOwner,
@@ -76,8 +61,6 @@ export async function compteDuJeton(userId: string): Promise<Compte | null> {
           : null,
       }
     : null;
-
-  comptes.set(userId, { compte, expireA: Date.now() + DUREE_CACHE_MS });
 
   return compte;
 }
@@ -144,7 +127,7 @@ async function authentifier(req: Request) {
   // Une session fermée — déconnexion, sur ce domaine ou un autre — ne vaut
   // plus nulle part. Les jetons émis avant le SSO n'en portent pas : ils
   // échappent à la déconnexion, donc refusés en production.
-  const sansSession = !payload.sid && process.env.NODE_ENV === "production";
+  const sansSession = !payload.sid && process.env.NODE_ENV !== "test";
   if (sansSession || (payload.sid && !(await SsoService.sessionActive(payload.sid)))) {
     throw new ApiError(
       401,
@@ -157,6 +140,7 @@ async function authentifier(req: Request) {
   // orgId, storeIds, and role are no longer in JWT; routes must load them from DB
   req.user = payload;
   req.compte = compte;
+  lierIdentite(payload.userId, payload.sid);
 }
 
 export function requireRole(...roles: string[]) {
