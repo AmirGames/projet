@@ -5,6 +5,8 @@ import { db } from "../../services/db";
 import { stripe, STRIPE_CONFIG } from "./stripe";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
+import { Outbox } from "../jobs/outbox.service";
+import { TYPE_ANNONCE_COMMANDE } from "../notifications/outbox-handlers";
 
 /** Les états d'une intention Stripe qui attendent encore le client. */
 const INTENTION_EN_COURS = new Set([
@@ -383,25 +385,31 @@ export const paymentService = {
    * fois — le webhook et `/confirm` peuvent arriver tous les deux.
    */
   async transmettreAuCommercant(orderId: string) {
-    const { count } = await db.order.updateMany({
-      where: { id: orderId, submittedAt: null, status: "PENDING", deletedAt: null, paymentStatus: 'SUCCEEDED' },
-      data: { submittedAt: new Date() },
+    // La commande devient « transmise » et son annonce est écrite dans la
+    // même transaction : un arrêt entre les deux ne laisse plus une commande
+    // payée que le commerçant ne verra jamais. L'annonce part ensuite via
+    // l'outbox, rejouée jusqu'à son succès, dédoublonnée par commande.
+    const enregistre = await db.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id: orderId, submittedAt: null, status: "PENDING", deletedAt: null, paymentStatus: 'SUCCEEDED' },
+        data: { submittedAt: new Date() },
+      });
+      if (count === 0) return false;
+      await Outbox.enregistrer(
+        TYPE_ANNONCE_COMMANDE,
+        { orderId },
+        { dedupeKey: `annonce-commande-${orderId}`, tx }
+      );
+      return true;
     });
-    if (count === 0) return false;
+    if (!enregistre) return false;
 
-    const commande = await db.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: {
-          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
-        },
-      },
-    });
-    if (!commande) return false;
-
-    // Import tardif : le service des commandes dépend déjà de celui-ci.
-    const { OrderService } = await import("../orders/order.service");
-    await OrderService.annoncerAuCommercant(commande);
+    // Au plus vite ; si cela échoue, le worker de l'outbox reprend.
+    try {
+      await Outbox.traiterLesDus(5);
+    } catch (err) {
+      logger.warn("Annonce de commande reportée au worker", { orderId, error: (err as Error).message });
+    }
 
     logger.info("Commande transmise au commerçant après encaissement", { orderId });
     return true;

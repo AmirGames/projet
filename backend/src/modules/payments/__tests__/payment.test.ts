@@ -27,6 +27,9 @@ jest.mock("../stripe", () => ({
   STRIPE_CONFIG: { currency: "eur", webhookSecret: SECRET },
 }));
 const annoncerAuCommercant = fn();
+const enregistrerOutbox = fn();
+const traiterLesDus = fn();
+jest.mock("../../jobs/outbox.service", () => ({ Outbox: { enregistrer: enregistrerOutbox, traiterLesDus } }));
 jest.mock("../../orders/order.service", () => ({ OrderService: { annoncerAuCommercant } }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
@@ -118,7 +121,9 @@ describe("webhook Stripe", () => {
     expect(db.order.updateMany.mock.calls[1][0]).toMatchObject({
       where: { id: "cmd-1", submittedAt: null, status: "PENDING", deletedAt: null, paymentStatus: 'SUCCEEDED' },
     });
-    expect(annoncerAuCommercant).toHaveBeenCalledTimes(1);
+    expect(enregistrerOutbox).toHaveBeenCalledTimes(1);
+    expect(enregistrerOutbox.mock.calls[0][0]).toBe("commande.annonce_commercant");
+    expect(enregistrerOutbox.mock.calls[0][2]).toMatchObject({ dedupeKey: "annonce-commande-cmd-1" });
   });
 
   it("rembourse aussitôt un paiement arrivé après le refus", async () => {
@@ -341,7 +346,7 @@ describe('intégrité des événements Stripe', () => {
     db.order.updateMany.mockResolvedValueOnce({ count: 0 });
     await paymentService.marquerPaye(intention() as any);
     expect(db.payment.upsert).not.toHaveBeenCalled();
-    expect(annoncerAuCommercant).not.toHaveBeenCalled();
+    expect(enregistrerOutbox).not.toHaveBeenCalled();
     expect(db.order.updateMany).toHaveBeenCalledWith({
       where: { id: 'cmd-1', paymentStatus: { not: 'REFUNDED' } },
       data: { paymentStatus: 'SUCCEEDED', paymentId: 'pi_1' },
@@ -381,7 +386,7 @@ describe('intégrité des événements Stripe', () => {
     const { corps, signature } = signe({ id: 'evt-invalid', type: 'payment_intent.succeeded', data: { object: intention(modifications) } });
     await expect(paymentService.handleWebhook(corps, signature)).rejects.toMatchObject({ statusCode: 409 });
     expect(db.payment.upsert).not.toHaveBeenCalled(); expect(db.order.update).not.toHaveBeenCalled();
-    expect(annoncerAuCommercant).not.toHaveBeenCalled();
+    expect(enregistrerOutbox).not.toHaveBeenCalled();
   });
   it('la métadonnée seule ne rattache pas un paiement inconnu', async () => {
     db.payment.findFirst.mockResolvedValue(null);
@@ -422,7 +427,9 @@ describe("abandonnerLesPaiementsNonAboutis", () => {
 
     expect(await paymentService.abandonnerLesPaiementsNonAboutis()).toBe(0);
     expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
-    expect(annoncerAuCommercant).toHaveBeenCalledTimes(1);
+    expect(enregistrerOutbox).toHaveBeenCalledTimes(1);
+    expect(enregistrerOutbox.mock.calls[0][0]).toBe("commande.annonce_commercant");
+    expect(enregistrerOutbox.mock.calls[0][2]).toMatchObject({ dedupeKey: "annonce-commande-cmd-1" });
   });
 });
 
@@ -445,7 +452,7 @@ describe("journal des événements Stripe", () => {
     await paymentService.handleWebhook(corps, signature);
     expect(db.order.findUnique).not.toHaveBeenCalled();
     expect(db.payment.upsert).not.toHaveBeenCalled();
-    expect(annoncerAuCommercant).not.toHaveBeenCalled();
+    expect(enregistrerOutbox).not.toHaveBeenCalled();
   });
 
   it("un événement dont le traitement a échoué est repris au renvoi de Stripe", async () => {
@@ -477,5 +484,33 @@ describe("journal des événements Stripe", () => {
     await paymentService.handleWebhook(corps, signature);
     const inscrit = db.stripeEvent.update.mock.calls.map((c: any) => c[0].data).find((d: any) => d.detail);
     expect(inscrit).toMatchObject({ objectId: "dp_1", orderId: "cmd-1", detail: { montant: 2350, motif: "fraudulent" } });
+  });
+});
+
+describe("annonce au commerçant après encaissement (C-10)", () => {
+  it("l'annonce est écrite dans la même transaction que la transmission", async () => {
+    db.order.updateMany.mockResolvedValue({ count: 1 });
+    await paymentService.transmettreAuCommercant("cmd-1");
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
+    expect(enregistrerOutbox.mock.calls[0][2].tx).toBe(db);
+  });
+
+  it("déjà transmise : aucune seconde annonce", async () => {
+    db.order.updateMany.mockResolvedValue({ count: 0 });
+    expect(await paymentService.transmettreAuCommercant("cmd-1")).toBe(false);
+    expect(enregistrerOutbox).not.toHaveBeenCalled();
+  });
+
+  it("l'outbox indisponible à l'instant T ne fait pas échouer la transmission", async () => {
+    db.order.updateMany.mockResolvedValue({ count: 1 });
+    traiterLesDus.mockRejectedValue(new Error("redémarrage"));
+    await expect(paymentService.transmettreAuCommercant("cmd-1")).resolves.toBe(true);
+  });
+
+  it("l'échec d'écriture de l'annonce remonte : la transaction n'est pas validée sans elle", async () => {
+    db.order.updateMany.mockResolvedValue({ count: 1 });
+    enregistrerOutbox.mockRejectedValue(new Error("base coupée"));
+    db.$transaction.mockImplementation(async (traitement: any) => traitement(db));
+    await expect(paymentService.transmettreAuCommercant("cmd-1")).rejects.toThrow("base coupée");
   });
 });
