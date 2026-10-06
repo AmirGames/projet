@@ -207,7 +207,7 @@ export default function DeliveryTrackingPage() {
       setError(t('erreurChargement'));
       setLoading(false);
     }
-  }, [deliveryId, router]);
+  }, [deliveryId, router, t]);
 
   // La commande est annulée, le commerçant la déclare prête : la course suit.
   // Le livreur ne reçoit que les annonces de ses propres courses.

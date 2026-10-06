@@ -557,7 +557,7 @@ export default function MerchantRegisterPage() {
                     autoComplete="new-password"
                   />
                   {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
-                  <ReglesMotDePasse valeur={formData.password} sombre />
+                  <ReglesMotDePasse valeur={formData.password} />
                 </div>
 
                 <div>

@@ -1701,7 +1701,43 @@
     "confirm": "Confirm",
     "submit": "Submit",
     "noAccount": "Don't have an account?",
-    "haveAccount": "Already have an account?"
+    "haveAccount": "Already have an account?",
+    "inscription": {
+      "echec": "Sign-up failed",
+      "titre": "Become a courier",
+      "sousTitre": "Create your account to receive runs",
+      "pays": "Country where you deliver",
+      "nom": "Full name",
+      "email": "Email address",
+      "telephone": "Phone",
+      "motDePasse": "Password",
+      "vehicule": "Vehicle",
+      "creation": "Creating account...",
+      "creer": "Create my account",
+      "dejaInscrit": "Already registered?",
+      "seConnecter": "Log in",
+      "plaque": "Licence plate",
+      "facultatif": "(optional)",
+      "vehicules": {
+        "bike": "Bike",
+        "scooter": "Scooter",
+        "car": "Car"
+      }
+    },
+    "connexion": {
+      "erreur": "Error while logging in",
+      "titre": "Courier space",
+      "sousTitre": "Log in to manage your deliveries",
+      "email": "Email",
+      "motDePasse": "Password",
+      "exempleEmail": "your@email.com",
+      "encours": "Logging in...",
+      "seConnecter": "Log in",
+      "pasInscrit": "Not registered yet?",
+      "inscrire": "Sign up here",
+      "besoinAide": "Need help?",
+      "contacter": "Contact support"
+    }
   },
   "driverDashboard": {
     "loading": "Loading...",
@@ -3925,6 +3961,58 @@
       "1": "The shop has not prepared the order",
       "2": "I can't find the address",
       "3": "Problem with my vehicle"
+    }
+  },
+  "espaceLivreur": {
+    "tableau": "Dashboard",
+    "revenus": "Earnings",
+    "statistiques": "Statistics",
+    "historique": "History",
+    "support": "Support",
+    "livreur": "Courier",
+    "espace": "Courier space"
+  },
+  "dossierLivreur": {
+    "depotImpossible": "Upload failed",
+    "vosPieces": "Your documents",
+    "pasEncore": "Not uploaded yet",
+    "pieceADeposer": "Document to upload",
+    "choisir": "Choose…",
+    "fichier": "File",
+    "lienUrl": "URL link",
+    "selectionner": "Select a file (JPG, PNG, PDF)",
+    "lienDocument": "Link to the document",
+    "expiration": "Expiry date (if the document has one)",
+    "fichierSelectionne": "Selected file: {nom} ({ko} KB)",
+    "depot": "Uploading…",
+    "deposer": "Upload the document",
+    "etats": {
+      "PENDING": {
+        "titre": "Application under review",
+        "texte": "Upload the requested documents. Until the platform has approved them, you cannot take runs."
+      },
+      "ACTIVE": {
+        "titre": "Account approved",
+        "texte": "You can go online and receive runs."
+      },
+      "REJECTED": {
+        "titre": "Application rejected",
+        "texte": "Correct the flagged documents and upload them again."
+      },
+      "SUSPENDED": {
+        "titre": "Account suspended",
+        "texte": "You no longer receive runs."
+      },
+      "INACTIVE": {
+        "titre": "Account deactivated",
+        "texte": "Contact the platform to restore it."
+      }
+    },
+    "pieces": {
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired",
+      "PENDING": "Awaiting review"
     }
   }
 }

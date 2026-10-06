@@ -80,7 +80,7 @@ export default function DriverProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffectChargement(() => {
     loadDriverData();
@@ -328,8 +328,8 @@ export default function DriverProfilePage() {
                     {t('email')}
                   </label>
                   <input
-                    type={t('email')}
-                    name={t('email')}
+                    type="email"
+                    name="email"
                     value={formData.email}
                     onChange={handleInputChange}
                     disabled={!isEditing}
@@ -345,7 +345,7 @@ export default function DriverProfilePage() {
                   </label>
                   <input
                     type="tel"
-                    name={t('phone')}
+                    name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
                     disabled={!isEditing}

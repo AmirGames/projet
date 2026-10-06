@@ -18,15 +18,17 @@ import ReglesMotDePasse from '@/components/ReglesMotDePasse';
 import { motDePasseValide } from '@/lib/mot-de-passe';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Le libellé de chaque véhicule : `vehicules.<valeur>` des traductions.
 const VEHICULES = [
-  { valeur: 'bike', libelle: 'Vélo', icone: Bike },
-  { valeur: 'scooter', libelle: 'Scooter', icone: Truck },
-  { valeur: 'car', libelle: 'Voiture', icone: Car },
+  { valeur: 'bike', icone: Bike },
+  { valeur: 'scooter', icone: Truck },
+  { valeur: 'car', icone: Car },
 ];
 
 export default function InscriptionLivreurPage() {
   const t = useTranslations('driverAuth');
   const tMdp = useTranslations('motDePasse');
+  const tConditions = useTranslations('acceptationConditions');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 
@@ -76,7 +78,7 @@ export default function InscriptionLivreurPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || donnees.message || "Échec de l'inscription");
+        setErreur(donnees.error || donnees.message || t('inscription.echec'));
         return;
       }
 
@@ -107,8 +109,8 @@ export default function InscriptionLivreurPage() {
           <div className="w-16 h-16 bg-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Bike size={32} className="text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Devenir livreur</h1>
-          <p className="text-gray-500 mt-2">Créez votre compte pour recevoir des courses</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('inscription.titre')}</h1>
+          <p className="text-gray-500 mt-2">{t('inscription.sousTitre')}</p>
         </div>
 
         <form onSubmit={soumettre} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
@@ -119,7 +121,7 @@ export default function InscriptionLivreurPage() {
           )}
 
           <div>
-            <label htmlFor="pays" className="block text-sm text-gray-500 mb-1">Pays où vous livrez</label>
+            <label htmlFor="pays" className="block text-sm text-gray-500 mb-1">{t('inscription.pays')}</label>
             <SelecteurPays
               pays={pays}
               onChange={setPays}
@@ -128,7 +130,7 @@ export default function InscriptionLivreurPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Nom complet</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('inscription.nom')}</label>
             <input
               type="text"
               required
@@ -139,9 +141,9 @@ export default function InscriptionLivreurPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Adresse e-mail</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('inscription.email')}</label>
             <input
-              type={t('email')}
+              type="email"
               required
               {...champ('email')}
               className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
@@ -149,7 +151,7 @@ export default function InscriptionLivreurPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Téléphone</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('inscription.telephone')}</label>
             <input
               type="tel"
               required
@@ -162,7 +164,7 @@ export default function InscriptionLivreurPage() {
 
           <div>
             <label className="block text-sm text-gray-500 mb-1">
-              Mot de passe
+              {t('inscription.motDePasse')}
             </label>
             <input
               type="password"
@@ -172,11 +174,11 @@ export default function InscriptionLivreurPage() {
               {...champ('password')}
               className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
             />
-            <ReglesMotDePasse valeur={formulaire.password} sombre />
+            <ReglesMotDePasse valeur={formulaire.password} />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-500 mb-2">Véhicule</label>
+            <label className="block text-sm text-gray-500 mb-2">{t('inscription.vehicule')}</label>
             <div className="grid grid-cols-3 gap-2">
               {VEHICULES.map((vehicule) => (
                 <button
@@ -190,7 +192,7 @@ export default function InscriptionLivreurPage() {
                   }`}
                 >
                   <vehicule.icone size={20} />
-                  <span className="text-sm">{vehicule.libelle}</span>
+                  <span className="text-sm">{t(`inscription.vehicules.${vehicule.valeur}`)}</span>
                 </button>
               ))}
             </div>
@@ -199,7 +201,7 @@ export default function InscriptionLivreurPage() {
           {formulaire.vehicleType !== 'bike' && (
             <div>
               <label className="block text-sm text-gray-500 mb-1">
-                Plaque d&apos;immatriculation <span className="text-gray-500">(facultatif)</span>
+                {t('inscription.plaque')} <span className="text-gray-500">{t('inscription.facultatif')}</span>
               </label>
               <input
                 type="text"
@@ -214,8 +216,8 @@ export default function InscriptionLivreurPage() {
             coche={conditionsAcceptees}
             onChange={setConditionsAcceptees}
             documents={[
-              { href: '/cgu', libelle: 'les conditions générales d’utilisation' },
-              { href: '/conditions-livreurs', libelle: 'les conditions générales livreurs' },
+              { href: '/cgu', libelle: tConditions('docs.cgu') },
+              { href: '/conditions-livreurs', libelle: tConditions('docs.livreurs') },
             ]}
           />
 
@@ -224,14 +226,14 @@ export default function InscriptionLivreurPage() {
             disabled={envoi || !conditionsAcceptees}
             className="w-full bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
           >
-            {envoi ? 'Création du compte...' : 'Créer mon compte'}
+            {envoi ? t('inscription.creation') : t('inscription.creer')}
           </button>
         </form>
 
         <p className="text-gray-500 text-center text-sm mt-6">
-          Déjà inscrit ?{' '}
+          {t('inscription.dejaInscrit')}{' '}
           <Link href="/driver/login" className="text-orange-500 hover:text-orange-600">
-            Se connecter
+            {t('inscription.seConnecter')}
           </Link>
         </p>
       </div>

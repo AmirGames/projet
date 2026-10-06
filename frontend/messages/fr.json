@@ -1701,7 +1701,43 @@
     "confirm": "Confirmer",
     "submit": "Envoyer",
     "noAccount": "Pas de compte ?",
-    "haveAccount": "Déjà inscrit ?"
+    "haveAccount": "Déjà inscrit ?",
+    "inscription": {
+      "echec": "Échec de l'inscription",
+      "titre": "Devenir livreur",
+      "sousTitre": "Créez votre compte pour recevoir des courses",
+      "pays": "Pays où vous livrez",
+      "nom": "Nom complet",
+      "email": "Adresse e-mail",
+      "telephone": "Téléphone",
+      "motDePasse": "Mot de passe",
+      "vehicule": "Véhicule",
+      "creation": "Création du compte...",
+      "creer": "Créer mon compte",
+      "dejaInscrit": "Déjà inscrit ?",
+      "seConnecter": "Se connecter",
+      "plaque": "Plaque d'immatriculation",
+      "facultatif": "(facultatif)",
+      "vehicules": {
+        "bike": "Vélo",
+        "scooter": "Scooter",
+        "car": "Voiture"
+      }
+    },
+    "connexion": {
+      "erreur": "Erreur lors de la connexion",
+      "titre": "Espace Livreur",
+      "sousTitre": "Connectez-vous pour gérer vos livraisons",
+      "email": "Email",
+      "motDePasse": "Mot de passe",
+      "exempleEmail": "votre@email.com",
+      "encours": "Connexion...",
+      "seConnecter": "Se connecter",
+      "pasInscrit": "Pas encore inscrit ?",
+      "inscrire": "S'inscrire ici",
+      "besoinAide": "Besoin d'aide ?",
+      "contacter": "Contactez le support"
+    }
   },
   "driverDashboard": {
     "loading": "Chargement...",
@@ -3925,6 +3961,58 @@
       "1": "Le commerce n'a pas préparé la commande",
       "2": "Je n'arrive pas à trouver l'adresse",
       "3": "Problème avec mon véhicule"
+    }
+  },
+  "espaceLivreur": {
+    "tableau": "Tableau de bord",
+    "revenus": "Revenus",
+    "statistiques": "Statistiques",
+    "historique": "Historique",
+    "support": "Support",
+    "livreur": "Livreur",
+    "espace": "Espace Livreur"
+  },
+  "dossierLivreur": {
+    "depotImpossible": "Dépôt impossible",
+    "vosPieces": "Vos pièces",
+    "pasEncore": "Pas encore déposée",
+    "pieceADeposer": "Pièce à déposer",
+    "choisir": "Choisir…",
+    "fichier": "Fichier",
+    "lienUrl": "Lien URL",
+    "selectionner": "Sélectionner un fichier (JPG, PNG, PDF)",
+    "lienDocument": "Lien vers le document",
+    "expiration": "Date d'expiration (si la pièce en a une)",
+    "fichierSelectionne": "Fichier sélectionné : {nom} ({ko} KB)",
+    "depot": "Dépôt…",
+    "deposer": "Déposer la pièce",
+    "etats": {
+      "PENDING": {
+        "titre": "Dossier en cours de validation",
+        "texte": "Déposez les pièces demandées. Tant que la plateforme ne les a pas validées, vous ne pouvez pas prendre de course."
+      },
+      "ACTIVE": {
+        "titre": "Compte validé",
+        "texte": "Vous pouvez vous mettre en ligne et recevoir des courses."
+      },
+      "REJECTED": {
+        "titre": "Dossier refusé",
+        "texte": "Corrigez les pièces signalées et déposez-les à nouveau."
+      },
+      "SUSPENDED": {
+        "titre": "Compte suspendu",
+        "texte": "Vous ne recevez plus de course."
+      },
+      "INACTIVE": {
+        "titre": "Compte désactivé",
+        "texte": "Contactez la plateforme pour le rétablir."
+      }
+    },
+    "pieces": {
+      "APPROVED": "Validée",
+      "REJECTED": "Refusée",
+      "EXPIRED": "Expirée",
+      "PENDING": "En attente d'examen"
     }
   }
 }
