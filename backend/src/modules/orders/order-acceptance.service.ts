@@ -1,3 +1,6 @@
+import { createHash } from "crypto";
+import { Outbox } from "../jobs/outbox.service";
+import { TYPE_EMAIL_SUIVI_COMMANDE } from "../notifications/outbox-handlers";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
@@ -205,13 +208,40 @@ export class OrderAcceptanceService {
 
     if (options.email === false) return;
 
+    // L'e-mail passe par l'outbox : l'intention est écrite en base, puis envoyée
+    // et rejouée par le worker si le courriel est indisponible ou si le
+    // processus s'arrête. La clé empêche un second e-mail identique pour la même
+    // commande, le même état et le même texte.
+    const contenu = { titre, message };
     try {
-      await EmailService.sendOrderStatusUpdate(commande, { titre, message });
+      const empreinte = createHash("sha1").update(`${titre}|${message}`).digest("hex").slice(0, 12);
+      await Outbox.enregistrer(
+        TYPE_EMAIL_SUIVI_COMMANDE,
+        {
+          commande: {
+            id: commande.id,
+            customerName: commande.customerName,
+            customerEmail: commande.customerEmail,
+            totalAmount: Number(commande.totalAmount),
+          },
+          contenu,
+        },
+        { dedupeKey: `suivi:${commande.id}:${commande.status}:${empreinte}` }
+      );
     } catch (err) {
-      logger.warn("E-mail de suivi non envoyé", {
+      // Base indisponible : envoi direct, comme avant l'outbox.
+      logger.warn("Outbox indisponible, e-mail de suivi envoyé directement", {
         orderId: commande.id,
         error: err instanceof Error ? err.message : err,
       });
+      try {
+        await EmailService.sendOrderStatusUpdate(commande, contenu);
+      } catch (erreurEnvoi) {
+        logger.warn("E-mail de suivi non envoyé", {
+          orderId: commande.id,
+          error: erreurEnvoi instanceof Error ? erreurEnvoi.message : erreurEnvoi,
+        });
+      }
     }
   }
 

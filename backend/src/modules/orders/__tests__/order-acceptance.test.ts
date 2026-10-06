@@ -22,6 +22,7 @@ jest.mock("../../realtime/socket", () => ({
   emitMerchantEvent: jest.fn(),
 }));
 jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
+jest.mock("../../jobs/outbox.service", () => ({ Outbox: { enregistrer: jest.fn(async () => ({})) } }));
 jest.mock("../../notifications/email.service", () => ({
   EmailService: { sendOrderStatusUpdate: jest.fn() },
 }));
@@ -45,6 +46,7 @@ import {
   verifierTransition,
 } from "../order-acceptance.service";
 import { EmailService } from "../../notifications/email.service";
+import { Outbox } from "../../jobs/outbox.service";
 import { DispatchService } from "../../drivers/dispatch.service";
 import { Notifier } from "../../notifications/notifier.service";
 import { paymentService } from "../../payments/payment.service";
@@ -144,7 +146,11 @@ describe("OrderAcceptanceService", () => {
     const ecrit = db.order.updateMany.mock.calls[0][0];
     expect(ecrit.where).toEqual({ id: "cmd-1", status: "PENDING" });
     expect(ecrit.data.estimatedReadyAt).toEqual(creneau);
-    expect(EmailService.sendOrderStatusUpdate).toHaveBeenCalled();
+    expect(Outbox.enregistrer).toHaveBeenCalledWith(
+      "email.suivi_commande",
+      expect.objectContaining({ commande: expect.objectContaining({ id: "cmd-1" }) }),
+      expect.objectContaining({ dedupeKey: expect.stringMatching(/^suivi:cmd-1:/) })
+    );
   });
 
   it("refuse d'accepter une commande déjà refusée", async () => {
@@ -200,7 +206,7 @@ describe("OrderAcceptanceService", () => {
     await OrderAcceptanceService.refuser("boutique-1", "cmd-1", "EXCEPTIONAL_CLOSURE");
 
     expect(db.order.updateMany.mock.calls[0][0].data.rejectionReason).toBe("EXCEPTIONAL_CLOSURE");
-    const [, contenu] = (EmailService.sendOrderStatusUpdate as jest.Mock).mock.calls[0] as any[];
+    const [, { contenu }] = (Outbox.enregistrer as jest.Mock).mock.calls[0] as any[];
     expect(contenu.message).toContain("fermer exceptionnellement");
   });
 
@@ -218,7 +224,7 @@ describe("OrderAcceptanceService", () => {
     await OrderAcceptanceService.refuser("boutique-1", "cmd-1", "TOO_BUSY");
 
     expect(paymentService.rembourserCommande).toHaveBeenCalledWith("cmd-1", expect.stringContaining("TOO_BUSY"));
-    const [, contenu] = (EmailService.sendOrderStatusUpdate as jest.Mock).mock.calls[0] as any[];
+    const [, { contenu }] = (Outbox.enregistrer as jest.Mock).mock.calls[0] as any[];
     expect(contenu.message).toMatch(/23,50\s€ vous sont remboursés/);
   });
 
@@ -236,7 +242,7 @@ describe("OrderAcceptanceService", () => {
     await OrderAcceptanceService.refuser("boutique-1", "cmd-1", "OTHER");
 
     expect(db.order.updateMany.mock.calls[0][0].data.status).toBe("REJECTED");
-    const [, contenu] = (EmailService.sendOrderStatusUpdate as jest.Mock).mock.calls[0] as any[];
+    const [, { contenu }] = (Outbox.enregistrer as jest.Mock).mock.calls[0] as any[];
     expect(contenu.message).toContain("vous serez remboursé");
     expect(contenu.message).toContain("0612345678");
   });
@@ -333,5 +339,39 @@ describe("OrderAcceptanceService.surAvancement", () => {
     await OrderAcceptanceService.surAvancement({ ...livraison, deliveryMode: "OWN", status: "PREPARING" });
 
     expect(DispatchService.creerCourse).not.toHaveBeenCalled();
+  });
+});
+
+describe("prevenirLeClient — e-mail par l'outbox", () => {
+  const commande = {
+    id: "cmd-9",
+    storeId: "boutique-1",
+    status: "READY",
+    customerName: "Dupont",
+    customerEmail: "dupont@example.com",
+    totalAmount: 24,
+  };
+
+  it("la même commande, le même état et le même texte donnent la même clé : un seul e-mail", async () => {
+    await OrderAcceptanceService.prevenirLeClient(commande, "Prête", "Venez la chercher");
+    await OrderAcceptanceService.prevenirLeClient(commande, "Prête", "Venez la chercher");
+    await OrderAcceptanceService.prevenirLeClient({ ...commande, status: "COMPLETED" }, "Terminée", "Merci");
+
+    const cles = (Outbox.enregistrer as jest.Mock).mock.calls.map((appel: any[]) => appel[2].dedupeKey);
+    expect(cles[0]).toBe(cles[1]);
+    expect(cles[2]).not.toBe(cles[0]);
+  });
+
+  it("ne met rien en file quand l'e-mail n'est pas demandé", async () => {
+    await OrderAcceptanceService.prevenirLeClient(commande, "Prête", "Venez la chercher", { email: false });
+    expect(Outbox.enregistrer).not.toHaveBeenCalled();
+  });
+
+  it("envoie directement si l'outbox est indisponible : l'e-mail n'est pas perdu", async () => {
+    (Outbox.enregistrer as jest.Mock<(...args: any[]) => any>).mockRejectedValueOnce(new Error("base indisponible"));
+
+    await OrderAcceptanceService.prevenirLeClient(commande, "Prête", "Venez la chercher");
+
+    expect(EmailService.sendOrderStatusUpdate).toHaveBeenCalledWith(commande, { titre: "Prête", message: "Venez la chercher" });
   });
 });

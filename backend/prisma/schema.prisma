@@ -3041,3 +3041,34 @@ model StoreCustomer {
   @@unique([storeId, customerId])
   @@index([customerId])
 }
+
+/// Bail du « leader » des tâches de fond : une seule instance de l'API lance les
+/// tâches planifiées (relances, arrêtés, vigie). Voir modules/jobs/leader.service.ts.
+model JobLease {
+  name      String   @id
+  owner     String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+}
+
+/// Effets externes à ne pas perdre (e-mails importants) : écrits en base, puis
+/// envoyés par un worker avec relances espacées. Voir modules/jobs/outbox.service.ts.
+model OutboxMessage {
+  id            String    @id @default(cuid())
+  type          String
+  payload       Json
+  /// Empêche le doublon d'un même effet (ex. même commande, même état).
+  dedupeKey     String?   @unique
+  /// PENDING, PROCESSING, DONE, FAILED
+  status        String    @default("PENDING")
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(8)
+  nextAttemptAt DateTime  @default(now())
+  /// Un envoi PROCESSING dont le bail est dépassé a perdu son worker : repris.
+  lockedUntil   DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  processedAt   DateTime?
+
+  @@index([status, nextAttemptAt])
+}
