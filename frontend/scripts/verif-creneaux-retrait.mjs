@@ -132,7 +132,7 @@ await page.locator('button', { hasText: 'Panier' }).first().click().catch(() => 
 await page.waitForTimeout(800);
 
 await page
-  .locator('button', { hasText: 'Passer la commande' })
+  .locator('button', { hasText: 'Passer la Commande' })
   .first()
   .click()
   .catch(() => undefined);
