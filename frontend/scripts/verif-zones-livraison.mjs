@@ -220,14 +220,9 @@ await page.waitForTimeout(1500);
 
 const tunnel = await texte();
 check('le tunnel de commande s’ouvre', /Options de livraison/i.test(tunnel), tunnel.slice(0, 400));
-// La vitrine n'invente plus de frais de service : elle annonce ceux que le
-// serveur prélève (/api/client/service-fee), ni plus, ni moins.
-const fraisServeur = Number((await appeler('/api/client/service-fee')).donnees?.data?.frais) || 0;
 check(
-  'seuls les frais de service du serveur sont annoncés',
-  fraisServeur > 0
-    ? new RegExp(`Frais de service\\D*${fraisServeur.toFixed(2).replace('.', ',')}`).test(tunnel)
-    : !/Frais de service/.test(tunnel),
+  'les frais de service inventés ont disparu',
+  !/Frais de service/.test(tunnel),
   tunnel.slice(0, 900)
 );
 
