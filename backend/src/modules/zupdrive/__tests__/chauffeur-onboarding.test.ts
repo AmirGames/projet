@@ -140,6 +140,12 @@ jest.mock("../../notifications/notification.service", () => ({
   ...(jest.requireActual("../../notifications/notification.service") as object),
   notifierPlateforme: jest.fn(async () => undefined),
 }));
+// Le test enchaîne bien plus de 120 appels depuis une seule IP : le budget
+// global de l'API publique le bloquerait (429). Les autres limiteurs restent réels.
+jest.mock("../../../middleware/throttle", () => ({
+  ...(jest.requireActual("../../../middleware/throttle") as object),
+  limiterApiPublique: (_req: any, _res: any, next: any) => next(),
+}));
 jest.mock("../../files/file-upload.service", () => ({
   FileUploadService: {
     uploadDocument: jest.fn(async () => ({

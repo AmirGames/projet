@@ -50,11 +50,11 @@ describe("dépôt de documents : ne pas acquérir la pièce privée du voisin", 
     expect(result.documentUrl).toBe(document);
   });
 
-  it("conserve le dépôt d'un lien externe légitime", async () => {
-    db.courierDocument.findFirst.mockResolvedValue(null);
-    db.courierDocument.create.mockImplementation(async ({ data }: any) => data);
-    const result = await DriverApprovalService.deposerPiece("alice", { type: "identity", documentUrl: "https://documents.example/identite.pdf" });
-    expect(result.driverId).toBe("alice");
+  it("refuse le dépôt d'un lien externe : seul le stockage sécurisé est admis", async () => {
+    await expect(
+      DriverApprovalService.deposerPiece("alice", { type: "identity", documentUrl: "https://documents.example/identite.pdf" })
+    ).rejects.toMatchObject({ statusCode: 400, code: "EXTERNAL_DOCUMENT_FORBIDDEN" });
+    expect(db.courierDocument.create).not.toHaveBeenCalled();
   });
 });
 

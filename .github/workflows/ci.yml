@@ -1,0 +1,99 @@
+# Intégration continue : chaque pull request doit compiler, passer le lint et
+# les tests, sur une vraie base PostgreSQL.
+#
+# Le backend applique toutes les migrations sur une base vide (ce qui prouve
+# qu'une installation neuve fonctionne) puis vérifie que le schéma Prisma n'a
+# pas dérivé des migrations : un champ ajouté au schéma sans migration fait
+# échouer le passage.
+#
+# Les variables des tests viennent de backend/.env.test (chargé par Jest). Seule
+# DATABASE_URL est répétée ici, pour les commandes Prisma lancées avant Jest.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [claude/awesome-ride-m9lci8]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Client Prisma
+        run: npx prisma generate
+      - name: Migrations sur base vide
+        run: npx prisma migrate deploy
+      - name: Schéma et migrations alignés
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+      - name: Types
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Types
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      # SafetyCheck.test.jsx importe le composant de l'app mobile livreur et sa
+      # copie de React : il exige mobile/apps/delivery/node_modules, absent ici.
+      # À rendre autonome ou à déplacer dans les tests mobiles.
+      - name: Tests
+        run: npx jest --testPathIgnorePatterns SafetyCheck
+      - name: Build
+        run: npm run build
