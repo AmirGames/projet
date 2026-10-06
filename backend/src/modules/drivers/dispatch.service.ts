@@ -15,6 +15,7 @@ import {
   ReglesTournee,
   versCourseTournee,
 } from "./tournee.service";
+import { exceptionOuverte, limiteVehiculeKm, peutLivrer } from "./vehicule-distance.service";
 
 /** Les statuts d'une course qu'un livreur a encore sur les bras. */
 export const STATUTS_EN_COURSE = ["ACCEPTED", "PICKED_UP"];
@@ -85,6 +86,11 @@ export interface Reglages {
   perKmFee: number;
   offerSeconds: number;
   maxRadiusKm: number;
+  /** Distance de livraison maximale selon le véhicule : voir vehicule-distance.service.ts. */
+  bikeMaxKm: number;
+  scooterMaxKm: number;
+  /** Délai avant d'ouvrir une course sans preneur aux véhicules hors limite. */
+  exceptionSeconds: number;
   /** Plusieurs courses à la fois : voir tournee.service.ts. */
   tournee: ReglesTournee;
 }
@@ -94,8 +100,18 @@ const REGLAGES_PAR_DEFAUT: Reglages = {
   perKmFee: 0.8,
   offerSeconds: 30,
   maxRadiusKm: 8,
+  bikeMaxKm: 4,
+  scooterMaxKm: 7,
+  exceptionSeconds: 180,
   tournee: REGLES_TOURNEE_PAR_DEFAUT,
 };
+
+/** Le trajet commerce → client d'une course, ou null si l'adresse n'est pas géolocalisée. */
+function trajetDe(c: { pickupLat: number | null; pickupLng: number | null; deliveryLat: number | null; deliveryLng: number | null }) {
+  const depart = { latitude: c.pickupLat, longitude: c.pickupLng };
+  const arrivee = { latitude: c.deliveryLat, longitude: c.deliveryLng };
+  return estUnPoint(depart) && estUnPoint(arrivee) ? distanceKm(depart, arrivee) : null;
+}
 
 export class DispatchService {
   /** Réglages de la plateforme, avec repli si la configuration n'existe pas. */
@@ -109,6 +125,9 @@ export class DispatchService {
       perKmFee: Number(config.driverPerKmFee),
       offerSeconds: config.driverOfferSeconds,
       maxRadiusKm: config.driverMaxRadiusKm,
+      bikeMaxKm: config.driverBikeMaxKm,
+      scooterMaxKm: config.driverScooterMaxKm,
+      exceptionSeconds: config.driverExceptionSeconds,
       tournee: {
         maxCourses: config.driverMaxCourses,
         rayonClientsKm: config.driverGroupClientKm,
@@ -230,6 +249,7 @@ export class DispatchService {
         name: true,
         latitude: true,
         longitude: true,
+        vehicleType: true,
         email: true,
         user: { select: { email: true } },
       },
@@ -379,6 +399,7 @@ export class DispatchService {
         name: true,
         latitude: true,
         longitude: true,
+        vehicleType: true,
         email: true,
         user: { select: { email: true } },
         deliveries: {
@@ -463,11 +484,39 @@ export class DispatchService {
 
     // Un livreur déjà en course passe par là : la course s'ajoute à sa
     // tournée plutôt que de mobiliser un livreur de plus.
-    const enTournee = prefere
-      ? []
-      : (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => sollicitable(course, l.id));
+    const toutesTournees = prefere ? [] : await this.livreursEnTournee(course, reglages.tournee);
+    const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
 
-    const choisi = prefere || enTournee[0] || candidats[0];
+    // Le véhicule couvre-t-il le trajet commerce → client ? (vehicule-distance.service.ts)
+    const trajet = trajetDe(course);
+    const adapte = (l: { vehicleType: string }) => peutLivrer(l.vehicleType, trajet, reglages);
+
+    // Les livreurs hors limite (un vélo pour 6 km) ne reçoivent la course
+    // qu'à défaut : aucun livreur adapté dans le secteur, ou une recherche
+    // qui dure. Ils acceptent ou refusent en connaissance de la distance.
+    const ouverte = exceptionOuverte({
+      aucunLivreurAdapte: !disponibles.some(adapte) && !toutesTournees.some(adapte),
+      rechercheDepuis: course.createdAt,
+      maintenant,
+      limites: reglages,
+    });
+
+    if (prefere && !adapte(prefere) && !ouverte) {
+      const limite = limiteVehiculeKm(prefere.vehicleType, reglages);
+      throw new ApiError(
+        409,
+        `Ce livreur ne livre pas au-delà de ${limite.toFixed(1).replace(".", ",")} km avec son véhicule, et cette course fait ${(trajet ?? 0).toFixed(1).replace(".", ",")} km. Choisissez un livreur avec un véhicule plus adapté.`,
+        "VEHICLE_TOO_LIMITED"
+      );
+    }
+
+    // Les véhicules adaptés d'abord (en tournée, puis libres), les autres
+    // seulement une fois l'exception ouverte.
+    const choisi =
+      prefere ||
+      enTournee.find(adapte) ||
+      candidats.find(adapte) ||
+      (ouverte ? enTournee[0] || candidats[0] : undefined);
 
     if (!choisi) {
       logger.info("Aucun livreur disponible pour la course", {
@@ -477,13 +526,20 @@ export class DispatchService {
       return null;
     }
 
-    const ajout = !prefere && choisi === enTournee[0];
+    const ajout = !prefere && (enTournee as unknown[]).includes(choisi);
     const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
 
     // Un livreur libre : les autres commandes qui attendent et vont au même
     // endroit partent avec celle-ci, en un lot.
-    const lot = ajout ? [course] : await this.composerLot(course, choisi.id, sollicitable, reglages.tournee);
+    // Les autres commandes du lot, elles, restent dans la limite du véhicule.
+    const lot = ajout
+      ? [course]
+      : await this.composerLot(course, choisi.id, sollicitable, reglages.tournee, (c) =>
+          peutLivrer(choisi.vehicleType, trajetDe(c), reglages)
+        );
     const batchId = lot.length > 1 ? randomUUID() : null;
+
+    const horsLimite = !adapte(choisi);
 
     const propositions = [];
     for (const c of lot) {
@@ -507,11 +563,14 @@ export class DispatchService {
           : lot.length > 1
             ? `${lot.length} courses d'un coup : ${euros(total)} €`
             : `Nouvelle course : ${euros(total)} €`,
-        body: ajout
+        body:
+          (ajout
           ? `${course.order?.store?.name || "Commerce"}, livraison de ${trajets.toFixed(1).replace(".", ",")} km, à ajouter à votre course.`
           : lot.length > 1
             ? `${[...new Set(lot.map((c) => c.order?.store?.name).filter(Boolean))].join(", ") || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, ${lot.length} clients au même endroit. Répondez vite !`
-            : `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${trajets.toFixed(1).replace(".", ",")} km. Répondez vite !`,
+            : `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${trajets.toFixed(1).replace(".", ",")} km. Répondez vite !`) +
+          // Au-delà de ce que son véhicule fait d'ordinaire : à lui de décider.
+          (horsLimite ? " Plus longue que votre limite habituelle." : ""),
         url: "/driver",
         tag: "course-proposee",
         offerId: proposition.id,
@@ -524,6 +583,7 @@ export class DispatchService {
       approche,
       trajet: trajets,
       ...(ajout ? { ajout: true } : {}),
+      ...(horsLimite ? { horsLimite: true, vehicule: choisi.vehicleType } : {}),
       ...(batchId ? { lot: lot.map((c) => c.id) } : {}),
     });
 
@@ -541,7 +601,8 @@ export class DispatchService {
     course: C,
     driverId: string,
     sollicitable: (c: { offers: Sollicitation[] }, driverId: string) => boolean,
-    regles: ReglesTournee
+    regles: ReglesTournee,
+    accepte: (c: C) => boolean = () => true
   ): Promise<C[]> {
     const lot: C[] = [course];
     if (regles.maxCourses <= 1) return lot;
@@ -565,7 +626,7 @@ export class DispatchService {
     })) as unknown as C[];
 
     // À chaque tour, la commande qui rallonge le moins le lot.
-    let restantes = enAttente.filter((c) => sollicitable(c, driverId));
+    let restantes = enAttente.filter((c) => sollicitable(c, driverId) && accepte(c));
     while (lot.length < regles.maxCourses && restantes.length > 0) {
       const tournee = lot.map((c) => versCourseTournee({ ...c, status: "ACCEPTED" }));
       const classees = restantes
@@ -602,7 +663,7 @@ export class DispatchService {
         store: { name: string; address: string | null; city: string | null; latitude: number | null; longitude: number | null } | null;
       } | null;
     },
-    choisi: { id: string; distance: number; email: string; user: { email: string } | null },
+    choisi: { id: string; distance: number; vehicleType: string; email: string; user: { email: string } | null },
     options: { maintenant: number; expiresAt: Date; reglages: Reglages; batchId: string | null; ajout: boolean }
   ) {
     const { maintenant, expiresAt, reglages, batchId, ajout } = options;
@@ -618,6 +679,8 @@ export class DispatchService {
       logger.warn("Course sans coordonnées de livraison : paiement sur la distance d'approche", { deliveryId });
     }
     const distancePayee = Number((trajet ?? choisi.distance).toFixed(2));
+    // Plus long que ce que son véhicule fait d'ordinaire : proposée faute de mieux.
+    const horsLimite = !peutLivrer(choisi.vehicleType, trajet, reglages);
     // Chemin jusqu'au commerce de cette course, depuis la dernière position.
     const approche = Number(choisi.distance.toFixed(2));
 
@@ -653,6 +716,7 @@ export class DispatchService {
         expiresAt,
         batchId,
         ajout,
+        horsLimite,
       },
       update: {
         status: "PENDING",
@@ -664,6 +728,7 @@ export class DispatchService {
         attempts: { increment: 1 },
         batchId,
         ajout,
+        horsLimite,
       },
     });
 
@@ -696,6 +761,9 @@ export class DispatchService {
       // course déjà en route.
       batchId,
       ajout,
+      // Plus longue que la limite habituelle de son véhicule : il peut refuser.
+      horsLimite,
+      limiteKm: horsLimite ? limiteVehiculeKm(choisi.vehicleType, reglages) : null,
     });
 
     return proposition;

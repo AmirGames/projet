@@ -29,6 +29,9 @@ interface Configuration {
   maintenanceMode: boolean;
   maintenanceMessage: string;
   driverMaxRadiusKm: number;
+  driverBikeMaxKm: number;
+  driverScooterMaxKm: number;
+  driverExceptionSeconds: number;
   driverOfferSeconds: number;
   driverMaxCourses: number;
   driverGroupClientKm: number;
@@ -58,6 +61,9 @@ export default function SystemConfigPage() {
     maintenanceMode: false,
     maintenanceMessage: '',
     driverMaxRadiusKm: '',
+    driverBikeMaxKm: '',
+    driverScooterMaxKm: '',
+    driverExceptionSeconds: '',
     driverOfferSeconds: '',
     driverMaxCourses: '',
     driverGroupClientKm: '',
@@ -93,6 +99,9 @@ export default function SystemConfigPage() {
         maintenanceMode: !!c.maintenanceMode,
         maintenanceMessage: c.maintenanceMessage || '',
         driverMaxRadiusKm: String(c.driverMaxRadiusKm ?? ''),
+        driverBikeMaxKm: String(c.driverBikeMaxKm ?? ''),
+        driverScooterMaxKm: String(c.driverScooterMaxKm ?? ''),
+        driverExceptionSeconds: String(c.driverExceptionSeconds ?? ''),
         driverOfferSeconds: String(c.driverOfferSeconds ?? ''),
         driverMaxCourses: String(c.driverMaxCourses ?? ''),
         driverGroupClientKm: String(c.driverGroupClientKm ?? ''),
@@ -129,6 +138,9 @@ export default function SystemConfigPage() {
           maintenanceMode: formulaire.maintenanceMode,
           maintenanceMessage: formulaire.maintenanceMessage,
           driverMaxRadiusKm: Number(formulaire.driverMaxRadiusKm),
+          driverBikeMaxKm: Number(formulaire.driverBikeMaxKm),
+          driverScooterMaxKm: Number(formulaire.driverScooterMaxKm),
+          driverExceptionSeconds: Math.round(Number(formulaire.driverExceptionSeconds)),
           driverOfferSeconds: Math.round(Number(formulaire.driverOfferSeconds)),
           driverMaxCourses: Math.round(Number(formulaire.driverMaxCourses)),
           driverGroupClientKm: Number(formulaire.driverGroupClientKm),
@@ -278,6 +290,42 @@ export default function SystemConfigPage() {
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">Distance maximale boutique ↔ livreur pour proposer une course. C&apos;est aussi le rayon de livraison des boutiques qui passent par les livreurs de la plateforme (boutique ↔ client).</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">Distance de livraison maximale à vélo (km)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0.5" max="50"
+                  value={formulaire.driverBikeMaxKm}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverBikeMaxKm: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Trajet boutique → client. Jamais au-delà du rayon ci-dessus. La voiture suit ce rayon.</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">Distance de livraison maximale en scooter (km)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0.5" max="50"
+                  value={formulaire.driverScooterMaxKm}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverScooterMaxKm: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Trajet boutique → client. Doit rester supérieure ou égale à celle du vélo.</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">Délai avant d'ouvrir une course aux véhicules hors limite (secondes)</label>
+                <input
+                  type="number"
+                  step="10"
+                  min="0" max="3600"
+                  value={formulaire.driverExceptionSeconds}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverExceptionSeconds: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Une course trop longue pour un vélo ou un scooter leur est proposée, s'ils veulent bien, quand aucun véhicule adapté ne la prend après ce délai (ou tout de suite s'il n'y en a pas).</p>
               </div>
               <div>
                 <label className="block text-sm text-gray-500 mb-2">Délai d'acceptation (secondes)</label>

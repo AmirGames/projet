@@ -553,6 +553,13 @@ model SystemConfig {
   driverOfferSeconds  Int       @default(30)
   // Au-delà, on ne propose plus la course
   driverMaxRadiusKm   Float     @default(8)
+  // Distance maximale d'une livraison (commerce → client) selon le véhicule.
+  // Jamais au-delà de driverMaxRadiusKm. La voiture n'a pas de limite propre.
+  driverBikeMaxKm     Float     @default(4)
+  driverScooterMaxKm  Float     @default(7)
+  // Une course sans preneur s'ouvre ensuite aux livreurs dont le véhicule est
+  // trop limité pour elle (ils peuvent refuser), après ce délai.
+  driverExceptionSeconds Int    @default(180)
   // Plusieurs courses à la fois (tournée) : combien au plus (1 = jamais de
   // regroupement), clients « au même endroit », détour accepté.
   driverMaxCourses    Int       @default(3)
@@ -1646,6 +1653,9 @@ model DeliveryOffer {
   batchId     String?
   /// Proposée à un livreur déjà en course, sur son trajet (« + 1 course »).
   ajout       Boolean   @default(false)
+  /// Course plus longue que la limite habituelle du véhicule du livreur,
+  /// proposée faute de livreur mieux adapté : il peut refuser.
+  horsLimite  Boolean   @default(false)
 
   delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
   driver      Courier        @relation(fields: [driverId], references: [id], onDelete: Cascade)
