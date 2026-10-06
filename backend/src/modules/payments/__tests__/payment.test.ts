@@ -11,6 +11,7 @@ const db: any = {
   $transaction: fn(),
   order: { findUnique: fn(), findMany: fn(), update: fn(), updateMany: fn() },
   payment: { findFirst: fn(), upsert: fn(), update: fn(), updateMany: fn() },
+  stripeEvent: { create: fn(), findUnique: fn(), update: fn() },
 };
 
 const stripe: any = {
@@ -422,5 +423,59 @@ describe("abandonnerLesPaiementsNonAboutis", () => {
     expect(await paymentService.abandonnerLesPaiementsNonAboutis()).toBe(0);
     expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
     expect(annoncerAuCommercant).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("journal des événements Stripe", () => {
+  const evenementPaye = () =>
+    signe({ id: "evt-dup", type: "payment_intent.succeeded", data: { object: intention() } });
+
+  it("inscrit l'événement puis le marque traité", async () => {
+    db.order.findUnique.mockResolvedValue(commande());
+    const { corps, signature } = evenementPaye();
+    await paymentService.handleWebhook(corps, signature);
+    expect(db.stripeEvent.create.mock.calls[0][0].data).toMatchObject({ id: "evt-dup", type: "payment_intent.succeeded" });
+    expect(db.stripeEvent.update.mock.calls.at(-1)[0].data.processedAt).toBeInstanceOf(Date);
+  });
+
+  it("un événement déjà traité n'a aucun effet", async () => {
+    db.stripeEvent.create.mockRejectedValue({ code: "P2002" });
+    db.stripeEvent.findUnique.mockResolvedValue({ processedAt: new Date() });
+    const { corps, signature } = evenementPaye();
+    await paymentService.handleWebhook(corps, signature);
+    expect(db.order.findUnique).not.toHaveBeenCalled();
+    expect(db.payment.upsert).not.toHaveBeenCalled();
+    expect(annoncerAuCommercant).not.toHaveBeenCalled();
+  });
+
+  it("un événement dont le traitement a échoué est repris au renvoi de Stripe", async () => {
+    db.stripeEvent.create.mockRejectedValue({ code: "P2002" });
+    db.stripeEvent.findUnique.mockResolvedValue({ processedAt: null });
+    db.order.findUnique.mockResolvedValue(commande());
+    const { corps, signature } = evenementPaye();
+    await paymentService.handleWebhook(corps, signature);
+    expect(db.stripeEvent.update.mock.calls[0][0].data).toEqual({ attempts: { increment: 1 } });
+    expect(db.stripeEvent.update.mock.calls.at(-1)[0].data.processedAt).toBeInstanceOf(Date);
+  });
+
+  it("un échec de traitement reste visible et laisse l'événement à rejouer", async () => {
+    db.order.findUnique.mockResolvedValue(commande());
+    const { corps, signature } = signe({ id: "evt-ko", type: "payment_intent.succeeded", data: { object: intention({ amount_received: 1 }) } });
+    await expect(paymentService.handleWebhook(corps, signature)).rejects.toMatchObject({ statusCode: 409 });
+    const ecritures = db.stripeEvent.update.mock.calls.map((c: any) => c[0].data);
+    expect(ecritures.some((d: any) => d.lastError)).toBe(true);
+    expect(ecritures.some((d: any) => d.processedAt)).toBe(false);
+  });
+
+  it("un litige carte est inscrit au journal avec sa commande", async () => {
+    db.payment.findFirst.mockResolvedValue({ orderId: "cmd-1" });
+    const { corps, signature } = signe({
+      id: "evt-litige",
+      type: "charge.dispute.created",
+      data: { object: { id: "dp_1", object: "dispute", amount: 2350, currency: "eur", reason: "fraudulent", status: "needs_response", payment_intent: "pi_1" } },
+    });
+    await paymentService.handleWebhook(corps, signature);
+    const inscrit = db.stripeEvent.update.mock.calls.map((c: any) => c[0].data).find((d: any) => d.detail);
+    expect(inscrit).toMatchObject({ objectId: "dp_1", orderId: "cmd-1", detail: { montant: 2350, motif: "fraudulent" } });
   });
 });

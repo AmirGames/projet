@@ -1218,6 +1218,28 @@ model Payment {
   @@index([stripePaymentIntentId])
 }
 
+/// Journal des événements Stripe reçus : un identifiant d'événement n'est
+/// traité qu'une fois, et chaque litige reste visible. Jamais supprimé pour
+/// « corriger » l'historique.
+model StripeEvent {
+  /// L'identifiant Stripe de l'événement (evt_…).
+  id          String    @id
+  type        String
+  /// L'objet concerné (intention, remboursement, litige…).
+  objectId    String?
+  orderId     String?
+  receivedAt  DateTime  @default(now())
+  /// Renseigné quand le traitement a abouti ; vide, Stripe peut renvoyer l'événement.
+  processedAt DateTime?
+  attempts    Int       @default(1)
+  lastError   String?
+  /// Données non personnelles utiles au suivi (montant, motif, statut d'un litige).
+  detail      Json?
+
+  @@index([type, receivedAt])
+  @@index([orderId])
+}
+
 // ============================================================================
 // THEME & CUSTOMIZATION
 // ============================================================================

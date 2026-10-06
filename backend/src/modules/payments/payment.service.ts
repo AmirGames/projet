@@ -135,29 +135,33 @@ export const paymentService = {
   },
 
   /**
-   * Le webhook Stripe.
-   *
-   * La signature est vérifiée sur le corps brut, tel que Stripe l'a envoyé :
-   * sans elle, n'importe qui pourrait déclarer une commande payée. Chaque
-   * traitement est rejouable sans effet de bord : Stripe renvoie un événement
-   * tant qu'il n'a pas reçu de 2xx, et parfois deux fois de suite.
+   * Inscrit l'événement au journal. L'identifiant Stripe est la clé : le
+   * second passage d'un même événement le retrouve. Un événement dont le
+   * traitement a échoué est repris (Stripe le renvoie) ; un événement traité
+   * ne l'est pas deux fois.
    */
-  async handleWebhook(corpsBrut: Buffer | string, signature: string | undefined) {
-    if (!STRIPE_CONFIG.webhookSecret) {
-      throw new ApiError(503, "Webhook Stripe non configuré", "STRIPE_WEBHOOK_NOT_CONFIGURED");
-    }
-    if (!signature) {
-      throw new ApiError(400, "Signature Stripe absente", "STRIPE_SIGNATURE_MISSING");
-    }
-
-    let evenement: Stripe.Event;
+  async journaliserEvenement(evenement: Stripe.Event): Promise<"nouveau" | "deja_traite" | "a_reprendre"> {
+    const objet: any = evenement.data?.object ?? {};
     try {
-      evenement = stripe.webhooks.constructEvent(corpsBrut, signature, STRIPE_CONFIG.webhookSecret);
-    } catch (err) {
-      logger.warn("Webhook Stripe : signature invalide", { error: (err as Error).message });
-      throw new ApiError(400, "Signature Stripe invalide", "STRIPE_SIGNATURE_INVALID");
+      await db.stripeEvent.create({
+        data: {
+          id: evenement.id,
+          type: evenement.type,
+          objectId: typeof objet.id === "string" ? objet.id : null,
+          orderId: typeof objet.metadata?.orderId === "string" ? objet.metadata.orderId : null,
+        },
+      });
+      return "nouveau";
+    } catch (err: any) {
+      if (err?.code !== "P2002") throw err;
     }
+    const existant = await db.stripeEvent.findUnique({ where: { id: evenement.id }, select: { processedAt: true } });
+    if (existant?.processedAt) return "deja_traite";
+    await db.stripeEvent.update({ where: { id: evenement.id }, data: { attempts: { increment: 1 } } });
+    return "a_reprendre";
+  },
 
+  async traiterEvenement(evenement: Stripe.Event) {
     switch (evenement.type) {
       // Un pourboire laissé après la livraison porte aussi l'orderId : il
       // passe à part, sans quoi il serait pris pour le paiement de la commande.
@@ -194,9 +198,94 @@ export const paymentService = {
           await this.remboursementMisAJour(evenement.data.object);
         }
         break;
+      case "charge.dispute.created":
+        await this.noterLitige(evenement.data.object, evenement.id, true);
+        break;
+      case "charge.dispute.closed":
+        await this.noterLitige(evenement.data.object, evenement.id, false);
+        break;
       default:
         logger.debug("Webhook Stripe ignoré", { type: evenement.type });
     }
+
+  },
+
+  /**
+   * Un litige carte (opposition du client auprès de sa banque) : la plateforme
+   * peut être débitée du montant et des frais. Aucun effet automatique sur la
+   * commande ni sur les reversements — décision humaine — mais le litige est
+   * inscrit au journal et signalé dans les logs.
+   */
+  async noterLitige(litige: Stripe.Dispute, evenementId: string, ouvert: boolean) {
+    const intentionId = idIntention(litige.payment_intent as any);
+    const paiement = intentionId
+      ? await db.payment.findFirst({ where: { stripePaymentIntentId: intentionId }, select: { orderId: true } })
+      : null;
+    await db.stripeEvent.update({
+      where: { id: evenementId },
+      data: {
+        objectId: litige.id,
+        orderId: paiement?.orderId ?? null,
+        detail: { montant: litige.amount, devise: litige.currency, motif: litige.reason, statut: litige.status },
+      },
+    });
+    (ouvert ? logger.error : logger.info)("Litige carte Stripe", {
+      litigeId: litige.id,
+      orderId: paiement?.orderId,
+      statut: litige.status,
+      motif: litige.reason,
+    });
+  },
+
+  /**
+   * Le webhook Stripe.
+   *
+   * La signature est vérifiée sur le corps brut, tel que Stripe l'a envoyé :
+   * sans elle, n'importe qui pourrait déclarer une commande payée. Chaque
+   * traitement est rejouable sans effet de bord : Stripe renvoie un événement
+   * tant qu'il n'a pas reçu de 2xx, et parfois deux fois de suite.
+   */
+  async handleWebhook(corpsBrut: Buffer | string, signature: string | undefined) {
+    if (!STRIPE_CONFIG.webhookSecret) {
+      throw new ApiError(503, "Webhook Stripe non configuré", "STRIPE_WEBHOOK_NOT_CONFIGURED");
+    }
+    if (!signature) {
+      throw new ApiError(400, "Signature Stripe absente", "STRIPE_SIGNATURE_MISSING");
+    }
+
+    let evenement: Stripe.Event;
+    try {
+      evenement = stripe.webhooks.constructEvent(corpsBrut, signature, STRIPE_CONFIG.webhookSecret);
+    } catch (err) {
+      logger.warn("Webhook Stripe : signature invalide", { error: (err as Error).message });
+      throw new ApiError(400, "Signature Stripe invalide", "STRIPE_SIGNATURE_INVALID");
+    }
+
+    // Un événement déjà traité (rejeu, doublon de livraison) n'a aucun effet.
+    const etat = await this.journaliserEvenement(evenement);
+    if (etat === "deja_traite") {
+      logger.info("Webhook Stripe déjà traité", { id: evenement.id, type: evenement.type });
+      return evenement;
+    }
+
+    try {
+      await this.traiterEvenement(evenement);
+    } catch (err) {
+      // Le journal ne doit pas masquer l'erreur d'origine.
+      try {
+        await db.stripeEvent.update({
+          where: { id: evenement.id },
+          data: { lastError: (err as Error).message?.slice(0, 500) },
+        });
+      } catch (erreurJournal) {
+        logger.warn("Journal Stripe : erreur non inscrite", { id: evenement.id, error: (erreurJournal as Error).message });
+      }
+      throw err;
+    }
+    await db.stripeEvent.update({
+      where: { id: evenement.id },
+      data: { processedAt: new Date(), lastError: null },
+    });
 
     return evenement;
   },
