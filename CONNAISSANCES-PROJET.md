@@ -1115,6 +1115,21 @@ elle va dans une `useRef` — sinon l'effet boucle. La règle
 `@next/next/no-img-element` est désactivée : les logos viennent d'URL
 quelconques, `next/image` ne convient pas.
 
+**Tout le site traduit (octobre 2026).** Plus aucun texte d'interface en dur :
+pages client et publiques, espaces livreur, commerçant et administration,
+assistant ZupOne, titres d'onglet (`generateMetadata` + `titresPages`) et
+contenu des pages « Devenir … » (`devenirContenus`, lu avec `t.raw`). Les
+statuts et motifs passent par des clés, les pluriels par ICU, les dates par
+`useLocale()`. Les règles sont dans `frontend/ARCHITECTURE.md` (« F.
+Traductions ») ; `node scripts/verif-traductions.mjs` contrôle la parité
+fr/en et la validité des messages. Défauts corrigés au passage : numéro de
+commande différent selon l'écran (`numeroCourt` partout), « course livrée
+livrée » dans les versements livreur, champs du profil livreur qu'on ne
+pouvait plus modifier, montants affichés en dollars, export CSV de facture
+sans guillemets. Restent en français : ce que le serveur envoie (erreurs de
+l'API, pages légales, réponses de l'assistant) et le format des montants
+(`euro()`).
+
 ### À faire ensuite
 
 Les priorités et critères de validation sont centralisés dans
