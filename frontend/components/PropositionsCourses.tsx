@@ -9,6 +9,7 @@ import { euro } from '@/lib/format';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { notifierSiCache } from '@/components/ActiverNotifications';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -67,6 +68,8 @@ interface Props {
  * c'est elle qui décide à qui la prochaine course sera proposée.
  */
 export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, surHorsLigne }: Props) {
+  const t = useTranslations('propositionsCourses');
+  const locale = useLocale();
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [enCours, setEnCours] = useState<string | null>(null);
@@ -128,10 +131,13 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
     const surCourse = (donnees: { payout?: number; approcheKm?: number; pickupStore?: string }) => {
       relever();
       notifierSiCache(
-        donnees?.payout != null ? `Nouvelle course : ${euro(donnees.payout)}` : 'Nouvelle course',
-        `${donnees?.pickupStore || 'Commerce'}${
-          donnees?.approcheKm != null ? ` · à ${donnees.approcheKm.toFixed(1)} km` : ''
-        }. Répondez vite !`,
+        donnees?.payout != null ? t('nouvelleCourseMontant', { montant: euro(donnees.payout) }) : t('nouvelleCourse'),
+        donnees?.approcheKm != null
+          ? t('notificationCorpsDistance', {
+              commerce: donnees?.pickupStore || t('commerce'),
+              km: donnees.approcheKm.toFixed(1),
+            })
+          : t('notificationCorps', { commerce: donnees?.pickupStore || t('commerce') }),
         'course-proposee'
       );
     };
@@ -140,7 +146,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
     const surGpsPerdu = () => setPerduCoteServeur(true);
     const surGpsRetabli = () => setPerduCoteServeur(false);
     const surMisHorsLigne = (donnees: { raison?: string }) => {
-      surHorsLigne?.(donnees?.raison || 'Vous avez été mis hors ligne.');
+      surHorsLigne?.(donnees?.raison || t('horsLigne'));
     };
 
     socket.on('course-proposee', surCourse);
@@ -155,7 +161,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
       socket.off('gps-retabli', surGpsRetabli);
       socket.off('mis-hors-ligne', surMisHorsLigne);
     };
-  }, [isOnline, relever, surHorsLigne]);
+  }, [isOnline, relever, surHorsLigne, t]);
 
   // Envoi de la position (tant que le livreur est en ligne, même en cours de livraison).
   useEffect(() => {
@@ -217,7 +223,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
       const donnees = await resultat.json();
 
       if (!resultat.ok) {
-        setErreur(donnees.error || "La réponse n'a pas été enregistrée.");
+        setErreur(donnees.error || t('reponseNonEnregistree'));
         await relever();
         return;
       }
@@ -231,7 +237,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
         if (deliveryId) router.push(`/driver/deliveries/${deliveryId}`);
       }
     } catch {
-      setErreur('Serveur injoignable. Vérifiez votre connexion.');
+      setErreur(t('injoignable'));
     } finally {
       setEnCours(null);
     }
@@ -260,9 +266,9 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
       {visibles.length === 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 text-center text-gray-500">
           <Navigation size={28} className="mx-auto mb-2 text-gray-400" />
-          <p>En attente d&apos;une course...</p>
+          <p>{t('enAttente')}</p>
           <p className="text-xs text-gray-500 mt-1">
-            Vous serez prévenu dès qu&apos;une commande est prête près de vous.
+            {t('prevenu')}
           </p>
         </div>
       )}
@@ -273,7 +279,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
           Math.ceil((new Date(proposition.expiresAt).getTime() - maintenant) / 1000)
         );
 
-        const pickupName = proposition.pickupStore || proposition.boutique?.name || 'Restaurant';
+        const pickupName = proposition.pickupStore || proposition.boutique?.name || t('restaurant');
         const pickupAddr = proposition.pickupAddress || proposition.boutique?.address || '';
         const pickupCity = proposition.pickupCity || proposition.boutique?.city || '';
         const deliveryAddr = proposition.deliveryAddress || proposition.adresse || '';
@@ -285,7 +291,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
           5,
           Math.round(((proposition.approcheKm || 0) + (proposition.distanceKm || 0)) * 2)
         );
-        const km = (n: number) => n.toLocaleString('fr-FR', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+        const km = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
         return (
           <div
@@ -310,7 +316,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
             {/* Montant principal */}
             <div className="pt-2">
-              <p className="text-gray-500 text-sm mb-1">Vous gagnerez</p>
+              <p className="text-gray-500 text-sm mb-1">{t('vousGagnerez')}</p>
               <p className="text-4xl font-bold text-gray-900">{euro(proposition.payout)}</p>
             </div>
 
@@ -319,37 +325,37 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
               {/* Le trajet de livraison est ce qui est payé ; l'approche
                   aide seulement à décider. */}
               <div>
-                <p className="text-gray-500 text-xs mb-1">Livraison (payée)</p>
+                <p className="text-gray-500 text-xs mb-1">{t('livraisonPayee')}</p>
                 <div className="flex items-center gap-1 text-gray-900 font-semibold">
                   <MapPin size={16} className="text-orange-500" />
-                  {proposition.distanceKm != null ? `${km(proposition.distanceKm)} km` : '?'}
+                  {proposition.distanceKm != null ? t('km', { n: km(proposition.distanceKm) }) : '?'}
                 </div>
               </div>
               {proposition.approcheKm != null && (
                 <>
                   <div className="border-l border-gray-200"></div>
                   <div>
-                    <p className="text-gray-500 text-xs mb-1">Jusqu&apos;au commerce</p>
+                    <p className="text-gray-500 text-xs mb-1">{t('jusquAuCommerce')}</p>
                     <div className="flex items-center gap-1 text-gray-900 font-semibold">
                       <Navigation size={16} className="text-gray-500" />
-                      {km(proposition.approcheKm)} km
+                      {t('km', { n: km(proposition.approcheKm) })}
                     </div>
                   </div>
                 </>
               )}
               <div className="border-l border-gray-200"></div>
               <div>
-                <p className="text-gray-500 text-xs mb-1">Durée estimée</p>
+                <p className="text-gray-500 text-xs mb-1">{t('dureeEstimee')}</p>
                 <div className="flex items-center gap-1 text-gray-900 font-semibold">
                   <Timer size={16} className="text-blue-500" />
-                  {tempsEstime} min
+                  {t('minutes', { n: tempsEstime })}
                 </div>
               </div>
             </div>
 
             {/* Lieu de prise en charge */}
             <div>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2 font-semibold">À récupérer</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2 font-semibold">{t('aRecuperer')}</p>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                 <p className="text-gray-900 font-semibold text-sm">{pickupName}</p>
                 <p className="text-gray-700 text-xs mt-1">
@@ -361,11 +367,11 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
             {/* Lieu de livraison */}
             <div>
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2 font-semibold">À livrer</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2 font-semibold">{t('aLivrer')}</p>
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-gray-900 font-semibold text-sm flex items-center gap-2">
                   <MapPin size={14} className="text-green-500" />
-                  Adresse de livraison
+                  {t('adresseLivraison')}
                 </p>
                 <p className="text-gray-700 text-xs mt-1">
                   {deliveryAddr}
@@ -374,7 +380,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
                     : ''}
                 </p>
                 <p className="text-gray-500 text-xs mt-2 italic">
-                  ℹ️ À ±50m de l&apos;adresse exacte pour votre confidentialité
+                  {t('confidentialite')}
                 </p>
               </div>
             </div>
@@ -387,7 +393,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
                 disabled={enCours === proposition.id}
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition transform hover:scale-105 active:scale-95"
               >
-                {enCours === proposition.id ? '⏳ ...' : '✓ Accepter'}
+                {enCours === proposition.id ? '⏳ ...' : t('accepter')}
               </button>
               <button
                 type="button"
@@ -395,7 +401,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
                 disabled={enCours === proposition.id}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-800 font-semibold py-3 rounded-lg transition"
               >
-                {enCours === proposition.id ? '...' : 'Refuser'}
+                {enCours === proposition.id ? '...' : t('refuser')}
               </button>
             </div>
           </div>

@@ -301,7 +301,7 @@ export default function ClientHomePage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <title>Accueil client — ZupEat</title>
+      <title>{`${t('titreOnglet')} — ZupEat`}</title>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
         {/* L'accroche : un grand aplat chaleureux, et l'adresse au centre du

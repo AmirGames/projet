@@ -7,6 +7,7 @@ import { ArrowDownRight, ArrowUpRight, BarChart3, Star } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { GraphiqueColonnes, type Colonne } from '@/components/GraphiqueColonnes';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -33,10 +34,10 @@ interface Analytics {
   parHeure: { heure: number; livrees: number; gains: number }[];
 }
 
-const PERIODES: { jours: Jours; label: string }[] = [
-  { jours: 7, label: '7 jours' },
-  { jours: 30, label: '30 jours' },
-  { jours: 90, label: '90 jours' },
+const PERIODES: { jours: Jours }[] = [
+  { jours: 7 },
+  { jours: 30 },
+  { jours: 90 },
 ];
 
 const nombre = (n: number, decimales = 0) =>
@@ -59,6 +60,8 @@ function Tuile({
   delta?: number | null;
   aide?: string;
 }) {
+  const t = useTranslations('statistiquesLivreur');
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
       <p className="text-gray-500 text-xs">{label}</p>
@@ -70,7 +73,7 @@ function Tuile({
         >
           {delta >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
           {delta >= 0 ? '+' : ''}
-          {delta} % vs période précédente
+          {t('vsPrecedente', { delta })}
         </p>
       ) : (
         aide && <p className="text-xs text-gray-500 mt-1">{aide}</p>
@@ -81,6 +84,8 @@ function Tuile({
 
 /** Statistiques du livreur : gains, rythme, acceptation, heures fortes. */
 export default function AnalyticsLivreurPage() {
+  const t = useTranslations('statistiquesLivreur');
+  const locale = useLocale();
   const router = useRouter();
   const [jours, setJours] = useState<Jours>(7);
   const [donnees, setDonnees] = useState<Analytics | null>(null);
@@ -107,11 +112,11 @@ export default function AnalyticsLivreurPage() {
       if (!res.ok) throw new Error(corps.error);
       setDonnees(corps.data);
     } catch (e) {
-      setErreur(e instanceof Error && e.message ? e.message : 'Statistiques indisponibles.');
+      setErreur(e instanceof Error && e.message ? e.message : t('indisponibles'));
     } finally {
       setChargement(false);
     }
-  }, [jours, router]);
+  }, [jours, router, t]);
 
   useEffectChargement(() => {
     charger();
@@ -127,18 +132,18 @@ export default function AnalyticsLivreurPage() {
         // Compté depuis la fin : le jour le plus récent porte toujours un libellé.
         label:
           (donnees.parJour.length - 1 - i) % espacement === 0
-            ? date.toLocaleDateString('fr-FR', jours === 7 ? { weekday: 'short' } : { day: 'numeric', month: 'short' })
+            ? date.toLocaleDateString(locale, jours === 7 ? { weekday: 'short' } : { day: 'numeric', month: 'short' })
             : '',
-        labelComplet: date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
+        labelComplet: date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }),
         valeur: j.gains,
         details: [
-          `${j.livrees} course${j.livrees > 1 ? 's' : ''}`,
-          `${nombre(j.distanceKm, 1)} km`,
-          ...(j.pourboires > 0 ? [`dont ${euro(j.pourboires)} de pourboires`] : []),
+          t('courses', { n: j.livrees }),
+          t('km', { n: nombre(j.distanceKm, 1) }),
+          ...(j.pourboires > 0 ? [t('dontPourboires', { montant: euro(j.pourboires) })] : []),
         ],
       };
     });
-  }, [donnees, jours]);
+  }, [donnees, jours, locale, t]);
 
   const colonnesHeures: Colonne[] = useMemo(() => {
     if (!donnees) return [];
@@ -146,9 +151,9 @@ export default function AnalyticsLivreurPage() {
       label: h.heure % 3 === 0 ? `${h.heure}h` : '',
       labelComplet: `${h.heure}h – ${h.heure + 1}h`,
       valeur: h.livrees,
-      details: [`${euro(h.gains)} gagnés`],
+      details: [t('gagnes', { montant: euro(h.gains) })],
     }));
-  }, [donnees]);
+  }, [donnees, t]);
 
   const heureForte = useMemo(() => {
     if (!donnees) return null;
@@ -166,11 +171,11 @@ export default function AnalyticsLivreurPage() {
           <div className="flex items-center gap-3">
             <BarChart3 className="text-orange-500" size={28} />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Statistiques</h1>
-              <p className="text-gray-500 text-sm">Votre activité, vos gains et vos heures fortes</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('titre')}</h1>
+              <p className="text-gray-500 text-sm">{t('sousTitre')}</p>
             </div>
           </div>
-          <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1" role="group" aria-label="Période">
+          <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1" role="group" aria-label={t('periode')}>
             {PERIODES.map((p) => (
               <button
                 key={p.jours}
@@ -180,7 +185,7 @@ export default function AnalyticsLivreurPage() {
                   jours === p.jours ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                {p.label}
+                {t('nJours', { n: p.jours })}
               </button>
             ))}
           </div>
@@ -201,10 +206,10 @@ export default function AnalyticsLivreurPage() {
             <>
               {/* Chiffre de tête */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <p className="text-gray-500 text-sm">Gains sur {jours} jours</p>
+                <p className="text-gray-500 text-sm">{t('gainsSur', { n: jours })}</p>
                 <p className="text-gray-900 text-5xl font-semibold mt-1">{euro(r.gains)}</p>
                 {r.pourboires > 0 && (
-                  <p className="text-sm text-yellow-600 mt-2">dont {euro(r.pourboires)} de pourboires 🎉</p>
+                  <p className="text-sm text-yellow-600 mt-2">{t('dontPourboiresFete', { montant: euro(r.pourboires) })}</p>
                 )}
                 {variation(r.gains, donnees.precedente.gains) != null && (
                   <p
@@ -213,42 +218,45 @@ export default function AnalyticsLivreurPage() {
                     }`}
                   >
                     {(variation(r.gains, donnees.precedente.gains) ?? 0) >= 0 ? '+' : ''}
-                    {variation(r.gains, donnees.precedente.gains)} % par rapport aux {jours} jours précédents (
-                    {euro(donnees.precedente.gains)})
+                    {t('parRapport', {
+                      delta: variation(r.gains, donnees.precedente.gains) ?? 0,
+                      n: jours,
+                      montant: euro(donnees.precedente.gains),
+                    })}
                   </p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Tuile
-                  label="Courses livrées"
+                  label={t('coursesLivrees')}
                   valeur={nombre(r.livrees)}
                   delta={variation(r.livrees, donnees.precedente.livrees)}
                 />
-                <Tuile label="Gain moyen par course" valeur={r.gainMoyen != null ? euro(r.gainMoyen) : '—'} />
+                <Tuile label={t('gainMoyen')} valeur={r.gainMoyen != null ? euro(r.gainMoyen) : '—'} />
                 <Tuile
-                  label="Gains par heure de course"
+                  label={t('gainsHeure')}
                   valeur={r.gainsParHeure != null ? euro(r.gainsParHeure) : '—'}
-                  aide="Temps d'acceptation à remise"
+                  aide={t('gainsHeureAide')}
                 />
-                <Tuile label="Distance parcourue" valeur={`${nombre(r.distanceKm, 1)} km`} />
+                <Tuile label={t('distance')} valeur={t('km', { n: nombre(r.distanceKm, 1) })} />
                 <Tuile
-                  label="Durée moyenne d'une course"
-                  valeur={r.dureeMoyenneMin != null ? `${r.dureeMoyenneMin} min` : '—'}
-                  aide={r.retraitMoyenMin != null ? `dont ${r.retraitMoyenMin} min jusqu'au retrait` : undefined}
+                  label={t('dureeMoyenne')}
+                  valeur={r.dureeMoyenneMin != null ? t('minutes', { n: r.dureeMoyenneMin }) : '—'}
+                  aide={r.retraitMoyenMin != null ? t('dontRetrait', { n: r.retraitMoyenMin }) : undefined}
                 />
                 <Tuile
-                  label="Pourboires reçus"
+                  label={t('pourboiresRecus')}
                   valeur={euro(r.pourboires ?? 0)}
                   aide={
                     r.coursesAvecPourboire
-                      ? `sur ${r.coursesAvecPourboire} course${r.coursesAvecPourboire > 1 ? 's' : ''}`
-                      : 'Aucun sur la période'
+                      ? t('surCourses', { n: r.coursesAvecPourboire })
+                      : t('aucunPeriode')
                   }
                 />
-                <Tuile label="Courses annulées" valeur={nombre(r.annulees)} />
+                <Tuile label={t('annulees')} valeur={nombre(r.annulees)} />
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <p className="text-gray-500 text-xs">Note moyenne</p>
+                  <p className="text-gray-500 text-xs">{t('noteMoyenne')}</p>
                   <p className="text-gray-900 text-2xl font-semibold mt-1 flex items-center gap-2">
                     {donnees.notes.moyenneGlobale != null ? nombre(donnees.notes.moyenneGlobale, 1) : '—'}
                     {donnees.notes.moyenneGlobale != null && (
@@ -256,17 +264,17 @@ export default function AnalyticsLivreurPage() {
                     )}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {donnees.notes.avisTotal} avis
+                    {t('avis', { n: donnees.notes.avisTotal })}
                     {donnees.notes.avisPeriode > 0 &&
-                      ` · ${nombre(donnees.notes.moyennePeriode ?? 0, 1)} sur la période`}
+                      t('surLaPeriode', { moyenne: nombre(donnees.notes.moyennePeriode ?? 0, 1) })}
                   </p>
                 </div>
 
                 {/* Taux d'acceptation : une jauge, piste du même ton. */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <p className="text-gray-500 text-xs">Taux d&apos;acceptation</p>
+                  <p className="text-gray-500 text-xs">{t('tauxAcceptation')}</p>
                   <p className="text-gray-900 text-2xl font-semibold mt-1">
-                    {o.tauxAcceptation != null ? `${o.tauxAcceptation} %` : '—'}
+                    {o.tauxAcceptation != null ? t('pourcent', { n: o.tauxAcceptation }) : '—'}
                   </p>
                   <div
                     className="mt-2 h-2 rounded-full bg-orange-50"
@@ -274,7 +282,7 @@ export default function AnalyticsLivreurPage() {
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={o.tauxAcceptation ?? 0}
-                    aria-label="Taux d'acceptation"
+                    aria-label={t('tauxAcceptation')}
                   >
                     <div
                       className="h-2 rounded-full"
@@ -282,31 +290,30 @@ export default function AnalyticsLivreurPage() {
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {o.acceptees} acceptées · {o.refusees} refusées · {o.expirees} expirées
+                    {t('offres', { acceptees: o.acceptees, refusees: o.refusees, expirees: o.expirees })}
                   </p>
                 </div>
               </div>
 
               <GraphiqueColonnes
                 clair
-                titre="Gains par jour"
+                titre={t('gainsParJour')}
                 colonnes={colonnesGains}
                 format={(v) => euro(v)}
                 formatAxe={(v) => `${nombre(v)} €`}
-                mesure="Gains"
+                mesure={t('gains')}
               />
 
               <GraphiqueColonnes
                 clair
-                titre="Courses selon l'heure de livraison"
+                titre={t('selonHeure')}
                 colonnes={colonnesHeures}
                 format={(v) => nombre(v)}
-                mesure="Courses"
+                mesure={t('coursesMesure')}
               />
               {heureForte && (
                 <p className="text-sm text-gray-500 -mt-3">
-                  Votre créneau le plus actif : {heureForte.heure}h – {heureForte.heure + 1}h (
-                  {heureForte.livrees} course{heureForte.livrees > 1 ? 's' : ''}).
+                  {t('creneauActif', { debut: heureForte.heure, fin: heureForte.heure + 1, n: heureForte.livrees })}
                 </p>
               )}
             </>

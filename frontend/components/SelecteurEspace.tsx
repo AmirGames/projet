@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, Crown, ShoppingBag, Store, Truck } from 'lucide-react';
 import { preparerEspace, useEspacesAccessibles, type Espace } from '@/lib/espaces';
+import { useTranslations } from 'next-intl';
 
 const ICONES: Record<Espace, typeof Store> = {
   client: ShoppingBag,
@@ -36,6 +37,7 @@ export function SelecteurEspace({
   /** Vrai sur un en-tête blanc : le survol s'éclaircit au lieu de s'assombrir. */
   clair?: boolean;
 }) {
+  const t = useTranslations('selecteurEspace');
   const router = useRouter();
   const { espaces, premiereOrg } = useEspacesAccessibles();
   const [ouvert, setOuvert] = useState(false);
@@ -80,7 +82,7 @@ export function SelecteurEspace({
         onClick={() => setOuvert(!ouvert)}
         aria-haspopup="menu"
         aria-expanded={ouvert}
-        title="Changer d'espace"
+        title={t('changer')}
         className={`flex items-center rounded-lg transition text-left ${clair ? 'hover:bg-gray-100' : 'hover:bg-gray-700/60'} ${className}`}
       >
         {children}
@@ -97,7 +99,7 @@ export function SelecteurEspace({
           role="menu"
           className={`absolute left-0 top-full mt-2 w-60 rounded-lg shadow-xl z-50 py-1 border ${clair ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'}`}
         >
-          <p className="px-4 pt-2 pb-1 text-xs uppercase tracking-wide text-gray-500">Changer d&apos;espace</p>
+          <p className="px-4 pt-2 pb-1 text-xs uppercase tracking-wide text-gray-500">{t('changer')}</p>
           {espaces.map((espace) => {
             const Icone = ICONES[espace.id];
             const estActuel = espace.id === actuel;

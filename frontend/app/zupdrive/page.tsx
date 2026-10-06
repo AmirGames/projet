@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { accueilDe } from '@/lib/domaines';
 import { EMAIL_CONTACT } from '@/lib/editeur';
@@ -6,11 +7,10 @@ import { MARQUES } from '@/lib/marques';
 import { EnTeteMarque } from '@/components/EnTeteMarque';
 import { BandeauMarque } from '@/components/BandeauMarque';
 
-export const metadata: Metadata = {
-  title: 'ZupDrive — Transport avec chauffeur, bientôt disponible',
-  description:
-    'ZupDrive prépare son service de transport de personnes avec chauffeur (VTC). Chauffeurs, faites-vous connaître dès maintenant.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('titresPages');
+  return { title: `ZupDrive — ${t('zupdrive')}`, description: t('zupdriveDescription') };
+}
 
 /**
  * L'accueil de zupdrive.com (voir ACCUEIL dans lib/domaines.ts).

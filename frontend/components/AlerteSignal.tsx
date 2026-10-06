@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { WifiOff, MapPinOff, SatelliteDish } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export type EtatGps = 'ok' | 'refuse' | 'faible';
 
@@ -52,15 +53,15 @@ interface Props {
 
 /** Le bandeau qui dit au livreur pourquoi il n'est plus suivi, et quoi faire. */
 export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
+  const t = useTranslations('alerteSignal');
   if (!enLigne) {
     return (
       <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm flex gap-3">
         <WifiOff size={20} className="flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-semibold">Pas de connexion internet</p>
+          <p className="font-semibold">{t('horsConnexion')}</p>
           <p className="text-red-800/80">
-            Votre position n&apos;est plus transmise. Elle repartira automatiquement dès le retour du
-            réseau.
+            {t('horsConnexionAide')}
           </p>
         </div>
       </div>
@@ -72,10 +73,9 @@ export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
       <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm flex gap-3">
         <MapPinOff size={20} className="flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-semibold">Localisation refusée</p>
+          <p className="font-semibold">{t('refusee')}</p>
           <p className="text-red-800/80">
-            Autorisez la localisation pour ce site dans les réglages du navigateur : sans elle, aucune
-            course ne peut vous être proposée.
+            {t('refuseeAide')}
           </p>
         </div>
       </div>
@@ -87,10 +87,9 @@ export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
       <div role="alert" className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm flex gap-3">
         <SatelliteDish size={20} className="flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-semibold">Signal GPS faible ou perdu</p>
+          <p className="font-semibold">{t('faible')}</p>
           <p className="text-amber-800/80">
-            Activez la localisation précise et gardez l&apos;application au premier plan. Sans position
-            pendant 10 minutes, vous serez mis hors ligne.
+            {t('faibleAide')}
           </p>
         </div>
       </div>

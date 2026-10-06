@@ -10,7 +10,7 @@ import { lienVersEspace } from '@/lib/domaines';
 import { ExternalLink, PackageX, Wallet } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { euro, montantCommercant } from '@/lib/format';
-import { numeroCourt } from '@/components/CarteCommandeCuisine';
+import { numeroCourt } from '@/lib/numero-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 

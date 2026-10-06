@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Trash2 } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const DPO = 'dpo@zupeat.com';
@@ -19,8 +20,8 @@ interface Apercu {
 }
 
 const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
-const jour = (iso: string) =>
-  new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Brussels' });
+const jour = (iso: string, locale: string) =>
+  new Date(iso).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Brussels' });
 
 /**
  * Supprimer son compte livreur depuis le site.
@@ -31,6 +32,8 @@ const jour = (iso: string) =>
  * courses, qui n'est pas perdu — puis confirme.
  */
 export default function SuppressionCompte() {
+  const t = useTranslations('suppressionCompte');
+  const locale = useLocale();
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [jeton, setJeton] = useState('');
@@ -52,7 +55,7 @@ export default function SuppressionCompte() {
       });
       const compte = await connexion.json().catch(() => ({}));
       if (!connexion.ok || !compte.accessToken) {
-        setErreur(compte.error || 'E-mail ou mot de passe incorrect.');
+        setErreur(compte.error || t('identifiantsIncorrects'));
         return;
       }
       const reponse = await fetch(`${API_URL}/api/drivers/me/suppression`, {
@@ -60,18 +63,18 @@ export default function SuppressionCompte() {
       });
       const donnees = await reponse.json().catch(() => ({}));
       if (reponse.status === 404) {
-        setErreur(`Ce compte n’est pas un compte livreur. Pour supprimer un autre compte, écrivez à ${DPO}.`);
+        setErreur(t('pasLivreur', { dpo: DPO }));
         return;
       }
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Impossible de lire votre compte. Réessayez dans un instant.');
+        setErreur(donnees.error || t('lectureImpossible'));
         return;
       }
       setJeton(compte.accessToken);
       setMotDePasse('');
       setApercu(donnees.data);
     } catch {
-      setErreur('Impossible de joindre le serveur. Réessayez dans un instant.');
+      setErreur(t('injoignable'));
     } finally {
       setEnCours(false);
     }
@@ -88,13 +91,13 @@ export default function SuppressionCompte() {
       });
       const donnees = await reponse.json().catch(() => ({}));
       if (!reponse.ok) {
-        setErreur(donnees.error || 'La demande n’a pas abouti. Réessayez dans un instant.');
+        setErreur(donnees.error || t('demandeEchouee'));
         return;
       }
-      setFait(donnees.message || 'Votre compte est désactivé.');
+      setFait(donnees.message || t('desactiveOk'));
       setJeton('');
     } catch {
-      setErreur('Impossible de joindre le serveur. Réessayez dans un instant.');
+      setErreur(t('injoignable'));
     } finally {
       setEnCours(false);
     }
@@ -106,33 +109,28 @@ export default function SuppressionCompte() {
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
       <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-lg">
         <Trash2 size={40} className="mx-auto text-primary mb-3" />
-        <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">Supprimer mon compte livreur</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">{t('titre')}</h1>
 
         {fait ? (
           <div className="space-y-4 text-slate-700">
             <div className="bg-green-50 border border-green-200 text-green-900 p-4 rounded-lg">{fait}</div>
             <p className="text-sm text-slate-500">
-              Vous pouvez encore vous connecter pour suivre ce versement. Une question : {DPO}.
+              {t('suivreVersement', { dpo: DPO })}
             </p>
           </div>
         ) : (
           <>
             <div className="text-slate-600 text-sm space-y-3 mb-6">
               <p>
-                Vous supprimez uniquement votre <strong>compte livreur</strong>.{' '}
-                <strong>Votre compte client ZupEat reste actif</strong> : vous pourrez toujours commander avec la même
-                adresse e-mail et le même mot de passe. Vous pouvez aussi faire la demande depuis l’application :{' '}
-                <em>Paramètres › Vos données › Supprimer mon compte livreur</em>.
+                {t.rich('intro', { b: (c) => <strong>{c}</strong>, i: (c) => <em>{c}</em> })}
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>Votre compte livreur est désactivé aussitôt : plus de courses, plus de notifications livreur.</li>
+                <li>{t('desactive')}</li>
                 <li>
-                  <strong>Ce qui vous est dû n’est pas perdu.</strong> Les courses de la semaine (du lundi 00 h 00 au
-                  dimanche 23 h 59) sont versées avec les paiements du lundi suivant, sur votre IBAN.
+                  {t.rich('duNonPerdu', { b: (c) => <strong>{c}</strong> })}
                 </li>
                 <li>
-                  Vos données de livreur (pièces, véhicule, IBAN, position) sont ensuite supprimées sous 30 jours.
-                  Seules restent celles que la loi nous oblige à garder : courses payées et pièces comptables (10 ans).
+                  {t('donnees')}
                 </li>
               </ul>
             </div>
@@ -143,7 +141,7 @@ export default function SuppressionCompte() {
               <form onSubmit={identifier} className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-                    Adresse e-mail du compte
+                    {t('emailCompte')}
                   </label>
                   <input
                     id="email"
@@ -157,7 +155,7 @@ export default function SuppressionCompte() {
                 </div>
                 <div>
                   <label htmlFor="mot-de-passe" className="block text-sm font-medium text-slate-700 mb-1">
-                    Mot de passe
+                    {t('motDePasse')}
                   </label>
                   <input
                     id="mot-de-passe"
@@ -174,14 +172,14 @@ export default function SuppressionCompte() {
                   disabled={enCours}
                   className="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-lg transition disabled:opacity-60"
                 >
-                  {enCours ? 'Vérification…' : 'Continuer'}
+                  {enCours ? t('verification') : t('continuer')}
                 </button>
                 <p className="text-sm text-slate-500 text-center">
-                  Mot de passe perdu ?{' '}
+                  {t('motDePassePerdu')}{' '}
                   <Link href="/mot-de-passe-oublie" className="text-primary font-medium">
-                    Le réinitialiser
+                    {t('reinitialiser')}
                   </Link>{' '}
-                  ou écrivez à {DPO}.
+                  {t('ouEcrivez', { dpo: DPO })}
                 </p>
               </form>
             ) : (
@@ -189,35 +187,36 @@ export default function SuppressionCompte() {
                 <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg text-sm text-slate-700 space-y-1">
                   {apercu.coursesEnCours > 0 ? (
                     <p className="text-red-800">
-                      Vous avez une course en cours : terminez-la ou annulez-la dans l’application, puis revenez ici.
+                      {t('courseEnCours')}
                     </p>
                   ) : apercu.montantDu > 0 ? (
                     apercu.ibanValide ? (
                       <p>
-                        Il vous reste <strong>{euros(apercu.montantDu)}</strong> à recevoir. Ils vous seront versés avec
-                        les paiements du <strong>{apercu.versementLe ? jour(apercu.versementLe) : 'lundi'}</strong>, sur
-                        votre compte •••{apercu.ibanFin}.
+                        {t.rich('resteAVerser', {
+                          montant: euros(apercu.montantDu),
+                          jour: apercu.versementLe ? jour(apercu.versementLe, locale) : t('lundi'),
+                          iban: apercu.ibanFin ?? '',
+                          b: (c) => <strong>{c}</strong>,
+                        })}
                       </p>
                     ) : (
                       <p className="text-red-800">
-                        Il vous reste <strong>{euros(apercu.montantDu)}</strong> à recevoir, mais aucun IBAN valide
-                        n’est enregistré : ajoutez-le dans l’application (Mon compte › Mes versements) ou dans
-                        votre espace livreur, puis revenez ici.
+                        {t.rich('resteSansIban', { montant: euros(apercu.montantDu), b: (c) => <strong>{c}</strong> })}
                       </p>
                     )
                   ) : (
-                    <p>Aucun versement en attente.</p>
+                    <p>{t('aucunVersement')}</p>
                   )}
                   <p className="text-green-800">
                     {apercu.restent?.commercant
-                      ? 'Votre compte client ZupEat et votre espace commerçant restent actifs.'
-                      : 'Votre compte client ZupEat reste actif.'}
+                      ? t('restentDeux')
+                      : t('resteClient')}
                   </p>
                 </div>
 
                 <div>
                   <label htmlFor="motif" className="block text-sm font-medium text-slate-700 mb-1">
-                    Pourquoi partez-vous ? (facultatif)
+                    {t('pourquoi')}
                   </label>
                   <textarea
                     id="motif"
@@ -235,7 +234,7 @@ export default function SuppressionCompte() {
                   disabled={enCours || bloque}
                   className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
                 >
-                  {enCours ? 'Envoi…' : 'Supprimer mon compte livreur'}
+                  {enCours ? t('envoi') : t('titre')}
                 </button>
               </div>
             )}

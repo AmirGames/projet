@@ -8,7 +8,8 @@ import { Search } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
-import { CarteCommandeCuisine, numeroCourt, type CommandeCuisine } from '@/components/CarteCommandeCuisine';
+import { CarteCommandeCuisine, type CommandeCuisine } from '@/components/CarteCommandeCuisine';
+import { numeroCourt } from '@/lib/numero-commande';
 import { EVENEMENT_COMMANDES_CHANGEES, MOTIFS_POUR_LE_COMMERCANT } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 

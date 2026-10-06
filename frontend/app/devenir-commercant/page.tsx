@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { PageDevenir } from '@/components/PageDevenir';
 import { COMMERCANT } from '@/lib/devenir-contenus';
 import { paysDuVisiteur } from '@/lib/pays';
 
-export const metadata: Metadata = {
-  title: 'Devenir commerçant — ZupEat',
-  description: 'Mettez votre commerce en ligne et recevez des commandes livrées.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('titresPages');
+  return { title: `${t('devenirCommercant')} — ZupEat`, description: t('devenirCommercantDescription') };
+}
 
 export default async function DevenirCommercantPage({ searchParams }: { searchParams: Promise<{ pays?: string }> }) {
   const pays = await paysDuVisiteur((await searchParams).pays);

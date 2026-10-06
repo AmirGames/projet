@@ -8,6 +8,7 @@ import { ArrowLeft, Wallet, Package, Star, CalendarDays, Gift } from 'lucide-rea
 import { euro } from '@/lib/format';
 import { MesVersements } from '@/components/MesVersements';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { numeroCourt } from '@/lib/numero-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface CourseRemuneree {
@@ -214,7 +215,7 @@ export default function RevenusLivreurPage() {
                     <tbody className="divide-y divide-gray-100">
                       {revenus.deliveries.map((course) => (
                         <tr key={course.id}>
-                          <td className="py-3">{course.orderId.slice(-8).toUpperCase()}</td>
+                          <td className="py-3">{numeroCourt(course.orderId)}</td>
                           <td className="py-3 text-gray-500">
                             {new Date(course.deliveredAt).toLocaleString('fr-FR')}
                           </td>

@@ -18,6 +18,7 @@ import { heure } from '@/lib/reponse-commande';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { cheminCommande, jetonDeSuivi } from '@/lib/suivi-commande';
+import { numeroCourt } from '@/lib/numero-commande';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -239,7 +240,7 @@ export default function OrderTrackingPage() {
           </Link>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Commande #{order.id.slice(0, 8)}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('commandeNumero', { numero: numeroCourt(order.id) })}</h1>
               <p className="text-gray-500">
                 {new Date(order.createdAt).toLocaleString('fr-FR')}
               </p>

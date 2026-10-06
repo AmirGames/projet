@@ -11,6 +11,7 @@ import { euro } from '@/lib/format';
 import { remettreAuPanier, type LigneCommandee } from '@/lib/recommander';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { numeroCourt } from '@/lib/numero-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Order {
@@ -199,7 +200,7 @@ export default function OrdersPage() {
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <p className="text-gray-900 font-bold text-lg">
-                          Commande #{order.id.slice(0, 8)}
+                          {t('commandeNumero', { numero: numeroCourt(order.id) })}
                         </p>
                         <p className="text-gray-500 text-sm flex items-center gap-2 mt-1">
                           <Clock size={14} />

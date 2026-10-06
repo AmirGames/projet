@@ -15,6 +15,7 @@ import { PauseLivreur } from '@/components/PauseLivreur';
 import { ActiverNotifications } from '@/components/ActiverNotifications';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { numeroCourt } from '@/lib/numero-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Delivery {
@@ -266,7 +267,7 @@ export default function DriverDashboard() {
 
   return (
     <div className="min-h-screen">
-      <title>Espace livreur — ZupEat</title>
+      <title>{`${t('titreOnglet')} — ZupEat`}</title>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Le dossier passe avant tout le reste : sans validation, aucune
             course n'arrivera, et un écran normal ne le dirait pas. */}
@@ -392,10 +393,10 @@ export default function DriverDashboard() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-100 rounded-lg p-4">
                       <p className="text-gray-500 text-sm mb-2">{t('distance')}</p>
-                      <p className="text-gray-900 text-2xl font-bold">{activeDelivery.distance || 0} km</p>
+                      <p className="text-gray-900 text-2xl font-bold">{t('km', { n: activeDelivery.distance || 0 })}</p>
                     </div>
                     <div className="bg-gray-100 rounded-lg p-4">
-                      <p className="text-gray-500 text-sm mb-2">Votre gain</p>
+                      <p className="text-gray-500 text-sm mb-2">{t('votreGain')}</p>
                       <p className="text-gray-900 text-2xl font-bold">{euro(activeDelivery.payout || 0)}</p>
                     </div>
                   </div>
@@ -436,7 +437,7 @@ export default function DriverDashboard() {
                       >
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <p className="text-gray-900 font-semibold">{t('orderNumber', { id: delivery.orderId.slice(0, 8) })}</p>
+                            <p className="text-gray-900 font-semibold">{t('orderNumber', { id: numeroCourt(delivery.orderId).slice(1) })}</p>
                             <p className="text-gray-500 text-sm">{delivery.customerName}</p>
                           </div>
                           <div className="text-right">

@@ -18,6 +18,7 @@ import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from '@/lib/suivi
 import { EnTeteClient } from '@/components/EnTeteClient';
 import { RetardLivraison, type Retard } from '@/components/RetardLivraison';
 import { ReclamationLivraison, type EtatReclamation } from '@/components/ReclamationLivraison';
+import { numeroCourt } from '@/lib/numero-commande';
 
 // Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
 const SuiviLivraisonClient = dynamic(
@@ -299,7 +300,7 @@ export default function TrackOrderPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-500 text-sm mb-1">{t('numero')}</p>
-                  <p className="text-2xl font-bold text-orange-600">#{order.id.slice(-8).toUpperCase()}</p>
+                  <p className="text-2xl font-bold text-orange-600">{numeroCourt(order.id)}</p>
                   <p className="text-xs text-gray-500 mt-2">
                     {t('creeeLe', { date: new Date(order.createdAt).toLocaleString(locale) })}
                   </p>

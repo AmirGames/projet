@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import ReglesMotDePasse from '@/components/ReglesMotDePasse';
 import { motDePasseValide } from '@/lib/mot-de-passe';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -19,6 +20,7 @@ const CHAMP_CLAIR =
  * suffit à prouver qu'on est bien le titulaire du compte.
  */
 export default function ChangerMotDePasse({ clair = false }: { clair?: boolean } = {}) {
+  const t = useTranslations('changerMotDePasse');
   const champ = clair ? CHAMP_CLAIR : CHAMP;
   const etiquette = `block text-sm mb-1 ${clair ? 'text-gray-600' : 'text-gray-400'}`;
   const [actuel, setActuel] = useState('');
@@ -34,7 +36,7 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
     setMessage(null);
 
     if (nouveau !== confirmation) {
-      setMessage({ ok: false, texte: 'Les deux mots de passe ne correspondent pas.' });
+      setMessage({ ok: false, texte: t('differents') });
       return;
     }
 
@@ -51,7 +53,7 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
       const donnees = await reponse.json().catch(() => ({}));
 
       if (!reponse.ok) {
-        setMessage({ ok: false, texte: donnees.error || 'Le changement a échoué.' });
+        setMessage({ ok: false, texte: donnees.error || t('echec') });
         return;
       }
 
@@ -62,12 +64,12 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
         // Stockage refusé : la session se refera à la prochaine connexion.
       }
 
-      setMessage({ ok: true, texte: donnees.message || 'Mot de passe modifié.' });
+      setMessage({ ok: true, texte: donnees.message || t('modifie') });
       setActuel('');
       setNouveau('');
       setConfirmation('');
     } catch {
-      setMessage({ ok: false, texte: 'Serveur injoignable. Réessayez dans un instant.' });
+      setMessage({ ok: false, texte: t('injoignable') });
     } finally {
       setEnvoi(false);
     }
@@ -77,7 +79,7 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
     <form onSubmit={envoyer} className={`rounded-lg p-6 space-y-4 border ${clair ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'}`}>
       <h2 className={`text-lg font-bold flex items-center gap-2 ${clair ? 'text-gray-900' : 'text-white'}`}>
         <KeyRound size={20} className="text-orange-500" />
-        Mot de passe
+        {t('titre')}
       </h2>
 
       {message && (
@@ -87,18 +89,18 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
       )}
 
       <div>
-        <label htmlFor="mdp-actuel" className={etiquette}>Mot de passe actuel</label>
+        <label htmlFor="mdp-actuel" className={etiquette}>{t('actuel')}</label>
         <input id="mdp-actuel" type="password" autoComplete="current-password" required value={actuel} onChange={(e) => setActuel(e.target.value)} className={champ} />
       </div>
 
       <div>
-        <label htmlFor="mdp-nouveau" className={etiquette}>Nouveau mot de passe</label>
+        <label htmlFor="mdp-nouveau" className={etiquette}>{t('nouveau')}</label>
         <input id="mdp-nouveau" type="password" autoComplete="new-password" required value={nouveau} onChange={(e) => setNouveau(e.target.value)} className={champ} />
         <ReglesMotDePasse valeur={nouveau} sombre={!clair} />
       </div>
 
       <div>
-        <label htmlFor="mdp-confirmation" className={etiquette}>Confirmer le nouveau mot de passe</label>
+        <label htmlFor="mdp-confirmation" className={etiquette}>{t('confirmer')}</label>
         <input id="mdp-confirmation" type="password" autoComplete="new-password" required value={confirmation} onChange={(e) => setConfirmation(e.target.value)} className={champ} />
       </div>
 
@@ -107,7 +109,7 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
         disabled={envoi || !valide || !actuel}
         className="px-5 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium text-white transition-colors"
       >
-        {envoi ? 'Enregistrement…' : 'Changer le mot de passe'}
+        {envoi ? t('enregistrement') : t('changer')}
       </button>
     </form>
   );
