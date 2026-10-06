@@ -128,6 +128,30 @@ export async function ouvrirToutLeJour(appeler, storeId, jeton) {
 }
 
 /**
+ * Écarte le bouton flottant de l'assistant ZupOne.
+ *
+ * Il est monté sur toutes les pages (RootLayoutContent), fixé en bas à droite
+ * avec un z-index élevé : il recouvre le bouton « Passer la commande » de la
+ * page de paiement, et Playwright, qui refuse de cliquer sous un autre
+ * élément, attend alors jusqu'au délai. Les suites qui ne testent pas
+ * l'assistant le masquent donc, sur toutes les pages que la page ouvre.
+ *
+ * À appeler juste après `newPage()`, avant la première navigation.
+ */
+export async function ecarterAssistant(page) {
+  await page.addInitScript(() => {
+    const poser = () => {
+      const style = document.createElement('style');
+      style.textContent = '[aria-label="Ouvrir Assistant ZupOne"] { display: none !important; }';
+      document.documentElement.appendChild(style);
+    };
+    // Le script s'exécute avant que le document n'ait son élément racine.
+    if (document.documentElement) poser();
+    else document.addEventListener('DOMContentLoaded', poser);
+  });
+}
+
+/**
  * Ouvre la session d'un compte dans une page, comme un vrai navigateur.
  *
  * Le jeton de renouvellement vit dans un cookie httpOnly, et le jeton d'accès

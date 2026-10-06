@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
+import { ecarterAssistant, inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -101,6 +101,7 @@ await appeler('/api/products', {
 
 const nav = await chromium.launch();
 const page = await nav.newPage();
+await ecarterAssistant(page);
 const erreurs = [];
 page.on('console', (m) => {
   if (m.type() === 'error') erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
