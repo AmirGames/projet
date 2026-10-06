@@ -192,6 +192,17 @@ suite("Dispatch par véhicule et livreurs bientôt libres : base PostgreSQL de t
     expect(socket.emitDeliveryUpdate).toHaveBeenCalledTimes(1);
   });
 
+  it("livreur libre à ~6 km et livreur qui termine tout près : le second reçoit la course (classement par arrivée)", async () => {
+    await livreur("paul", "scooter", { latitude: 48.9, longitude: 2.35 }); // libre mais loin du commerce
+    const { sophie } = await livreurEnFinDeCourse("sophie");
+    const suivante = await course({ latitude: 48.87, longitude: 2.35 });
+
+    await DispatchService.proposerAuSuivant(suivante.id);
+
+    const offre = await db.deliveryOffer.findFirstOrThrow({ where: { deliveryId: suivante.id } });
+    expect(offre).toMatchObject({ driverId: sophie.id, bientotLibre: true });
+  });
+
   it("deux libérations simultanées ne démarrent la course qu'une fois", async () => {
     const { sophie, enCours } = await livreurEnFinDeCourse("sophie");
     const suivante = await course({ latitude: 48.87, longitude: 2.35 });

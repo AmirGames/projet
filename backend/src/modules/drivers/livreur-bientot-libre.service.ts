@@ -30,6 +30,17 @@ export const REGLES_BIENTOT_LIBRE_PAR_DEFAUT: ReglesBientotLibre = { rayonKm: 1,
 export const VITESSE_ESTIMEE_KMH = 15;
 /** Le temps de remettre la commande, une fois arrivé. */
 export const REMISE_ESTIMEE_SECONDES = 60;
+/**
+ * Dans combien de secondes un livreur peut être au commerce : le temps de se
+ * libérer (0 pour un livreur libre), puis le trajet. Sert à classer ensemble
+ * les livreurs libres et ceux qui terminent leur livraison : un livreur libre
+ * à 7 km n'arrive pas avant un livreur à 1 km qui se libère dans 2 minutes.
+ * `distanceKm` : depuis sa position, ou depuis l'adresse du client qu'il livre.
+ */
+export function secondesAvantRetrait(distanceKm: number, libreDansSecondes = 0): number {
+  return Math.round(libreDansSecondes + (distanceKm / VITESSE_ESTIMEE_KMH) * 3600);
+}
+
 /** Au-delà, une réservation qui n'a pas abouti est relâchée. */
 export const RESERVATION_MAX_MS = 20 * 60 * 1000;
 

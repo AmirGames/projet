@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { libreDansSecondes, REGLES_BIENTOT_LIBRE_PAR_DEFAUT, CourseEnCours } from "../livreur-bientot-libre.service";
+import { libreDansSecondes, REGLES_BIENTOT_LIBRE_PAR_DEFAUT, CourseEnCours, secondesAvantRetrait } from "../livreur-bientot-libre.service";
 
 const maintenant = Date.parse("2026-10-07T12:00:00Z");
 const CLIENT = { latitude: 48.85, longitude: 2.35 };
@@ -62,5 +62,19 @@ describe("livreur bientôt libre", () => {
     const off = { rayonKm: 0, secondes: 0 };
     expect(libreDansSecondes(course(), PROCHE, maintenant, off)).toBeNull();
     expect(libreDansSecondes(course({ attenteFinLe: dans(10) }), PROCHE, maintenant, off)).toBeNull();
+  });
+});
+
+describe("heure d'arrivée au commerce", () => {
+  it("un livreur libre à 1 km arrive en 4 minutes (15 km/h)", () => {
+    expect(secondesAvantRetrait(1)).toBe(240);
+  });
+
+  it("un livreur qui se libère dans 2 minutes à 1 km arrive après 6 minutes", () => {
+    expect(secondesAvantRetrait(1, 120)).toBe(360);
+  });
+
+  it("un livreur libre à 7 km arrive après un livreur à 1 km qui se libère dans 2 minutes", () => {
+    expect(secondesAvantRetrait(7)).toBeGreaterThan(secondesAvantRetrait(1, 120));
   });
 });
