@@ -233,7 +233,9 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
       if (reponse === 'accept') {
         surAcceptation?.();
         // Direction la course : adresse de retrait, carte et itinéraire.
-        const deliveryId = donnees.data?.id;
+        // Course à enchaîner : elle ne démarre qu'une fois la livraison en
+        // cours terminée, il n'y a pas encore de page de course.
+        const deliveryId = donnees.data?.reservee ? null : donnees.data?.id;
         if (deliveryId) router.push(`/driver/deliveries/${deliveryId}`);
       }
     } catch {

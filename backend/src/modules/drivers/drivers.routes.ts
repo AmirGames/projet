@@ -1576,6 +1576,11 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
         // « Accepter » pour tout le lot), ou ajoutée à la course en cours.
         batchId: proposition.batchId,
         ajout: proposition.ajout,
+        // Plus longue que la limite habituelle de son véhicule : il peut refuser.
+        horsLimite: proposition.horsLimite,
+        // À enchaîner après sa livraison en cours : elle démarre quand il est libre.
+        bientotLibre: proposition.bientotLibre,
+        libreDansSecondes: proposition.libreDansSecondes,
         // Nouvelles données
         pickupStore: proposition.delivery.order?.store?.name,
         pickupAddress: proposition.delivery.order?.store?.address,

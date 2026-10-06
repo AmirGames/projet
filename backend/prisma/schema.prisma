@@ -560,6 +560,11 @@ model SystemConfig {
   // Une course sans preneur s'ouvre ensuite aux livreurs dont le véhicule est
   // trop limité pour elle (ils peuvent refuser), après ce délai.
   driverExceptionSeconds Int    @default(180)
+  // Livreur « bientôt libre » : à moins de ce rayon du client qu'il livre, ou à
+  // moins de ce délai de la fin de l'attente à la porte, on peut lui proposer
+  // la course suivante. 0 et 0 : jamais.
+  driverSoonFreeKm       Float  @default(1)
+  driverSoonFreeSeconds  Int    @default(180)
   // Plusieurs courses à la fois (tournée) : combien au plus (1 = jamais de
   // regroupement), clients « au même endroit », détour accepté.
   driverMaxCourses    Int       @default(3)
@@ -1512,6 +1517,14 @@ model OrderDelivery {
   /// attendent. Remis à zéro à chaque nouveau retrait.
   ordreRemise     Int?
 
+  /// Course à enchaîner : un livreur qui termine sa livraison l'a acceptée, elle
+  /// lui sera attribuée dès qu'il est libre. Tant qu'elle est réservée elle reste
+  /// PENDING sans livreur — elle n'entre pas dans sa tournée et ne masque pas le
+  /// client qu'il livre —, mais plus personne d'autre ne la reçoit.
+  /// Pas de relation : une réservation périmée est simplement relâchée.
+  reservedDriverId String?
+  reservedAt      DateTime?
+
   /// Depuis quand le livreur est loin de son trajet (voir
   /// surveillance-courses.service.ts). Effacé dès qu'il y revient : seul un
   /// écart qui dure déclenche quelque chose, pas un détour d'une minute.
@@ -1526,6 +1539,7 @@ model OrderDelivery {
   @@index([payoutHold])
   @@index([status])
   @@index([payoutId])
+  @@index([reservedDriverId])
 }
 
 /// Un relevé de versement : ce que la plateforme doit à un livreur, puis ce
@@ -1656,6 +1670,11 @@ model DeliveryOffer {
   /// Course plus longue que la limite habituelle du véhicule du livreur,
   /// proposée faute de livreur mieux adapté : il peut refuser.
   horsLimite  Boolean   @default(false)
+  /// Proposée à un livreur qui termine sa livraison : à enchaîner après. Elle
+  /// n'est attribuée qu'à sa libération (voir OrderDelivery.reservedDriverId).
+  bientotLibre Boolean  @default(false)
+  /// Dans combien de secondes il devrait être libre, à la proposition.
+  libreDansSecondes Int?
 
   delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
   driver      Courier        @relation(fields: [driverId], references: [id], onDelete: Cascade)
