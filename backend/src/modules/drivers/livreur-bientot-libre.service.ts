@@ -26,8 +26,17 @@ export interface ReglesBientotLibre {
 
 export const REGLES_BIENTOT_LIBRE_PAR_DEFAUT: ReglesBientotLibre = { rayonKm: 1, secondes: 180 };
 
-/** Vitesse supposée pour estimer le temps restant à la porte (vélo / ville). */
-export const VITESSE_ESTIMEE_KMH = 15;
+/**
+ * Vitesse moyenne supposée en ville, selon le véhicule, pour estimer les
+ * temps de trajet (haversine : à vol d'oiseau, donc prudente). Un type
+ * inconnu vaut la voiture.
+ */
+export const VITESSES_KMH: Record<string, number> = { bike: 15, scooter: 25, car: 20 };
+
+export function vitesseKmh(vehicleType?: string | null): number {
+  return (vehicleType && VITESSES_KMH[vehicleType]) || VITESSES_KMH.car;
+}
+
 /** Le temps de remettre la commande, une fois arrivé. */
 export const REMISE_ESTIMEE_SECONDES = 60;
 /**
@@ -37,8 +46,8 @@ export const REMISE_ESTIMEE_SECONDES = 60;
  * à 7 km n'arrive pas avant un livreur à 1 km qui se libère dans 2 minutes.
  * `distanceKm` : depuis sa position, ou depuis l'adresse du client qu'il livre.
  */
-export function secondesAvantRetrait(distanceKm: number, libreDansSecondes = 0): number {
-  return Math.round(libreDansSecondes + (distanceKm / VITESSE_ESTIMEE_KMH) * 3600);
+export function secondesAvantRetrait(distanceKm: number, libreDansSecondes = 0, vehicleType?: string | null): number {
+  return Math.round(libreDansSecondes + (distanceKm / vitesseKmh(vehicleType)) * 3600);
 }
 
 /** Au-delà, une réservation qui n'a pas abouti est relâchée. */
@@ -69,7 +78,8 @@ export function libreDansSecondes(
   course: CourseEnCours,
   position: Point | null,
   maintenant: number,
-  regles: ReglesBientotLibre = REGLES_BIENTOT_LIBRE_PAR_DEFAUT
+  regles: ReglesBientotLibre = REGLES_BIENTOT_LIBRE_PAR_DEFAUT,
+  vehicleType?: string | null
 ): number | null {
   if (!bientotLibreActif(regles)) return null;
   // Pas encore récupérée : il n'est même pas parti chez le client.
@@ -90,5 +100,5 @@ export function libreDansSecondes(
   // Le client a déjà été prévenu que le livreur arrive (à moins de 300 m).
   if (!course.nearCustomerNotifiedAt && distance > regles.rayonKm) return null;
 
-  return Math.round((distance / VITESSE_ESTIMEE_KMH) * 3600 + REMISE_ESTIMEE_SECONDES);
+  return Math.round((distance / vitesseKmh(vehicleType)) * 3600 + REMISE_ESTIMEE_SECONDES);
 }

@@ -689,7 +689,8 @@ export class DispatchService {
         },
         position,
         maintenant,
-        reglages.bientotLibre
+        reglages.bientotLibre,
+        livreur.vehicleType
       );
       if (secondes == null) continue;
 
@@ -807,8 +808,8 @@ export class DispatchService {
     // ceux qui se libèrent, classés par heure d'arrivée au commerce : à
     // égalité, le livreur déjà libre), les autres seulement une fois
     // l'exception ouverte.
-    const arrivee = (l: { distance: number; libreDansSecondes?: number }) =>
-      secondesAvantRetrait(l.distance, l.libreDansSecondes ?? 0);
+    const arrivee = (l: { distance: number; vehicleType: string; libreDansSecondes?: number }) =>
+      secondesAvantRetrait(l.distance, l.libreDansSecondes ?? 0, l.vehicleType);
     const libresOuBientot = [
       ...candidats.map((l) => Object.assign(l, { libreDansSecondes: 0 })),
       ...bientotLibres,

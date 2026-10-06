@@ -66,15 +66,36 @@ describe("livreur bientôt libre", () => {
 });
 
 describe("heure d'arrivée au commerce", () => {
-  it("un livreur libre à 1 km arrive en 4 minutes (15 km/h)", () => {
-    expect(secondesAvantRetrait(1)).toBe(240);
+  it("1 km : 4 minutes à vélo, 2 min 24 en scooter, 3 minutes en voiture", () => {
+    expect(secondesAvantRetrait(1, 0, "bike")).toBe(240);
+    expect(secondesAvantRetrait(1, 0, "scooter")).toBe(144);
+    expect(secondesAvantRetrait(1, 0, "car")).toBe(180);
   });
 
-  it("un livreur qui se libère dans 2 minutes à 1 km arrive après 6 minutes", () => {
-    expect(secondesAvantRetrait(1, 120)).toBe(360);
+  it("un véhicule inconnu ou absent compte comme une voiture", () => {
+    expect(secondesAvantRetrait(1, 0, "trottinette")).toBe(180);
+    expect(secondesAvantRetrait(1)).toBe(180);
+  });
+
+  it("le temps avant libération s'ajoute au trajet", () => {
+    expect(secondesAvantRetrait(1, 120, "bike")).toBe(360);
+  });
+
+  it("un vélo à 2 km arrive après un scooter à 3 km", () => {
+    expect(secondesAvantRetrait(2, 0, "bike")).toBeGreaterThan(secondesAvantRetrait(3, 0, "scooter"));
   });
 
   it("un livreur libre à 7 km arrive après un livreur à 1 km qui se libère dans 2 minutes", () => {
-    expect(secondesAvantRetrait(7)).toBeGreaterThan(secondesAvantRetrait(1, 120));
+    expect(secondesAvantRetrait(7, 0, "scooter")).toBeGreaterThan(secondesAvantRetrait(1, 120, "scooter"));
+  });
+});
+
+describe("temps avant libération selon le véhicule", () => {
+  it("à 0,56 km du client, un scooter est libre plus tôt qu'un vélo", () => {
+    const scooter = libreDansSecondes(course(), PROCHE, maintenant, REGLES_BIENTOT_LIBRE_PAR_DEFAUT, "scooter");
+    const velo = libreDansSecondes(course(), PROCHE, maintenant, REGLES_BIENTOT_LIBRE_PAR_DEFAUT, "bike");
+    expect(scooter).not.toBeNull();
+    expect(velo).not.toBeNull();
+    expect(scooter!).toBeLessThan(velo!);
   });
 });
