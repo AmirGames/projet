@@ -15,12 +15,18 @@ import { useEffectChargement } from '@/lib/use-effect-chargement';
 // rendue côté serveur.
 const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ssr: false,
-  loading: () => (
-    <div className="h-[560px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-500">
-      Chargement de la carte…
-    </div>
-  ),
+  loading: () => <ChargementCarte />,
 });
+
+function ChargementCarte() {
+  const t = useTranslations('suiviLivraison');
+
+  return (
+    <div className="h-[560px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-500">
+      {t('chargementCarte')}
+    </div>
+  );
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -153,7 +159,7 @@ export default function DeliveryZonesPage() {
 
       if (!reponse.ok) {
         const lue = await reponse.json().catch(() => null);
-        setErreurCarte(lue?.error || 'Position non enregistrée');
+        setErreurCarte(lue?.error || t('positionNonEnregistree'));
         await chargerBoutique();
         return;
       }
@@ -172,7 +178,7 @@ export default function DeliveryZonesPage() {
       .join(' ');
 
     if (texte.trim().length < 3) {
-      setErreurCarte("Renseignez d'abord l'adresse de la boutique dans ses réglages");
+      setErreurCarte(t('adresseDabord'));
       return;
     }
 
@@ -196,7 +202,7 @@ export default function DeliveryZonesPage() {
 
       await enregistrerPosition(point.latitude, point.longitude);
     } catch {
-      setErreurCarte("Le service d'adresses ne répond pas");
+      setErreurCarte(t('serviceAdresses'));
     } finally {
       setSituation(false);
     }
@@ -271,7 +277,7 @@ export default function DeliveryZonesPage() {
       // À la création, ou après avoir cliqué « Redessiner » : les nouveaux
       // sommets font foi. Sinon, une zone existante garde son tracé.
       if (dessin && dessin.length > 0 && dessin.length < 3) {
-        setFormError("Un polygone a besoin d'au moins 3 sommets — continuez à cliquer sur la carte");
+        setFormError(t('polygoneTrois'));
         return;
       }
       if (!editingZone && (!dessin || dessin.length < 3)) {
@@ -335,7 +341,7 @@ export default function DeliveryZonesPage() {
   };
 
   const handleDeleteZone = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this delivery zone?')) return;
+    if (!confirm(t('confirmerSuppression'))) return;
 
     setSaving(true);
     try {
@@ -407,14 +413,12 @@ export default function DeliveryZonesPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <MapPin className="text-amber-500" />
-              Zones de Livraison
+              {t('titre')}
             </h1>
             <p className="text-gray-500 mt-2">Gérez vos zones de livraison et frais</p>
             {livreursPlateforme && (
               <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Vous utilisez les livreurs de la plateforme : ces zones ne s&apos;appliquent pas. Le rayon
-                et les frais de livraison sont fixés par la plateforme selon la distance. Pour utiliser vos
-                zones, cochez « J&apos;utilise ma propre livraison » dans les réglages de la boutique.
+                {t('livreursPlateforme')}
               </p>
             )}
           </div>
@@ -423,7 +427,7 @@ export default function DeliveryZonesPage() {
             className="bg-orange-600 text-white hover:bg-orange-700 flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg transition"
           >
             <Plus size={20} />
-            Ajouter Zone
+            {t('ajouter')}
           </button>
         </div>
 
@@ -442,7 +446,7 @@ export default function DeliveryZonesPage() {
                 className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 rounded-lg transition text-sm"
               >
                 <Crosshair size={16} />
-                {situation ? 'Recherche…' : 'Situer depuis mon adresse'}
+                {situation ? t('recherche') : t('situer')}
               </button>
             )}
           </div>
@@ -460,15 +464,13 @@ export default function DeliveryZonesPage() {
 
           {boutique?.latitude == null && (
             <p className="text-sm text-amber-700 mb-3">
-              Votre boutique n'est pas située. Tant qu'elle ne l'est pas, aucune zone ne
-              s'applique et aucun livreur ne vous est proposé.
+              {t('nonSituee')}
             </p>
           )}
 
           {boutique?.latitude != null && (
             <p className="text-sm text-gray-500 mb-3">
-              Position fixée d'après l'adresse de la boutique. Elle suit l'adresse : pour la
-              corriger, modifiez l'adresse dans vos réglages.
+              {t('positionFixee')}
             </p>
           )}
 
@@ -480,7 +482,7 @@ export default function DeliveryZonesPage() {
               showForm && formData.type === 'RADIUS'
                 ? {
                     id: editingZone?.id ?? null,
-                    name: formData.name || 'Nouvelle zone',
+                    name: formData.name || t('nouvelleZone'),
                     radiusKm: parseFloat(formData.radiusKm) || 0,
                   }
                 : null
@@ -504,7 +506,7 @@ export default function DeliveryZonesPage() {
         {showForm && (
           <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {editingZone ? 'Modifier Zone' : 'Nouvelle Zone de Livraison'}
+              {editingZone ? t('modifierZone') : t('nouvelleZoneLivraison')}
             </h2>
             {formError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-800">
@@ -517,26 +519,26 @@ export default function DeliveryZonesPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label htmlFor="zone-nom" className="text-gray-700 text-sm block mb-2">
-                  Nom de la zone
+                  {t('nomZone')}
                 </label>
                 <input
                   id="zone-nom"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="ex: Centre-Ville"
+                  placeholder={t('exempleNom')}
                   className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 />
               </div>
               <div>
                 <label htmlFor="zone-forme" className="text-gray-700 text-sm block mb-2">
-                  Forme
+                  {t('forme')}
                 </label>
                 {editingZone ? (
                   // La forme d'une zone ne se change pas après coup : ça
                   // reviendrait à en recréer une autre sous le même nom.
                   <p className="px-3 py-2 bg-white text-gray-700 rounded border border-gray-200 text-sm">
-                    {formData.type === 'RADIUS' ? 'Rayon (anneau)' : 'Polygone dessiné'}
+                    {formData.type === 'RADIUS' ? t('rayonAnneau') : t('polygoneDessine')}
                   </p>
                 ) : (
                   <select
@@ -549,8 +551,8 @@ export default function DeliveryZonesPage() {
                     }}
                     className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                   >
-                    <option value="RADIUS">Rayon (anneau, en km)</option>
-                    <option value="POLYGON">Polygone (dessiné à la main)</option>
+                    <option value="RADIUS">{t('optionRayon')}</option>
+                    <option value="POLYGON">{t('optionPolygone')}</option>
                   </select>
                 )}
               </div>
@@ -559,7 +561,7 @@ export default function DeliveryZonesPage() {
                   {/* Le rayon fait la zone : sans lui, aucune adresse ne peut y
                       être rattachée et la zone ne s'applique jamais. */}
                   <label htmlFor="zone-rayon" className="text-gray-700 text-sm block mb-2">
-                    Rayon (km)
+                    {t('rayonKm')}
                   </label>
                   <input
                     id="zone-rayon"
@@ -574,18 +576,18 @@ export default function DeliveryZonesPage() {
                 </div>
               ) : (
                 <div>
-                  <span className="text-gray-700 text-sm block mb-2">Tracé sur la carte</span>
+                  <span className="text-gray-700 text-sm block mb-2">{t('trace')}</span>
                   {dessin != null ? (
                     <div className="flex items-center gap-2">
                       <span className="px-3 py-2 bg-white text-gray-700 rounded border border-gray-200 text-sm flex-1">
-                        {dessin.length} sommet{dessin.length !== 1 ? 's' : ''}
+                        {t('sommets', { n: dessin.length })}
                       </span>
                       <button
                         type="button"
                         onClick={() => setDessin((actuel) => (actuel && actuel.length > 0 ? actuel.slice(0, -1) : actuel))}
                         disabled={dessin.length === 0}
-                        title="Retirer le dernier sommet"
-                        className="px-2 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 text-gray-900 rounded text-sm"
+                        title={t('retirerSommet')}
+                        className="px-2 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 rounded text-sm"
                       >
                         ↩︎
                       </button>
@@ -596,14 +598,14 @@ export default function DeliveryZonesPage() {
                       onClick={redessinerZone}
                       className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded border border-gray-300 text-sm"
                     >
-                      Redessiner cette zone
+                      {t('redessiner')}
                     </button>
                   )}
                 </div>
               )}
               <div>
                 <label htmlFor="zone-frais" className="text-gray-700 text-sm block mb-2">
-                  Frais de livraison (€)
+                  {t('frais')}
                 </label>
                 <input
                   id="zone-frais"
@@ -618,7 +620,7 @@ export default function DeliveryZonesPage() {
               </div>
               <div>
                 <label htmlFor="zone-minimum" className="text-gray-700 text-sm block mb-2">
-                  Commande minimum (€)
+                  {t('minimum')}
                 </label>
                 <input
                   id="zone-minimum"
@@ -633,7 +635,7 @@ export default function DeliveryZonesPage() {
               </div>
               <div>
                 <label htmlFor="zone-offerte" className="text-gray-700 text-sm block mb-2">
-                  Livraison offerte dès (€)
+                  {t('offerteDes')}
                 </label>
                 <input
                   id="zone-offerte"
@@ -648,7 +650,7 @@ export default function DeliveryZonesPage() {
               </div>
               <div>
                 <label htmlFor="zone-duree" className="text-gray-700 text-sm block mb-2">
-                  Durée annoncée (min)
+                  {t('duree')}
                 </label>
                 <input
                   id="zone-duree"
@@ -663,7 +665,7 @@ export default function DeliveryZonesPage() {
               </div>
               <div>
                 <label htmlFor="zone-couleur" className="text-gray-700 text-sm block mb-2">
-                  Couleur
+                  {t('couleur')}
                 </label>
                 <input
                   id="zone-couleur"
@@ -675,7 +677,7 @@ export default function DeliveryZonesPage() {
               </div>
               <div>
                 <label htmlFor="zone-opacite" className="text-gray-700 text-sm block mb-2">
-                  Opacité ({Math.round(parseFloat(formData.opacity) * 100)} %)
+                  {t('opacite', { n: Math.round(parseFloat(formData.opacity) * 100) })}
                 </label>
                 <input
                   id="zone-opacite"
@@ -691,9 +693,7 @@ export default function DeliveryZonesPage() {
             </div>
 
             <p className="text-xs text-gray-500 mb-4">
-              La zone la plus « spécifique » qui contient l'adresse du client s'applique : le plus
-              petit rayon, ou à défaut le plus petit polygone, parmi ceux qui la couvrent. Un
-              client hors de toute zone ne peut pas commander en livraison.
+              {t('regle')}
             </p>
             <div className="flex gap-2">
               <button
@@ -711,7 +711,7 @@ export default function DeliveryZonesPage() {
                 }}
                 className="px-4 py-2 bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition"
               >
-                Annuler
+                {t('annuler')}
               </button>
             </div>
           </div>
@@ -725,7 +725,7 @@ export default function DeliveryZonesPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher une zone..."
+              placeholder={t('rechercher')}
               className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:border-amber-500 focus:outline-none"
             />
           </div>
@@ -742,12 +742,12 @@ export default function DeliveryZonesPage() {
                       <span
                         className="w-3 h-3 rounded-full shrink-0 border border-white/30"
                         style={{ backgroundColor: zone.color }}
-                        title={`Couleur sur la carte : ${zone.color}`}
+                        title={t('couleurCarte', { couleur: zone.color })}
                       />
                       <h3 className="text-lg font-bold text-gray-900">{zone.name}</h3>
                     </div>
                     <p className="text-gray-500 text-sm">
-                      {zone.type === 'RADIUS' ? 'Zone de livraison — rayon' : 'Zone de livraison — polygone'}
+                      {zone.type === 'RADIUS' ? t('zoneRayon') : t('zonePolygone')}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -785,7 +785,7 @@ export default function DeliveryZonesPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500">{zone.type === 'RADIUS' ? 'Rayon' : 'Sommets'}</span>
                     <span className="text-gray-900 font-semibold">
-                      {zone.type === 'RADIUS' ? `${zone.radiusKm} km` : `${zone.polygon?.length ?? 0} points`}
+                      {zone.type === 'RADIUS' ? t('km', { n: zone.radiusKm ?? 0 }) : t('points', { n: zone.polygon?.length ?? 0 })}
                     </span>
                   </div>
                   {zone.deliveryMinutes && (
@@ -809,7 +809,7 @@ export default function DeliveryZonesPage() {
           <div className="text-center py-16">
             <MapPin className="mx-auto text-gray-400 mb-4" size={48} />
             <p className="text-gray-500 text-lg">
-              {zones.length === 0 ? 'Aucune zone de livraison' : 'Aucune zone trouvée'}
+              {zones.length === 0 ? t('aucuneZone') : t('aucuneTrouvee')}
             </p>
             {zones.length === 0 && (
               <button
@@ -817,7 +817,7 @@ export default function DeliveryZonesPage() {
                 className="bg-orange-600 text-white hover:bg-orange-700 mt-4 px-4 py-2 rounded-lg transition inline-flex items-center gap-2"
               >
                 <Plus size={20} />
-                Créer votre première zone
+                {t('premiere')}
               </button>
             )}
           </div>

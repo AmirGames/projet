@@ -189,7 +189,7 @@ export default function TaxSettingsPage() {
   };
 
   const supprimer = async (taxId: string) => {
-    if (!confirm('Supprimer cette taxe ?')) return;
+    if (!confirm(t('confirmerSuppression'))) return;
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       const r = await fetch(`${API_URL}/api/tax-settings/${storeId}/${taxId}`, {
@@ -207,18 +207,18 @@ export default function TaxSettingsPage() {
   const totalPages = Math.ceil(total / itemsPerPage);
 
   const libelleCible = (taxe: TaxSetting) => {
-    if (taxe.applicableTo === 'all') return 'Tous les produits';
+    if (taxe.applicableTo === 'all') return t('tousProduits');
     if (taxe.applicableTo === 'categories') {
       const noms = taxe.categoryIds
         .map(id => categories.find(c => c.id === id)?.name)
         .filter(Boolean);
-      return noms.length ? noms.join(', ') : `${taxe.categoryIds.length} catégorie(s)`;
+      return noms.length ? noms.join(', ') : t('nCategories', { n: taxe.categoryIds.length });
     }
     if (taxe.applicableTo === 'products') {
       const noms = taxe.productIds
         .map(id => produits.find(p => p.id === id)?.name)
         .filter(Boolean);
-      return noms.length ? noms.join(', ') : `${taxe.productIds.length} produit(s)`;
+      return noms.length ? noms.join(', ') : t('nProduits', { n: taxe.productIds.length });
     }
     return taxe.applicableTo;
   };
@@ -228,7 +228,7 @@ export default function TaxSettingsPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4" />
-          <p className="text-gray-500">Chargement des taxes…</p>
+          <p className="text-gray-500">{t('chargement')}</p>
         </div>
       </div>
     );
@@ -238,9 +238,9 @@ export default function TaxSettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold">Taxes</h1>
+          <h1 className="text-3xl font-bold">{t('titre')}</h1>
           <p className="text-gray-500 mt-1">
-            Configurez les taux de TVA et attribuez-les à des catégories ou des produits.
+            {t('sousTitre')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -248,10 +248,10 @@ export default function TaxSettingsPage() {
             onClick={() => ouvrirModale()}
             className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white hover:bg-orange-500 rounded-lg font-medium transition-colors"
           >
-            <Plus size={18} /> Nouvelle taxe
+            <Plus size={18} /> {t('nouvelle')}
           </button>
           <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-500 hover:text-gray-700 text-sm">
-            ← Retour
+            {t('retour')}
           </Link>
         </div>
       </div>
@@ -260,16 +260,12 @@ export default function TaxSettingsPage() {
       <div className="bg-blue-100 border border-blue-500/30 rounded-lg p-4 text-sm text-blue-700 flex gap-3">
         <Info size={18} className="shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-medium">Comment ça marche ?</p>
+          <p className="font-medium">{t('comment')}</p>
           <p>
-            La règle la plus précise l&apos;emporte : un taux attribué à un <strong>produit</strong> prime
-            sur un taux attribué à sa <strong>catégorie</strong>, qui prime sur le taux
-            appliqué à <strong>tous les produits</strong>.
+            {t.rich('regle', { b: (c) => <strong>{c}</strong> })}
           </p>
           <p>
-            Exemple : 6 % sur la catégorie &laquo; Nourriture &raquo; et 21 % sur la catégorie
-            &laquo; Boissons &raquo;. Une commande avec une pizza et une bière produira un ticket
-            avec les deux taux séparés.
+            {t('exemple')}
           </p>
         </div>
       </div>
@@ -279,19 +275,19 @@ export default function TaxSettingsPage() {
           <table className="w-full">
             <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Nom</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Taux</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Prix</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Applicable à</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Statut</th>
-                <th className="px-6 py-3 text-center text-sm font-semibold">Actions</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('nom')}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('taux')}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('prix')}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('applicable')}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('statut')}</th>
+                <th className="px-6 py-3 text-center text-sm font-semibold">{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
               {taxes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    Aucune taxe configurée — cliquez sur &laquo; Nouvelle taxe &raquo; pour commencer.
+                    {t('aucune')}
                   </td>
                 </tr>
               ) : (
@@ -302,7 +298,7 @@ export default function TaxSettingsPage() {
                       <span className="text-blue-600 font-bold">{Number(taxe.rate).toFixed(2)} %</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {taxe.included === false ? 'HT (ajoutée)' : 'TTC (comprise)'}
+                      {taxe.included === false ? t('ht') : t('ttc')}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">
                       {libelleCible(taxe)}
@@ -313,7 +309,7 @@ export default function TaxSettingsPage() {
                           ? 'bg-green-50 text-green-600'
                           : 'bg-gray-600/20 text-gray-500'
                       }`}>
-                        {taxe.status === 'ACTIVE' ? t('active') : 'Inactive'}
+                        {taxe.status === 'ACTIVE' ? t('active') : t('inactive')}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -349,12 +345,12 @@ export default function TaxSettingsPage() {
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
-              >Précédent</button>
+              >{t('precedent')}</button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
-              >Suivant</button>
+              >{t('suivant')}</button>
             </div>
           </div>
         )}
@@ -369,7 +365,7 @@ export default function TaxSettingsPage() {
           >
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">
-                {enEdition ? 'Modifier la taxe' : 'Nouvelle taxe'}
+                {enEdition ? t('modifier') : t('nouvelle')}
               </h2>
               <button type="button" onClick={() => setModaleOuverte(false)} className="p-1 hover:bg-gray-100 rounded">
                 <X size={20} />
@@ -381,19 +377,19 @@ export default function TaxSettingsPage() {
             )}
 
             <div>
-              <label className="block text-sm text-gray-500 mb-1">Nom</label>
+              <label className="block text-sm text-gray-500 mb-1">{t('nom')}</label>
               <input
                 type="text" required minLength={2}
                 value={formulaire.name}
                 onChange={e => setFormulaire({ ...formulaire, name: e.target.value })}
-                placeholder="Ex : TVA restauration"
+                placeholder={t('exempleNom')}
                 className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-500 mb-1">Taux (%)</label>
+                <label className="block text-sm text-gray-500 mb-1">{t('tauxPourcent')}</label>
                 <input
                   type="number" required step="0.1" min="0" max="100"
                   value={formulaire.rate}
@@ -403,28 +399,28 @@ export default function TaxSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-1">Type de prix</label>
+                <label className="block text-sm text-gray-500 mb-1">{t('typePrix')}</label>
                 <select
                   value={formulaire.included ? 'ttc' : 'ht'}
                   onChange={e => setFormulaire({ ...formulaire, included: e.target.value === 'ttc' })}
                   className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
                 >
-                  <option value="ttc">Prix TTC (taxe comprise)</option>
-                  <option value="ht">Prix HT (taxe ajoutée)</option>
+                  <option value="ttc">{t('prixTtc')}</option>
+                  <option value="ht">{t('prixHt')}</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-500 mb-1">Appliquer à</label>
+              <label className="block text-sm text-gray-500 mb-1">{t('appliquer')}</label>
               <select
                 value={formulaire.applicableTo}
                 onChange={e => setFormulaire({ ...formulaire, applicableTo: e.target.value, categoryIds: [], productIds: [] })}
                 className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
               >
-                <option value="all">Tous les produits</option>
-                <option value="categories">Certaines catégories</option>
-                <option value="products">Certains produits</option>
+                <option value="all">{t('tousProduits')}</option>
+                <option value="categories">{t('certainesCategories')}</option>
+                <option value="products">{t('certainsProduits')}</option>
               </select>
             </div>
 
@@ -432,10 +428,10 @@ export default function TaxSettingsPage() {
             {formulaire.applicableTo === 'categories' && (
               <div>
                 <label className="block text-sm text-gray-500 mb-2">
-                  Catégories concernées <span className="text-orange-600">*</span>
+                  {t('categoriesConcernees')} <span className="text-orange-600">*</span>
                 </label>
                 {categories.length === 0 ? (
-                  <p className="text-sm text-gray-500">Aucune catégorie créée pour l&apos;instant.</p>
+                  <p className="text-sm text-gray-500">{t('aucuneCategorie')}</p>
                 ) : (
                   <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-300 rounded-lg p-2">
                     {categories.map(cat => (
@@ -458,10 +454,10 @@ export default function TaxSettingsPage() {
             {formulaire.applicableTo === 'products' && (
               <div>
                 <label className="block text-sm text-gray-500 mb-2">
-                  Produits concernés <span className="text-orange-600">*</span>
+                  {t('produitsConcernes')} <span className="text-orange-600">*</span>
                 </label>
                 {produits.length === 0 ? (
-                  <p className="text-sm text-gray-500">Aucun produit créé pour l&apos;instant.</p>
+                  <p className="text-sm text-gray-500">{t('aucunProduit')}</p>
                 ) : (
                   <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-300 rounded-lg p-2">
                     {/* Groupés par catégorie pour s'y retrouver */}
@@ -513,7 +509,7 @@ export default function TaxSettingsPage() {
                 type="button" onClick={() => setModaleOuverte(false)}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
-                Annuler
+                {t('annuler')}
               </button>
             </div>
           </form>

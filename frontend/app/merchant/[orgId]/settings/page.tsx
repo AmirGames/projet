@@ -226,22 +226,22 @@ export default function StoreSettings() {
     logo: {
       chemin: 'logo',
       champ: 'logo',
-      trop: 'Le logo ne doit pas dépasser 2 Mo',
-      envoye: 'Logo enregistré',
-      nonEnvoye: "Le logo n'a pas pu être envoyé",
-      retire: 'Logo retiré',
-      nonRetire: "Le logo n'a pas pu être retiré",
+      trop: t('images.logo.trop'),
+      envoye: t('images.logo.envoye'),
+      nonEnvoye: t('images.logo.nonEnvoye'),
+      retire: t('images.logo.retire'),
+      nonRetire: t('images.logo.nonRetire'),
       appliquer: setLogo,
       enCours: setLogoEnCours,
     },
     banner: {
       chemin: 'banner',
       champ: 'banner',
-      trop: 'La photo de couverture ne doit pas dépasser 2 Mo',
-      envoye: 'Photo de couverture enregistrée',
-      nonEnvoye: "La photo de couverture n'a pas pu être envoyée",
-      retire: 'Photo de couverture retirée',
-      nonRetire: "La photo de couverture n'a pas pu être retirée",
+      trop: t('images.couverture.trop'),
+      envoye: t('images.couverture.envoye'),
+      nonEnvoye: t('images.couverture.nonEnvoye'),
+      retire: t('images.couverture.retire'),
+      nonRetire: t('images.couverture.nonRetire'),
       appliquer: setCouverture,
       enCours: setCouvertureEnCours,
     },
@@ -352,7 +352,7 @@ export default function StoreSettings() {
       // Un refus muet — une TVA au mauvais format, par exemple — laissait
       // croire que tout était enregistré.
       if (!response.ok) {
-        setMessage({ type: 'error', text: lu?.error || 'Réglages refusés' });
+        setMessage({ type: 'error', text: lu?.error || t('refuses') });
         return;
       }
 
@@ -362,9 +362,7 @@ export default function StoreSettings() {
       if (lu?.settings?.position === 'introuvable') {
         setMessage({
           type: 'error',
-          text:
-            "Réglages enregistrés, mais la nouvelle adresse n'a pas pu être située sur la carte. " +
-            'Vérifiez-la, ou posez la boutique sur la carte depuis vos zones de livraison.',
+          text: t('enregistresAdresseIntrouvable'),
         });
         fetchSettings();
         return;
@@ -374,14 +372,14 @@ export default function StoreSettings() {
         type: 'success',
         text:
           lu?.settings?.position === 'recalculee'
-            ? 'Réglages enregistrés — position de la boutique mise à jour'
-            : 'Réglages enregistrés',
+            ? t('enregistresPosition')
+            : t('enregistres'),
       });
       setTimeout(() => setMessage(null), 3000);
       fetchSettings();
     } catch (error) {
       signalerErreur('Error saving settings:', error);
-      setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde des paramètres' });
+      setMessage({ type: 'error', text: t('erreurSauvegarde') });
     } finally {
       setSaving(false);
     }
@@ -393,7 +391,7 @@ export default function StoreSettings() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Chargement des paramètres...</p>
+            <p className="text-gray-500">{t('chargement')}</p>
           </div>
         </div>
       </div>
@@ -406,10 +404,10 @@ export default function StoreSettings() {
         {/* Header */}
         <div className="mb-8">
           <Link href={`/merchant/${orgId}/dashboard`} className="text-red-600 hover:text-red-700 text-sm mb-4 inline-block">
-            ← Retour au tableau de bord
+            {t('retourTableau')}
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Paramètres de la Boutique</h1>
-          <p className="text-gray-500">Gérez les informations et les préférences de votre boutique</p>
+          <h1 className="text-3xl font-bold mb-2">{t('titre')}</h1>
+          <p className="text-gray-500">{t('sousTitre')}</p>
         </div>
 
         {/* Message */}
@@ -433,11 +431,7 @@ export default function StoreSettings() {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {tab === 'general' && '🏪 Général'}
-                {tab === 'contact' && '📍 Contact'}
-                {tab === 'notifications' && '🔔 Notifications'}
-                {tab === 'facturation' && '🧾 Facturation'}
-                {tab === 'livraison' && '🚚 Livraison'}
+                {t(`onglets.${tab}`)}
               </button>
             ))}
           </div>
@@ -448,7 +442,7 @@ export default function StoreSettings() {
             {activeTab === 'general' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo de la boutique</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('logo')}</label>
                   <div className="flex items-center gap-4">
                     {/* Le même fond que la carte vue par les clients : blanc avec
                         un logo, dégradé avec l'initiale. */}
@@ -458,7 +452,7 @@ export default function StoreSettings() {
                       }`}
                     >
                       {logo ? (
-                        <img src={logo} alt="Logo de la boutique" className="h-full w-full object-contain" />
+                        <img src={logo} alt={t('logo')} className="h-full w-full object-contain" />
                       ) : (
                         <span className="text-2xl font-bold text-gray-900 opacity-50">
                           {formData.name.charAt(0).toUpperCase()}
@@ -473,7 +467,7 @@ export default function StoreSettings() {
                           }`}
                         >
                           <ImagePlus size={16} />
-                          {logo ? 'Changer le logo' : 'Ajouter un logo'}
+                          {logo ? t('changerLogo') : t('ajouterLogo')}
                           <input
                             type="file"
                             accept="image/png,image/jpeg,image/webp"
@@ -494,29 +488,29 @@ export default function StoreSettings() {
                             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                           >
                             <Trash2 size={16} />
-                            Retirer
+                            {t('retirer')}
                           </button>
                         )}
                       </div>
                       <p className="text-xs text-gray-500">
-                        Idéal : PNG à fond transparent ou blanc, format carré. JPG, PNG ou WebP, 2 Mo maximum.
+                        {t('logoIdeal')}
                         <br />
-                        Affiché sur fond blanc sur votre carte dans la liste des restaurants.
+                        {t('logoAide')}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Photo de couverture</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('couverture')}</label>
                   {/* L'aperçu au format de la vitrine : la grande image en tête
                       de page, et la carte du commerce dans la liste. */}
                   <div className="relative aspect-[16/6] w-full max-w-xl overflow-hidden rounded-lg border border-gray-300 bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
                     {couverture ? (
-                      <img src={couverture} alt="Photo de couverture" className="h-full w-full object-cover" />
+                      <img src={couverture} alt={t('couverture')} className="h-full w-full object-cover" />
                     ) : (
                       <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-white/80">
-                        Sans photo : la vitrine garde ce dégradé
+                        {t('sansPhoto')}
                       </span>
                     )}
                   </div>
@@ -527,7 +521,7 @@ export default function StoreSettings() {
                       }`}
                     >
                       <ImagePlus size={16} />
-                      {couverture ? 'Changer la photo' : 'Ajouter une photo de couverture'}
+                      {couverture ? t('changerPhoto') : t('ajouterCouverture')}
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
@@ -548,42 +542,42 @@ export default function StoreSettings() {
                         className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                       >
                         <Trash2 size={16} />
-                        Retirer
+                        {t('retirer')}
                       </button>
                     )}
                   </div>
                   <p className="mt-2 text-xs text-gray-500">
-                    Une belle photo de vos plats ou de votre devanture, en paysage (idéalement 1600 × 600). JPG, PNG ou WebP, 2 Mo maximum.
+                    {t('couvertureAide')}
                     <br />
-                    Affichée en tête de votre vitrine et sur votre carte dans la liste des commerces.
+                    {t('couvertureAide2')}
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Nom de la boutique</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('nom')}</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
-                    placeholder="Nom de votre boutique"
+                    placeholder={t('nomPlaceholder')}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('description')}</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600 resize-none"
-                    placeholder="Description de votre boutique"
+                    placeholder={t('descriptionPlaceholder')}
                     rows={3}
                   />
                   <p className="text-xs text-gray-500 mt-1">{formData.description.length}/500</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Site web</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('siteWeb')}</label>
                   <input
                     type="url"
                     value={formData.website}
@@ -595,13 +589,13 @@ export default function StoreSettings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fuseau horaire</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('fuseau')}</label>
                     <select
                       value={formData.timezone}
                       onChange={(e) => handleInputChange('timezone', e.target.value)}
                       className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                     >
-                      <option value="">Sélectionner</option>
+                      <option value="">{t('selectionner')}</option>
                       <option value="UTC">UTC</option>
                       <option value="Europe/Paris">Europe/Paris</option>
                       <option value="Europe/London">Europe/London</option>
@@ -611,13 +605,13 @@ export default function StoreSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Devise</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('devise')}</label>
                     <select
                       value={formData.currency}
                       onChange={(e) => handleInputChange('currency', e.target.value)}
                       className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                     >
-                      <option value="">Sélectionner</option>
+                      <option value="">{t('selectionner')}</option>
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
                       <option value="GBP">GBP (£)</option>
@@ -626,13 +620,13 @@ export default function StoreSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Langue</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('langue')}</label>
                     <select
                       value={formData.language}
                       onChange={(e) => handleInputChange('language', e.target.value)}
                       className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                     >
-                      <option value="">Sélectionner</option>
+                      <option value="">{t('selectionner')}</option>
                       <option value="fr">Français</option>
                       <option value="en">English</option>
                       <option value="es">Español</option>
@@ -647,7 +641,7 @@ export default function StoreSettings() {
             {activeTab === 'contact' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('adresse')}</label>
                   <AddressAutocomplete
                     value={formData.address}
                     onChange={(valeur) => handleInputChange('address', valeur)}
@@ -662,13 +656,13 @@ export default function StoreSettings() {
                       }))
                     }
                     className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
-                    placeholder="Votre adresse"
+                    placeholder={t('adressePlaceholder')}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ville</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('ville')}</label>
                     <input
                       type="text"
                       value={formData.city}
@@ -679,19 +673,19 @@ export default function StoreSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Code postal</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('codePostal')}</label>
                     <input
                       type="text"
                       value={formData.postalCode}
                       onChange={(e) => handleInputChange('postalCode', e.target.value)}
                       className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
-                      placeholder="Code postal"
+                      placeholder={t('codePostal')}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('telephone')}</label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -702,13 +696,13 @@ export default function StoreSettings() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('email')}</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
-                    placeholder="contact@votre-boutique.com"
+                    placeholder={t('emailPlaceholder')}
                   />
                 </div>
               </div>
@@ -719,8 +713,8 @@ export default function StoreSettings() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
-                    <p className="font-medium">Notifications de commandes</p>
-                    <p className="text-sm text-gray-500">Recevoir une alerte pour chaque nouvelle commande</p>
+                    <p className="font-medium">{t('notifCommandes')}</p>
+                    <p className="text-sm text-gray-500">{t('notifCommandesAide')}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -732,8 +726,8 @@ export default function StoreSettings() {
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
-                    <p className="font-medium">Alertes de faible stock</p>
-                    <p className="text-sm text-gray-500">Recevoir une alerte quand un produit est en rupture</p>
+                    <p className="font-medium">{t('notifStock')}</p>
+                    <p className="text-sm text-gray-500">{t('notifStockAide')}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -745,8 +739,8 @@ export default function StoreSettings() {
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
-                    <p className="font-medium">Notifications d'avis</p>
-                    <p className="text-sm text-gray-500">Recevoir une notification pour chaque nouvel avis client</p>
+                    <p className="font-medium">{t('notifAvis')}</p>
+                    <p className="text-sm text-gray-500">{t('notifAvisAide')}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -758,8 +752,8 @@ export default function StoreSettings() {
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
-                    <p className="font-medium">Notifications par email</p>
-                    <p className="text-sm text-gray-500">Recevoir des notifications par email en plus du tableau de bord</p>
+                    <p className="font-medium">{t('notifEmail')}</p>
+                    <p className="text-sm text-gray-500">{t('notifEmailAide')}</p>
                   </div>
                   <input
                     type="checkbox"
@@ -778,17 +772,16 @@ export default function StoreSettings() {
               <div className="space-y-8">
                 <section className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900">Genre du commerce</h3>
+                    <h3 className="font-semibold text-gray-900">{t('genre')}</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      Ce que vend ce commerce, et ce qu&apos;on y mange. Le client s&apos;en
-                      sert pour vous trouver.
+                      {t('genreAide')}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="businessType" className="block text-sm font-medium text-gray-700 mb-2">
-                        Type d&apos;établissement
+                        {t('typeEtablissement')}
                       </label>
                       <select
                         id="businessType"
@@ -801,7 +794,7 @@ export default function StoreSettings() {
                         }
                         className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       >
-                        <option value="">Choisir…</option>
+                        <option value="">{t('choisir')}</option>
                         {etablissements.map((genre) => (
                           <option key={genre.code} value={genre.code}>
                             {genre.libelle}
@@ -815,7 +808,7 @@ export default function StoreSettings() {
                     {formData.businessType === 'restaurant' && (
                       <div>
                         <label htmlFor="cuisineType" className="block text-sm font-medium text-gray-700 mb-2">
-                          Type de cuisine
+                          {t('typeCuisine')}
                         </label>
                         <select
                           id="cuisineType"
@@ -823,7 +816,7 @@ export default function StoreSettings() {
                           onChange={(e) => handleInputChange('cuisineType', e.target.value)}
                           className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                         >
-                          <option value="">Choisir…</option>
+                          <option value="">{t('choisir')}</option>
                           {cuisines.map((genre) => (
                             <option key={genre.code} value={genre.code}>
                               {genre.libelle}
@@ -837,10 +830,9 @@ export default function StoreSettings() {
 
                 <section className="space-y-4 border-t border-gray-200 pt-6">
                   <div>
-                    <h3 className="font-semibold text-gray-900">Identité de facturation</h3>
+                    <h3 className="font-semibold text-gray-900">{t('identiteFacturation')}</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      Ce qui figure sur les factures de <em>cette boutique</em>. Laissez vide si
-                      elle relève de votre société : c&apos;est le cas le plus courant.
+                      {t.rich('facturationAide', { i: (c) => <em>{c}</em> })}
                     </p>
                   </div>
 
@@ -854,20 +846,20 @@ export default function StoreSettings() {
                     >
                       {facturation.propre ? (
                         <p>
-                          Cette boutique facture sous sa propre identité :{' '}
+                          {t('facturePropre')}{' '}
                           <strong>{facturation.effective.legalName || '—'}</strong>
-                          {facturation.effective.vatNumber && ` · TVA ${facturation.effective.vatNumber}`}
+                          {facturation.effective.vatNumber && t('tva', { numero: facturation.effective.vatNumber })}
                         </p>
                       ) : (
                         <p>
-                          Héritée de votre société :{' '}
-                          <strong>{facturation.societe.legalName || 'non renseignée'}</strong>
-                          {facturation.societe.vatNumber && ` · TVA ${facturation.societe.vatNumber}`}
+                          {t('heritee')}{' '}
+                          <strong>{facturation.societe.legalName || t('nonRenseignee')}</strong>
+                          {facturation.societe.vatNumber && t('tva', { numero: facturation.societe.vatNumber })}
                           {!facturation.societe.legalName && (
                             <>
                               {' — '}
                               <Link href="/merchant/profil" className="underline hover:text-gray-900">
-                                complétez votre profil
+                                {t('completezProfil')}
                               </Link>
                             </>
                           )}
@@ -879,57 +871,55 @@ export default function StoreSettings() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="legalName" className="block text-sm font-medium text-gray-700 mb-2">
-                        Raison sociale de la boutique
+                        {t('raisonSociale')}
                       </label>
                       <input
                         id="legalName"
                         value={formData.legalName}
                         onChange={(e) => handleInputChange('legalName', e.target.value)}
-                        placeholder={facturation?.societe.legalName || 'Celle de votre société'}
+                        placeholder={facturation?.societe.legalName || t('celleSociete')}
                         className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       />
                     </div>
 
                     <div>
                       <label htmlFor="vatNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                        Numéro de TVA
+                        {t('numeroTva')}
                       </label>
                       <input
                         id="vatNumber"
                         value={formData.vatNumber}
                         onChange={(e) => handleInputChange('vatNumber', e.target.value)}
-                        placeholder={facturation?.societe.vatNumber || 'Celui de votre société'}
+                        placeholder={facturation?.societe.vatNumber || t('celuiSociete')}
                         className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       />
                     </div>
 
                     <div>
                       <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                        Numéro d&apos;immatriculation
+                        {t('immatriculation')}
                       </label>
                       <input
                         id="registrationNumber"
                         value={formData.registrationNumber}
                         onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
-                        placeholder={facturation?.societe.registrationNumber || 'Celui de votre société'}
+                        placeholder={facturation?.societe.registrationNumber || t('celuiSociete')}
                         className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       />
                     </div>
                   </div>
 
                   <p className="text-xs text-gray-500">
-                    Le compte bancaire et les justificatifs restent au niveau de votre société,
-                    dans{' '}
+                    {t('compteBancaire')}{' '}
                     <Link href="/merchant/profil" className="underline hover:text-gray-700">
-                      votre profil
+                      {t('votreProfil')}
                     </Link>
                     .
                   </p>
                 </section>
 
                 <p className="text-sm text-gray-500 border-t border-gray-200 pt-6">
-                  Les horaires d&apos;ouverture se règlent dans l&apos;onglet{' '}
-                  <strong>Horaires</strong> de la barre latérale, service par service.
+                  {t.rich('horairesAilleurs', { b: (c) => <strong>{c}</strong> })}
                 </p>
               </div>
             )}
@@ -939,16 +929,16 @@ export default function StoreSettings() {
               <div className="space-y-6">
                 <section className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900">Gestion de la livraison</h3>
+                    <h3 className="font-semibold text-gray-900">{t('gestionLivraison')}</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      Configurez comment vous gérez les livraisons de vos commandes.
+                      {t('gestionLivraisonAide')}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                     <div>
-                      <p className="font-medium">J&apos;utilise ma propre livraison</p>
-                      <p className="text-sm text-gray-500">Activez cette option si vous livrez uniquement avec vos propres livreurs</p>
+                      <p className="font-medium">{t('propreLivraison')}</p>
+                      <p className="text-sm text-gray-500">{t('propreLivraisonAide')}</p>
                     </div>
                     <input
                       type="checkbox"
@@ -962,34 +952,38 @@ export default function StoreSettings() {
                     <div className="space-y-4">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-1">
                         <p className="text-sm text-blue-700">
-                          ✓ Vous livrez vous-même : les frais de livraison de vos zones vous reviennent.
+                          {t('vousLivrez')}
                         </p>
                         <p className="text-sm text-blue-700">
-                          Commission de la plateforme :{' '}
-                          <strong>{commissions ? `${commissions.propre} %` : 'celle de votre formule'}</strong>{' '}
-                          sur vos ventes.
+                          {t('commission')}{' '}
+                          <strong>{commissions ? t('pourcent', { n: commissions.propre }) : t('celleFormule')}</strong>{' '}
+                          {t('surVentes')}
                         </p>
                       </div>
 
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                         <p className="text-sm text-amber-700">
-                          📍 Gérez votre rayon et vos frais de livraison dans l&apos;onglet <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-800">Zones de livraison</Link>
+                          {t('gerezRayon')}{' '}
+                          <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-800">
+                            {t('zonesLivraison')}
+                          </Link>
                         </p>
                       </div>
                     </div>
                   ) : (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-1">
                       <p className="text-sm text-blue-700">
-                        ✓ Vos commandes sont livrées par les livreurs de la plateforme. Lorsqu&apos;une commande est prête, un bouton vous permet d&apos;appeler un livreur.
+                        {t('livreursPlateforme')}
                       </p>
                       <p className="text-sm text-blue-700">
-                        Le rayon de livraison est fixé par la plateforme, et les frais sont calculés selon la distance entre votre boutique et l&apos;adresse du client. Le client les paie à la plateforme, qui les reverse au livreur.
+                        {t('rayonPlateforme')}
                       </p>
                       <p className="text-sm text-blue-700">
-                        Commission de la plateforme :{' '}
-                        <strong>{commissions ? `${commissions.plateforme} %` : 'majorée'}</strong>{' '}
-                        sur vos ventes (hors frais de livraison)
-                        {commissions ? `, au lieu de ${commissions.propre} % si vous livrez vous-même` : ''}.
+                        {t('commission')}{' '}
+                        <strong>{commissions ? t('pourcent', { n: commissions.plateforme }) : t('majoree')}</strong>{' '}
+                        {commissions
+                          ? t('surVentesHorsLivraisonAuLieu', { n: commissions.propre })
+                          : t('surVentesHorsLivraison')}
                       </p>
                     </div>
                   )}
@@ -1005,14 +999,14 @@ export default function StoreSettings() {
             href={`/merchant/${orgId}/dashboard`}
             className="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
           >
-            Annuler
+            {t('annuler')}
           </Link>
           <button
             onClick={handleSave}
             disabled={saving}
             className="bg-orange-600 text-white hover:bg-orange-700 px-6 py-2 rounded-lg font-medium transition-colors"
           >
-            {saving ? t('saving') : 'Enregistrer les modifications'}
+            {saving ? t('saving') : t('enregistrer')}
           </button>
         </div>
       </div>
