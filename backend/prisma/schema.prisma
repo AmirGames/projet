@@ -1607,6 +1607,11 @@ model MerchantPayout {
   paidBy          String?
   note            String?
 
+  /// Le lot bancaire actif qui porte ce relevé : un relevé n'est que dans un
+  /// seul lot à la fois. Vide : pas encore (ou plus) dans un lot.
+  batchId         String?
+  batch           PayoutBatch? @relation("MerchantPayoutBatch", fields: [batchId], references: [id], onDelete: SetNull)
+
   org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   orders          Order[]
 
@@ -1616,6 +1621,45 @@ model MerchantPayout {
   @@index([orgId])
   @@index([status])
   @@index([periodStart])
+  @@index([batchId])
+}
+
+/// Un lot de virements SEPA. États : PREPARED (figé, en attente d'approbation),
+/// APPROVED (approuvé après réauthentification), EXPORTED (fichier téléchargé),
+/// SUBMITTED (importé et signé à la banque), CONFIRMED (versé), REJECTED
+/// (refusé par la banque : les relevés repartent en attente), CANCELLED
+/// (abandonné avant export). Les bénéficiaires, IBAN et montants sont figés à
+/// la préparation : un changement d'IBAN ou de montant plus tard ne modifie
+/// pas un lot déjà préparé.
+model PayoutBatch {
+  id            String    @id @default(cuid())
+  reference     String    @unique
+  status        String    @default("PREPARED")
+  total         Decimal   @default(0) @db.Decimal(12, 2)
+  itemCount     Int       @default(0)
+  /// [{ kind, payoutId, nom, iban, bic, montant, communication }] — chiffré.
+  itemsJson     Json      @default("[]")
+  /// Empreinte du fichier exporté : le même lot redonne le même fichier.
+  xmlSha256     String?
+  bankReference String?
+  note          String?
+
+  createdBy     String
+  approvedBy    String?
+  approvedAt    DateTime?
+  exportedBy    String?
+  exportedAt    DateTime?
+  submittedAt   DateTime?
+  closedBy      String?
+  closedAt      DateTime?
+
+  merchantPayouts MerchantPayout[] @relation("MerchantPayoutBatch")
+  courierPayouts  CourierPayout[]  @relation("CourierPayoutBatch")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
 }
 
 model CourierPayout {
@@ -1645,6 +1689,10 @@ model CourierPayout {
   note            String?
 
   // Relations
+  /// Le lot bancaire actif qui porte ce relevé (voir MerchantPayout.batchId).
+  batchId         String?
+  batch           PayoutBatch? @relation("CourierPayoutBatch", fields: [batchId], references: [id], onDelete: SetNull)
+
   driver          Courier    @relation(fields: [driverId], references: [id], onDelete: Cascade)
   deliveries      OrderDelivery[]
   /// Les pourboires laissés après la livraison, payés avec ce relevé.
@@ -1656,6 +1704,7 @@ model CourierPayout {
   @@index([driverId])
   @@index([status])
   @@index([periodStart])
+  @@index([batchId])
 
   /// Table au nom historique (renommage Driver → Courier, code seulement).
   @@map("DriverPayout")

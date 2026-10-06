@@ -78,6 +78,8 @@ export async function runRetention(now = new Date()) {
     await tx.platformInvoice.deleteMany({ where: { id: { notIn: holds("PlatformInvoice") }, issuedAt: { lt: before(RETENTION.accounting, now) } } });
     await tx.courierPayout.deleteMany({ where: { id: { notIn: holds("CourierPayout") }, status: { in: ["PAID", "CANCELLED"] }, periodEnd: { lt: before(RETENTION.accounting, now) } } });
     await tx.merchantPayout.deleteMany({ where: { id: { notIn: holds("MerchantPayout") }, status: { in: ["PAID", "CANCELLED", "CARRIED"] }, periodEnd: { lt: before(RETENTION.accounting, now) } } });
+    // Les lots clos portent des IBAN figés : même durée de conservation comptable.
+    await tx.payoutBatch.deleteMany({ where: { id: { notIn: holds("PayoutBatch") }, status: { in: ["CONFIRMED", "REJECTED", "CANCELLED"] }, closedAt: { lt: before(RETENTION.accounting, now) } } });
   });
   result.accounting = ancientOrders.length;
   await db.courseDrive.deleteMany({ where: { id: { notIn: holds("CourseDrive") }, statut: { in: ["TERMINEE", "ANNULEE"] }, createdAt: { lt: before(RETENTION.accounting, now) } } });

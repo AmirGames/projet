@@ -10,9 +10,9 @@ import {
   ajustementRemboursement,
   lignesDuReversement,
 } from "../../utils/reversement";
-import { dateBruxelles, fichierSepa, ibanNormalise, ibanValide, VirementSepa } from "../../utils/sepa";
+import { dateBruxelles, ibanNormalise, ibanValide, VirementSepa } from "../../utils/sepa";
 import { debutDeSemaine, semaineEcoulee } from "../../utils/semaine-bruxelles";
-import { DriverPayoutService, MOYENS_VERSEMENT } from "./driver-payout.service";
+import { DriverPayoutService } from "./driver-payout.service";
 import { MOTIF_LIVRAISON_ECHOUEE } from "../orders/order-acceptance.service";
 
 /**
@@ -372,73 +372,18 @@ export class MerchantPayoutService {
   }
 
   /**
-   * Marque des relevés versés, commerçants et livreurs ensemble : c'est un lot
-   * SEPA qui part en une fois.
-   */
-  static async payerLeLot(
-    ids: { commercants: string[]; livreurs: string[] },
-    versement: { method: string; reference?: string },
-    adminId: string
-  ) {
-    if (!MOYENS_VERSEMENT.includes(versement.method as (typeof MOYENS_VERSEMENT)[number])) {
-      throw new ApiError(400, "Moyen de versement inconnu", "INVALID_METHOD");
-    }
-
-    const payes = await db.merchantPayout.updateMany({
-      where: { id: { in: ids.commercants }, status: "PENDING" },
-      data: {
-        status: "PAID",
-        method: versement.method,
-        reference: versement.reference?.trim() || null,
-        paidAt: new Date(),
-        paidBy: adminId,
-      },
-    });
-
-    const releves = await db.merchantPayout.findMany({
-      where: { id: { in: ids.commercants }, status: "PAID", paidBy: adminId },
-      select: { orgId: true, amount: true },
-    });
-    for (const r of releves) {
-      await this.prevenir(r.orgId, "Versement effectué", `${Number(r.amount).toFixed(2)} € sont en route vers votre compte.`);
-    }
-
-    let livreurs = 0;
-    for (const id of ids.livreurs) {
-      try {
-        await DriverPayoutService.payer(id, versement, adminId);
-        livreurs += 1;
-      } catch (err) {
-        // Déjà versé ou annulé entre-temps : on n'arrête pas le lot pour ça.
-        logger.warn("Relevé livreur non marqué versé", { id, error: err instanceof Error ? err.message : err });
-      }
-    }
-
-    return { commercants: payes.count, livreurs };
-  }
-
-  /**
-   * Le fichier SEPA de tous les versements en attente, commerçants et
+   * Les virements en attente qu'aucun lot ne porte encore : commerçants et
    * livreurs. Un bénéficiaire sans IBAN valide est écarté et signalé : le
    * fichier entier serait rejeté par la banque.
    */
-  static async fichierDesVersements(maintenant = new Date()) {
-    const env = getEnv();
-    if (!env.SEPA_DEBTOR_IBAN || !env.SEPA_DEBTOR_NAME || !ibanValide(env.SEPA_DEBTOR_IBAN)) {
-      throw new ApiError(
-        400,
-        "Le compte de la plateforme n'est pas réglé : renseignez SEPA_DEBTOR_NAME et SEPA_DEBTOR_IBAN.",
-        "SEPA_DEBTOR_MISSING"
-      );
-    }
-
+  static async virementsEnAttente(client: Pick<typeof db, "merchantPayout" | "courierPayout"> = db) {
     const [commercants, livreurs] = await Promise.all([
-      db.merchantPayout.findMany({
-        where: { status: "PENDING" },
+      client.merchantPayout.findMany({
+        where: { status: "PENDING", batchId: null },
         include: { org: { select: { name: true, legalName: true, iban: true, bic: true, accountHolder: true } } },
       }),
-      db.courierPayout.findMany({
-        where: { status: "PENDING" },
+      client.courierPayout.findMany({
+        where: { status: "PENDING", batchId: null },
         include: { driver: { select: { name: true, iban: true, bic: true, accountHolder: true } } },
       }),
     ]);
@@ -446,7 +391,7 @@ export class MerchantPayoutService {
     const periode = (debut: Date, fin: Date) =>
       `${dateBruxelles(debut)} au ${dateBruxelles(new Date(fin.getTime() - 1))}`;
 
-    const virements: VirementSepa[] = [];
+    const virements: (VirementSepa & { kind: "commercant" | "livreur"; payoutId: string })[] = [];
     const ecartes: { type: string; id: string; nom: string; montant: number; raison: string }[] = [];
     const inclus = { commercants: [] as string[], livreurs: [] as string[] };
 
@@ -457,6 +402,8 @@ export class MerchantPayoutService {
         continue;
       }
       virements.push({
+        kind: "commercant",
+        payoutId: r.id,
         id: `MP-${r.id}`,
         nom,
         iban: r.org.iban as string,
@@ -474,6 +421,8 @@ export class MerchantPayoutService {
         continue;
       }
       virements.push({
+        kind: "livreur",
+        payoutId: r.id,
         id: `DP-${r.id}`,
         nom,
         iban: r.driver.iban as string,
@@ -484,6 +433,26 @@ export class MerchantPayoutService {
       inclus.livreurs.push(r.id);
     }
 
+    return { virements, ecartes, inclus };
+  }
+
+  /**
+   * Aperçu du lot à verser : ce que `PayoutBatchService.preparer` figerait
+   * maintenant. Aucun effet de bord, aucun fichier : l'export se fait sur un
+   * lot préparé et approuvé.
+   */
+  static async fichierDesVersements(maintenant = new Date()) {
+    const env = getEnv();
+    if (!env.SEPA_DEBTOR_IBAN || !env.SEPA_DEBTOR_NAME || !ibanValide(env.SEPA_DEBTOR_IBAN)) {
+      throw new ApiError(
+        400,
+        "Le compte de la plateforme n'est pas réglé : renseignez SEPA_DEBTOR_NAME et SEPA_DEBTOR_IBAN.",
+        "SEPA_DEBTOR_MISSING"
+      );
+    }
+
+    const { virements, ecartes, inclus } = await this.virementsEnAttente();
+
     const aPayer = virements.filter((v) => v.montant > 0);
     const reference = `VERSEMENTS-${maintenant.toISOString().slice(0, 16).replace(/[-:T]/g, "")}`;
 
@@ -493,19 +462,12 @@ export class MerchantPayoutService {
       nombre: aPayer.length,
       inclus,
       ecartes,
-      xml:
-        aPayer.length > 0
-          ? fichierSepa(
-              { nom: env.SEPA_DEBTOR_NAME, iban: env.SEPA_DEBTOR_IBAN, bic: env.SEPA_DEBTOR_BIC },
-              aPayer,
-              { reference, dateExecution: maintenant, maintenant }
-            )
-          : null,
+      pret: aPayer.length > 0,
     };
   }
 
   /** Prévient les membres du commerçant. */
-  private static async prevenir(orgId: string, titre: string, corps: string) {
+  static async prevenir(orgId: string, titre: string, corps: string) {
     try {
       const membres = await db.membership.findMany({
         where: { orgId },
