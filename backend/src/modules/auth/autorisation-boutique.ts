@@ -6,6 +6,22 @@ import { ApiError } from "../../middleware/errorHandler";
 export type Acteur = Pick<Request, "userId" | "compte">;
 export type ActionBoutique = "read" | "manage";
 
+/**
+ * La règle d'appartenance d'un membre à une boutique, partagée par HTTP et
+ * temps réel : ADMIN voit toute l'organisation, MANAGER/STAFF les boutiques
+ * qui leur sont attribuées.
+ */
+export function membreVoitBoutique(
+  membership: { role: string; storeIds: string[] },
+  storeId: string,
+  action: ActionBoutique = "read",
+): boolean {
+  if (membership.role === "ADMIN") return true;
+  if (membership.role === "STORE_MANAGER" || (action === "read" && membership.role === "STORE_STAFF"))
+    return membership.storeIds.includes(storeId);
+  return false;
+}
+
 /** Les droits viennent de la base, jamais du corps de requête ou du JWT. */
 export async function perimetreBoutiques(
   acteur: Acteur,
