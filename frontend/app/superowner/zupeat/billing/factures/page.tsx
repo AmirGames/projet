@@ -101,7 +101,7 @@ export default function FacturesPeppolPage() {
     } finally {
       setChargement(false);
     }
-  }, [periode]);
+  }, [periode, t]);
 
   useEffectChargement(() => {
     charger();

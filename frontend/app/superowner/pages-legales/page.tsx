@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Scale, Send, ExternalLink, History } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useLocale, useTranslations } from 'next-intl';
 
 /**
  * Les pages légales, modifiables sans mise en production.
@@ -46,10 +47,11 @@ function versionSuivante(actuelle: string): string {
   return actuelle === aujourdhui ? `${aujourdhui}-2` : aujourdhui;
 }
 
-const date = (iso: string) =>
-  new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-
 export default function PagesLegalesPage() {
+  const t = useTranslations('pagesLegalesAdmin');
+  const locale = useLocale();
+  const date = (iso: string) =>
+    new Date(iso).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
   const [pages, setPages] = useState<Page[]>([]);
   const [slug, setSlug] = useState('');
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
@@ -75,7 +77,7 @@ export default function PagesLegalesPage() {
       });
       const donnees = await reponse.json();
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Chargement impossible');
+        setErreur(donnees.error || t('chargementImpossible'));
         return;
       }
       const liste: Page[] = donnees.data;
@@ -87,18 +89,18 @@ export default function PagesLegalesPage() {
       }
       setErreur('');
     } catch {
-      setErreur('Serveur injoignable');
+      setErreur(t('injoignable'));
     } finally {
       setChargement(false);
     }
-  }, []);
+  }, [t]);
 
   useEffectChargement(() => {
     charger();
   }, [charger]);
 
   const choisir = (p: Page) => {
-    if (brouillonModifie && !confirm('Abandonner les modifications en cours ?')) return;
+    if (brouillonModifie && !confirm(t('abandonner'))) return;
     setSlug(p.slug);
     setBrouillon(partirDe(p));
     setConsultee(null);
@@ -113,7 +115,7 @@ export default function PagesLegalesPage() {
     if (!page || !brouillon) return;
     if (
       !confirm(
-        `Publier la version « ${brouillon.version} » de « ${brouillon.titre} » ? Elle s'appliquera immédiatement et ne pourra plus être modifiée.`
+        t('confirmerPublication', { version: brouillon.version, titre: brouillon.titre })
       )
     )
       return;
@@ -132,20 +134,20 @@ export default function PagesLegalesPage() {
       });
       const donnees = await reponse.json();
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Publication impossible');
+        setErreur(donnees.error || t('publicationImpossible'));
         return;
       }
-      setMessage(`Version ${donnees.data.version} publiée.`);
+      setMessage(t('publiee', { version: donnees.data.version }));
       await charger(page.slug);
     } catch {
-      setErreur('Serveur injoignable');
+      setErreur(t('injoignable'));
     } finally {
       setEnvoi(false);
     }
   };
 
   if (chargement && pages.length === 0) {
-    return <div className="p-8 text-gray-500">Chargement…</div>;
+    return <div className="p-8 text-gray-500">{t('chargement')}</div>;
   }
 
   return (
@@ -153,10 +155,9 @@ export default function PagesLegalesPage() {
       <div className="flex items-center gap-3">
         <Scale size={28} className="text-red-500" />
         <div>
-          <h1 className="text-3xl font-bold">Pages légales</h1>
+          <h1 className="text-3xl font-bold">{t('titrePage')}</h1>
           <p className="text-gray-500 text-sm">
-            Chaque publication crée une nouvelle version. Les inscriptions et commandes enregistrent la
-            version acceptée ; les anciennes restent consultables.
+            {t('intro')}
           </p>
         </div>
       </div>
@@ -182,7 +183,7 @@ export default function PagesLegalesPage() {
               <span className="block font-medium">{p.titre}</span>
               <span className="block text-xs opacity-75">
                 v{p.version}
-                {p.parDefaut ? ' · texte de départ' : ''}
+                {p.parDefaut ? t('texteDepartCourt') : ''}
               </span>
             </button>
           ))}
@@ -193,22 +194,25 @@ export default function PagesLegalesPage() {
             <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-gray-500">
-                  En vigueur : <strong className="text-gray-800">v{page.version}</strong>
-                  {page.publieLe ? ` depuis le ${date(page.publieLe)}` : ' (texte de départ, jamais publié)'}
+                  {t.rich('enVigueur', {
+                    version: page.version,
+                    fort: (morceau) => <strong className="text-gray-800">{morceau}</strong>,
+                  })}
+                  {page.publieLe ? t('depuis', { date: date(page.publieLe) }) : t('jamaisPublie')}
                 </p>
                 <Link
                   href={`/${page.slug}`}
                   target="_blank"
                   className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900"
                 >
-                  Voir la page publique <ExternalLink size={14} />
+                  {t('voirPublique')} <ExternalLink size={14} />
                 </Link>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-4">
                 <div>
                   <label className="block text-sm text-gray-500 mb-1" htmlFor="titre">
-                    Titre
+                    {t('titre')}
                   </label>
                   <input
                     id="titre"
@@ -219,7 +223,7 @@ export default function PagesLegalesPage() {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-500 mb-1" htmlFor="version">
-                    Nouvelle version
+                    {t('nouvelleVersion')}
                   </label>
                   <input
                     id="version"
@@ -233,8 +237,7 @@ export default function PagesLegalesPage() {
               <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-500 mb-1" htmlFor="contenu">
-                    Texte (Markdown : <code>## Titre</code>, <code>- liste</code>, <code>**gras**</code>,{' '}
-                    <code>[lien](/cgu)</code>, tableaux)
+                    {t.rich('texteMarkdown', { code: (morceau) => <code>{morceau}</code> })}
                   </label>
                   <textarea
                     id="contenu"
@@ -245,7 +248,7 @@ export default function PagesLegalesPage() {
                   />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Aperçu</p>
+                  <p className="text-sm text-gray-500 mb-1">{t('apercu')}</p>
                   <div className="legal bg-white ring-1 ring-gray-200 text-gray-800 rounded p-6 max-h-[42rem] overflow-y-auto">
                     <h1>{brouillon.titre}</h1>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{brouillon.contenu}</ReactMarkdown>
@@ -260,18 +263,18 @@ export default function PagesLegalesPage() {
                   className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-lg"
                 >
                   <Send size={16} />
-                  {envoi ? 'Publication…' : `Publier la version ${brouillon.version}`}
+                  {envoi ? t('publication') : t('publier', { version: brouillon.version })}
                 </button>
                 {brouillonModifie && (
                   <button
                     onClick={() => setBrouillon(partirDe(page))}
                     className="text-sm text-gray-500 hover:text-gray-900"
                   >
-                    Annuler les modifications
+                    {t('annulerModifs')}
                   </button>
                 )}
                 <p className="text-xs text-gray-500">
-                  Une modification substantielle des CGU doit être annoncée aux inscrits avant son entrée en vigueur.
+                  {t('cguAnnonce')}
                 </p>
               </div>
             </section>
@@ -279,19 +282,19 @@ export default function PagesLegalesPage() {
             {/* Historique */}
             <section className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="flex items-center gap-2 text-lg font-semibold mb-3">
-                <History size={18} /> Versions publiées
+                <History size={18} /> {t('versionsPubliees')}
               </h2>
               {page.historique.length === 0 ? (
                 <p className="text-sm text-gray-500">
-                  Aucune version publiée : le site affiche le texte de départ (v{page.version}).
+                  {t('aucuneVersion', { version: page.version })}
                 </p>
               ) : (
                 <table className="w-full text-sm">
                   <thead className="text-gray-500 text-left">
                     <tr>
-                      <th className="py-2">Version</th>
-                      <th>Publiée le</th>
-                      <th>Par</th>
+                      <th className="py-2">{t('version')}</th>
+                      <th>{t('publieeLe')}</th>
+                      <th>{t('par')}</th>
                       <th />
                     </tr>
                   </thead>
@@ -300,19 +303,19 @@ export default function PagesLegalesPage() {
                       <tr key={v.id} className="border-t border-gray-200">
                         <td className="py-2 font-mono">
                           {v.version}
-                          {i === 0 && <span className="ml-2 text-xs text-green-600">en vigueur</span>}
+                          {i === 0 && <span className="ml-2 text-xs text-green-600">{t('enVigueurCourt')}</span>}
                         </td>
                         <td>{date(v.publieLe)}</td>
                         <td className="text-gray-500">{v.publiePar ?? '—'}</td>
                         <td className="text-right space-x-3">
                           <button onClick={() => setConsultee(v)} className="text-gray-700 hover:text-gray-900">
-                            Voir
+                            {t('voir')}
                           </button>
                           <button
                             onClick={() => setBrouillon({ titre: v.titre, contenu: v.contenu, version: versionSuivante(page.version) })}
                             className="text-gray-700 hover:text-gray-900"
                           >
-                            Repartir de ce texte
+                            {t('repartir')}
                           </button>
                         </td>
                       </tr>
@@ -335,12 +338,12 @@ export default function PagesLegalesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm text-gray-500">
-              Version {consultee.version} — publiée le {date(consultee.publieLe)}
+              {t('versionPubliee', { version: consultee.version, date: date(consultee.publieLe) })}
             </p>
             <h1>{consultee.titre}</h1>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{consultee.contenu}</ReactMarkdown>
             <button onClick={() => setConsultee(null)} className="mt-6 rounded bg-white ring-1 ring-gray-200 px-4 py-2 text-gray-900">
-              Fermer
+              {t('fermer')}
             </button>
           </div>
         </div>
