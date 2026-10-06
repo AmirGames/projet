@@ -319,7 +319,7 @@ check(
 check('au prix de la déclinaison', /16,50/.test(panierVitrine), panierVitrine.slice(0, 900));
 
 titre('La commande porte la déclinaison');
-await page.locator('button', { hasText: 'Passer la Commande' }).first().click();
+await page.locator('button', { hasText: 'Passer la commande' }).first().click();
 await page.waitForTimeout(1200);
 
 await page.fill('input[name="customerName"], input[placeholder*="om"]', `Client ${uniq}`).catch(() => undefined);

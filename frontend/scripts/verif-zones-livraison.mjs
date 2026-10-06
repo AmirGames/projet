@@ -214,7 +214,7 @@ await page.locator(`button[aria-label="Ajouter Margherita ${uniq} au panier"]`).
 await page.waitForTimeout(700);
 await page.locator('button', { hasText: 'Panier' }).first().click();
 await page.waitForTimeout(800);
-await page.locator('button', { hasText: 'Passer la Commande' }).first().click();
+await page.locator('button', { hasText: 'Passer la commande' }).first().click();
 await page.waitForTimeout(1500);
 
 const tunnel = await texte();
