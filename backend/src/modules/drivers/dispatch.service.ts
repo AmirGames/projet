@@ -22,6 +22,7 @@ import {
   REGLES_BIENTOT_LIBRE_PAR_DEFAUT,
   ReglesBientotLibre,
   RESERVATION_MAX_MS,
+  secondesAvantRetrait,
 } from "./livreur-bientot-libre.service";
 
 /** Les commandes dont la course reste à faire. */
@@ -688,7 +689,8 @@ export class DispatchService {
         },
         position,
         maintenant,
-        reglages.bientotLibre
+        reglages.bientotLibre,
+        livreur.vehicleType
       );
       if (secondes == null) continue;
 
@@ -765,16 +767,19 @@ export class DispatchService {
 
     // Un livreur déjà en course passe par là : la course s'ajoute à sa
     // tournée plutôt que de mobiliser un livreur de plus.
-    const toutesTournees = prefere ? [] : await this.livreursEnTournee(course, reglages.tournee);
-    const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
-
-    // Ceux qui terminent leur livraison passent après les livreurs libres :
-    // un livreur libre démarre tout de suite. Un livreur déjà dans la
-    // tournée ci-dessus est écarté de cette liste, il prend la course en ajout.
-    const toutBientotLibres = prefere
-      ? []
-      : await this.livreursBientotLibres(retrait, reglages, maintenant, toutesTournees.map((l) => l.id));
+    //
+    // Ceux qui terminent leur livraison sont classés avec les livreurs libres
+    // (plus bas) selon leur arrivée au commerce. Ils ne sont pas proposés en
+    // « +1 course » : à la porte de leur client, partir d'abord chercher une
+    // autre commande ferait attendre celui qu'ils ont en main. Ils prennent la
+    // course à enchaîner, après sa remise.
+    const toutBientotLibres = prefere ? [] : await this.livreursBientotLibres(retrait, reglages, maintenant);
     const bientotLibres = toutBientotLibres.filter((l) => sollicitable(course, l.id));
+    const presDeLaFin = new Set(toutBientotLibres.map((l) => l.id));
+    const toutesTournees = prefere
+      ? []
+      : (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => !presDeLaFin.has(l.id));
+    const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
 
     // Le véhicule couvre-t-il le trajet commerce → client ? (vehicule-distance.service.ts)
     const trajet = trajetDe(course);
@@ -799,9 +804,17 @@ export class DispatchService {
       );
     }
 
-    // Les véhicules adaptés d'abord (en tournée, puis libres, puis bientôt
-    // libres), les autres seulement une fois l'exception ouverte.
-    const ordre = [...enTournee, ...candidats, ...bientotLibres];
+    // Les véhicules adaptés d'abord (en tournée, puis les livreurs libres et
+    // ceux qui se libèrent, classés par heure d'arrivée au commerce : à
+    // égalité, le livreur déjà libre), les autres seulement une fois
+    // l'exception ouverte.
+    const arrivee = (l: { distance: number; vehicleType: string; libreDansSecondes?: number }) =>
+      secondesAvantRetrait(l.distance, l.libreDansSecondes ?? 0, l.vehicleType);
+    const libresOuBientot = [
+      ...candidats.map((l) => Object.assign(l, { libreDansSecondes: 0 })),
+      ...bientotLibres,
+    ].sort((a, b) => arrivee(a) - arrivee(b) || a.libreDansSecondes - b.libreDansSecondes);
+    const ordre = [...enTournee, ...libresOuBientot];
     const choisi = prefere || ordre.find(adapte) || (ouverte ? ordre[0] : undefined);
 
     if (!choisi) {

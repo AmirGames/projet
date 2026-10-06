@@ -113,6 +113,40 @@ describe("proposition à un livreur bientôt libre", () => {
     expect(offre()).toMatchObject({ driverId: "paul", bientotLibre: false });
   });
 
+  it("un livreur libre très loin passe après un livreur qui termine tout près : on classe par heure d'arrivée", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    // Paul est libre mais à ~6 km du commerce (dans le rayon de 8 km) ; Sophie se libère dans ~1 min, à ~1 km.
+    livreurs({ libres: [{ ...livreurLibre("paul"), latitude: 48.9 }], bientot: [livreurEnFinDeCourse("sophie")] });
+
+    await DispatchService.proposerAuSuivant("course-2");
+
+    expect(offre()).toMatchObject({ driverId: "sophie", bientotLibre: true });
+  });
+
+  it("un livreur libre tout près du commerce passe avant un livreur qui se libère", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    // Paul libre, juste à côté du commerce : bien avant Sophie.
+    livreurs({ libres: [livreurLibre("paul")], bientot: [livreurEnFinDeCourse("sophie")] });
+
+    await DispatchService.proposerAuSuivant("course-2");
+
+    expect(offre()).toMatchObject({ driverId: "paul", bientotLibre: false });
+  });
+
+  it("la vitesse du véhicule compte : un scooter à 3,3 km arrive avant un vélo à 2,2 km", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    livreurs({
+      libres: [
+        { ...livreurLibre("velo"), vehicleType: "bike", latitude: 48.87 },
+        { ...livreurLibre("scooter"), vehicleType: "scooter", latitude: 48.88 },
+      ],
+    });
+
+    await DispatchService.proposerAuSuivant("course-2");
+
+    expect(offre()).toMatchObject({ driverId: "scooter" });
+  });
+
   it("un livreur encore loin de son client n'est pas proposé", async () => {
     db.orderDelivery.findUnique.mockResolvedValue(course());
     livreurs({ bientot: [livreurEnFinDeCourse("loin", { latitude: 48.9 })] });
