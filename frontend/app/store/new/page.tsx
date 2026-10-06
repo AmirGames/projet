@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function CreateStorePage() {
+  const t = useTranslations('nouvelleBoutique');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -128,7 +130,7 @@ export default function CreateStorePage() {
       });
 
       if (!meRes.ok) {
-        setError("Erreur d\'authentification");
+        setError(t('erreurAuth'));
         return;
       }
 
@@ -169,7 +171,7 @@ export default function CreateStorePage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        setError(errorData?.error || errorData?.message || 'Erreur lors de la création');
+        setError(errorData?.error || errorData?.message || t('erreurCreation'));
         return;
       }
 
@@ -187,9 +189,9 @@ export default function CreateStorePage() {
       <div className="bg-white border-b border-gray-200 p-6">
         <div className="max-w-2xl mx-auto">
           <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
-            ← Retour au tableau de bord
+            {t('retour')}
           </Link>
-          <h1 className="text-3xl font-bold">Créer une nouvelle boutique</h1>
+          <h1 className="text-3xl font-bold">{t('titre')}</h1>
         </div>
       </div>
 
@@ -209,30 +211,29 @@ export default function CreateStorePage() {
             >
               <p className={`font-bold ${orgBlocked.status === 'SUSPENDED' ? 'text-yellow-600' : 'text-red-600'}`}>
                 {orgBlocked.status === 'SUSPENDED'
-                  ? 'Compte temporairement suspendu'
-                  : 'Compte fermé'}
+                  ? t('suspendu')
+                  : t('ferme')}
               </p>
               <p className="text-sm text-gray-700 mt-1">
-                Vous ne pouvez pas créer de boutique. Raison : {orgBlocked.reason || 'non spécifiée'}.
-                Contactez le support pour rétablir votre compte.
+                {t('bloqueRaison', { raison: orgBlocked.reason || t('nonSpecifiee') })}
               </p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold mb-4">Informations de base</h2>
+              <h2 className="text-xl font-bold mb-4">{t('infos')}</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">
-                    Nom de la boutique *
+                    {t('nom')}
                   </label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleNameChange}
-                    placeholder="Ex: Ma Pizzeria"
+                    placeholder={t('nomExemple')}
                     className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -240,7 +241,7 @@ export default function CreateStorePage() {
 
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">
-                    Slug (URL) *
+                    {t('slug')}
                   </label>
                   <input
                     type="text"
@@ -256,7 +257,7 @@ export default function CreateStorePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="businessType" className="block text-gray-700 mb-2 font-medium">
-                      Type d&apos;entreprise *
+                      {t('typeEntreprise')}
                     </label>
                     <select
                       id="businessType"
@@ -279,7 +280,7 @@ export default function CreateStorePage() {
                   {formData.businessType === 'restaurant' && (
                     <div>
                       <label htmlFor="cuisineType" className="block text-gray-700 mb-2 font-medium">
-                        Type de cuisine
+                        {t('typeCuisine')}
                       </label>
                       <select
                         id="cuisineType"
@@ -288,7 +289,7 @@ export default function CreateStorePage() {
                         onChange={handleChange}
                         className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Sélectionnez…</option>
+                        <option value="">{t('selectionnez')}</option>
                         {cuisines.map((genre) => (
                           <option key={genre.code} value={genre.code}>
                             {genre.libelle}
@@ -301,13 +302,13 @@ export default function CreateStorePage() {
 
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">
-                    Description
+                    {t('description')}
                   </label>
                   <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    placeholder="Décrivez votre boutique..."
+                    placeholder={t('descriptionAide')}
                     rows={3}
                     className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -316,11 +317,11 @@ export default function CreateStorePage() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold mb-4">Adresse</h2>
+              <h2 className="text-xl font-bold mb-4">{t('adresseTitre')}</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">
-                    Adresse
+                    {t('adresseTitre')}
                   </label>
                   <AddressAutocomplete
                     value={formData.address}
@@ -344,7 +345,7 @@ export default function CreateStorePage() {
                         longitude: adresse.longitude ?? undefined,
                       })
                     }
-                    placeholder="123 rue de la Paix"
+                    placeholder={t('adresseExemple')}
                     className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -352,7 +353,7 @@ export default function CreateStorePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 mb-2 font-medium">
-                      Ville
+                      {t('ville')}
                     </label>
                     <input
                       type="text"
@@ -366,7 +367,7 @@ export default function CreateStorePage() {
 
                   <div>
                     <label className="block text-gray-700 mb-2 font-medium">
-                      Code postal
+                      {t('codePostal')}
                     </label>
                     <input
                       type="text"
@@ -382,11 +383,11 @@ export default function CreateStorePage() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold mb-4">Contact</h2>
+              <h2 className="text-xl font-bold mb-4">{t('contact')}</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">
-                    Téléphone
+                    {t('telephone')}
                   </label>
                   <input
                     type="tel"
@@ -400,14 +401,14 @@ export default function CreateStorePage() {
 
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">
-                    Email
+                    {t('email')}
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="contact@boutique.com"
+                    placeholder={t('emailExemple')}
                     className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -420,13 +421,13 @@ export default function CreateStorePage() {
                 disabled={loading || orgBlocked !== null}
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg"
               >
-                {loading ? 'Création en cours...' : 'Créer la boutique'}
+                {loading ? t('creation') : t('creer')}
               </button>
               <Link
                 href="/dashboard"
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3 px-4 rounded-lg text-center"
               >
-                Annuler
+                {t('annuler')}
               </Link>
             </div>
           </form>
