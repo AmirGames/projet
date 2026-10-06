@@ -188,6 +188,10 @@ export const paymentService = {
       case "refund.updated":
         if (evenement.data.object.status === "failed") {
           await this.remboursementEchoue(evenement.data.object);
+        } else {
+          // « pending » → « succeeded » (ou « canceled ») : l'état de la
+          // commande suit ce que Stripe a réellement rendu.
+          await this.remboursementMisAJour(evenement.data.object);
         }
         break;
       default:
@@ -403,23 +407,47 @@ export const paymentService = {
     return this.noterRemboursement(paiement, charge);
   },
 
+  /**
+   * Ramène la commande et le paiement à ce que Stripe a réellement rendu.
+   *
+   * Seuls les remboursements « succeeded » comptent : `amount_refunded` d'une
+   * charge inclut ceux encore en attente, qui peuvent échouer ensuite. Une
+   * commande n'est « REFUNDED » que quand tout le montant est rendu.
+   */
   async noterRemboursement(paiement: { id: string; orderId: string; refundedAt: Date | null }, charge: Stripe.Charge) {
-    const total = charge.amount_refunded >= charge.amount;
+    const liste = await stripe.refunds.list({ charge: charge.id, limit: 100 });
+    const rendu = liste.data
+      .filter((r: Stripe.Refund) => r.status === "succeeded")
+      .reduce((somme: number, r: Stripe.Refund) => somme + r.amount, 0);
+    const total = rendu >= charge.amount;
     await db.$transaction(async (tx) => {
-        await tx.order.update({
-          where: { id: paiement.orderId },
-          data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
-        });
+      await tx.order.update({
+        where: { id: paiement.orderId },
+        data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
+      });
       await tx.payment.update({
-      where: { id: paiement.id },
-      data: {
-        refundedAmount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
-        refundedAt: charge.amount_refunded ? paiement.refundedAt ?? new Date() : null,
-        status: total ? "REFUNDED" : "SUCCEEDED",
-      },
-    });
+        where: { id: paiement.id },
+        data: {
+          refundedAmount: rendu ? rendu / 100 : null,
+          refundedAt: rendu ? paiement.refundedAt ?? new Date() : null,
+          status: total ? "REFUNDED" : "SUCCEEDED",
+        },
+      });
     });
     return paiement;
+  },
+
+  /** Un remboursement a changé d'état chez Stripe (en attente, réussi, annulé). */
+  async remboursementMisAJour(remboursement: Stripe.Refund) {
+    const paymentIntentId = idIntention(remboursement.payment_intent);
+    if (!paymentIntentId) return null;
+
+    const paiement = await db.payment.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (!paiement) return null;
+
+    const chargeId = typeof remboursement.charge === "string" ? remboursement.charge : remboursement.charge?.id;
+    if (!chargeId) return null;
+    return this.noterRemboursement(paiement, await stripe.charges.retrieve(chargeId));
   },
 
   /**
@@ -477,19 +505,48 @@ export const paymentService = {
       return null;
     }
 
-    const remboursement = await stripe.refunds.create(
-      {
-        payment_intent: paymentIntentId,
-        reason: "requested_by_customer",
-        metadata: { orderId, raison: raison.slice(0, 500) },
-      },
-      { idempotencyKey: `remboursement-${orderId}${paiement?.stripeRefundId ? `-${paiement.stripeRefundId}` : ''}` }
-    );
+    // Un remboursement déjà demandé (en attente ou réussi) est repris, pas
+    // doublé. Seul un remboursement échoué ou annulé autorise une nouvelle
+    // demande, avec une autre clé d'idempotence.
+    let precedent: Stripe.Refund | null = null;
+    if (paiement?.stripeRefundId) {
+      try {
+        precedent = await stripe.refunds.retrieve(paiement.stripeRefundId);
+      } catch (err) {
+        logger.warn("Remboursement précédent illisible chez Stripe", { orderId, error: (err as Error).message });
+      }
+    }
+    const reprise = precedent && ["pending", "requires_action", "succeeded"].includes(precedent.status ?? "");
+
+    const remboursement: Stripe.Refund = reprise && precedent
+      ? precedent
+      : await stripe.refunds.create(
+          {
+            payment_intent: paymentIntentId,
+            reason: "requested_by_customer",
+            metadata: { orderId, raison: raison.slice(0, 500) },
+          },
+          { idempotencyKey: `remboursement-${orderId}${paiement?.stripeRefundId ? `-${paiement.stripeRefundId}` : ''}` }
+        );
 
     if (remboursement.status === 'failed' || remboursement.status === 'canceled') {
       await db.payment.updateMany({ where: { orderId }, data: { stripeRefundId: remboursement.id } });
       throw new ApiError(502, 'Stripe n’a pas effectué le remboursement.', 'REFUND_FAILED');
     }
+
+    // Demandé mais pas encore rendu : on garde la trace du remboursement, la
+    // commande reste « payée » jusqu'à la confirmation de Stripe
+    // (refund.updated / charge.refunded).
+    if (remboursement.status !== 'succeeded') {
+      await db.payment.updateMany({ where: { orderId }, data: { stripeRefundId: remboursement.id } });
+      logger.info("Remboursement demandé, en attente de confirmation Stripe", {
+        orderId,
+        refundId: remboursement.id,
+        statut: remboursement.status,
+      });
+      return remboursement;
+    }
+
     const refundedAt = new Date();
     await db.$transaction(async (tx) => {
       await tx.order.update({

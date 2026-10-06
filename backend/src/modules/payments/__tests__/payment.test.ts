@@ -16,7 +16,7 @@ const db: any = {
 const stripe: any = {
   webhooks: vraiStripe.webhooks,
   paymentIntents: { create: fn(), retrieve: fn(), cancel: fn() },
-  refunds: { create: fn() },
+  refunds: { create: fn(), retrieve: fn(), list: fn() },
   charges: { retrieve: fn() },
 };
 
@@ -177,7 +177,8 @@ describe("webhook Stripe", () => {
 
   it("repasse la commande en « payée » si le remboursement échoue", async () => {
     db.payment.findFirst.mockResolvedValue({ id: "pay-1", orderId: "cmd-1", stripeRefundId: "re_1" });
-    stripe.paymentIntents.retrieve.mockResolvedValue({ latest_charge: { amount: 2350, amount_refunded: 0 } });
+    stripe.paymentIntents.retrieve.mockResolvedValue({ latest_charge: { id: "ch_1", amount: 2350, amount_refunded: 0 } });
+    stripe.refunds.list.mockResolvedValue({ data: [{ id: "re_1", amount: 2350, status: "failed" }] });
     const { corps, signature } = signe({
       id: "evt_1",
       object: "event",
@@ -197,7 +198,7 @@ describe("webhook Stripe", () => {
 describe("rembourserCommande", () => {
   it("rembourse une commande payée", async () => {
     db.order.findUnique.mockResolvedValue(commande({ paymentStatus: "SUCCEEDED" }));
-    stripe.refunds.create.mockResolvedValue({ id: "re_1", amount: 2350, status: "pending" });
+    stripe.refunds.create.mockResolvedValue({ id: "re_1", amount: 2350, status: "succeeded" });
 
     const remboursement = await paymentService.rembourserCommande("cmd-1", "Commande refusée");
 
@@ -207,6 +208,55 @@ describe("rembourserCommande", () => {
       stripeRefundId: "re_1",
       refundedAmount: 23.5,
     });
+  });
+
+  it("remboursement en attente : la commande n'est pas « remboursée »", async () => {
+    db.order.findUnique.mockResolvedValue(commande({ paymentStatus: "SUCCEEDED" }));
+    stripe.refunds.create.mockResolvedValue({ id: "re_1", amount: 2350, status: "pending" });
+
+    await paymentService.rembourserCommande("cmd-1", "Commande refusée");
+
+    expect(db.order.update).not.toHaveBeenCalled();
+    expect(db.payment.upsert).not.toHaveBeenCalled();
+    expect(db.payment.updateMany).toHaveBeenCalledWith({ where: { orderId: "cmd-1" }, data: { stripeRefundId: "re_1" } });
+  });
+
+  it("un remboursement déjà en attente n'est pas redemandé", async () => {
+    db.order.findUnique.mockResolvedValue(
+      commande({ paymentStatus: "SUCCEEDED", payments: [{ stripePaymentIntentId: "pi_1", stripeRefundId: "re_1" }] }),
+    );
+    stripe.refunds.retrieve.mockResolvedValue({ id: "re_1", amount: 2350, status: "pending" });
+
+    await paymentService.rembourserCommande("cmd-1", "Commande refusée");
+
+    expect(stripe.refunds.create).not.toHaveBeenCalled();
+    expect(db.order.update).not.toHaveBeenCalled();
+  });
+
+  it("refund.updated « succeeded » : la commande devient remboursée", async () => {
+    db.payment.findFirst.mockResolvedValue({ id: "pay-1", orderId: "cmd-1", refundedAt: null });
+    stripe.charges.retrieve.mockResolvedValue({ id: "ch_1", amount: 2350 });
+    stripe.refunds.list.mockResolvedValue({ data: [{ id: "re_1", amount: 2350, status: "succeeded" }] });
+    const { corps, signature } = signe({
+      id: "evt-ref-ok",
+      type: "refund.updated",
+      data: { object: { id: "re_1", object: "refund", status: "succeeded", payment_intent: "pi_1", charge: "ch_1" } },
+    });
+
+    await paymentService.handleWebhook(corps, signature);
+
+    expect(db.order.update.mock.calls[0][0].data.paymentStatus).toBe("REFUNDED");
+  });
+
+  it("charge.refunded avec un remboursement encore en attente : reste payée", async () => {
+    stripe.charges.retrieve.mockResolvedValue({ id: "ch_1", payment_intent: "pi_1", amount: 2350, amount_refunded: 2350 });
+    stripe.refunds.list.mockResolvedValue({ data: [{ id: "re_1", amount: 2350, status: "pending" }] });
+    db.payment.findFirst.mockResolvedValue({ id: "pay-1", orderId: "cmd-1", refundedAt: null });
+
+    await paymentService.marquerRembourse({ id: "ch_1", payment_intent: "pi_1" } as any);
+
+    expect(db.order.update.mock.calls[0][0].data.paymentStatus).toBe("SUCCEEDED");
+    expect(db.payment.update.mock.calls[0][0].data).toMatchObject({ status: "SUCCEEDED", refundedAmount: null });
   });
 
   it("annule l'intention d'une commande pas encore payée", async () => {
@@ -298,12 +348,14 @@ describe('intégrité des événements Stripe', () => {
   });
   it('un événement partiel ancien utilise le cumul Stripe actuel', async () => {
     stripe.charges.retrieve.mockResolvedValue({ id: 'ch_1', payment_intent: 'pi_1', amount: 2350, amount_refunded: 2350 });
+    stripe.refunds.list.mockResolvedValue({ data: [{ id: 're_1', amount: 2350, status: 'succeeded' }] });
     await paymentService.marquerRembourse({ id: 'ch_1', payment_intent: 'pi_1', amount: 2350, amount_refunded: 100 } as any);
     expect(db.payment.update.mock.calls[0][0].data).toMatchObject({ status: 'REFUNDED', refundedAmount: 23.5 });
     expect(db.order.update.mock.calls[0][0].data.paymentStatus).toBe('REFUNDED');
   });
   it('un échec de remboursement conserve les remboursements partiels réussis', async () => {
-    stripe.paymentIntents.retrieve.mockResolvedValue({ latest_charge: { amount: 2350, amount_refunded: 500 } });
+    stripe.paymentIntents.retrieve.mockResolvedValue({ latest_charge: { id: 'ch_1', amount: 2350, amount_refunded: 500 } });
+    stripe.refunds.list.mockResolvedValue({ data: [{ id: 're_ok', amount: 500, status: 'succeeded' }, { id: 're_1', amount: 1850, status: 'failed' }] });
     await paymentService.remboursementEchoue({ id: 're_1', payment_intent: 'pi_1' } as any);
     expect(db.payment.update.mock.calls[0][0].data).toMatchObject({ status: 'SUCCEEDED', refundedAmount: 5 });
   });
@@ -316,6 +368,7 @@ describe('intégrité des événements Stripe', () => {
   });
   it('après un remboursement échoué, une nouvelle tentative a une autre clé', async () => {
     db.order.findUnique.mockResolvedValue(commande({ paymentStatus: 'SUCCEEDED', payments: [{ stripePaymentIntentId: 'pi_1', stripeRefundId: 're_failed' }] }));
+    stripe.refunds.retrieve.mockResolvedValue({ id: 're_failed', status: 'failed', amount: 2350 });
     stripe.refunds.create.mockResolvedValue({ id: 're_new', status: 'succeeded', amount: 2350 });
     await paymentService.rembourserCommande('cmd-1', 'test');
     expect(stripe.refunds.create.mock.calls[0][1]).toEqual({ idempotencyKey: 'remboursement-cmd-1-re_failed' });
