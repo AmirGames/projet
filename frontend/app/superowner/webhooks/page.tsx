@@ -26,7 +26,7 @@ import {
   Trash2,
   Webhook as WebhookIcon,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -67,6 +67,7 @@ const COULEUR_ETAT: Record<string, string> = {
 const jeton = () => localStorage.getItem('accessToken');
 
 export default function WebhooksPage() {
+  const locale = useLocale();
   const t = useTranslations('superownerWebhooks');
   const tCommon = useTranslations('common');
   const [abonnements, setAbonnements] = useState<Abonnement[]>([]);
@@ -313,7 +314,7 @@ export default function WebhooksPage() {
             <button
               onClick={() => navigator.clipboard?.writeText(secret.valeur)}
               className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
-              title="Copier"
+              title={t('copier')}
             >
               <Copy size={16} />
             </button>
@@ -483,7 +484,7 @@ export default function WebhooksPage() {
 
               <p className="text-xs text-gray-500">
                 {abonnement.lastTriggered
-                  ? t('lastSent', { date: new Date(abonnement.lastTriggered).toLocaleString('fr-FR') })
+                  ? t('lastSent', { date: new Date(abonnement.lastTriggered).toLocaleString(locale) })
                   : t('noSent')}
                 {abonnement.retryCount > 0 &&
                   ` · ${t('abandonedAttempts', { count: abonnement.retryCount })}`}
@@ -531,7 +532,7 @@ export default function WebhooksPage() {
                               {envoi.nextAttemptAt && !envoi.success && (
                                 <span className="text-amber-600">
                                   {' '}
-                                  · {t('retryAt', { time: new Date(envoi.nextAttemptAt).toLocaleTimeString('fr-FR') })}
+                                  · {t('retryAt', { time: new Date(envoi.nextAttemptAt).toLocaleTimeString(locale) })}
                                 </span>
                               )}
                               {envoi.abandonedAt && (
@@ -539,7 +540,7 @@ export default function WebhooksPage() {
                               )}
                             </td>
                             <td className="py-2 text-gray-500 text-xs">
-                              {new Date(envoi.createdAt).toLocaleString('fr-FR')}
+                              {new Date(envoi.createdAt).toLocaleString(locale)}
                             </td>
                           </tr>
                         ))}

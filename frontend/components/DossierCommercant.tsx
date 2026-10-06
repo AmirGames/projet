@@ -279,7 +279,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
         {t('titre')}
         {dossier.piecesAExaminer > 0 && (
           <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-500/40 text-xs font-semibold">
-            {dossier.piecesAExaminer} pièce{dossier.piecesAExaminer > 1 ? 's' : ''} à examiner
+            {t('piecesAExaminer', { n: dossier.piecesAExaminer })}
           </span>
         )}
       </h2>

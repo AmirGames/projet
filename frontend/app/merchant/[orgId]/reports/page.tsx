@@ -5,7 +5,7 @@ import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { Download, TrendingUp, DollarSign, ShoppingCart, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -50,6 +50,7 @@ interface RevenueData {
 type TabType = 'sales' | 'revenue' | 'products' | 'customers';
 
 export default function ReportsPage() {
+  const locale = useLocale();
   const t = useTranslations('merchantreports');
 
   const { storeId } = useCurrentStore();
@@ -184,9 +185,9 @@ export default function ReportsPage() {
         <div className="mt-6 border-b border-gray-200">
           <div className="flex gap-8">
             {[
-              { id: 'sales' as TabType, label: 'Ventes', icon: ShoppingCart },
-              { id: 'revenue' as TabType, label: 'Revenus', icon: DollarSign },
-              { id: 'products' as TabType, label: 'Produits', icon: TrendingUp },
+              { id: 'sales' as TabType, label: t('ongletVentes'), icon: ShoppingCart },
+              { id: 'revenue' as TabType, label: t('ongletRevenus'), icon: DollarSign },
+              { id: 'products' as TabType, label: t('ongletProduits'), icon: TrendingUp },
               { id: 'customers' as TabType, label: t('customers'), icon: Users },
             ].map(({ id, label }) => (
               <button
@@ -364,7 +365,7 @@ export default function ReportsPage() {
                       <td className="px-6 py-3 text-green-600 font-semibold">{customer.totalSpent.toFixed(2)} €</td>
                       <td className="px-6 py-3 text-blue-600">{customer.averageOrderValue.toFixed(2)} €</td>
                       <td className="px-6 py-3 text-gray-500 text-xs">
-                        {new Date(customer.lastOrder).toLocaleDateString('fr-FR')}
+                        {new Date(customer.lastOrder).toLocaleDateString(locale)}
                       </td>
                     </tr>
                   ))}

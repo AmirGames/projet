@@ -495,7 +495,7 @@ export default function SystemConfigPage() {
                   <button
                     onClick={() => navigator.clipboard?.writeText(nouvelleCle)}
                     className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
-                    title="Copier"
+                    title={t('copier')}
                   >
                     <Copy size={16} />
                   </button>

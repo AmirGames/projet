@@ -644,7 +644,7 @@ export default function DeliveryZonesPage() {
                   min="0"
                   value={formData.freeAbove}
                   onChange={(e) => setFormData({ ...formData, freeAbove: e.target.value })}
-                  placeholder="Jamais"
+                  placeholder={t('jamais')}
                   className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 />
               </div>

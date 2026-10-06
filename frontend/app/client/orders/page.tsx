@@ -2,7 +2,7 @@
 
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Clock, MapPin, ChevronRight, RotateCcw } from 'lucide-react';
@@ -54,6 +54,7 @@ const statusTranslationKeys: Record<string, string> = {
 const TERMINEES = ['COMPLETED', 'REJECTED'];
 
 export default function OrdersPage() {
+  const locale = useLocale();
   const t = useTranslations('clientOrders');
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -204,7 +205,7 @@ export default function OrdersPage() {
                         </p>
                         <p className="text-gray-500 text-sm flex items-center gap-2 mt-1">
                           <Clock size={14} />
-                          {new Date(order.createdAt).toLocaleString('fr-FR')}
+                          {new Date(order.createdAt).toLocaleString(locale)}
                         </p>
                       </div>
                       <ChevronRight size={24} className="text-gray-400" />

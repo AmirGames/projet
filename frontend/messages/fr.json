@@ -111,7 +111,8 @@
       "chauffeurs": "Chauffeurs",
       "societesDrive": "Sociétés",
       "coursesDrive": "Courses",
-      "tarifsDrive": "Tarifs"
+      "tarifsDrive": "Tarifs",
+      "relaisAssistant": "Relais Assistant ZupOne"
     },
     "openMenu": "Ouvrir le menu",
     "toggleSidebar": "Replier ou déplier le menu"
@@ -771,7 +772,8 @@
     "paid": "Versés",
     "cancelled": "Annulés",
     "empty": "Aucun relevé dans cet état",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "periode": "du {debut} au {fin}"
   },
   "superownerDrivers": {
     "title": "Livreurs",
@@ -1009,7 +1011,8 @@
     "testError": "❌ Essai impossible",
     "testSending": "Envoi d’essai en cours…",
     "test_send_label": "Envoi d’essai vers {url}",
-    "echec": "échec"
+    "echec": "échec",
+    "copier": "Copier"
   },
   "superownerStoreDetail": {
     "title": "Détail de la boutique",
@@ -1158,7 +1161,9 @@
     "mark_as_read": "Marquer comme lu",
     "delete": "Supprimer",
     "total": "Total",
-    "totalCount": "notification(s)"
+    "totalCount": "notification(s)",
+    "lu": "Lu",
+    "nonLu": "Non lu"
   },
   "superownerSystemConfig": {
     "title": "Configuration Système",
@@ -1228,7 +1233,8 @@
     "generation": "Génération...",
     "generer": "Générer",
     "utiliseeLe": "Utilisée le {date}",
-    "jamaisUtilisee": "Jamais utilisée"
+    "jamaisUtilisee": "Jamais utilisée",
+    "copier": "Copier"
   },
   "merchantDashboard": {
     "loading": "Chargement…",
@@ -1464,7 +1470,8 @@
     "productCount": "{count, plural, =0 {aucun produit} one {# produit} other {# produits}}",
     "msgReorganises": "✅ Produits réorganisés",
     "msgErreurReorg": "❌ Erreur lors de la réorganisation",
-    "msgConnexion": "❌ Erreur de connexion au serveur"
+    "msgConnexion": "❌ Erreur de connexion au serveur",
+    "changementImpossible": "Changement impossible"
   },
   "merchantCustomers": {
     "loading": "Chargement des clients...",
@@ -1836,7 +1843,14 @@
     "reorderUnavailable": "Ce commerce n'est pas joignable pour le moment.",
     "reorderSeeCart": "Voir le panier",
     "commandeNumero": "Commande {numero}",
-    "produitSupprime": "Produit supprimé"
+    "produitSupprime": "Produit supprimé",
+    "notes": {
+      "1": "Mauvais",
+      "2": "Acceptable",
+      "3": "Moyen",
+      "4": "Bon",
+      "5": "Excellent"
+    }
   },
   "clientOrderDetail": {
     "statusPending": "En attente",
@@ -2423,7 +2437,9 @@
     "retourClients": "Retour aux clients",
     "enregistrer": "Enregistrer",
     "chargementFiche": "Impossible de charger la fiche client",
-    "noteEnregistree": "✅ Note enregistrée"
+    "noteEnregistree": "✅ Note enregistrée",
+    "noteImpossible": "Impossible d'enregistrer la note",
+    "operationImpossible": "Opération impossible"
   },
   "merchantdeliveryzones": {
     "create": "Créer",
@@ -2495,7 +2511,8 @@
     "minutes": "{n} min",
     "mettreAJour": "Mettre à jour",
     "offerteDesCarte": "Livraison offerte dès",
-    "sommetsTitre": "Sommets"
+    "sommetsTitre": "Sommets",
+    "jamais": "Jamais"
   },
   "merchantInvoices": {
     "actionDownload": "Télécharger",
@@ -2542,7 +2559,8 @@
       "frais": "Frais",
       "totalMaj": "TOTAL"
     },
-    "statusRefunded": "Remboursée"
+    "statusRefunded": "Remboursée",
+    "articles": "{n, plural, one {# article} other {# articles}}"
   },
   "merchantmarketing": {
     "all": "Toutes",
@@ -2675,7 +2693,9 @@
     "voirFacture": "Voir la facture",
     "chargementCommande": "Impossible de charger la commande",
     "noteEnregistree": "✅ Note enregistrée",
-    "produitSupprime": "Produit supprimé"
+    "produitSupprime": "Produit supprimé",
+    "retrait": "Retrait",
+    "noteImpossible": "Impossible d'enregistrer la note"
   },
   "merchantpaymentmethods": {
     "active": "Actif",
@@ -2721,7 +2741,8 @@
     "msgConnexion": "❌ Erreur de connexion au serveur",
     "desactiver": "Désactiver",
     "activer": "Activer",
-    "pageSur": "Page {page} sur {total}"
+    "pageSur": "Page {page} sur {total}",
+    "enregistrementImpossible": "Enregistrement impossible"
   },
   "merchantproductmedia": {
     "deleteError": "Erreur lors de la suppression",
@@ -2894,7 +2915,10 @@
     "nom": "Nom",
     "email": "Email",
     "totalDepense": "Total Dépensé",
-    "derniereVisite": "Dernière Visite"
+    "derniereVisite": "Dernière Visite",
+    "ongletVentes": "Ventes",
+    "ongletRevenus": "Revenus",
+    "ongletProduits": "Produits"
   },
   "merchantstaff": {
     "create": "Créer",
@@ -2983,7 +3007,8 @@
     "modifierJour": "Modifier {jour}",
     "ouverture": "Ouverture {n} — {jour}",
     "fermeture": "Fermeture {n} — {jour}",
-    "enregistrerJour": "Enregistrer {jour}"
+    "enregistrerJour": "Enregistrer {jour}",
+    "commandesAuMaximum": "{n, plural, one {# commande au maximum} other {# commandes au maximum}}"
   },
   "merchanttaxsettings": {
     "active": "Active",
@@ -3033,7 +3058,9 @@
     "msgCategorie": "❌ Sélectionnez au moins une catégorie",
     "msgProduit": "❌ Sélectionnez au moins un produit",
     "msgConnexion": "❌ Erreur de connexion au serveur",
-    "pageSur": "Page {page} sur {total}"
+    "pageSur": "Page {page} sur {total}",
+    "exempleTaux": "Ex : 6",
+    "enregistrementImpossible": "Enregistrement impossible"
   },
   "merchantSubscription": {
     "back": "Retour",
@@ -3340,7 +3367,8 @@
     "period": "Période",
     "reportStoppedTransferComing": "Relevé arrêté, virement à venir",
     "status": "État",
-    "yourReports": "Vos relevés"
+    "yourReports": "Vos relevés",
+    "periode": "du {debut} au {fin}"
   },
   "notificationBell": {
     "markAllAsRead": "Marquer tout comme lu",
@@ -4446,7 +4474,8 @@
     "remise": "Remise",
     "remiseCode": "Remise ({code})",
     "dontTva": "dont TVA",
-    "dontTvaTaux": "dont TVA {taux} %"
+    "dontTvaTaux": "dont TVA {taux} %",
+    "offerte": "Offerte"
   },
   "choixPourboire": {
     "groupe": "Pourboire pour le livreur",
@@ -4620,7 +4649,9 @@
     "videAide": "Choisissez un commerce et composez votre commande.",
     "voirCommerces": "Voir les commerces",
     "quelPanier": "Quel panier voulez-vous commander ?",
-    "plusieurs": "Vous avez un panier chez plusieurs commerces. Une commande ne concerne qu'un commerce à la fois."
+    "plusieurs": "Vous avez un panier chez plusieurs commerces. Une commande ne concerne qu'un commerce à la fois.",
+    "commerce": "Commerce",
+    "articles": "{n, plural, one {# article} other {# articles}}"
   },
   "confirmationCommande": {
     "envoyee": "Commande envoyée",
@@ -4767,7 +4798,13 @@
   "enTeteClient": {
     "deconnexion": "Déconnexion",
     "connexion": "Connexion",
-    "monEspace": "Mon espace"
+    "monEspace": "Mon espace",
+    "nav": {
+      "accueil": "Accueil",
+      "favoris": "Favoris",
+      "commandes": "Commandes",
+      "profil": "Profil"
+    }
   },
   "ancienneVitrine": {
     "introuvable": "Ce commerce est introuvable",
@@ -4850,7 +4887,9 @@
     "preuveRemise": "Preuve de la remise",
     "completee": "✓ Livraison complétée !",
     "retourDans": "Retour au tableau de bord dans 2 secondes...",
-    "verification": "Vérification…"
+    "verification": "Vérification…",
+    "essaisRestants": "{n, plural, one {# essai restant} other {# essais restants}}",
+    "commerce": "Commerce"
   },
   "propositionsCourses": {
     "horsLigne": "Vous avez été mis hors ligne.",
@@ -4980,7 +5019,8 @@
     "nouvelles": "{n, plural, one {# nouvelle commande} other {# nouvelles commandes}}",
     "aAccepter": "{n, plural, one {# nouvelle commande à accepter} other {# nouvelles commandes à accepter}}",
     "activerSonnerie": "Activer la sonnerie",
-    "livreurTrouve": "<b>Livreur trouvé</b> — {livreur} a accepté la commande #{numero} et arrive au commerce."
+    "livreurTrouve": "<b>Livreur trouvé</b> — {livreur} a accepté la commande #{numero} et arrive au commerce.",
+    "fermer": "Fermer"
   },
   "statistiquesLivreur": {
     "indisponibles": "Statistiques indisponibles.",
@@ -5249,7 +5289,8 @@
       "PAID": "Versé",
       "CARRIED": "Reporté",
       "CANCELLED": "Annulé"
-    }
+    },
+    "erreur": "Erreur"
   },
   "graphiqueColonnes": {
     "vide": "Aucune course sur la période",
@@ -5265,7 +5306,8 @@
     "course": "course",
     "lu": "Lu",
     "envoye": "Envoyé",
-    "vide": "Aucun message pour le moment."
+    "vide": "Aucun message pour le moment.",
+    "envoyer": "Envoyer"
   },
   "cadreCommercant": {
     "tableau": "Tableau de bord",
@@ -5391,7 +5433,8 @@
     "aucunePiece": "Aucune pièce déposée.",
     "serveurMuet": "Le serveur ne répond pas",
     "choisirPieceFichier": "Choisissez une pièce et un fichier",
-    "erreurConnexion": "Erreur de connexion"
+    "erreurConnexion": "Erreur de connexion",
+    "piecesAExaminer": "{n, plural, one {# pièce à examiner} other {# pièces à examiner}}"
   },
   "facturesPeppol": {
     "chargementImpossible": "Chargement impossible",
@@ -5864,7 +5907,8 @@
   "apercuDocument": {
     "chargement": "Chargement…",
     "impossible": "Impossible d'afficher ce fichier ici.",
-    "ouvrir": "Ouvrir dans un nouvel onglet"
+    "ouvrir": "Ouvrir dans un nouvel onglet",
+    "fermer": "Fermer l'aperçu"
   },
   "ancienneGestionBoutique": {
     "ouverture": "Ouverture de votre boutique..."
@@ -5882,5 +5926,322 @@
     "reseauLu": "Erreur réseau : impossible de marquer comme lu.",
     "serveurTous": "Erreur serveur : impossible de marquer tous comme lus.",
     "reseauTous": "Erreur réseau : impossible de marquer tous comme lus."
+  },
+  "devenirContenus": {
+    "livreur": {
+      "badge": "Livreur ZupEat",
+      "titre": "Livrez près de chez vous, quand vous le voulez",
+      "accroche": "À vélo, en scooter ou en voiture : vous vous connectez quand vous êtes disponible, et les courses des commerces du quartier vous sont proposées.",
+      "cta": "Créer mon dossier livreur",
+      "conditions": "conditions livreurs",
+      "avantages": [
+        {
+          "titre": "Liberté d’horaires",
+          "texte": "Pas de planning imposé : vous passez en ligne ou en pause d’un geste."
+        },
+        {
+          "titre": "Courses proches",
+          "texte": "Chaque course est proposée au livreur disponible le plus proche du commerce."
+        },
+        {
+          "titre": "Rémunération claire",
+          "texte": "Le montant de chaque course est affiché avant acceptation, et vos versements sont suivis dans votre espace."
+        }
+      ],
+      "BE": {
+        "etapes": [
+          {
+            "titre": "Créez votre compte",
+            "texte": "Nom, e‑mail, téléphone et type de véhicule."
+          },
+          {
+            "titre": "Envoyez vos pièces",
+            "texte": "Carte d’identité ou titre de séjour, numéro d’entreprise (BCE) et documents du véhicule si besoin."
+          },
+          {
+            "titre": "Validation",
+            "texte": "Notre équipe examine votre dossier une seule fois."
+          },
+          {
+            "titre": "Première course",
+            "texte": "Passez en ligne, acceptez une course et remettez-la avec le code à 4 chiffres du client."
+          }
+        ],
+        "prerequis": [
+          "Avoir 18 ans ou plus",
+          "Une carte d’identité belge, européenne ou un titre de séjour permettant de travailler en Belgique",
+          "Un statut d’indépendant (à titre principal, complémentaire ou étudiant‑indépendant) avec numéro d’entreprise BCE et affiliation à une caisse d’assurances sociales",
+          "Un vélo, un cyclomoteur, une moto ou une voiture — avec le permis correspondant (AM, A ou B) et une assurance RC pour les véhicules motorisés",
+          "Un smartphone avec connexion internet et localisation"
+        ],
+        "questions": [
+          {
+            "question": "Suis-je salarié de ZupEat ?",
+            "reponse": "Non, vous exercez comme indépendant et restez libre d’accepter ou de refuser les courses."
+          },
+          {
+            "question": "Je suis étudiant, puis-je livrer ?",
+            "reponse": "Oui, sous le statut d’étudiant‑indépendant, à condition de respecter les règles de ce statut (inscription BCE et caisse d’assurances sociales)."
+          },
+          {
+            "question": "Dois-je facturer la TVA ?",
+            "reponse": "Cela dépend de votre chiffre d’affaires : sous le seuil de la franchise TVA, vous n’en facturez pas. Votre comptable ou votre guichet d’entreprise peut vous le confirmer."
+          },
+          {
+            "question": "Puis-je refuser une course ?",
+            "reponse": "Oui. Une course refusée est simplement proposée au livreur suivant."
+          }
+        ]
+      },
+      "FR": {
+        "etapes": [
+          {
+            "titre": "Créez votre compte",
+            "texte": "Nom, e‑mail, téléphone et type de véhicule."
+          },
+          {
+            "titre": "Envoyez vos pièces",
+            "texte": "Pièce d’identité, numéro SIRET et documents du véhicule si besoin."
+          },
+          {
+            "titre": "Validation",
+            "texte": "Notre équipe examine votre dossier une seule fois."
+          },
+          {
+            "titre": "Première course",
+            "texte": "Passez en ligne, acceptez une course et remettez-la avec le code à 4 chiffres du client."
+          }
+        ],
+        "prerequis": [
+          "Avoir 18 ans ou plus",
+          "Une pièce d’identité valide et le droit de travailler en France",
+          "Un statut d’indépendant (micro‑entreprise par exemple) avec numéro SIRET",
+          "Un vélo, un scooter ou une voiture — avec permis et assurance pour les véhicules motorisés",
+          "Un smartphone avec connexion internet et localisation"
+        ],
+        "questions": [
+          {
+            "question": "Suis-je salarié de ZupEat ?",
+            "reponse": "Non, vous exercez en tant qu’indépendant et restez libre d’accepter ou de refuser les courses."
+          },
+          {
+            "question": "Comment obtenir un SIRET ?",
+            "reponse": "En créant une micro‑entreprise sur le guichet unique de l’INPI ; le numéro est généralement attribué en quelques jours."
+          },
+          {
+            "question": "Puis-je refuser une course ?",
+            "reponse": "Oui. Une course refusée est simplement proposée au livreur suivant."
+          }
+        ]
+      }
+    },
+    "commercant": {
+      "badge": "Commerçant ZupEat",
+      "titre": "Votre commerce en ligne, en quelques minutes",
+      "accroche": "Restaurant, boulangerie, épicerie, fleuriste… Créez votre boutique, publiez votre catalogue et recevez des commandes livrées par des livreurs du quartier.",
+      "cta": "Créer ma boutique",
+      "conditions": "conditions commerçants",
+      "avantages": [
+        {
+          "titre": "Votre vitrine",
+          "texte": "Une boutique à votre nom, avec votre catalogue, vos photos et vos prix."
+        },
+        {
+          "titre": "Commandes en direct",
+          "texte": "Chaque commande arrive instantanément ; vous l’acceptez et suivez sa préparation."
+        },
+        {
+          "titre": "Livraison incluse",
+          "texte": "Un livreur est automatiquement envoyé dès que la commande est prête."
+        }
+      ],
+      "BE": {
+        "etapes": [
+          {
+            "titre": "Créez votre compte",
+            "texte": "Nom du commerce, type d’établissement et adresse."
+          },
+          {
+            "titre": "Complétez le dossier",
+            "texte": "Numéro d’entreprise (BCE), numéro de TVA et IBAN pour vos versements."
+          },
+          {
+            "titre": "Montez le catalogue",
+            "texte": "Produits, horaires par service et zones de livraison sur la carte."
+          },
+          {
+            "titre": "Ouvrez",
+            "texte": "Après validation, votre boutique est visible par les clients."
+          }
+        ],
+        "prerequis": [
+          "Un commerce inscrit à la Banque‑Carrefour des Entreprises (numéro d’entreprise) et, le cas échéant, un numéro de TVA",
+          "Pour l’alimentaire : l’enregistrement ou l’autorisation de l’AFSCA pour votre activité",
+          "Une adresse physique où les livreurs récupèrent les commandes",
+          "Un IBAN professionnel pour recevoir vos versements",
+          "Un appareil (téléphone, tablette ou ordinateur) pour recevoir les commandes"
+        ],
+        "questions": [
+          {
+            "question": "Combien ça coûte ?",
+            "reponse": "La création de la boutique est gratuite ; les formules et commissions sont détaillées dans votre espace commerçant."
+          },
+          {
+            "question": "Mes clients doivent-ils créer un compte ?",
+            "reponse": "Non, ils peuvent commander sans compte."
+          },
+          {
+            "question": "Puis-je fermer temporairement ma boutique ?",
+            "reponse": "Oui, vous gérez vos horaires et pouvez suspendre les commandes à tout moment."
+          },
+          {
+            "question": "La vente en ligne change-t-elle mes obligations AFSCA ?",
+            "reponse": "Votre autorisation ou enregistrement AFSCA doit couvrir la vente à distance et la livraison. En cas de doute, vérifiez auprès de votre unité locale de contrôle."
+          }
+        ]
+      },
+      "FR": {
+        "etapes": [
+          {
+            "titre": "Créez votre compte",
+            "texte": "Nom du commerce, type d’établissement et adresse."
+          },
+          {
+            "titre": "Complétez le dossier",
+            "texte": "SIRET, justificatifs et coordonnées bancaires pour vos versements."
+          },
+          {
+            "titre": "Montez le catalogue",
+            "texte": "Produits, horaires par service et zones de livraison sur la carte."
+          },
+          {
+            "titre": "Ouvrez",
+            "texte": "Après validation, votre boutique est visible par les clients."
+          }
+        ],
+        "prerequis": [
+          "Un commerce déclaré avec un numéro SIRET",
+          "Pour l’alimentaire : la déclaration de votre établissement auprès de la DDPP",
+          "Une adresse physique où les livreurs récupèrent les commandes",
+          "Un IBAN professionnel pour recevoir vos versements",
+          "Un appareil (téléphone, tablette ou ordinateur) pour recevoir les commandes"
+        ],
+        "questions": [
+          {
+            "question": "Combien ça coûte ?",
+            "reponse": "La création de la boutique est gratuite ; les formules et commissions sont détaillées dans votre espace commerçant."
+          },
+          {
+            "question": "Mes clients doivent-ils créer un compte ?",
+            "reponse": "Non, ils peuvent commander sans compte."
+          },
+          {
+            "question": "Puis-je fermer temporairement ma boutique ?",
+            "reponse": "Oui, vous gérez vos horaires et pouvez suspendre les commandes à tout moment."
+          }
+        ]
+      }
+    },
+    "chauffeur": {
+      "badge": "Chauffeur VTC · Bientôt disponible",
+      "titre": "Conduisez des passagers dans votre ville",
+      "accroche": "ZupDrive prépare son service de transport de personnes. Chauffeurs, faites-vous connaître dès maintenant pour faire partie des premiers sur la plateforme.",
+      "cta": "Je suis intéressé",
+      "sujetCandidature": "Candidature chauffeur VTC",
+      "avantages": [
+        {
+          "titre": "Vous choisissez vos horaires",
+          "texte": "Connectez-vous quand vous êtes disponible, sans planning imposé."
+        },
+        {
+          "titre": "Courses à proximité",
+          "texte": "Les demandes de trajet sont proposées au chauffeur disponible le plus proche."
+        },
+        {
+          "titre": "Prix affiché à l’avance",
+          "texte": "Le montant de la course est connu avant que vous l’acceptiez."
+        }
+      ],
+      "BE": {
+        "etapes": [
+          {
+            "titre": "Créez votre compte",
+            "texte": "Un seul compte ZupOne, puis ouvrez votre dossier chauffeur et indiquez votre Région (Bruxelles, Wallonie ou Flandre)."
+          },
+          {
+            "titre": "Dossier",
+            "texte": "Numéro BCE, licence régionale, permis avec sélection médicale, assurance, contrôle technique : tout se dépose en ligne."
+          },
+          {
+            "titre": "Validation",
+            "texte": "Notre équipe vérifie vos documents et votre véhicule."
+          },
+          {
+            "titre": "Premiers trajets",
+            "texte": "À l’ouverture du service, passez en ligne et acceptez vos courses."
+          }
+        ],
+        "prerequis": [
+          "Une autorisation d’exploitation délivrée par votre Région : Bruxelles‑Capitale, Wallonie (location de voiture avec chauffeur) ou Flandre (vergunning individueel bezoldigd personenvervoer)",
+          "Un permis B valide et un certificat de sélection médicale (chauffeur professionnel)",
+          "Un extrait de casier judiciaire récent",
+          "Un véhicule conforme aux exigences de votre Région, avec une assurance couvrant le transport rémunéré de personnes",
+          "Un statut d’indépendant ou une société, avec numéro d’entreprise BCE"
+        ],
+        "questions": [
+          {
+            "question": "Quand le service ouvre-t-il ?",
+            "reponse": "Le transport de personnes est en préparation. Les chauffeurs qui se sont fait connaître seront prévenus en premier."
+          },
+          {
+            "question": "Les règles sont-elles les mêmes partout en Belgique ?",
+            "reponse": "Non, le transport rémunéré de personnes est réglementé par chaque Région. Les documents demandés dépendent de la Région où vous exercez."
+          },
+          {
+            "question": "Je n’ai pas encore d’autorisation, puis-je candidater ?",
+            "reponse": "Non. L’autorisation régionale est obligatoire pour transporter des passagers : obtenez-la d’abord (voir les étapes ci-dessus), puis ouvrez votre dossier."
+          }
+        ],
+        "accroche": "ZupDrive prépare son service de transport de personnes. Chauffeurs, ouvrez votre dossier dès maintenant pour faire partie des premiers sur la plateforme.",
+        "cta": "Créer mon dossier chauffeur"
+      },
+      "FR": {
+        "etapes": [
+          {
+            "titre": "Faites-vous connaître",
+            "texte": "Envoyez-nous vos coordonnées et votre ville."
+          },
+          {
+            "titre": "Dossier",
+            "texte": "Carte VTC, permis, inscription au registre VTC, assurance et statut d’indépendant."
+          },
+          {
+            "titre": "Validation",
+            "texte": "Notre équipe vérifie vos documents et votre véhicule."
+          },
+          {
+            "titre": "Premiers trajets",
+            "texte": "À l’ouverture du service, passez en ligne et acceptez vos courses."
+          }
+        ],
+        "prerequis": [
+          "Une carte professionnelle VTC en cours de validité",
+          "Un permis B depuis au moins 3 ans",
+          "Une inscription au registre des exploitants VTC",
+          "Un véhicule conforme aux exigences VTC, avec une assurance transport de personnes",
+          "Un statut d’indépendant (société ou micro‑entreprise) avec numéro SIRET"
+        ],
+        "questions": [
+          {
+            "question": "Quand le service ouvre-t-il ?",
+            "reponse": "Le transport de personnes est en préparation. Les chauffeurs qui se sont fait connaître seront prévenus en premier."
+          },
+          {
+            "question": "Je n’ai pas encore ma carte VTC, puis-je candidater ?",
+            "reponse": "Non. La carte VTC est obligatoire pour transporter des passagers : obtenez-la d’abord, puis faites-vous connaître."
+          }
+        ]
+      }
+    }
   }
 }

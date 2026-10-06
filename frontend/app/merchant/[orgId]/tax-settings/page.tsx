@@ -175,7 +175,7 @@ export default function TaxSettingsPage() {
 
       const donnees = await reponse.json();
       if (!reponse.ok) {
-        setMessage(`❌ ${donnees.error || 'Enregistrement impossible'}`);
+        setMessage(`❌ ${donnees.error || t('enregistrementImpossible')}`);
         return;
       }
 
@@ -394,7 +394,7 @@ export default function TaxSettingsPage() {
                   type="number" required step="0.1" min="0" max="100"
                   value={formulaire.rate}
                   onChange={e => setFormulaire({ ...formulaire, rate: e.target.value })}
-                  placeholder="Ex : 6"
+                  placeholder={t('exempleTaux')}
                   className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
                 />
               </div>

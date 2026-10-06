@@ -38,10 +38,10 @@ export function EnTeteClient() {
   };
 
   const navItems = [
-    { href: '/client', label: 'Accueil', icon: Home },
-    { href: '/client/favorites', label: 'Favoris', icon: Heart },
-    { href: '/client/orders', label: 'Commandes', icon: ShoppingCart },
-    { href: '/client/profile', label: 'Profil', icon: User },
+    { href: '/client', label: t('nav.accueil'), icon: Home },
+    { href: '/client/favorites', label: t('nav.favoris'), icon: Heart },
+    { href: '/client/orders', label: t('nav.commandes'), icon: ShoppingCart },
+    { href: '/client/profile', label: t('nav.profil'), icon: User },
   ];
 
   const isActive = (href: string) => pathname === href;

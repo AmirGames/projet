@@ -292,7 +292,7 @@ export default function InvoicesPage() {
                         {euro(invoice.amount)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {invoice.itemCount} article{invoice.itemCount > 1 ? 's' : ''}
+                        {t('articles', { n: invoice.itemCount })}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[invoice.status] || statusColors.PENDING}`}>
@@ -303,7 +303,7 @@ export default function InvoicesPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(invoice.date).toLocaleDateString('fr-FR')}
+                        {new Date(invoice.date).toLocaleDateString(locale)}
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
                         <div className="flex items-center justify-center gap-2">

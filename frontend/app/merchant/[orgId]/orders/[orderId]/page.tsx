@@ -173,7 +173,7 @@ export default function DetailCommandePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${donnees.error || "Impossible d'enregistrer la note"}`);
+        setMessage(`❌ ${donnees.error || t('noteImpossible')}`);
         return;
       }
 
@@ -223,7 +223,7 @@ export default function DetailCommandePage() {
           </h1>
           <p className="text-gray-500 mt-1 flex items-center gap-2">
             <Clock size={16} />
-            {new Date(commande.createdAt).toLocaleString('fr-FR')}
+            {new Date(commande.createdAt).toLocaleString(locale)}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -400,7 +400,7 @@ export default function DetailCommandePage() {
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <MapPin size={20} className="text-orange-500" />
-              {commande.deliveryType === 'DELIVERY' ? t('delivery') : 'Retrait'}
+              {commande.deliveryType === 'DELIVERY' ? t('delivery') : t('retrait')}
             </h2>
             {commande.deliveryType === 'DELIVERY' ? (
               <div className="text-sm text-gray-700 space-y-1">

@@ -228,10 +228,9 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
                         className="flex items-center justify-between bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3 transition-colors"
                       >
                         <span className="font-semibold">
-                          {panier.storeName || 'Commerce'}
+                          {panier.storeName || tc('commerce')}
                           <span className="block text-xs text-gray-500">
-                            {nombreDArticles(panier.lignes)} article
-                            {nombreDArticles(panier.lignes) > 1 ? 's' : ''}
+                            {tc('articles', { n: nombreDArticles(panier.lignes) })}
                           </span>
                         </span>
                         <span className="text-red-600">{euro(totalDuPanier(panier.lignes))}</span>

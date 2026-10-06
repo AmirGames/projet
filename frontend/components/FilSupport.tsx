@@ -116,7 +116,7 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
           type="submit"
           disabled={envoi || !texte.trim()}
           className="px-4 bg-orange-600 hover:bg-orange-700 disabled:opacity-40 rounded-lg text-white"
-          aria-label="Envoyer"
+          aria-label={t('envoyer')}
         >
           <Send size={18} />
         </button>

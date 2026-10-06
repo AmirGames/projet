@@ -339,7 +339,6 @@ export default function LivreursPage() {
                       <span>
                         {/* « 0/4 pièces validées » : l'accord suit le nombre attendu. */}
                         {livreur.piecesValidees}/{livreur.piecesAttendues} {t('piecesLabel', { count: livreur.piecesAttendues })}
-                        {livreur.piecesAttendues > 1 ? 's' : ''}
                       </span>
                       <span>
                         {livreur.totalDeliveries} {livreur.totalDeliveries > 1 ? t('deliveries_plural') : t('delivery')}

@@ -201,7 +201,7 @@ export default function MerchantDashboard() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-gray-500 first-letter:uppercase">
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 className="text-3xl font-extrabold tracking-tight">{currentStore?.name}</h1>
           {stores.length > 1 && <p className="mt-1 text-sm text-gray-500">{t('changeSwitcher')}</p>}
@@ -281,7 +281,7 @@ export default function MerchantDashboard() {
                   <span className={`text-xs ${estAujourdhui ? 'font-extrabold text-gray-900' : 'font-semibold text-gray-500'}`}>
                     {estAujourdhui
                       ? t('today')
-                      : new Date(j.jour).toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' })}
+                      : new Date(j.jour).toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' })}
                   </span>
                 </div>
               );

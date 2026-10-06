@@ -2,7 +2,7 @@
 
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
@@ -569,6 +569,7 @@ function CarteCommerce({
   onFavori: (e: React.MouseEvent) => void;
   enRangee: boolean;
 }) {
+  const locale = useLocale();
   const t = useTranslations('clientHome');
   const ferme = store.isOpenNow === false;
   const minutes = minutesDe(store);
@@ -591,7 +592,7 @@ function CarteCommerce({
     store.genreLibelle,
     frais,
     delai,
-    store.distance ? t('distance', { km: store.distance.toLocaleString('fr-FR') }) : null,
+    store.distance ? t('distance', { km: store.distance.toLocaleString(locale) }) : null,
   ].filter(Boolean);
 
   return (

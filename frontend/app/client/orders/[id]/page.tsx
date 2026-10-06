@@ -15,7 +15,7 @@ import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { heure } from '@/lib/reponse-commande';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { cheminCommande, jetonDeSuivi } from '@/lib/suivi-commande';
 import { numeroCourt } from '@/lib/numero-commande';
@@ -55,6 +55,7 @@ interface Order {
 type OrderDelivery = Course;
 
 export default function OrderTrackingPage() {
+  const locale = useLocale();
   const t = useTranslations('clientOrderDetail');
   const tMotif = useTranslations('motifsRefus');
   const params = useParams();
@@ -249,7 +250,7 @@ export default function OrderTrackingPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{t('commandeNumero', { numero: numeroCourt(order.id) })}</h1>
               <p className="text-gray-500">
-                {new Date(order.createdAt).toLocaleString('fr-FR')}
+                {new Date(order.createdAt).toLocaleString(locale)}
               </p>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">

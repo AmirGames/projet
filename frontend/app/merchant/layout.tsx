@@ -97,7 +97,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
     } catch (error) {
       signalerErreur(t('chargementImpossible'), error);
     }
-  }, []);
+  }, [t]);
 
   useEffectChargement(() => {
     if (auNiveauDuChoix) charger();

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Loader, MapPin, Navigation } from 'lucide-react';
 
 import { Etoiles, NoterCourseDrive } from '@/components/NoterCourseDrive';
@@ -65,6 +65,7 @@ const ETAPE_SUIVANTE: Record<string, 'arrive' | 'demarrer' | 'terminer'> = {
 };
 
 export default function CoursesChauffeurPage() {
+  const locale = useLocale();
   const t = useTranslations('chauffeurCourses');
   const { user, isLoading } = useAuth();
   const [tableau, setTableau] = useState<Tableau | null>(null);
@@ -168,7 +169,7 @@ export default function CoursesChauffeurPage() {
             {tableau.maNote.moyenne != null ? (
               <>
                 <Etoiles valeur={tableau.maNote.moyenne} taille={14} />
-                {t('maMoyenne', { moyenne: tableau.maNote.moyenne.toLocaleString('fr-FR'), avis: tableau.maNote.avis })}
+                {t('maMoyenne', { moyenne: tableau.maNote.moyenne.toLocaleString(locale), avis: tableau.maNote.avis })}
               </>
             ) : (
               t('pasEncoreNote')
@@ -318,13 +319,14 @@ export default function CoursesChauffeurPage() {
 
 /** La moyenne du passager, pour aider à décider ; jamais le détail. */
 function NotePassager({ note }: { note: Moyenne | null }) {
+  const locale = useLocale();
   const t = useTranslations('chauffeurCourses');
   if (!note) return null;
   return (
     <span className="ml-2 inline-flex items-center gap-1 text-xs text-slate-500">
       {note.moyenne != null ? (
         <>
-          <Etoiles valeur={note.moyenne} taille={12} /> {note.moyenne.toLocaleString('fr-FR')} ({note.avis})
+          <Etoiles valeur={note.moyenne} taille={12} /> {note.moyenne.toLocaleString(locale)} ({note.avis})
         </>
       ) : (
         t('passagerNouveau')

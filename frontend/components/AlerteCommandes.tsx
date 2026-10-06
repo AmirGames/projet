@@ -148,7 +148,7 @@ export function AlerteCommandes({
           <button
             onClick={() => setLivreursTrouves((liste) => liste.filter((x) => x.orderId !== l.orderId))}
             className="text-green-800 hover:text-green-950"
-            aria-label="Fermer"
+            aria-label={t('fermer')}
           >
             <X size={16} />
           </button>

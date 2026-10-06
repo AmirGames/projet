@@ -107,7 +107,7 @@ export default function PaymentMethodsPage() {
       const donnees = await response.json();
 
       if (!response.ok) {
-        setMessage(`❌ ${donnees.error || 'Enregistrement impossible'}`);
+        setMessage(`❌ ${donnees.error || t('enregistrementImpossible')}`);
         return;
       }
 

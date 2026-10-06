@@ -556,7 +556,7 @@ export default function DeliveryTrackingPage() {
                   <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-orange-500 flex-shrink-0" />
                     <div>
-                      <p className="text-gray-900 font-semibold">{delivery.pickupStore || 'Commerce'}</p>
+                      <p className="text-gray-900 font-semibold">{delivery.pickupStore || t('commerce')}</p>
                       <p className="text-gray-500">{delivery.pickupAddress}</p>
                     </div>
                   </div>
@@ -692,9 +692,7 @@ export default function DeliveryTrackingPage() {
                         </p>
                         {delivery.essaisRestants != null && delivery.essaisRestants < 5 && (
                           <p className="text-xs text-amber-700">
-                            {delivery.essaisRestants} essai
-                            {delivery.essaisRestants > 1 ? 's' : ''} restant
-                            {delivery.essaisRestants > 1 ? 's' : ''}
+                            {t('essaisRestants', { n: delivery.essaisRestants })}
                           </p>
                         )}
                         <AttenteDepotLivreur

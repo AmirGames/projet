@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Wallet, Package, Star, CalendarDays, Gift } from 'lucide-react';
@@ -37,6 +37,7 @@ interface Revenus {
 }
 
 export default function RevenusLivreurPage() {
+  const locale = useLocale();
   const t = useTranslations('driverEarnings');
   const router = useRouter();
 
@@ -217,7 +218,7 @@ export default function RevenusLivreurPage() {
                         <tr key={course.id}>
                           <td className="py-3">{numeroCourt(course.orderId)}</td>
                           <td className="py-3 text-gray-500">
-                            {new Date(course.deliveredAt).toLocaleString('fr-FR')}
+                            {new Date(course.deliveredAt).toLocaleString(locale)}
                           </td>
                           <td className="py-3 text-right text-yellow-600">
                             {(course.pourboire ?? 0) + (course.pourboireApres ?? 0) > 0

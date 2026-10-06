@@ -117,7 +117,7 @@ export default function FicheClientPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${donnees.error || "Impossible d'enregistrer la note"}`);
+        setMessage(`❌ ${donnees.error || t('noteImpossible')}`);
         return;
       }
 
@@ -150,7 +150,7 @@ export default function FicheClientPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${donnees.error || 'Opération impossible'}`);
+        setMessage(`❌ ${donnees.error || t('operationImpossible')}`);
         return;
       }
 

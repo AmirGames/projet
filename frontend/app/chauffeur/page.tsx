@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle, Clock, FileUp, Loader, XCircle } from 'lucide-react';
 
 import { LienPiece } from '@/components/LienPiece';
@@ -547,6 +547,7 @@ function LignePiece({
   erreur?: string;
   onDeposer: (fichier: File, dateExpiration: string) => void;
 }) {
+  const locale = useLocale();
   const t = useTranslations('chauffeurDrive');
   const [dateExpiration, setDateExpiration] = useState('');
   const icones = {
@@ -569,7 +570,7 @@ function LignePiece({
               ? t('versionEnVigueurExpiree')
               : versionEnVigueur.dateExpiration
                 ? t('versionEnVigueurJusquau', {
-                    date: new Date(versionEnVigueur.dateExpiration).toLocaleDateString('fr-FR'),
+                    date: new Date(versionEnVigueur.dateExpiration).toLocaleDateString(locale),
                   })
                 : t('versionEnVigueur')}
           </p>

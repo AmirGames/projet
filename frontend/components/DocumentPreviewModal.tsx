@@ -92,7 +92,7 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded transition"
-            aria-label="Close preview"
+            aria-label={t('fermer')}
           >
             <X size={20} className="text-gray-700" />
           </button>

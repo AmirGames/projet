@@ -59,7 +59,7 @@ export default function ReversementsPage() {
         if (detail.ok) setOuvert((await detail.json()).data);
       }
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Erreur');
+      setErreur(e instanceof Error ? e.message : t('erreur'));
     }
   }, [orgId, t]);
 

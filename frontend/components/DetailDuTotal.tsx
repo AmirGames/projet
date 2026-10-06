@@ -46,7 +46,7 @@ export default function DetailDuTotal({
       {commande.deliveryType === 'DELIVERY' && (
         <div className="flex justify-between text-gray-500">
           <span>{t('livraison')}</span>
-          <span>{Number(commande.feesAmount) > 0 ? euro(commande.feesAmount) : 'Offerte'}</span>
+          <span>{Number(commande.feesAmount) > 0 ? euro(commande.feesAmount) : t('offerte')}</span>
         </div>
       )}
       {Number(commande.serviceFeeAmount) > 0 && (

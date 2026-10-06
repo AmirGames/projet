@@ -285,14 +285,7 @@ export default function ReviewPage() {
   }
 
   const getRatingText = (rating: number) => {
-    const texts: Record<number, string> = {
-      1: 'Mauvais',
-      2: 'Acceptable',
-      3: 'Moyen',
-      4: 'Bon',
-      5: 'Excellent'
-    };
-    return texts[rating] || '';
+    return rating >= 1 && rating <= 5 ? t(`notes.${rating}`) : '';
   };
 
   // « Vous aviez mis 4★ en mars. Toujours d'accord ? » — l'année n'est

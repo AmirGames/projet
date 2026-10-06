@@ -572,7 +572,7 @@ export default function HorairesPage() {
                       {creneau.start} – {creneau.end}
                     </p>
                     <p className="text-gray-500 text-sm">
-                      {creneau.maxOrders} commande{creneau.maxOrders > 1 ? 's' : ''} au maximum
+                      {t('commandesAuMaximum', { n: creneau.maxOrders })}
                     </p>
                   </div>
 

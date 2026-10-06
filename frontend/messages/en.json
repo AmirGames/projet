@@ -111,7 +111,8 @@
       "chauffeurs": "Drivers (ZupDrive)",
       "societesDrive": "Companies",
       "coursesDrive": "Rides",
-      "tarifsDrive": "Fares"
+      "tarifsDrive": "Fares",
+      "relaisAssistant": "ZupOne Assistant handoffs"
     },
     "openMenu": "Open menu",
     "toggleSidebar": "Collapse or expand the menu"
@@ -771,7 +772,8 @@
     "paid": "Paid",
     "cancelled": "Cancelled",
     "empty": "No statement in this state",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "periode": "from {debut} to {fin}"
   },
   "superownerDrivers": {
     "title": "Drivers",
@@ -1009,7 +1011,8 @@
     "testError": "❌ Test failed",
     "testSending": "Sending test…",
     "test_send_label": "Test delivery to {url}",
-    "echec": "failed"
+    "echec": "failed",
+    "copier": "Copy"
   },
   "superownerStoreDetail": {
     "title": "Store Details",
@@ -1158,7 +1161,9 @@
     "mark_as_read": "Mark as read",
     "delete": "Delete",
     "total": "Total",
-    "totalCount": "notification(s)"
+    "totalCount": "notification(s)",
+    "lu": "Read",
+    "nonLu": "Unread"
   },
   "superownerSystemConfig": {
     "title": "System Configuration",
@@ -1228,7 +1233,8 @@
     "generation": "Generating...",
     "generer": "Generate",
     "utiliseeLe": "Used on {date}",
-    "jamaisUtilisee": "Never used"
+    "jamaisUtilisee": "Never used",
+    "copier": "Copy"
   },
   "merchantDashboard": {
     "loading": "Loading…",
@@ -1464,7 +1470,8 @@
     "productCount": "{count, plural, =0 {no products} one {# product} other {# products}}",
     "msgReorganises": "✅ Products reordered",
     "msgErreurReorg": "❌ Error while reordering",
-    "msgConnexion": "❌ Server connection error"
+    "msgConnexion": "❌ Server connection error",
+    "changementImpossible": "Change failed"
   },
   "merchantCustomers": {
     "loading": "Loading customers...",
@@ -1836,7 +1843,14 @@
     "reorderUnavailable": "This shop can't be reached right now.",
     "reorderSeeCart": "See basket",
     "commandeNumero": "Order {numero}",
-    "produitSupprime": "Deleted product"
+    "produitSupprime": "Deleted product",
+    "notes": {
+      "1": "Poor",
+      "2": "Fair",
+      "3": "Average",
+      "4": "Good",
+      "5": "Excellent"
+    }
   },
   "clientOrderDetail": {
     "statusPending": "Pending",
@@ -2423,7 +2437,9 @@
     "retourClients": "Back to customers",
     "enregistrer": "Save",
     "chargementFiche": "Unable to load the customer record",
-    "noteEnregistree": "✅ Note saved"
+    "noteEnregistree": "✅ Note saved",
+    "noteImpossible": "Unable to save the note",
+    "operationImpossible": "Operation failed"
   },
   "merchantdeliveryzones": {
     "create": "Create",
@@ -2495,7 +2511,8 @@
     "minutes": "{n} min",
     "mettreAJour": "Update",
     "offerteDesCarte": "Free delivery from",
-    "sommetsTitre": "Points"
+    "sommetsTitre": "Points",
+    "jamais": "Never"
   },
   "merchantInvoices": {
     "actionDownload": "Download",
@@ -2542,7 +2559,8 @@
       "frais": "Fees",
       "totalMaj": "TOTAL"
     },
-    "statusRefunded": "Refunded"
+    "statusRefunded": "Refunded",
+    "articles": "{n, plural, one {# item} other {# items}}"
   },
   "merchantmarketing": {
     "all": "All",
@@ -2675,7 +2693,9 @@
     "voirFacture": "View the invoice",
     "chargementCommande": "Unable to load the order",
     "noteEnregistree": "✅ Note saved",
-    "produitSupprime": "Deleted product"
+    "produitSupprime": "Deleted product",
+    "retrait": "Pickup",
+    "noteImpossible": "Unable to save the note"
   },
   "merchantpaymentmethods": {
     "active": "Active",
@@ -2721,7 +2741,8 @@
     "msgConnexion": "❌ Server connection error",
     "desactiver": "Disable",
     "activer": "Enable",
-    "pageSur": "Page {page} of {total}"
+    "pageSur": "Page {page} of {total}",
+    "enregistrementImpossible": "Saving failed"
   },
   "merchantproductmedia": {
     "deleteError": "Error while deleting",
@@ -2894,7 +2915,10 @@
     "nom": "Name",
     "email": "Email",
     "totalDepense": "Total spent",
-    "derniereVisite": "Last visit"
+    "derniereVisite": "Last visit",
+    "ongletVentes": "Sales",
+    "ongletRevenus": "Revenue",
+    "ongletProduits": "Products"
   },
   "merchantstaff": {
     "create": "Create",
@@ -2983,7 +3007,8 @@
     "modifierJour": "Edit {jour}",
     "ouverture": "Opening {n} — {jour}",
     "fermeture": "Closing {n} — {jour}",
-    "enregistrerJour": "Save {jour}"
+    "enregistrerJour": "Save {jour}",
+    "commandesAuMaximum": "{n, plural, one {# order at most} other {# orders at most}}"
   },
   "merchanttaxsettings": {
     "active": "Active",
@@ -3033,7 +3058,9 @@
     "msgCategorie": "❌ Select at least one category",
     "msgProduit": "❌ Select at least one product",
     "msgConnexion": "❌ Server connection error",
-    "pageSur": "Page {page} of {total}"
+    "pageSur": "Page {page} of {total}",
+    "exempleTaux": "E.g. 6",
+    "enregistrementImpossible": "Saving failed"
   },
   "merchantSubscription": {
     "back": "Back",
@@ -3340,7 +3367,8 @@
     "period": "Period",
     "reportStoppedTransferComing": "Statement closed, transfer coming",
     "status": "Status",
-    "yourReports": "Your statements"
+    "yourReports": "Your statements",
+    "periode": "from {debut} to {fin}"
   },
   "notificationBell": {
     "markAllAsRead": "Mark all as read",
@@ -4446,7 +4474,8 @@
     "remise": "Discount",
     "remiseCode": "Discount ({code})",
     "dontTva": "incl. VAT",
-    "dontTvaTaux": "incl. VAT {taux}%"
+    "dontTvaTaux": "incl. VAT {taux}%",
+    "offerte": "Free"
   },
   "choixPourboire": {
     "groupe": "Tip for the courier",
@@ -4620,7 +4649,9 @@
     "videAide": "Choose a shop and build your order.",
     "voirCommerces": "See the shops",
     "quelPanier": "Which basket do you want to order?",
-    "plusieurs": "You have a basket at several shops. An order covers one shop at a time."
+    "plusieurs": "You have a basket at several shops. An order covers one shop at a time.",
+    "commerce": "Shop",
+    "articles": "{n, plural, one {# item} other {# items}}"
   },
   "confirmationCommande": {
     "envoyee": "Order sent",
@@ -4767,7 +4798,13 @@
   "enTeteClient": {
     "deconnexion": "Log out",
     "connexion": "Log in",
-    "monEspace": "My space"
+    "monEspace": "My space",
+    "nav": {
+      "accueil": "Home",
+      "favoris": "Favourites",
+      "commandes": "Orders",
+      "profil": "Profile"
+    }
   },
   "ancienneVitrine": {
     "introuvable": "This shop cannot be found",
@@ -4850,7 +4887,9 @@
     "preuveRemise": "Proof of handover",
     "completee": "✓ Delivery completed!",
     "retourDans": "Back to the dashboard in 2 seconds...",
-    "verification": "Checking…"
+    "verification": "Checking…",
+    "essaisRestants": "{n, plural, one {# attempt left} other {# attempts left}}",
+    "commerce": "Shop"
   },
   "propositionsCourses": {
     "horsLigne": "You have been set offline.",
@@ -4980,7 +5019,8 @@
     "nouvelles": "{n, plural, one {# new order} other {# new orders}}",
     "aAccepter": "{n, plural, one {# new order to accept} other {# new orders to accept}}",
     "activerSonnerie": "Turn on the ringer",
-    "livreurTrouve": "<b>Courier found</b> — {livreur} accepted order #{numero} and is heading to the shop."
+    "livreurTrouve": "<b>Courier found</b> — {livreur} accepted order #{numero} and is heading to the shop.",
+    "fermer": "Close"
   },
   "statistiquesLivreur": {
     "indisponibles": "Statistics unavailable.",
@@ -5249,7 +5289,8 @@
       "PAID": "Paid",
       "CARRIED": "Carried over",
       "CANCELLED": "Cancelled"
-    }
+    },
+    "erreur": "Error"
   },
   "graphiqueColonnes": {
     "vide": "No runs in this period",
@@ -5265,7 +5306,8 @@
     "course": "run",
     "lu": "Read",
     "envoye": "Sent",
-    "vide": "No message yet."
+    "vide": "No message yet.",
+    "envoyer": "Send"
   },
   "cadreCommercant": {
     "tableau": "Dashboard",
@@ -5391,7 +5433,8 @@
     "aucunePiece": "No document uploaded.",
     "serveurMuet": "The server is not responding",
     "choisirPieceFichier": "Choose a document type and a file",
-    "erreurConnexion": "Connection error"
+    "erreurConnexion": "Connection error",
+    "piecesAExaminer": "{n, plural, one {# document to review} other {# documents to review}}"
   },
   "facturesPeppol": {
     "chargementImpossible": "Unable to load",
@@ -5864,7 +5907,8 @@
   "apercuDocument": {
     "chargement": "Loading…",
     "impossible": "This file cannot be displayed here.",
-    "ouvrir": "Open in a new tab"
+    "ouvrir": "Open in a new tab",
+    "fermer": "Close preview"
   },
   "ancienneGestionBoutique": {
     "ouverture": "Opening your shop..."
@@ -5882,5 +5926,322 @@
     "reseauLu": "Network error: unable to mark as read.",
     "serveurTous": "Server error: unable to mark all as read.",
     "reseauTous": "Network error: unable to mark all as read."
+  },
+  "devenirContenus": {
+    "livreur": {
+      "badge": "ZupEat courier",
+      "titre": "Deliver near you, whenever you want",
+      "accroche": "By bike, scooter or car: you log in when you are available, and deliveries from local shops are offered to you.",
+      "cta": "Create my courier application",
+      "conditions": "courier terms",
+      "avantages": [
+        {
+          "titre": "Flexible hours",
+          "texte": "No imposed schedule: go online or take a break in one tap."
+        },
+        {
+          "titre": "Nearby deliveries",
+          "texte": "Each delivery is offered to the available courier closest to the shop."
+        },
+        {
+          "titre": "Clear pay",
+          "texte": "The amount of each delivery is shown before you accept, and your payouts are tracked in your area."
+        }
+      ],
+      "BE": {
+        "etapes": [
+          {
+            "titre": "Create your account",
+            "texte": "Name, email, phone and vehicle type."
+          },
+          {
+            "titre": "Send your documents",
+            "texte": "Identity card or residence permit, company number (BCE) and vehicle documents if needed."
+          },
+          {
+            "titre": "Approval",
+            "texte": "Our team reviews your application once."
+          },
+          {
+            "titre": "First delivery",
+            "texte": "Go online, accept a delivery and hand it over with the customer's 4-digit code."
+          }
+        ],
+        "prerequis": [
+          "Be 18 or older",
+          "A Belgian or European identity card, or a residence permit allowing you to work in Belgium",
+          "Self-employed status (main activity, secondary activity or student self-employed) with a BCE company number and membership of a social insurance fund",
+          "A bicycle, moped, motorbike or car — with the matching licence (AM, A or B) and third-party insurance for motor vehicles",
+          "A smartphone with internet access and location"
+        ],
+        "questions": [
+          {
+            "question": "Am I an employee of ZupEat?",
+            "reponse": "No, you work as a self-employed person and remain free to accept or refuse deliveries."
+          },
+          {
+            "question": "I am a student, can I deliver?",
+            "reponse": "Yes, under student self-employed status, provided you follow the rules of that status (BCE registration and social insurance fund)."
+          },
+          {
+            "question": "Do I have to charge VAT?",
+            "reponse": "It depends on your turnover: below the VAT exemption threshold, you do not charge any. Your accountant or business counter can confirm it."
+          },
+          {
+            "question": "Can I refuse a delivery?",
+            "reponse": "Yes. A refused delivery is simply offered to the next courier."
+          }
+        ]
+      },
+      "FR": {
+        "etapes": [
+          {
+            "titre": "Create your account",
+            "texte": "Name, email, phone and vehicle type."
+          },
+          {
+            "titre": "Send your documents",
+            "texte": "Identity document, SIRET number and vehicle documents if needed."
+          },
+          {
+            "titre": "Approval",
+            "texte": "Our team reviews your application once."
+          },
+          {
+            "titre": "First delivery",
+            "texte": "Go online, accept a delivery and hand it over with the customer's 4-digit code."
+          }
+        ],
+        "prerequis": [
+          "Be 18 or older",
+          "A valid identity document and the right to work in France",
+          "Self-employed status (for example a micro-enterprise) with a SIRET number",
+          "A bicycle, scooter or car — with a licence and insurance for motor vehicles",
+          "A smartphone with internet access and location"
+        ],
+        "questions": [
+          {
+            "question": "Am I an employee of ZupEat?",
+            "reponse": "No, you work as a self-employed person and remain free to accept or refuse deliveries."
+          },
+          {
+            "question": "How do I get a SIRET?",
+            "reponse": "By setting up a micro-enterprise on the INPI one-stop shop; the number is usually issued within a few days."
+          },
+          {
+            "question": "Can I refuse a delivery?",
+            "reponse": "Yes. A refused delivery is simply offered to the next courier."
+          }
+        ]
+      }
+    },
+    "commercant": {
+      "badge": "ZupEat merchant",
+      "titre": "Your shop online, in a few minutes",
+      "accroche": "Restaurant, bakery, grocery, florist… Create your shop, publish your catalogue and receive orders delivered by local couriers.",
+      "cta": "Create my shop",
+      "conditions": "merchant terms",
+      "avantages": [
+        {
+          "titre": "Your storefront",
+          "texte": "A shop in your name, with your catalogue, photos and prices."
+        },
+        {
+          "titre": "Live orders",
+          "texte": "Each order arrives instantly; you accept it and follow its preparation."
+        },
+        {
+          "titre": "Delivery included",
+          "texte": "A courier is sent automatically as soon as the order is ready."
+        }
+      ],
+      "BE": {
+        "etapes": [
+          {
+            "titre": "Create your account",
+            "texte": "Business name, type of establishment and address."
+          },
+          {
+            "titre": "Complete your file",
+            "texte": "Company number (BCE), VAT number and IBAN for your payouts."
+          },
+          {
+            "titre": "Build your catalogue",
+            "texte": "Products, opening hours per service and delivery zones on the map."
+          },
+          {
+            "titre": "Open",
+            "texte": "Once approved, your shop is visible to customers."
+          }
+        ],
+        "prerequis": [
+          "A business registered with the Crossroads Bank for Enterprises (company number) and, where applicable, a VAT number",
+          "For food: AFSCA registration or authorisation for your activity",
+          "A physical address where couriers collect orders",
+          "A business IBAN to receive your payouts",
+          "A device (phone, tablet or computer) to receive orders"
+        ],
+        "questions": [
+          {
+            "question": "How much does it cost?",
+            "reponse": "Creating the shop is free; plans and commissions are detailed in your merchant area."
+          },
+          {
+            "question": "Do my customers need an account?",
+            "reponse": "No, they can order without an account."
+          },
+          {
+            "question": "Can I close my shop temporarily?",
+            "reponse": "Yes, you manage your opening hours and can pause orders at any time."
+          },
+          {
+            "question": "Does selling online change my AFSCA obligations?",
+            "reponse": "Your AFSCA authorisation or registration must cover distance selling and delivery. If in doubt, check with your local control unit."
+          }
+        ]
+      },
+      "FR": {
+        "etapes": [
+          {
+            "titre": "Create your account",
+            "texte": "Business name, type of establishment and address."
+          },
+          {
+            "titre": "Complete your file",
+            "texte": "SIRET, supporting documents and bank details for your payouts."
+          },
+          {
+            "titre": "Build your catalogue",
+            "texte": "Products, opening hours per service and delivery zones on the map."
+          },
+          {
+            "titre": "Open",
+            "texte": "Once approved, your shop is visible to customers."
+          }
+        ],
+        "prerequis": [
+          "A registered business with a SIRET number",
+          "For food: your establishment declared to the DDPP",
+          "A physical address where couriers collect orders",
+          "A business IBAN to receive your payouts",
+          "A device (phone, tablet or computer) to receive orders"
+        ],
+        "questions": [
+          {
+            "question": "How much does it cost?",
+            "reponse": "Creating the shop is free; plans and commissions are detailed in your merchant area."
+          },
+          {
+            "question": "Do my customers need an account?",
+            "reponse": "No, they can order without an account."
+          },
+          {
+            "question": "Can I close my shop temporarily?",
+            "reponse": "Yes, you manage your opening hours and can pause orders at any time."
+          }
+        ]
+      }
+    },
+    "chauffeur": {
+      "badge": "Private hire driver · Coming soon",
+      "titre": "Drive passengers in your city",
+      "accroche": "ZupDrive is preparing its passenger transport service. Drivers, get in touch now to be among the first on the platform.",
+      "cta": "I'm interested",
+      "sujetCandidature": "Private hire driver application",
+      "avantages": [
+        {
+          "titre": "You choose your hours",
+          "texte": "Log in when you are available, with no imposed schedule."
+        },
+        {
+          "titre": "Nearby rides",
+          "texte": "Ride requests are offered to the closest available driver."
+        },
+        {
+          "titre": "Price shown in advance",
+          "texte": "The fare is known before you accept the ride."
+        }
+      ],
+      "BE": {
+        "etapes": [
+          {
+            "titre": "Create your account",
+            "texte": "A single ZupOne account, then open your driver file and choose your Region (Brussels, Wallonia or Flanders)."
+          },
+          {
+            "titre": "File",
+            "texte": "BCE number, regional licence, licence with medical selection, insurance, roadworthiness test: everything is uploaded online."
+          },
+          {
+            "titre": "Approval",
+            "texte": "Our team checks your documents and your vehicle."
+          },
+          {
+            "titre": "First rides",
+            "texte": "When the service opens, go online and accept your rides."
+          }
+        ],
+        "prerequis": [
+          "An operating licence issued by your Region: Brussels-Capital, Wallonia (car hire with driver) or Flanders (vergunning individueel bezoldigd personenvervoer)",
+          "A valid category B licence and a medical selection certificate (professional driver)",
+          "A recent criminal record extract",
+          "A vehicle meeting your Region's requirements, with insurance covering paid passenger transport",
+          "Self-employed status or a company, with a BCE company number"
+        ],
+        "questions": [
+          {
+            "question": "When does the service open?",
+            "reponse": "Passenger transport is being prepared. Drivers who have got in touch will be notified first."
+          },
+          {
+            "question": "Are the rules the same everywhere in Belgium?",
+            "reponse": "No, paid passenger transport is regulated by each Region. The documents required depend on the Region where you work."
+          },
+          {
+            "question": "I don't have a licence yet, can I apply?",
+            "reponse": "No. The regional licence is mandatory to carry passengers: get it first (see the steps above), then open your file."
+          }
+        ],
+        "accroche": "ZupDrive is preparing its passenger transport service. Drivers, open your file now to be among the first on the platform.",
+        "cta": "Create my driver file"
+      },
+      "FR": {
+        "etapes": [
+          {
+            "titre": "Get in touch",
+            "texte": "Send us your contact details and your city."
+          },
+          {
+            "titre": "File",
+            "texte": "VTC card, licence, VTC register entry, insurance and self-employed status."
+          },
+          {
+            "titre": "Approval",
+            "texte": "Our team checks your documents and your vehicle."
+          },
+          {
+            "titre": "First rides",
+            "texte": "When the service opens, go online and accept your rides."
+          }
+        ],
+        "prerequis": [
+          "A valid professional VTC card",
+          "A category B licence held for at least 3 years",
+          "Registration in the VTC operators register",
+          "A vehicle meeting VTC requirements, with passenger transport insurance",
+          "Self-employed status (company or micro-enterprise) with a SIRET number"
+        ],
+        "questions": [
+          {
+            "question": "When does the service open?",
+            "reponse": "Passenger transport is being prepared. Drivers who have got in touch will be notified first."
+          },
+          {
+            "question": "I don't have my VTC card yet, can I apply?",
+            "reponse": "No. The VTC card is mandatory to carry passengers: get it first, then get in touch."
+          }
+        ]
+      }
+    }
   }
 }

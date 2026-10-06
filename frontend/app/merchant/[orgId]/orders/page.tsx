@@ -3,7 +3,7 @@
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
 
@@ -64,6 +64,7 @@ function expliquerAbsence(
  * « Historique » garde toutes les commandes, filtrables, avec les chiffres.
  */
 export default function OrdersPage() {
+  const locale = useLocale();
   const t = useTranslations('merchantOrders');
   const tMotif = useTranslations('motifsRefus');
   const tc = useTranslations('merchantOrders.cuisine');
@@ -510,7 +511,7 @@ export default function OrdersPage() {
                         </Link>
                       </td>
                       <td className="px-5 py-3 text-gray-500">
-                        {new Date(order.createdAt).toLocaleString('fr-FR', {
+                        {new Date(order.createdAt).toLocaleString(locale, {
                           day: 'numeric',
                           month: 'short',
                           hour: '2-digit',

@@ -8,7 +8,7 @@
  */
 
 import { Check, Eye, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 export interface PieceAExaminer {
   id: string;
@@ -29,7 +29,7 @@ const COULEURS_PIECE: Record<string, string> = {
   PENDING: 'text-amber-700',
 };
 
-const date = (valeur: string) => new Date(valeur).toLocaleDateString('fr-FR');
+const date = (valeur: string, locale: string) => new Date(valeur).toLocaleDateString(locale);
 
 export function LignePieceAExaminer({
   piece,
@@ -51,6 +51,7 @@ export function LignePieceAExaminer({
   onExaminer: (approuve: boolean) => void;
   onVoir: () => void;
 }) {
+  const locale = useLocale();
   const t = useTranslations('superownerChauffeurs');
 
   return (
@@ -66,7 +67,7 @@ export function LignePieceAExaminer({
               {t(`documentStatus.${piece.statut}`)}
             </span>
           </p>
-          {piece.dateExpiration && <p className="text-xs text-gray-500">{t('expiresOn', { date: date(piece.dateExpiration) })}</p>}
+          {piece.dateExpiration && <p className="text-xs text-gray-500">{t('expiresOn', { date: date(piece.dateExpiration, locale) })}</p>}
           {piece.noteExamen && <p className="text-xs text-red-700">{piece.noteExamen}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">

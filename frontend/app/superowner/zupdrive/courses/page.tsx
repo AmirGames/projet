@@ -8,7 +8,7 @@
 
 import { useCallback, useState } from 'react';
 import { Navigation } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -32,6 +32,7 @@ interface CourseAdmin {
 }
 
 export default function CoursesDrivePage() {
+  const locale = useLocale();
   const t = useTranslations('superownerCoursesDrive');
   const [filtre, setFiltre] = useState<string>('ALL');
   const [courses, setCourses] = useState<CourseAdmin[]>([]);
@@ -96,7 +97,7 @@ export default function CoursesDrivePage() {
             <tbody className="divide-y divide-gray-100 bg-white text-gray-800">
               {courses.map((course) => (
                 <tr key={course.id}>
-                  <td className="whitespace-nowrap px-4 py-2">{new Date(course.createdAt).toLocaleString('fr-FR')}</td>
+                  <td className="whitespace-nowrap px-4 py-2">{new Date(course.createdAt).toLocaleString(locale)}</td>
                   <td className="px-4 py-2">
                     {course.departAdresse} → {course.arriveeAdresse}
                     <span className="block text-xs text-gray-500">

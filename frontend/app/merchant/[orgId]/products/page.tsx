@@ -549,7 +549,7 @@ export default function ProductsPage() {
       const donnees = await response.json();
 
       if (!response.ok) {
-        setMessage(`❌ ${donnees.error || 'Changement impossible'}`);
+        setMessage(`❌ ${donnees.error || t('changementImpossible')}`);
         return;
       }
 
