@@ -252,9 +252,24 @@ puis ouvrez `https://zupeat.com`.
    ```
 
    Elles restent 14 jours dans `~/sauvegardes`. **Copiez-les aussi hors du
-   serveur** — si le VPS disparaît, elles disparaissent avec lui. Par exemple
-   vers un bucket Scaleway Object Storage avec `rclone`, ou depuis votre
-   ordinateur : `scp -r deploy@<IP>:sauvegardes ./`.
+   serveur** — si le VPS disparaît, elles disparaissent avec lui. Installez
+   `rclone`, configurez un remote vers un bucket Scaleway Object Storage, puis
+   renseignez `BACKUP_REMOTE=<remote>:<bucket>/zupone` dans `.env.production` :
+   `zup.sh backup` y copie alors chaque sauvegarde (déjà chiffrée) et sort en
+   erreur si la copie échoue. Sans cette variable, le script le signale à
+   chaque passage.
+
+   Chaque sauvegarde réussie est enregistrée en base : la carte « Sauvegardes »
+   de la santé de la plateforme passe à l'orange si la dernière a plus de deux
+   jours. L'export partiel de l'écran *Données* n'en fait pas partie : ce n'est
+   pas une sauvegarde.
+
+   **Une sauvegarde jamais restaurée n'est qu'une hypothèse.** Chaque trimestre,
+   et après tout changement de serveur : copiez la clé privée age depuis le
+   coffre, lancez
+   `./deploy/zup.sh restore-test ~/sauvegardes/base-….sql.gz.age ./identite-age.txt`
+   (restauration dans une base jetable, comparaison avec la production, base
+   supprimée ensuite), puis supprimez la clé du serveur.
 
 ## Au quotidien
 
@@ -268,7 +283,8 @@ puis ouvrez `https://zupeat.com`.
 | `./deploy/zup.sh psql` | console SQL |
 | `./deploy/zup.sh vapid` | crée les clés du push navigateur dans `.env.production` (une seule fois : les changer rend muets les abonnements existants) |
 | `./deploy/zup.sh backup` | sauvegarde base + fichiers dans `~/sauvegardes` |
-| `./deploy/zup.sh restore ~/sauvegardes/base-….sql.gz` | restaure la base (demande confirmation) |
+| `./deploy/zup.sh restore-test <base-….sql.gz.age> <identite.txt>` | exercice de restauration dans une base jetable, sans toucher à la production |
+| `./deploy/zup.sh restore` | explique la restauration de production, volontairement manuelle (voir `docs/rgpd/exploitation.md`) |
 
 > Les variables `NEXT_PUBLIC_*` (domaines, clé Stripe publique, adresse de
 > l'API) sont inscrites dans le site **au moment du build** : après les avoir

@@ -370,10 +370,24 @@ export class DriverPayoutService {
       ...pourboires.map((ligne) => ligne.driverId),
     ]);
 
+    // Reprise après échec partiel : les livreurs déjà arrêtés sont sautés.
+    const dejaArretes = new Set(
+      (await db.courierPayout.findMany({ where: { periodEnd }, select: { driverId: true } })).map((r) => r.driverId)
+    );
+
     const releves = [];
 
     for (const driverId of livreurs) {
-      releves.push(await this.arreter(driverId, periodStart, periodEnd));
+      if (dejaArretes.has(driverId)) continue;
+      // L'échec d'un livreur n'empêche pas les suivants.
+      try {
+        releves.push(await this.arreter(driverId, periodStart, periodEnd));
+      } catch (err) {
+        logger.error("Courier payout failed, will be retried", {
+          driverId,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
     }
 
     return releves;

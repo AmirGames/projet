@@ -201,9 +201,17 @@ export class OrderManagementService {
         );
       }
 
-      const updated = await db.order.update({
-        where: { id: orderId },
+      // Écriture conditionnelle : si l'état a changé entre la lecture et ici,
+      // la décision de verifierTransition n'est plus valable.
+      const ecrit = await db.order.updateMany({
+        where: { id: orderId, storeId, status: order.status },
         data: { status: status as any },
+      });
+      if (ecrit.count !== 1) {
+        throw new ApiError(409, "La commande a changé entre-temps, rechargez-la.", "ORDER_STATE_CONFLICT");
+      }
+      const updated = await db.order.findUniqueOrThrow({
+        where: { id: orderId },
         include: {
           items: {
             include: {

@@ -9,6 +9,11 @@ import { ApiError } from "../../middleware/errorHandler";
  * La clientèle d'une boutique se déduit de ses commandes. Toutes les méthodes
  * ci-dessous vérifient ce rattachement avant d'exposer ou de modifier une
  * fiche : sans quoi un commerçant verrait les clients de ses concurrents.
+ *
+ * Ce qu'un commerçant sait d'un client (notes, blocage, retrait du carnet) vit
+ * dans `StoreCustomer`, propre à sa boutique : agir sur « son » client ne touche
+ * jamais la fiche globale ni les autres commerçants. Les coordonnées de la fiche
+ * globale n'appartiennent qu'au client.
  */
 
 export interface CustomerData {
@@ -24,14 +29,18 @@ export interface CustomerData {
 
 export interface CreateCustomerData extends CustomerData {}
 
+/** Seul ce que le commerçant sait du client se modifie depuis sa boutique. */
 export interface UpdateCustomerData {
-  name?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  postalCode?: string;
   notes?: string;
   status?: string;
+}
+
+/** La fiche globale vue par une boutique : notes et statut sont ceux de son carnet. */
+function vueBoutique<T extends { notes?: string | null; status?: string }>(
+  client: T,
+  entree?: { notes: string | null; status: string } | null
+) {
+  return { ...client, notes: entree?.notes ?? null, status: entree?.status ?? "ACTIVE" };
 }
 
 export class CustomerService {
@@ -42,7 +51,10 @@ export class CustomerService {
         id: customerId,
         deletedAt: null,
         orders: { some: { storeId, deletedAt: null } },
+        // Retiré du carnet de cette boutique : introuvable pour elle seule.
+        storeEntries: { none: { storeId, hiddenAt: { not: null } } },
       },
+      include: { storeEntries: { where: { storeId }, take: 1 } },
     });
 
     if (!client) {
@@ -60,6 +72,7 @@ export class CustomerService {
     const whereClause: any = {
       deletedAt: null,
       orders: { some: { storeId, deletedAt: null } },
+      storeEntries: { none: { storeId, hiddenAt: { not: null } } },
     };
 
     if (search) {
@@ -76,6 +89,7 @@ export class CustomerService {
         take,
         orderBy: { createdAt: "desc" },
         include: {
+          storeEntries: { where: { storeId }, take: 1 },
           // Les totaux affichés doivent porter sur cette boutique seulement,
           // pas sur l'ensemble des commerces où le client a commandé.
           orders: {
@@ -88,8 +102,8 @@ export class CustomerService {
     ]);
 
     return {
-      data: customers.map(({ orders, ...client }) => ({
-        ...client,
+      data: customers.map(({ orders, storeEntries, ...client }) => ({
+        ...vueBoutique(client, storeEntries[0]),
         totalOrders: orders.length,
         // Ce que le client a dépensé en articles chez ce commerçant.
         totalSpent: totalCommercant(orders),
@@ -107,9 +121,10 @@ export class CustomerService {
   static async getCustomer(storeId: string, customerId: string) {
     await this.assurerRattachement(storeId, customerId);
 
-    return db.customer.findUnique({
+    const client = await db.customer.findUnique({
       where: { id: customerId },
       include: {
+        storeEntries: { where: { storeId }, take: 1 },
         orders: {
           where: { storeId, deletedAt: null },
           select: {
@@ -125,63 +140,80 @@ export class CustomerService {
         },
       },
     });
+
+    if (!client) return null;
+    const { storeEntries, ...fiche } = client;
+    return vueBoutique(fiche, storeEntries[0]);
   }
 
-  static async createCustomer(_storeId: string, data: CreateCustomerData) {
+  static async createCustomer(storeId: string, data: CreateCustomerData) {
     const existant = await db.customer.findUnique({ where: { email: data.email } });
 
     if (existant) {
       throw new ApiError(409, "Un client utilise déjà cette adresse e-mail", "CUSTOMER_EXISTS");
     }
 
-    return db.customer.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        city: data.city,
-        postalCode: data.postalCode,
-        notes: data.notes,
-        status: data.status || "ACTIVE",
-      },
+    return db.$transaction(async (tx) => {
+      const client = await tx.customer.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          city: data.city,
+          postalCode: data.postalCode,
+        },
+      });
+      const entree = await tx.storeCustomer.create({
+        data: { storeId, customerId: client.id, notes: data.notes, status: data.status || "ACTIVE" },
+      });
+      return vueBoutique(client, entree);
     });
   }
 
+  /** Notes et statut du carnet de cette boutique ; la fiche globale n'est pas touchée. */
   static async updateCustomer(storeId: string, customerId: string, data: UpdateCustomerData) {
-    await this.assurerRattachement(storeId, customerId);
+    const client = await this.assurerRattachement(storeId, customerId);
 
-    const updateData: any = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.phone !== undefined) updateData.phone = data.phone;
-    if (data.address !== undefined) updateData.address = data.address;
-    if (data.city !== undefined) updateData.city = data.city;
-    if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
-    if (data.notes !== undefined) updateData.notes = data.notes;
-    if (data.status !== undefined) updateData.status = data.status;
+    const changements: { notes?: string; status?: string } = {};
+    if (data.notes !== undefined) changements.notes = data.notes;
+    if (data.status !== undefined) changements.status = data.status;
 
-    return db.customer.update({ where: { id: customerId }, data: updateData });
+    const entree = await db.storeCustomer.upsert({
+      where: { storeId_customerId: { storeId, customerId } },
+      update: changements,
+      create: { storeId, customerId, ...changements },
+    });
+
+    const { storeEntries, ...fiche } = client;
+    return vueBoutique(fiche, entree);
   }
 
-  // Suppression logique : la fiche est partagée entre commerçants et ses
-  // commandes doivent rester consultables pour la comptabilité.
+  // Retrait du carnet de cette boutique seulement : la fiche est partagée entre
+  // commerçants et ses commandes restent consultables pour la comptabilité.
   static async deleteCustomer(storeId: string, customerId: string) {
     await this.assurerRattachement(storeId, customerId);
 
-    await db.customer.update({
-      where: { id: customerId },
-      data: { deletedAt: new Date() },
+    await db.storeCustomer.upsert({
+      where: { storeId_customerId: { storeId, customerId } },
+      update: { hiddenAt: new Date() },
+      create: { storeId, customerId, hiddenAt: new Date() },
     });
 
     return { success: true };
   }
 
+  /** Blocage dans le carnet de cette boutique : les autres commerçants ne le voient pas. */
   static async blockCustomer(storeId: string, customerId: string) {
-    await this.assurerRattachement(storeId, customerId);
+    const client = await this.assurerRattachement(storeId, customerId);
 
-    return db.customer.update({
-      where: { id: customerId },
-      data: { status: "BLOCKED" },
+    const entree = await db.storeCustomer.upsert({
+      where: { storeId_customerId: { storeId, customerId } },
+      update: { status: "BLOCKED" },
+      create: { storeId, customerId, status: "BLOCKED" },
     });
+
+    const { storeEntries, ...fiche } = client;
+    return vueBoutique(fiche, entree);
   }
 }

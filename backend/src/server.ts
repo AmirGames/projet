@@ -6,6 +6,9 @@ import { createApp } from "./app";
 import { initializeSocket, brancherRedis } from "./modules/realtime/socket";
 import { brancherAnnoncesCommandes } from "./modules/realtime/diffusion.middleware";
 import { db } from "./services/db";
+import { Leader } from "./modules/jobs/leader.service";
+import { OutboxJobs } from "./modules/jobs/outbox.jobs";
+import { declarerGestionnairesOutbox } from "./modules/notifications/outbox-handlers";
 import { ClosureJobs } from "./modules/merchants/closure.jobs";
 import { DispatchJobs } from "./modules/drivers/dispatch.jobs";
 import { OrderJobs } from "./modules/orders/order.jobs";
@@ -62,32 +65,33 @@ const start = async () => {
       logger.info(`🔌 WebSocket enabled`);
     });
 
-    // Start background jobs
-    ClosureJobs.startJobs();
-    DispatchJobs.start();
-    DriverJobs.start();
-    WebhookJobs.start();
-    MerchantJobs.start();
-    ChauffeurJobs.start();
-    CourseDriveJobs.start();
-    DemoJobs.start();
-    PayoutJobs.start();
-    PlatformInvoiceJobs.start();
-    OrderJobs.start();
-    PrivacyJobs.start();
+    // Les messages en file (e-mails à ne pas perdre) : chaque type sait comment
+    // s'envoyer. Déclaré sur toutes les instances ; seul le leader fait tourner
+    // le worker.
+    declarerGestionnairesOutbox();
 
-    // Après les tâches : la vigie les surveille dès son premier passage.
-    Vigie.demarrer();
-    Disponibilite.demarrer();
-    const assistantRetention = setInterval(() => {
-      void purgeAssistantConversations().catch(() => logger.warn("Assistant retention unavailable"));
-    }, 3600000);
-    assistantRetention.unref();
+    // Tâches de fond : une seule instance les lance (voir jobs/leader.service.ts).
+    // Avec une instance unique, elle obtient le bail aussitôt : rien ne change.
+    const lancerLesTaches = () => {
+      ClosureJobs.startJobs();
+      DispatchJobs.start();
+      DriverJobs.start();
+      WebhookJobs.start();
+      MerchantJobs.start();
+      ChauffeurJobs.start();
+      CourseDriveJobs.start();
+      DemoJobs.start();
+      PayoutJobs.start();
+      PlatformInvoiceJobs.start();
+      OrderJobs.start();
+      PrivacyJobs.start();
+      OutboxJobs.start();
 
-    // Graceful shutdown
-    const gracefulShutdown = async () => {
-      logger.info("Shutting down gracefully...");
-      clearInterval(assistantRetention);
+      // Après les tâches : la vigie les surveille dès son premier passage.
+      Vigie.demarrer();
+      Disponibilite.demarrer();
+    };
+    const arreterLesTaches = () => {
       ClosureJobs.stopJobs();
       DispatchJobs.stop();
       WebhookJobs.stop();
@@ -100,8 +104,23 @@ const start = async () => {
       OrderJobs.stop();
       PrivacyJobs.stop();
       DriverJobs.stop();
+      OutboxJobs.stop();
       Vigie.arreter();
       Disponibilite.arreter();
+    };
+    Leader.demarrer({ gagne: lancerLesTaches, perdu: arreterLesTaches });
+
+    const assistantRetention = setInterval(() => {
+      void purgeAssistantConversations().catch(() => logger.warn("Assistant retention unavailable"));
+    }, 3600000);
+    assistantRetention.unref();
+
+    // Graceful shutdown
+    const gracefulShutdown = async () => {
+      logger.info("Shutting down gracefully...");
+      clearInterval(assistantRetention);
+      arreterLesTaches();
+      await Leader.arreter();
       httpServer.close(() => {
         logger.info("Server closed");
       });

@@ -56,20 +56,10 @@ export class InvoiceService {
 
     // ── Numéro séquentiel ───────────────────────────────────────────────────
     //
-    // On incrémente le compteur de la boutique pour l'année en cours dans la
-    // même transaction que la création de la facture : impossible d'avoir deux
-    // factures avec le même numéro, même sous forte charge.
+    // Le compteur de la boutique pour l'année en cours est incrémenté dans la
+    // même transaction que la création de la facture (voir plus bas) : pas de
+    // numéro consommé sans facture, pas de doublon sous forte charge.
     const annee = new Date(order.createdAt).getFullYear();
-
-    const numero = await db.$transaction(async (tx) => {
-      const seq = await tx.invoiceSeq.upsert({
-        where:  { storeId_year_serie: { storeId, year: annee, serie: "FAC" } },
-        update: { last: { increment: 1 } },
-        create: { storeId, year: annee, serie: "FAC", last: 1 },
-      });
-      // FAC-2026-00042
-      return `FAC-${annee}-${String(seq.last).padStart(5, "0")}`;
-    });
 
     // ── Snapshot de l'émetteur ───────────────────────────────────────────────
     const org = order.store.org;
@@ -133,23 +123,42 @@ export class InvoiceService {
     );
 
     // ── Stockage ─────────────────────────────────────────────────────────────
-    const facture = await db.invoice.create({
-      data: {
-        number:           numero,
-        storeId,
-        orderId:          order.id,
-        issuedAt:         order.createdAt,
-        emetteurJson:     emetteur     as any,
-        destinataireJson: destinataire as any,
-        lignesJson:       lignes       as any,
-        subtotal,
-        taxJson:  recapTva as any,
-        taxTotal,
-        fees,
-        discount,
-        total,
-      },
-    });
+    let facture;
+    try {
+      facture = await db.$transaction(async (tx) => {
+        const seq = await tx.invoiceSeq.upsert({
+          where:  { storeId_year_serie: { storeId, year: annee, serie: "FAC" } },
+          update: { last: { increment: 1 } },
+          create: { storeId, year: annee, serie: "FAC", last: 1 },
+        });
+        // FAC-2026-00042
+        const numero = `FAC-${annee}-${String(seq.last).padStart(5, "0")}`;
+        return tx.invoice.create({
+          data: {
+            number:           numero,
+            storeId,
+            orderId:          order.id,
+            issuedAt:         order.createdAt,
+            emetteurJson:     emetteur     as any,
+            destinataireJson: destinataire as any,
+            lignesJson:       lignes       as any,
+            subtotal,
+            taxJson:  recapTva as any,
+            taxTotal,
+            fees,
+            discount,
+            total,
+          },
+        });
+      });
+    } catch (error: any) {
+      // Émission concurrente : l'autre transaction a gagné, la nôtre est
+      // annulée avec son numéro. On rend la facture déjà créée.
+      if (error?.code !== "P2002") throw error;
+      const existante = await db.invoice.findUnique({ where: { orderId: order.id } });
+      if (!existante) throw error;
+      facture = existante;
+    }
 
     return this._factureDepuisStockage(facture, order.paymentStatus);
   }

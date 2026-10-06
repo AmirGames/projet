@@ -9,7 +9,7 @@ export interface ProductData {
   sku?: string;
   isAvailable?: boolean;
   name: string;
-  description?: string;
+  description?: string | null;
   price: number;
   categoryId?: string | null;
   stock?: number;
@@ -32,6 +32,8 @@ export class ProductService {
           categoryId: data.categoryId,
           stock: data.stock || 0,
           status: data.status || "ACTIVE",
+          // Était accepté puis ignoré : le produit restait toujours disponible.
+          ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
         },
         include: {
           category: true,
@@ -74,7 +76,7 @@ export class ProductService {
         // La première photo déposée par le commerçant, pour la vignette du catalogue.
         media: { take: 1, orderBy: { displayOrder: "asc" }, select: { url: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
       take: limit,
       skip: offset,
     });
@@ -87,7 +89,7 @@ export class ProductService {
         category: true,
         images: { take: 1 },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
       take: limit,
       skip: offset,
     });
@@ -116,11 +118,12 @@ export class ProductService {
         where: { id },
         data: {
           ...(data.name && { name: data.name }),
-          ...(data.description && { description: data.description }),
+          // undefined = inchangé ; "" et null permettent de vider le champ.
+          ...(data.description !== undefined && { description: data.description }),
           ...(data.price && { price: data.price }),
           ...(data.stock !== undefined && { stock: data.stock }),
           ...(data.status && { status: data.status }),
-          ...(data.categoryId && { categoryId: data.categoryId }),
+          ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
           // Ces deux champs étaient ignorés : modifier la référence ou la
           // disponibilité d'un produit restait sans effet.
           ...(data.sku && { sku: data.sku }),
@@ -199,7 +202,7 @@ export class ProductService {
         images: { orderBy: { order: "asc" } },
         store: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
       take: limit,
       skip: offset,
     });

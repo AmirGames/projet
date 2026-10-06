@@ -26,7 +26,7 @@ const createProductSchema = z.object({
 const updateProductSchema = z.object({
   sku: z.string().trim().optional().transform((v) => v || undefined),
   name: z.string().min(2).optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   price: z.number().positive().optional(),
   categoryId: z.string().min(1).optional().nullable(),
   stock: z.number().int().min(0).optional(),
@@ -110,8 +110,8 @@ router.get("/", authMiddleware, autoriserCatalogue, async (req: Request, res: Re
 router.get("/store/:storeId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
-    const limit = parseInt(req.query.limit as string) || 100;
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
 
     const { products, total } = await CataloguePublicService.productsByStore(storeId, limit, offset, req);
 
@@ -132,8 +132,8 @@ router.get("/store/:storeId", authFacultative, async (req: Request, res: Respons
 router.get("/category/:categoryId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const categoryId = req.params.categoryId as string;
-    const limit = parseInt(req.query.limit as string) || 100;
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
 
     const products = await CataloguePublicService.productsByCategory(categoryId, limit, offset, req);
 

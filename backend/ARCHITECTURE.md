@@ -317,8 +317,29 @@ export class MonJob {
 }
 ```
 
-Puis dans `src/server.ts` : importer la classe, appeler `MonJob.start()` avec
-les autres au démarrage, et `MonJob.stop()` dans l'arrêt propre.
+Puis dans `src/server.ts` : importer la classe, appeler `MonJob.start()` dans
+`lancerLesTaches` et `MonJob.stop()` dans `arreterLesTaches`.
+
+**Une seule instance lance les tâches.** `modules/jobs/leader.service.ts` tient un
+bail en base (`JobLease`) : seule l'instance titulaire exécute `lancerLesTaches`,
+et une autre reprend si elle s'arrête ou n'arrive plus à renouveler (30 s). Une
+instance unique obtient le bail tout de suite, rien ne change. Le bail réduit les
+doublons sans les rendre impossibles (l'ancien leader peut finir un passage en
+cours) : **un job reste idempotent**. Redis n'entre pas dans ce verrou, il n'est
+pas persistant en production.
+
+**Un effet qui ne doit pas se perdre passe par l'outbox.** Un e-mail envoyé « en
+arrière-plan » disparaît si le processus s'arrête ou si le serveur de courriel est
+indisponible à cet instant. `Outbox.enregistrer(type, payload, { dedupeKey })`
+(`modules/jobs/outbox.service.ts`) écrit l'intention en base (dans la transaction
+métier si on lui passe `tx`) ; le worker `OutboxJobs` l'envoie et la rejoue avec un
+délai croissant (30 s, 1 min, 2 min… plafonné à 1 h, 8 tentatives) avant de la
+marquer `FAILED`, visible dans la table et le journal. La clé `dedupeKey` évite le
+doublon d'un même effet. Livraison « au moins une fois » : à réserver aux effets où
+un doublon vaut mieux qu'une perte (un e-mail), jamais à une opération financière.
+Pour un nouveau type : le déclarer dans `notifications/outbox-handlers.ts`.
+Aujourd'hui, l'e-mail de suivi de commande (`prevenirLeClient`) l'utilise ; la
+notification dans l'application est déjà écrite en base, le push reste au mieux.
 
 ### 5. Écrire un test
 

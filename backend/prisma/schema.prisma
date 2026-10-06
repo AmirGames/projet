@@ -790,6 +790,7 @@ model Store {
   @@index([orgId])
   @@index([deletedAt])
   @@index([countryCode])
+  customerEntries StoreCustomer[]
 }
 
 // ============================================================================
@@ -1964,6 +1965,7 @@ model Customer {
   driverRatings   CourierRating[]
   favorites       FavoriteStore[] @relation("CustomerFavorites")
   carts           CustomerCart[]
+  storeEntries    StoreCustomer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3014,4 +3016,59 @@ model NoteCourseDrive {
   @@unique([courseId, auteur])
   @@index([chauffeurId, auteur])
   @@index([passagerId, auteur])
+}
+
+/// Carnet de clients d'une boutique : ce que CE commerçant sait de CE client.
+/// La fiche `Customer` est globale (partagée entre commerçants) ; notes, blocage
+/// et retrait du carnet vivent ici pour qu'un commerçant n'agisse jamais sur les
+/// autres. `Customer.notes` et `Customer.status` sont dépréciés (plus écrits).
+model StoreCustomer {
+  id         String    @id @default(cuid())
+  storeId    String
+  store      Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  notes      String?
+  /// ACTIVE, BLOCKED, INACTIVE
+  status     String    @default("ACTIVE")
+  /// Retiré du carnet de cette boutique seulement.
+  hiddenAt   DateTime?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([storeId, customerId])
+  @@index([customerId])
+}
+
+/// Bail du « leader » des tâches de fond : une seule instance de l'API lance les
+/// tâches planifiées (relances, arrêtés, vigie). Voir modules/jobs/leader.service.ts.
+model JobLease {
+  name      String   @id
+  owner     String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+}
+
+/// Effets externes à ne pas perdre (e-mails importants) : écrits en base, puis
+/// envoyés par un worker avec relances espacées. Voir modules/jobs/outbox.service.ts.
+model OutboxMessage {
+  id            String    @id @default(cuid())
+  type          String
+  payload       Json
+  /// Empêche le doublon d'un même effet (ex. même commande, même état).
+  dedupeKey     String?   @unique
+  /// PENDING, PROCESSING, DONE, FAILED
+  status        String    @default("PENDING")
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(8)
+  nextAttemptAt DateTime  @default(now())
+  /// Un envoi PROCESSING dont le bail est dépassé a perdu son worker : repris.
+  lockedUntil   DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  processedAt   DateTime?
+
+  @@index([status, nextAttemptAt])
 }
