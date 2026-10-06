@@ -179,22 +179,36 @@ export class MerchantPayoutService {
       }),
     ]);
 
+    // Reprise après échec partiel : un commerçant qui a déjà son relevé pour
+    // cette période est sauté, les autres sont rattrapés.
+    const dejaArretes = new Set(
+      (await db.merchantPayout.findMany({ where: { periodEnd }, select: { orgId: true } })).map((r) => r.orgId)
+    );
     const orgIds = [
       ...new Set([...avecCommandes.map((c) => c.store.orgId), ...avecReport.map((r) => r.orgId)]),
-    ];
+    ].filter((orgId) => !dejaArretes.has(orgId));
 
     const releves = [];
     for (const orgId of orgIds) {
-      const releve = await this.arreter(orgId, periodStart, periodEnd);
-      if (releve) releves.push(releve);
+      // L'échec d'un commerçant n'empêche pas les suivants ; la relance du
+      // lundi suivant (ou manuelle) reprend uniquement ceux qui manquent.
+      try {
+        const releve = await this.arreter(orgId, periodStart, periodEnd);
+        if (releve) releves.push(releve);
+      } catch (err) {
+        logger.error("Merchant payout failed, will be retried", {
+          orgId,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
     }
     return releves;
   }
 
   /**
    * L'arrêté du lundi : la semaine écoulée, pour les commerçants et les
-   * livreurs. Une seule fois par semaine : si un relevé de cette période existe
-   * déjà, on ne refait rien — une commande terminée entre-temps attendra le
+   * livreurs. Relançable : les bénéficiaires déjà arrêtés pour cette période sont
+   * sautés, les autres rattrapés. Une commande terminée entre-temps attendra le
    * relevé suivant.
    */
   static async arreterLaSemaine(maintenant = new Date()) {
@@ -206,13 +220,10 @@ export class MerchantPayoutService {
       return { periodStart, periodEnd, commercants: 0, livreurs: 0, inactif: true };
     }
 
-    const [dejaCommercants, dejaLivreurs] = await Promise.all([
-      db.merchantPayout.count({ where: { periodEnd } }),
-      db.courierPayout.count({ where: { periodEnd } }),
-    ]);
-
-    const commercants = dejaCommercants > 0 ? [] : await this.arreterTous(periodStart, periodEnd);
-    const livreurs = dejaLivreurs > 0 ? [] : await DriverPayoutService.arreterTous(periodStart, periodEnd);
+    // Chaque catégorie ignore elle-même les bénéficiaires déjà arrêtés : relancer
+    // l'arrêté après un échec partiel rattrape ceux qui manquent.
+    const commercants = await this.arreterTous(periodStart, periodEnd);
+    const livreurs = await DriverPayoutService.arreterTous(periodStart, periodEnd);
 
     return { periodStart, periodEnd, commercants: commercants.length, livreurs: livreurs.length, inactif: false };
   }

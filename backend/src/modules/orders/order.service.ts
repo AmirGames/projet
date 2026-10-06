@@ -730,9 +730,17 @@ export class OrderService {
 
       verifierTransition(avant.status, status);
 
-      const commande = await db.order.update({
-        where: { id },
+      // Écriture conditionnelle sur l'état lu : un changement concurrent
+      // invalide la vérification de transition.
+      const ecrit = await db.order.updateMany({
+        where: { id, status: avant.status },
         data: { status: status as any },
+      });
+      if (ecrit.count !== 1) {
+        throw new ApiError(409, "La commande a changé entre-temps, rechargez-la.", "ORDER_STATE_CONFLICT");
+      }
+      const commande = await db.order.findUniqueOrThrow({
+        where: { id },
         include: {
           items: true,
         },

@@ -98,6 +98,11 @@ describe("verifierTransition", () => {
     expect(() => verifierTransition("REJECTED", "READY")).toThrow();
   });
 
+  it("ne fait pas repartir en cuisine une commande terminée", () => {
+    expect(() => verifierTransition("COMPLETED", "PREPARING")).toThrow();
+    expect(() => verifierTransition("COMPLETED", "READY")).toThrow();
+  });
+
   it("laisse avancer une commande acceptée", () => {
     expect(() => verifierTransition("ACCEPTED", "PREPARING")).not.toThrow();
     expect(() => verifierTransition("PREPARING", "READY")).not.toThrow();

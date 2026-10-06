@@ -131,6 +131,11 @@ export function verifierTransition(avant: string, apres: string) {
     throw new ApiError(400, "Cette commande a été refusée.", "ORDER_REJECTED");
   }
 
+  // Une commande terminée est un état final : elle ne repart pas en cuisine.
+  if (avant === "COMPLETED" && apres !== "COMPLETED") {
+    throw new ApiError(400, "Cette commande est terminée.", "ORDER_COMPLETED");
+  }
+
   if (apres === "PENDING") {
     throw new ApiError(400, "Une commande acceptée ne repasse pas en attente.", "INVALID_TRANSITION");
   }
