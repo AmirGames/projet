@@ -29,6 +29,11 @@ interface Configuration {
   maintenanceMode: boolean;
   maintenanceMessage: string;
   driverMaxRadiusKm: number;
+  driverBikeMaxKm: number;
+  driverScooterMaxKm: number;
+  driverExceptionSeconds: number;
+  driverSoonFreeKm: number;
+  driverSoonFreeSeconds: number;
   driverOfferSeconds: number;
   driverMaxCourses: number;
   driverGroupClientKm: number;
@@ -59,6 +64,11 @@ export default function SystemConfigPage() {
     maintenanceMode: false,
     maintenanceMessage: '',
     driverMaxRadiusKm: '',
+    driverBikeMaxKm: '',
+    driverScooterMaxKm: '',
+    driverExceptionSeconds: '',
+    driverSoonFreeKm: '',
+    driverSoonFreeSeconds: '',
     driverOfferSeconds: '',
     driverMaxCourses: '',
     driverGroupClientKm: '',
@@ -94,6 +104,11 @@ export default function SystemConfigPage() {
         maintenanceMode: !!c.maintenanceMode,
         maintenanceMessage: c.maintenanceMessage || '',
         driverMaxRadiusKm: String(c.driverMaxRadiusKm ?? ''),
+        driverBikeMaxKm: String(c.driverBikeMaxKm ?? ''),
+        driverScooterMaxKm: String(c.driverScooterMaxKm ?? ''),
+        driverExceptionSeconds: String(c.driverExceptionSeconds ?? ''),
+        driverSoonFreeKm: String(c.driverSoonFreeKm ?? ''),
+        driverSoonFreeSeconds: String(c.driverSoonFreeSeconds ?? ''),
         driverOfferSeconds: String(c.driverOfferSeconds ?? ''),
         driverMaxCourses: String(c.driverMaxCourses ?? ''),
         driverGroupClientKm: String(c.driverGroupClientKm ?? ''),
@@ -130,6 +145,11 @@ export default function SystemConfigPage() {
           maintenanceMode: formulaire.maintenanceMode,
           maintenanceMessage: formulaire.maintenanceMessage,
           driverMaxRadiusKm: Number(formulaire.driverMaxRadiusKm),
+          driverBikeMaxKm: Number(formulaire.driverBikeMaxKm),
+          driverScooterMaxKm: Number(formulaire.driverScooterMaxKm),
+          driverExceptionSeconds: Math.round(Number(formulaire.driverExceptionSeconds)),
+          driverSoonFreeKm: Number(formulaire.driverSoonFreeKm),
+          driverSoonFreeSeconds: Math.round(Number(formulaire.driverSoonFreeSeconds)),
           driverOfferSeconds: Math.round(Number(formulaire.driverOfferSeconds)),
           driverMaxCourses: Math.round(Number(formulaire.driverMaxCourses)),
           driverGroupClientKm: Number(formulaire.driverGroupClientKm),
@@ -279,6 +299,66 @@ export default function SystemConfigPage() {
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('rayonAide')}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">{t('veloMaxLabel')}</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0.5" max="50"
+                  value={formulaire.driverBikeMaxKm}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverBikeMaxKm: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('veloMaxAide')}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">{t('scooterMaxLabel')}</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0.5" max="50"
+                  value={formulaire.driverScooterMaxKm}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverScooterMaxKm: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('scooterMaxAide')}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">{t('exceptionLabel')}</label>
+                <input
+                  type="number"
+                  step="10"
+                  min="0" max="3600"
+                  value={formulaire.driverExceptionSeconds}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverExceptionSeconds: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('exceptionAide')}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">{t('bientotLibreKmLabel')}</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0" max="10"
+                  value={formulaire.driverSoonFreeKm}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverSoonFreeKm: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('bientotLibreKmAide')}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 mb-2">{t('bientotLibreSecLabel')}</label>
+                <input
+                  type="number"
+                  step="10"
+                  min="0" max="360"
+                  value={formulaire.driverSoonFreeSeconds}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverSoonFreeSeconds: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('bientotLibreSecAide')}</p>
               </div>
               <div>
                 <label className="block text-sm text-gray-500 mb-2">{t('delaiAcceptation')}</label>

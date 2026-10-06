@@ -52,6 +52,8 @@ export interface OrderDelivery {
   pickupTime?: string | null;
   deliveryTime?: string | null;
   driver?: { name: string; phone?: string | null; vehicleType?: string | null } | null;
+  /** Un livreur qui termine sa livraison a réservé la course : elle démarre dès qu'il est libre. */
+  reservee?: boolean;
 }
 
 /**
@@ -122,6 +124,7 @@ export function deliveryStep(order: Order): { icon: string; text: string; done?:
     case 'FAILED':
       return { icon: '⚠️', text: 'Livraison échouée — contactez le support' };
     default:
+      if (d?.reservee) return { icon: '🛵', text: 'Livreur trouvé : il termine sa livraison en cours et arrive bientôt' };
       return { icon: '🔎', text: 'Recherche d’un livreur…' };
   }
 }

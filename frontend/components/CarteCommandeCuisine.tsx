@@ -49,6 +49,8 @@ export interface CommandeCuisine {
     status: string;
     driverId?: string | null;
     driver?: { name?: string | null } | null;
+    /** Un livreur qui termine sa livraison a réservé la course : elle démarre dès qu'il est libre. */
+    reservee?: boolean;
   } | null;
 }
 
@@ -233,6 +235,11 @@ export function CarteCommandeCuisine({
                 ? t('livreurEnRoute', { nom: commande.delivery.driver?.name?.split(' ')[0] || t('leLivreur') })
                 : t('livreurTrouve', { nom: commande.delivery.driver?.name?.split(' ')[0] || t('leLivreur') })}
             </span>
+          </div>
+        ) : commande.delivery?.reservee ? (
+          <div className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-[13px]">
+            <Truck size={16} className="shrink-0 text-green-700" aria-hidden="true" />
+            <span className="font-bold text-green-900">{t('livreurReserve')}</span>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2 rounded-xl bg-amber-50 px-3 py-2 text-[13px]">

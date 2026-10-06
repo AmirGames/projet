@@ -490,13 +490,18 @@ export default function DeliveryApp() {
   const answerOffer = async (offer: Offer, answer: 'accept' | 'decline') => {
     setAnsweringOfferId(offer.id);
     try {
-      const res = await apiFetch<{ data?: { id?: string } }>(`/api/drivers/offers/${offer.id}/${answer}`, token, {
+      const res = await apiFetch<{ data?: { id?: string; reservee?: boolean } }>(`/api/drivers/offers/${offer.id}/${answer}`, token, {
         method: 'POST',
       });
       // Un lot se répond d'un geste : toutes ses courses quittent l'écran.
       CourseAlerts?.dismissOffer(offer.id).catch(() => undefined);
       setOffers((list) => list.filter((o) => o.id !== offer.id && !(offer.batchId && o.batchId === offer.batchId)));
-      if (answer === 'accept') {
+      if (answer === 'accept' && res.data?.reservee) {
+        // À enchaîner : réservée, elle ne démarre que quand la livraison en
+        // cours est terminée. Pas de page de course à ouvrir pour l'instant.
+        await loadAll(token);
+        Alert.alert('Course réservée', 'Elle démarrera dès que vous aurez terminé votre livraison en cours.');
+      } else if (answer === 'accept') {
         await loadAll(token);
         if (offer.batchId || offer.ajout || visibleDeliveries.length > 0) {
           // Plusieurs courses : direction la tournée, dans l'ordre des arrêts.

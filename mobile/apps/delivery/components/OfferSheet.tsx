@@ -105,7 +105,9 @@ export default function OfferSheet({
           <View style={styles.tags}>
             <View style={styles.tagMain}>
               <Text style={styles.tagMainText}>
-                {offer.ajout
+                {offer.bientotLibre
+                  ? '⏭️ Course à enchaîner'
+                  : offer.ajout
                   ? '➕ Course sur votre trajet'
                   : group.length > 1
                     ? `🛵 ${group.length} courses d’un coup`
@@ -114,7 +116,13 @@ export default function OfferSheet({
             </View>
             <View style={styles.tagSoft}>
               <Text style={styles.tagSoftText}>
-                {offer.ajout ? 'En plus de votre course' : group.length > 1 ? 'Clients au même endroit' : 'Rien que pour vous'}
+                {offer.bientotLibre
+                  ? 'Après votre livraison en cours'
+                  : offer.ajout
+                  ? 'En plus de votre course'
+                  : group.length > 1
+                  ? 'Clients au même endroit'
+                  : 'Rien que pour vous'}
               </Text>
             </View>
             {others > 0 && (
@@ -139,6 +147,12 @@ export default function OfferSheet({
               {group.length > 1 ? `Montant garanti · ${group.length} courses payées chacune` : 'Montant garanti'}
             </Text>
           </View>
+
+          {offer.horsLimite && (
+            <Text style={styles.warning}>
+              ⚠️ Course plus longue que votre limite habituelle : à vous de voir, vous pouvez refuser.
+            </Text>
+          )}
 
           <View style={styles.divider} />
           <Text style={styles.line}>
@@ -236,6 +250,7 @@ const styles = themedStyles(() => ({
     marginTop: 4,
   },
   guaranteedText: { color: COLORS.text, fontSize: 14 },
+  warning: { color: '#b45309', fontSize: 14, marginTop: 10 },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 12 },
   line: { fontSize: 17, color: COLORS.text },
   stops: { flexDirection: 'row', gap: 12 },

@@ -82,10 +82,10 @@
     current = data; busy = false;
     el('accept').disabled = false; el('decline').disabled = false; el('error').hidden = true;
     var count = Math.max(1, data.count || 1);
-    label('tag', data.ajout ? 'Course sur votre trajet' : count > 1 ? 'Livraison groupée' : 'Nouvelle course');
+    label('tag', data.bientotLibre ? 'Course à enchaîner' : data.ajout ? 'Course sur votre trajet' : count > 1 ? 'Livraison groupée' : 'Nouvelle course');
     el('demo').hidden = !data.demo;
     label('amount', Number(data.payout || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €');
-    label('guaranteed', count > 1 ? 'Montant garanti · ' + count + ' courses' : 'Montant garanti');
+    label('guaranteed', (count > 1 ? 'Montant garanti · ' + count + ' courses' : 'Montant garanti') + (data.horsLimite ? ' · Plus longue que votre limite habituelle' : ''));
     var km = data.totalKm;
     label('journey', Number.isFinite(km) && km >= 0 ? '≈ ' + Math.max(1, Math.round(km * 3)) + ' min · ' + km.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' km' : 'Distance à confirmer');
     var pickups = data.pickups && data.pickups.length ? data.pickups : [{ name: data.pickupStore || 'Commerce', address: data.pickupCity || 'Retrait au commerce' }];

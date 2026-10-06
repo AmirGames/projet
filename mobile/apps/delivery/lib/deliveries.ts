@@ -52,6 +52,12 @@ export interface Offer {
   batchId?: string | null;
   /** Proposée pendant une course, sur le trajet (« +1 course »). */
   ajout?: boolean;
+  /** Plus longue que ce que fait d'ordinaire son véhicule : il peut refuser. */
+  horsLimite?: boolean;
+  /** À enchaîner : elle ne démarre qu'une fois la livraison en cours terminée. */
+  bientotLibre?: boolean;
+  /** Dans combien de secondes il devrait être libre, à la proposition. */
+  libreDansSecondes?: number | null;
 }
 
 /** Un arrêt de la tournée : un commerce où prendre, un client où remettre. */

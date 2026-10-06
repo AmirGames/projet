@@ -27,6 +27,18 @@ export interface OrderFilterOptions {
  * graphique du tableau de bord. Une commande refusée n'est pas une vente :
  * elle n'y compte pas, ni en nombre ni en montant.
  */
+/**
+ * Une course réservée par un livreur qui termine sa livraison (voir
+ * DispatchService.reserver) n'a pas encore de livreur, mais n'est plus en
+ * recherche. Le commerçant ne reçoit que cette information : pas l'identité du
+ * livreur, qui n'est attribuée qu'au démarrage.
+ */
+export function avecReservation<T extends { delivery?: { reservedDriverId?: string | null } | null }>(commande: T) {
+  if (!commande.delivery) return commande;
+  const { reservedDriverId, ...livraison } = commande.delivery;
+  return { ...commande, delivery: { ...livraison, reservee: Boolean(reservedDriverId) } };
+}
+
 function ventesParJour(
   commandes: { status: string; createdAt: Date; totalAmount: unknown; feesAmount?: unknown; serviceFeeAmount?: unknown }[],
   nombre: number
@@ -108,6 +120,7 @@ export class OrderManagementService {
               select: {
                 status: true,
                 driverId: true,
+                reservedDriverId: true,
                 driver: { select: { name: true, phone: true } },
               },
             },
@@ -121,8 +134,8 @@ export class OrderManagementService {
         // L'heure limite de réponse, pour le compte à rebours à l'écran.
         data: orders.map((commande) =>
           commande.status === "PENDING"
-            ? { ...commande, echeance: echeanceDeReponse(commande) }
-            : commande
+            ? { ...avecReservation(commande), echeance: echeanceDeReponse(commande) }
+            : avecReservation(commande)
         ),
         total,
         skip,
@@ -157,6 +170,7 @@ export class OrderManagementService {
               pickupTime: true,
               deliveryTime: true,
               estimatedTime: true,
+              reservedDriverId: true,
               driver: { select: { name: true, phone: true, vehicleType: true } },
             },
           },
@@ -167,7 +181,9 @@ export class OrderManagementService {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
-      return order.status === "PENDING" ? { ...order, echeance: echeanceDeReponse(order) } : order;
+      return order.status === "PENDING"
+        ? { ...avecReservation(order), echeance: echeanceDeReponse(order) }
+        : avecReservation(order);
     } catch (error) {
       throw error;
     }

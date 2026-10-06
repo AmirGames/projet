@@ -42,6 +42,11 @@ router.get("/system-config", authMiddleware, isSuperOwner, async (_req: Request,
         maintenanceMode: config.maintenanceMode,
         maintenanceMessage: config.maintenanceMessage || "",
         driverMaxRadiusKm: config.driverMaxRadiusKm,
+        driverBikeMaxKm: config.driverBikeMaxKm,
+        driverScooterMaxKm: config.driverScooterMaxKm,
+        driverExceptionSeconds: config.driverExceptionSeconds,
+        driverSoonFreeKm: config.driverSoonFreeKm,
+        driverSoonFreeSeconds: config.driverSoonFreeSeconds,
         driverOfferSeconds: config.driverOfferSeconds,
         driverMaxCourses: config.driverMaxCourses,
         driverGroupClientKm: config.driverGroupClientKm,
@@ -67,6 +72,17 @@ router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, 
       maintenanceMessage: z.string().optional(),
       // Attribution des courses aux livreurs
       driverMaxRadiusKm: z.number().min(1).max(50).optional(),
+      // Distance de livraison maximale selon le véhicule (jamais au-delà du
+      // rayon ci-dessus), et délai avant d'ouvrir une course sans preneur aux
+      // véhicules hors limite.
+      driverBikeMaxKm: z.number().min(0.5).max(50).optional(),
+      driverScooterMaxKm: z.number().min(0.5).max(50).optional(),
+      driverExceptionSeconds: z.number().int().min(0).max(3600).optional(),
+      // Livreur « bientôt libre » : à moins de ce rayon du client, ou de ce délai
+      // de la fin de l'attente à la porte, on lui propose la course suivante.
+      // 0 et 0 : jamais.
+      driverSoonFreeKm: z.number().min(0).max(10).optional(),
+      driverSoonFreeSeconds: z.number().int().min(0).max(360).optional(),
       driverOfferSeconds: z.number().int().min(10).max(600).optional(),
       // Plusieurs courses à la fois : combien au plus (1 = jamais), clients
       // « au même endroit », détour accepté.
@@ -91,6 +107,14 @@ router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, 
     let config = await db.systemConfig.findFirst();
     if (!config) config = await db.systemConfig.create({ data: {} });
 
+    // Un vélo ne peut pas livrer plus loin qu'un scooter. On compare avec la
+    // valeur enregistrée quand une seule des deux est modifiée.
+    const velo = body.driverBikeMaxKm ?? config.driverBikeMaxKm;
+    const scooter = body.driverScooterMaxKm ?? config.driverScooterMaxKm;
+    if (velo > scooter) {
+      throw new ApiError(400, "La distance du vélo ne peut pas dépasser celle du scooter", "INVALID_RANGE");
+    }
+
     const misAJour = await db.systemConfig.update({
       where: { id: config.id },
       data: body,
@@ -110,6 +134,11 @@ router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, 
         maintenanceMode: misAJour.maintenanceMode,
         maintenanceMessage: misAJour.maintenanceMessage || "",
         driverMaxRadiusKm: misAJour.driverMaxRadiusKm,
+        driverBikeMaxKm: misAJour.driverBikeMaxKm,
+        driverScooterMaxKm: misAJour.driverScooterMaxKm,
+        driverExceptionSeconds: misAJour.driverExceptionSeconds,
+        driverSoonFreeKm: misAJour.driverSoonFreeKm,
+        driverSoonFreeSeconds: misAJour.driverSoonFreeSeconds,
         driverOfferSeconds: misAJour.driverOfferSeconds,
         driverMaxCourses: misAJour.driverMaxCourses,
         driverGroupClientKm: misAJour.driverGroupClientKm,
