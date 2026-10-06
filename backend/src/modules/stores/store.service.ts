@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { AddressService, paysDeLAdresse } from "../customers/address.service";
@@ -97,13 +98,14 @@ export class StoreService {
   }
 
   static async getById(id: string) {
-    const store = await db.store.findUnique({
-      where: { id },
+    // Jamais de commandes ici : elles portent nom, e-mail, téléphone et
+    // adresse des clients. Elles ont leurs propres routes, cloisonnées.
+    const store = await db.store.findFirst({
+      where: { id, deletedAt: null },
       include: {
         products: { where: { status: "ACTIVE" } },
         categories: true,
         theme: true,
-        orders: { take: 10, orderBy: { createdAt: "desc" } },
       },
     });
 
@@ -114,9 +116,10 @@ export class StoreService {
     return store;
   }
 
-  static async getByOrgId(orgId: string) {
+  /** `scope` : le périmètre de boutiques de l'appelant (MANAGER/STAFF : les siennes). */
+  static async getByOrgId(orgId: string, scope: Prisma.StoreWhereInput = {}) {
     return await db.store.findMany({
-      where: { orgId, deletedAt: null },
+      where: { AND: [{ orgId, deletedAt: null }, scope] },
       include: {
         products: { where: { deletedAt: null } },
         categories: true,

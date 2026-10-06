@@ -202,7 +202,7 @@ export class OrderService {
           operatingHours: true,
           deletedAt: true,
           name: true,
-          org: { select: { approvedAt: true, isDemo: true } },
+          org: { select: { approvedAt: true, isDemo: true, status: true } },
         },
       });
 
@@ -226,6 +226,16 @@ export class OrderService {
           400,
           `« ${boutique.name} » n'est pas encore ouverte aux commandes.`,
           "MERCHANT_NOT_APPROVED"
+        );
+      }
+
+      // Un commerce suspendu ou fermé ne prend plus de nouvelle commande,
+      // même d'un invité : sans cela, seul le compte connecté était bloqué.
+      if (boutique.org.status === "SUSPENDED" || boutique.org.status === "CLOSED") {
+        throw new ApiError(
+          403,
+          `« ${boutique.name} » n'accepte pas de commande pour le moment.`,
+          "MERCHANT_SUSPENDED"
         );
       }
 

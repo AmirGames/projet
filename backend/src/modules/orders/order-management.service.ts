@@ -11,6 +11,27 @@ import {
 import { TRANSMISE } from "../../utils/commande-transmise";
 import { derniersJoursBruxelles, jourBruxelles } from "../../utils/semaine-bruxelles";
 
+/**
+ * Ce que le commerçant lit d'un paiement. Le `stripeClientSecret` n'y figure
+ * pas : c'est une capacité de paiement réservée au client, et l'extension de
+ * chiffrement le rend en clair à la lecture.
+ */
+const PAIEMENT_COMMERCANT = {
+  id: true,
+  orderId: true,
+  amount: true,
+  currency: true,
+  status: true,
+  stripePaymentIntentId: true,
+  stripeStatus: true,
+  paidAt: true,
+  refundedAt: true,
+  refundedAmount: true,
+  stripeRefundId: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export interface OrderFilterOptions {
   skip?: number;
   take?: number;
@@ -113,7 +134,7 @@ export class OrderManagementService {
             customer: {
               select: { name: true, email: true },
             },
-            payments: true,
+            payments: { select: PAIEMENT_COMMERCANT },
             // La recherche du livreur part dès « En préparation » : la liste
             // dit où elle en est.
             delivery: {
@@ -160,7 +181,7 @@ export class OrderManagementService {
             },
           },
           customer: true,
-          payments: true,
+          payments: { select: PAIEMENT_COMMERCANT },
           store: true,
           // Le commerçant suit le livreur : arrivée, récupération, livraison.
           delivery: {

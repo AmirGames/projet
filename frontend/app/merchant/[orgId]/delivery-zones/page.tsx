@@ -99,7 +99,10 @@ export default function DeliveryZonesPage() {
     if (!storeId) return;
 
     try {
-      const reponse = await fetch(`${API_URL}/api/stores/${storeId}`);
+      const jeton = localStorage.getItem('accessToken');
+      const reponse = await fetch(`${API_URL}/api/stores/${storeId}`, {
+        headers: jeton ? { Authorization: `Bearer ${jeton}` } : {},
+      });
       if (!reponse.ok) return;
 
       const lue = await reponse.json();

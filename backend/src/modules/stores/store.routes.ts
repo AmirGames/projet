@@ -5,6 +5,7 @@ import { StoreService } from "./store.service";
 import { TaxService } from "../catalog/tax.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../auth/auth.middleware";
+import { perimetreBoutiques } from "../auth/autorisation-boutique";
 import { logger } from "../../config/logger";
 import { PlanService } from "../plans/plan.service";
 import { StoreDuplicationService } from "./store-duplication.service";
@@ -166,7 +167,7 @@ router.get("/slug/:slug", async (req: Request, res: Response, next: NextFunction
 });
 
 // GET /stores/:id - Get store by ID
-router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 
@@ -193,11 +194,13 @@ router.get("/org/:orgId/quota", authMiddleware, async (req: Request, res: Respon
   }
 });
 
-router.get("/org/:orgId", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/org/:orgId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.params.orgId as string;
 
-    const stores = await StoreService.getByOrgId(orgId);
+    // Données de gestion (produits brouillons compris) : le périmètre de
+    // l'appelant s'applique, en plus du cloisonnement par organisation.
+    const stores = await StoreService.getByOrgId(orgId, await perimetreBoutiques(req));
 
     res.json(stores);
   } catch (err) {

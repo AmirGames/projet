@@ -98,10 +98,9 @@ const GESTES_PUBLICS: { methode: string; chemin: RegExp }[] = [
   { methode: "GET", chemin: /^\/api\/categories\/store\/[^/]+$/ },
   { methode: "GET", chemin: /^\/api\/promotions\/active\/[^/]+$/ },
   { methode: "POST", chemin: /^\/api\/promotions\/validate$/ },
-  // La boutique et sa devanture.
-  { methode: "GET", chemin: /^\/api\/stores\/[^/]+$/ },
+  // La devanture de la boutique. `GET /api/stores/:id` et `/org/:orgId`
+  // sont des routes de gestion : elles exigent un compte et le cloisonnement.
   { methode: "GET", chemin: /^\/api\/stores\/slug\/[^/]+$/ },
-  { methode: "GET", chemin: /^\/api\/stores\/org\/[^/]+$/ },
   { methode: "GET", chemin: /^\/api\/organizations\/slug\/[^/]+$/ },
 ];
 

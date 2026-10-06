@@ -205,3 +205,21 @@ describe("OrderService.create — frais de livraison", () => {
     expect(db.order.create).not.toHaveBeenCalled();
   });
 });
+
+describe("OrderService.create — commerce suspendu ou fermé", () => {
+  it.each(["SUSPENDED", "CLOSED"])("refuse une commande invitée quand le commerce est %s", async (status) => {
+    db.store.findUnique.mockResolvedValue({
+      isOpen: true,
+      operatingHours: null,
+      deletedAt: null,
+      name: "Chez Luigi",
+      org: { approvedAt: new Date(), status, isDemo: false },
+    });
+
+    await expect(OrderService.create(commande() as any)).rejects.toMatchObject({
+      statusCode: 403,
+      code: "MERCHANT_SUSPENDED",
+    });
+    expect(db.order.create).not.toHaveBeenCalled();
+  });
+});
