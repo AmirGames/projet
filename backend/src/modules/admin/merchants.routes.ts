@@ -5,15 +5,16 @@ import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
 import { MerchantClosureService } from "../merchants/merchant-closure.service";
 import { logger } from "../../config/logger";
-import { getQueryString, getQueryNumber, isSystemAdmin } from "./shared";
+import { getQueryString, isSystemAdmin } from "./shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
 // GET /admin/merchants - List all merchants
 router.get("/merchants", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = getQueryNumber(req.query.limit, 20);
-    const offset = getQueryNumber(req.query.offset, 0);
+    const limit = limiteBornee(req.query.limit, 20, 10000);
+    const offset = decalage(req.query.offset);
     const status = getQueryString(req.query.status, "");
 
     const where: any = {};
@@ -248,8 +249,8 @@ router.post("/merchants/:orgId/restore-from-backup", authMiddleware, isSystemAdm
 router.get("/stores", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const recherche = (req.query.search as string) || "";
-    const limit = Math.min(parseInt((req.query.limit as string) || "50") || 50, 200);
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
+    const limit = limiteBornee(req.query.limit, 50, 200);
+    const offset = decalage(req.query.offset);
 
     const where: any = { deletedAt: null };
 

@@ -2,15 +2,16 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../services/db";
 import { voitLesFinances } from "../auth/permissions-plateforme.service";
 import { authMiddleware } from "../auth/auth.middleware";
-import { getQueryString, getQueryNumber, isSystemAdmin } from "./shared";
+import { getQueryString, isSystemAdmin } from "./shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
 // GET /admin/commissions - Get commission history
 router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = getQueryNumber(req.query.limit, 20);
-    const offset = getQueryNumber(req.query.offset, 0);
+    const limit = limiteBornee(req.query.limit, 20, 10000);
+    const offset = decalage(req.query.offset);
     const period = getQueryString(req.query.period, "");
 
     const where: any = {};
@@ -46,8 +47,8 @@ router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, r
 // GET /admin/access-logs - Journal des accès (connexions, actions sensibles)
 router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(getQueryNumber(req.query.limit, 100), 500);
-    const offset = getQueryNumber(req.query.offset, 0);
+    const limit = limiteBornee(req.query.limit, 100, 500);
+    const offset = decalage(req.query.offset);
     const statut = req.query.status as string | undefined;
 
     const where: any = {};
@@ -174,8 +175,8 @@ router.get("/stats", authMiddleware, isSystemAdmin, async (req: Request, res: Re
 // GET /admin/audit-logs - Get audit logs
 router.get("/audit-logs", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = getQueryNumber(req.query.limit, 50);
-    const offset = getQueryNumber(req.query.offset, 0);
+    const limit = limiteBornee(req.query.limit, 50, 200);
+    const offset = decalage(req.query.offset);
 
     const logs = await db.systemAuditLog.findMany({
       skip: offset,

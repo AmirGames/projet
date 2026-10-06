@@ -338,6 +338,12 @@ marquer `FAILED`, visible dans la table et le journal. La clé `dedupeKey` évit
 doublon d'un même effet. Livraison « au moins une fois » : à réserver aux effets où
 un doublon vaut mieux qu'une perte (un e-mail), jamais à une opération financière.
 Pour un nouveau type : le déclarer dans `notifications/outbox-handlers.ts`.
+**Jamais de secret dans le `payload`** (jeton de réinitialisation, lien de
+connexion, mot de passe) : il resterait en clair en base jusqu'à la purge. C'est
+pourquoi les e-mails de compte n'y passent pas ; l'e-mail de suivi de commande y
+passe parce que son lien de suivi est créé au moment de l'envoi, pas stocké.
+Le retard et les abandons de l'outbox alimentent le contrôle « Notifications » de
+la santé de la plateforme.
 Aujourd'hui, l'e-mail de suivi de commande (`prevenirLeClient`) l'utilise ; la
 notification dans l'application est déjà écrite en base, le push reste au mieux.
 

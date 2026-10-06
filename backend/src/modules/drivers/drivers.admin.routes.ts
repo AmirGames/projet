@@ -9,6 +9,7 @@ import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { isSuperOwner, journaliser } from "../superowner/shared";
 import { SurveillanceCoursesService } from "./surveillance-courses.service";
 import { DossierIncidentService } from "./dossier-incident.service";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -21,8 +22,8 @@ const router = Router();
  */
 router.get("/drivers", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const statut = req.query.status as string;
 
     const where = statut && statut !== "ALL" ? { status: statut } : {};

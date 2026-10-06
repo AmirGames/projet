@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
 import { isSuperOwner } from "./shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -101,8 +102,8 @@ router.get("/analytics", authMiddleware, isSuperOwner, async (req: Request, res:
 // GET /superowner/audit-logs - Journal des actions administratives
 router.get("/audit-logs", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
 
     const [journal, total] = await Promise.all([
       db.systemAuditLog.findMany({

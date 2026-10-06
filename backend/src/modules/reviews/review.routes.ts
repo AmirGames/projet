@@ -10,6 +10,7 @@ import { avisDuClientSurCommande } from "./avis-client.service";
 import { ReviewModerationService } from "./review-moderation.service";
 
 import { emitMerchantEvent } from "../realtime/socket";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -135,8 +136,8 @@ router.get("/commande/:orderId", authMiddleware, async (req: Request, res: Respo
 router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
-    const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
-    const take = req.query.take ? parseInt(req.query.take as string) : 50;
+    const skip = decalage(req.query.skip);
+    const take = limiteBornee(req.query.take, 50, 200);
     const productId = req.query.productId as string | undefined;
     const filtre = req.query.filtre as "signales" | "retires" | undefined;
 

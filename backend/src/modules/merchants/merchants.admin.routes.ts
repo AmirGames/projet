@@ -15,6 +15,7 @@ import { MerchantProfileService } from "./merchant-profile.service";
 import { MerchantApprovalService } from "./merchant-approval.service";
 import { logger } from "../../config/logger";
 import { isSuperOwner, journaliser } from "../superowner/shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -81,8 +82,8 @@ async function figerCommissionsDuMois(orgId: string, taux: number, tier: string)
 // GET /superowner/organizations - Commerçants avec leur activité réelle
 router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const status = req.query.status as string;
     // « ?validation=attente » : les commerces qui attendent qu'on examine
     // leur dossier, ce que la plateforme cherche en premier.

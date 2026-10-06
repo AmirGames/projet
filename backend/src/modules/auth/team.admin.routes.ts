@@ -6,6 +6,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware, oublierCompte } from "./auth.middleware";
 import { PermissionsPlateforme, SECTIONS, estRoleDeBase, PLATEFORMES, LIBELLES_PLATEFORMES } from "./permissions-plateforme.service";
 import { Plateforme } from "@prisma/client";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -20,8 +21,8 @@ const superOwnerSeul = (req: Request, _res: Response, next: NextFunction) => {
 // GET /superowner/admins - Les membres de l'équipe et leurs rôles par plateforme
 router.get("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const where = { OR: [{ isSystemAdmin: true }, { isSuperOwner: true }] };
 
     const [comptes, total] = await Promise.all([

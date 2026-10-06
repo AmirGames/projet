@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { InvoiceService } from "./invoice.service";
 import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -9,8 +10,8 @@ const router = Router();
 router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
-    const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
-    const take = req.query.take ? parseInt(req.query.take as string) : 50;
+    const skip = decalage(req.query.skip);
+    const take = limiteBornee(req.query.take, 50, 200);
 
     logger.info("Fetching invoices", { storeId, skip, take });
 

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { AddressService, completerIndice, fournisseurActif, indiceValide } from "./address.service";
+import { limiteBornee } from "../../utils/pagination";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get('/reverse', async (req: Request, res: Response) => {
 // country, lat et lon sont facultatifs : ils ne font qu'ordonner les résultats.
 router.get("/search", async (req: Request, res: Response) => {
   const requete = ((req.query.q as string) || "").trim();
-  const limite = Math.min(parseInt((req.query.limit as string) || "5") || 5, 10);
+  const limite = limiteBornee(req.query.limit, 5, 10);
 
   // Ce que le texte dit du pays (« 4000 Liège ») passe devant la supposition
   // du navigateur.

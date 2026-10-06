@@ -5,6 +5,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
 import { TicketMessageService } from "../support/ticket-message.service";
 import { isSuperOwner, journaliser } from "./shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -101,8 +102,8 @@ const versPrioriteStockee = (p: string) => (p === "URGENT" ? "CRITICAL" : p);
 // GET /superowner/support-tickets - Tickets de tous les commerçants
 router.get("/support-tickets", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const status = req.query.status as string;
     const priority = req.query.priority as string;
     /**

@@ -3,6 +3,7 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { notificationService } from "./notification.service";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { limiteBornee } from "../../utils/pagination";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ async function recipientEmail(req: Request) {
 router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const email = await recipientEmail(req);
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = limiteBornee(req.query.limit, 20, 100);
 
     const notifications = await notificationService.getUserNotifications(email, limit);
     const unreadCount = await db.notification.count({
