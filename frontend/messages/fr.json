@@ -2213,7 +2213,8 @@
       "login": "Se connecter",
       "error": "Une erreur est survenue",
       "pays": "Pays",
-      "emailPlaceholder": "vous@exemple.fr"
+      "emailPlaceholder": "vous@exemple.fr",
+      "checkEmail": "Si cette adresse peut être inscrite, un e-mail de confirmation vient d'être envoyé. Ouvrez le lien qu'il contient pour vous connecter."
     }
   },
   "restaurants": {

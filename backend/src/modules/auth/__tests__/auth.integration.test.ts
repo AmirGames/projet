@@ -311,3 +311,59 @@ describe("Espace client : fiche du compte connecté", () => {
     await expect(ficheClientDuCompte(c.id, { creer: true })).rejects.toMatchObject({ statusCode: 404 });
   });
 });
+
+describe("POST /auth/signup — confirmation d'adresse exigée (C-20, C-21)", () => {
+  beforeEach(() => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = "true";
+  });
+
+  it("ne remet aucune session avant la confirmation de l'adresse", async () => {
+    const res = await inscrire("nouveau@exemple.fr");
+
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({ emailVerificationRequired: true });
+    expect(res.body).not.toHaveProperty("accessToken");
+    expect(res.body).not.toHaveProperty("refreshToken");
+    expect(res.body).not.toHaveProperty("user");
+    // Le compte existe et le lien de confirmation part.
+    expect(users.find((u) => u.email === "nouveau@exemple.fr")).toBeTruthy();
+    expect(await jetonDeConfirmation()).toBeTruthy();
+  });
+
+  it("répond exactement pareil que l'adresse soit libre ou déjà prise", async () => {
+    await inscrire("existant@exemple.fr");
+    const prise = await inscrire("existant@exemple.fr");
+    const libre = await inscrire("libre@exemple.fr");
+
+    expect(prise.status).toBe(libre.status);
+    expect(prise.body).toEqual(libre.body);
+  });
+
+  it("une adresse déjà confirmée ne reçoit aucun nouveau lien et n'est pas modifiée", async () => {
+    users.push({ id: "u-1", email: "actif@exemple.fr", emailVerified: true, status: "ACTIVE", name: "Actif" });
+    const res = await inscrire("actif@exemple.fr");
+
+    expect(res.status).toBe(202);
+    await new Promise((r) => setImmediate(r));
+    expect(sendEmailVerification).not.toHaveBeenCalled();
+    expect(db.user.create).not.toHaveBeenCalled();
+  });
+
+  it("une adresse non confirmée reçoit un nouveau lien, sans second compte", async () => {
+    users.push({ id: "u-2", email: "attente@exemple.fr", emailVerified: false, status: "ACTIVE", name: "Attente" });
+    const res = await inscrire("attente@exemple.fr");
+
+    expect(res.status).toBe(202);
+    expect(await jetonDeConfirmation()).toBeTruthy();
+    expect(users.filter((u) => u.email === "attente@exemple.fr")).toHaveLength(1);
+  });
+
+  it("sans confirmation exigée (développement), le comportement reste celui d'avant", async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = "false";
+    const premier = await inscrire("dev@exemple.fr");
+    expect(premier.status).toBe(201);
+    expect(premier.body.accessToken).toBeTruthy();
+    expect((await inscrire("dev@exemple.fr")).status).toBe(409);
+  });
+});
+

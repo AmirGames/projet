@@ -2213,7 +2213,8 @@
       "login": "Log in",
       "error": "An error occurred",
       "pays": "Country",
-      "emailPlaceholder": "you@example.com"
+      "emailPlaceholder": "you@example.com",
+      "checkEmail": "If this address can be registered, a confirmation email has just been sent. Open the link it contains to sign in."
     }
   },
   "restaurants": {

@@ -331,6 +331,14 @@ export default function CustomerApp() {
         return;
       }
 
+      // Confirmation d'adresse exigée : pas de session avant le clic sur le lien.
+      if (mode === 'signup' && data.emailVerificationRequired) {
+        Alert.alert('Vérifiez vos e-mails', data.message || 'Un e-mail de confirmation vient d’être envoyé.');
+        setPassword('');
+        setMode('login');
+        return;
+      }
+
       // Tout compte peut commander : la fiche client naît à la première visite.
       const next: Session = {
         accessToken: data.accessToken,
