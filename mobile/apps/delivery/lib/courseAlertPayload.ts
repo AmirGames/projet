@@ -66,6 +66,8 @@ export function buildCourseAlert(offers: Offer[], id: string, now = Date.now()) 
     pickups,
     dropoffs,
     ajout: !!offer.ajout,
+    bientotLibre: !!offer.bientotLibre,
+    horsLimite: offer.horsLimite === true,
   };
 }
 

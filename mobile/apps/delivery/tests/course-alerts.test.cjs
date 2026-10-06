@@ -57,3 +57,11 @@ test('a batch shares a pickup, keeps all destinations and includes each paid jou
   assert.equal(result.createdAtMs, now);
   assert.equal(buildCourseAlert([offer('unknown', { distanceKm: null })], 'unknown', now).totalKm, null);
 });
+test('a chained or out-of-range proposal is flagged in the alert, an ordinary one is not', () => {
+  const chained = buildCourseAlert([offer('next', { bientotLibre: true, libreDansSecondes: 90 })], 'next', now);
+  assert.equal(chained.bientotLibre, true); assert.equal(chained.horsLimite, false);
+  const long = buildCourseAlert([offer('far', { horsLimite: true })], 'far', now);
+  assert.equal(long.horsLimite, true); assert.equal(long.bientotLibre, false);
+  const plain = buildCourseAlert([offer('plain')], 'plain', now);
+  assert.equal(plain.bientotLibre, false); assert.equal(plain.horsLimite, false);
+});

@@ -39,6 +39,12 @@ interface Proposition {
   deliveryAddress?: string | null;
   deliveryCity?: string | null;
   deliveryPostal?: string | null;
+  /** Proposée pendant une course, sur le trajet (« +1 course »). */
+  ajout?: boolean;
+  /** Plus longue que ce que fait d'ordinaire son véhicule : il peut refuser. */
+  horsLimite?: boolean;
+  /** À enchaîner : elle ne démarre qu'une fois la livraison en cours terminée. */
+  bientotLibre?: boolean;
   // Anciennes données (rétrocompatibilité)
   boutique?: { name?: string; address?: string; city?: string } | null;
   adresse?: string | null;
@@ -74,6 +80,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState('');
+  const [info, setInfo] = useState('');
   const [perduCoteServeur, setPerduCoteServeur] = useState(false);
 
   const jeton = useRef<string | null>(null);
@@ -106,19 +113,21 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
     }
   }, []);
 
-  // Relevé périodique des propositions (seulement si disponible).
-  if (!isAvailable && propositions.length > 0) setPropositions([]);
+  // Relevé périodique des propositions, tant que le livreur est en ligne : en
+  // pleine livraison, on peut encore lui proposer une course à enchaîner ou
+  // sur son trajet. Hors ligne, rien n'est proposé.
+  if (!isOnline && propositions.length > 0) setPropositions([]);
 
   useEffectChargement(() => {
-    if (isAvailable) relever();
-  }, [isAvailable, relever]);
+    if (isOnline) relever();
+  }, [isOnline, relever]);
 
   useEffect(() => {
-    if (!isAvailable) return;
+    if (!isOnline) return;
 
     const minuteur = setInterval(relever, INTERVALLE_RELEVE_MS);
     return () => clearInterval(minuteur);
-  }, [isAvailable, relever]);
+  }, [isOnline, relever]);
 
   // Temps réel : le serveur pousse « course-proposee » au livreur choisi. On
   // relève aussitôt plutôt que d'attendre le prochain relevé périodique, qui
@@ -213,6 +222,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
   const repondre = async (propositionId: string, reponse: 'accept' | 'decline') => {
     setEnCours(propositionId);
     setErreur('');
+    setInfo('');
 
     try {
       const resultat = await fetch(`${API_URL}/api/drivers/offers/${propositionId}/${reponse}`, {
@@ -232,6 +242,10 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
       if (reponse === 'accept') {
         surAcceptation?.();
+        if (donnees.data?.reservee) {
+          setInfo(t('reservee'));
+          setTimeout(() => setInfo(''), 20000);
+        }
         // Direction la course : adresse de retrait, carte et itinéraire.
         // Course à enchaîner : elle ne démarre qu'une fois la livraison en
         // cours terminée, il n'y a pas encore de page de course.
@@ -249,11 +263,11 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
   const alerte = <AlerteSignal enLigne={enLigne} gps={gps} perduCoteServeur={perduCoteServeur} />;
 
-  // En course ou en pause : pas de proposition, mais l'état du signal compte
-  // toujours, puisque le client suit la position.
-  if (!isAvailable) return alerte;
-
   const visibles = propositions.filter((p) => new Date(p.expiresAt).getTime() > maintenant);
+
+  // En course ou en pause, sans proposition à enchaîner : l'état du signal
+  // compte toujours, puisque le client suit la position.
+  if (!isAvailable && visibles.length === 0 && !info) return alerte;
 
   return (
     <div className="space-y-3">
@@ -265,7 +279,13 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
         </div>
       )}
 
-      {visibles.length === 0 && (
+      {info && (
+        <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-3 text-sm">
+          {info}
+        </div>
+      )}
+
+      {visibles.length === 0 && isAvailable && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 text-center text-gray-500">
           <Navigation size={28} className="mx-auto mb-2 text-gray-400" />
           <p>{t('enAttente')}</p>
@@ -315,6 +335,18 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
                 {restant}s
               </span>
             </div>
+
+            {proposition.bientotLibre && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-lg p-3 text-sm pr-20">
+                <p className="font-semibold">{t('aEnchainer')}</p>
+                <p className="text-xs mt-1">{t('aEnchainerAide')}</p>
+              </div>
+            )}
+            {proposition.horsLimite && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3 text-sm">
+                {t('horsLimite')}
+              </div>
+            )}
 
             {/* Montant principal */}
             <div className="pt-2">

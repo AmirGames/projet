@@ -1355,6 +1355,7 @@
       "remettreAuLivreur": "Remise au livreur",
       "clientServi": "Client servi",
       "rechercheLivreur": "Recherche d’un livreur…",
+      "livreurReserve": "Livreur trouvé : il termine sa livraison en cours et arrive bientôt",
       "choisirLivreur": "Choisir",
       "livreurTrouve": "{nom} arrive pour la course",
       "livreurEnRoute": "En route avec {nom}",
@@ -4925,7 +4926,11 @@
     "km": "{n} km",
     "minutes": "{n} min",
     "accepter": "✓ Accepter",
-    "refuser": "Refuser"
+    "refuser": "Refuser",
+    "aEnchainer": "Course à enchaîner",
+    "aEnchainerAide": "Elle démarrera dès que vous aurez terminé votre livraison en cours.",
+    "horsLimite": "Course plus longue que votre limite habituelle : à vous de voir, vous pouvez refuser.",
+    "reservee": "Course réservée : elle démarrera dès que vous aurez terminé votre livraison en cours."
   },
   "annulerCourse": {
     "choisirRaison": "Veuillez sélectionner ou entrer une raison",

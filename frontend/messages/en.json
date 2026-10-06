@@ -1355,6 +1355,7 @@
       "remettreAuLivreur": "Handed to courier",
       "clientServi": "Customer served",
       "rechercheLivreur": "Looking for a courier…",
+      "livreurReserve": "Courier found: finishing a current delivery, arriving soon",
       "choisirLivreur": "Choose",
       "livreurTrouve": "{nom} is coming for the delivery",
       "livreurEnRoute": "On the way with {nom}",
@@ -4925,7 +4926,11 @@
     "km": "{n} km",
     "minutes": "{n} min",
     "accepter": "✓ Accept",
-    "refuser": "Decline"
+    "refuser": "Decline",
+    "aEnchainer": "Trip to chain",
+    "aEnchainerAide": "It starts as soon as you finish your current delivery.",
+    "horsLimite": "Trip longer than your usual limit: your call, you can decline.",
+    "reservee": "Trip reserved: it starts as soon as you finish your current delivery."
   },
   "annulerCourse": {
     "choisirRaison": "Please select or enter a reason",
