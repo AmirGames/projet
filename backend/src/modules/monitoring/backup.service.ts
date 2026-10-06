@@ -7,6 +7,14 @@ import { encrypt, decrypt, isEncrypted } from "../privacy/crypto";
 
 const DOSSIER = process.env.BACKUP_DIR || path.join(process.cwd(), "backups");
 
+/**
+ * Préfixe des vraies sauvegardes : celles de `deploy/zup.sh backup` (dump
+ * PostgreSQL + fichiers), enregistrées dans la table Backup une fois chiffrées.
+ * Les exports JSON de ce service portent un autre préfixe : ils ne comptent pas
+ * pour le contrôle de santé « Sauvegardes ».
+ */
+export const PREFIXE_SAUVEGARDE_COMPLETE = "base-";
+
 function formaterTaille(octets: number) {
   if (octets < 1024) return `${octets} o`;
   if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(1)} Ko`;
@@ -53,11 +61,14 @@ export class BackupService {
     };
   }
 
-  // Export JSON des tables métier. Un dump SQL complet supposerait pg_dump et
-  // un accès disque que l'application n'a pas nécessairement en production.
+  // EXPORT PARTIEL, pas une sauvegarde : quelques tables métier en JSON chiffré
+  // (organisations, boutiques, catalogue, commandes, clients, comptes sans mot de
+  // passe). Ni paiements, ni relevés, ni appartenances, ni fichiers : il ne permet
+  // pas de reprendre après une perte de base. La reprise passe par
+  // `deploy/zup.sh backup` (pg_dump + fichiers) et `restore-test`.
   static async create(createdById?: string) {
     const horodatage = new Date().toISOString().replace(/[:.]/g, "-");
-    const nom = `sauvegarde-${horodatage}.json.zupenc`;
+    const nom = `export-partiel-${horodatage}.json.zupenc`;
 
     const enregistrement = await db.backup.create({
       data: { name: nom, createdById, status: "IN_PROGRESS" },
@@ -163,8 +174,10 @@ export class BackupService {
     logger.info("Backup deleted", { id });
   }
 
-  // Réinsère le contenu d'une sauvegarde sans toucher à ce qui existe déjà :
-  // les enregistrements encore présents sont ignorés, jamais écrasés.
+  // Réinsère le contenu d'un export partiel sans toucher à ce qui existe déjà :
+  // les enregistrements encore présents sont ignorés, jamais écrasés. Seuls
+  // organisations, boutiques, catégories, produits et clients sont réinjectés ;
+  // commandes, comptes, appartenances et paiements ne le sont pas.
   static async restore(id: string) {
     const snapshot = await this.get(id);
     const laterErasure = await db.erasureRecord.findFirst({ where: { erasedAt: { gte: snapshot.createdAt } }, select: { id: true } });

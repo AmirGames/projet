@@ -1,3 +1,4 @@
+import { PREFIXE_SAUVEGARDE_COMPLETE } from "./backup.service";
 import { db } from "../../services/db";
 
 /**
@@ -92,10 +93,14 @@ async function controlerMaintenance(): Promise<Controle> {
   };
 }
 
-/** Une sauvegarde récente existe-t-elle. */
+/**
+ * Une vraie sauvegarde récente existe-t-elle : dump PostgreSQL + fichiers, faits
+ * par `deploy/zup.sh backup`. L'export JSON partiel de l'écran Données n'en est
+ * pas une et ne compte pas : il ne permet pas de reprendre après une perte de base.
+ */
 async function controlerSauvegardes(): Promise<Controle> {
   const derniere = await db.backup.findFirst({
-    where: { status: "COMPLETED" },
+    where: { status: "COMPLETED", name: { startsWith: PREFIXE_SAUVEGARDE_COMPLETE } },
     orderBy: { createdAt: "desc" },
     select: { createdAt: true },
   });
@@ -107,13 +112,15 @@ async function controlerSauvegardes(): Promise<Controle> {
       poids: 20,
       score: 0,
       etat: "PANNE",
-      detail: "Aucune sauvegarde terminée",
-      remede: "Lancez une sauvegarde depuis Données : sans elle, une perte est définitive.",
+      detail: "Aucune sauvegarde complète enregistrée",
+      remede:
+        "Planifiez `deploy/zup.sh backup` sur le serveur (voir DEPLOIEMENT-SCALEWAY.md). L'export partiel de l'écran Données ne remplace pas une sauvegarde.",
     };
   }
 
   const jours = Math.floor((Date.now() - derniere.createdAt.getTime()) / JOUR);
-  const score = jours <= 7 ? 1 : jours <= 30 ? 0.5 : 0.2;
+  // Sauvegarde nocturne attendue : au-delà de deux jours, quelque chose a cessé.
+  const score = jours <= 2 ? 1 : jours <= 7 ? 0.5 : 0.2;
 
   return {
     cle: "sauvegardes",
@@ -123,9 +130,9 @@ async function controlerSauvegardes(): Promise<Controle> {
     etat: etatDuScore(score),
     detail:
       jours === 0
-        ? "Sauvegarde du jour"
-        : `Dernière sauvegarde il y a ${jours} jour${jours > 1 ? "s" : ""}`,
-    remede: score === 1 ? "" : "Lancez une sauvegarde depuis Données : la dernière commence à dater.",
+        ? "Sauvegarde complète du jour"
+        : `Dernière sauvegarde complète il y a ${jours} jour${jours > 1 ? "s" : ""}`,
+    remede: score === 1 ? "" : "La sauvegarde nocturne ne passe plus : consultez ~/sauvegardes.log sur le serveur.",
   };
 }
 

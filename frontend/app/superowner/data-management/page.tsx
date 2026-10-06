@@ -157,6 +157,7 @@ export default function DataManagementPage() {
           {t('title')}
         </h1>
         <p className="text-gray-500 mt-2">{t('subtitle')}</p>
+        <p className="mt-3 p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-sm">{t('partialNotice')}</p>
       </div>
 
       {error && (
