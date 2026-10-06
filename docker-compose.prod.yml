@@ -58,6 +58,9 @@ services:
     build:
       context: ./backend
     restart: unless-stopped
+    # L'arrêt propre laisse finir les requêtes en cours (25 s au plus, voir
+    # backend/src/arret-gracieux.ts) : Docker ne doit pas tuer avant.
+    stop_grace_period: 40s
     depends_on:
       postgres:
         condition: service_healthy
