@@ -1224,30 +1224,40 @@ export class DispatchService {
         })
       : [];
 
-    const enCours = await db.orderDelivery.count({ where: { driverId, status: { in: STATUTS_EN_COURSE } } });
     const { maxCourses } = (await this.reglages()).tournee;
-    const place = maxCourses - enCours;
-    if (place <= 0) {
-      throw new ApiError(
-        409,
-        enCours > 1
-          ? `Vous avez déjà ${enCours} courses en cours : terminez-en une d'abord.`
-          : "Vous avez déjà une course en cours : terminez-la d'abord.",
-        "TOO_MANY_DELIVERIES"
-      );
-    }
-    const acceptees = [proposition, ...compagnes].slice(0, place);
-    const laissees = [proposition, ...compagnes].slice(place);
+    const lotDemande = [proposition, ...compagnes];
+    let acceptees: typeof lotDemande = [];
+    let laissees: typeof lotDemande = [];
 
     const maintenant = new Date();
 
     // Tout d'un bloc : sans cela, une course pourrait être attribuée sans que
     // le livreur soit marqué occupé.
     await db.$transaction(async (tx) => {
+      // Un livreur à la fois : deux acceptations simultanées lisaient chacune
+      // « une place libre » et dépassaient sa capacité. Le verrou tient
+      // jusqu'à la fin de la transaction ; la capacité est recomptée dessous.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`acceptation-livreur:${driverId}`}))`;
+
       const livreur = await tx.courier.findUnique({ where: { id: driverId }, select: { currentOrderId: true, status: true } });
       if (!livreur || livreur.status !== "ACTIVE") {
         throw new ApiError(403, "Votre compte livreur n'est pas actif", "DRIVER_NOT_ACTIVE");
       }
+
+      const enCours = await tx.orderDelivery.count({ where: { driverId, status: { in: STATUTS_EN_COURSE } } });
+      const place = maxCourses - enCours;
+      if (place <= 0) {
+        throw new ApiError(
+          409,
+          enCours > 1
+            ? `Vous avez déjà ${enCours} courses en cours : terminez-en une d'abord.`
+            : "Vous avez déjà une course en cours : terminez-la d'abord.",
+          "TOO_MANY_DELIVERIES"
+        );
+      }
+      acceptees = lotDemande.slice(0, place);
+      laissees = lotDemande.slice(place);
+
       for (const offre of acceptees) {
         // Le contrôle initial ne suffit pas : une autre acceptation peut
         // s'intercaler. Le perdant ne doit jamais écraser l'attribution.
