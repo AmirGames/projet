@@ -198,11 +198,11 @@ export default function CategoriesPage() {
           body: JSON.stringify({ storeId, ordering }),
         });
 
-        setMessage('✅ Catégories réorganisées');
+        setMessage(t('msgReorganisees'));
         setTimeout(() => setMessage(''), 3000);
       } catch (error) {
         signalerErreur('Error reordering:', error);
-        setMessage('❌ Erreur lors de la réorganisation');
+        setMessage(t('msgErreurReorg'));
         fetchStoreAndCategories();
       } finally {
         setIsReordering(false);
@@ -214,7 +214,7 @@ export default function CategoriesPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      setMessage('❌ Le nom de la catégorie est requis');
+      setMessage(t('msgNomRequis'));
       return;
     }
 
@@ -232,7 +232,7 @@ export default function CategoriesPage() {
         });
 
         if (response.ok) {
-          setMessage('✅ Catégorie mise à jour avec succès');
+          setMessage(t('msgMiseAJour'));
           resetForm();
           await fetchStoreAndCategories();
           setTimeout(() => setMessage(''), 3000);
@@ -243,7 +243,7 @@ export default function CategoriesPage() {
         }
       } else {
         if (!storeId) {
-          setMessage('❌ Erreur: store non trouvé');
+          setMessage(t('msgStoreIntrouvable'));
           return;
         }
 
@@ -261,7 +261,7 @@ export default function CategoriesPage() {
         });
 
         if (response.ok) {
-          setMessage('✅ Catégorie créée avec succès');
+          setMessage(t('msgCreee'));
           resetForm();
           await fetchStoreAndCategories();
           setTimeout(() => setMessage(''), 3000);
@@ -273,7 +273,7 @@ export default function CategoriesPage() {
       }
     } catch (error) {
       signalerErreur('Error saving category:', error);
-      setMessage('❌ Erreur lors de la sauvegarde');
+      setMessage(t('msgErreurSauvegarde'));
     }
   };
 
@@ -290,7 +290,7 @@ export default function CategoriesPage() {
       });
 
       if (response.ok) {
-        setMessage('✅ Catégorie supprimée');
+        setMessage(t('msgSupprimee'));
         await fetchStoreAndCategories();
         setTimeout(() => setMessage(''), 3000);
       } else {
@@ -300,7 +300,7 @@ export default function CategoriesPage() {
       }
     } catch (error) {
       signalerErreur('Error deleting category:', error);
-      setMessage('❌ Erreur lors de la suppression');
+      setMessage(t('msgErreurSuppression'));
     }
   };
 

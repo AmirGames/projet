@@ -908,7 +908,35 @@
     "saving": "Sauvegarde…",
     "suspendAccount": "Suspendre le compte",
     "suspensionFailed": "Suspension impossible",
-    "updateFailed": "Mise à jour impossible"
+    "updateFailed": "Mise à jour impossible",
+    "chargement": "Chargement...",
+    "nonTrouve": "Commerçant non trouvé",
+    "raison": "Raison:",
+    "raisonFermeture": "Raison de fermeture:",
+    "backup": "Backup disponible pour restauration",
+    "supprimees": "Données définitivement supprimées",
+    "actionsRapides": "Actions rapides",
+    "suspendre": "Suspendre",
+    "fermerCompte": "Fermer le compte",
+    "gestion": "Gestion générale",
+    "restaurerConfirm": "Êtes-vous sûr de vouloir restaurer ce compte ? Les données supprimées seront restaurées et le statut passera à ACTIVE.",
+    "raisonPlaceholder": "Raison...",
+    "annuler": "Annuler",
+    "ca": "Chiffre d'affaires",
+    "commissionTitre": "Commission",
+    "commandes": "Commandes",
+    "aucuneBoutique": "Aucune boutique",
+    "aucunMembre": "Aucun membre",
+    "tickets": "Tickets récents",
+    "statutValeur": "Statut : {statut}",
+    "suspendreAide": "Le commerçant ne pourra plus accéder à son compte",
+    "fermerAide": "Les données seront sauvegardées et progressivement supprimées",
+    "depuisLe": "Depuis le {date}",
+    "fermeLe": "Fermé le {date}",
+    "joursAvantSuppression": "{n} j avant suppression permanente",
+    "suppressionPrevue": "Suppression prévue le {date}",
+    "boutiquesN": "Boutiques ({n})",
+    "equipeN": "Équipe ({n})"
   },
   "superownerWebhooks": {
     "title": "Webhooks",
@@ -1418,7 +1446,10 @@
     "notCommandable": "Affiché mais non commandable",
     "summary": "{total} produits · {soldOut} épuisé(s)",
     "categoriesNav": "Catégories",
-    "productCount": "{count, plural, =0 {aucun produit} one {# produit} other {# produits}}"
+    "productCount": "{count, plural, =0 {aucun produit} one {# produit} other {# produits}}",
+    "msgReorganises": "✅ Produits réorganisés",
+    "msgErreurReorg": "❌ Erreur lors de la réorganisation",
+    "msgConnexion": "❌ Erreur de connexion au serveur"
   },
   "merchantCustomers": {
     "loading": "Chargement des clients...",
@@ -1508,7 +1539,16 @@
     "nom": "Nom de la catégorie",
     "exempleNom": "Ex: Pizzas, Desserts, Boissons...",
     "annuler": "Annuler",
-    "produits": "Produits :"
+    "produits": "Produits :",
+    "msgReorganisees": "✅ Catégories réorganisées",
+    "msgErreurReorg": "❌ Erreur lors de la réorganisation",
+    "msgNomRequis": "❌ Le nom de la catégorie est requis",
+    "msgMiseAJour": "✅ Catégorie mise à jour avec succès",
+    "msgStoreIntrouvable": "❌ Erreur: store non trouvé",
+    "msgCreee": "✅ Catégorie créée avec succès",
+    "msgErreurSauvegarde": "❌ Erreur lors de la sauvegarde",
+    "msgSupprimee": "✅ Catégorie supprimée",
+    "msgErreurSuppression": "❌ Erreur lors de la suppression"
   },
   "merchantAnalytics": {
     "title": "Analytics",
@@ -2340,7 +2380,12 @@
     "aucuneCommande": "Aucune commande dans cette boutique",
     "noteInterne": "Note interne",
     "notePlaceholder": "Préférences, allergies, remarques — visible uniquement par votre équipe",
-    "clientDepuis": "Client depuis le {date}"
+    "clientDepuis": "Client depuis le {date}",
+    "statutBloque": "Bloqué",
+    "retourClients": "Retour aux clients",
+    "enregistrer": "Enregistrer",
+    "chargementFiche": "Impossible de charger la fiche client",
+    "noteEnregistree": "✅ Note enregistrée"
   },
   "merchantdeliveryzones": {
     "create": "Créer",
@@ -2390,7 +2435,29 @@
     "opacite": "Opacité ({n} %)",
     "couleurCarte": "Couleur sur la carte : {couleur}",
     "km": "{n} km",
-    "points": "{n} points"
+    "points": "{n} points",
+    "gerez": "Gérez vos zones de livraison et frais",
+    "votreCarte": "Votre carte",
+    "fraisBase": "Frais de Base",
+    "commandeMin": "Commande Minimale",
+    "dureeAnnoncee": "Durée annoncée",
+    "zoneLivree": "Zone livrée",
+    "zoneDesactivee": "Zone désactivée",
+    "totalZones": "Total des Zones",
+    "fraisMoyen": "Frais Moyen",
+    "commandeMinMax": "Commande Min. Max",
+    "positionEnregistree": "Position de la boutique enregistrée",
+    "adresseIntrouvable": "Adresse introuvable : posez la boutique sur la carte",
+    "nomRequis": "Le nom de la zone est requis",
+    "fraisRequis": "Les frais de base sont requis",
+    "fraisPositifs": "Les frais de base doivent être positifs",
+    "rayonRequis": "Indiquez un rayon en kilomètres, supérieur à zéro",
+    "dessinez": "Dessinez la zone sur la carte : au moins 3 sommets",
+    "rayon": "Rayon",
+    "minutes": "{n} min",
+    "mettreAJour": "Mettre à jour",
+    "offerteDesCarte": "Livraison offerte dès",
+    "sommetsTitre": "Sommets"
   },
   "merchantInvoices": {
     "actionDownload": "Télécharger",
@@ -2436,7 +2503,8 @@
       "taxes": "Taxes",
       "frais": "Frais",
       "totalMaj": "TOTAL"
-    }
+    },
+    "statusRefunded": "Remboursée"
   },
   "merchantmarketing": {
     "all": "Toutes",
@@ -2493,7 +2561,13 @@
       "PAUSED": "En pause",
       "SCHEDULED": "Programmée",
       "CANCELLED": "Annulée"
-    }
+    },
+    "msgConnexion": "❌ Erreur de connexion au serveur",
+    "msgNomContenu": "❌ Renseignez un nom et le contenu du message",
+    "creerCampagne": "Créer la campagne",
+    "msgStatutImpossible": "Changement de statut impossible",
+    "descriptionLibelle": "Description",
+    "pageSur": "Page {page} sur {total}"
   },
   "merchantnotifications": {
     "delete": "Supprimer",
@@ -2558,7 +2632,11 @@
       "READY": "Prête",
       "COMPLETED": "Terminée",
       "REJECTED": "Refusée"
-    }
+    },
+    "imprimerTicket": "Imprimer le ticket",
+    "voirFacture": "Voir la facture",
+    "chargementCommande": "Impossible de charger la commande",
+    "noteEnregistree": "✅ Note enregistrée"
   },
   "merchantpaymentmethods": {
     "active": "Actif",
@@ -2598,7 +2676,13 @@
       "BANK_TRANSFER": "Virement bancaire",
       "APPLE_PAY": "Apple Pay",
       "GOOGLE_PAY": "Google Pay"
-    }
+    },
+    "ajouterMethode": "Ajouter une méthode",
+    "msgNomCourt": "❌ Le nom doit contenir au moins 2 caractères",
+    "msgConnexion": "❌ Erreur de connexion au serveur",
+    "desactiver": "Désactiver",
+    "activer": "Activer",
+    "pageSur": "Page {page} sur {total}"
   },
   "merchantproductmedia": {
     "deleteError": "Erreur lors de la suppression",
@@ -2733,7 +2817,19 @@
       "4": "Jeu",
       "5": "Ven",
       "6": "Sam"
-    }
+    },
+    "ajouterCode": "Ajouter Code",
+    "heureDe": "De",
+    "msgCodeRequis": "❌ Le code promo est requis",
+    "msgValeurRequise": "❌ La valeur de réduction est requise",
+    "msgMisAJour": "✅ Code promo mis à jour",
+    "msgErreurMaj": "❌ Erreur lors de la mise à jour",
+    "msgCree": "✅ Code promo créé",
+    "msgErreurSauvegarde": "❌ Erreur lors de la sauvegarde",
+    "msgSupprime": "✅ Code promo supprimé",
+    "msgErreurSuppression": "❌ Erreur lors de la suppression",
+    "desactiver": "Désactiver",
+    "activer": "Activer"
   },
   "merchantreports": {
     "customers": "Clients",
@@ -2798,7 +2894,12 @@
       "KITCHEN": "Cuisine",
       "DELIVERY": "Livraison",
       "SUPPORT": "Support"
-    }
+    },
+    "nomRequis": "Le nom est requis",
+    "mettreAJour": "Mettre à Jour",
+    "desactiver": "Désactiver",
+    "activer": "Activer",
+    "aucunMembre": "Aucun membre"
   },
   "merchantstorehours": {
     "closed": "Fermée",
@@ -2888,7 +2989,12 @@
     "regle": "La règle la plus précise l'emporte : un taux attribué à un <b>produit</b> prime sur un taux attribué à sa <b>catégorie</b>, qui prime sur le taux appliqué à <b>tous les produits</b>.",
     "exemple": "Exemple : 6 % sur la catégorie « Nourriture » et 21 % sur la catégorie « Boissons ». Une commande avec une pizza et une bière produira un ticket avec les deux taux séparés.",
     "aucune": "Aucune taxe configurée — cliquez sur « Nouvelle taxe » pour commencer.",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "msgNomTaux": "❌ Indiquez un nom et un taux compris entre 0 et 100",
+    "msgCategorie": "❌ Sélectionnez au moins une catégorie",
+    "msgProduit": "❌ Sélectionnez au moins un produit",
+    "msgConnexion": "❌ Erreur de connexion au serveur",
+    "pageSur": "Page {page} sur {total}"
   },
   "merchantSubscription": {
     "back": "Retour",
@@ -2955,7 +3061,9 @@
     "description": "Description *",
     "creation": "Création en cours...",
     "creer": "Créer ma boutique",
-    "annuler": "Annuler"
+    "annuler": "Annuler",
+    "connecteEnTantQue": "Connecté en tant que {email}",
+    "boutiqueCreee": "Boutique créée avec succès !"
   },
   "merchantMainDashboard": {
     "createFirstStore": "Créer votre première boutique",
@@ -3108,7 +3216,9 @@
         "urlFormat": "L'URL ne peut contenir que des lettres minuscules, chiffres et tirets",
         "inscription": "Erreur lors de l'inscription"
       }
-    }
+    },
+    "inscriptionReussie": "Inscription réussie! Redirection vers votre tableau de bord...",
+    "erreurReessayer": "Une erreur est survenue. Veuillez réessayer."
   },
   "addressAutocomplete": {
     "placeholder": "Saisissez une adresse",
@@ -5001,7 +5111,8 @@
     "imprimerA4": "Imprimer la facture (A4)",
     "ticket": "Ticket 80 mm",
     "retour": "Retour aux factures",
-    "chargementImpossible": "Impossible de charger la facture"
+    "chargementImpossible": "Impossible de charger la facture",
+    "retourFactures": "Retour aux factures"
   },
   "supportCommercant": {
     "titre": "Support",
@@ -5160,7 +5271,12 @@
     "monProfil": "Mon profil",
     "enteteFormule": "Votre formule et la grille tarifaire",
     "enteteProfil": "Vos informations de facturation et votre compte",
-    "enteteChoix": "Choisissez le commerce à gérer"
+    "enteteChoix": "Choisissez le commerce à gérer",
+    "deconnexion": "Déconnexion",
+    "espaceCommercant": "Espace commerçant",
+    "aucuneBoutique": "Aucune boutique pour l'instant.",
+    "nouvelleBoutique": "Nouvelle boutique",
+    "chargementImpossible": "Chargement des boutiques impossible"
   },
   "dossierCommercant": {
     "modificationImpossible": "Modification impossible",
@@ -5603,5 +5719,26 @@
     "enAttendant": "En attendant, ZupEat est ouvert",
     "enAttendantTexte": "Commandez chez les restaurants et commerces de votre quartier, livrés ou à emporter.",
     "decouvrir": "Découvrir ZupEat"
+  },
+  "tableauDeBord": {
+    "chargement": "Chargement de votre espace...",
+    "aucunRole": "Aucun rôle trouvé",
+    "aucunRoleTexte": "Aucun rôle n'est actif pour votre compte. Les rôles pris en charge sont : commerçant, livreur, client et super administrateur.",
+    "retour": "Retour à l'accueil",
+    "redirection": "Redirection vers votre espace...",
+    "selection": "Sélectionnez l'espace que vous souhaitez gérer",
+    "commerces": "Mes commerces",
+    "commercesTexte": "Gérez vos boutiques, produits, commandes et livreurs",
+    "commercesLien": "Accéder aux commerces →",
+    "livraisons": "Mes livraisons",
+    "livraisonsTexte": "Consultez vos courses, revenus et votre historique",
+    "livraisonsLien": "Voir mes courses →",
+    "commandes": "Mes commandes",
+    "commandesTexte": "Consultez vos commandes, favoris et votre profil",
+    "commandesLien": "Voir mes commandes →",
+    "admin": "Administration",
+    "adminTexte": "Gérez l'ensemble de la plateforme, utilisateurs et paramètres",
+    "adminLien": "Accéder à l'admin →",
+    "bienvenue": "Bienvenue, {email}"
   }
 }

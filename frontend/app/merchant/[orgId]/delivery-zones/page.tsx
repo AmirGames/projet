@@ -164,7 +164,7 @@ export default function DeliveryZonesPage() {
         return;
       }
 
-      setMessageCarte('Position de la boutique enregistrée');
+      setMessageCarte(t('positionEnregistree'));
     } catch {
       setErreurCarte(t('serverError'));
       await chargerBoutique();
@@ -196,7 +196,7 @@ export default function DeliveryZonesPage() {
       );
 
       if (!point) {
-        setErreurCarte('Adresse introuvable : posez la boutique sur la carte');
+        setErreurCarte(t('adresseIntrouvable'));
         return;
       }
 
@@ -248,18 +248,18 @@ export default function DeliveryZonesPage() {
     setFormError('');
 
     if (!formData.name.trim()) {
-      setFormError('Le nom de la zone est requis');
+      setFormError(t('nomRequis'));
       return;
     }
 
     if (!formData.baseFee) {
-      setFormError('Les frais de base sont requis');
+      setFormError(t('fraisRequis'));
       return;
     }
 
     const baseFeeNum = parseFloat(formData.baseFee);
     if (baseFeeNum < 0) {
-      setFormError('Les frais de base doivent être positifs');
+      setFormError(t('fraisPositifs'));
       return;
     }
 
@@ -270,7 +270,7 @@ export default function DeliveryZonesPage() {
       // s'appliquerait jamais.
       rayon = parseFloat(formData.radiusKm);
       if (!(rayon > 0)) {
-        setFormError('Indiquez un rayon en kilomètres, supérieur à zéro');
+        setFormError(t('rayonRequis'));
         return;
       }
     } else {
@@ -281,7 +281,7 @@ export default function DeliveryZonesPage() {
         return;
       }
       if (!editingZone && (!dessin || dessin.length < 3)) {
-        setFormError('Dessinez la zone sur la carte : au moins 3 sommets');
+        setFormError(t('dessinez'));
         return;
       }
     }
@@ -415,7 +415,7 @@ export default function DeliveryZonesPage() {
               <MapPin className="text-amber-500" />
               {t('titre')}
             </h1>
-            <p className="text-gray-500 mt-2">Gérez vos zones de livraison et frais</p>
+            <p className="text-gray-500 mt-2">{t('gerez')}</p>
             {livreursPlateforme && (
               <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 {t('livreursPlateforme')}
@@ -436,7 +436,7 @@ export default function DeliveryZonesPage() {
             couvrait. */}
         <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Votre carte</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('votreCarte')}</h2>
 
             {boutique && boutique.latitude == null && (
               <button
@@ -701,7 +701,7 @@ export default function DeliveryZonesPage() {
                 disabled={saving}
                 className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
               >
-                {editingZone ? 'Mettre à Jour' : t('create')}
+                {editingZone ? t('mettreAJour') : t('create')}
               </button>
               <button
                 onClick={() => {
@@ -769,36 +769,36 @@ export default function DeliveryZonesPage() {
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Frais de Base</span>
-                    <span className="text-gray-900 font-semibold">{zone.baseFee.toFixed(2)} €</span>
+                    <span className="text-gray-500">{t('fraisBase')}</span>
+                    <span className="text-gray-900 font-semibold">{euro(zone.baseFee)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Commande Minimale</span>
-                    <span className="text-gray-900 font-semibold">{zone.minOrder.toFixed(2)} €</span>
+                    <span className="text-gray-500">{t('commandeMin')}</span>
+                    <span className="text-gray-900 font-semibold">{euro(zone.minOrder)}</span>
                   </div>
                   {zone.freeAbove != null && zone.baseFee > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500">Livraison offerte dès</span>
-                      <span className="text-green-600 font-semibold">{zone.freeAbove.toFixed(2)} €</span>
+                      <span className="text-gray-500">{t('offerteDesCarte')}</span>
+                      <span className="text-green-600 font-semibold">{euro(zone.freeAbove)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">{zone.type === 'RADIUS' ? 'Rayon' : 'Sommets'}</span>
+                    <span className="text-gray-500">{zone.type === 'RADIUS' ? t('rayon') : t('sommetsTitre')}</span>
                     <span className="text-gray-900 font-semibold">
                       {zone.type === 'RADIUS' ? t('km', { n: zone.radiusKm ?? 0 }) : t('points', { n: zone.polygon?.length ?? 0 })}
                     </span>
                   </div>
                   {zone.deliveryMinutes && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500">Durée annoncée</span>
-                      <span className="text-gray-900 font-semibold">{zone.deliveryMinutes} min</span>
+                      <span className="text-gray-500">{t('dureeAnnoncee')}</span>
+                      <span className="text-gray-900 font-semibold">{t('minutes', { n: zone.deliveryMinutes })}</span>
                     </div>
                   )}
                   <div className="text-xs pt-2 border-t border-gray-200">
                     {zone.isActive ? (
-                      <span className="text-green-600">Zone livrée</span>
+                      <span className="text-green-600">{t('zoneLivree')}</span>
                     ) : (
-                      <span className="text-orange-600">Zone désactivée</span>
+                      <span className="text-orange-600">{t('zoneDesactivee')}</span>
                     )}
                   </div>
                 </div>
@@ -827,19 +827,19 @@ export default function DeliveryZonesPage() {
         {zones.length > 0 && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-500 text-sm">Total des Zones</p>
+              <p className="text-gray-500 text-sm">{t('totalZones')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{zones.length}</p>
             </div>
             <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-500 text-sm">Frais Moyen</p>
+              <p className="text-gray-500 text-sm">{t('fraisMoyen')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {euro(zones.length > 0 ? zones.reduce((sum, z) => sum + Number(z.baseFee || 0), 0) / zones.length : 0)}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-gray-500 text-sm">Commande Min. Max</p>
+              <p className="text-gray-500 text-sm">{t('commandeMinMax')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {Math.max(...zones.map((z) => z.minOrder)).toFixed(2)} €
+                {euro(Math.max(...zones.map((z) => z.minOrder)))}
               </p>
             </div>
           </div>

@@ -68,7 +68,7 @@ export default function PaymentMethodsPage() {
     e.preventDefault();
 
     if (formulaire.name.trim().length < 2) {
-      setMessage('❌ Le nom doit contenir au moins 2 caractères');
+      setMessage(t('msgNomCourt'));
       return;
     }
 
@@ -114,7 +114,7 @@ export default function PaymentMethodsPage() {
       setModaleOuverte(false);
       fetchPaymentMethods();
     } catch {
-      setMessage('❌ Erreur de connexion au serveur');
+      setMessage(t('msgConnexion'));
     } finally {
       setEnvoi(false);
     }
@@ -208,7 +208,7 @@ export default function PaymentMethodsPage() {
                 onClick={() => ouvrirModale()}
                 className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                <Plus size={18} /> Ajouter une méthode
+                <Plus size={18} /> {t('ajouterMethode')}
               </button>
               <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-500 hover:text-gray-700 text-sm">
                 {t('retour')}
@@ -263,7 +263,7 @@ export default function PaymentMethodsPage() {
                           ? 'bg-green-50 hover:bg-green-100 text-green-600'
                           : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-500'
                       }`}
-                      title={method.isActive ? 'Désactiver' : 'Activer'}
+                      title={method.isActive ? t('desactiver') : t('activer')}
                     >
                       <Power size={18} />
                     </button>
@@ -289,7 +289,7 @@ export default function PaymentMethodsPage() {
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-8 px-6 py-4 bg-white border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-500">Page {page + 1} sur {totalPages}</p>
+            <p className="text-sm text-gray-500">{t('pageSur', { page: page + 1, total: totalPages })}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}

@@ -92,12 +92,12 @@ export default function PromotionsPage() {
     e.preventDefault();
 
     if (!formData.code.trim()) {
-      setMessage('❌ Le code promo est requis');
+      setMessage(t('msgCodeRequis'));
       return;
     }
 
     if (!formData.discountValue) {
-      setMessage('❌ La valeur de réduction est requise');
+      setMessage(t('msgValeurRequise'));
       return;
     }
 
@@ -132,11 +132,11 @@ export default function PromotionsPage() {
         if (response.ok) {
           const updated = await response.json();
           setPromotions(prev => prev.map(p => p.id === editingPromo.id ? updated.promotion : p));
-          setMessage('✅ Code promo mis à jour');
+          setMessage(t('msgMisAJour'));
           resetForm();
           setTimeout(() => setMessage(''), 3000);
         } else {
-          setMessage('❌ Erreur lors de la mise à jour');
+          setMessage(t('msgErreurMaj'));
         }
       } else {
         const response = await fetch(`${API_URL}/api/promotions`, {
@@ -151,7 +151,7 @@ export default function PromotionsPage() {
         if (response.ok) {
           const created = await response.json();
           setPromotions(prev => [created.promotion, ...prev]);
-          setMessage('✅ Code promo créé');
+          setMessage(t('msgCree'));
           resetForm();
           setTimeout(() => setMessage(''), 3000);
         } else {
@@ -161,7 +161,7 @@ export default function PromotionsPage() {
       }
     } catch (error) {
       signalerErreur('Error saving promotion:', error);
-      setMessage('❌ Erreur lors de la sauvegarde');
+      setMessage(t('msgErreurSauvegarde'));
     }
   };
 
@@ -179,14 +179,14 @@ export default function PromotionsPage() {
 
       if (response.ok) {
         setPromotions(prev => prev.filter(p => p.id !== id));
-        setMessage('✅ Code promo supprimé');
+        setMessage(t('msgSupprime'));
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage('❌ Erreur lors de la suppression');
+        setMessage(t('msgErreurSuppression'));
       }
     } catch (error) {
       signalerErreur('Error deleting promotion:', error);
-      setMessage('❌ Erreur lors de la suppression');
+      setMessage(t('msgErreurSuppression'));
     }
   };
 
@@ -311,7 +311,7 @@ export default function PromotionsPage() {
             onClick={() => setShowForm(true)}
             className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors"
           >
-            <Plus size={20} /> Ajouter Code
+            <Plus size={20} /> {t('ajouterCode')}
           </button>
         </div>
 
@@ -450,7 +450,7 @@ export default function PromotionsPage() {
                           ? 'bg-green-600 text-white hover:bg-green-700'
                           : 'bg-gray-200 hover:bg-gray-100'
                       }`}
-                      title={promo.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
+                      title={promo.status === 'ACTIVE' ? t('desactiver') : t('activer')}
                     >
                       {promo.status === 'ACTIVE' ? (
                         <ToggleRight size={16} />
@@ -587,7 +587,7 @@ export default function PromotionsPage() {
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 block mb-1">De</label>
+                    <label className="text-xs text-gray-500 block mb-1">{t('heureDe')}</label>
                     <input
                       type="time"
                       value={formData.activeFromTime}

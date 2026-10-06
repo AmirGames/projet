@@ -92,7 +92,7 @@ export default function FicheClientPage() {
       setClient(donnees);
       setNote(donnees.notes || '');
     } catch {
-      setErreur('Impossible de charger la fiche client');
+      setErreur(t('chargementFiche'));
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ export default function FicheClientPage() {
         return;
       }
 
-      setMessage('✅ Note enregistrée');
+      setMessage(t('noteEnregistree'));
     } catch {
       setMessage(t('connectionErrorFinal'));
     } finally {
@@ -172,7 +172,7 @@ export default function FicheClientPage() {
           href={`/merchant/${orgId}/customers`}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900"
         >
-          <ArrowLeft size={18} /> Retour aux clients
+          <ArrowLeft size={18} /> {t('retourClients')}
         </Link>
         <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
           {erreur || t('introuvable')}
@@ -192,7 +192,7 @@ export default function FicheClientPage() {
             href={`/merchant/${orgId}/customers`}
             className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm mb-2"
           >
-            <ArrowLeft size={16} /> Retour aux clients
+            <ArrowLeft size={16} /> {t('retourClients')}
           </Link>
           <h1 className="text-3xl font-bold">{client.name}</h1>
           <p className="text-gray-500 mt-1">
@@ -206,7 +206,7 @@ export default function FicheClientPage() {
               : 'bg-green-100 text-green-600'
           }`}
         >
-          {client.status === 'BLOCKED' ? 'Bloqué' : t('active')}
+          {client.status === 'BLOCKED' ? t('statutBloque') : t('active')}
         </span>
       </div>
 
@@ -321,7 +321,7 @@ export default function FicheClientPage() {
           disabled={enregistrement}
           className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-600 text-white hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
         >
-          <Save size={16} /> Enregistrer
+          <Save size={16} /> {t('enregistrer')}
         </button>
       </div>
     </div>

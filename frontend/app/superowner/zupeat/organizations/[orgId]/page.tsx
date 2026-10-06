@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -40,6 +40,7 @@ interface MerchantDetail {
 
 export default function MerchantDetailPage() {
   const t = useTranslations('superownerOrganizationDetail');
+  const locale = useLocale();
   // Suspendre relève de « Organisations » ; fermer et rouvrir, qui touchent
   // aux données, d'un droit à part. Les boutons suivent les droits du rôle.
   const [acces, setAcces] = useState<AccesPlateforme | null>(null);
@@ -247,8 +248,8 @@ export default function MerchantDetailPage() {
     return Math.max(0, days);
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
-  if (!merchant) return <div className="text-center py-8 text-red-600">Commerçant non trouvé</div>;
+  if (loading) return <div className="text-center py-8">{t('chargement')}</div>;
+  if (!merchant) return <div className="text-center py-8 text-red-600">{t('nonTrouve')}</div>;
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -277,26 +278,26 @@ export default function MerchantDetailPage() {
           <div className="flex items-center gap-3">
             <AlertCircle size={20} className={merchant.status === 'SUSPENDED' ? 'text-yellow-600' : 'text-red-600'} />
             <span className={merchant.status === 'SUSPENDED' ? 'text-yellow-600' : 'text-red-600'}>
-              Statut: {merchant.status}
+              {t('statutValeur', { statut: merchant.status })}
             </span>
           </div>
 
           {merchant.status === 'SUSPENDED' && merchant.suspensionReason && (
             <div className="text-sm text-gray-700 ml-8">
-              <p className="font-medium mb-1">Raison:</p>
+              <p className="font-medium mb-1">{t('raison')}</p>
               <p>{merchant.suspensionReason}</p>
               {merchant.suspensionDate && (
-                <p className="text-gray-500 mt-1">Depuis le {new Date(merchant.suspensionDate).toLocaleDateString('fr-FR')}</p>
+                <p className="text-gray-500 mt-1">{t('depuisLe', { date: new Date(merchant.suspensionDate).toLocaleDateString(locale) })}</p>
               )}
             </div>
           )}
 
           {merchant.status === 'CLOSED' && merchant.closureReason && (
             <div className="text-sm text-gray-700 ml-8 space-y-2">
-              <p className="font-medium">Raison de fermeture:</p>
+              <p className="font-medium">{t('raisonFermeture')}</p>
               <p>{merchant.closureReason}</p>
               {merchant.closureDate && (
-                <p className="text-gray-500">Fermé le {new Date(merchant.closureDate).toLocaleDateString('fr-FR')}</p>
+                <p className="text-gray-500">{t('fermeLe', { date: new Date(merchant.closureDate).toLocaleDateString(locale) })}</p>
               )}
 
               {/* Timeline */}
@@ -304,27 +305,27 @@ export default function MerchantDetailPage() {
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-gray-500" />
                   <span className="text-sm">
-                    {getDaysUntilHardDelete()}j avant suppression permanente
+                    {t('joursAvantSuppression', { n: getDaysUntilHardDelete() ?? 0 })}
                   </span>
                 </div>
 
                 {merchant.closedUntil && (
                   <p className="text-sm text-gray-500">
-                    Suppression prévue le {new Date(merchant.closedUntil).toLocaleDateString('fr-FR')}
+                    {t('suppressionPrevue', { date: new Date(merchant.closedUntil).toLocaleDateString(locale) })}
                   </p>
                 )}
 
                 {!merchant.isArchivedPermanently && merchant.archiveBackupId && (
                   <p className="text-sm text-green-600 flex items-center gap-2">
                     <Archive size={16} />
-                    Backup disponible pour restauration
+                    {t('backup')}
                   </p>
                 )}
 
                 {merchant.isArchivedPermanently && (
                   <p className="text-sm text-red-600 flex items-center gap-2">
                     <XCircle size={16} />
-                    Données définitivement supprimées
+                    {t('supprimees')}
                   </p>
                 )}
               </div>
@@ -339,7 +340,7 @@ export default function MerchantDetailPage() {
 
       {/* Quick Actions */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-        <h2 className="text-lg font-bold">Actions rapides</h2>
+        <h2 className="text-lg font-bold">{t('actionsRapides')}</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {merchant.status === 'ACTIVE' && (
@@ -348,13 +349,13 @@ export default function MerchantDetailPage() {
                 onClick={() => setShowActionModal('suspend')}
                 className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors font-medium text-sm text-white"
               >
-                Suspendre
+                {t('suspendre')}
               </button>)}
               {peutFermer && (<button
                 onClick={() => setShowActionModal('close')}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-medium text-sm text-white"
               >
-                Fermer le compte
+                {t('fermerCompte')}
               </button>)}
             </>
           )}
@@ -383,11 +384,11 @@ export default function MerchantDetailPage() {
 
       {/* Controls */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-        <h2 className="text-lg font-bold">Gestion générale</h2>
+        <h2 className="text-lg font-bold">{t('gestion')}</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Plan</label>
+            <label className="block text-sm font-medium mb-2">{t('plan')}</label>
             <select
               value={newTier}
               onChange={(e) => setNewTier(e.target.value)}
@@ -423,16 +424,16 @@ export default function MerchantDetailPage() {
 
             {showActionModal === 'restore' ? (
               <p className="text-gray-700">
-                Êtes-vous sûr de vouloir restaurer ce compte ? Les données supprimées seront restaurées et le statut passera à ACTIVE.
+                {t('restaurerConfirm')}
               </p>
             ) : (
               <>
                 <p className="text-gray-700 text-sm">
-                  {showActionModal === 'suspend' && 'Le commerçant ne pourra plus accéder à son compte'}
-                  {showActionModal === 'close' && 'Les données seront sauvegardées et progressivement supprimées'}
+                  {showActionModal === 'suspend' && t('suspendreAide')}
+                  {showActionModal === 'close' && t('fermerAide')}
                 </p>
                 <textarea
-                  placeholder="Raison..."
+                  placeholder={t('raisonPlaceholder')}
                   value={actionReason}
                   onChange={(e) => setActionReason(e.target.value)}
                   className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500 resize-none"
@@ -450,7 +451,7 @@ export default function MerchantDetailPage() {
                 }}
                 className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
               >
-                Annuler
+                {t('annuler')}
               </button>
               <button
                 onClick={() => {
@@ -475,24 +476,24 @@ export default function MerchantDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-gray-500 text-sm mb-2">Chiffre d'affaires</p>
+          <p className="text-gray-500 text-sm mb-2">{t('ca')}</p>
           <p className="text-3xl font-bold">{merchant.stats.totalRevenue.toFixed(2)} €</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-gray-500 text-sm mb-2">Commission</p>
+          <p className="text-gray-500 text-sm mb-2">{t('commissionTitre')}</p>
           <p className="text-3xl font-bold text-green-600">{merchant.stats.commission.toFixed(2)} €</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-gray-500 text-sm mb-2">Commandes</p>
+          <p className="text-gray-500 text-sm mb-2">{t('commandes')}</p>
           <p className="text-3xl font-bold">{merchant.stats.ordersCount}</p>
         </div>
       </div>
 
       {/* Stores */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Boutiques ({merchant.stores.length})</h2>
+        <h2 className="text-lg font-bold mb-4">{t('boutiquesN', { n: merchant.stores.length })}</h2>
         {merchant.stores.length > 0 ? (
           <div className="space-y-2">
             {merchant.stores.map((store) => (
@@ -505,13 +506,13 @@ export default function MerchantDetailPage() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">Aucune boutique</p>
+          <p className="text-gray-500">{t('aucuneBoutique')}</p>
         )}
       </div>
 
       {/* Team Members */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Équipe ({merchant.memberships.length})</h2>
+        <h2 className="text-lg font-bold mb-4">{t('equipeN', { n: merchant.memberships.length })}</h2>
         {merchant.memberships.length > 0 ? (
           <div className="space-y-2">
             {merchant.memberships.map((member) => (
@@ -524,14 +525,14 @@ export default function MerchantDetailPage() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">Aucun membre</p>
+          <p className="text-gray-500">{t('aucunMembre')}</p>
         )}
       </div>
 
       {/* Recent Tickets */}
       {merchant.tickets.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-bold mb-4">Tickets récents</h2>
+          <h2 className="text-lg font-bold mb-4">{t('tickets')}</h2>
           <div className="space-y-2">
             {merchant.tickets.slice(0, 5).map((ticket) => (
               <div key={ticket.id} className="p-3 bg-gray-100 rounded-lg">

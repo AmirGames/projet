@@ -299,7 +299,7 @@ export default function InvoicesPage() {
                           {invoice.status === 'SUCCEEDED' && t('statusSucceeded')}
                           {invoice.status === 'PENDING' && t('statusPending')}
                           {invoice.status === 'FAILED' && t('statusFailed')}
-                          {invoice.status === 'REFUNDED' && 'Remboursée'}
+                          {invoice.status === 'REFUNDED' && t('statusRefunded')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">

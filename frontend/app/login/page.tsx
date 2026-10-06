@@ -159,7 +159,7 @@ export default function LoginPage() {
             role="status"
             className="bg-blue-50 border border-blue-200 text-blue-900 p-4 rounded-lg mb-4"
           >
-            {raison}
+            {t('sessionExpiree')}
           </div>
         )}
 

@@ -908,7 +908,35 @@
     "saving": "Saving…",
     "suspendAccount": "Suspend account",
     "suspensionFailed": "Could not suspend",
-    "updateFailed": "Could not update"
+    "updateFailed": "Could not update",
+    "chargement": "Loading...",
+    "nonTrouve": "Merchant not found",
+    "raison": "Reason:",
+    "raisonFermeture": "Closing reason:",
+    "backup": "Backup available for restore",
+    "supprimees": "Data permanently deleted",
+    "actionsRapides": "Quick actions",
+    "suspendre": "Suspend",
+    "fermerCompte": "Close the account",
+    "gestion": "General management",
+    "restaurerConfirm": "Are you sure you want to restore this account? Deleted data will be restored and the status will become ACTIVE.",
+    "raisonPlaceholder": "Reason...",
+    "annuler": "Cancel",
+    "ca": "Revenue",
+    "commissionTitre": "Commission",
+    "commandes": "Orders",
+    "aucuneBoutique": "No shop",
+    "aucunMembre": "No member",
+    "tickets": "Recent tickets",
+    "statutValeur": "Status: {statut}",
+    "suspendreAide": "The merchant will no longer be able to access their account",
+    "fermerAide": "Data will be backed up and gradually deleted",
+    "depuisLe": "Since {date}",
+    "fermeLe": "Closed on {date}",
+    "joursAvantSuppression": "{n} days before permanent deletion",
+    "suppressionPrevue": "Deletion scheduled on {date}",
+    "boutiquesN": "Shops ({n})",
+    "equipeN": "Team ({n})"
   },
   "superownerWebhooks": {
     "title": "Webhooks",
@@ -1418,7 +1446,10 @@
     "notCommandable": "Displayed but not orderable",
     "summary": "{total} products · {soldOut} sold out",
     "categoriesNav": "Categories",
-    "productCount": "{count, plural, =0 {no products} one {# product} other {# products}}"
+    "productCount": "{count, plural, =0 {no products} one {# product} other {# products}}",
+    "msgReorganises": "✅ Products reordered",
+    "msgErreurReorg": "❌ Error while reordering",
+    "msgConnexion": "❌ Server connection error"
   },
   "merchantCustomers": {
     "loading": "Loading customers...",
@@ -1508,7 +1539,16 @@
     "nom": "Category name",
     "exempleNom": "E.g. Pizzas, Desserts, Drinks...",
     "annuler": "Cancel",
-    "produits": "Products:"
+    "produits": "Products:",
+    "msgReorganisees": "✅ Categories reordered",
+    "msgErreurReorg": "❌ Error while reordering",
+    "msgNomRequis": "❌ The category name is required",
+    "msgMiseAJour": "✅ Category updated",
+    "msgStoreIntrouvable": "❌ Error: shop not found",
+    "msgCreee": "✅ Category created",
+    "msgErreurSauvegarde": "❌ Error while saving",
+    "msgSupprimee": "✅ Category deleted",
+    "msgErreurSuppression": "❌ Error while deleting"
   },
   "merchantAnalytics": {
     "title": "Analytics",
@@ -2340,7 +2380,12 @@
     "aucuneCommande": "No order in this shop",
     "noteInterne": "Internal note",
     "notePlaceholder": "Preferences, allergies, remarks — visible only to your team",
-    "clientDepuis": "Customer since {date}"
+    "clientDepuis": "Customer since {date}",
+    "statutBloque": "Blocked",
+    "retourClients": "Back to customers",
+    "enregistrer": "Save",
+    "chargementFiche": "Unable to load the customer record",
+    "noteEnregistree": "✅ Note saved"
   },
   "merchantdeliveryzones": {
     "create": "Create",
@@ -2390,7 +2435,29 @@
     "opacite": "Opacity ({n}%)",
     "couleurCarte": "Colour on the map: {couleur}",
     "km": "{n} km",
-    "points": "{n} points"
+    "points": "{n} points",
+    "gerez": "Manage your delivery zones and fees",
+    "votreCarte": "Your map",
+    "fraisBase": "Base fee",
+    "commandeMin": "Minimum order",
+    "dureeAnnoncee": "Announced time",
+    "zoneLivree": "Zone delivered",
+    "zoneDesactivee": "Zone disabled",
+    "totalZones": "Total zones",
+    "fraisMoyen": "Average fee",
+    "commandeMinMax": "Highest min. order",
+    "positionEnregistree": "Shop location saved",
+    "adresseIntrouvable": "Address not found: place the shop on the map",
+    "nomRequis": "The zone name is required",
+    "fraisRequis": "The base fee is required",
+    "fraisPositifs": "The base fee must be positive",
+    "rayonRequis": "Enter a radius in kilometres, greater than zero",
+    "dessinez": "Draw the zone on the map: at least 3 points",
+    "rayon": "Radius",
+    "minutes": "{n} min",
+    "mettreAJour": "Update",
+    "offerteDesCarte": "Free delivery from",
+    "sommetsTitre": "Points"
   },
   "merchantInvoices": {
     "actionDownload": "Download",
@@ -2436,7 +2503,8 @@
       "taxes": "Taxes",
       "frais": "Fees",
       "totalMaj": "TOTAL"
-    }
+    },
+    "statusRefunded": "Refunded"
   },
   "merchantmarketing": {
     "all": "All",
@@ -2493,7 +2561,13 @@
       "PAUSED": "Paused",
       "SCHEDULED": "Scheduled",
       "CANCELLED": "Cancelled"
-    }
+    },
+    "msgConnexion": "❌ Server connection error",
+    "msgNomContenu": "❌ Enter a name and the message content",
+    "creerCampagne": "Create the campaign",
+    "msgStatutImpossible": "Status change failed",
+    "descriptionLibelle": "Description",
+    "pageSur": "Page {page} of {total}"
   },
   "merchantnotifications": {
     "delete": "Delete",
@@ -2558,7 +2632,11 @@
       "READY": "Ready",
       "COMPLETED": "Completed",
       "REJECTED": "Declined"
-    }
+    },
+    "imprimerTicket": "Print the receipt",
+    "voirFacture": "View the invoice",
+    "chargementCommande": "Unable to load the order",
+    "noteEnregistree": "✅ Note saved"
   },
   "merchantpaymentmethods": {
     "active": "Active",
@@ -2598,7 +2676,13 @@
       "BANK_TRANSFER": "Bank transfer",
       "APPLE_PAY": "Apple Pay",
       "GOOGLE_PAY": "Google Pay"
-    }
+    },
+    "ajouterMethode": "Add a method",
+    "msgNomCourt": "❌ The name must be at least 2 characters",
+    "msgConnexion": "❌ Server connection error",
+    "desactiver": "Disable",
+    "activer": "Enable",
+    "pageSur": "Page {page} of {total}"
   },
   "merchantproductmedia": {
     "deleteError": "Error while deleting",
@@ -2733,7 +2817,19 @@
       "4": "Thu",
       "5": "Fri",
       "6": "Sat"
-    }
+    },
+    "ajouterCode": "Add code",
+    "heureDe": "From",
+    "msgCodeRequis": "❌ The promo code is required",
+    "msgValeurRequise": "❌ The discount value is required",
+    "msgMisAJour": "✅ Promo code updated",
+    "msgErreurMaj": "❌ Error while updating",
+    "msgCree": "✅ Promo code created",
+    "msgErreurSauvegarde": "❌ Error while saving",
+    "msgSupprime": "✅ Promo code deleted",
+    "msgErreurSuppression": "❌ Error while deleting",
+    "desactiver": "Disable",
+    "activer": "Enable"
   },
   "merchantreports": {
     "customers": "Customers",
@@ -2798,7 +2894,12 @@
       "KITCHEN": "Kitchen",
       "DELIVERY": "Delivery",
       "SUPPORT": "Support"
-    }
+    },
+    "nomRequis": "The name is required",
+    "mettreAJour": "Update",
+    "desactiver": "Disable",
+    "activer": "Enable",
+    "aucunMembre": "No member"
   },
   "merchantstorehours": {
     "closed": "Closed",
@@ -2888,7 +2989,12 @@
     "regle": "The most precise rule wins: a rate assigned to a <b>product</b> takes precedence over a rate assigned to its <b>category</b>, which takes precedence over the rate applied to <b>all products</b>.",
     "exemple": "Example: 6% on the “Food” category and 21% on the “Drinks” category. An order with a pizza and a beer will produce a receipt with both rates shown separately.",
     "aucune": "No tax set up — click “New tax” to start.",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "msgNomTaux": "❌ Enter a name and a rate between 0 and 100",
+    "msgCategorie": "❌ Select at least one category",
+    "msgProduit": "❌ Select at least one product",
+    "msgConnexion": "❌ Server connection error",
+    "pageSur": "Page {page} of {total}"
   },
   "merchantSubscription": {
     "back": "Back",
@@ -2955,7 +3061,9 @@
     "description": "Description *",
     "creation": "Creating...",
     "creer": "Create my shop",
-    "annuler": "Cancel"
+    "annuler": "Cancel",
+    "connecteEnTantQue": "Logged in as {email}",
+    "boutiqueCreee": "Shop created successfully!"
   },
   "merchantMainDashboard": {
     "createFirstStore": "Create your first store",
@@ -3108,7 +3216,9 @@
         "urlFormat": "The URL may only contain lowercase letters, numbers and hyphens",
         "inscription": "Error during sign-up"
       }
-    }
+    },
+    "inscriptionReussie": "Sign-up successful! Redirecting to your dashboard...",
+    "erreurReessayer": "An error occurred. Please try again."
   },
   "addressAutocomplete": {
     "placeholder": "Enter an address",
@@ -5001,7 +5111,8 @@
     "imprimerA4": "Print the invoice (A4)",
     "ticket": "80 mm receipt",
     "retour": "Back to invoices",
-    "chargementImpossible": "Unable to load the invoice"
+    "chargementImpossible": "Unable to load the invoice",
+    "retourFactures": "Back to invoices"
   },
   "supportCommercant": {
     "titre": "Support",
@@ -5160,7 +5271,12 @@
     "monProfil": "My profile",
     "enteteFormule": "Your plan and the price list",
     "enteteProfil": "Your billing information and account",
-    "enteteChoix": "Choose the shop to manage"
+    "enteteChoix": "Choose the shop to manage",
+    "deconnexion": "Log out",
+    "espaceCommercant": "Merchant area",
+    "aucuneBoutique": "No shop yet.",
+    "nouvelleBoutique": "New shop",
+    "chargementImpossible": "Unable to load shops"
   },
   "dossierCommercant": {
     "modificationImpossible": "Unable to change",
@@ -5603,5 +5719,26 @@
     "enAttendant": "Meanwhile, ZupEat is open",
     "enAttendantTexte": "Order from restaurants and shops in your neighbourhood, delivered or for takeaway.",
     "decouvrir": "Discover ZupEat"
+  },
+  "tableauDeBord": {
+    "chargement": "Loading your space...",
+    "aucunRole": "No role found",
+    "aucunRoleTexte": "No role is active for your account. Supported roles are: merchant, courier, customer and super administrator.",
+    "retour": "Back to home",
+    "redirection": "Redirecting to your space...",
+    "selection": "Select the space you want to manage",
+    "commerces": "My businesses",
+    "commercesTexte": "Manage your shops, products, orders and couriers",
+    "commercesLien": "Go to businesses →",
+    "livraisons": "My deliveries",
+    "livraisonsTexte": "View your deliveries, earnings and history",
+    "livraisonsLien": "View my deliveries →",
+    "commandes": "My orders",
+    "commandesTexte": "View your orders, favourites and profile",
+    "commandesLien": "View my orders →",
+    "admin": "Administration",
+    "adminTexte": "Manage the whole platform, users and settings",
+    "adminLien": "Go to admin →",
+    "bienvenue": "Welcome, {email}"
   }
 }

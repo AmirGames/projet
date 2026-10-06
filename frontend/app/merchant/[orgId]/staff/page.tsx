@@ -88,7 +88,7 @@ export default function StaffPage() {
     setFormError('');
 
     if (!formData.name.trim()) {
-      setFormError('Le nom est requis');
+      setFormError(t('nomRequis'));
       return;
     }
 
@@ -311,7 +311,7 @@ export default function StaffPage() {
                 disabled={saving}
                 className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
               >
-                {editingStaff ? 'Mettre à Jour' : t('create')}
+                {editingStaff ? t('mettreAJour') : t('create')}
               </button>
               <button
                 onClick={() => {
@@ -382,7 +382,7 @@ export default function StaffPage() {
                               : 'bg-green-600 text-white hover:bg-green-700'
                           }`}
                         >
-                          {s.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
+                          {s.status === 'ACTIVE' ? t('desactiver') : t('activer')}
                         </button>
                         <button
                           onClick={() => handleEditStaff(s)}
@@ -408,7 +408,7 @@ export default function StaffPage() {
           <div className="text-center py-16">
             <Users className="mx-auto text-gray-400 mb-4" size={48} />
             <p className="text-gray-500 text-lg">
-              {staff.length === 0 ? 'Aucun membre' : t('empty')}
+              {staff.length === 0 ? t('aucunMembre') : t('empty')}
             </p>
             {staff.length === 0 && (
               <button

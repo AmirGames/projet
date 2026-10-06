@@ -69,14 +69,14 @@ export default function MarketingPage() {
       const donnees = await response.json();
 
       if (!response.ok) {
-        setMessage(`❌ ${donnees.error || 'Changement de statut impossible'}`);
+        setMessage(`❌ ${donnees.error || t('msgStatutImpossible')}`);
         setModaleOuverte(true);
         return;
       }
 
       fetchCampaigns();
     } catch {
-      setMessage('❌ Erreur de connexion au serveur');
+      setMessage(t('msgConnexion'));
       setModaleOuverte(true);
     }
   };
@@ -85,7 +85,7 @@ export default function MarketingPage() {
     e.preventDefault();
 
     if (formulaire.name.trim().length < 2 || !formulaire.message.trim()) {
-      setMessage('❌ Renseignez un nom et le contenu du message');
+      setMessage(t('msgNomContenu'));
       return;
     }
 
@@ -117,7 +117,7 @@ export default function MarketingPage() {
       setFormulaire({ name: '', type: 'EMAIL', message: '', description: '', targetAudience: 'all' });
       fetchCampaigns();
     } catch {
-      setMessage('❌ Erreur de connexion au serveur');
+      setMessage(t('msgConnexion'));
     } finally {
       setEnvoi(false);
     }
@@ -310,7 +310,7 @@ export default function MarketingPage() {
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-8 px-6 py-4 bg-white border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-500">Page {page + 1} sur {totalPages}</p>
+            <p className="text-sm text-gray-500">{t('pageSur', { page: page + 1, total: totalPages })}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
@@ -395,7 +395,7 @@ export default function MarketingPage() {
 
               <div>
                 <label className="block text-sm text-gray-500 mb-1">
-                  Description <span className="text-gray-500">{t('interne')}</span>
+                  {t('descriptionLibelle')} <span className="text-gray-500">{t('interne')}</span>
                 </label>
                 <input
                   type="text"
@@ -423,7 +423,7 @@ export default function MarketingPage() {
                   disabled={envoi}
                   className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 disabled:opacity-40 rounded-lg font-medium transition-colors"
                 >
-                  {envoi ? t('creating') : 'Créer la campagne'}
+                  {envoi ? t('creating') : t('creerCampagne')}
                 </button>
                 <button
                   type="button"

@@ -7,35 +7,18 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-/** Les motifs que le commerçant peut choisir, tels qu'il les lit. */
+/**
+ * Les motifs que le commerçant peut choisir. Leur libellé : `motifsRefus.commercant.<motif>`
+ * des traductions ; le motif tel que le client le lit : `motifsRefus.client.<motif>`.
+ */
 export const MOTIFS_DU_COMMERCANT = [
-  { valeur: 'TOO_BUSY', libelle: 'Trop occupé' },
-  { valeur: 'PRODUCT_UNAVAILABLE', libelle: 'Produit indisponible' },
-  { valeur: 'EXCEPTIONAL_CLOSURE', libelle: 'Fermeture exceptionnelle' },
-  { valeur: 'OTHER', libelle: 'Autre raison' },
+  { valeur: 'TOO_BUSY' },
+  { valeur: 'PRODUCT_UNAVAILABLE' },
+  { valeur: 'EXCEPTIONAL_CLOSURE' },
+  { valeur: 'OTHER' },
 ] as const;
 
 export type MotifDeRefus = (typeof MOTIFS_DU_COMMERCANT)[number]['valeur'];
-
-/** Le motif, tel que le client le lit. */
-export const MOTIFS_POUR_LE_CLIENT: Record<string, string> = {
-  TOO_BUSY: 'Le restaurant est trop occupé pour le moment.',
-  PRODUCT_UNAVAILABLE: "Un produit de votre commande n'est plus disponible.",
-  EXCEPTIONAL_CLOSURE: 'Le restaurant a dû fermer exceptionnellement.',
-  OTHER: 'Le restaurant ne peut pas honorer votre commande.',
-  NO_RESPONSE: "Le restaurant n'a pas confirmé votre commande à temps.",
-  DELIVERY_FAILED: "La livraison n'a pas pu aboutir. Le restaurant n'y est pour rien. Un paiement en ligne vous est intégralement remboursé.",
-};
-
-/** Le motif, tel que le commerçant le relit. */
-export const MOTIFS_POUR_LE_COMMERCANT: Record<string, string> = {
-  TOO_BUSY: 'Trop occupé',
-  PRODUCT_UNAVAILABLE: 'Produit indisponible',
-  EXCEPTIONAL_CLOSURE: 'Fermeture exceptionnelle',
-  OTHER: 'Autre raison',
-  NO_RESPONSE: 'Refusée automatiquement : pas de réponse à temps',
-  DELIVERY_FAILED: 'Livraison échouée : payée sur votre prochain relevé',
-};
 
 /** Les temps de préparation proposés, en minutes. */
 export const TEMPS_DE_PREPARATION = [10, 15, 20, 30, 45, 60];

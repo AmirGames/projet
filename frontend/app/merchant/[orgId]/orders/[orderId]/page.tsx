@@ -136,7 +136,7 @@ export default function DetailCommandePage() {
 
       setCommande(donnees.order || donnees);
     } catch {
-      setErreur('Impossible de charger la commande');
+      setErreur(t('chargementCommande'));
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ export default function DetailCommandePage() {
         return;
       }
 
-      setMessage('✅ Note enregistrée');
+      setMessage(t('noteEnregistree'));
       setNote('');
       await charger();
     } catch {
@@ -239,7 +239,7 @@ export default function DetailCommandePage() {
             }
             className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white hover:bg-orange-500 rounded-lg text-sm font-medium transition-colors"
           >
-            <Printer size={16} /> Imprimer le ticket
+            <Printer size={16} /> {t('imprimerTicket')}
           </button>
           <span
             className={`px-4 py-2 rounded-full text-sm font-medium ${
@@ -435,7 +435,7 @@ export default function DetailCommandePage() {
             href={`/merchant/${orgId}/invoices/${commande.id}`}
             className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
-            <FileText size={18} /> Voir la facture
+            <FileText size={18} /> {t('voirFacture')}
           </Link>
         </div>
       </div>

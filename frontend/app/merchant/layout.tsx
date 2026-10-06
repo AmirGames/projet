@@ -95,7 +95,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         setFormule(quota.tier ? { code: quota.tier, libelle: quota.tierLabel || quota.tier } : null);
       }
     } catch (error) {
-      signalerErreur('Chargement des boutiques impossible', error);
+      signalerErreur(t('chargementImpossible'), error);
     }
   }, []);
 
@@ -146,9 +146,9 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             </div>
             {(menuOuvert || tiroir) && (
               <div className="min-w-0">
-                <p className="font-bold text-sm truncate">Mes commerces</p>
+                <p className="font-bold text-sm truncate">{t('mesCommerces')}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-gray-500">Commerçant</span>
+                  <span className="text-xs text-gray-500">{t('commercant')}</span>
                   {formule && (
                     <span
                       title={t("formule", { nom: formule.libelle })}
@@ -193,13 +193,13 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           ))}
 
           {boutiques.length === 0 && menuOuvert && (
-            <p className="px-4 py-3 text-sm text-gray-500">Aucune boutique pour l&apos;instant.</p>
+            <p className="px-4 py-3 text-sm text-gray-500">{t('aucuneBoutique')}</p>
           )}
 
           <div className="pt-3 mt-3 border-t border-gray-200 space-y-1">
-            <Link href="/store/new" onClick={() => setTiroir(false)} title={menuOuvert ? undefined : 'Nouvelle boutique'} className={lienSecondaire}>
+            <Link href="/store/new" onClick={() => setTiroir(false)} title={menuOuvert ? undefined : t('nouvelleBoutique')} className={lienSecondaire}>
               <Plus size={20} className="flex-shrink-0" />
-              {(menuOuvert || tiroir) && <span className="truncate">Nouvelle boutique</span>}
+              {(menuOuvert || tiroir) && <span className="truncate">{t('nouvelleBoutique')}</span>}
             </Link>
 
             <Link
@@ -226,11 +226,11 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
               <Link
                 href={`/merchant/${orgId}/support`}
                 onClick={() => setTiroir(false)}
-                title={menuOuvert ? undefined : 'Support'}
+                title={menuOuvert ? undefined : t('support')}
                 className={lienSecondaire}
               >
                 <MessageCircle size={20} className="flex-shrink-0" />
-                {(menuOuvert || tiroir) && <span className="truncate">Support</span>}
+                {(menuOuvert || tiroir) && <span className="truncate">{t('support')}</span>}
               </Link>
             )}
           </div>
@@ -242,7 +242,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 transition-colors text-red-600"
           >
             <LogOut size={20} className="flex-shrink-0" />
-            {(menuOuvert || tiroir) && <span className="truncate">Déconnexion</span>}
+            {(menuOuvert || tiroir) && <span className="truncate">{t('deconnexion')}</span>}
           </button>
         </div>
       </aside>

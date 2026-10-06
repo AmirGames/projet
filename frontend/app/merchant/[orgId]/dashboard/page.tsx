@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCurrentStore } from '@/lib/current-store';
 import { lienVersEspace } from '@/lib/domaines';
 import { ExternalLink, PackageX, Wallet } from 'lucide-react';
@@ -57,8 +57,8 @@ const pastilleDeStatut: Record<string, string> = {
 };
 
 /** « 2 oct. » ou « 27 sept. – 3 oct. ». */
-const jourCourt = (date: string) =>
-  new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'Europe/Brussels' });
+const jourCourt = (date: string, locale: string) =>
+  new Date(date).toLocaleDateString(locale, { day: 'numeric', month: 'short', timeZone: 'Europe/Brussels' });
 
 /**
  * Le tableau de bord du commerce : ce qui demande une action aujourd'hui.
@@ -70,6 +70,7 @@ const jourCourt = (date: string) =>
  */
 export default function MerchantDashboard() {
   const t = useTranslations('merchantDashboard');
+  const locale = useLocale();
   const tStatut = useTranslations('merchantOrders.statusLabel');
   const params = useParams();
   const router = useRouter();
@@ -275,7 +276,7 @@ export default function MerchantDashboard() {
                   <div
                     className={`w-full rounded-t-lg rounded-b ${estAujourdhui ? 'bg-orange-600' : 'bg-orange-200'}`}
                     style={{ height: `${Math.max(3, (j.chiffreAffaires / plusHaut) * 100)}%` }}
-                    title={t("barreJour", { jour: jourCourt(j.jour), montant: euro(j.chiffreAffaires), n: j.commandes })}
+                    title={t("barreJour", { jour: jourCourt(j.jour, locale), montant: euro(j.chiffreAffaires), n: j.commandes })}
                   />
                   <span className={`text-xs ${estAujourdhui ? 'font-extrabold text-gray-900' : 'font-semibold text-gray-500'}`}>
                     {estAujourdhui
@@ -331,7 +332,7 @@ export default function MerchantDashboard() {
               <>
                 <p className="mt-2 text-2xl font-extrabold tabular-nums">{euro(releve.amount)}</p>
                 <p className="mt-1 text-sm text-gray-500">
-                  {t('payoutPeriod', { debut: jourCourt(releve.periodStart), fin: jourCourt(releve.periodEnd) })} ·{' '}
+                  {t('payoutPeriod', { debut: jourCourt(releve.periodStart, locale), fin: jourCourt(releve.periodEnd, locale) })} ·{' '}
                   {t(`payoutStatus.${releve.status}` as any)}
                 </p>
               </>

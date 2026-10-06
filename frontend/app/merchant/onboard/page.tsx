@@ -135,7 +135,7 @@ export default function MerchantOnboardPage() {
         return;
       }
 
-      setSuccessMessage('Boutique créée avec succès !');
+      setSuccessMessage(t('boutiqueCreee'));
 
       // Stocker l'orgId pour le contexte d'authentification
       if (data.organization?.id) {
@@ -176,7 +176,7 @@ export default function MerchantOnboardPage() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('creerTitre')}</h1>
-          <p className="text-gray-500">Connecté en tant que {user?.email}</p>
+          <p className="text-gray-500">{t('connecteEnTantQue', { email: user?.email ?? '' })}</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-8">

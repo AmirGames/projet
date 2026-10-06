@@ -338,11 +338,11 @@ export default function ProductsPage() {
           body: JSON.stringify({ storeId, ordering }),
         });
 
-        setMessage('✅ Produits réorganisés');
+        setMessage(t('msgReorganises'));
         setTimeout(() => setMessage(''), 3000);
       } catch (error) {
         signalerErreur('Error reordering:', error);
-        setMessage('❌ Erreur lors de la réorganisation');
+        setMessage(t('msgErreurReorg'));
         fetchProducts();
       } finally {
         setIsReordering(false);
@@ -556,7 +556,7 @@ export default function ProductsPage() {
       setMessage(`✅ ${donnees.message}`);
       fetchProducts();
     } catch {
-      setMessage('❌ Erreur de connexion au serveur');
+      setMessage(t('msgConnexion'));
     }
   };
 

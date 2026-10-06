@@ -49,10 +49,8 @@ function oublierLaSession() {
      * par erreur, et réessayait. Le drapeau ne survit pas à l'onglet — c'est
      * un message, pas un état.
      */
-    sessionStorage.setItem(
-      RAISON_DECONNEXION,
-      "Votre session n'est plus valable. Reconnectez-vous."
-    );
+    // Un drapeau : la page de connexion dit pourquoi, dans la langue du visiteur.
+    sessionStorage.setItem(RAISON_DECONNEXION, "session-expiree");
   } catch {
     // Stockage refusé : il n'y avait rien à effacer.
   }

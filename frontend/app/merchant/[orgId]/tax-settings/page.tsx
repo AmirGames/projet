@@ -139,15 +139,15 @@ export default function TaxSettingsPage() {
 
     const taux = Number(formulaire.rate);
     if (!formulaire.name.trim() || Number.isNaN(taux) || taux < 0 || taux > 100) {
-      setMessage('❌ Indiquez un nom et un taux compris entre 0 et 100');
+      setMessage(t('msgNomTaux'));
       return;
     }
     if (formulaire.applicableTo === 'categories' && formulaire.categoryIds.length === 0) {
-      setMessage('❌ Sélectionnez au moins une catégorie');
+      setMessage(t('msgCategorie'));
       return;
     }
     if (formulaire.applicableTo === 'products' && formulaire.productIds.length === 0) {
-      setMessage('❌ Sélectionnez au moins un produit');
+      setMessage(t('msgProduit'));
       return;
     }
 
@@ -182,7 +182,7 @@ export default function TaxSettingsPage() {
       setModaleOuverte(false);
       charger();
     } catch {
-      setMessage('❌ Erreur de connexion au serveur');
+      setMessage(t('msgConnexion'));
     } finally {
       setEnvoi(false);
     }
@@ -339,7 +339,7 @@ export default function TaxSettingsPage() {
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500">Page {page + 1} sur {totalPages}</p>
+            <p className="text-sm text-gray-500">{t('pageSur', { page: page + 1, total: totalPages })}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}

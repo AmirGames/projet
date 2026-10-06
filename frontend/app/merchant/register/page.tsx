@@ -206,7 +206,7 @@ export default function MerchantRegisterPage() {
         return;
       }
 
-      setSuccessMessage('Inscription réussie! Redirection vers votre tableau de bord...');
+      setSuccessMessage(t('inscriptionReussie'));
       setSubmitted(true);
 
       // Store credentials
@@ -228,7 +228,7 @@ export default function MerchantRegisterPage() {
         router.push(destination);
       }, 2000);
     } catch (error) {
-      setApiError('Une erreur est survenue. Veuillez réessayer.');
+      setApiError(t('erreurReessayer'));
       signalerErreur('Registration error:', error);
     } finally {
       setLoading(false);

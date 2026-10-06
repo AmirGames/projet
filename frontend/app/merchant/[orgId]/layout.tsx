@@ -233,7 +233,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           </SelecteurEspace>
         </div>
 
-        <nav aria-label="Espace commerçant" className="flex-1 space-y-3 overflow-y-auto p-3">
+        <nav aria-label={t('espaceCommercant')} className="flex-1 space-y-3 overflow-y-auto p-3">
           {sections.map((section, index) => (
             <div key={section.title ?? `section-${index}`} className="space-y-0.5">
               {section.title && (
@@ -250,11 +250,11 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           <button
             type="button"
             onClick={handleLogout}
-            title={sidebarOpen ? undefined : 'Déconnexion'}
+            title={sidebarOpen ? undefined : t('deconnexion')}
             className="flex w-full items-center gap-3 rounded-[10px] px-3 py-1.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
           >
             <LogOut size={18} className="flex-shrink-0" aria-hidden="true" />
-            <span className={`truncate ${libelle}`}>Déconnexion</span>
+            <span className={`truncate ${libelle}`}>{t('deconnexion')}</span>
           </button>
         </div>
       </aside>

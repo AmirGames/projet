@@ -121,7 +121,7 @@ export default function FacturePage() {
           href={`/merchant/${orgId}/invoices`}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900"
         >
-          <ArrowLeft size={18} /> Retour aux factures
+          <ArrowLeft size={18} /> {t('retourFactures')}
         </Link>
         <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
           {erreur || t('introuvable')}
