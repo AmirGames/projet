@@ -42,15 +42,18 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 // Chaque formule a sa couleur, pour être identifiable d'un coup d'œil.
-const FORMULES: Record<string, { libelle: string; classe: string }> = {
-  FREE: { libelle: 'Gratuit', classe: 'bg-gray-100 text-gray-600 border-gray-200' },
-  PREMIUM: { libelle: 'Premium', classe: 'bg-sky-50 text-sky-800 border-sky-200' },
-  PRO: { libelle: 'Pro', classe: 'bg-amber-50 text-amber-800 border-amber-200' },
+// Le libellé : `formules.<code>` des traductions.
+const FORMULES: Record<string, { classe: string }> = {
+  FREE: { classe: 'bg-gray-100 text-gray-600 border-gray-200' },
+  PREMIUM: { classe: 'bg-sky-50 text-sky-800 border-sky-200' },
+  PRO: { classe: 'bg-amber-50 text-amber-800 border-amber-200' },
 };
 
 export default function MerchantStoreLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('cadreCommercant');
   // Sur grand écran, la barre se replie en icônes ; sur téléphone, c'est un
   // tiroir fermé par défaut, qui se referme à chaque page ouverte.
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -87,56 +90,56 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
     {
       title: null,
       items: [
-        { label: 'Tableau de bord', icon: Home, href: `/merchant/${orgId}/dashboard` },
-        { label: 'Commandes', icon: ShoppingCart, href: `/merchant/${orgId}/orders` },
-        { label: 'Clients', icon: Users, href: `/merchant/${orgId}/customers` },
-        { label: 'Avis', icon: Star, href: `/merchant/${orgId}/reviews` },
+        { label: t('tableau'), icon: Home, href: `/merchant/${orgId}/dashboard` },
+        { label: t('commandes'), icon: ShoppingCart, href: `/merchant/${orgId}/orders` },
+        { label: t('clients'), icon: Users, href: `/merchant/${orgId}/customers` },
+        { label: t('avis'), icon: Star, href: `/merchant/${orgId}/reviews` },
       ],
     },
     {
-      title: 'Catalogue',
+      title: t('catalogue'),
       items: [
-        { label: 'Produits', icon: Package, href: `/merchant/${orgId}/products` },
-        { label: 'Catégories', icon: Zap, href: `/merchant/${orgId}/categories` },
-        { label: 'Promotions', icon: Percent, href: `/merchant/${orgId}/promotions` },
-        { label: 'Étiquettes', icon: Tags, href: `/merchant/${orgId}/product-tags` },
-        { label: 'Photos produits', icon: ImageIcon, href: `/merchant/${orgId}/product-media` },
-        { label: 'Référencement', icon: Search, href: `/merchant/${orgId}/product-seo` },
+        { label: t('produits'), icon: Package, href: `/merchant/${orgId}/products` },
+        { label: t('categories'), icon: Zap, href: `/merchant/${orgId}/categories` },
+        { label: t('promotions'), icon: Percent, href: `/merchant/${orgId}/promotions` },
+        { label: t('etiquettes'), icon: Tags, href: `/merchant/${orgId}/product-tags` },
+        { label: t('photos'), icon: ImageIcon, href: `/merchant/${orgId}/product-media` },
+        { label: t('referencement'), icon: Search, href: `/merchant/${orgId}/product-seo` },
       ],
     },
     {
-      title: 'Boutique',
+      title: t('boutique'),
       items: [
-        { label: 'Horaires', icon: Timer, href: `/merchant/${orgId}/store-hours` },
-        { label: 'Zones de livraison', icon: MapPin, href: `/merchant/${orgId}/delivery-zones` },
-        { label: 'Méthodes de paiement', icon: CreditCard, href: `/merchant/${orgId}/payment-methods` },
-        { label: 'Taxes', icon: Receipt, href: `/merchant/${orgId}/tax-settings` },
+        { label: t('horaires'), icon: Timer, href: `/merchant/${orgId}/store-hours` },
+        { label: t('zones'), icon: MapPin, href: `/merchant/${orgId}/delivery-zones` },
+        { label: t('paiement'), icon: CreditCard, href: `/merchant/${orgId}/payment-methods` },
+        { label: t('taxes'), icon: Receipt, href: `/merchant/${orgId}/tax-settings` },
       ],
     },
     {
-      title: 'Argent',
+      title: t('argent'),
       items: [
-        { label: 'Reversements', icon: Wallet, href: `/merchant/${orgId}/payouts` },
-        { label: 'Factures', icon: FileText, href: `/merchant/${orgId}/invoices` },
-        { label: 'Statistiques', icon: BarChart3, href: `/merchant/${orgId}/analytics` },
-        { label: 'Rapports', icon: FileText, href: `/merchant/${orgId}/reports` },
+        { label: t('reversements'), icon: Wallet, href: `/merchant/${orgId}/payouts` },
+        { label: t('factures'), icon: FileText, href: `/merchant/${orgId}/invoices` },
+        { label: t('statistiques'), icon: BarChart3, href: `/merchant/${orgId}/analytics` },
+        { label: t('rapports'), icon: FileText, href: `/merchant/${orgId}/reports` },
       ],
     },
     {
-      title: 'Gestion',
+      title: t('gestion'),
       items: [
-        { label: 'Marketing', icon: Megaphone, href: `/merchant/${orgId}/marketing` },
-        { label: 'Équipe', icon: Users2, href: `/merchant/${orgId}/staff` },
-        { label: 'Notifications', icon: Bell, href: `/merchant/${orgId}/notifications` },
+        { label: t('marketing'), icon: Megaphone, href: `/merchant/${orgId}/marketing` },
+        { label: t('equipe'), icon: Users2, href: `/merchant/${orgId}/staff` },
+        { label: t('notifications'), icon: Bell, href: `/merchant/${orgId}/notifications` },
       ],
     },
     {
-      title: 'Compte',
+      title: t('compte'),
       items: [
-        { label: 'Paramètres', icon: Settings, href: `/merchant/${orgId}/settings` },
-        { label: 'Aide et support', icon: MessageCircle, href: `/merchant/${orgId}/support` },
+        { label: t('parametres'), icon: Settings, href: `/merchant/${orgId}/settings` },
+        { label: t('aideSupport'), icon: MessageCircle, href: `/merchant/${orgId}/support` },
         // Retour au choix du commerce, d'où l'on peut aussi en créer un.
-        { label: 'Mes commerces', icon: LayoutGrid, href: '/merchant' },
+        { label: t('mesCommerces'), icon: LayoutGrid, href: '/merchant' },
       ],
     },
   ];
@@ -152,8 +155,8 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
     {
       title: null,
       items: [
-        { label: 'Mes commerces', icon: LayoutGrid, href: '/merchant' },
-        { label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` },
+        { label: t('mesCommerces'), icon: LayoutGrid, href: '/merchant' },
+        { label: t('support'), icon: MessageCircle, href: `/merchant/${orgId}/support` },
       ],
     },
   ];
@@ -194,7 +197,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
       {tiroirOuvert && (
         <button
           type="button"
-          aria-label="Fermer le menu"
+          aria-label={t('fermerMenu')}
           onClick={() => setTiroirOuvert(false)}
           className="fixed inset-0 z-40 bg-black/30 lg:hidden"
         />
@@ -212,17 +215,17 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
               {orgStatus?.name?.charAt(0).toUpperCase() || 'M'}
             </div>
             <div className={`min-w-0 ${libelle}`}>
-              <p className="font-extrabold text-sm truncate">{orgStatus?.name || 'Ma Boutique'}</p>
+              <p className="font-extrabold text-sm truncate">{orgStatus?.name || t('maBoutique')}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs font-semibold text-gray-500">Commerçant</span>
+                <span className="text-xs font-semibold text-gray-500">{t('commercant')}</span>
                 {orgStatus?.tier && (
                   <span
-                    title={`Formule ${FORMULES[orgStatus.tier]?.libelle || orgStatus.tier}`}
+                    title={t('formule', { nom: FORMULES[orgStatus.tier] ? t(`formules.${orgStatus.tier}`) : orgStatus.tier })}
                     className={`px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wide ${
                       FORMULES[orgStatus.tier]?.classe || FORMULES.FREE.classe
                     }`}
                   >
-                    {FORMULES[orgStatus.tier]?.libelle || orgStatus.tier}
+                    {FORMULES[orgStatus.tier] ? t(`formules.${orgStatus.tier}`) : orgStatus.tier}
                   </span>
                 )}
               </div>
@@ -262,7 +265,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           <button
             type="button"
             onClick={() => setTiroirOuvert(true)}
-            aria-label="Ouvrir le menu"
+            aria-label={t('ouvrirMenu')}
             className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 lg:hidden"
           >
             <Menu size={22} />
@@ -270,7 +273,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           <button
             type="button"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label={sidebarOpen ? 'Replier le menu' : 'Déplier le menu'}
+            aria-label={sidebarOpen ? t('replier') : t('deplier')}
             className="hidden rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 lg:block"
           >
             {sidebarOpen ? <ChevronsLeft size={20} /> : <ChevronsRight size={20} />}
@@ -293,20 +296,19 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
             <div className="flex items-start gap-3">
               <Clock size={20} className="text-sky-700 mt-0.5 flex-shrink-0" />
               <div className="flex-1 text-sm">
-                <h3 className="font-bold text-sky-900">Commerce en attente de validation</h3>
+                <h3 className="font-bold text-sky-900">{t('enAttente')}</h3>
                 <p className="text-gray-700 mt-1">
-                  Préparez votre boutique : produits, catégories, horaires. Vous pourrez l&apos;ouvrir
-                  dès que la plateforme aura validé vos documents.
+                  {t('preparez')}
                 </p>
                 {orgStatus.validation.piecesAFournir?.length > 0 && (
                   <p className="text-gray-700 mt-1">
-                    <strong className="text-sky-900">À fournir :</strong>{' '}
+                    <strong className="text-sky-900">{t('aFournir')}</strong>{' '}
                     {orgStatus.validation.piecesAFournir.map((piece) => piece.libelle).join(', ')}.
                   </p>
                 )}
                 {orgStatus.validation.piecesEnExamen?.length > 0 && (
                   <p className="text-gray-500 mt-1">
-                    En cours d&apos;examen :{' '}
+                    {t('enExamen')}{' '}
                     {orgStatus.validation.piecesEnExamen.map((piece) => piece.libelle).join(', ')}.
                   </p>
                 )}
@@ -314,7 +316,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
                   href="/merchant/profil"
                   className="inline-block mt-2 font-bold text-sky-800 underline hover:text-sky-950"
                 >
-                  Compléter mon dossier
+                  {t('completer')}
                 </Link>
               </div>
             </div>
@@ -336,27 +338,27 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
               <div className="flex-1">
                 <h3 className={`font-bold ${orgStatus.status === 'SUSPENDED' ? 'text-amber-900' : 'text-red-800'}`}>
                   {orgStatus.status === 'SUSPENDED'
-                    ? 'Compte temporairement suspendu'
-                    : 'Compte fermé'}
+                    ? t('suspendu')
+                    : t('ferme')}
                 </h3>
                 <p className="text-sm text-gray-700 mt-1">
                   {orgStatus.status === 'SUSPENDED'
-                    ? `Raison: ${orgStatus.suspensionReason || 'Non spécifiée'}`
-                    : `Raison: ${orgStatus.closureReason || 'Non spécifiée'}`}
+                    ? t('raison', { raison: orgStatus.suspensionReason || t('nonSpecifiee') })
+                    : t('raison', { raison: orgStatus.closureReason || t('nonSpecifiee') })}
                 </p>
 
                 {orgStatus.status === 'CLOSED' && orgStatus.closedUntil && (
                   <div className="text-sm text-gray-700 mt-2 flex items-center gap-2">
                     <Clock size={16} />
                     <span>
-                      Données supprimées dans {getDaysUntilDelete()} jours. Contactez le support pour restaurer votre compte.
+                      {t('donneesSupprimees', { n: getDaysUntilDelete() ?? 0 })}
                     </span>
                   </div>
                 )}
 
                 {orgStatus.status === 'SUSPENDED' && (
                   <p className="text-sm text-gray-700 mt-2">
-                    Veuillez contacter le support pour réactiver votre compte.
+                    {t('contacter')}
                   </p>
                 )}
               </div>
@@ -376,14 +378,11 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
               </div>
 
               <h2 className="text-2xl font-extrabold">
-                {orgStatus?.status === 'CLOSED' ? 'Compte fermé' : 'Compte suspendu'}
+                {orgStatus?.status === 'CLOSED' ? t('ferme') : t('compteSuspendu')}
               </h2>
 
               <p className="text-gray-500">
-                Votre espace est en accès restreint.{' '}
-                {orgStatus?.status === 'CLOSED'
-                  ? 'Seul le support reste joignable.'
-                  : 'Vous pouvez échanger avec le support, qui vous indiquera la marche à suivre.'}
+                {orgStatus?.status === 'CLOSED' ? t('restreintFerme') : t('restreintSuspendu')}
               </p>
 
               <Link
@@ -391,7 +390,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold transition"
               >
                 <MessageCircle size={18} />
-                Écrire au support
+                {t('ecrire')}
               </Link>
             </div>
           ) : (

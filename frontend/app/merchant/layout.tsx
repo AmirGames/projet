@@ -24,6 +24,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -52,6 +53,7 @@ interface Boutique {
 }
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('cadreCommercant');
   // Sur grand écran, la barre se replie en icônes ; sur téléphone, c'est un
   // tiroir fermé par défaut, qui se referme à chaque lien suivi.
   const [menuOuvert, setMenuOuvert] = useState(true);
@@ -126,7 +128,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
       {tiroir && (
         <button
           type="button"
-          aria-label="Fermer le menu"
+          aria-label={t('fermerMenu')}
           onClick={() => setTiroir(false)}
           className="fixed inset-0 z-40 bg-black/30 lg:hidden"
         />
@@ -149,7 +151,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                   <span className="text-xs text-gray-500">Commerçant</span>
                   {formule && (
                     <span
-                      title={`Formule ${formule.libelle}`}
+                      title={t("formule", { nom: formule.libelle })}
                       className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${
                         COULEURS[formule.code] || COULEURS.FREE
                       }`}
@@ -166,7 +168,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {(menuOuvert || tiroir) && (
             <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Boutiques
+              {t('boutiques')}
             </p>
           )}
 
@@ -203,21 +205,21 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             <Link
               href="/merchant/formule"
               onClick={() => setTiroir(false)}
-              title={menuOuvert ? undefined : 'Ma formule'}
+              title={menuOuvert ? undefined : t('maFormule')}
               className={lienSecondaire}
             >
               <CreditCard size={20} className="flex-shrink-0" />
-              {(menuOuvert || tiroir) && <span className="truncate">Ma formule</span>}
+              {(menuOuvert || tiroir) && <span className="truncate">{t('maFormule')}</span>}
             </Link>
 
             <Link
               href="/merchant/profil"
               onClick={() => setTiroir(false)}
-              title={menuOuvert ? undefined : 'Mon profil'}
+              title={menuOuvert ? undefined : t('monProfil')}
               className={lienSecondaire}
             >
               <UserCog size={20} className="flex-shrink-0" />
-              {(menuOuvert || tiroir) && <span className="truncate">Mon profil</span>}
+              {(menuOuvert || tiroir) && <span className="truncate">{t('monProfil')}</span>}
             </Link>
 
             {orgId && (
@@ -250,7 +252,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           <button
             type="button"
             onClick={() => setTiroir(true)}
-            aria-label="Ouvrir le menu"
+            aria-label={t('ouvrirMenu')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
           >
             <Menu size={22} />
@@ -258,7 +260,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           <button
             type="button"
             onClick={() => setMenuOuvert(!menuOuvert)}
-            aria-label={menuOuvert ? 'Replier le menu' : 'Déplier le menu'}
+            aria-label={menuOuvert ? t('replier') : t('deplier')}
             className="hidden p-2 hover:bg-gray-100 rounded-lg transition-colors lg:block"
           >
             {menuOuvert ? <ChevronsLeft size={20} /> : <ChevronsRight size={20} />}
@@ -266,10 +268,10 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <div className="hidden text-sm text-gray-500 md:block">
               {pathname === '/merchant/formule'
-                ? 'Votre formule et la grille tarifaire'
+                ? t('enteteFormule')
                 : pathname === '/merchant/profil'
-                  ? 'Vos informations de facturation et votre compte'
-                  : 'Choisissez le commerce à gérer'}
+                  ? t('enteteProfil')
+                  : t('enteteChoix')}
             </div>
             {/* Une réponse du support arrive souvent pendant qu'on choisit sa
                 boutique : la cloche manquait à ce niveau-là. */}
