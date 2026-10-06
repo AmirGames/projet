@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { euro, montantCommercant } from '@/lib/format';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { numeroCourt } from '@/lib/numero-commande';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -53,6 +54,8 @@ const COULEURS: Record<string, string> = {
 
 export default function FicheClientPage() {
   const t = useTranslations('merchantcustomers');
+  const tStatut = useTranslations('merchantOrderDetail');
+  const locale = useLocale();
   const params = useParams();
   const orgId = params?.orgId as string;
   const customerId = params?.customerId as string;
@@ -81,7 +84,7 @@ export default function FicheClientPage() {
 
       if (!reponse.ok) {
         // Un client n'est visible que s'il a commandé dans cette boutique.
-        setErreur(donnees.error || "Ce client n'a pas commandé dans la boutique sélectionnée");
+        setErreur(donnees.error || t('pasCommande'));
         setClient(null);
         return;
       }
@@ -93,7 +96,7 @@ export default function FicheClientPage() {
     } finally {
       setLoading(false);
     }
-  }, [storeId, customerId]);
+  }, [storeId, customerId, t]);
 
   useEffectChargement(() => {
     if (!boutiqueEnCours) charger();
@@ -151,7 +154,7 @@ export default function FicheClientPage() {
         return;
       }
 
-      setMessage(bloque ? '✅ Client débloqué' : '✅ Client bloqué');
+      setMessage(bloque ? t('debloque') : t('bloque'));
       await charger();
     } catch {
       setMessage(t('connectionErrorFinal'));
@@ -160,7 +163,7 @@ export default function FicheClientPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8 text-gray-500">Chargement...</div>;
+  if (loading) return <div className="text-center py-8 text-gray-500">{t('chargement')}</div>;
 
   if (erreur || !client) {
     return (
@@ -172,7 +175,7 @@ export default function FicheClientPage() {
           <ArrowLeft size={18} /> Retour aux clients
         </Link>
         <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
-          {erreur || 'Client introuvable'}
+          {erreur || t('introuvable')}
         </div>
       </div>
     );
@@ -193,7 +196,7 @@ export default function FicheClientPage() {
           </Link>
           <h1 className="text-3xl font-bold">{client.name}</h1>
           <p className="text-gray-500 mt-1">
-            Client depuis le {new Date(client.createdAt).toLocaleDateString('fr-FR')}
+            {t('clientDepuis', { date: new Date(client.createdAt).toLocaleDateString(locale) })}
           </p>
         </div>
         <span
@@ -214,7 +217,7 @@ export default function FicheClientPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-500 text-sm">Commandes dans cette boutique</p>
+            <p className="text-gray-500 text-sm">{t('commandesIci')}</p>
             <ShoppingBag size={20} className="text-blue-500" />
           </div>
           <p className="text-3xl font-bold">{commandes.length}</p>
@@ -222,7 +225,7 @@ export default function FicheClientPage() {
 
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-500 text-sm">Total dépensé ici</p>
+            <p className="text-gray-500 text-sm">{t('totalIci')}</p>
             <Wallet size={20} className="text-green-500" />
           </div>
           <p className="text-3xl font-bold">{euro(totalDepense)}</p>
@@ -231,7 +234,7 @@ export default function FicheClientPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-bold mb-4">Coordonnées</h2>
+          <h2 className="text-lg font-bold mb-4">{t('coordonnees')}</h2>
           <div className="space-y-3 text-sm">
             <p className="flex items-start gap-2 text-gray-700">
               <Mail size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
@@ -239,12 +242,12 @@ export default function FicheClientPage() {
             </p>
             <p className="flex items-center gap-2 text-gray-700">
               <Phone size={16} className="text-gray-500 flex-shrink-0" />
-              {client.phone || 'Non renseigné'}
+              {client.phone || t('nonRenseigne')}
             </p>
             <p className="flex items-start gap-2 text-gray-700">
               <MapPin size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
               <span>
-                {client.address || 'Adresse non renseignée'}
+                {client.address || t('adresseNonRenseignee')}
                 {(client.postalCode || client.city) && (
                   <>
                     <br />
@@ -265,14 +268,14 @@ export default function FicheClientPage() {
             }`}
           >
             <Ban size={16} />
-            {client.status === 'BLOCKED' ? 'Débloquer ce client' : 'Bloquer ce client'}
+            {client.status === 'BLOCKED' ? t('debloquer') : t('bloquer')}
           </button>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6 lg:col-span-2">
-          <h2 className="text-lg font-bold mb-4">Dernières commandes</h2>
+          <h2 className="text-lg font-bold mb-4">{t('dernieres')}</h2>
           {commandes.length === 0 ? (
-            <p className="text-gray-500">Aucune commande dans cette boutique</p>
+            <p className="text-gray-500">{t('aucuneCommande')}</p>
           ) : (
             <div className="space-y-2">
               {commandes.map((commande) => (
@@ -282,9 +285,9 @@ export default function FicheClientPage() {
                   className="flex items-center justify-between gap-4 p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium">{commande.id.slice(-8).toUpperCase()}</p>
+                    <p className="font-medium">{numeroCourt(commande.id)}</p>
                     <p className="text-sm text-gray-500">
-                      {new Date(commande.createdAt).toLocaleString('fr-FR')}
+                      {new Date(commande.createdAt).toLocaleString(locale)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
@@ -293,7 +296,7 @@ export default function FicheClientPage() {
                         COULEURS[commande.status] || 'bg-gray-500/20 text-gray-500'
                       }`}
                     >
-                      {commande.status}
+                      {tStatut.has(`statuts.${commande.status}`) ? tStatut(`statuts.${commande.status}`) : commande.status}
                     </span>
                     <span className="font-bold text-green-600">{euro(montantCommercant(commande))}</span>
                   </div>
@@ -305,12 +308,12 @@ export default function FicheClientPage() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Note interne</h2>
+        <h2 className="text-lg font-bold mb-4">{t('noteInterne')}</h2>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
-          placeholder="Préférences, allergies, remarques — visible uniquement par votre équipe"
+          placeholder={t('notePlaceholder')}
           className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
         />
         <button

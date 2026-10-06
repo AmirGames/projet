@@ -1121,7 +1121,8 @@
     },
     "inProgressTitle": "Orders in progress",
     "inProgressAll": "See all",
-    "inProgressNone": "No order in progress."
+    "inProgressNone": "No order in progress.",
+    "barreJour": "{jour}: {montant}, {n, plural, one {# order} other {# orders}}"
   },
   "merchantOrders": {
     "title": "Orders",
@@ -1226,6 +1227,17 @@
       "relancerRecherche": "Restart automatic search",
       "distance": "{km} km away",
       "fermer": "Close"
+    },
+    "courseNonProposee": "The run could not be offered.",
+    "injoignable": "Server unreachable.",
+    "erreurStatut": "Error {statut}",
+    "absence": {
+      "aucunInscrit": "No courier is registered on the platform.",
+      "aucunValide": "{n} courier(s) registered, but no application approved (ACTIVE status) by the platform.",
+      "aucunEnLigne": "No courier is online. The courier must turn on “Online” in their space.",
+      "tousEnCourse": "{n} courier(s) online, but all are already on a run.",
+      "aucunePosition": "{n} courier(s) online, but none is sending their position (location denied or GPS signal lost). The courier must keep the app open with location allowed.",
+      "tropLoin": "The nearest courier is {km} km away, beyond the {rayon} km radius."
     }
   },
   "merchantProducts": {
@@ -1384,7 +1396,21 @@
     "createError": "Error while creating",
     "deleteError": "Error while deleting",
     "update": "Update",
-    "create": "Create"
+    "create": "Create",
+    "glissez": "Drag to reorder",
+    "confirmerSuppression": "Delete this category?",
+    "chargement": "Loading categories...",
+    "titreGestion": "📂 Category management",
+    "sousTitreGestion": "Organise your products into categories (drag to reorder)",
+    "total": "Total categories",
+    "aucune": "No category created yet. Start by creating one!",
+    "astuce": "💡 Categories help organise your catalogue. Drag categories to reorder them.",
+    "modifier": "Edit category",
+    "ajouter": "Add category",
+    "nom": "Category name",
+    "exempleNom": "E.g. Pizzas, Desserts, Drinks...",
+    "annuler": "Cancel",
+    "produits": "Products:"
   },
   "merchantAnalytics": {
     "title": "Analytics",
@@ -2199,7 +2225,24 @@
   },
   "merchantcustomers": {
     "active": "Active",
-    "connectionErrorFinal": "❌ Connection error"
+    "connectionErrorFinal": "❌ Connection error",
+    "pasCommande": "This customer has not ordered from the selected shop",
+    "debloque": "✅ Customer unblocked",
+    "bloque": "✅ Customer blocked",
+    "chargement": "Loading...",
+    "introuvable": "Customer not found",
+    "commandesIci": "Orders in this shop",
+    "totalIci": "Total spent here",
+    "coordonnees": "Contact details",
+    "nonRenseigne": "Not provided",
+    "adresseNonRenseignee": "Address not provided",
+    "debloquer": "Unblock this customer",
+    "bloquer": "Block this customer",
+    "dernieres": "Latest orders",
+    "aucuneCommande": "No order in this shop",
+    "noteInterne": "Internal note",
+    "notePlaceholder": "Preferences, allergies, remarks — visible only to your team",
+    "clientDepuis": "Customer since {date}"
   },
   "merchantdeliveryzones": {
     "create": "Create",
@@ -2276,7 +2319,26 @@
     "statusFailed": "Failed",
     "statusPending": "Pending",
     "statusSucceeded": "Paid",
-    "title": "Invoices"
+    "title": "Invoices",
+    "csv": {
+      "facture": "INVOICE",
+      "numero": "Number",
+      "date": "Date",
+      "echeance": "Due date",
+      "boutique": "SHOP INFORMATION",
+      "client": "CUSTOMER",
+      "articles": "ITEMS",
+      "description": "Description",
+      "sku": "SKU",
+      "quantite": "Quantity",
+      "prixUnitaire": "Unit price",
+      "total": "Total",
+      "resume": "SUMMARY",
+      "sousTotal": "Subtotal",
+      "taxes": "Taxes",
+      "frais": "Fees",
+      "totalMaj": "TOTAL"
+    }
   },
   "merchantmarketing": {
     "all": "All",
@@ -2339,7 +2401,14 @@
     "delete": "Delete",
     "filterByRead": "All",
     "filterByReadRead": "Read",
-    "mark_as_read": "Mark as read"
+    "mark_as_read": "Mark as read",
+    "erreur": "An error occurred",
+    "titre": "Notifications",
+    "toutLu": "Mark all as read",
+    "aucune": "No notification",
+    "precedent": "Previous",
+    "suivant": "Next",
+    "affichage": "Showing {debut} to {fin} of {total}"
   },
   "merchantOrderDetail": {
     "cityUnknown": "City not provided",
@@ -2435,18 +2504,84 @@
   },
   "merchantproductmedia": {
     "deleteError": "Error while deleting",
-    "genericError": "An error occurred"
+    "genericError": "An error occurred",
+    "saisirId": "Please enter a product ID",
+    "erreurChargement": "Error loading media",
+    "urlRequise": "The media URL is required",
+    "erreurAjout": "Error adding the media",
+    "erreurOrdre": "Error while reordering",
+    "titre": "Product media",
+    "sousTitre": "Manage your products' images and videos",
+    "charger": "Upload a media",
+    "produit": "Product",
+    "choisirProduit": "— Choose a product —",
+    "url": "Media URL",
+    "texteAlt": "Alternative text",
+    "descriptionMedia": "Media description",
+    "type": "Media type",
+    "image": "Image",
+    "video": "Video",
+    "ajouter": "Add the media",
+    "chargerMedias": "Load media",
+    "aucun": "No media for this product",
+    "supprimer": "Delete",
+    "ordre": "Order: {n}"
   },
   "merchantproductseo": {
     "genericError": "An error occurred",
-    "updateError": "Error while updating"
+    "updateError": "Error while updating",
+    "saisirId": "Please enter a product ID",
+    "erreurChargement": "Error loading SEO",
+    "misAJour": "SEO updated successfully",
+    "titre": "Product SEO",
+    "sousTitre": "Optimise SEO metadata and Open Graph tags",
+    "selectionner": "Select a product",
+    "choisirProduit": "— Choose a product —",
+    "charger": "Load",
+    "metadonnees": "SEO metadata",
+    "titreMeta": "Meta title",
+    "titrePlaceholder": "Page title (60 characters max)",
+    "descriptionMeta": "Meta description",
+    "descriptionPlaceholder": "Description (160 characters max)",
+    "motsCles": "Keywords",
+    "separes": "Separated by commas",
+    "slug": "Slug",
+    "slugPlaceholder": "Friendly URL (e.g. my-product)",
+    "openGraph": "Open Graph",
+    "imageOg": "OG image",
+    "apercuOg": "OG preview",
+    "descriptionOg": "OG description",
+    "descriptionOgPlaceholder": "Description for social networks",
+    "enregistrer": "Save SEO",
+    "selectionnez": "Select a product to edit its SEO"
   },
   "merchantproducttags": {
     "delete": "Delete",
     "deleteError": "Error while deleting",
     "edit": "Edit",
     "genericError": "An error occurred",
-    "saveError": "Error while saving"
+    "saveError": "Error while saving",
+    "erreurChargement": "Error loading tags",
+    "nomRequis": "The tag name is required",
+    "misAJour": "Tag updated",
+    "creee": "Tag created",
+    "confirmerSuppression": "Delete this tag?",
+    "supprimee": "Tag deleted",
+    "titre": "Product tags",
+    "sousTitre": "Manage the tags for your products",
+    "nouvelle": "New tag",
+    "modifier": "Edit tag",
+    "creer": "Create a tag",
+    "nom": "Name",
+    "nomPlaceholder": "Tag name",
+    "description": "Description",
+    "couleur": "Colour",
+    "annuler": "Cancel",
+    "enregistrer": "Save",
+    "aucune": "No tag found",
+    "precedent": "Previous",
+    "suivant": "Next",
+    "affichage": "Showing {debut} to {fin} of {total}"
   },
   "merchantpromotions": {
     "active": "Active",
@@ -2659,11 +2794,70 @@
   },
   "merchantSubscription": {
     "back": "Back",
-    "serverError": "The server is not responding"
+    "serverError": "The server is not responding",
+    "reconnectez": "Log in again to see your plan",
+    "chargementImpossible": "Unable to load your plan",
+    "demandeRefusee": "Request rejected",
+    "demandeEnvoyee": "Request sent",
+    "chargement": "Loading your plan…",
+    "titre": "My plan",
+    "sousTitre": "What you have subscribed to, and what the other plans offer.",
+    "enCours": "Current plan",
+    "suivre": "Follow the discussion",
+    "badgeEnCours": "Current",
+    "parSemaine": "/ week",
+    "votreFormule": "Your plan",
+    "paiementPasOuvert": "Online payment is not open yet: your request goes to support, who applies the plan and replies in your space.",
+    "boutiquesSur": "{n, plural, one {# shop} other {# shops}} out of {max}",
+    "conditionsNegociees": "You have terms negotiated with the platform: they replace those of the plan.",
+    "offert": "Free: no commission on your sales.",
+    "offertJusquau": "Free: no commission on your sales until {date} inclusive.",
+    "limiteAvecSuivante": "You have reached your plan's limit. The {formule} plan allows more.",
+    "limiteSupport": "You have reached your plan's limit. To go further, send a request to support.",
+    "demandeDeposee": "Request submitted on {date}, awaiting support.",
+    "gratuit": "Free",
+    "soitParMois": "That is {montant} billed per month",
+    "boutiques": "{n, plural, one {# shop} other {# shops}}",
+    "demandeEnCours": "A request is already being processed",
+    "demanderFormule": "Request the {formule} plan",
+    "envoi": "Sending…",
+    "demanderCette": "Request this plan"
   },
   "merchantOnboard": {
     "connectionError": "Could not connect to the server",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "erreurs": {
+      "entreprise": "Company name is required",
+      "telephone": "Phone is required",
+      "adresse": "Address is required",
+      "ville": "City is required",
+      "codePostal": "Postcode is required",
+      "description": "Description is required",
+      "boutique": "Shop name is required",
+      "url": "Shop URL is required",
+      "urlFormat": "The URL may only contain lowercase letters, numbers and hyphens"
+    },
+    "creerTitre": "Create your shop",
+    "nomEntreprise": "Company name *",
+    "typeCommerce": "Type of business *",
+    "types": {
+      "restaurant": "Restaurant",
+      "boulangerie": "Bakery",
+      "epicerie": "Grocery",
+      "pharmacie": "Pharmacy",
+      "fleuriste": "Florist",
+      "autre": "Other"
+    },
+    "telephone": "Phone *",
+    "nomBoutique": "Shop name *",
+    "urlBoutique": "Shop URL *",
+    "ville": "City *",
+    "adresse": "Address *",
+    "codePostal": "Postcode *",
+    "description": "Description *",
+    "creation": "Creating...",
+    "creer": "Create my shop",
+    "annuler": "Cancel"
   },
   "merchantMainDashboard": {
     "createFirstStore": "Create your first store",
@@ -2685,7 +2879,8 @@
     "title": "Dashboard",
     "totalRevenue": "Total revenue",
     "totalStores": "Total stores",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "titreOnglet": "Merchant space"
   },
   "merchantProfile": {
     "save": "Save",
@@ -2828,7 +3023,13 @@
   },
   "carteZones": {
     "dragRadius": "Drag to adjust the radius",
-    "yourStore": "Your store — drag it to set its location"
+    "yourStore": "Your store — drag it to set its location",
+    "aide": {
+      "nonSituee": "Your shop is not located yet: enter its address or place it on the map.",
+      "dessin": "Click on the map to place the zone's points, in order.",
+      "rayon": "Drag the orange handle to set the radius.",
+      "position": "Move the shop's point to correct its position."
+    }
   },
   "supplementsProduit": {
     "title": "Add-ons",
@@ -2867,7 +3068,15 @@
     "questionPlaceholder": "Pasta type, Size…",
     "restore": "Restock",
     "serverError": "The server is not responding",
-    "title": "Variants"
+    "title": "Variants",
+    "enregistrerIntitule": "Save the label",
+    "sansElle": "Without it, customers see choices without knowing what they are choosing.",
+    "prixVide": "A price left empty uses the dish's price ({prix}). As soon as a variant exists, customers must choose one to order.",
+    "monter": "Move {nom} up",
+    "descendre": "Move {nom} down",
+    "nomDe": "Name of {nom}",
+    "prixDe": "Price of {nom}",
+    "supprimerNom": "Delete {nom}"
   },
   "mesVersements": {
     "alreadyPaid": "Already paid",
@@ -3965,6 +4174,14 @@
       "OTHER": "The restaurant cannot fulfil your order.",
       "NO_RESPONSE": "The restaurant did not confirm your order in time.",
       "DELIVERY_FAILED": "The delivery could not be completed. The restaurant is not at fault. Any online payment is refunded in full."
+    },
+    "commercant": {
+      "TOO_BUSY": "Too busy",
+      "PRODUCT_UNAVAILABLE": "Product unavailable",
+      "EXCEPTIONAL_CLOSURE": "Exceptional closure",
+      "OTHER": "Other reason",
+      "NO_RESPONSE": "Declined automatically: no answer in time",
+      "DELIVERY_FAILED": "Delivery failed: paid on your next statement"
     }
   },
   "detailDuTotal": {
@@ -4687,5 +4904,99 @@
     "ticket": "80 mm receipt",
     "retour": "Back to invoices",
     "chargementImpossible": "Unable to load the invoice"
+  },
+  "supportCommercant": {
+    "titre": "Support",
+    "sousTitre": "Manage your support tickets",
+    "voirActifs": "See active tickets",
+    "voirArchives": "See archives",
+    "nouveau": "New ticket",
+    "creer": "Create a ticket",
+    "sujet": "Subject",
+    "sujetPlaceholder": "Describe your problem...",
+    "description": "Description",
+    "details": "Additional details...",
+    "priorite": "Priority",
+    "basse": "Low",
+    "moyenne": "Medium",
+    "haute": "High",
+    "envoi": "Sending...",
+    "soumettre": "Submit",
+    "annuler": "Cancel",
+    "chargement": "Loading...",
+    "aucun": "No ticket yet",
+    "archive": "Archived",
+    "statuts": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "priorites": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    }
+  },
+  "delai": {
+    "maintenant": "now",
+    "minutes": "in {n} min",
+    "heures": "in {h} h {m}"
+  },
+  "reponseCommande": {
+    "actionImpossible": "Action not possible",
+    "rembourse": "Paid online: the customer has been refunded.",
+    "remise": "Order handed over.",
+    "pourquoi": "Why decline?",
+    "precision": "Note for the customer (optional)",
+    "seraRembourse": "This order was paid online: the customer will be refunded automatically.",
+    "retour": "Back",
+    "tempsPreparation": "Preparation time",
+    "annulerImprevu": "Cancel the order (unexpected)…",
+    "etapes": {
+      "PREPARING": "Being prepared",
+      "READY": "Ready",
+      "COMPLETED": "Handed over"
+    },
+    "appeler": "Call the customer ({telephone})",
+    "refusee": "Order declined",
+    "remboursementEchoue": "Paid online: the automatic refund failed, contact support.",
+    "aAccepterAvant": "To accept before {heure} ({delai}), otherwise it will be declined automatically.",
+    "retraitPrevu": "Pickup planned at {heure}",
+    "minutes": "{n} min",
+    "accepter": "Accept",
+    "rejeter": "Decline",
+    "preteVers": "Ready around {heure}",
+    "preteVersAnnonce": "Ready around {heure} ({n} min announced)",
+    "confirmerRefus": "Confirm decline"
+  },
+  "reversementsCommercant": {
+    "illisibles": "Statements unreadable",
+    "aide": "Every Monday, the platform transfers your online-paid sales from the past week, minus commission.",
+    "aucun": "No statement yet: the first one arrives on the Monday after your first sales.",
+    "titre": "Payouts",
+    "etats": {
+      "PENDING": "Being prepared",
+      "PAID": "Paid",
+      "CARRIED": "Carried over",
+      "CANCELLED": "Cancelled"
+    }
+  },
+  "graphiqueColonnes": {
+    "vide": "No runs in this period",
+    "voirGraphique": "See the chart",
+    "voirTableau": "See the table",
+    "periode": "Period"
+  },
+  "filSupport": {
+    "pendantCourse": "Sent during a run",
+    "votreMessage": "Your message…",
+    "support": "Support",
+    "livreur": "Courier",
+    "course": "run",
+    "lu": "Read",
+    "envoye": "Sent",
+    "vide": "No message yet."
   }
 }

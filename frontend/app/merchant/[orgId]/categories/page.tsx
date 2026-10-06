@@ -67,7 +67,7 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-500"
-            title="Glissez pour réorganiser"
+            title={t('glissez')}
           >
             <GripVertical size={18} />
           </button>
@@ -99,7 +99,7 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
 
       {category.products && category.products.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-200">
-          <p className="text-xs text-gray-500 mb-2">Produits:</p>
+          <p className="text-xs text-gray-500 mb-2">{t('produits')}</p>
           <div className="flex flex-wrap gap-2">
             {category.products.map((product: any) => (
               <span
@@ -278,7 +278,7 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (categoryId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie?')) {
+    if (!confirm(t('confirmerSuppression'))) {
       return;
     }
 
@@ -322,7 +322,7 @@ export default function CategoriesPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Chargement des catégories...</p>
+            <p className="text-gray-500">{t('chargement')}</p>
           </div>
         </div>
       </div>
@@ -334,15 +334,15 @@ export default function CategoriesPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">📂 Gestion des Catégories</h1>
-            <p className="text-gray-500 mt-1">Organisez vos produits par catégories (glissez pour réorganiser)</p>
+            <h1 className="text-3xl font-bold">{t('titreGestion')}</h1>
+            <p className="text-gray-500 mt-1">{t('sousTitreGestion')}</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
             className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
             disabled={isReordering}
           >
-            <Plus size={20} /> Ajouter Catégorie
+            <Plus size={20} /> {t('ajouter')}
           </button>
         </div>
 
@@ -357,14 +357,14 @@ export default function CategoriesPage() {
         )}
 
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-gray-500 text-sm">Total de catégories</p>
+          <p className="text-gray-500 text-sm">{t('total')}</p>
           <p className="text-3xl font-bold">{categories.length}</p>
         </div>
 
         <div className="space-y-3">
           {categories.length === 0 ? (
             <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
-              <p className="text-gray-500">Aucune catégorie créée. Commencez à en créer une!</p>
+              <p className="text-gray-500">{t('aucune')}</p>
             </div>
           ) : (
             <DndContext
@@ -392,7 +392,7 @@ export default function CategoriesPage() {
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-blue-600 text-sm">
-            💡 Les catégories aident à organiser votre catalogue. Glissez les catégories pour les réorganiser.
+            {t('astuce')}
           </p>
         </div>
       </div>
@@ -402,7 +402,7 @@ export default function CategoriesPage() {
           <div className="bg-white border border-gray-200 rounded-lg max-w-md w-full">
             <div className="border-b border-gray-200 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold">
-                {editingCategory ? 'Modifier Catégorie' : 'Ajouter Catégorie'}
+                {editingCategory ? t('modifier') : t('ajouter')}
               </h2>
               <button
                 onClick={resetForm}
@@ -414,13 +414,13 @@ export default function CategoriesPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-sm text-gray-500 block mb-2">Nom de la catégorie</label>
+                <label className="text-sm text-gray-500 block mb-2">{t('nom')}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
-                  placeholder="Ex: Pizzas, Desserts, Boissons..."
+                  placeholder={t('exempleNom')}
                   autoFocus
                   required
                 />
@@ -432,7 +432,7 @@ export default function CategoriesPage() {
                   onClick={resetForm}
                   className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded font-semibold transition-colors"
                 >
-                  Annuler
+                  {t('annuler')}
                 </button>
                 <button
                   type="submit"

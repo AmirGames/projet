@@ -45,13 +45,19 @@ export function heure(date: string | Date) {
   return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-/** « dans 7 min », « dans 1 h 05 », ou « maintenant ». */
-export function delaiRestant(echeance: string | Date, maintenant = Date.now()) {
+type Traduire = (cle: string, valeurs?: Record<string, string | number>) => string;
+
+/**
+ * « dans 7 min », « dans 1 h 05 », ou « maintenant ». Avec `t` (l'espace
+ * `delai` des traductions), dans la langue du visiteur ; sans, en français.
+ */
+export function delaiRestant(echeance: string | Date, maintenant = Date.now(), t?: Traduire) {
   const minutes = Math.floor((new Date(echeance).getTime() - maintenant) / 60000);
-  if (minutes <= 0) return 'maintenant';
-  if (minutes < 60) return `dans ${minutes} min`;
-  const reste = minutes % 60;
-  return `dans ${Math.floor(minutes / 60)} h ${String(reste).padStart(2, '0')}`;
+  if (minutes <= 0) return t ? t('maintenant') : 'maintenant';
+  if (minutes < 60) return t ? t('minutes', { n: minutes }) : `dans ${minutes} min`;
+  const reste = String(minutes % 60).padStart(2, '0');
+  const heures = Math.floor(minutes / 60);
+  return t ? t('heures', { h: heures, m: reste }) : `dans ${heures} h ${reste}`;
 }
 
 async function envoyer(chemin: string, corps: unknown) {

@@ -203,21 +203,21 @@ export function DeclinaisonsProduit({
               />
               <button
                 type="button"
-                aria-label="Enregistrer l’intitulé"
+                aria-label={t('enregistrerIntitule')}
                 onClick={enregistrerLibelle}
                 disabled={chargement || libelleDuChoix === libelleEnregistre}
                 className={`px-3 rounded transition ${
                   libelleDuChoix === libelleEnregistre
                     ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                    : 'bg-orange-600 hover:bg-orange-700'
+                    : 'bg-orange-600 hover:bg-orange-700 text-white'
                 }`}
-                title="Enregistrer l’intitulé"
+                title={t('enregistrerIntitule')}
               >
                 <Save size={16} />
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Sans elle, le client voit des choix sans savoir ce qu'il choisit.
+              {t('sansElle')}
             </p>
           </div>
 
@@ -233,7 +233,7 @@ export function DeclinaisonsProduit({
                       type="button"
                       onClick={() => deplacer(index, -1)}
                       disabled={index === 0}
-                      aria-label={`Monter ${declinaison.label}`}
+                      aria-label={t('monter', { nom: declinaison.label })}
                       className="text-gray-500 hover:text-gray-900 disabled:opacity-30"
                     >
                       <ChevronUp size={14} />
@@ -242,7 +242,7 @@ export function DeclinaisonsProduit({
                       type="button"
                       onClick={() => deplacer(index, 1)}
                       disabled={index === declinaisons.length - 1}
-                      aria-label={`Descendre ${declinaison.label}`}
+                      aria-label={t('descendre', { nom: declinaison.label })}
                       className="text-gray-500 hover:text-gray-900 disabled:opacity-30"
                     >
                       <ChevronDown size={14} />
@@ -251,7 +251,7 @@ export function DeclinaisonsProduit({
 
                   <input
                     defaultValue={declinaison.label}
-                    aria-label={`Nom de ${declinaison.label}`}
+                    aria-label={t('nomDe', { nom: declinaison.label })}
                     onBlur={(e) => {
                       if (e.target.value.trim() !== declinaison.label) {
                         renommer(declinaison, e.target.value.trim());
@@ -266,7 +266,7 @@ export function DeclinaisonsProduit({
                     min={0}
                     defaultValue={declinaison.price ?? ''}
                     placeholder={String(prixDuPlat)}
-                    aria-label={`Prix de ${declinaison.label}`}
+                    aria-label={t('prixDe', { nom: declinaison.label })}
                     onBlur={(e) => {
                       const valeur = e.target.value;
                       const actuel = declinaison.price === null ? '' : String(declinaison.price);
@@ -294,7 +294,7 @@ export function DeclinaisonsProduit({
                   <button
                     type="button"
                     onClick={() => supprimer(declinaison)}
-                    aria-label={`Supprimer ${declinaison.label}`}
+                    aria-label={t('supprimerNom', { nom: declinaison.label })}
                     className="p-1 text-gray-500 hover:text-red-600 transition"
                   >
                     <Trash2 size={14} />
@@ -353,8 +353,7 @@ export function DeclinaisonsProduit({
           </div>
 
           <p className="text-xs text-gray-500">
-            Un prix laissé vide reprend celui du plat ({euro(prixDuPlat)}). Dès qu'une
-            déclinaison existe, le client doit en choisir une pour commander.
+            {t('prixVide', { prix: euro(prixDuPlat) })}
           </p>
 
           <button

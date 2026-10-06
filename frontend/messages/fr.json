@@ -1121,7 +1121,8 @@
     },
     "inProgressTitle": "Commandes en cours",
     "inProgressAll": "Tout voir",
-    "inProgressNone": "Aucune commande en cours."
+    "inProgressNone": "Aucune commande en cours.",
+    "barreJour": "{jour} : {montant}, {n, plural, one {# commande} other {# commandes}}"
   },
   "merchantOrders": {
     "title": "Commandes",
@@ -1226,6 +1227,17 @@
       "relancerRecherche": "Relancer la recherche automatique",
       "distance": "À {km} km",
       "fermer": "Fermer"
+    },
+    "courseNonProposee": "La course n'a pas pu être proposée.",
+    "injoignable": "Serveur injoignable.",
+    "erreurStatut": "Erreur {statut}",
+    "absence": {
+      "aucunInscrit": "Aucun livreur n'est inscrit sur la plateforme.",
+      "aucunValide": "{n} livreur(s) inscrit(s), mais aucun dossier validé (statut ACTIVE) par la plateforme.",
+      "aucunEnLigne": "Aucun livreur n'est en ligne. Le livreur doit activer « En ligne » dans son espace.",
+      "tousEnCourse": "{n} livreur(s) en ligne, mais tous sont déjà en course.",
+      "aucunePosition": "{n} livreur(s) en ligne, mais aucun n'envoie sa position (localisation refusée ou signal GPS perdu). Le livreur doit garder l'application ouverte avec la localisation autorisée.",
+      "tropLoin": "Le livreur le plus proche est à {km} km, au-delà du rayon de {rayon} km."
     }
   },
   "merchantProducts": {
@@ -1384,7 +1396,21 @@
     "createError": "Erreur lors de la création",
     "deleteError": "Erreur lors de la suppression",
     "update": "Mettre à jour",
-    "create": "Créer"
+    "create": "Créer",
+    "glissez": "Glissez pour réorganiser",
+    "confirmerSuppression": "Êtes-vous sûr de vouloir supprimer cette catégorie?",
+    "chargement": "Chargement des catégories...",
+    "titreGestion": "📂 Gestion des Catégories",
+    "sousTitreGestion": "Organisez vos produits par catégories (glissez pour réorganiser)",
+    "total": "Total de catégories",
+    "aucune": "Aucune catégorie créée. Commencez à en créer une!",
+    "astuce": "💡 Les catégories aident à organiser votre catalogue. Glissez les catégories pour les réorganiser.",
+    "modifier": "Modifier Catégorie",
+    "ajouter": "Ajouter Catégorie",
+    "nom": "Nom de la catégorie",
+    "exempleNom": "Ex: Pizzas, Desserts, Boissons...",
+    "annuler": "Annuler",
+    "produits": "Produits :"
   },
   "merchantAnalytics": {
     "title": "Analytics",
@@ -2199,7 +2225,24 @@
   },
   "merchantcustomers": {
     "active": "Actif",
-    "connectionErrorFinal": "❌ Erreur de connexion"
+    "connectionErrorFinal": "❌ Erreur de connexion",
+    "pasCommande": "Ce client n'a pas commandé dans la boutique sélectionnée",
+    "debloque": "✅ Client débloqué",
+    "bloque": "✅ Client bloqué",
+    "chargement": "Chargement...",
+    "introuvable": "Client introuvable",
+    "commandesIci": "Commandes dans cette boutique",
+    "totalIci": "Total dépensé ici",
+    "coordonnees": "Coordonnées",
+    "nonRenseigne": "Non renseigné",
+    "adresseNonRenseignee": "Adresse non renseignée",
+    "debloquer": "Débloquer ce client",
+    "bloquer": "Bloquer ce client",
+    "dernieres": "Dernières commandes",
+    "aucuneCommande": "Aucune commande dans cette boutique",
+    "noteInterne": "Note interne",
+    "notePlaceholder": "Préférences, allergies, remarques — visible uniquement par votre équipe",
+    "clientDepuis": "Client depuis le {date}"
   },
   "merchantdeliveryzones": {
     "create": "Créer",
@@ -2276,7 +2319,26 @@
     "statusFailed": "Échouée",
     "statusPending": "En Attente",
     "statusSucceeded": "Payée",
-    "title": "Factures"
+    "title": "Factures",
+    "csv": {
+      "facture": "FACTURE",
+      "numero": "Numéro",
+      "date": "Date",
+      "echeance": "Échéance",
+      "boutique": "INFORMATIONS BOUTIQUE",
+      "client": "CLIENT",
+      "articles": "ARTICLES",
+      "description": "Description",
+      "sku": "SKU",
+      "quantite": "Quantité",
+      "prixUnitaire": "Prix unitaire",
+      "total": "Total",
+      "resume": "RÉSUMÉ",
+      "sousTotal": "Sous-total",
+      "taxes": "Taxes",
+      "frais": "Frais",
+      "totalMaj": "TOTAL"
+    }
   },
   "merchantmarketing": {
     "all": "Toutes",
@@ -2339,7 +2401,14 @@
     "delete": "Supprimer",
     "filterByRead": "Tous",
     "filterByReadRead": "Lus",
-    "mark_as_read": "Marquer comme lu"
+    "mark_as_read": "Marquer comme lu",
+    "erreur": "Une erreur est survenue",
+    "titre": "Notifications",
+    "toutLu": "Marquer tout comme lu",
+    "aucune": "Aucune notification",
+    "precedent": "Précédent",
+    "suivant": "Suivant",
+    "affichage": "Affichage {debut} à {fin} sur {total}"
   },
   "merchantOrderDetail": {
     "cityUnknown": "Ville non renseignée",
@@ -2435,18 +2504,84 @@
   },
   "merchantproductmedia": {
     "deleteError": "Erreur lors de la suppression",
-    "genericError": "Une erreur s'est produite"
+    "genericError": "Une erreur s'est produite",
+    "saisirId": "Veuillez entrer un ID de produit",
+    "erreurChargement": "Erreur lors du chargement des médias",
+    "urlRequise": "L'URL du média est requise",
+    "erreurAjout": "Erreur lors de l'ajout du média",
+    "erreurOrdre": "Erreur lors de la réorganisation",
+    "titre": "Médias des Produits",
+    "sousTitre": "Gérez les images et vidéos de vos produits",
+    "charger": "Charger un média",
+    "produit": "Produit",
+    "choisirProduit": "— Choisir un produit —",
+    "url": "URL du Média",
+    "texteAlt": "Texte Alternatif",
+    "descriptionMedia": "Description du média",
+    "type": "Type de Média",
+    "image": "Image",
+    "video": "Vidéo",
+    "ajouter": "Ajouter le Média",
+    "chargerMedias": "Charger les Médias",
+    "aucun": "Aucun média pour ce produit",
+    "supprimer": "Supprimer",
+    "ordre": "Ordre : {n}"
   },
   "merchantproductseo": {
     "genericError": "Une erreur s'est produite",
-    "updateError": "Erreur lors de la mise à jour"
+    "updateError": "Erreur lors de la mise à jour",
+    "saisirId": "Veuillez entrer un ID de produit",
+    "erreurChargement": "Erreur lors du chargement du SEO",
+    "misAJour": "SEO mis à jour avec succès",
+    "titre": "SEO du Produit",
+    "sousTitre": "Optimisez les métadonnées SEO et les balises Open Graph",
+    "selectionner": "Sélectionner un Produit",
+    "choisirProduit": "— Choisir un produit —",
+    "charger": "Charger",
+    "metadonnees": "Métadonnées SEO",
+    "titreMeta": "Titre Meta",
+    "titrePlaceholder": "Titre de la page (60 caractères max)",
+    "descriptionMeta": "Description Meta",
+    "descriptionPlaceholder": "Description (160 caractères max)",
+    "motsCles": "Mots-clés",
+    "separes": "Séparés par des virgules",
+    "slug": "Slug",
+    "slugPlaceholder": "URL amicale (ex: mon-produit)",
+    "openGraph": "Open Graph",
+    "imageOg": "Image OG",
+    "apercuOg": "OG Preview",
+    "descriptionOg": "Description OG",
+    "descriptionOgPlaceholder": "Description pour les réseaux sociaux",
+    "enregistrer": "Enregistrer le SEO",
+    "selectionnez": "Sélectionnez un produit pour modifier son SEO"
   },
   "merchantproducttags": {
     "delete": "Supprimer",
     "deleteError": "Erreur lors de la suppression",
     "edit": "Modifier",
     "genericError": "Une erreur s'est produite",
-    "saveError": "Erreur lors de la sauvegarde"
+    "saveError": "Erreur lors de la sauvegarde",
+    "erreurChargement": "Erreur lors du chargement des étiquettes",
+    "nomRequis": "Le nom de l'étiquette est requis",
+    "misAJour": "Étiquette mise à jour",
+    "creee": "Étiquette créée",
+    "confirmerSuppression": "Êtes-vous sûr de vouloir supprimer cette étiquette ?",
+    "supprimee": "Étiquette supprimée",
+    "titre": "Étiquettes de Produits",
+    "sousTitre": "Gérez les étiquettes pour vos produits",
+    "nouvelle": "Nouvelle Étiquette",
+    "modifier": "Modifier l'étiquette",
+    "creer": "Créer une étiquette",
+    "nom": "Nom",
+    "nomPlaceholder": "Nom de l'étiquette",
+    "description": "Description",
+    "couleur": "Couleur",
+    "annuler": "Annuler",
+    "enregistrer": "Enregistrer",
+    "aucune": "Aucune étiquette trouvée",
+    "precedent": "Précédent",
+    "suivant": "Suivant",
+    "affichage": "Affichage {debut} à {fin} sur {total}"
   },
   "merchantpromotions": {
     "active": "Actif",
@@ -2659,11 +2794,70 @@
   },
   "merchantSubscription": {
     "back": "Retour",
-    "serverError": "Le serveur ne répond pas"
+    "serverError": "Le serveur ne répond pas",
+    "reconnectez": "Reconnectez-vous pour voir votre formule",
+    "chargementImpossible": "Impossible de charger votre formule",
+    "demandeRefusee": "Demande refusée",
+    "demandeEnvoyee": "Demande envoyée",
+    "chargement": "Chargement de votre formule…",
+    "titre": "Ma formule",
+    "sousTitre": "Ce à quoi vous avez souscrit, et ce que proposent les autres formules.",
+    "enCours": "Formule en cours",
+    "suivre": "Suivre la discussion",
+    "badgeEnCours": "En cours",
+    "parSemaine": "/ semaine",
+    "votreFormule": "Votre formule",
+    "paiementPasOuvert": "Le paiement en ligne n'est pas encore ouvert : votre demande part au support, qui applique la formule et vous répond dans votre espace.",
+    "boutiquesSur": "{n, plural, one {# boutique} other {# boutiques}} sur {max}",
+    "conditionsNegociees": "Vous bénéficiez de conditions négociées avec la plateforme : elles remplacent celles de la formule.",
+    "offert": "Offert : aucune commission sur vos ventes.",
+    "offertJusquau": "Offert : aucune commission sur vos ventes jusqu'au {date} inclus.",
+    "limiteAvecSuivante": "Vous avez atteint la limite de votre formule. La formule {formule} en autorise davantage.",
+    "limiteSupport": "Vous avez atteint la limite de votre formule. Pour aller au-delà, adressez une demande au support.",
+    "demandeDeposee": "Demande déposée le {date}, en attente du support.",
+    "gratuit": "Gratuit",
+    "soitParMois": "Soit {montant} facturés par mois",
+    "boutiques": "{n, plural, one {# boutique} other {# boutiques}}",
+    "demandeEnCours": "Une demande est déjà en cours de traitement",
+    "demanderFormule": "Demander la formule {formule}",
+    "envoi": "Envoi…",
+    "demanderCette": "Demander cette formule"
   },
   "merchantOnboard": {
     "connectionError": "Erreur de connexion au serveur",
-    "error": "Une erreur est survenue"
+    "error": "Une erreur est survenue",
+    "erreurs": {
+      "entreprise": "Le nom de l'entreprise est requis",
+      "telephone": "Le téléphone est requis",
+      "adresse": "L'adresse est requise",
+      "ville": "La ville est requise",
+      "codePostal": "Le code postal est requis",
+      "description": "La description est requise",
+      "boutique": "Le nom de la boutique est requis",
+      "url": "L'URL de la boutique est requise",
+      "urlFormat": "L'URL ne peut contenir que des lettres minuscules, chiffres et tirets"
+    },
+    "creerTitre": "Créer votre boutique",
+    "nomEntreprise": "Nom de l'entreprise *",
+    "typeCommerce": "Type de commerce *",
+    "types": {
+      "restaurant": "Restaurant",
+      "boulangerie": "Boulangerie",
+      "epicerie": "Épicerie",
+      "pharmacie": "Pharmacie",
+      "fleuriste": "Fleuriste",
+      "autre": "Autre"
+    },
+    "telephone": "Téléphone *",
+    "nomBoutique": "Nom de la boutique *",
+    "urlBoutique": "URL de la boutique *",
+    "ville": "Ville *",
+    "adresse": "Adresse *",
+    "codePostal": "Code postal *",
+    "description": "Description *",
+    "creation": "Création en cours...",
+    "creer": "Créer ma boutique",
+    "annuler": "Annuler"
   },
   "merchantMainDashboard": {
     "createFirstStore": "Créer votre première boutique",
@@ -2685,7 +2879,8 @@
     "title": "Tableau de Bord",
     "totalRevenue": "Revenu Total",
     "totalStores": "Total de Boutiques",
-    "duplicate": "Dupliquer"
+    "duplicate": "Dupliquer",
+    "titreOnglet": "Espace commerçant"
   },
   "merchantProfile": {
     "save": "Enregistrer",
@@ -2828,7 +3023,13 @@
   },
   "carteZones": {
     "dragRadius": "Tirez pour régler le rayon",
-    "yourStore": "Votre boutique — déplacez-la pour la situer"
+    "yourStore": "Votre boutique — déplacez-la pour la situer",
+    "aide": {
+      "nonSituee": "Votre boutique n'est pas encore située : renseignez son adresse ou posez-la sur la carte.",
+      "dessin": "Cliquez sur la carte pour poser les sommets de la zone, dans l'ordre.",
+      "rayon": "Tirez la poignée orange pour régler le rayon.",
+      "position": "Déplacez le point de la boutique pour corriger sa position."
+    }
   },
   "supplementsProduit": {
     "title": "Suppléments",
@@ -2867,7 +3068,15 @@
     "questionPlaceholder": "Type de pâtes, Taille…",
     "restore": "Remettre",
     "serverError": "Le serveur ne répond pas",
-    "title": "Déclinaisons"
+    "title": "Déclinaisons",
+    "enregistrerIntitule": "Enregistrer l’intitulé",
+    "sansElle": "Sans elle, le client voit des choix sans savoir ce qu'il choisit.",
+    "prixVide": "Un prix laissé vide reprend celui du plat ({prix}). Dès qu'une déclinaison existe, le client doit en choisir une pour commander.",
+    "monter": "Monter {nom}",
+    "descendre": "Descendre {nom}",
+    "nomDe": "Nom de {nom}",
+    "prixDe": "Prix de {nom}",
+    "supprimerNom": "Supprimer {nom}"
   },
   "mesVersements": {
     "alreadyPaid": "Déjà versé",
@@ -3965,6 +4174,14 @@
       "OTHER": "Le restaurant ne peut pas honorer votre commande.",
       "NO_RESPONSE": "Le restaurant n'a pas confirmé votre commande à temps.",
       "DELIVERY_FAILED": "La livraison n'a pas pu aboutir. Le restaurant n'y est pour rien. Un paiement en ligne vous est intégralement remboursé."
+    },
+    "commercant": {
+      "TOO_BUSY": "Trop occupé",
+      "PRODUCT_UNAVAILABLE": "Produit indisponible",
+      "EXCEPTIONAL_CLOSURE": "Fermeture exceptionnelle",
+      "OTHER": "Autre raison",
+      "NO_RESPONSE": "Refusée automatiquement : pas de réponse à temps",
+      "DELIVERY_FAILED": "Livraison échouée : payée sur votre prochain relevé"
     }
   },
   "detailDuTotal": {
@@ -4687,5 +4904,99 @@
     "ticket": "Ticket 80 mm",
     "retour": "Retour aux factures",
     "chargementImpossible": "Impossible de charger la facture"
+  },
+  "supportCommercant": {
+    "titre": "Support",
+    "sousTitre": "Gérez vos tickets de support",
+    "voirActifs": "Voir les tickets actifs",
+    "voirArchives": "Voir les archives",
+    "nouveau": "Nouveau ticket",
+    "creer": "Créer un ticket",
+    "sujet": "Sujet",
+    "sujetPlaceholder": "Décrivez votre problème...",
+    "description": "Description",
+    "details": "Détails supplémentaires...",
+    "priorite": "Priorité",
+    "basse": "Basse",
+    "moyenne": "Moyenne",
+    "haute": "Haute",
+    "envoi": "Envoi...",
+    "soumettre": "Soumettre",
+    "annuler": "Annuler",
+    "chargement": "Chargement...",
+    "aucun": "Aucun ticket pour le moment",
+    "archive": "Archivé",
+    "statuts": {
+      "OPEN": "Ouvert",
+      "IN_PROGRESS": "En cours",
+      "RESOLVED": "Résolu",
+      "CLOSED": "Clos"
+    },
+    "priorites": {
+      "LOW": "Basse",
+      "MEDIUM": "Moyenne",
+      "HIGH": "Haute",
+      "URGENT": "Urgente"
+    }
+  },
+  "delai": {
+    "maintenant": "maintenant",
+    "minutes": "dans {n} min",
+    "heures": "dans {h} h {m}"
+  },
+  "reponseCommande": {
+    "actionImpossible": "Action impossible",
+    "rembourse": "Payée en ligne : le client a été remboursé.",
+    "remise": "Commande remise.",
+    "pourquoi": "Pourquoi refuser ?",
+    "precision": "Précision pour le client (facultatif)",
+    "seraRembourse": "Cette commande est payée en ligne : le client sera remboursé automatiquement.",
+    "retour": "Retour",
+    "tempsPreparation": "Temps de préparation",
+    "annulerImprevu": "Annuler la commande (imprévu)…",
+    "etapes": {
+      "PREPARING": "En préparation",
+      "READY": "Prête",
+      "COMPLETED": "Remise"
+    },
+    "appeler": "Appeler le client ({telephone})",
+    "refusee": "Commande refusée",
+    "remboursementEchoue": "Payée en ligne : le remboursement automatique a échoué, contactez le support.",
+    "aAccepterAvant": "À accepter avant {heure} ({delai}), sinon elle sera refusée automatiquement.",
+    "retraitPrevu": "Retrait prévu à {heure}",
+    "minutes": "{n} min",
+    "accepter": "Accepter",
+    "rejeter": "Rejeter",
+    "preteVers": "Prête vers {heure}",
+    "preteVersAnnonce": "Prête vers {heure} ({n} min annoncées)",
+    "confirmerRefus": "Confirmer le refus"
+  },
+  "reversementsCommercant": {
+    "illisibles": "Relevés illisibles",
+    "aide": "Chaque lundi, la plateforme vous vire vos ventes payées en ligne de la semaine écoulée, commission déduite.",
+    "aucun": "Aucun relevé pour l'instant : le premier arrive le lundi qui suit vos premières ventes.",
+    "titre": "Reversements",
+    "etats": {
+      "PENDING": "En préparation",
+      "PAID": "Versé",
+      "CARRIED": "Reporté",
+      "CANCELLED": "Annulé"
+    }
+  },
+  "graphiqueColonnes": {
+    "vide": "Aucune course sur la période",
+    "voirGraphique": "Voir le graphique",
+    "voirTableau": "Voir le tableau",
+    "periode": "Période"
+  },
+  "filSupport": {
+    "pendantCourse": "Envoyé pendant une course",
+    "votreMessage": "Votre message…",
+    "support": "Support",
+    "livreur": "Livreur",
+    "course": "course",
+    "lu": "Lu",
+    "envoye": "Envoyé",
+    "vide": "Aucun message pour le moment."
   }
 }

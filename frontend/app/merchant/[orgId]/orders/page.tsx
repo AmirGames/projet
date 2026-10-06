@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 import { CarteCommandeCuisine, type CommandeCuisine } from '@/components/CarteCommandeCuisine';
 import { numeroCourt } from '@/lib/numero-commande';
-import { EVENEMENT_COMMANDES_CHANGEES, MOTIFS_POUR_LE_COMMERCANT } from '@/lib/reponse-commande';
+import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro, montantCommercant, sommeEuros } from '@/lib/format';
@@ -40,15 +40,16 @@ const pastilleDeStatut: Record<string, string> = {
 /** Explique au commerçant pourquoi aucun livreur n'est listé. */
 function expliquerAbsence(
   d: { total: number; actifs: number; enLigne: number; libres: number; localises: number; plusProcheKm: number | null } | undefined,
-  rayon?: number
+  rayon: number | undefined,
+  t: (cle: string, valeurs?: Record<string, string | number>) => string
 ): string | null {
   if (!d) return null;
-  if (d.total === 0) return "Aucun livreur n'est inscrit sur la plateforme.";
-  if (d.actifs === 0) return `${d.total} livreur(s) inscrit(s), mais aucun dossier validé (statut ACTIVE) par la plateforme.`;
-  if (d.enLigne === 0) return `Aucun livreur n'est en ligne. Le livreur doit activer « En ligne » dans son espace.`;
-  if (d.libres === 0) return `${d.enLigne} livreur(s) en ligne, mais tous sont déjà en course.`;
-  if (d.localises === 0) return `${d.libres} livreur(s) en ligne, mais aucun n'envoie sa position (localisation refusée ou signal GPS perdu). Le livreur doit garder l'application ouverte avec la localisation autorisée.`;
-  if (d.plusProcheKm != null) return `Le livreur le plus proche est à ${d.plusProcheKm.toFixed(1)} km, au-delà du rayon de ${rayon ?? '?'} km.`;
+  if (d.total === 0) return t('absence.aucunInscrit');
+  if (d.actifs === 0) return t('absence.aucunValide', { n: d.total });
+  if (d.enLigne === 0) return t('absence.aucunEnLigne');
+  if (d.libres === 0) return t('absence.tousEnCourse', { n: d.enLigne });
+  if (d.localises === 0) return t('absence.aucunePosition', { n: d.libres });
+  if (d.plusProcheKm != null) return t('absence.tropLoin', { km: d.plusProcheKm.toFixed(1), rayon: rayon ?? '?' });
   return null;
 }
 
@@ -64,6 +65,7 @@ function expliquerAbsence(
  */
 export default function OrdersPage() {
   const t = useTranslations('merchantOrders');
+  const tMotif = useTranslations('motifsRefus');
   const tc = useTranslations('merchantOrders.cuisine');
   const { storeId } = useCurrentStore();
   const params = useParams();
@@ -240,12 +242,12 @@ export default function OrdersPage() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(data?.error || data?.message || `Erreur ${response.status}`);
+        throw new Error(data?.error || data?.message || t('erreurStatut', { statut: response.status }));
       }
 
       setAvailableDeliveryMen(data.deliveryMen || []);
       if ((data.deliveryMen || []).length === 0) {
-        setDriversDiagnostic(expliquerAbsence(data.diagnostic, data.radiusKm));
+        setDriversDiagnostic(expliquerAbsence(data.diagnostic, data.radiusKm, t));
       }
     } catch (error) {
       signalerErreur('Error fetching available drivers:', error);
@@ -273,7 +275,7 @@ export default function OrdersPage() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        setDispatchMessage({ ok: false, text: data?.error || data?.message || "La course n'a pas pu être proposée." });
+        setDispatchMessage({ ok: false, text: data?.error || data?.message || t('courseNonProposee') });
         return;
       }
 
@@ -288,7 +290,7 @@ export default function OrdersPage() {
       relire();
     } catch (error) {
       signalerErreur('Error selecting driver:', error);
-      setDispatchMessage({ ok: false, text: 'Serveur injoignable.' });
+      setDispatchMessage({ ok: false, text: t('injoignable') });
     }
   };
 
@@ -528,7 +530,7 @@ export default function OrdersPage() {
                         </span>
                         {order.status === 'REJECTED' && order.rejectionReason && (
                           <span className="mt-1 block text-xs text-gray-500">
-                            {MOTIFS_POUR_LE_COMMERCANT[order.rejectionReason] || ''}
+                            {tMotif.has(`commercant.${order.rejectionReason}`) ? tMotif(`commercant.${order.rejectionReason}`) : ''}
                           </span>
                         )}
                       </td>

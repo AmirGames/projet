@@ -62,37 +62,37 @@ export default function MerchantOnboardPage() {
     const newErrors: FormErrors = {};
 
     if (!formData.businessName.trim()) {
-      newErrors.businessName = "Le nom de l'entreprise est requis";
+      newErrors.businessName = t('erreurs.entreprise');
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Le téléphone est requis';
+      newErrors.phone = t('erreurs.telephone');
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = "L'adresse est requise";
+      newErrors.address = t('erreurs.adresse');
     }
 
     if (!formData.city.trim()) {
-      newErrors.city = 'La ville est requise';
+      newErrors.city = t('erreurs.ville');
     }
 
     if (!formData.postalCode.trim()) {
-      newErrors.postalCode = 'Le code postal est requis';
+      newErrors.postalCode = t('erreurs.codePostal');
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'La description est requise';
+      newErrors.description = t('erreurs.description');
     }
 
     if (!formData.storeName.trim()) {
-      newErrors.storeName = 'Le nom de la boutique est requis';
+      newErrors.storeName = t('erreurs.boutique');
     }
 
     if (!formData.storeSlug.trim()) {
-      newErrors.storeSlug = "L'URL de la boutique est requise";
+      newErrors.storeSlug = t('erreurs.url');
     } else if (!/^[a-z0-9-]+$/.test(formData.storeSlug)) {
-      newErrors.storeSlug = "L'URL ne peut contenir que des lettres minuscules, chiffres et tirets";
+      newErrors.storeSlug = t('erreurs.urlFormat');
     }
 
     setErrors(newErrors);
@@ -175,7 +175,7 @@ export default function MerchantOnboardPage() {
     <div className="min-h-screen bg-[#F7F7F6] text-gray-900 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Créer votre boutique</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('creerTitre')}</h1>
           <p className="text-gray-500">Connecté en tant que {user?.email}</p>
         </div>
 
@@ -198,7 +198,7 @@ export default function MerchantOnboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom de l'entreprise *
+                  {t('nomEntreprise')}
                 </label>
                 <input
                   type="text"
@@ -212,7 +212,7 @@ export default function MerchantOnboardPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type de commerce *
+                  {t('typeCommerce')}
                 </label>
                 <select
                   name="businessType"
@@ -220,18 +220,18 @@ export default function MerchantOnboardPage() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 >
-                  <option value="RESTAURANT">Restaurant</option>
-                  <option value="BAKERY">Boulangerie</option>
-                  <option value="GROCERY">Épicerie</option>
-                  <option value="PHARMACY">Pharmacie</option>
-                  <option value="FLORIST">Fleuriste</option>
-                  <option value="OTHER">Autre</option>
+                  <option value="RESTAURANT">{t('types.restaurant')}</option>
+                  <option value="BAKERY">{t('types.boulangerie')}</option>
+                  <option value="GROCERY">{t('types.epicerie')}</option>
+                  <option value="PHARMACY">{t('types.pharmacie')}</option>
+                  <option value="FLORIST">{t('types.fleuriste')}</option>
+                  <option value="OTHER">{t('types.autre')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Téléphone *
+                  {t('telephone')}
                 </label>
                 <input
                   type="tel"
@@ -245,7 +245,7 @@ export default function MerchantOnboardPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom de la boutique *
+                  {t('nomBoutique')}
                 </label>
                 <input
                   type="text"
@@ -259,7 +259,7 @@ export default function MerchantOnboardPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL de la boutique *
+                  {t('urlBoutique')}
                 </label>
                 <input
                   type="text"
@@ -274,7 +274,7 @@ export default function MerchantOnboardPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ville *
+                  {t('ville')}
                 </label>
                 <input
                   type="text"
@@ -288,7 +288,7 @@ export default function MerchantOnboardPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Adresse *
+                  {t('adresse')}
                 </label>
                 <AddressAutocomplete
                   clair
@@ -309,7 +309,7 @@ export default function MerchantOnboardPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Code postal *
+                  {t('codePostal')}
                 </label>
                 <input
                   type="text"
@@ -324,7 +324,7 @@ export default function MerchantOnboardPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description *
+                {t('description')}
               </label>
               <textarea
                 name="description"
@@ -343,13 +343,13 @@ export default function MerchantOnboardPage() {
                 className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
               >
                 {loading ? <Loader className="animate-spin" size={20} /> : null}
-                {loading ? 'Création en cours...' : 'Créer ma boutique'}
+                {loading ? t('creation') : t('creer')}
               </button>
               <Link
                 href="/"
                 className="px-6 py-3 border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-bold rounded-lg transition"
               >
-                Annuler
+                {t('annuler')}
               </Link>
             </div>
           </form>

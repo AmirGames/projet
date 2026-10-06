@@ -61,6 +61,7 @@ export function AlerteCommandes({
   toutesBoutiques?: boolean;
 }) {
   const t = useTranslations('alerteCommandes');
+  const tDelai = useTranslations('delai');
   const boutiqueCourante = useCurrentStoreOptionnel()?.storeId ?? null;
   const storeId = toutesBoutiques ? null : boutiqueCourante;
   const actif = toutesBoutiques ? Boolean(orgId) : Boolean(storeId);
@@ -240,7 +241,7 @@ export function AlerteCommandes({
           </p>
           <p className="text-white/70 truncate">
             {enAttente
-                .map((c) => `${c.customerName}${toutesBoutiques && c.store ? ` — ${c.store.name}` : ''}${c.echeance ? ` (${delaiRestant(c.echeance, maintenant)})` : ''}`)
+                .map((c) => `${c.customerName}${toutesBoutiques && c.store ? ` — ${c.store.name}` : ''}${c.echeance ? ` (${delaiRestant(c.echeance, maintenant, tDelai)})` : ''}`)
               .join(' · ')}
           </p>
         </div>

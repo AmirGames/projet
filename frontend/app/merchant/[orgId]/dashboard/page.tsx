@@ -275,7 +275,7 @@ export default function MerchantDashboard() {
                   <div
                     className={`w-full rounded-t-lg rounded-b ${estAujourdhui ? 'bg-orange-600' : 'bg-orange-200'}`}
                     style={{ height: `${Math.max(3, (j.chiffreAffaires / plusHaut) * 100)}%` }}
-                    title={`${jourCourt(j.jour)} : ${euro(j.chiffreAffaires)}, ${j.commandes} commande(s)`}
+                    title={t("barreJour", { jour: jourCourt(j.jour), montant: euro(j.chiffreAffaires), n: j.commandes })}
                   />
                   <span className={`text-xs ${estAujourdhui ? 'font-extrabold text-gray-900' : 'font-semibold text-gray-500'}`}>
                     {estAujourdhui

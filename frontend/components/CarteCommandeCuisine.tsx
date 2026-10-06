@@ -144,7 +144,7 @@ export function CarteCommandeCuisine({
   const boutonSecondaire =
     'rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-bold transition hover:bg-gray-50 disabled:opacity-40';
   const boutonPrincipal =
-    'rounded-full px-4 py-3 text-sm font-extrabold text-white transition disabled:opacity-40';
+    'rounded-full px-4 py-3 text-sm font-extrabold text-white transition disabled:opacity-50';
 
   // L'étape suivante de la commande acceptée, avec son libellé.
   const suite =

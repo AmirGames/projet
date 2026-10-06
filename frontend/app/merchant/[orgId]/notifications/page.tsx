@@ -64,11 +64,11 @@ export default function NotificationsPage() {
       setTotal(data.total);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : t('erreur'));
     } finally {
       setLoading(false);
     }
-  }, [filterRead, skip, storeId]);
+  }, [filterRead, skip, storeId, t]);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -109,7 +109,7 @@ export default function NotificationsPage() {
       fetchNotifications();
       fetchUnreadCount();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : t('erreur'));
     }
   };
 
@@ -126,7 +126,7 @@ export default function NotificationsPage() {
       fetchNotifications();
       fetchUnreadCount();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : t('erreur'));
     }
   };
 
@@ -146,7 +146,7 @@ export default function NotificationsPage() {
       fetchNotifications();
       fetchUnreadCount();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : t('erreur'));
     }
   };
 
@@ -169,7 +169,7 @@ export default function NotificationsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Bell className="w-8 h-8" />
-            Notifications
+            {t('titre')}
           </h1>
           <p className="text-gray-400 mt-1">
             {unreadCount} non-lues
@@ -180,7 +180,7 @@ export default function NotificationsPage() {
             onClick={markAllAsRead}
             className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg"
           >
-            Marquer tout comme lu
+            {t('toutLu')}
           </button>
         )}
       </div>
@@ -219,7 +219,7 @@ export default function NotificationsPage() {
       ) : notifications.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Bell className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucune notification</p>
+          <p className="text-gray-400">{t('aucune')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -278,7 +278,7 @@ export default function NotificationsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {skip + 1} à {Math.min(skip + take, total)} sur {total}
+          {t("affichage", { debut: skip + 1, fin: Math.min(skip + take, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -286,14 +286,14 @@ export default function NotificationsPage() {
             disabled={skip === 0}
             className="px-3 py-1 border rounded-lg disabled:opacity-50"
           >
-            Précédent
+            {t('precedent')}
           </button>
           <button
             onClick={() => setSkip(skip + take)}
             disabled={skip + take >= total}
             className="px-3 py-1 border rounded-lg disabled:opacity-50"
           >
-            Suivant
+            {t('suivant')}
           </button>
         </div>
       </div>

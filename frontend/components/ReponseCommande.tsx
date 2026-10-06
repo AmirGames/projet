@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Check, Phone, X, AlertTriangle } from 'lucide-react';
 import {
   MOTIFS_DU_COMMERCANT,
-  MOTIFS_POUR_LE_COMMERCANT,
   TEMPS_DE_PREPARATION,
   EVENEMENT_COMMANDES_CHANGEES,
   accepterCommande,
@@ -14,6 +13,7 @@ import {
   heure,
   type MotifDeRefus,
 } from '@/lib/reponse-commande';
+import { useTranslations } from 'next-intl';
 
 export interface CommandeARepondre {
   id: string;
@@ -31,11 +31,8 @@ export interface CommandeARepondre {
 }
 
 /** Les étapes qui suivent l'acceptation, dans l'ordre. */
-const ETAPES = [
-  { valeur: 'PREPARING', libelle: 'En préparation' },
-  { valeur: 'READY', libelle: 'Prête' },
-  { valeur: 'COMPLETED', libelle: 'Remise' },
-];
+// Le libellé : `etapes.<valeur>` des traductions.
+const ETAPES = [{ valeur: 'PREPARING' }, { valeur: 'READY' }, { valeur: 'COMPLETED' }];
 
 /**
  * Répondre à une commande, comme sur une tablette de plateforme de livraison.
@@ -54,6 +51,9 @@ export function ReponseCommande({
   /** La commande a changé : relire la liste ou le détail. */
   surChangement: () => void;
 }) {
+  const t = useTranslations('reponseCommande');
+  const tMotif = useTranslations('motifsRefus');
+  const tDelai = useTranslations('delai');
   const [preparation, setPreparation] = useState(20);
   const [refus, setRefus] = useState(false);
   const [motif, setMotif] = useState<MotifDeRefus | ''>('');
@@ -82,7 +82,7 @@ export function ReponseCommande({
       // La sonnerie et les autres écrans se remettent à jour.
       window.dispatchEvent(new Event(EVENEMENT_COMMANDES_CHANGEES));
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Action impossible');
+      setErreur(e instanceof Error ? e.message : t('actionImpossible'));
     } finally {
       setEnvoi(false);
     }
@@ -93,7 +93,7 @@ export function ReponseCommande({
       href={`tel:${commande.customerPhone.replace(/\s+/g, '')}`}
       className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
     >
-      <Phone size={14} /> Appeler le client ({commande.customerPhone})
+      <Phone size={14} /> {t('appeler', { telephone: commande.customerPhone })}
     </a>
   ) : null;
 
@@ -101,17 +101,17 @@ export function ReponseCommande({
     return (
       <div className="space-y-2 text-sm">
         <p className="text-red-600">
-          {MOTIFS_POUR_LE_COMMERCANT[commande.rejectionReason || ''] || 'Commande refusée'}
+          {commande.rejectionReason && tMotif.has(`commercant.${commande.rejectionReason}`) ? tMotif(`commercant.${commande.rejectionReason}`) : t('refusee')}
         </p>
         {commande.rejectionNote && (
           <p className="text-gray-500">« {commande.rejectionNote} »</p>
         )}
         {commande.paymentStatus === 'REFUNDED' && (
-          <p className="text-gray-500">Payée en ligne : le client a été remboursé.</p>
+          <p className="text-gray-500">{t('rembourse')}</p>
         )}
         {commande.paymentStatus === 'SUCCEEDED' && (
           <p className="flex items-center gap-1 text-amber-600">
-            <AlertTriangle size={14} /> Payée en ligne : le remboursement automatique a échoué, contactez le support.
+            <AlertTriangle size={14} /> {t('remboursementEchoue')}
           </p>
         )}
       </div>
@@ -119,12 +119,12 @@ export function ReponseCommande({
   }
 
   if (commande.status === 'COMPLETED') {
-    return <p className="text-sm text-gray-500">Commande remise.</p>;
+    return <p className="text-sm text-gray-500">{t('remise')}</p>;
   }
 
   const formulaireDeRefus = refus && (
     <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-3">
-      <p className="text-sm font-semibold text-red-700">Pourquoi refuser ?</p>
+      <p className="text-sm font-semibold text-red-700">{t('pourquoi')}</p>
       <div className="grid grid-cols-2 gap-2">
         {MOTIFS_DU_COMMERCANT.map((m) => (
           <button
@@ -137,7 +137,7 @@ export function ReponseCommande({
                 : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
             }`}
           >
-            {m.libelle}
+            {tMotif(`commercant.${m.valeur}`)}
           </button>
         ))}
       </div>
@@ -145,12 +145,12 @@ export function ReponseCommande({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         maxLength={300}
-        placeholder="Précision pour le client (facultatif)"
+        placeholder={t('precision')}
         className="w-full rounded bg-gray-100 border border-gray-300 px-3 py-2 text-sm"
       />
       {commande.paymentStatus === 'SUCCEEDED' && (
         <p className="text-xs text-amber-600">
-          Cette commande est payée en ligne : le client sera remboursé automatiquement.
+          {t('seraRembourse')}
         </p>
       )}
       <div className="flex gap-2">
@@ -160,14 +160,14 @@ export function ReponseCommande({
           disabled={!motif || envoi}
           className="flex-1 rounded bg-red-600 text-white hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
         >
-          {envoi ? '...' : 'Confirmer le refus'}
+          {envoi ? '...' : t('confirmerRefus')}
         </button>
         <button
           type="button"
           onClick={() => setRefus(false)}
           className="rounded bg-gray-100 hover:bg-gray-200 px-3 py-2 text-sm"
         >
-          Retour
+          {t('retour')}
         </button>
       </div>
     </div>
@@ -178,12 +178,11 @@ export function ReponseCommande({
       <div className="space-y-3">
         {commande.echeance && (
           <p className="text-sm text-yellow-700">
-            À accepter avant {heure(commande.echeance)} ({delaiRestant(commande.echeance, maintenant)}),
-            sinon elle sera refusée automatiquement.
+            {t('aAccepterAvant', { heure: heure(commande.echeance), delai: delaiRestant(commande.echeance, maintenant, tDelai) })}
           </p>
         )}
         {commande.deliveryType === 'PICKUP' && commande.pickupTime && (
-          <p className="text-sm text-gray-700">Retrait prévu à {heure(commande.pickupTime)}</p>
+          <p className="text-sm text-gray-700">{t('retraitPrevu', { heure: heure(commande.pickupTime) })}</p>
         )}
         {telephone}
 
@@ -192,7 +191,7 @@ export function ReponseCommande({
         ) : (
           <>
             <div>
-              <p className="text-xs text-gray-500 mb-2">Temps de préparation</p>
+              <p className="text-xs text-gray-500 mb-2">{t('tempsPreparation')}</p>
               <div className="grid grid-cols-6 gap-1">
                 {TEMPS_DE_PREPARATION.map((minutes) => (
                   <button
@@ -205,7 +204,7 @@ export function ReponseCommande({
                         : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
                     }`}
                   >
-                    {minutes} min
+                    {t('minutes', { n: minutes })}
                   </button>
                 ))}
               </div>
@@ -215,17 +214,17 @@ export function ReponseCommande({
                 type="button"
                 onClick={() => agir(() => accepterCommande(storeId, commande.id, preparation))}
                 disabled={envoi}
-                className="flex-1 inline-flex items-center justify-center gap-1 rounded bg-green-600 text-white hover:bg-green-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="flex-1 inline-flex items-center justify-center gap-1 rounded bg-green-600 text-white hover:bg-green-700 px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
-                <Check size={16} /> {envoi ? '...' : 'Accepter'}
+                <Check size={16} /> {envoi ? '...' : t('accepter')}
               </button>
               <button
                 type="button"
                 onClick={() => setRefus(true)}
                 disabled={envoi}
-                className="inline-flex items-center justify-center gap-1 rounded bg-gray-100 hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="inline-flex items-center justify-center gap-1 rounded bg-gray-100 hover:bg-red-50 hover:text-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
-                <X size={16} /> Rejeter
+                <X size={16} /> {t('rejeter')}
               </button>
             </div>
           </>
@@ -242,8 +241,9 @@ export function ReponseCommande({
     <div className="space-y-3">
       {commande.estimatedReadyAt && (
         <p className="text-sm text-gray-700">
-          Prête vers {heure(commande.estimatedReadyAt)}
-          {commande.preparationMinutes ? ` (${commande.preparationMinutes} min annoncées)` : ''}
+          {commande.preparationMinutes
+            ? t('preteVersAnnonce', { heure: heure(commande.estimatedReadyAt), n: commande.preparationMinutes })
+            : t('preteVers', { heure: heure(commande.estimatedReadyAt) })}
         </p>
       )}
       {telephone}
@@ -261,11 +261,11 @@ export function ReponseCommande({
                 disabled={envoi || index <= rang}
                 className={`rounded px-2 py-2 text-xs font-medium border transition-colors disabled:cursor-default ${
                   index <= rang
-                    ? 'bg-gray-600/50 border-gray-300 text-gray-500'
+                    ? 'bg-gray-100 border-gray-200 text-gray-400'
                     : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
                 }`}
               >
-                {etape.libelle}
+                {t(`etapes.${etape.valeur}`)}
               </button>
             ))}
           </div>
@@ -275,7 +275,7 @@ export function ReponseCommande({
             disabled={envoi}
             className="text-xs text-red-600 hover:text-red-700"
           >
-            Annuler la commande (imprévu)…
+            {t('annulerImprevu')}
           </button>
         </>
       )}

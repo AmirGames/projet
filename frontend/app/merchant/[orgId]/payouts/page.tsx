@@ -16,6 +16,7 @@ import { Banknote } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import ReleveReversement, { type Releve } from '@/components/ReleveReversement';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,14 +29,12 @@ interface Resume {
   orderCount: number;
 }
 
-const ETATS: Record<string, string> = {
-  PENDING: 'En préparation',
-  PAID: 'Versé',
-  CARRIED: 'Reporté',
-  CANCELLED: 'Annulé',
-};
+// Les libellés : `etats.<statut>` des traductions.
+const ETATS = ['PENDING', 'PAID', 'CARRIED', 'CANCELLED'];
 
 export default function ReversementsPage() {
+  const t = useTranslations('reversementsCommercant');
+  const locale = useLocale();
   const { orgId } = useParams<{ orgId: string }>();
   const [releves, setReleves] = useState<Resume[]>([]);
   const [ouvert, setOuvert] = useState<Releve | null>(null);
@@ -51,7 +50,7 @@ export default function ReversementsPage() {
   const charger = useCallback(async () => {
     try {
       const rep = await fetch(`${API_URL}/api/merchant-payouts?orgId=${orgId}`, { headers: entetes() });
-      if (!rep.ok) throw new Error('Relevés illisibles');
+      if (!rep.ok) throw new Error(t('illisibles'));
       const liste: Resume[] = (await rep.json()).data || [];
       setReleves(liste);
       // Le dernier relevé s'ouvre d'office.
@@ -62,7 +61,7 @@ export default function ReversementsPage() {
     } catch (e) {
       setErreur(e instanceof Error ? e.message : 'Erreur');
     }
-  }, [orgId]);
+  }, [orgId, t]);
 
   useEffectChargement(() => {
     charger();
@@ -72,18 +71,17 @@ export default function ReversementsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <Banknote /> Reversements
+          <Banknote /> {t('titre')}
         </h1>
         <p className="text-gray-500 mt-1">
-          Chaque lundi, la plateforme vous vire vos ventes payées en ligne de la semaine écoulée,
-          commission déduite.
+          {t('aide')}
         </p>
       </div>
 
       {erreur && <p className="text-red-600">{erreur}</p>}
 
       {releves.length === 0 ? (
-        <p className="text-gray-500">Aucun relevé pour l&apos;instant : le premier arrive le lundi qui suit vos premières ventes.</p>
+        <p className="text-gray-500">{t('aucun')}</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
@@ -96,10 +94,10 @@ export default function ReversementsPage() {
                   className={`w-full text-left p-4 hover:bg-gray-50 ${ouvert?.id === r.id ? 'bg-gray-50' : ''}`}
                 >
                   <p className="text-gray-900 font-semibold">
-                    {new Date(r.periodStart).toLocaleDateString('fr-FR')} – {veille.toLocaleDateString('fr-FR')}
+                    {new Date(r.periodStart).toLocaleDateString(locale)} – {veille.toLocaleDateString(locale)}
                   </p>
                   <p className="text-sm flex justify-between">
-                    <span className="text-gray-500">{ETATS[r.status] || r.status}</span>
+                    <span className="text-gray-500">{ETATS.includes(r.status) ? t(`etats.${r.status}`) : r.status}</span>
                     <span className={r.amount < 0 ? 'text-red-600' : 'text-green-600'}>{euro(r.amount)}</span>
                   </p>
                 </button>
