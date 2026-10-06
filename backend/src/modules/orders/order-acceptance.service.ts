@@ -111,7 +111,11 @@ const euros = (montant: number) =>
  * leur propre route. Une commande en attente ne peut rien faire d'autre, et une
  * commande refusée ne repart pas.
  */
-export function verifierTransition(avant: string, apres: string) {
+export function verifierTransition(
+  avant: string,
+  apres: string,
+  commande?: { deliveryType?: string | null; deliveryMode?: string | null },
+) {
   if (apres === "ACCEPTED" || apres === "REJECTED") {
     throw new ApiError(
       400,
@@ -137,6 +141,23 @@ export function verifierTransition(avant: string, apres: string) {
   // Une commande terminée est un état final : elle ne repart pas en cuisine.
   if (avant === "COMPLETED" && apres !== "COMPLETED") {
     throw new ApiError(400, "Cette commande est terminée.", "ORDER_COMPLETED");
+  }
+
+  // Une livraison plateforme se clôt par la validation de livraison du
+  // livreur (preuve, course, reversements), jamais par ce bouton générique.
+  // Le retour en préparation (READY → PREPARING) reste permis : c'est une
+  // correction voulue du commerçant, qui ne touche pas à la course.
+  if (
+    apres === "COMPLETED" &&
+    avant !== "COMPLETED" &&
+    commande?.deliveryType === "DELIVERY" &&
+    commande?.deliveryMode === "PLATFORM"
+  ) {
+    throw new ApiError(
+      400,
+      "Cette livraison est suivie par la plateforme : elle se termine à la remise au client.",
+      "USE_DELIVERY_VALIDATION"
+    );
   }
 
   if (apres === "PENDING") {

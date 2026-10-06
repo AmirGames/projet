@@ -86,6 +86,26 @@ describe("echeanceDeReponse", () => {
   });
 });
 
+describe("verifierTransition — livraison plateforme", () => {
+  const plateforme = { deliveryType: "DELIVERY", deliveryMode: "PLATFORM" };
+
+  it("refuse de terminer une livraison plateforme par le bouton générique", () => {
+    for (const avant of ["ACCEPTED", "PREPARING", "READY"])
+      expect(() => verifierTransition(avant, "COMPLETED", plateforme)).toThrow(
+        expect.objectContaining({ code: "USE_DELIVERY_VALIDATION" }),
+      );
+  });
+
+  it("laisse terminer un retrait ou une livraison propre au commerçant", () => {
+    expect(() => verifierTransition("READY", "COMPLETED", { deliveryType: "PICKUP", deliveryMode: null })).not.toThrow();
+    expect(() => verifierTransition("READY", "COMPLETED", { deliveryType: "DELIVERY", deliveryMode: "OWN" })).not.toThrow();
+  });
+
+  it("garde le retour en préparation comme opération explicite", () => {
+    expect(() => verifierTransition("READY", "PREPARING", plateforme)).not.toThrow();
+  });
+});
+
 describe("verifierTransition", () => {
   it("renvoie accepter et refuser vers leurs propres routes", () => {
     expect(() => verifierTransition("PENDING", "ACCEPTED")).toThrow();

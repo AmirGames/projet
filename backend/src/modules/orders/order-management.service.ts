@@ -225,7 +225,7 @@ export class OrderManagementService {
         throw new ApiError(400, "Invalid order status", "INVALID_STATUS");
       }
 
-      verifierTransition(order.status, status);
+      verifierTransition(order.status, status, order);
 
       // Vérification supplémentaire : si paiement en liquide (CASH), doit être PICKUP uniquement
       // Ceci ne devrait jamais arriver car la validation est faite à la création,

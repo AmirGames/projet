@@ -732,13 +732,13 @@ export class OrderService {
       // L'ancien état est lu avant la mise à jour : un abonné qui reçoit « la
       // commande est prête » sans savoir d'où elle vient ne peut pas distinguer
       // une préparation qui avance d'un renvoi du même état.
-      const avant = await db.order.findUnique({ where: { id }, select: { status: true } });
+      const avant = await db.order.findUnique({ where: { id }, select: { status: true, deliveryType: true, deliveryMode: true } });
 
       if (!avant) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
-      verifierTransition(avant.status, status);
+      verifierTransition(avant.status, status, avant);
 
       // Écriture conditionnelle sur l'état lu : un changement concurrent
       // invalide la vérification de transition.
