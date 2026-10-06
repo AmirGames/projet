@@ -5,7 +5,7 @@ import { StoreService } from "./store.service";
 import { TaxService } from "../catalog/tax.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../auth/auth.middleware";
-import { perimetreBoutiques } from "../auth/autorisation-boutique";
+import { exigerBoutique, perimetreBoutiques } from "../auth/autorisation-boutique";
 import { logger } from "../../config/logger";
 import { PlanService } from "../plans/plan.service";
 import { StoreDuplicationService } from "./store-duplication.service";
@@ -213,6 +213,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
   try {
     const id = req.params.id as string;
     const body = updateStoreSchema.parse(req.body);
+    await exigerBoutique(req, id, "manage");
 
     logger.info("Updating store", { id });
 
@@ -236,6 +237,7 @@ router.patch("/:id/status", authMiddleware, async (req: Request, res: Response, 
   try {
     const id = req.params.id as string;
     const body = storeStatusSchema.parse(req.body);
+    await exigerBoutique(req, id, "manage");
 
     logger.info("Setting store status", { id, status: body.status });
 
@@ -280,6 +282,7 @@ router.patch("/:id/toggle", authMiddleware, async (req: Request, res: Response, 
 router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
+    await exigerBoutique(req, id, "manage");
 
     const store = await StoreService.getById(id);
 

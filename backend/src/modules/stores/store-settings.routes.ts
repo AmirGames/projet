@@ -3,6 +3,7 @@ import { z } from "zod";
 import { emailFacultatif } from "../../utils/validation";
 import { StoreSettingsService } from "./store-settings.service";
 import { authMiddleware } from "../auth/auth.middleware";
+import { exigerBoutique } from "../auth/autorisation-boutique";
 import { uploadMiddleware } from "../files/file-upload.middleware";
 import { ApiError } from "../../middleware/errorHandler";
 import { FileUploadService } from "../files/file-upload.service";
@@ -71,6 +72,9 @@ router.put("/:storeId", authMiddleware, async (req: Request, res: Response, next
   try {
     const storeId = req.params.storeId as string;
     const body = updateSettingsSchema.parse(req.body);
+    // Identité légale, TVA, devise, mode de livraison : le STAFF lit, il ne
+    // modifie pas (les horaires et la fermeture ont leurs routes dédiées).
+    await exigerBoutique(req, storeId, "manage");
 
     logger.info("Updating store settings", { storeId });
 
@@ -90,6 +94,7 @@ router.post("/:storeId/logo", authMiddleware, async (req: Request, res: Response
   try {
     const storeId = req.params.storeId as string;
     const { logoUrl } = z.object({ logoUrl: z.string().url() }).parse(req.body);
+    await exigerBoutique(req, storeId, "manage");
 
     logger.info("Uploading store logo", { storeId });
 
@@ -116,6 +121,7 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const storeId = req.params.storeId as string;
+      await exigerBoutique(req, storeId, "manage");
 
       if (!req.file) {
         throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
@@ -150,6 +156,7 @@ router.post(
 router.delete("/:storeId/logo", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
+    await exigerBoutique(req, storeId, "manage");
 
     logger.info("Removing store logo", { storeId });
 
@@ -165,6 +172,7 @@ router.delete("/:storeId/logo", authMiddleware, async (req: Request, res: Respon
 router.post("/:storeId/banner", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
+    await exigerBoutique(req, storeId, "manage");
     const { bannerUrl } = z.object({ bannerUrl: z.string().url() }).parse(req.body);
 
     logger.info("Uploading store banner", { storeId });
@@ -193,6 +201,7 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const storeId = req.params.storeId as string;
+      await exigerBoutique(req, storeId, "manage");
 
       if (!req.file) {
         throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
@@ -227,6 +236,7 @@ router.post(
 router.delete("/:storeId/banner", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
+    await exigerBoutique(req, storeId, "manage");
 
     logger.info("Removing store banner", { storeId });
 
