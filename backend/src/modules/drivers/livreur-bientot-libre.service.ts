@@ -31,7 +31,7 @@ export const REGLES_BIENTOT_LIBRE_PAR_DEFAUT: ReglesBientotLibre = { rayonKm: 1,
  * temps de trajet (haversine : à vol d'oiseau, donc prudente). Un type
  * inconnu vaut la voiture.
  */
-export const VITESSES_KMH: Record<string, number> = { bike: 15, scooter: 25, car: 20 };
+export const VITESSES_KMH: Record<string, number> = { bike: 15, scooter: 25, car: 30 };
 
 export function vitesseKmh(vehicleType?: string | null): number {
   return (vehicleType && VITESSES_KMH[vehicleType]) || VITESSES_KMH.car;

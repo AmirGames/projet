@@ -66,19 +66,23 @@ describe("livreur bientôt libre", () => {
 });
 
 describe("heure d'arrivée au commerce", () => {
-  it("1 km : 4 minutes à vélo, 2 min 24 en scooter, 3 minutes en voiture", () => {
+  it("1 km : 4 minutes à vélo, 2 min 24 en scooter, 2 minutes en voiture", () => {
     expect(secondesAvantRetrait(1, 0, "bike")).toBe(240);
     expect(secondesAvantRetrait(1, 0, "scooter")).toBe(144);
-    expect(secondesAvantRetrait(1, 0, "car")).toBe(180);
+    expect(secondesAvantRetrait(1, 0, "car")).toBe(120);
   });
 
   it("un véhicule inconnu ou absent compte comme une voiture", () => {
-    expect(secondesAvantRetrait(1, 0, "trottinette")).toBe(180);
-    expect(secondesAvantRetrait(1)).toBe(180);
+    expect(secondesAvantRetrait(1, 0, "trottinette")).toBe(120);
+    expect(secondesAvantRetrait(1)).toBe(120);
   });
 
   it("le temps avant libération s'ajoute au trajet", () => {
     expect(secondesAvantRetrait(1, 120, "bike")).toBe(360);
+  });
+
+  it("une voiture à 5 km arrive avant un scooter à 5 km", () => {
+    expect(secondesAvantRetrait(5, 0, "car")).toBeLessThan(secondesAvantRetrait(5, 0, "scooter"));
   });
 
   it("un vélo à 2 km arrive après un scooter à 3 km", () => {
