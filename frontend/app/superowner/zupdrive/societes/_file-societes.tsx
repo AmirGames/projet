@@ -13,7 +13,7 @@
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Building2, CheckCircle, XCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
@@ -84,13 +84,14 @@ const COULEURS: Record<string, string> = {
 };
 
 const jeton = () => localStorage.getItem('accessToken');
-const date = (valeur: string | null) => (valeur ? new Date(valeur).toLocaleDateString('fr-FR') : '—');
+const date = (valeur: string | null, locale: string) => (valeur ? new Date(valeur).toLocaleDateString(locale) : '—');
 
 /** Une nouvelle version de ce type attend l'examen : celle-ci reste en vigueur d'ici là. */
 const enVigueur = (pieces: PieceAExaminer[], piece: PieceAExaminer) =>
   pieces.some((autre) => autre.renouvellement && autre.type === piece.type);
 
 export function FileSocietes({ idInitial }: { idInitial?: string }) {
+  const locale = useLocale();
   const t = useTranslations('superownerSocietes');
   const tC = useTranslations('superownerChauffeurs');
 
@@ -299,7 +300,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
                     {societe.region && <span>{tC(`region.${societe.region}`)}</span>}
                     <span>{t('vehiclesCount', { conformes: societe.vehiculesConformes, total: societe.vehicules })}</span>
                     <span>{t('driversCount', { n: societe.chauffeurs })}</span>
-                    {societe.soumisLe && <span>{tC('submittedOn', { date: date(societe.soumisLe) })}</span>}
+                    {societe.soumisLe && <span>{tC('submittedOn', { date: date(societe.soumisLe, locale) })}</span>}
                   </div>
                   {societe.motifStatut && <p className="mt-2 text-xs text-red-700">{societe.motifStatut}</p>}
                 </div>
@@ -322,8 +323,8 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
       ['region', dossier.region ? tC(`region.${dossier.region}`) : null],
       ['numeroEntreprise', dossier.numeroEntreprise],
       ['numeroTva', dossier.numeroTva],
-      ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe) : null],
-      ['valideLe', dossier.valideLe ? date(dossier.valideLe) : null],
+      ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe, locale) : null],
+      ['valideLe', dossier.valideLe ? date(dossier.valideLe, locale) : null],
     ];
     const manquantes = dossier.piecesExigees.filter((p) => dossier.piecesManquantes.includes(p.type));
 

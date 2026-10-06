@@ -39,7 +39,8 @@ export interface IntituleDeLigne {
 
 export function intituleDeLaLigne(ligne: LigneAffichable): IntituleDeLigne {
   const categorie = ligne.product?.category?.name || ligne.category || '';
-  const plat = ligne.product?.name || ligne.name || 'Produit supprimé';
+  // Vide si le produit a été supprimé : l'écran affiche alors « produit supprimé » traduit.
+  const plat = ligne.product?.name || ligne.name || '';
   const declinaison = ligne.variant?.label || ligne.variantNom || '';
   const supplements = (ligne.selectedOptions?.supplements || ligne.supplements || [])
     .map((sup) => sup?.label)

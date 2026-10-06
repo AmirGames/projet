@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import { paysDuNavigateur } from '@/lib/pays-client';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { User, Mail, ShoppingBag, Wallet, Save } from 'lucide-react';
 import { euro } from '@/lib/format';
@@ -26,6 +26,7 @@ interface Profil {
 }
 
 export default function ProfilClientPage() {
+  const locale = useLocale();
   const t = useTranslations('clientProfile');
   const router = useRouter();
 
@@ -139,7 +140,7 @@ export default function ProfilClientPage() {
         </h1>
         {profil && (
           <p className="text-gray-500 mt-1">
-            {t('memberSince', { date: new Date(profil.memberSince).toLocaleDateString('fr-FR') })}
+            {t('memberSince', { date: new Date(profil.memberSince).toLocaleDateString(locale) })}
           </p>
         )}
       </div>

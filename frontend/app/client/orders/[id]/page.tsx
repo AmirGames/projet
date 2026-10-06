@@ -13,11 +13,12 @@ import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
-import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
+import { heure } from '@/lib/reponse-commande';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { cheminCommande, jetonDeSuivi } from '@/lib/suivi-commande';
+import { numeroCourt } from '@/lib/numero-commande';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -54,7 +55,9 @@ interface Order {
 type OrderDelivery = Course;
 
 export default function OrderTrackingPage() {
+  const locale = useLocale();
   const t = useTranslations('clientOrderDetail');
+  const tMotif = useTranslations('motifsRefus');
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
@@ -109,7 +112,7 @@ export default function OrderTrackingPage() {
         const orderData = await orderResponse.json();
         setOrder(orderData.data ?? orderData);
       } else if (orderResponse.status === 404) {
-        setError('Commande non trouvée');
+        setError(t('introuvable'));
       }
 
       const deliveryResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
@@ -124,10 +127,10 @@ export default function OrderTrackingPage() {
       setLoading(false);
     } catch (err) {
       signalerErreur('Error loading order:', err);
-      setError('Erreur lors du chargement de la commande');
+      setError(t('erreurChargement'));
       setLoading(false);
     }
-  }, [orderId, router]);
+  }, [orderId, router, t]);
 
   // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
   // remboursement. La commande est relue à chaque écriture qui la touche.
@@ -160,11 +163,11 @@ export default function OrderTrackingPage() {
   const getStatusInfo = (status: string) => {
     const statuses: Record<string, { label: string; color: string; icon: string }> = {
       PENDING: { label: t('statusPending'), color: 'yellow', icon: '⏳' },
-      ACCEPTED: { label: 'Acceptée', color: 'blue', icon: '✓' },
+      ACCEPTED: { label: t('statusAccepted'), color: 'blue', icon: '✓' },
       PREPARING: { label: t('statusPreparing'), color: 'orange', icon: '👨‍🍳' },
-      READY: { label: 'Prête', color: 'yellow-green', icon: '📦' },
-      COMPLETED: { label: 'Complétée', color: 'green', icon: '✓✓' },
-      REJECTED: { label: 'Refusée', color: 'red', icon: '✗' },
+      READY: { label: t('statusReady'), color: 'yellow-green', icon: '📦' },
+      COMPLETED: { label: t('statusCompleted'), color: 'green', icon: '✓✓' },
+      REJECTED: { label: t('statusRejected'), color: 'red', icon: '✗' },
     };
     return statuses[status] || { label: status, color: 'gray', icon: '?' };
   };
@@ -180,7 +183,7 @@ export default function OrderTrackingPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-900 text-lg mb-4">Chargement de la commande...</p>
+          <p className="text-gray-900 text-lg mb-4">{t('chargement')}</p>
           <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
         </div>
       </div>
@@ -194,7 +197,7 @@ export default function OrderTrackingPage() {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-600">
               <ArrowLeft size={20} />
-              Retour aux commandes
+              {t('retour')}
             </Link>
           </div>
         </header>
@@ -202,7 +205,7 @@ export default function OrderTrackingPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 flex items-center gap-3">
             <AlertCircle size={24} />
             <div>
-              <p className="font-semibold mb-1">Erreur</p>
+              <p className="font-semibold mb-1">{t('erreur')}</p>
               <p>{error}</p>
             </div>
           </div>
@@ -229,7 +232,7 @@ export default function OrderTrackingPage() {
                 <p className="text-green-800 text-sm">{notification.message}</p>
               </div>
               <div className="text-green-600 text-sm">
-                À l'instant
+                {t('aLInstant')}
               </div>
             </div>
           </div>
@@ -241,25 +244,25 @@ export default function OrderTrackingPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
             <ArrowLeft size={20} />
-            Retour aux commandes
+            {t('retour')}
           </Link>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Commande #{order.id.slice(0, 8)}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('commandeNumero', { numero: numeroCourt(order.id) })}</h1>
               <p className="text-gray-500">
-                {new Date(order.createdAt).toLocaleString('fr-FR')}
+                {new Date(order.createdAt).toLocaleString(locale)}
               </p>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
               {isConnected ? (
                 <>
                   <Wifi size={16} className="text-green-500 animate-pulse" />
-                  <span className="text-green-600 text-sm">En direct</span>
+                  <span className="text-green-600 text-sm">{t('enDirect')}</span>
                 </>
               ) : (
                 <>
                   <WifiOff size={16} className="text-orange-500" />
-                  <span className="text-orange-600 text-sm">Hors ligne</span>
+                  <span className="text-orange-600 text-sm">{t('horsLigne')}</span>
                 </>
               )}
             </div>
@@ -291,42 +294,42 @@ export default function OrderTrackingPage() {
 
             {/* Order Status */}
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Statut de la commande</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-6">{t('statutCommande')}</h2>
 
               {/* Status Badge */}
               <div className="mb-6 p-4 bg-gray-100 rounded-lg">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-3xl">{statusInfo.icon}</span>
                   <div>
-                    <p className="text-gray-500 text-sm">Statut actuel</p>
+                    <p className="text-gray-500 text-sm">{t('statutActuel')}</p>
                     <p className="text-gray-900 text-xl font-semibold">{statusInfo.label}</p>
                   </div>
                 </div>
                 {order.status === 'PENDING' && (
                   <p className="text-sm text-yellow-700">
-                    Le restaurant doit confirmer votre commande. Vous serez prévenu dès qu&apos;il
-                    l&apos;aura acceptée.
+                    {t('attenteConfirmation')}
                   </p>
                 )}
                 {['ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && order.estimatedReadyAt && (
                   <p className="text-sm text-gray-800">
                     {order.deliveryType === 'PICKUP' && order.pickupTime
-                      ? `Retrait prévu à ${heure(order.pickupTime)}`
-                      : `Prête vers ${heure(order.estimatedReadyAt)}`}
+                      ? t('retraitPrevu', { heure: heure(order.pickupTime) })
+                      : t('preteVers', { heure: heure(order.estimatedReadyAt) })}
                   </p>
                 )}
                 {order.status === 'REJECTED' && (
                   <div className="text-sm text-red-700 space-y-1">
                     <p>
-                      {MOTIFS_POUR_LE_CLIENT[order.rejectionReason || ''] ||
-                        'Le restaurant a refusé votre commande.'}
+                      {order.rejectionReason && tMotif.has(`client.${order.rejectionReason}`)
+                        ? tMotif(`client.${order.rejectionReason}`)
+                        : t('refusee')}
                     </p>
                     {order.rejectionNote && <p>« {order.rejectionNote} »</p>}
                     {order.paymentStatus === 'REFUNDED' && (
-                      <p>Vous avez payé en ligne : vous êtes remboursé, sous 5 à 10 jours sur votre compte.</p>
+                      <p>{t('rembourse')}</p>
                     )}
                     {order.paymentStatus === 'SUCCEEDED' && (
-                      <p>Vous avez payé en ligne : votre remboursement est en cours de traitement.</p>
+                      <p>{t('remboursementEnCours')}</p>
                     )}
                   </div>
                 )}
@@ -392,7 +395,7 @@ export default function OrderTrackingPage() {
             {/* Order Items */}
             {order.items && order.items.length > 0 && (
               <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Articles commandés</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">{t('articles')}</h2>
 
                 <div className="space-y-3">
                   {order.items.map((item: any) => (
@@ -406,7 +409,7 @@ export default function OrderTrackingPage() {
                           </p>
                         )}
                         <p className="text-gray-900 font-semibold">
-                          {intituleDeLaLigne(item).plat}
+                          {intituleDeLaLigne(item).plat || t('produitSupprime')}
                           {intituleDeLaLigne(item).declinaison && (
                             <span className="text-orange-600">
                               {' '}
@@ -434,7 +437,7 @@ export default function OrderTrackingPage() {
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 sticky top-8 space-y-6">
               {/* Delivery Address */}
               <div>
-                <p className="text-gray-500 text-sm mb-2">Adresse de livraison</p>
+                <p className="text-gray-500 text-sm mb-2">{t('adresseLivraison')}</p>
                 <div className="flex gap-2 text-gray-900">
                   <MapPin size={20} className="text-orange-500 flex-shrink-0 mt-0.5" />
                   <p className="font-semibold">{order.deliveryAddress}</p>
@@ -444,10 +447,10 @@ export default function OrderTrackingPage() {
               {/* ETA */}
               {eta && (
                 <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-orange-800 text-sm mb-1">Temps estimé</p>
+                  <p className="text-orange-800 text-sm mb-1">{t('tempsEstime')}</p>
                   <p className="text-gray-900 text-2xl font-bold flex items-center gap-2">
                     <Clock size={24} />
-                    {eta} min
+                    {t('minutes', { n: eta })}
                   </p>
                 </div>
               )}
@@ -465,7 +468,7 @@ export default function OrderTrackingPage() {
 
               {/* Help */}
               <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-2 rounded-lg transition">
-                Besoin d'aide ?
+                {t('aide')}
               </button>
             </div>
           </div>

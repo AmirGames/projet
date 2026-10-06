@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { Store, Bike, Crown, ShoppingCart } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -18,6 +19,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * - Si multiple rôles OU superowner → affiche un sélecteur visuel
  */
 export default function DashboardPage() {
+  const t = useTranslations('tableauDeBord');
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [roles, setRoles] = useState<any>(null);
@@ -92,7 +94,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-          <p className="text-gray-500">Chargement de votre espace...</p>
+          <p className="text-gray-500">{t('chargement')}</p>
         </div>
       </div>
     );
@@ -102,12 +104,12 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Aucun rôle trouvé</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{t('aucunRole')}</h1>
           <p className="text-gray-500 mb-8">
-            Aucun rôle n'est actif pour votre compte. Les rôles pris en charge sont : commerçant, livreur, client et super administrateur.
+            {t('aucunRoleTexte')}
           </p>
           <Link href="/" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
-            Retour à l'accueil
+            {t('retour')}
           </Link>
         </div>
       </div>
@@ -120,7 +122,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-          <p className="text-gray-500">Redirection vers votre espace...</p>
+          <p className="text-gray-500">{t('redirection')}</p>
         </div>
       </div>
     );
@@ -130,8 +132,8 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#F7F7F6] text-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Bienvenue, {user?.email}</h1>
-          <p className="text-gray-500">Sélectionnez l'espace que vous souhaitez gérer</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">{t('bienvenue', { email: user?.email ?? '' })}</h1>
+          <p className="text-gray-500">{t('selection')}</p>
         </div>
 
         <div className={`grid gap-8 ${activeRolesCount >= 3 ? 'grid-cols-1 md:grid-cols-3' : activeRolesCount === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
@@ -143,12 +145,12 @@ export default function DashboardPage() {
               <div className="flex items-center justify-center w-16 h-16 bg-blue-600 group-hover:bg-blue-700 text-white rounded-lg mb-6 mx-auto transition">
                 <Store size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Mes commerces</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('commerces')}</h2>
               <p className="text-gray-500 text-center mb-6 text-sm">
-                Gérez vos boutiques, produits, commandes et livreurs
+                {t('commercesTexte')}
               </p>
               <div className="flex items-center justify-center gap-2 text-blue-600 group-hover:text-blue-700 font-semibold transition">
-                Accéder aux commerces →
+                {t('commercesLien')}
               </div>
             </Link>
           )}
@@ -161,12 +163,12 @@ export default function DashboardPage() {
               <div className="flex items-center justify-center w-16 h-16 bg-orange-600 group-hover:bg-orange-700 text-white rounded-lg mb-6 mx-auto transition">
                 <Bike size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Mes livraisons</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('livraisons')}</h2>
               <p className="text-gray-500 text-center mb-6 text-sm">
-                Consultez vos courses, revenus et votre historique
+                {t('livraisonsTexte')}
               </p>
               <div className="flex items-center justify-center gap-2 text-orange-600 group-hover:text-orange-700 font-semibold transition">
-                Voir mes courses →
+                {t('livraisonsLien')}
               </div>
             </Link>
           )}
@@ -179,12 +181,12 @@ export default function DashboardPage() {
               <div className="flex items-center justify-center w-16 h-16 bg-green-600 group-hover:bg-green-700 text-white rounded-lg mb-6 mx-auto transition">
                 <ShoppingCart size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Mes commandes</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('commandes')}</h2>
               <p className="text-gray-500 text-center mb-6 text-sm">
-                Consultez vos commandes, favoris et votre profil
+                {t('commandesTexte')}
               </p>
               <div className="flex items-center justify-center gap-2 text-green-600 group-hover:text-green-700 font-semibold transition">
-                Voir mes commandes →
+                {t('commandesLien')}
               </div>
             </Link>
           )}
@@ -197,12 +199,12 @@ export default function DashboardPage() {
               <div className="flex items-center justify-center w-16 h-16 bg-purple-600 group-hover:bg-purple-700 text-white rounded-lg mb-6 mx-auto transition">
                 <Crown size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Administration</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('admin')}</h2>
               <p className="text-gray-500 text-center mb-6 text-sm">
-                Gérez l'ensemble de la plateforme, utilisateurs et paramètres
+                {t('adminTexte')}
               </p>
               <div className="flex items-center justify-center gap-2 text-purple-600 group-hover:text-purple-700 font-semibold transition">
-                Accéder à l'admin →
+                {t('adminLien')}
               </div>
             </Link>
           )}

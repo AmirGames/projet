@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { CreditCard } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -90,6 +90,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function BillingPage() {
   const t = useTranslations('superownerBilling');
+  const locale = useLocale();
   const [billings, setBillings] = useState<BillingData[]>([]);
   const [reversementsDepuis, setReversementsDepuis] = useState<string | null>(null);
   const [summary, setSummary] = useState({ totalRevenue: 0, pendingAmount: 0, activeSubscriptions: 0 });
@@ -135,7 +136,7 @@ export default function BillingPage() {
   }, [offset, fetchBillings]);
 
   const euro = (valeur: number) =>
-    Number(valeur || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+    Number(valeur || 0).toLocaleString(locale, { style: 'currency', currency: 'EUR' });
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
@@ -183,7 +184,7 @@ export default function BillingPage() {
           href="/superowner/zupeat/billing/factures"
           className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-700 underline"
         >
-          Factures Peppol (e-facturation mensuelle) →
+          {t('lienPeppol')}
         </Link>
       </div>
 
@@ -191,10 +192,7 @@ export default function BillingPage() {
           la facturer ici aussi la ferait payer deux fois. */}
       {reversementsDepuis && (
         <div className="p-4 bg-blue-50 text-blue-700 rounded-lg border border-blue-500/20 text-sm">
-          Depuis le {new Date(reversementsDepuis).toLocaleDateString('fr-FR')}, la commission et les frais
-          sont retenus chaque semaine sur les reversements (page Versements SEPA). Cette page ne compte
-          plus que les commandes d&apos;avant cette date. Les montants retenus sont facturés quand même,
-          comme « déjà réglés », sur la facture Peppol mensuelle.
+          {t('retenueDepuis', { date: new Date(reversementsDepuis).toLocaleDateString(locale) })}
         </div>
       )}
 
@@ -260,7 +258,7 @@ export default function BillingPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/50">
+            <tbody className="divide-y divide-gray-100">
               {billings.map((billing) => (
                 <tr
                   key={billing.id}
@@ -302,12 +300,12 @@ export default function BillingPage() {
                         plateforme : le client les a payés au commerçant. */}
                     {(billing.deliveryFeesDue ?? 0) > 0 && (
                       <span className="block text-xs text-amber-700">
-                        + {euro(billing.deliveryFeesDue ?? 0)} de livraison
+                        {t('plusLivraison', { montant: euro(billing.deliveryFeesDue ?? 0) })}
                       </span>
                     )}
                     {(billing.serviceFeesDue ?? 0) > 0 && (
                       <span className="block text-xs text-amber-700">
-                        + {euro(billing.serviceFeesDue ?? 0)} de frais de service
+                        {t('plusService', { montant: euro(billing.serviceFeesDue ?? 0) })}
                       </span>
                     )}
                     {(billing.totalDue ?? 0) > billing.amount && (
@@ -322,7 +320,7 @@ export default function BillingPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(billing.nextBillingDate).toLocaleDateString('fr-FR')}
+                    {new Date(billing.nextBillingDate).toLocaleDateString(locale)}
                   </td>
                 </tr>
               ))}
@@ -345,7 +343,7 @@ export default function BillingPage() {
                     .filter(Boolean)
                     .join(' '),
                   detail.organization.billingCountry,
-                  detail.organization.vatNumber && `TVA ${detail.organization.vatNumber}`,
+                  detail.organization.vatNumber && t('tvaNumero', { numero: detail.organization.vatNumber }),
                 ]
                   .filter(Boolean)
                   .join(' · ') || t('incompleteInvoice')}
@@ -374,17 +372,17 @@ export default function BillingPage() {
               </p>
               {(detail.summary.deliveryFees ?? 0) > 0 && (
                 <p className="text-amber-700">
-                  Livraisons de la plateforme : {euro(detail.summary.deliveryFees ?? 0)}
+                  {t('livraisonsPlateforme', { montant: euro(detail.summary.deliveryFees ?? 0) })}
                 </p>
               )}
               {(detail.summary.serviceFees ?? 0) > 0 && (
                 <p className="text-amber-700">
-                  Frais de service : {euro(detail.summary.serviceFees ?? 0)}
+                  {t('fraisService', { montant: euro(detail.summary.serviceFees ?? 0) })}
                 </p>
               )}
               {(detail.summary.totalDue ?? 0) > detail.summary.commission && (
                 <p className="font-bold text-gray-900">
-                  Total dû : {euro(detail.summary.totalDue ?? 0)}
+                  {t('totalDu', { montant: euro(detail.summary.totalDue ?? 0) })}
                 </p>
               )}
             </div>
@@ -402,9 +400,9 @@ export default function BillingPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                       {t('colOrganization')}
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('date')}</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                      Boutique
+                      {t('boutique')}
                     </th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">
                       {t('total')}
@@ -414,7 +412,7 @@ export default function BillingPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700/50">
+                <tbody className="divide-y divide-gray-100">
                   {detail.orders.map((ligne) => (
                     <tr key={ligne.id} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-4 text-sm text-gray-900">
@@ -422,7 +420,7 @@ export default function BillingPage() {
                         <span className="block text-xs text-gray-500">{ligne.client}</span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(ligne.date).toLocaleString('fr-FR', {
+                        {new Date(ligne.date).toLocaleString(locale, {
                           day: '2-digit',
                           month: '2-digit',
                           hour: '2-digit',
@@ -434,17 +432,17 @@ export default function BillingPage() {
                         {euro(ligne.total)}
                         {ligne.remise > 0 && (
                           <span className="block text-xs text-green-600">
-                            − {euro(ligne.remise)} de {t('discount')}
+                            {t('moinsRemise', { montant: euro(ligne.remise) })}
                           </span>
                         )}
                         {(ligne.livraisonDue ?? 0) > 0 && (
                           <span className="block text-xs text-amber-700">
-                            dont {euro(ligne.livraisonDue ?? 0)} de livraison dus à la plateforme
+                            {t('dontLivraison', { montant: euro(ligne.livraisonDue ?? 0) })}
                           </span>
                         )}
                         {(ligne.serviceDu ?? 0) > 0 && (
                           <span className="block text-xs text-amber-700">
-                            dont {euro(ligne.serviceDu ?? 0)} de frais de service
+                            {t('dontService', { montant: euro(ligne.serviceDu ?? 0) })}
                           </span>
                         )}
                       </td>

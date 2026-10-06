@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Settings, Key, Copy, Save, Database, Webhook, Wrench } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import SelecteurTheme from '@/components/SelecteurTheme';
@@ -45,6 +45,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SystemConfigPage() {
   const t = useTranslations('superownerSystemConfig');
+  const locale = useLocale();
   const [config, setConfig] = useState<Configuration | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -277,10 +278,10 @@ export default function SystemConfigPage() {
             {/* Attribution des courses : ces réglages existaient en base sans
                 aucun écran pour les changer, le rayon restait bloqué à 8 km. */}
             <div className="border-t border-gray-200 pt-4 space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">Livraison et livreurs</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('livraisonLivreurs')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Rayon de recherche des livreurs (km)</label>
+                <label className="block text-sm text-gray-500 mb-2">{t('rayonRecherche')}</label>
                 <input
                   type="number"
                   step="0.5"
@@ -289,10 +290,10 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverMaxRadiusKm: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Distance maximale boutique ↔ livreur pour proposer une course. C&apos;est aussi le rayon de livraison des boutiques qui passent par les livreurs de la plateforme (boutique ↔ client).</p>
+                <p className="text-xs text-gray-500 mt-1">{t('rayonAide')}</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Distance de livraison maximale à vélo (km)</label>
+                <label className="block text-sm text-gray-500 mb-2">{t('veloMaxLabel')}</label>
                 <input
                   type="number"
                   step="0.5"
@@ -301,10 +302,10 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverBikeMaxKm: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Trajet boutique → client. Jamais au-delà du rayon ci-dessus. La voiture suit ce rayon.</p>
+                <p className="text-xs text-gray-500 mt-1">{t('veloMaxAide')}</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Distance de livraison maximale en scooter (km)</label>
+                <label className="block text-sm text-gray-500 mb-2">{t('scooterMaxLabel')}</label>
                 <input
                   type="number"
                   step="0.5"
@@ -313,10 +314,10 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverScooterMaxKm: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Trajet boutique → client. Doit rester supérieure ou égale à celle du vélo.</p>
+                <p className="text-xs text-gray-500 mt-1">{t('scooterMaxAide')}</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Délai avant d'ouvrir une course aux véhicules hors limite (secondes)</label>
+                <label className="block text-sm text-gray-500 mb-2">{t('exceptionLabel')}</label>
                 <input
                   type="number"
                   step="10"
@@ -325,10 +326,10 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverExceptionSeconds: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Une course trop longue pour un vélo ou un scooter leur est proposée, s'ils veulent bien, quand aucun véhicule adapté ne la prend après ce délai (ou tout de suite s'il n'y en a pas).</p>
+                <p className="text-xs text-gray-500 mt-1">{t('exceptionAide')}</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Délai d'acceptation (secondes)</label>
+                <label className="block text-sm text-gray-500 mb-2">{t('delaiAcceptation')}</label>
                 <input
                   type="number"
                   step="1"
@@ -337,10 +338,10 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverOfferSeconds: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Temps laissé au livreur avant de passer au suivant</p>
+                <p className="text-xs text-gray-500 mt-1">{t('delaiAide')}</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Rémunération de base (€)</label>
+                <label className="block text-sm text-gray-500 mb-2">{t('remBase')}</label>
                 <input
                   type="number"
                   step="0.1"
@@ -349,10 +350,10 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverBaseFee: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Montant fixe par course</p>
+                <p className="text-xs text-gray-500 mt-1">{t('remBaseAide')}</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-500 mb-2">Rémunération par km (€)</label>
+                <label className="block text-sm text-gray-500 mb-2">{t('remKm')}</label>
                 <input
                   type="number"
                   step="0.05"
@@ -361,11 +362,11 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverPerKmFee: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Ajouté pour chaque km</p>
+                <p className="text-xs text-gray-500 mt-1">{t('remKmAide')}</p>
               </div>
               <div>
                 <label htmlFor="frais-service" className="block text-sm text-gray-500 mb-2">
-                  Frais de service par commande (€)
+                  {t('fraisService')}
                 </label>
                 <input
                   id="frais-service"
@@ -377,32 +378,26 @@ export default function SystemConfigPage() {
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Ajoutés au total du client, pour la plateforme : jamais au commerçant. 0 les supprime.
+                  {t('fraisServiceAide')}
                 </p>
               </div>
               </div>
               <p className="text-xs text-gray-500">
-                Pour une boutique qui utilise les livreurs de la plateforme, le client paie à la commande
-                base + km × distance boutique → client. La plateforme encaisse ces frais puis les reverse
-                au livreur sur son relevé.
+                {t('fraisLivraisonAide')}
               </p>
             </div>
 
             {/* Plusieurs courses à la fois : les règles vivaient dans le code
                 (tournee.service.ts), sans moyen de les ajuster à la ville. */}
             <div className="border-t border-gray-200 pt-4 space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">Plusieurs courses à la fois</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('plusieursCourses')}</h3>
               <p className="text-xs text-gray-500">
-                Un livreur peut prendre ensemble des commandes qui vont au même endroit : proposées en lot quand
-                elles attendent en même temps, ou ajoutées à sa course quand elles sont sur son trajet. Une
-                commande rejoint les autres si son client est proche d&apos;un autre client ou sur le trajet, et si
-                elle part du même commerce ou d&apos;un commerce sur le trajet. Chaque course reste payée ce qui est
-                annoncé.
+                {t('plusieursAide')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="max-courses" className="block text-sm text-gray-500 mb-2">
-                    Courses par livreur, au plus
+                    {t('maxCourses')}
                   </label>
                   <input
                     id="max-courses"
@@ -416,13 +411,13 @@ export default function SystemConfigPage() {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {formulaire.driverMaxCourses === '1'
-                      ? 'Une seule course à la fois : aucun regroupement.'
-                      : 'De 1 à 5. 1 désactive le regroupement.'}
+                      ? t('uneSeule')
+                      : t('deUnACinq')}
                   </p>
                 </div>
                 <div>
                   <label htmlFor="rayon-clients" className="block text-sm text-gray-500 mb-2">
-                    Clients au même endroit (km)
+                    {t('clientsProches')}
                   </label>
                   <input
                     id="rayon-clients"
@@ -434,11 +429,11 @@ export default function SystemConfigPage() {
                     onChange={(e) => setFormulaire({ ...formulaire, driverGroupClientKm: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Distance maximale entre deux clients d&apos;une même tournée</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('clientsAide')}</p>
                 </div>
                 <div>
                   <label htmlFor="detour-max" className="block text-sm text-gray-500 mb-2">
-                    Détour accepté (km)
+                    {t('detour')}
                   </label>
                   <input
                     id="detour-max"
@@ -451,7 +446,7 @@ export default function SystemConfigPage() {
                     className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Ce qu&apos;une course de plus peut rallonger la tournée (« sur le trajet »)
+                    {t('detourAide')}
                   </p>
                 </div>
               </div>
@@ -539,7 +534,7 @@ export default function SystemConfigPage() {
             {nouvelleCle && (
               <div className="bg-green-100 border border-green-500/30 rounded-lg p-4">
                 <p className="text-sm text-green-600 mb-2">
-                  Copiez cette clé maintenant : elle ne sera plus jamais affichée.
+                  {t('copiezCle')}
                 </p>
                 <div className="flex gap-2">
                   <code className="flex-1 px-3 py-2 bg-white ring-1 ring-gray-200 rounded text-green-700 text-sm break-all">
@@ -548,7 +543,7 @@ export default function SystemConfigPage() {
                   <button
                     onClick={() => navigator.clipboard?.writeText(nouvelleCle)}
                     className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
-                    title="Copier"
+                    title={t('copier')}
                   >
                     <Copy size={16} />
                   </button>
@@ -557,11 +552,11 @@ export default function SystemConfigPage() {
             )}
 
             <div className="bg-gray-50 border border-gray-200/50 rounded-lg p-4 space-y-3">
-              <label className="block text-sm text-gray-500">Nouvelle clé</label>
+              <label className="block text-sm text-gray-500">{t('nouvelleCle')}</label>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Nom de la clé (ex : Production)"
+                  placeholder={t('nomCle')}
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
                   className="flex-1 px-4 py-2 bg-gray-200 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 text-sm"
@@ -571,7 +566,7 @@ export default function SystemConfigPage() {
                   disabled={creating}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition font-medium text-sm"
                 >
-                  {creating ? 'Génération...' : 'Générer'}
+                  {creating ? t('generation') : t('generer')}
                 </button>
               </div>
             </div>
@@ -586,8 +581,8 @@ export default function SystemConfigPage() {
                     </div>
                     <span className="text-xs text-gray-500 flex-shrink-0">
                       {cle.lastUsedAt
-                        ? `Utilisée le ${new Date(cle.lastUsedAt).toLocaleDateString('fr-FR')}`
-                        : 'Jamais utilisée'}
+                        ? t('utiliseeLe', { date: new Date(cle.lastUsedAt).toLocaleDateString(locale) })
+                        : t('jamaisUtilisee')}
                     </span>
                   </div>
                 ))}

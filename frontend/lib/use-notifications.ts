@@ -2,6 +2,7 @@ import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import { useState, useEffect, useCallback } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -16,6 +17,7 @@ interface Notification {
 }
 
 export function useNotifications() {
+  const t = useTranslations('notificationsHook');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -37,22 +39,22 @@ export function useNotifications() {
         setNotifications(data.data);
         setUnreadCount(data.unreadCount);
       } else if (response.status >= 500) {
-        setError('Erreur serveur : impossible de charger les notifications.');
+        setError(t('serveurCharger'));
         signalerErreur('Server error fetching notifications:', response.status);
       } else {
-        setError('Erreur : impossible de charger les notifications.');
+        setError(t('charger'));
       }
     } catch (err) {
       signalerErreur('Error fetching notifications:', err);
       if (estErreurReseau(err)) {
-        setError('Erreur réseau : vérifiez votre connexion.');
+        setError(t('reseau'));
       } else {
-        setError('Erreur : impossible de charger les notifications.');
+        setError(t('charger'));
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     const token = localStorage.getItem('accessToken');
@@ -65,7 +67,7 @@ export function useNotifications() {
       });
 
       if (!response.ok && response.status >= 500) {
-        setError('Erreur serveur : impossible de marquer comme lu.');
+        setError(t('serveurLu'));
       }
 
       setNotifications((prev) =>
@@ -75,10 +77,10 @@ export function useNotifications() {
     } catch (err) {
       signalerErreur('Error marking notification as read:', err);
       if (estErreurReseau(err)) {
-        setError('Erreur réseau : impossible de marquer comme lu.');
+        setError(t('reseauLu'));
       }
     }
-  }, []);
+  }, [t]);
 
   const markAllAsRead = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -91,7 +93,7 @@ export function useNotifications() {
       });
 
       if (!response.ok && response.status >= 500) {
-        setError('Erreur serveur : impossible de marquer tous comme lus.');
+        setError(t('serveurTous'));
       }
 
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
@@ -99,10 +101,10 @@ export function useNotifications() {
     } catch (err) {
       signalerErreur('Error marking all as read:', err);
       if (estErreurReseau(err)) {
-        setError('Erreur réseau : impossible de marquer tous comme lus.');
+        setError(t('reseauTous'));
       }
     }
-  }, []);
+  }, [t]);
 
   // Le serveur pousse les nouvelles notifications : sans cela il fallait
   // recharger la page pour les voir apparaître sur la cloche.

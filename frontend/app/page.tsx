@@ -6,8 +6,10 @@ import { accueilDe } from '@/lib/domaines';
 import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
 import { useEffectChargement } from "@/lib/use-effect-chargement";
+import { useTranslations } from 'next-intl';
 
 export default function Home() {
+  const t = useTranslations('accueilPro');
   const { user, isLoading } = useAuth();
   const [roles, setRoles] = useState<any>(null);
   const [rolesLoading, setRolesLoading] = useState(true);
@@ -53,29 +55,29 @@ export default function Home() {
 
         <nav className="hidden items-center gap-8 md:flex">
           <Link href={accueilDe('public')} className="font-semibold text-slate-900 transition hover:text-primary">
-            Commerces
+            {t('commerces')}
           </Link>
 
           {!user || (!isMerchant && !rolesLoading) ? (
             <Link href="/devenir-commercant" className="font-semibold text-slate-900 transition hover:text-primary">
-              Devenir commerçant
+              {t('devenirCommercant')}
             </Link>
           ) : null}
 
           {!user || (!isDriver && !rolesLoading) ? (
             <Link href="/devenir-livreur" className="font-semibold text-slate-900 transition hover:text-primary">
-              Devenir livreur
+              {t('devenirLivreur')}
             </Link>
           ) : null}
 
           <Link href="/devenir-chauffeur" className="font-semibold text-slate-900 transition hover:text-primary">
-            Devenir chauffeur
-            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">Bientôt disponible</span>
+            {t('devenirChauffeur')}
+            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">{t('bientot')}</span>
           </Link>
 
           {!user ? (
             <Link href="/login" className="font-semibold text-slate-900 transition hover:text-primary">
-              Connexion
+              {t('connexion')}
             </Link>
           ) : null}
         </nav>
@@ -85,14 +87,14 @@ export default function Home() {
             href="/signup"
             className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:bg-accent-hover md:px-6 md:py-3 md:text-base"
           >
-            Créer ma boutique
+            {t('creerBoutique')}
           </Link>
         ) : (
           <Link
             href="/dashboard"
             className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:bg-accent-hover md:px-6 md:py-3 md:text-base"
           >
-            Mon espace
+            {t('monEspace')}
           </Link>
         )}
       </header>
@@ -100,16 +102,15 @@ export default function Home() {
       {/* HERO */}
       <section className="bg-gradient-to-b from-white to-slate-100 px-6 py-20 text-center md:py-32">
         <span className="mb-6 inline-block rounded-full bg-blue-100 px-4 py-2.5 font-bold text-primary">
-          Fait pour les commerces de proximité
+          {t('badge')}
         </span>
 
         <h1 className="mx-auto mb-5 max-w-4xl text-4xl font-black leading-tight md:text-6xl">
-          Votre commerce, en ligne, sans intermédiaire encombrant
+          {t('titre')}
         </h1>
 
         <p className="mx-auto max-w-2xl text-lg text-slate-500 md:text-xl">
-          Catalogue, commandes et livraison réunis dans un seul outil. Vos clients
-          commandent sans créer de compte, vos livreurs suivent la course en direct.
+          {t('intro')}
         </p>
 
         <div className="mt-9 flex flex-wrap justify-center gap-4">
@@ -117,13 +118,13 @@ export default function Home() {
             href="/signup"
             className="rounded-full bg-accent px-8 py-4 font-bold text-white transition hover:bg-accent-hover"
           >
-            Créer ma boutique gratuitement
+            {t('creerGratuit')}
           </Link>
           <Link
             href={accueilDe('public')}
             className="rounded-full border border-slate-200 bg-white px-8 py-4 font-bold text-slate-900 transition hover:border-slate-300"
           >
-            Voir les commerces
+            {t('voirCommerces')}
           </Link>
         </div>
       </section>
@@ -132,52 +133,48 @@ export default function Home() {
       <section className="grid grid-cols-1 gap-8 bg-white px-6 py-16 md:grid-cols-2 lg:grid-cols-4 md:px-10 md:py-24">
         <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
           <div className="mb-4 text-4xl">🛍️</div>
-          <h2 className="mb-2 text-xl font-bold">Pour les clients</h2>
+          <h2 className="mb-2 text-xl font-bold">{t('clientsTitre')}</h2>
           <p className="mb-4 text-slate-500">
-            Une vitrine claire par commerce, un panier par boutique, et une commande
-            possible sans créer de compte.
+            {t('clientsTexte')}
           </p>
           <Link href={accueilDe('public')} className="font-bold text-primary">
-            Parcourir les commerces →
+            {t('clientsLien')}
           </Link>
         </div>
 
         <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
           <div className="mb-4 text-4xl">🏪</div>
-          <h2 className="mb-2 text-xl font-bold">Pour les commerçants</h2>
+          <h2 className="mb-2 text-xl font-bold">{t('commercantsTitre')}</h2>
           <p className="mb-4 text-slate-500">
-            Catalogue, horaires par service, zones de livraison réglées sur une
-            carte, et le suivi de chaque commande.
+            {t('commercantsTexte')}
           </p>
           <Link href="/devenir-commercant" className="font-bold text-primary">
-            Ouvrir ma boutique →
+            {t('commercantsLien')}
           </Link>
         </div>
 
         <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
           <div className="mb-4 text-4xl">🛵</div>
-          <h2 className="mb-2 text-xl font-bold">Pour les livreurs</h2>
+          <h2 className="mb-2 text-xl font-bold">{t('livreursTitre')}</h2>
           <p className="mb-4 text-slate-500">
-            Un dossier examiné une fois, puis des courses proposées au plus proche
-            disponible, avec une rémunération calculée.
+            {t('livreursTexte')}
           </p>
           <Link href="/devenir-livreur" className="font-bold text-primary">
-            Devenir livreur →
+            {t('livreursLien')}
           </Link>
         </div>
 
         <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-4xl">🚘</span>
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">Bientôt disponible</span>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">{t('bientot')}</span>
           </div>
-          <h2 className="mb-2 text-xl font-bold">Pour les chauffeurs VTC</h2>
+          <h2 className="mb-2 text-xl font-bold">{t('chauffeursTitre')}</h2>
           <p className="mb-4 text-slate-500">
-            Le transport de personnes arrive bientôt. Chauffeurs VTC, faites-vous
-            connaître pour être parmi les premiers.
+            {t('chauffeursTexte')}
           </p>
           <Link href="/devenir-chauffeur" className="font-bold text-primary">
-            Devenir chauffeur →
+            {t('chauffeursLien')}
           </Link>
         </div>
       </section>
@@ -186,46 +183,43 @@ export default function Home() {
       <section className="flex flex-col justify-center gap-10 bg-slate-50 px-6 py-16 md:flex-row md:gap-24 md:py-20">
         <div className="text-center">
           <h3 className="text-4xl font-extrabold text-primary md:text-5xl">3</h3>
-          <p className="text-slate-500">espaces dédiés : client, commerçant, livreur</p>
+          <p className="text-slate-500">{t('stat1')}</p>
         </div>
         <div className="text-center">
           <h3 className="text-4xl font-extrabold text-primary md:text-5xl">83</h3>
-          <p className="text-slate-500">pages déjà construites côté site</p>
+          <p className="text-slate-500">{t('stat2')}</p>
         </div>
         <div className="text-center">
           <h3 className="text-4xl font-extrabold text-primary md:text-5xl">1978</h3>
-          <p className="text-slate-500">contrôles automatisés, API et navigateur</p>
+          <p className="text-slate-500">{t('stat3')}</p>
         </div>
       </section>
 
       {/* HOW IT WORKS */}
       <section className="px-6 py-20 md:px-10 md:py-24">
         <h2 className="mb-12 text-center text-3xl font-black md:text-4xl">
-          Comment ça marche
+          {t('comment')}
         </h2>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="rounded-3xl border border-slate-200 p-8">
             <span className="text-2xl font-extrabold text-primary">01</span>
-            <h3 className="my-3 text-lg font-bold">Le client choisit</h3>
+            <h3 className="my-3 text-lg font-bold">{t('etape1Titre')}</h3>
             <p className="text-slate-500">
-              Il parcourt les commerces, consulte le menu et commande, avec ou sans
-              compte.
+              {t('etape1')}
             </p>
           </div>
           <div className="rounded-3xl border border-slate-200 p-8">
             <span className="text-2xl font-extrabold text-primary">02</span>
-            <h3 className="my-3 text-lg font-bold">Le commerçant prépare</h3>
+            <h3 className="my-3 text-lg font-bold">{t('etape2Titre')}</h3>
             <p className="text-slate-500">
-              La commande arrive en direct, il suit son état jusqu'à la remise au
-              livreur.
+              {t('etape2')}
             </p>
           </div>
           <div className="rounded-3xl border border-slate-200 p-8">
             <span className="text-2xl font-extrabold text-primary">03</span>
-            <h3 className="my-3 text-lg font-bold">Le livreur livre</h3>
+            <h3 className="my-3 text-lg font-bold">{t('etape3Titre')}</h3>
             <p className="text-slate-500">
-              La course lui est proposée automatiquement, et un code à quatre
-              chiffres prouve la remise.
+              {t('etape3')}
             </p>
           </div>
         </div>
@@ -235,17 +229,16 @@ export default function Home() {
       <section className="bg-blue-50 px-6 py-24 text-center md:py-32">
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-5 text-3xl font-black md:text-5xl">
-            Vous tenez un commerce local ?
+            {t('ctaTitre')}
           </h2>
           <p className="mb-8 text-slate-500">
-            Restaurant, boulangerie, épicerie, fleuriste — créez votre boutique en
-            quelques minutes et gardez la main sur votre catalogue et vos prix.
+            {t('ctaTexte')}
           </p>
           <Link
             href="/devenir-commercant"
             className="inline-block rounded-full bg-accent px-8 py-4 font-bold text-white transition hover:bg-accent-hover"
           >
-            Créer ma boutique
+            {t('creerBoutique')}
           </Link>
         </div>
       </section>

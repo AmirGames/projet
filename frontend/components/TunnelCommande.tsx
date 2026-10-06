@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import Link from '@/components/LienRegional';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
@@ -114,6 +115,7 @@ export function TunnelCommande({
   surCommandePassee,
   ouverteMaintenant,
 }: Props) {
+  const t = useTranslations('tunnelCommande');
   const livraisonFermee = ouverteMaintenant === false;
   const { user } = useAuth();
   const [livraison, setLivraison] = useState<Livraison | null>(null);
@@ -434,7 +436,7 @@ export function TunnelCommande({
 
       if (!reponse.ok) {
         setRemise(null);
-        setCodeRefuse(lu?.error || "Ce code promo n'est pas valable");
+        setCodeRefuse(lu?.error || t('codeInvalide'));
         return;
       }
 
@@ -442,13 +444,13 @@ export function TunnelCommande({
 
       if (!(montant > 0)) {
         setRemise(null);
-        setCodeRefuse("Ce code n'accorde aucune remise sur ce panier");
+        setCodeRefuse(t('codeSansRemise'));
         return;
       }
 
       setRemise({ code: saisi, montant });
     } catch {
-      setCodeRefuse('Vérification impossible pour le moment');
+      setCodeRefuse(t('verificationImpossible'));
     } finally {
       setCodeEnCours(false);
     }
@@ -464,7 +466,7 @@ export function TunnelCommande({
     setCheckoutError('');
 
     if (!checkoutForm.customerName || !checkoutForm.customerEmail || !checkoutForm.customerPhone) {
-      setCheckoutError('Veuillez remplir tous les champs obligatoires');
+      setCheckoutError(t('champsObligatoires'));
       setContactOuvert(true);
       return;
     }
@@ -473,18 +475,18 @@ export function TunnelCommande({
       checkoutForm.deliveryType === 'DELIVERY' &&
       (!checkoutForm.deliveryAddress || !checkoutForm.deliveryCity)
     ) {
-      setCheckoutError("Veuillez remplir l'adresse de livraison");
+      setCheckoutError(t('adresseManquante'));
       setAdresseOuverte(true);
       return;
     }
 
     if (checkoutForm.deliveryType === 'PICKUP' && !checkoutForm.pickupTime) {
-      setCheckoutError('Veuillez sélectionner une heure de retrait');
+      setCheckoutError(t('heureManquante'));
       return;
     }
 
     if (lignes.length === 0) {
-      setCheckoutError('Votre panier est vide');
+      setCheckoutError(t('panierVide'));
       return;
     }
 
@@ -550,7 +552,7 @@ export function TunnelCommande({
 
       if (!response.ok) {
         const erreur = await response.json().catch(() => null);
-        setCheckoutError(erreur?.error || 'Erreur lors de la création de la commande');
+        setCheckoutError(erreur?.error || t('erreurCreation'));
         return;
       }
 
@@ -583,7 +585,7 @@ export function TunnelCommande({
       surCommandePassee(commande);
     } catch (error) {
       signalerErreur('Checkout error:', error);
-      setCheckoutError('Erreur de connexion. Veuillez réessayer.');
+      setCheckoutError(t('erreurConnexion'));
     } finally {
       setSubmitting(false);
     }
@@ -620,7 +622,7 @@ export function TunnelCommande({
 
   const delai = enAttente ? (
     <DelaiAnnulation
-      lieu={enLivraison ? checkoutForm.deliveryAddress || 'Livraison' : `Retrait chez ${boutique.name}`}
+      lieu={enLivraison ? checkoutForm.deliveryAddress || t('livraison') : t('retraitChez', { boutique: boutique.name })}
       precisionLieu={
         enLivraison
           ? [checkoutForm.deliveryPostal, checkoutForm.deliveryCity].filter(Boolean).join(' ')
@@ -629,11 +631,11 @@ export function TunnelCommande({
       horaire={
         enLivraison
           ? livraison?.zone?.deliveryMinutes
-            ? `Livraison : environ ${livraison.zone.deliveryMinutes} minutes`
-            : 'Livraison dès que possible'
+            ? t('livraisonEnviron', { minutes: livraison.zone.deliveryMinutes })
+            : t('livraisonDesQuePossible')
           : checkoutForm.pickupTime
-            ? `Retrait : ${libelleDuCreneau(checkoutForm.pickupTime)}`
-            : 'Retrait'
+            ? t('retraitA', { creneau: libelleDuCreneau(checkoutForm.pickupTime) })
+            : t('retrait')
       }
       boutique={boutique.name}
       lignes={lignes}
@@ -653,10 +655,9 @@ export function TunnelCommande({
     return (
       <div className={`${carte} max-w-xl mx-auto p-6 space-y-4`}>
         {delai}
-        <h3 className="font-bold text-lg">Paiement en ligne</h3>
+        <h3 className="font-bold text-lg">{t('paiementEnLigne')}</h3>
         <p className="text-sm text-gray-500">
-          Commande n° {aPayer.numero} — {euro(aPayer.montant)}. Elle sera transmise à{' '}
-          {boutique.name} dès le paiement accepté.
+          {t('paiementAide', { numero: aPayer.numero, montant: euro(aPayer.montant), boutique: boutique.name })}
         </p>
         <StripePayment
           orderId={aPayer.id}
@@ -679,7 +680,7 @@ export function TunnelCommande({
       <div className="space-y-6 min-w-0">
         <section className={`${carte} p-6`}>
           <h2 className="text-xl font-bold mb-2">
-            {enLivraison ? 'Détails de la livraison' : 'Détails du retrait'}
+            {enLivraison ? t('detailsLivraison') : t('detailsRetrait')}
           </h2>
 
           {/* L'adresse, ou la boutique où passer prendre la commande. */}
@@ -690,14 +691,14 @@ export function TunnelCommande({
                   <MapPin size={22} className="text-gray-700 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold truncate">
-                      {checkoutForm.deliveryAddress || 'Adresse de livraison'}
+                      {checkoutForm.deliveryAddress || t('adresseLivraison')}
                     </p>
                     <p className="text-sm text-gray-500 truncate">
                       {adresseComplete
                         ? [checkoutForm.deliveryPostal, checkoutForm.deliveryCity]
                             .filter(Boolean)
                             .join(' ')
-                        : 'Où devons-nous livrer ?'}
+                        : t('ouLivrer')}
                     </p>
                   </div>
                   {!adresseOuverte && (
@@ -706,7 +707,7 @@ export function TunnelCommande({
                       onClick={() => setAdresseOuverte(true)}
                       className={boutonModifier}
                     >
-                      Modifier
+                      {t('modifier')}
                     </button>
                   )}
                 </div>
@@ -718,7 +719,7 @@ export function TunnelCommande({
                         htmlFor="livraison-adresse"
                         className="text-sm text-gray-500 block mb-2"
                       >
-                        Adresse *
+                        {t('adresse')} *
                       </label>
                       <AddressAutocomplete
                         clair
@@ -748,7 +749,7 @@ export function TunnelCommande({
                           })
                         }
                         className={champ}
-                        placeholder="123 rue de la Paix"
+                        placeholder={t('exempleAdresse')}
                       />
                     </div>
 
@@ -758,7 +759,7 @@ export function TunnelCommande({
                           htmlFor="livraison-ville"
                           className="text-sm text-gray-500 block mb-2"
                         >
-                          Ville *
+                          {t('ville')} *
                         </label>
                         <input
                           id="livraison-ville"
@@ -768,7 +769,7 @@ export function TunnelCommande({
                             setCheckoutForm({ ...checkoutForm, deliveryCity: e.target.value })
                           }
                           className={champ}
-                          placeholder="Paris"
+                          placeholder={t('exempleVille')}
                         />
                       </div>
 
@@ -777,7 +778,7 @@ export function TunnelCommande({
                           htmlFor="livraison-code-postal"
                           className="text-sm text-gray-500 block mb-2"
                         >
-                          Code postal
+                          {t('codePostal')}
                         </label>
                         <input
                           id="livraison-code-postal"
@@ -799,7 +800,7 @@ export function TunnelCommande({
                         onClick={() => setAdresseOuverte(false)}
                         className={boutonModifier}
                       >
-                        Valider l&apos;adresse
+                        {t('validerAdresse')}
                       </button>
                     )}
                   </div>
@@ -822,25 +823,24 @@ export function TunnelCommande({
                     ) : (
                       <>
                         <p className="font-semibold">
-                          Zone « {livraison.zone?.name} »
+                          {t('zone', { nom: livraison.zone?.name ?? '' })}
                           {livraison.distanceKm !== null && ` — ${livraison.distanceKm} km`}
                         </p>
                         <p>
-                          Livraison {livraisonOfferte ? 'offerte' : euro(livraison.frais)}
+                          {livraisonOfferte ? t('livraisonOfferte') : t('livraisonA', { frais: euro(livraison.frais) })}
                           {livraison.zone?.deliveryMinutes
-                            ? `, environ ${livraison.zone.deliveryMinutes} min`
+                            ? t('environMinutes', { minutes: livraison.zone.deliveryMinutes })
                             : ''}
-                          {livraison.minimum > 0 && ` — minimum ${euro(livraison.minimum)}`}
+                          {livraison.minimum > 0 && t('minimumZone', { minimum: euro(livraison.minimum) })}
                         </p>
                         {manquePourOfferte > 0 && (
                           <p className="mt-1 text-green-700">
-                            Encore {euro(manquePourOfferte)} pour la livraison offerte.
+                            {t('encorePourOfferte', { montant: euro(manquePourOfferte) })}
                           </p>
                         )}
                         {sousTotal < livraison.minimum && (
                           <p className="mt-1">
-                            Il vous manque {euro(livraison.minimum - sousTotal)} pour atteindre
-                            le minimum de cette zone.
+                            {t('manquePourMinimum', { montant: euro(livraison.minimum - sousTotal) })}
                           </p>
                         )}
                       </>
@@ -852,9 +852,9 @@ export function TunnelCommande({
               <div className="flex items-center gap-4">
                 <IconeBoutique size={22} className="text-gray-700 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">Retrait chez {boutique.name}</p>
+                  <p className="font-semibold truncate">{t('retraitChez', { boutique: boutique.name })}</p>
                   <p className="text-sm text-gray-500 truncate">
-                    {adresseBoutique || 'À la boutique'}
+                    {adresseBoutique || t('aLaBoutique')}
                   </p>
                 </div>
               </div>
@@ -867,12 +867,12 @@ export function TunnelCommande({
               <User size={22} className="text-gray-700 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">
-                  {checkoutForm.customerName || 'Vos informations'}
+                  {checkoutForm.customerName || t('vosInformations')}
                 </p>
                 <p className="text-sm text-gray-500 truncate">
                   {contactComplet
                     ? `${checkoutForm.customerEmail} · ${checkoutForm.customerPhone}`
-                    : 'Nom, e-mail et téléphone pour vous tenir informé'}
+                    : t('vosInformationsAide')}
                 </p>
               </div>
               {!contactOuvert && (
@@ -881,7 +881,7 @@ export function TunnelCommande({
                   onClick={() => setContactOuvert(true)}
                   className={boutonModifier}
                 >
-                  Modifier
+                  {t('modifier')}
                 </button>
               )}
             </div>
@@ -890,7 +890,7 @@ export function TunnelCommande({
               <div className="mt-4 space-y-4">
                 <div>
                   <label htmlFor="client-nom" className="text-sm text-gray-500 block mb-2">
-                    Nom complet *
+                    {t('nomComplet')} *
                   </label>
                   <input
                     id="client-nom"
@@ -900,14 +900,14 @@ export function TunnelCommande({
                       setCheckoutForm({ ...checkoutForm, customerName: e.target.value })
                     }
                     className={champ}
-                    placeholder="Jean Dupont"
+                    placeholder={t('exempleNom')}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="client-email" className="text-sm text-gray-500 block mb-2">
-                      Email *
+                      {t('email')} *
                     </label>
                     <input
                       id="client-email"
@@ -917,7 +917,7 @@ export function TunnelCommande({
                         setCheckoutForm({ ...checkoutForm, customerEmail: e.target.value })
                       }
                       className={champ}
-                      placeholder="jean@example.com"
+                      placeholder={t('exempleEmail')}
                     />
                   </div>
 
@@ -926,7 +926,7 @@ export function TunnelCommande({
                       htmlFor="client-telephone"
                       className="text-sm text-gray-500 block mb-2"
                     >
-                      Téléphone *
+                      {t('telephone')} *
                     </label>
                     <input
                       id="client-telephone"
@@ -947,7 +947,7 @@ export function TunnelCommande({
                     onClick={() => setContactOuvert(false)}
                     className={boutonModifier}
                   >
-                    Valider
+                    {t('valider')}
                   </button>
                 )}
               </div>
@@ -959,12 +959,12 @@ export function TunnelCommande({
             <div className="flex items-center gap-4">
               <MessageSquare size={22} className="text-gray-700 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">Instructions</p>
+                <p className="font-semibold">{t('instructions')}</p>
                 <p className="text-sm text-gray-500 truncate">
                   {checkoutForm.notes ||
                     (enLivraison
-                      ? 'Étage, code d’entrée, allergies…'
-                      : 'Allergies, précisions pour la boutique…')}
+                      ? t('instructionsLivraison')
+                      : t('instructionsRetrait'))}
                 </p>
               </div>
               {!notesOuvertes && (
@@ -973,7 +973,7 @@ export function TunnelCommande({
                   onClick={() => setNotesOuvertes(true)}
                   className={boutonModifier}
                 >
-                  {checkoutForm.notes ? 'Modifier' : 'Ajouter'}
+                  {checkoutForm.notes ? t('modifier') : t('ajouter')}
                 </button>
               )}
             </div>
@@ -981,25 +981,25 @@ export function TunnelCommande({
             {notesOuvertes && (
               <div className="mt-4 space-y-3">
                 <textarea
-                  aria-label="Instructions"
+                  aria-label={t('instructions')}
                   value={checkoutForm.notes}
                   onChange={(e) => setCheckoutForm({ ...checkoutForm, notes: e.target.value })}
                   className={`${champ} h-20`}
-                  placeholder="Instructions spéciales, allergies, etc..."
+                  placeholder={t('instructionsExemple')}
                 />
                 <button
                   type="button"
                   onClick={() => setNotesOuvertes(false)}
                   className={boutonModifier}
                 >
-                  Valider
+                  {t('valider')}
                 </button>
               </div>
             )}
           </div>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Options de livraison</h2>
-          <div className="space-y-3" role="radiogroup" aria-label="Mode de livraison">
+          <h2 className="text-xl font-bold mt-8 mb-4">{t('optionsLivraison')}</h2>
+          <div className="space-y-3" role="radiogroup" aria-label={t('modeLivraison')}>
             <label
               className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 transition-colors ${
                 enLivraison ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-300'
@@ -1020,18 +1020,18 @@ export function TunnelCommande({
               />
               <Bike size={24} className="text-green-600 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">Livraison</p>
+                <p className="font-semibold">{t('livraison')}</p>
                 <p className="text-sm text-gray-500">
                   {livraisonFermee
-                    ? 'Indisponible : la boutique est fermée pour le moment'
+                    ? t('livraisonFermee')
                     : livraison?.livrable && livraison.zone?.deliveryMinutes
-                      ? `Environ ${livraison.zone.deliveryMinutes} minutes · Livré chez vous`
-                      : 'Livré chez vous'}
+                      ? t('livreChezVousEnviron', { minutes: livraison.zone.deliveryMinutes })
+                      : t('livreChezVous')}
                 </p>
               </div>
               {livraison?.livrable && (
                 <span className="text-sm text-gray-700 whitespace-nowrap">
-                  {livraison.frais > 0 && !livraisonOfferte ? `+${euro(livraison.frais)}` : 'Offerte'}
+                  {livraison.frais > 0 && !livraisonOfferte ? `+${euro(livraison.frais)}` : t('offerte')}
                 </span>
               )}
             </label>
@@ -1051,9 +1051,9 @@ export function TunnelCommande({
               />
               <CalendarClock size={24} className="text-gray-700 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">Retrait sur place</p>
+                <p className="font-semibold">{t('retraitSurPlace')}</p>
                 <p className="text-sm text-gray-500">
-                  Choisissez une heure et passez la récupérer
+                  {t('retraitSurPlaceAide')}
                 </p>
               </div>
             </label>
@@ -1064,13 +1064,12 @@ export function TunnelCommande({
           {!enLivraison && (
             <div className="mt-4">
               <label htmlFor="creneau" className="text-sm text-gray-500 block mb-2">
-                Heure de retrait *
+                {t('heureRetrait')} *
               </label>
 
               {creneaux.length === 0 ? (
                 <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  Aucun créneau de retrait disponible pour les prochains jours. Choisissez la
-                  livraison, ou revenez plus tard.
+                  {t('aucunCreneau')}
                 </p>
               ) : (
                 <select
@@ -1079,7 +1078,7 @@ export function TunnelCommande({
                   onChange={(e) => setCheckoutForm({ ...checkoutForm, pickupTime: e.target.value })}
                   className={champ}
                 >
-                  <option value="">Choisir un créneau</option>
+                  <option value="">{t('choisirCreneau')}</option>
                   {creneaux.map((jour) => (
                     <optgroup key={jour.date} label={jour.libelle}>
                       {jour.creneaux.map((creneau) => (
@@ -1099,8 +1098,8 @@ export function TunnelCommande({
             qu'aucun écran ne les montre au client. */}
         {moyens.length > 0 && (
           <section className={`${carte} p-6`}>
-            <h2 className="text-xl font-bold mb-4">Moyen de paiement</h2>
-            <div className="space-y-3" role="radiogroup" aria-label="Moyen de paiement">
+            <h2 className="text-xl font-bold mb-4">{t('moyenPaiement')}</h2>
+            <div className="space-y-3" role="radiogroup" aria-label={t('moyenPaiement')}>
               {moyens.map((moyen) => (
                 <label
                   key={moyen.id}
@@ -1152,7 +1151,7 @@ export function TunnelCommande({
           >
             <ShoppingCart size={22} className="text-gray-700 shrink-0" />
             <span className="flex-1 font-semibold">
-              Récapitulatif du panier ({articles} article{articles > 1 ? 's' : ''})
+              {t('recapitulatif', { n: articles })}
             </span>
             <ChevronDown
               size={20}
@@ -1190,19 +1189,19 @@ export function TunnelCommande({
 
         {/* Le code promo, derrière son lien comme le reste des options. */}
         <div className="border-t-8 border-white px-6 py-5">
-          <h3 className="text-lg font-bold mb-3">Promotion</h3>
+          <h3 className="text-lg font-bold mb-3">{t('promotion')}</h3>
 
           {remise ? (
             <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
               <span>
-                Code « {remise.code} » appliqué — {euro(remise.montant)} de remise
+                {t('codeApplique', { code: remise.code, montant: euro(remise.montant) })}
               </span>
               <button
                 type="button"
                 onClick={retirerLeCode}
                 className="text-green-700 underline hover:text-green-800"
               >
-                Retirer
+                {t('retirer')}
               </button>
             </div>
           ) : promoOuverte ? (
@@ -1210,7 +1209,7 @@ export function TunnelCommande({
               <input
                 id="code-promo"
                 type="text"
-                aria-label="Code promotionnel"
+                aria-label={t('codePromo')}
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 onKeyDown={(e) => {
@@ -1226,7 +1225,7 @@ export function TunnelCommande({
                 disabled={codeEnCours || code.trim().length === 0}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
               >
-                {codeEnCours ? 'Vérification…' : 'Appliquer'}
+                {codeEnCours ? t('verification') : t('appliquer')}
               </button>
             </div>
           ) : (
@@ -1236,7 +1235,7 @@ export function TunnelCommande({
               className="w-full flex items-center gap-4 text-left hover:text-gray-900 text-gray-800"
             >
               <Tag size={20} className="text-gray-700 shrink-0" />
-              <span className="flex-1 font-semibold">Ajouter un code promotionnel</span>
+              <span className="flex-1 font-semibold">{t('ajouterCode')}</span>
               <ChevronRight size={20} className="text-gray-500" />
             </button>
           )}
@@ -1250,45 +1249,45 @@ export function TunnelCommande({
 
         {/* Le total, puis le bouton : on sait ce qu'on paie avant de cliquer. */}
         <div className="border-t-8 border-white px-6 py-5 space-y-3">
-          <h3 className="text-lg font-bold">Total de la commande</h3>
+          <h3 className="text-lg font-bold">{t('totalCommande')}</h3>
           <div className="flex justify-between text-gray-700">
-            <span>Sous-total</span>
+            <span>{t('sousTotal')}</span>
             <span>{euro(sousTotal)}</span>
           </div>
           {fraisDeService > 0 && (
             <div className="flex justify-between text-gray-700">
-              <span>Frais de service</span>
+              <span>{t('fraisService')}</span>
               <span>{euro(fraisDeService)}</span>
             </div>
           )}
           <div className="flex justify-between text-gray-700">
             <span>
-              Livraison
+              {t('livraison')}
               {enLivraison && livraison?.zone ? ` — ${livraison.zone.name}` : ''}
             </span>
-            <span>{enLivraison ? euro(fraisDeLivraison) : 'Retrait sur place'}</span>
+            <span>{enLivraison ? euro(fraisDeLivraison) : t('retraitSurPlace')}</span>
           </div>
           {remise && (
             <div className="flex justify-between text-green-700">
-              <span>Remise — {remise.code}</span>
+              <span>{t('remise', { code: remise.code })}</span>
               <span>− {euro(remise.montant)}</span>
             </div>
           )}
           {pourboirePossible && (
             <div className="pt-1">
               <div className="flex justify-between text-gray-700">
-                <span>Pourboire pour le livreur</span>
+                <span>{t('pourboire')}</span>
                 <span>{pourboire > 0 ? euro(pourboire) : '—'}</span>
               </div>
               <div className="mt-2">
                 {/* En % des articles, le montant écrit dessous. */}
                 <ChoixPourboire base={Math.max(0, sousTotal - montantRemise)} onChange={setPourboire} />
               </div>
-              <p className="mt-1 text-xs text-gray-500">Il revient en entier à votre livreur.</p>
+              <p className="mt-1 text-xs text-gray-500">{t('pourboireAide')}</p>
             </div>
           )}
           <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-3">
-            <span>Total</span>
+            <span>{t('total')}</span>
             <span>{euro(total)}</span>
           </div>
 
@@ -1297,7 +1296,7 @@ export function TunnelCommande({
           <AcceptationConditions
             coche={conditionsAcceptees}
             onChange={setConditionsAcceptees}
-            documents={[{ href: '/cgv', libelle: 'les conditions générales de vente' }]}
+            documents={[{ href: '/cgv', libelle: t('cgv') }]}
             clair
           />
 
@@ -1314,17 +1313,16 @@ export function TunnelCommande({
             className="w-full py-4 bg-orange-600 hover:bg-orange-700 rounded-full text-lg text-white font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting
-              ? 'Traitement...'
+              ? t('traitement')
               : sousLeMinimum
-                ? `Minimum ${euro(livraison?.minimum ?? 0)}`
+                ? t('minimum', { minimum: euro(livraison?.minimum ?? 0) })
                 : enLivraison && livraison?.livrable === false
-                  ? 'Adresse non livrée'
-                  : 'Confirmer la Commande'}
+                  ? t('adresseNonLivree')
+                  : t('confirmer')}
           </button>
 
           <p className="text-xs text-gray-500 leading-relaxed">
-            En confirmant, vous transmettez votre commande à {boutique.name}. Elle sera
-            préparée dès que la boutique l&apos;aura acceptée ; vous en serez averti par e-mail.
+            {t('mentionConfirmation', { boutique: boutique.name })}
           </p>
         </div>
       </aside>

@@ -8,6 +8,7 @@ import { memoriserBoutique, useCurrentStoreOptionnel } from '@/lib/current-store
 import { EVENEMENT_COMMANDES_CHANGEES, delaiRestant } from '@/lib/reponse-commande';
 import { useDonneesModifiees, useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -59,6 +60,8 @@ export function AlerteCommandes({
   /** Au niveau du choix du commerce (/merchant), aucune boutique n'est ouverte : on veille sur toutes. */
   toutesBoutiques?: boolean;
 }) {
+  const t = useTranslations('alerteCommandes');
+  const tDelai = useTranslations('delai');
   const boutiqueCourante = useCurrentStoreOptionnel()?.storeId ?? null;
   const storeId = toutesBoutiques ? null : boutiqueCourante;
   const actif = toutesBoutiques ? Boolean(orgId) : Boolean(storeId);
@@ -140,12 +143,12 @@ export function AlerteCommandes({
         <div key={l.orderId} className="flex items-center gap-3 text-sm">
           <Bike size={20} className="text-green-700 flex-shrink-0" />
           <p className="flex-1 text-green-900">
-            <span className="font-bold">Livreur trouvé</span> — {l.livreur} a accepté la commande #{l.numero} et arrive au commerce.
+            {t.rich('livreurTrouve', { livreur: l.livreur, numero: l.numero, b: (c) => <span className="font-bold">{c}</span> })}
           </p>
           <button
             onClick={() => setLivreursTrouves((liste) => liste.filter((x) => x.orderId !== l.orderId))}
             className="text-green-800 hover:text-green-950"
-            aria-label="Fermer"
+            aria-label={t('fermer')}
           >
             <X size={16} />
           </button>
@@ -204,7 +207,7 @@ export function AlerteCommandes({
     const minuteur = setInterval(() => {
       alterne = !alterne;
       document.title = alterne
-        ? `🔔 ${enAttente.length} nouvelle${enAttente.length > 1 ? 's' : ''} commande${enAttente.length > 1 ? 's' : ''}`
+        ? `🔔 ${t('nouvelles', { n: enAttente.length })}`
         : titre;
     }, 1000);
 
@@ -212,7 +215,7 @@ export function AlerteCommandes({
       clearInterval(minuteur);
       document.title = titre;
     };
-  }, [enAttente.length]);
+  }, [enAttente.length, t]);
 
   if (enAttente.length === 0) return bandeauLivreurs || null;
 
@@ -234,12 +237,11 @@ export function AlerteCommandes({
         <BellRing size={22} className="text-orange-400 flex-shrink-0 animate-pulse" />
         <div className="flex-1 min-w-0 text-sm">
           <p className="font-extrabold">
-            {enAttente.length} nouvelle{enAttente.length > 1 ? 's' : ''} commande
-            {enAttente.length > 1 ? 's' : ''} à accepter
+            {t('aAccepter', { n: enAttente.length })}
           </p>
           <p className="text-white/70 truncate">
             {enAttente
-                .map((c) => `${c.customerName}${toutesBoutiques && c.store ? ` — ${c.store.name}` : ''}${c.echeance ? ` (${delaiRestant(c.echeance, maintenant)})` : ''}`)
+                .map((c) => `${c.customerName}${toutesBoutiques && c.store ? ` — ${c.store.name}` : ''}${c.echeance ? ` (${delaiRestant(c.echeance, maintenant, tDelai)})` : ''}`)
               .join(' · ')}
           </p>
         </div>
@@ -248,7 +250,7 @@ export function AlerteCommandes({
             onClick={activerLeSon}
             className="inline-flex items-center gap-1 rounded-full bg-white/10 hover:bg-white/20 px-4 py-2 text-sm font-bold text-white"
           >
-            <Volume2 size={16} /> Activer la sonnerie
+            <Volume2 size={16} /> {t('activerSonnerie')}
           </button>
         )}
         {toutesBoutiques ? (
@@ -261,7 +263,7 @@ export function AlerteCommandes({
               }}
               className="rounded-full bg-orange-600 hover:bg-orange-700 px-5 py-2 text-sm font-extrabold text-white"
             >
-              Voir les commandes
+              {t('voir')}
             </button>
           )
         ) : (
@@ -269,7 +271,7 @@ export function AlerteCommandes({
           href={`/merchant/${orgId}/orders?filtre=PENDING`}
           className="rounded-full bg-orange-600 hover:bg-orange-700 px-5 py-2 text-sm font-extrabold text-white"
         >
-          Voir les commandes
+          {t('voir')}
         </Link>
         )}
       </div>

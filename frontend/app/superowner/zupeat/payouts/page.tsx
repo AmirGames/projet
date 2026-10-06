@@ -10,7 +10,7 @@
 
 import { useCallback, useState } from 'react';
 import { Banknote, CalendarRange, Check, FileText, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { useDonneesModifiees } from '@/lib/temps-reel';
@@ -40,14 +40,14 @@ interface Reste {
   livreurs: number;
 }
 
-const jour = (date: string) => new Date(date).toLocaleDateString('fr-FR');
+const jour = (date: string | Date, locale: string) => new Date(date).toLocaleDateString(locale);
 
 /** La borne de fin est exclue : on l'affiche comme la veille. */
-const periode = (releve: Releve) => {
+const bornesDuReleve = (releve: Releve, locale: string) => {
   const fin = new Date(releve.periodEnd);
   fin.setDate(fin.getDate() - 1);
 
-  return `du ${jour(releve.periodStart)} au ${fin.toLocaleDateString('fr-FR')}`;
+  return { debut: jour(releve.periodStart, locale), fin: jour(fin, locale) };
 };
 
 /**
@@ -66,6 +66,7 @@ const pourChamp = (date: string) => {
 
 export default function VersementsPage() {
   const t = useTranslations('superownerPayouts');
+  const locale = useLocale();
   const tCommon = useTranslations('common');
   
   const [releves, setReleves] = useState<Releve[]>([]);
@@ -344,13 +345,13 @@ export default function VersementsPage() {
                   <p className="text-sm text-gray-500">{releve.driverEmail}</p>
 
                   <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
-                    <span>{periode(releve)}</span>
+                    <span>{t('periode', bornesDuReleve(releve, locale))}</span>
                     <span>
                       {releve.deliveryCount} {releve.deliveryCount > 1 ? t('deliveries_plural') : t('delivery')}
                     </span>
                     {releve.paidAt && (
                       <span>
-                        {t('paidOn')} {jour(releve.paidAt)}
+                        {t('paidOn')} {jour(releve.paidAt, locale)}
                         {releve.methodLibelle ? ` · ${releve.methodLibelle}` : ''}
                         {releve.reference ? ` · ${releve.reference}` : ''}
                       </span>

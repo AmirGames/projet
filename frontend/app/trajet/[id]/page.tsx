@@ -2,7 +2,7 @@
 
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Car, Loader } from 'lucide-react';
 
 import { CarteCourseDrive } from '@/components/CarteCourseDrive';
@@ -49,6 +49,7 @@ const RELECTURE_MS = 4000;
 const ANNULABLE = ['RECHERCHE', 'ACCEPTEE', 'ARRIVEE'];
 
 export default function SuiviTrajetPage({ params }: { params: Promise<{ id: string }> }) {
+  const locale = useLocale();
   const { id } = use(params);
   const t = useTranslations('zupdriveTrajet');
   const { user, isLoading } = useAuth();
@@ -134,7 +135,7 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
                 {trajet.chauffeur.note?.moyenne != null ? (
                   <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
                     <Etoiles valeur={trajet.chauffeur.note.moyenne} taille={12} />
-                    {trajet.chauffeur.note.moyenne.toLocaleString('fr-FR')} ({trajet.chauffeur.note.avis})
+                    {trajet.chauffeur.note.moyenne.toLocaleString(locale)} ({trajet.chauffeur.note.avis})
                   </span>
                 ) : (
                   <span className="text-xs font-normal text-slate-500">{t('pasEncoreNote')}</span>

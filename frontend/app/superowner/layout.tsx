@@ -238,7 +238,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: t('nav.sectionTeam'),
       items: [
         { label: t('nav.profile'), icon: UserCircle, href: '/superowner/profil', section: 'profil' },
-        { label: 'Relais Assistant ZupOne', icon: MessageCircle, href: '/superowner/assistant', section: 'assistant-support' },
+        { label: t('nav.relaisAssistant'), icon: MessageCircle, href: '/superowner/assistant', section: 'assistant-support' },
         { label: t('nav.userManagement'), icon: Users, href: '/superowner/user-management', section: null },
         { label: t('nav.roles'), icon: ShieldCheck, href: '/superowner/roles', section: null },
       ],

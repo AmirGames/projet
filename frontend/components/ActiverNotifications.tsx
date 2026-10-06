@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Bell, BellOff, BellRing } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -59,6 +60,7 @@ export async function notifierSiCache(titre: string, corps: string, tag: string,
  * était affichée.
  */
 export function ActiverNotifications() {
+  const t = useTranslations('activerNotifications');
   // Ce que le navigateur interdit l'emporte sur l'état suivi ici.
   const constat = useSyncExternalStore(sansAbonnement, constatDuNavigateur, () => null);
   const [etatSuivi, setEtat] = useState<Etat>('chargement');
@@ -98,7 +100,7 @@ export function ActiverNotifications() {
       // possibles tant que l'onglet est ouvert, même en arrière-plan.
       if (!enregistrement?.pushManager || !config?.data?.enabled || !config.data.publicKey) {
         setEtat('actif');
-        setMessage("Notifications actives tant que l'application reste ouverte.");
+        setMessage(t('tantQueOuvert'));
         return;
       }
 
@@ -125,7 +127,7 @@ export function ActiverNotifications() {
       setEtat('actif');
     } catch {
       setEtat('inactif');
-      setMessage("L'activation a échoué. Réessayez.");
+      setMessage(t('echec'));
     }
   };
 
@@ -148,21 +150,21 @@ export function ActiverNotifications() {
   return (
     <div className="space-y-2">
       <p className="text-gray-500 text-sm flex items-center gap-2">
-        <Bell size={16} /> Notifications
+        <Bell size={16} /> {t('titre')}
       </p>
 
       {etat === 'refuse' ? (
         <p className="text-xs text-amber-700 flex gap-2">
           <BellOff size={14} className="flex-shrink-0 mt-0.5" />
-          Bloquées par le navigateur. Autorisez-les dans les réglages du site pour être prévenu des courses.
+          {t('bloquees')}
         </p>
       ) : etat === 'actif' ? (
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm text-green-600 flex items-center gap-2">
-            <BellRing size={16} /> Activées
+            <BellRing size={16} /> {t('activees')}
           </span>
           <button onClick={desactiver} className="text-xs text-gray-500 hover:text-gray-900 underline">
-            Désactiver
+            {t('desactiver')}
           </button>
         </div>
       ) : (
@@ -171,7 +173,7 @@ export function ActiverNotifications() {
           disabled={etat === 'chargement'}
           className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-lg"
         >
-          Activer les notifications
+          {t('activer')}
         </button>
       )}
 

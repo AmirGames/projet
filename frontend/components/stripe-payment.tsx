@@ -55,7 +55,7 @@ function StripePaymentForm({
       return;
     }
     if (!carteComplete) {
-      setError(carteErreur || 'Veuillez compléter les informations de la carte.');
+      setError(carteErreur || t('carteIncomplete'));
       return;
     }
     setError('');
@@ -169,10 +169,11 @@ function StripePaymentForm({
 }
 
 export function StripePayment(props: StripePaymentProps) {
+  const t = useTranslations('stripePayment');
   if (!stripePromise) {
     return (
       <p className="text-red-600 text-sm">
-        Le paiement par carte n&apos;est pas configuré (clé publique Stripe manquante).
+        {t('nonConfigure')}
       </p>
     );
   }

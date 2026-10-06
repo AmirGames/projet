@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -15,6 +16,7 @@ export default function CompteVersementLivreur({
   compte?: { ibanFin: string; titulaire?: string | null; valide: boolean } | null;
   onSaved: () => void;
 }) {
+  const t = useTranslations('compteVersementLivreur');
   const [edition, setEdition] = useState(!compte);
   const [iban, setIban] = useState('');
   const [titulaire, setTitulaire] = useState(compte?.titulaire || '');
@@ -35,12 +37,12 @@ export default function CompteVersementLivreur({
         body: JSON.stringify({ iban, accountHolder: titulaire }),
       });
       const lu = await rep.json().catch(() => ({}));
-      if (!rep.ok) throw new Error(lu?.error || lu?.message || "Impossible d'enregistrer le compte");
+      if (!rep.ok) throw new Error(lu?.error || lu?.message || t('impossible'));
       setEdition(false);
       setIban('');
       onSaved();
     } catch (err) {
-      setErreur(err instanceof Error ? err.message : 'Erreur');
+      setErreur(err instanceof Error ? err.message : t('erreur'));
     } finally {
       setEnvoi(false);
     }
@@ -48,15 +50,15 @@ export default function CompteVersementLivreur({
 
   return (
     <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
-      <h2 className="text-lg font-bold text-gray-900">Mes versements</h2>
-      <p className="text-sm text-gray-500 mb-4">Vos gains de la semaine sont virés chaque lundi sur ce compte.</p>
+      <h2 className="text-lg font-bold text-gray-900">{t('titre')}</h2>
+      <p className="text-sm text-gray-500 mb-4">{t('aide')}</p>
       {!edition && compte ? (
         <div className="space-y-1 text-sm">
-          <p className="text-gray-900">Compte …{compte.ibanFin}</p>
+          <p className="text-gray-900">{t('compte', { fin: compte.ibanFin })}</p>
           <p className="text-gray-500">{compte.titulaire}</p>
-          {!compte.valide && <p className="text-red-600">Cet IBAN n&apos;est pas valide : corrigez-le pour être payé.</p>}
+          {!compte.valide && <p className="text-red-600">{t('invalide')}</p>}
           <button onClick={() => setEdition(true)} className="text-orange-600 font-semibold mt-2">
-            Modifier
+            {t('modifier')}
           </button>
         </div>
       ) : (
@@ -64,14 +66,14 @@ export default function CompteVersementLivreur({
           <input
             value={iban}
             onChange={(e) => setIban(e.target.value)}
-            placeholder="IBAN (BE68 5390 0754 7034)"
+            placeholder={t('iban')}
             className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
             required
           />
           <input
             value={titulaire}
             onChange={(e) => setTitulaire(e.target.value)}
-            placeholder="Titulaire du compte"
+            placeholder={t('titulaire')}
             className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
             required
           />
@@ -81,7 +83,7 @@ export default function CompteVersementLivreur({
             disabled={envoi}
             className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 rounded"
           >
-            Enregistrer
+            {t('enregistrer')}
           </button>
         </form>
       )}

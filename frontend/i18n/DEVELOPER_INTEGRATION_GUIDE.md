@@ -1,5 +1,10 @@
 # 👨‍💻 Guide d'Intégration pour Développeurs
 
+> **Historique (octobre 2026)** : la migration est terminée, tout le site passe par `next-intl`.
+> Ce document décrit l'ancienne migration de l'espace superowner ; les règles en vigueur sont
+> dans `frontend/ARCHITECTURE.md`, section « F. Traductions », et le contrôle dans
+> `scripts/verif-traductions.mjs`.
+
 ## 🎯 Objectif
 
 Intégrer rapidement la migration i18n des 8 pages Superowner.

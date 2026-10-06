@@ -7,6 +7,8 @@ import { ArrowLeft, MapPin, Clock, Package, CheckCircle, AlertCircle, Star, Navi
 import { euro } from '@/lib/format';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { numeroCourt } from '@/lib/numero-commande';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -41,19 +43,10 @@ interface Reponse {
   resume: { livrees: number; gains: number; distanceKm: number };
 }
 
-const FILTRES: { id: Filtre; label: string }[] = [
-  { id: 'ALL', label: 'Toutes' },
-  { id: 'ACTIVE', label: 'En cours' },
-  { id: 'DELIVERED', label: 'Livrées' },
-  { id: 'CANCELLED', label: 'Annulées' },
-];
+// Les libellés : `filtres.<id>` et `periodes.<id>` des traductions.
+const FILTRES: Filtre[] = ['ALL', 'ACTIVE', 'DELIVERED', 'CANCELLED'];
 
-const PERIODES: { id: Periode; label: string }[] = [
-  { id: 'all', label: 'Tout' },
-  { id: 'today', label: "Aujourd'hui" },
-  { id: 'week', label: '7 jours' },
-  { id: 'month', label: '30 jours' },
-];
+const PERIODES: Periode[] = ['all', 'today', 'week', 'month'];
 
 /** Début de la période choisie, ou null pour tout l'historique. */
 function debutPeriode(periode: Periode): Date | null {
@@ -64,31 +57,34 @@ function debutPeriode(periode: Periode): Date | null {
   return null;
 }
 
-const STATUTS: Record<string, { label: string; classes: string; Icon: typeof Clock }> = {
-  ACCEPTED: { label: 'Acceptée', classes: 'bg-blue-50 text-blue-700', Icon: Package },
-  PICKED_UP: { label: 'En route', classes: 'bg-purple-50 text-purple-700', Icon: Navigation },
-  DELIVERED: { label: 'Livrée', classes: 'bg-green-50 text-green-700', Icon: CheckCircle },
-  CANCELLED: { label: 'Annulée', classes: 'bg-red-50 text-red-700', Icon: AlertCircle },
+const STATUTS: Record<string, { classes: string; Icon: typeof Clock }> = {
+  ACCEPTED: { classes: 'bg-blue-50 text-blue-700', Icon: Package },
+  PICKED_UP: { classes: 'bg-purple-50 text-purple-700', Icon: Navigation },
+  DELIVERED: { classes: 'bg-green-50 text-green-700', Icon: CheckCircle },
+  CANCELLED: { classes: 'bg-red-50 text-red-700', Icon: AlertCircle },
 };
 
 function Badge({ status }: { status: string }) {
-  const s = STATUTS[status] || { label: status, classes: 'bg-gray-100 text-gray-700', Icon: Clock };
+  const t = useTranslations('historiqueCourses');
+  const s = STATUTS[status] || { classes: 'bg-gray-100 text-gray-700', Icon: Clock };
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${s.classes}`}>
       <s.Icon size={14} />
-      {s.label}
+      {STATUTS[status] ? t(`statuts.${status}`) : status}
     </span>
   );
 }
 
-const km = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const km = (n: number, locale: string) => n.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-const date = (iso?: string | null) =>
+const date = (iso: string | null | undefined, locale: string) =>
   iso
-    ? new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    ? new Date(iso).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
     : '—';
 
 export default function HistoriqueCoursesPage() {
+  const t = useTranslations('historiqueCourses');
+  const locale = useLocale();
   const router = useRouter();
   const [filtre, setFiltre] = useState<Filtre>('ALL');
   const [periode, setPeriode] = useState<Periode>('all');
@@ -124,17 +120,17 @@ export default function HistoriqueCoursesPage() {
 
       const donnees = await res.json();
       if (!res.ok) {
-        setErreur(donnees.error || "L'historique n'a pas pu être chargé.");
+        setErreur(donnees.error || t('echecChargement'));
         return;
       }
 
       setReponse(donnees);
     } catch {
-      setErreur('Serveur injoignable.');
+      setErreur(t('injoignable'));
     } finally {
       setLoading(false);
     }
-  }, [filtre, periode, page, router]);
+  }, [filtre, periode, page, router, t]);
 
   useEffectChargement(() => {
     charger();
@@ -159,12 +155,12 @@ export default function HistoriqueCoursesPage() {
     <div className="min-h-screen">
       <header className="pt-4">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/driver" className="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Retour">
+          <Link href="/driver" className="p-2 hover:bg-gray-100 rounded-lg transition" aria-label={t('retour')}>
             <ArrowLeft size={20} className="text-gray-500" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Historique des courses</h1>
-            <p className="text-gray-500 text-sm">Toutes vos livraisons, gains et avis</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('titre')}</h1>
+            <p className="text-gray-500 text-sm">{t('sousTitre')}</p>
           </div>
         </div>
       </header>
@@ -174,16 +170,16 @@ export default function HistoriqueCoursesPage() {
         {reponse && (
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4">
-              <p className="text-gray-500 text-xs">Livrées</p>
+              <p className="text-gray-500 text-xs">{t('livrees')}</p>
               <p className="text-gray-900 text-2xl font-bold">{reponse.resume.livrees}</p>
             </div>
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4">
-              <p className="text-gray-500 text-xs">Gains</p>
+              <p className="text-gray-500 text-xs">{t('gains')}</p>
               <p className="text-gray-900 text-2xl font-bold">{euro(reponse.resume.gains)}</p>
             </div>
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4">
-              <p className="text-gray-500 text-xs">Distance</p>
-              <p className="text-gray-900 text-2xl font-bold">{km(reponse.resume.distanceKm)} km</p>
+              <p className="text-gray-500 text-xs">{t('distance')}</p>
+              <p className="text-gray-900 text-2xl font-bold">{t('km', { n: km(reponse.resume.distanceKm, locale) })}</p>
             </div>
           </div>
         )}
@@ -193,13 +189,13 @@ export default function HistoriqueCoursesPage() {
           <div className="flex flex-wrap gap-2">
             {FILTRES.map((f) => (
               <button
-                key={f.id}
-                onClick={() => changerFiltre(f.id)}
+                key={f}
+                onClick={() => changerFiltre(f)}
                 className={`px-4 py-2 rounded-full font-semibold text-sm transition ${
-                  filtre === f.id ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-100'
+                  filtre === f ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-100'
                 }`}
               >
-                {f.label}
+                {t(`filtres.${f}`)}
               </button>
             ))}
           </div>
@@ -207,11 +203,11 @@ export default function HistoriqueCoursesPage() {
             value={periode}
             onChange={(e) => changerPeriode(e.target.value as Periode)}
             className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900"
-            aria-label="Période"
+            aria-label={t('periode')}
           >
             {PERIODES.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
+              <option key={p} value={p}>
+                {t(`periodes.${p}`)}
               </option>
             ))}
           </select>
@@ -228,7 +224,7 @@ export default function HistoriqueCoursesPage() {
         ) : courses.length === 0 ? (
           <div className="bg-white ring-1 ring-gray-200 rounded-lg p-12 text-center">
             <Package size={48} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-900 text-lg">Aucune course sur cette période</p>
+            <p className="text-gray-900 text-lg">{t('aucune')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -242,9 +238,9 @@ export default function HistoriqueCoursesPage() {
                 >
                   <div className="flex flex-wrap justify-between items-start gap-3">
                     <div>
-                      <p className="text-gray-900 font-semibold">{c.store || 'Commerce'}</p>
+                      <p className="text-gray-900 font-semibold">{c.store || t('commerce')}</p>
                       <p className="text-gray-500 text-xs">
-                        #{c.orderId.slice(0, 8)} · {date(c.createdAt)}
+                        {numeroCourt(c.orderId)} · {date(c.createdAt, locale)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -267,10 +263,10 @@ export default function HistoriqueCoursesPage() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500">
-                    {c.distanceKm != null && <span>{km(c.distanceKm)} km</span>}
-                    {c.durationMin != null && <span>{c.durationMin} min de course</span>}
-                    {c.deliveredAt && <span>Livrée {date(c.deliveredAt)}</span>}
-                    {c.proofType && <span>Preuve : {c.proofType === 'CODE' ? 'code client' : 'photo'}</span>}
+                    {c.distanceKm != null && <span>{t('km', { n: km(c.distanceKm, locale) })}</span>}
+                    {c.durationMin != null && <span>{t('dureeCourse', { n: c.durationMin })}</span>}
+                    {c.deliveredAt && <span>{t('livreeLe', { date: date(c.deliveredAt, locale) })}</span>}
+                    {c.proofType && <span>{c.proofType === 'CODE' ? t('preuveCode') : t('preuvePhoto')}</span>}
                     {c.rating && (
                       <span className="inline-flex items-center gap-1 text-yellow-600">
                         <Star size={12} fill="currentColor" /> {c.rating.note}/5
@@ -279,13 +275,13 @@ export default function HistoriqueCoursesPage() {
                     )}
                     {(c.pourboire ?? 0) > 0 && (
                       <span className="inline-flex items-center gap-1 text-yellow-600 font-semibold">
-                        <Gift size={12} /> Pourboire ({euro(c.pourboire!)})
+                        <Gift size={12} /> {t('pourboire', { montant: euro(c.pourboire!) })}
                       </span>
                     )}
                   </div>
 
                   {c.status === 'CANCELLED' && c.cancellationReason && (
-                    <p className="mt-2 text-xs text-red-700">Motif : {c.cancellationReason}</p>
+                    <p className="mt-2 text-xs text-red-700">{t('motif', { motif: c.cancellationReason })}</p>
                   )}
                 </div>
               );
@@ -308,19 +304,19 @@ export default function HistoriqueCoursesPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-4 py-2 bg-white ring-1 ring-gray-200 rounded-lg text-gray-900 disabled:opacity-40"
+              className="px-4 py-2 bg-white ring-1 ring-gray-200 rounded-lg text-gray-900 disabled:opacity-50"
             >
-              Précédent
+              {t('precedent')}
             </button>
             <span className="text-gray-500 text-sm">
-              Page {reponse.pagination.page} / {reponse.pagination.pages}
+              {t('page', { page: reponse.pagination.page, pages: reponse.pagination.pages })}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(reponse.pagination.pages, p + 1))}
               disabled={page >= reponse.pagination.pages}
-              className="px-4 py-2 bg-white ring-1 ring-gray-200 rounded-lg text-gray-900 disabled:opacity-40"
+              className="px-4 py-2 bg-white ring-1 ring-gray-200 rounded-lg text-gray-900 disabled:opacity-50"
             >
-              Suivant
+              {t('suivant')}
             </button>
           </div>
         )}

@@ -11,6 +11,8 @@
 import { useCallback, useState } from 'react';
 import { AlertTriangle, Banknote, Check, Download, RefreshCw } from 'lucide-react';
 
+import { useLocale, useTranslations } from 'next-intl';
+
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import ReleveReversement, { type Releve } from '@/components/ReleveReversement';
@@ -38,19 +40,19 @@ interface Ligne {
   ibanValide: boolean;
 }
 
-const ETATS: Record<string, string> = {
-  PENDING: 'À verser',
-  PAID: 'Versé',
-  CARRIED: 'Reporté (négatif)',
-  CANCELLED: 'Annulé',
-};
-
-const periode = (debut: string, fin: string) => {
-  const veille = new Date(new Date(fin).getTime() - 1);
-  return `du ${new Date(debut).toLocaleDateString('fr-FR')} au ${veille.toLocaleDateString('fr-FR')}`;
-};
+// Libellé de chaque état d'un relevé : `etats.<statut>` des traductions.
+const ETATS_CONNUS = ['PENDING', 'PAID', 'CARRIED', 'CANCELLED'];
 
 export default function VersementsSepaPage() {
+  const t = useTranslations('versementsSepa');
+  const locale = useLocale();
+  const periode = (debut: string, fin: string) => {
+    const veille = new Date(new Date(fin).getTime() - 1);
+    return t('periode', {
+      debut: new Date(debut).toLocaleDateString(locale),
+      fin: veille.toLocaleDateString(locale),
+    });
+  };
   const [lot, setLot] = useState<Lot | null>(null);
   const [lotErreur, setLotErreur] = useState('');
   const [releves, setReleves] = useState<Ligne[]>([]);
@@ -75,13 +77,13 @@ export default function VersementsSepaPage() {
       if (lotRep.ok) setLot(lotLu.data);
       else {
         setLot(null);
-        setLotErreur(lotLu?.error || lotLu?.message || 'Lot illisible');
+        setLotErreur(lotLu?.error || lotLu?.message || t('lotIllisible'));
       }
       if (listeRep.ok) setReleves((await listeRep.json()).data || []);
     } catch {
       setLotErreur('Serveur injoignable');
     }
-  }, [filtre]);
+  }, [filtre, t]);
 
   useEffectChargement(() => {
     charger();
@@ -94,15 +96,15 @@ export default function VersementsSepaPage() {
     try {
       const rep = await fetch(`${API_URL}/api/superowner/versements/arreter`, { method: 'POST', headers: entetes() });
       const lu = await rep.json();
-      if (!rep.ok) throw new Error(lu?.error || 'Arrêté impossible');
+      if (!rep.ok) throw new Error(lu?.error || t('arreteImpossible'));
       setMessage(
         lu.data.inactif
-          ? 'Les reversements ne sont pas encore activés (PAYOUTS_START_DATE).'
-          : `Semaine arrêtée : ${lu.data.commercants} relevé(s) commerçant, ${lu.data.livreurs} relevé(s) livreur.`
+          ? t('inactifs')
+          : t('semaineArretee', { commercants: lu.data.commercants, livreurs: lu.data.livreurs })
       );
       await charger();
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Erreur');
+      setErreur(e instanceof Error ? e.message : t('erreur'));
     } finally {
       setOccupe(false);
     }
@@ -113,7 +115,7 @@ export default function VersementsSepaPage() {
     const rep = await fetch(`${API_URL}/api/superowner/versements/sepa.xml`, { headers: entetes() });
     if (!rep.ok) {
       const lu = await rep.json().catch(() => ({}));
-      setErreur(lu?.error || 'Téléchargement impossible');
+      setErreur(lu?.error || t('telechargementImpossible'));
       return;
     }
     const lien = document.createElement('a');
@@ -125,7 +127,7 @@ export default function VersementsSepaPage() {
 
   const marquerVerse = async () => {
     if (!lot) return;
-    if (!confirm(`Confirmez-vous que la banque a exécuté ces ${lot.nombre} virements (${euro(lot.total)}) ?`)) return;
+    if (!confirm(t('confirmerVerse', { n: lot.nombre, total: euro(lot.total) }))) return;
     setOccupe(true);
     setErreur('');
     try {
@@ -135,11 +137,11 @@ export default function VersementsSepaPage() {
         body: JSON.stringify({ ...lot.inclus, reference: lot.reference }),
       });
       const lu = await rep.json();
-      if (!rep.ok) throw new Error(lu?.error || 'Impossible de marquer le lot');
-      setMessage(`Lot versé : ${lu.data.commercants} commerçant(s), ${lu.data.livreurs} livreur(s).`);
+      if (!rep.ok) throw new Error(lu?.error || t('marquerImpossible'));
+      setMessage(t('lotVerse', { commercants: lu.data.commercants, livreurs: lu.data.livreurs }));
       await charger();
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : 'Erreur');
+      setErreur(e instanceof Error ? e.message : t('erreur'));
     } finally {
       setOccupe(false);
     }
@@ -154,11 +156,10 @@ export default function VersementsSepaPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <Banknote /> Versements du lundi
+          <Banknote /> {t('titre')}
         </h1>
         <p className="text-gray-500 mt-1">
-          Commerçants et livreurs, en un seul fichier à importer dans votre banque. La semaine
-          s&apos;arrête d&apos;elle-même chaque lundi à 00 h 00.
+          {t('intro')}
         </p>
       </div>
 
@@ -166,25 +167,25 @@ export default function VersementsSepaPage() {
       {erreur && <div className="bg-red-50 border border-red-200 text-red-700 rounded p-3">{erreur}</div>}
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Lot à verser</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{t('lotAVerser')}</h2>
         {lotErreur ? (
           <p className="text-amber-700">{lotErreur}</p>
         ) : lot ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <p className="text-gray-500 text-sm">Total</p>
+                <p className="text-gray-500 text-sm">{t('total')}</p>
                 <p className="text-3xl font-bold text-green-600">{euro(lot.total)}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Virements</p>
+                <p className="text-gray-500 text-sm">{t('virements')}</p>
                 <p className="text-3xl font-bold text-gray-900">{lot.nombre}</p>
                 <p className="text-xs text-gray-500">
-                  {lot.inclus.commercants.length} commerçant(s) · {lot.inclus.livreurs.length} livreur(s)
+                  {t('repartition', { commercants: lot.inclus.commercants.length, livreurs: lot.inclus.livreurs.length })}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Référence</p>
+                <p className="text-gray-500 text-sm">{t('reference')}</p>
                 <p className="text-gray-900 font-mono text-sm break-all">{lot.reference}</p>
               </div>
             </div>
@@ -192,11 +193,16 @@ export default function VersementsSepaPage() {
             {lot.ecartes.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800 space-y-1">
                 <p className="font-semibold flex items-center gap-2">
-                  <AlertTriangle size={16} /> Écartés du fichier (à corriger avant le prochain lot)
+                  <AlertTriangle size={16} /> {t('ecartes')}
                 </p>
                 {lot.ecartes.map((e) => (
                   <p key={e.id}>
-                    {e.type === 'commercant' ? 'Commerçant' : 'Livreur'} {e.nom} — {euro(e.montant)} : {e.raison}
+                    {t('ecarte', {
+                      type: e.type === 'commercant' ? t('commercant') : t('livreur'),
+                      nom: e.nom,
+                      montant: euro(e.montant),
+                      raison: e.raison,
+                    })}
                   </p>
                 ))}
               </div>
@@ -208,49 +214,48 @@ export default function VersementsSepaPage() {
                 disabled={!lot.pret}
                 className="bg-gray-900 hover:bg-black disabled:opacity-40 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
               >
-                <Download size={18} /> Télécharger le fichier SEPA
+                <Download size={18} /> {t('telecharger')}
               </button>
               <button
                 onClick={marquerVerse}
                 disabled={!lot.pret || occupe}
                 className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
               >
-                <Check size={18} /> Marquer le lot versé
+                <Check size={18} /> {t('marquerVerse')}
               </button>
               <button
                 onClick={arreter}
                 disabled={occupe}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded flex items-center gap-2"
               >
-                <RefreshCw size={18} /> Arrêter la semaine maintenant
+                <RefreshCw size={18} /> {t('arreter')}
               </button>
             </div>
             <p className="text-xs text-gray-500">
-              1. Téléchargez le fichier · 2. Importez-le dans votre banque en ligne (virements groupés
-              SEPA) et signez · 3. Revenez ici et marquez le lot versé.
+              {t('etapes')}
             </p>
           </>
         ) : (
-          <p className="text-gray-500">Chargement…</p>
+          <p className="text-gray-500">{t('chargement')}</p>
         )}
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-gray-900">Relevés des commerçants</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('relevesCommercants')}</h2>
           <select
             value={filtre}
             onChange={(e) => setFiltre(e.target.value)}
             className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
           >
-            <option value="PENDING">À verser</option>
-            <option value="PAID">Versés</option>
-            <option value="CARRIED">Reportés</option>
-            <option value="">Tous</option>
+            <option value="PENDING">{t('filtreAVerser')}</option>
+            <option value="PAID">{t('filtreVerses')}</option>
+            <option value="CARRIED">{t('filtreReportes')}</option>
+            <option value="">{t('filtreTous')}</option>
           </select>
         </div>
         {releves.length === 0 ? (
-          <p className="text-gray-500">Aucun relevé.</p>
+          <p className="text-gray-500">{t('aucun')}</p>
         ) : (
           <div className="divide-y divide-gray-100">
             {releves.map((r) => (
@@ -262,13 +267,13 @@ export default function VersementsSepaPage() {
                 <span>
                   <span className="text-gray-900 font-semibold">{r.organization}</span>
                   <span className="block text-xs text-gray-500">
-                    {periode(r.periodStart, r.periodEnd)} · {r.orderCount} commande(s) ·{' '}
-                    {r.ibanValide ? `IBAN …${r.ibanFin}` : <span className="text-amber-700">IBAN manquant ou invalide</span>}
+                    {periode(r.periodStart, r.periodEnd)} · {t('commandes', { n: r.orderCount })} ·{' '}
+                    {r.ibanValide ? `IBAN …${r.ibanFin}` : <span className="text-amber-700">{t('ibanManquant')}</span>}
                   </span>
                 </span>
                 <span className="text-right">
                   <span className={`font-bold ${r.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>{euro(r.amount)}</span>
-                  <span className="block text-xs text-gray-500">{ETATS[r.status] || r.status}</span>
+                  <span className="block text-xs text-gray-500">{ETATS_CONNUS.includes(r.status) ? t(`etats.${r.status}`) : r.status}</span>
                 </span>
               </button>
             ))}
@@ -281,7 +286,7 @@ export default function VersementsSepaPage() {
           <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <ReleveReversement releve={ouvert} />
             <button onClick={() => setOuvert(null)} className="mt-3 w-full bg-gray-100 text-gray-900 py-2 rounded">
-              Fermer
+              {t('fermer')}
             </button>
           </div>
         </div>

@@ -15,18 +15,26 @@ import { useDonneesModifiees } from '@/lib/temps-reel';
 import { reduireImage } from '@/lib/reduire-image';
 import { AttenteDepotLivreur } from '@/components/AttenteDepotLivreur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { numeroCourt } from '@/lib/numero-commande';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Leaflet touche `window` dès son chargement : pas de rendu côté serveur.
 const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
   ssr: false,
-  loading: () => (
-    <div className="h-[320px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-sm text-gray-500">
-      Chargement de la carte…
-    </div>
-  ),
+  loading: () => <ChargementCarte />,
 });
+
+function ChargementCarte() {
+  const t = useTranslations('suiviLivraison');
+
+  return (
+    <div className="h-[320px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-sm text-gray-500">
+      {t('chargementCarte')}
+    </div>
+  );
+}
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
 const RAYON_ARRIVEE_COMMERCE_M = 150;
@@ -86,6 +94,7 @@ interface Delivery {
 }
 
 export default function DeliveryTrackingPage() {
+  const t = useTranslations('livraisonLivreur');
   const params = useParams();
   const router = useRouter();
   const deliveryId = params.id as string;
@@ -113,7 +122,7 @@ export default function DeliveryTrackingPage() {
   const appareil = useRef<HTMLInputElement>(null);
   const priseEnChargeRef = useRef<HTMLDivElement>(null);
 
-  const steps = ['Aller au commerce', 'Prendre en charge la commande', 'Aller au client', 'Remettre la commande'];
+  const steps = [t('etape1'), t('etape2'), t('etape3'), t('etape4')];
 
   useEffect(() => {
     // Vérifier l'authentification avant de charger les données
@@ -188,17 +197,17 @@ export default function DeliveryTrackingPage() {
         const data = await response.json();
         setDelivery(data.data);
       } else {
-        setError('Livraison non trouvée');
+        setError(t('introuvable'));
       }
 
       setLoading(false);
     } catch (err) {
       signalerErreur('Error loading delivery:', err);
       if (silencieux) return;
-      setError('Erreur lors du chargement de la livraison');
+      setError(t('erreurChargement'));
       setLoading(false);
     }
-  }, [deliveryId, router]);
+  }, [deliveryId, router, t]);
 
   // La commande est annulée, le commerçant la déclare prête : la course suit.
   // Le livreur ne reçoit que les annonces de ses propres courses.
@@ -281,11 +290,11 @@ export default function DeliveryTrackingPage() {
       } else {
         gps?.close();
         const lu = await reponse?.json().catch(() => null);
-        setRefus(lu?.error || "La prise en charge n'a pas pu être enregistrée");
+        setRefus(lu?.error || t('priseEnChargeEchec'));
       }
     } catch (err) {
       gps?.close();
-      setRefus("La prise en charge n'a pas pu être enregistrée");
+      setRefus(t('priseEnChargeEchec'));
       signalerErreur('Error updating delivery:', err);
     } finally {
       setUpdating(false);
@@ -315,13 +324,13 @@ export default function DeliveryTrackingPage() {
       // Un code refusé se disait « Erreur lors de la mise à jour » : le
       // livreur ne savait pas s'il s'était trompé de chiffre.
       const lu = await reponse?.json().catch(() => null);
-      setRefus(lu?.error || "La remise n'a pas pu être confirmée");
+      setRefus(lu?.error || t('remiseEchec'));
       // Le champ se vide pour la saisie suivante, qui se vérifiera d'elle-même.
       if (preuve.code) setCode('');
       // Code bloqué : la photo devient la seule issue, autant y basculer.
       await loadDeliveryData();
     } catch (err) {
-      setRefus('Erreur lors de la confirmation de la remise');
+      setRefus(t('remiseErreur'));
       signalerErreur('Error updating delivery:', err);
     } finally {
       setUpdating(false);
@@ -380,10 +389,10 @@ export default function DeliveryTrackingPage() {
         setPhotoUrl(lu.data.photoUrl);
         setApercuPhoto(lu.data.apercuUrl || lu.data.photoUrl);
       } else {
-        setRefus(lu?.error || "La photo n'a pas pu être envoyée, reprenez-la");
+        setRefus(lu?.error || t('photoEchec'));
       }
     } catch {
-      setRefus("La photo n'a pas pu être envoyée, reprenez-la");
+      setRefus(t('photoEchec'));
     } finally {
       setEnvoiPhoto(false);
       // Le même fichier doit pouvoir être repris.
@@ -396,7 +405,7 @@ export default function DeliveryTrackingPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader size={48} className="text-orange-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-900">Chargement de la livraison...</p>
+          <p className="text-gray-900">{t('chargement')}</p>
         </div>
       </div>
     );
@@ -409,14 +418,14 @@ export default function DeliveryTrackingPage() {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <Link href="/driver" className="flex items-center gap-2 text-orange-500 hover:text-orange-600">
               <ArrowLeft size={20} />
-              Retour
+              {t('retour')}
             </Link>
           </div>
         </header>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 flex items-center gap-3">
             <AlertCircle size={24} />
-            <p>{error || 'Erreur lors du chargement de la livraison'}</p>
+            <p>{error || t('erreurChargement')}</p>
           </div>
         </div>
       </div>
@@ -430,17 +439,17 @@ export default function DeliveryTrackingPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/driver" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
             <ArrowLeft size={20} />
-            Retour au tableau de bord
+            {t('retourTableau')}
           </Link>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Livraison #{delivery.orderId.slice(0, 8)}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t('livraisonNumero', { numero: numeroCourt(delivery.orderId) })}</h1>
               <p className="text-gray-500">{delivery.customerName}</p>
             </div>
             {location && (
               <div className="text-right">
-                <p className="text-gray-500 text-sm">Localisation active</p>
-                <p className="text-green-600 font-semibold text-sm">✓ GPS activé</p>
+                <p className="text-gray-500 text-sm">{t('localisationActive')}</p>
+                <p className="text-green-600 font-semibold text-sm">{t('gpsActive')}</p>
               </div>
             )}
           </div>
@@ -456,7 +465,7 @@ export default function DeliveryTrackingPage() {
 
         {/* Progress */}
         <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Étapes de la livraison</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">{t('etapes')}</h2>
 
           <div className="space-y-4">
             {steps.map((step, index) => {
@@ -507,7 +516,7 @@ export default function DeliveryTrackingPage() {
           return (
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 mb-8 space-y-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {versClient ? 'Itinéraire vers le client' : 'Itinéraire vers le commerce'}
+                {versClient ? t('itineraireClient') : t('itineraireCommerce')}
               </h2>
               {(retrait || destination) && (
                 <CarteTrajet
@@ -525,7 +534,7 @@ export default function DeliveryTrackingPage() {
                   className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
                 >
                   <Navigation size={20} />
-                  Lancer le GPS {versClient ? 'vers le client' : 'vers le commerce'}
+                  {versClient ? t('gpsClient') : t('gpsCommerce')}
                 </a>
               )}
             </div>
@@ -538,19 +547,16 @@ export default function DeliveryTrackingPage() {
             {/* Current Step Details */}
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">
-                {currentStep === 0 && '📍 Allez au commerce'}
-                {currentStep === 1 && '📦 Prenez en charge la commande'}
-                {currentStep === 2 && '🚗 Allez chez le client'}
-                {currentStep === 3 && '✓ Livraison terminée'}
+                {t(`titreEtape.${currentStep}`)}
               </h2>
 
               {currentStep === 0 && (
                 <div className="space-y-4">
-                  <p className="text-gray-700 mb-4">Rendez-vous au commerce pour récupérer la commande</p>
+                  <p className="text-gray-700 mb-4">{t('rendezVous')}</p>
                   <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-orange-500 flex-shrink-0" />
                     <div>
-                      <p className="text-gray-900 font-semibold">{delivery.pickupStore || 'Commerce'}</p>
+                      <p className="text-gray-900 font-semibold">{delivery.pickupStore || t('commerce')}</p>
                       <p className="text-gray-500">{delivery.pickupAddress}</p>
                     </div>
                   </div>
@@ -559,15 +565,16 @@ export default function DeliveryTrackingPage() {
                       se valide pas depuis chez soi. */}
                   <p className="text-sm text-gray-500">
                     {distanceCommerce != null
-                      ? `Encore ${
-                          distanceCommerce >= 1000
-                            ? `${(distanceCommerce / 1000).toFixed(1)} km`
-                            : `${Math.round(distanceCommerce)} m`
-                        } : la prise en charge s'ouvrira à votre arrivée.`
-                      : 'Recherche de votre position… La prise en charge s\'ouvrira à votre arrivée.'}
+                      ? t('encore', {
+                          distance:
+                            distanceCommerce >= 1000
+                              ? `${(distanceCommerce / 1000).toFixed(1)} km`
+                              : `${Math.round(distanceCommerce)} m`,
+                        })
+                      : t('recherchePosition')}
                   </p>
 
-                  <GlisserPourValider libelle="Arrivez au commerce pour déverrouiller" onValide={() => {}} desactive />
+                  <GlisserPourValider libelle={t('deverrouiller')} onValide={() => {}} desactive />
 
                   {gpsIncertain && (
                     <button
@@ -575,7 +582,7 @@ export default function DeliveryTrackingPage() {
                       onClick={() => setArriveeDeclaree(true)}
                       className="block text-sm text-orange-600 hover:underline"
                     >
-                      Le GPS ne me situe pas : je suis bien au commerce
+                      {t('gpsIncertain')}
                     </button>
                   )}
                 </div>
@@ -585,12 +592,12 @@ export default function DeliveryTrackingPage() {
                 <div className="space-y-4">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <p className="text-green-800 font-semibold">
-                      Vous êtes arrivé chez {delivery.pickupStore || 'le commerce'}
+                      {t('arriveChez', { commerce: delivery.pickupStore || t('leCommerce') })}
                     </p>
                     <p className="text-green-700/80 text-sm">
                       {commandePrete
-                        ? 'Vérifiez la commande, puis glissez pour la prendre en charge. Le GPS partira aussitôt vers le client.'
-                        : 'La commande est encore en préparation. Vous pourrez la prendre en charge dès que le commerçant la déclarera prête.'}
+                        ? t('commandePrete')
+                        : t('commandeEnPreparation')}
                     </p>
                   </div>
 
@@ -602,7 +609,7 @@ export default function DeliveryTrackingPage() {
 
                   {delivery.items && delivery.items.length > 0 && (
                     <div className="bg-gray-100 rounded-lg p-4 space-y-2">
-                      <p className="text-gray-900 font-semibold mb-3">Articles à récupérer:</p>
+                      <p className="text-gray-900 font-semibold mb-3">{t('articles')}</p>
                       {delivery.items.map((item: any, idx: number) => (
                         <div key={idx} className="flex justify-between text-gray-700 text-sm">
                           <span>{item.product?.name || item.name} x{item.quantity}</span>
@@ -614,14 +621,14 @@ export default function DeliveryTrackingPage() {
                   <div ref={priseEnChargeRef} />
                   {commandePrete ? (
                     <GlisserPourValider
-                      libelle="Glisser pour prendre en charge"
+                      libelle={t('glisserPrendre')}
                       onValide={prendreEnCharge}
                       enCours={updating}
                     />
                   ) : (
                     <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
                       <Loader size={18} className="animate-spin" />
-                      <span className="text-sm font-medium">En attente : commande en préparation…</span>
+                      <span className="text-sm font-medium">{t('enAttentePreparation')}</span>
                     </div>
                   )}
                 </div>
@@ -629,11 +636,11 @@ export default function DeliveryTrackingPage() {
 
               {currentStep === 2 && (
                 <div className="space-y-4">
-                  <p className="text-gray-700 mb-4">Livrez la commande à l&apos;adresse du client</p>
+                  <p className="text-gray-700 mb-4">{t('livrez')}</p>
                   <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-green-500 flex-shrink-0" />
                     <div>
-                      <p className="text-gray-900 font-semibold">Client</p>
+                      <p className="text-gray-900 font-semibold">{t('client')}</p>
                       <p className="text-gray-500">{delivery.deliveryAddress}</p>
                     </div>
                   </div>
@@ -642,7 +649,7 @@ export default function DeliveryTrackingPage() {
                   {distanceClient != null && distanceClient <= RAYON_APPROCHE_CLIENT_M && (
                     <p className="flex items-center gap-2 text-sm text-green-700">
                       <BellRing size={16} />
-                      Le client est prévenu de votre arrivée : il peut descendre.
+                      {t('clientPrevenu')}
                     </p>
                   )}
 
@@ -650,7 +657,7 @@ export default function DeliveryTrackingPage() {
                       simple clic : rien ne distinguait un repas remis en main
                       propre d'un repas jamais sorti du sac. */}
                   <div className="border-t border-gray-200 pt-4 space-y-3">
-                    <h3 className="text-gray-900 font-semibold">Preuve de la remise</h3>
+                    <h3 className="text-gray-900 font-semibold">{t('preuveRemise')}</h3>
 
                     {refus && (
                       <p role="status" className="text-sm text-red-600">
@@ -661,7 +668,7 @@ export default function DeliveryTrackingPage() {
                     {!modePhoto ? (
                       <>
                         <label htmlFor="code-remise" className="block text-sm text-gray-500">
-                          Code à quatre chiffres, demandé au client
+                          {t('codeQuatre')}
                         </label>
                         <div className="flex items-center gap-3">
                           <input
@@ -676,18 +683,16 @@ export default function DeliveryTrackingPage() {
                           />
                           {updating && (
                             <span className="flex items-center gap-2 text-sm text-gray-500">
-                              <Loader size={16} className="animate-spin" /> Vérification…
+                              <Loader size={16} className="animate-spin" /> {t('verification')}
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-gray-500">
-                          Le code se vérifie tout seul dès le quatrième chiffre.
+                          {t('codeAuto')}
                         </p>
                         {delivery.essaisRestants != null && delivery.essaisRestants < 5 && (
                           <p className="text-xs text-amber-700">
-                            {delivery.essaisRestants} essai
-                            {delivery.essaisRestants > 1 ? 's' : ''} restant
-                            {delivery.essaisRestants > 1 ? 's' : ''}
+                            {t('essaisRestants', { n: delivery.essaisRestants })}
                           </p>
                         )}
                         <AttenteDepotLivreur
@@ -717,7 +722,7 @@ export default function DeliveryTrackingPage() {
                           <div className="space-y-2">
                             <img
                               src={apercuPhoto || photoUrl}
-                              alt="Photo du dépôt"
+                              alt={t('photoDepot')}
                               className="w-full max-h-72 object-cover rounded-lg border border-gray-300"
                             />
                             <button
@@ -726,7 +731,7 @@ export default function DeliveryTrackingPage() {
                               disabled={envoiPhoto}
                               className="text-sm text-orange-600 hover:underline"
                             >
-                              Reprendre la photo
+                              {t('reprendrePhoto')}
                             </button>
                           </div>
                         ) : (
@@ -739,25 +744,25 @@ export default function DeliveryTrackingPage() {
                             {envoiPhoto ? (
                               <>
                                 <Loader size={28} className="animate-spin" />
-                                Envoi de la photo…
+                                {t('envoiPhoto')}
                               </>
                             ) : (
                               <>
                                 <Camera size={28} />
-                                Photographier le dépôt
+                                {t('photographier')}
                               </>
                             )}
                           </button>
                         )}
 
                         <label htmlFor="note-depot" className="block text-sm text-gray-500">
-                          Où avez-vous déposé ?
+                          {t('ouDepose')}
                         </label>
                         <input
                           id="note-depot"
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
-                          placeholder="Devant la porte, chez le gardien…"
+                          placeholder={t('ouDeposeExemple')}
                           className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                         />
 
@@ -768,7 +773,7 @@ export default function DeliveryTrackingPage() {
                           className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
                         >
                           {updating ? <Loader size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                          Confirmer le dépôt
+                          {t('confirmerDepot')}
                         </button>
 
                         {delivery.codeAttendu && (
@@ -777,7 +782,7 @@ export default function DeliveryTrackingPage() {
                             onClick={() => setModePhoto(false)}
                             className="block text-sm text-orange-600 hover:underline"
                           >
-                            Revenir au code du client
+                            {t('revenirCode')}
                           </button>
                         )}
                       </>
@@ -791,11 +796,11 @@ export default function DeliveryTrackingPage() {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3">
                     <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
                     <div>
-                      <p className="text-green-800 font-semibold">Livraison complétée !</p>
+                      <p className="text-green-800 font-semibold">{t('livraisonCompletee')}</p>
                       <p className="text-green-700 text-sm">
                         {delivery.preuve === 'PHOTO'
-                          ? 'Dépôt prouvé par photo.'
-                          : 'Remise confirmée par le code du client.'}
+                          ? t('preuvePhoto')
+                          : t('preuveCode')}
                       </p>
                     </div>
                   </div>
@@ -805,18 +810,24 @@ export default function DeliveryTrackingPage() {
 
             {/* Customer Info */}
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Information du client</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">{t('infoClient')}</h2>
 
               <div className="space-y-4">
                 <div className="bg-gray-100 rounded-lg p-4">
-                  <p className="text-gray-500 text-sm mb-1">Nom</p>
+                  <p className="text-gray-500 text-sm mb-1">{t('nom')}</p>
                   <p className="text-gray-900 font-semibold">{delivery.customerName}</p>
                 </div>
 
-                <button className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2">
-                  <Phone size={18} />
-                  Appeler {delivery.customerPhone}
-                </button>
+                {/* Un bouton sans lien n'appelait personne. */}
+                {delivery.customerPhone && (
+                  <a
+                    href={`tel:${delivery.customerPhone.replace(/\s+/g, '')}`}
+                    className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2"
+                  >
+                    <Phone size={18} />
+                    {t('appeler', { telephone: delivery.customerPhone })}
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -826,19 +837,19 @@ export default function DeliveryTrackingPage() {
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 sticky top-20 space-y-6">
               {/* Stats */}
               <div>
-                <p className="text-gray-500 text-sm mb-2">Distance</p>
-                <p className="text-gray-900 text-2xl font-bold">{delivery.distance || 0} km</p>
+                <p className="text-gray-500 text-sm mb-2">{t('distance')}</p>
+                <p className="text-gray-900 text-2xl font-bold">{t('km', { n: delivery.distance || 0 })}</p>
               </div>
 
               <div>
-                <p className="text-gray-500 text-sm mb-2">Votre gain</p>
+                <p className="text-gray-500 text-sm mb-2">{t('votreGain')}</p>
                 <p className="text-green-600 text-2xl font-bold">{euro(delivery.payout || 0)}</p>
                 {(delivery.pourboire ?? 0) > 0 && (
-                  <p className="text-green-700 text-sm mt-1">dont {euro(delivery.pourboire!)} de pourboire 🙏</p>
+                  <p className="text-green-700 text-sm mt-1">{t('dontPourboire', { montant: euro(delivery.pourboire!) })}</p>
                 )}
                 {(delivery.pourboireApres ?? 0) > 0 && (
                   <p className="text-green-700 text-sm mt-1">
-                    + {euro(delivery.pourboireApres!)} de pourboire laissé après la livraison 🎉
+                    {t('pourboireApres', { montant: euro(delivery.pourboireApres!) })}
                   </p>
                 )}
               </div>
@@ -851,14 +862,14 @@ export default function DeliveryTrackingPage() {
                   className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 border border-red-200"
                 >
                   <X size={18} />
-                  Annuler la course
+                  {t('annuler')}
                 </button>
               )}
 
               {currentStep === 3 && (
                 <div className="text-center py-4">
-                  <p className="text-green-600 font-semibold mb-4">✓ Livraison complétée !</p>
-                  <p className="text-gray-500 text-sm">Retour au tableau de bord dans 2 secondes...</p>
+                  <p className="text-green-600 font-semibold mb-4">{t('completee')}</p>
+                  <p className="text-gray-500 text-sm">{t('retourDans')}</p>
                 </div>
               )}
             </div>

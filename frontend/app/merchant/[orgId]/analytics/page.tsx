@@ -3,7 +3,7 @@
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { useCurrentStore } from '@/lib/current-store';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -34,12 +34,13 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const locale = useLocale();
   const t = useTranslations('merchantAnalytics');
   const { storeId } = useCurrentStore();
 
   // Les montants sont déjà en euros : aucune division par 100.
   const euro = (valeur: number, decimales = 2) =>
-    Number(valeur || 0).toLocaleString('fr-FR', {
+    Number(valeur || 0).toLocaleString(locale, {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: decimales,
@@ -82,7 +83,7 @@ export default function AnalyticsPage() {
 
         const dailyData: { [key: string]: number } = {};
         ordersInRange.forEach(order => {
-          const date = new Date(order.createdAt).toLocaleDateString('fr-FR');
+          const date = new Date(order.createdAt).toLocaleDateString(locale);
           dailyData[date] = (dailyData[date] || 0) + montantCommercant(order);
         });
 
@@ -109,7 +110,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [storeId, timeRange]);
+  }, [storeId, timeRange, locale]);
 
   useEffectChargement(() => {
     if (storeId) {

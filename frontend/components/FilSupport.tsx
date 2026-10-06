@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Send, Check, CheckCheck, Package } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 
 export interface MessageSupport {
   id: string;
@@ -25,11 +26,13 @@ interface Props {
   clair?: boolean;
 }
 
-const heure = (iso: string) =>
-  new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const heure = (iso: string, locale: string) =>
+  new Date(iso).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** Un fil de discussion livreur ↔ support, commun aux deux espaces. */
 export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]', clair = false }: Props) {
+  const t = useTranslations('filSupport');
+  const locale = useLocale();
   const [texte, setTexte] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const bas = useRef<HTMLDivElement>(null);
@@ -53,7 +56,7 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
     <div className={`flex flex-col rounded-lg overflow-hidden border ${clair ? 'bg-white border-[#ECECEA]' : 'bg-gray-800 border-gray-700'}`}>
       <div className={`${hauteur} overflow-y-auto p-4 space-y-3`}>
         {messages.length === 0 && (
-          <p className="text-center text-gray-500 text-sm py-12">{vide || 'Aucun message pour le moment.'}</p>
+          <p className="text-center text-gray-500 text-sm py-12">{vide || t('vide')}</p>
         )}
 
         {messages.map((m) => {
@@ -71,18 +74,18 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
               >
                 {!deMoi && (
                   <p className={`text-xs font-semibold mb-0.5 ${clair ? 'text-orange-700' : 'text-orange-300'}`}>
-                    {m.sender === 'SUPPORT' ? 'Support' : 'Livreur'}
+                    {m.sender === 'SUPPORT' ? t('support') : t('livreur')}
                   </p>
                 )}
                 <p className="whitespace-pre-wrap break-words text-sm">{m.body}</p>
                 <div className={`flex items-center gap-2 mt-1 text-[11px] ${deMoi ? 'text-orange-100/80' : clair ? 'text-gray-500' : 'text-gray-400'}`}>
                   {m.deliveryId && (
-                    <span className="inline-flex items-center gap-1" title="Envoyé pendant une course">
-                      <Package size={11} /> course
+                    <span className="inline-flex items-center gap-1" title={t('pendantCourse')}>
+                      <Package size={11} /> {t('course')}
                     </span>
                   )}
-                  <span>{heure(m.createdAt)}</span>
-                  {deMoi && (m.readAt ? <CheckCheck size={13} aria-label="Lu" /> : <Check size={13} aria-label="Envoyé" />)}
+                  <span>{heure(m.createdAt, locale)}</span>
+                  {deMoi && (m.readAt ? <CheckCheck size={13} aria-label={t('lu')} /> : <Check size={13} aria-label={t('envoye')} />)}
                 </div>
               </div>
             </div>
@@ -104,7 +107,7 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
           }}
           rows={1}
           maxLength={2000}
-          placeholder="Votre message…"
+          placeholder={t('votreMessage')}
           className={`flex-1 resize-none rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 border ${
             clair ? 'bg-white border-gray-300 text-gray-900' : 'bg-gray-700 border-gray-600 text-white'
           }`}
@@ -113,7 +116,7 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
           type="submit"
           disabled={envoi || !texte.trim()}
           className="px-4 bg-orange-600 hover:bg-orange-700 disabled:opacity-40 rounded-lg text-white"
-          aria-label="Envoyer"
+          aria-label={t('envoyer')}
         >
           <Send size={18} />
         </button>

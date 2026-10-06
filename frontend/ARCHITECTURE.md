@@ -320,9 +320,11 @@ fichiers, à faire **ensemble** :
 
 ### F. Traductions
 
-Les textes sont dans `messages/fr.json` et `messages/en.json` (**111
-namespaces** aujourd'hui, à parité exacte). Un namespace par page ou par
-composant : `superownerApiKeys`, `nav`, `common`…
+Les textes sont dans `messages/fr.json` et `messages/en.json` (**environ 200
+namespaces**, à parité exacte). Un namespace par page ou par composant :
+`superownerApiKeys`, `nav`, `common`… **Tout le site passe par `next-intl`** :
+aucun texte affiché à l'utilisateur ne s'écrit en dur, y compris les
+`placeholder`, `title`, `aria-label`, messages d'erreur et confirmations.
 
 ```tsx
 const t = useTranslations('superownerCampagnes');
@@ -331,33 +333,45 @@ const t = useTranslations('superownerCampagnes');
 ```
 
 Dans un composant **serveur** : `const t = await getTranslations('ns')` (import
-`next-intl/server`).
+`next-intl/server`), ou `useTranslations` dans un composant serveur synchrone.
+Les titres d'onglet passent par `generateMetadata` et l'espace `titresPages`.
 
 **Règles :**
 
 - Ajoutez chaque clé **dans les deux fichiers**, au même endroit.
 - Les textes communs (boutons, « chargement… ») sont dans `common` : ne les
   redéfinissez pas.
-- Pour les montants et les dates, utilisez `lib/format.ts` (`euro(...)`) et
-  `useLocale()` de `next-intl` pour les dates.
+- **Pluriels** : un message ICU (`{n, plural, one {# article} other {# articles}}`),
+  jamais `article{n > 1 ? 's' : ''}`.
+- **Texte avec un lien ou du gras** : `t.rich('cle', { lien: (m) => <a …>{m}</a> })`
+  et `<lien>…</lien>` dans le JSON, plutôt que de couper la phrase en morceaux.
+- **Statuts, rôles, motifs** : une clé par code (`statuts.<CODE>`,
+  `motifsRefus.client.<MOTIF>`) ; la valeur envoyée au serveur reste le code.
+  Les tables de libellés en dur dans le code ne sont pas admises.
+- **`lib/`** ne connaît pas la langue : une fonction y renvoie un code (ex.
+  `erreurDeTaille` → `'pdfTropLourd'`) ou une chaîne vide, et l'écran traduit.
+  Un hook peut, lui, appeler `useTranslations` (`useNotifications`,
+  `useOrderTracking`, `CurrentStoreProvider`).
+- **Contenus longs** (pages « Devenir … ») : des tableaux d'objets dans le JSON,
+  lus avec `t.raw(...)` (voir `lib/devenir-contenus.ts`) ; le code ne garde que
+  les icônes et les liens.
+- **Dates** : `toLocaleDateString(locale)` avec `const locale = useLocale()`,
+  jamais `'fr-FR'` en dur. Les **montants** passent par `lib/format.ts`
+  (`euro(...)`), encore formatés à la française dans les deux langues.
+- **Numéro de commande** : `numeroCourt(id)` (`lib/numero-commande.ts`), le
+  même sur tous les écrans.
+- Ce que le serveur envoie (messages d'erreur de l'API, textes des pages
+  légales, réponses de l'assistant, motifs choisis par le livreur) reste dans
+  la langue du serveur : seule l'interface est traduite ici.
 
-**Ce n'est pas encore généralisé.** Environ **81 pages sur 121** utilisent
-`next-intl`. Les autres sont encore en français en dur (espace livreur, pages
-légales, certaines pages commerçant…). Une page neuve doit être traduite ; en
-modifiant une page ancienne, vous pouvez la migrer au passage (le guide
-`i18n/MIGRATION_GUIDE_REMAINING_PAGES.md` en décrit le principe).
-
-**Vérifier la parité** des deux fichiers (à lancer depuis `frontend/`) :
+**Vérifier** (depuis `frontend/`, sans serveur ni base) :
 
 ```bash
-node -e '
-const fr=require("./messages/fr.json"), en=require("./messages/en.json");
-const cles=(o,p="")=>Object.entries(o).flatMap(([k,v])=>typeof v==="object"&&v?cles(v,p+k+"."):[p+k]);
-const a=new Set(cles(fr)), b=new Set(cles(en));
-const m=(x,y)=>[...x].filter(k=>!y.has(k));
-console.log("absentes de en:",m(a,b)); console.log("absentes de fr:",m(b,a));
-process.exit(m(a,b).length+m(b,a).length?1:0)'
+node scripts/verif-traductions.mjs   # parité fr/en et messages ICU valides
 ```
+
+Une clé absente d'une langue affiche la clé brute ; un message ICU invalide
+(accolade non fermée, pluriel mal formé) fait planter la page qui l'affiche.
 
 **Ajouter une langue** : l'ajouter dans `LANGUES_SUPPORTEES`
 (`i18n/langues.ts`), créer `messages/<code>.json`, et vérifier les régions
@@ -563,7 +577,7 @@ avant de conclure à une régression.
    marche en local mais pas en production multi-domaines) : utilisez
    `lienVersEspace` / `accueilDe`.
 3. **Clé de traduction dans un seul des deux fichiers** : la page affiche la clé
-   brute (ou plante) dans l'autre langue. Lancez le contrôle de parité.
+   brute (ou plante) dans l'autre langue. Lancez `node scripts/verif-traductions.mjs`.
 4. **`useEffect` pour charger des données** : le lint le refuse dès qu'un
    `setState` s'y trouve. Utilisez `useEffectChargement`.
 5. **`window` ou `localStorage` au rendu serveur** : réservé aux composants

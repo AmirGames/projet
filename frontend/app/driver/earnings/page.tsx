@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Wallet, Package, Star, CalendarDays, Gift } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { MesVersements } from '@/components/MesVersements';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { numeroCourt } from '@/lib/numero-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface CourseRemuneree {
@@ -36,6 +37,7 @@ interface Revenus {
 }
 
 export default function RevenusLivreurPage() {
+  const locale = useLocale();
   const t = useTranslations('driverEarnings');
   const router = useRouter();
 
@@ -214,9 +216,9 @@ export default function RevenusLivreurPage() {
                     <tbody className="divide-y divide-gray-100">
                       {revenus.deliveries.map((course) => (
                         <tr key={course.id}>
-                          <td className="py-3">{course.orderId.slice(-8).toUpperCase()}</td>
+                          <td className="py-3">{numeroCourt(course.orderId)}</td>
                           <td className="py-3 text-gray-500">
-                            {new Date(course.deliveredAt).toLocaleString('fr-FR')}
+                            {new Date(course.deliveredAt).toLocaleString(locale)}
                           </td>
                           <td className="py-3 text-right text-yellow-600">
                             {(course.pourboire ?? 0) + (course.pourboireApres ?? 0) > 0

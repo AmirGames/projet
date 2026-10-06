@@ -2,7 +2,7 @@
 
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Store, ShoppingCart, TrendingUp, Copy } from 'lucide-react';
@@ -43,6 +43,7 @@ const PASTILLES: Record<string, string> = {
 };
 
 export default function MerchantDashboard() {
+  const locale = useLocale();
   const t = useTranslations('merchantMainDashboard');
   const tStatut = useTranslations('merchantOrders.statusLabel');
   const router = useRouter();
@@ -143,7 +144,7 @@ export default function MerchantDashboard() {
 
   return (
     <div className="space-y-6">
-      <title>Espace commerçant — ZupEat</title>
+      <title>{`${t("titreOnglet")} — ZupEat`}</title>
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
@@ -323,7 +324,7 @@ export default function MerchantDashboard() {
                   <div>
                     <p className="text-gray-900 font-semibold">{t('orderNumber', { id: order.id.slice(-8).toUpperCase() })}</p>
                     <p className="text-gray-500 text-sm mt-1">
-                      {new Date(order.createdAt).toLocaleDateString('fr-FR')}
+                      {new Date(order.createdAt).toLocaleDateString(locale)}
                     </p>
                   </div>
                   <div className="text-right">

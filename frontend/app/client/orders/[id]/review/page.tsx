@@ -285,14 +285,7 @@ export default function ReviewPage() {
   }
 
   const getRatingText = (rating: number) => {
-    const texts: Record<number, string> = {
-      1: 'Mauvais',
-      2: 'Acceptable',
-      3: 'Moyen',
-      4: 'Bon',
-      5: 'Excellent'
-    };
-    return texts[rating] || '';
+    return rating >= 1 && rating <= 5 ? t(`notes.${rating}`) : '';
   };
 
   // « Vous aviez mis 4★ en mars. Toujours d'accord ? » — l'année n'est
@@ -482,7 +475,7 @@ export default function ReviewPage() {
                       <div key={item.productId} className="bg-gray-100 rounded-lg p-4">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <p className="text-gray-900 font-semibold">{item.name}</p>
+                            <p className="text-gray-900 font-semibold">{item.name || t('produitSupprime')}</p>
                             <p className="text-gray-500 text-sm">x{item.quantity} • {euro(item.total)}</p>
                           </div>
                         </div>

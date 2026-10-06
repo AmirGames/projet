@@ -13,7 +13,7 @@
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Car, ChevronRight, Clock, Navigation } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { AccesPlateforme, chargerAcces } from '@/lib/acces-plateforme';
 import { useDonneesModifiees } from '@/lib/temps-reel';
@@ -68,6 +68,7 @@ const totalDes = async (statut: string) =>
   (await lire<{ pagination: { total: number } }>(`/courses?statut=${statut}&limit=1`)).pagination.total;
 
 export default function TableauDeBordZupDrive() {
+  const locale = useLocale();
   const t = useTranslations('superownerZupDrive');
   const tCourses = useTranslations('superownerCoursesDrive');
   const [chiffres, setChiffres] = useState<Chiffres | null>(null);
@@ -107,7 +108,7 @@ export default function TableauDeBordZupDrive() {
   }, [charger]);
   useDonneesModifiees('zupdrive', () => charger());
 
-  const date = (valeur: string) => new Date(valeur).toLocaleDateString('fr-FR');
+  const date = (valeur: string) => new Date(valeur).toLocaleDateString(locale);
   const enCours = chiffres?.courses ? EN_COURS.reduce((somme, statut) => somme + (chiffres.courses?.parStatut[statut] ?? 0), 0) : 0;
 
   return (
@@ -224,7 +225,7 @@ export default function TableauDeBordZupDrive() {
                         {course.departAdresse} → {course.arriveeAdresse}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {new Date(course.createdAt).toLocaleString('fr-FR')} · {tCourses(`statut.${course.statut}`)}
+                        {new Date(course.createdAt).toLocaleString(locale)} · {tCourses(`statut.${course.statut}`)}
                       </span>
                     </span>
                     <span className="shrink-0 whitespace-nowrap">{prix(course.prixCentimes)}</span>

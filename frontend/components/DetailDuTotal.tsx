@@ -1,4 +1,5 @@
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 type Montant = number | string | null | undefined;
 
@@ -30,6 +31,7 @@ export default function DetailDuTotal({
   };
   couleurTotal?: string;
 }) {
+  const t = useTranslations('detailDuTotal');
   const sousTotal = (commande.items || []).reduce(
     (somme, ligne) => somme + Number(ligne.price || 0) * ligne.quantity,
     0
@@ -38,35 +40,35 @@ export default function DetailDuTotal({
   return (
     <div className="space-y-2 text-sm">
       <div className="flex justify-between text-gray-500">
-        <span>Sous-total</span>
+        <span>{t('sousTotal')}</span>
         <span>{euro(sousTotal)}</span>
       </div>
       {commande.deliveryType === 'DELIVERY' && (
         <div className="flex justify-between text-gray-500">
-          <span>Livraison</span>
-          <span>{Number(commande.feesAmount) > 0 ? euro(commande.feesAmount) : 'Offerte'}</span>
+          <span>{t('livraison')}</span>
+          <span>{Number(commande.feesAmount) > 0 ? euro(commande.feesAmount) : t('offerte')}</span>
         </div>
       )}
       {Number(commande.serviceFeeAmount) > 0 && (
         <div className="flex justify-between text-gray-500">
-          <span>Frais de service</span>
+          <span>{t('fraisService')}</span>
           <span>{euro(commande.serviceFeeAmount)}</span>
         </div>
       )}
       {Number(commande.discountAmount) > 0 && (
         <div className="flex justify-between text-green-600">
-          <span>Remise{commande.promoCode ? ` (${commande.promoCode})` : ''}</span>
+          <span>{commande.promoCode ? t('remiseCode', { code: commande.promoCode }) : t('remise')}</span>
           <span>− {euro(commande.discountAmount)}</span>
         </div>
       )}
       {Number(commande.tipAmount) > 0 && (
         <div className="flex justify-between text-gray-500">
-          <span>Pourboire du livreur</span>
+          <span>{t('pourboire')}</span>
           <span>{euro(commande.tipAmount)}</span>
         </div>
       )}
       <div className="flex justify-between items-center pt-2 border-t border-gray-200 text-lg font-bold text-gray-900">
-        <span>Total</span>
+        <span>{t('total')}</span>
         {/* Ce que le client a payé : la commande et le pourboire, gardé à part. */}
         <span className={`text-2xl ${couleurTotal}`}>
           {euro(Number(commande.totalAmount || 0) + Number(commande.tipAmount || 0))}
@@ -75,8 +77,7 @@ export default function DetailDuTotal({
       {Number(commande.taxAmount) > 0 && (
         <div className="flex justify-between text-gray-500">
           <span>
-            dont TVA
-            {Number(commande.taxRate) > 0 ? ` ${Number(commande.taxRate)} %` : ''}
+            {Number(commande.taxRate) > 0 ? t('dontTvaTaux', { taux: Number(commande.taxRate) }) : t('dontTva')}
           </span>
           <span>{euro(commande.taxAmount)}</span>
         </div>

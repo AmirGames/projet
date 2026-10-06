@@ -8,6 +8,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PaniersAccueil } from '@/components/PaniersAccueil';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useAuth } from '@/lib/auth-context';
+import { useTranslations } from 'next-intl';
 
 /**
  * L'en-tête blanc du parcours client : logo, onglets (accueil, favoris,
@@ -18,6 +19,7 @@ import { useAuth } from '@/lib/auth-context';
  * l'autre.
  */
 export function EnTeteClient() {
+  const t = useTranslations('enTeteClient');
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
@@ -36,10 +38,10 @@ export function EnTeteClient() {
   };
 
   const navItems = [
-    { href: '/client', label: 'Accueil', icon: Home },
-    { href: '/client/favorites', label: 'Favoris', icon: Heart },
-    { href: '/client/orders', label: 'Commandes', icon: ShoppingCart },
-    { href: '/client/profile', label: 'Profil', icon: User },
+    { href: '/client', label: t('nav.accueil'), icon: Home },
+    { href: '/client/favorites', label: t('nav.favoris'), icon: Heart },
+    { href: '/client/orders', label: t('nav.commandes'), icon: ShoppingCart },
+    { href: '/client/profile', label: t('nav.profil'), icon: User },
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -97,7 +99,7 @@ export function EnTeteClient() {
                 className="flex w-full items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition"
               >
                 <LogOut size={20} />
-                Déconnexion
+                {t('deconnexion')}
               </button>
             )}
             {!isLoading && !user && (
@@ -107,7 +109,7 @@ export function EnTeteClient() {
                 className="flex w-full items-center gap-3 px-4 py-3 font-semibold text-orange-600 hover:bg-orange-50 transition"
               >
                 <LogIn size={20} />
-                Connexion
+                {t('connexion')}
               </Link>
             )}
           </div>
@@ -151,7 +153,7 @@ export function EnTeteClient() {
                 onClick={seDeconnecter}
                 className="px-4 py-2 rounded-full text-sm text-gray-700 font-semibold hover:bg-gray-100 transition"
               >
-                Déconnexion
+                {t('deconnexion')}
               </button>
             )}
             {!isLoading && !user && (
@@ -159,7 +161,7 @@ export function EnTeteClient() {
                 href="/login"
                 className="px-5 py-2 bg-gray-900 hover:bg-gray-800 rounded-full text-sm text-white font-semibold transition"
               >
-                Connexion
+                {t('connexion')}
               </Link>
             )}
             <LanguageSwitcher clair />

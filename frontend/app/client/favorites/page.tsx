@@ -4,7 +4,7 @@ import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -37,6 +37,7 @@ interface FavoriteStore {
 }
 
 export default function FavoritesPage() {
+  const locale = useLocale();
   const t = useTranslations('clientFavorites');
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteStore[]>([]);
@@ -176,13 +177,13 @@ export default function FavoritesPage() {
                           <div className="flex items-center gap-1">
                             <Star size={16} className="text-yellow-500 fill-yellow-500" />
                             <span className="text-gray-900 font-semibold">
-                              {Number(store.rating).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                              {Number(store.rating).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                             </span>
                           </div>
                           <span className="text-gray-500 text-sm">({store.totalRatings} avis)</span>
                         </>
                       ) : (
-                        <span className="text-gray-500 text-sm">Pas encore d&apos;avis</span>
+                        <span className="text-gray-500 text-sm">{t('pasDAvis')}</span>
                       )}
                     </div>
 

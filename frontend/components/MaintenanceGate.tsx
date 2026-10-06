@@ -37,7 +37,7 @@ export function MaintenanceGate() {
           try {
             const donnees = await reponse.clone().json();
             if (donnees?.code === 'MAINTENANCE_MODE') {
-              setMessage(donnees.error || 'Plateforme en maintenance.');
+              setMessage(donnees.error || t('enMaintenance'));
             }
           } catch {
             // Un 503 sans corps JSON ne vient pas du mode maintenance.
@@ -54,23 +54,23 @@ export function MaintenanceGate() {
     return () => {
       window.fetch = originel;
     };
-  }, []);
+  }, [t]);
 
   if (!message || exempt) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-gray-900/95 backdrop-blur flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-[100] bg-[#F7F7F6] flex items-center justify-center p-6">
       <div className="max-w-md text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-orange-500/20 flex items-center justify-center mx-auto">
-          <Wrench size={32} className="text-orange-400" />
+        <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto">
+          <Wrench size={32} className="text-orange-600" />
         </div>
-        <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
-        <p className="text-gray-300">{message || t('message')}</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-600">{message || t('message')}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-lg font-medium transition-colors"
+          className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-semibold transition-colors"
         >
-          Réessayer
+          {t('reessayer')}
         </button>
       </div>
     </div>

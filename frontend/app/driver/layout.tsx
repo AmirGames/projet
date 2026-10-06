@@ -9,12 +9,14 @@ import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { AlertesCourseLivreur } from '@/components/AlertesCourseLivreur';
 import { useStockageLocal } from '@/lib/navigateur';
 import { fermerSessionPartout } from '@/lib/sso';
+import { useTranslations } from 'next-intl';
 
 export default function DriverLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations('espaceLivreur');
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -31,11 +33,11 @@ export default function DriverLayout({
   const afficherBarre = isAuthenticated && !pageSansSession;
 
   const navItems = [
-    { href: '/driver', label: 'Tableau de bord', icon: Home },
-    { href: '/driver/earnings', label: 'Revenus', icon: DollarSign },
-    { href: '/driver/analytics', label: 'Statistiques', icon: BarChart3 },
-    { href: '/driver/deliveries', label: 'Historique', icon: FileText },
-    { href: '/driver/support', label: 'Support', icon: MessageCircle },
+    { href: '/driver', label: t('tableau'), icon: Home },
+    { href: '/driver/earnings', label: t('revenus'), icon: DollarSign },
+    { href: '/driver/analytics', label: t('statistiques'), icon: BarChart3 },
+    { href: '/driver/deliveries', label: t('historique'), icon: FileText },
+    { href: '/driver/support', label: t('support'), icon: MessageCircle },
   ];
 
   // L'accueil /driver préfixe toutes les pages : il ne s'allume que sur lui-même.
@@ -67,7 +69,7 @@ export default function DriverLayout({
                 <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                   DR
                 </div>
-                <span className="font-bold text-gray-900">Livreur</span>
+                <span className="font-bold text-gray-900">{t('livreur')}</span>
               </SelecteurEspace>
 
               <div className="flex items-center gap-2">
@@ -107,7 +109,7 @@ export default function DriverLayout({
                   className="w-full flex items-center gap-3 rounded-[10px] px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   <LogOut size={20} />
-                  Déconnexion
+                  {t('deconnexion')}
                 </button>
               </div>
             )}
@@ -122,7 +124,7 @@ export default function DriverLayout({
                 <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                   DR
                 </div>
-                <span className="font-bold text-gray-900 text-lg">Espace Livreur</span>
+                <span className="font-bold text-gray-900 text-lg">{t('espace')}</span>
               </SelecteurEspace>
 
               <div className="flex items-center gap-4">
@@ -151,7 +153,7 @@ export default function DriverLayout({
                   className="flex items-center gap-2 rounded-full px-4 py-2 font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   <LogOut size={18} />
-                  Déconnexion
+                  {t('deconnexion')}
                 </button>
                 <LanguageSwitcher clair />
               </div>

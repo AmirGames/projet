@@ -50,15 +50,7 @@ interface Horaires {
 
 const JOURS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
-const NOM_DU_JOUR: Record<string, string> = {
-  MON: 'Lundi',
-  TUE: 'Mardi',
-  WED: 'Mercredi',
-  THU: 'Jeudi',
-  FRI: 'Vendredi',
-  SAT: 'Samedi',
-  SUN: 'Dimanche',
-};
+// Le nom de chaque jour : `jours.<MON…SUN>` des traductions.
 
 /** Une fermeture avant l'ouverture se lit « le lendemain ». */
 const franchitMinuit = (plage: Plage) => plage.close <= plage.open;
@@ -93,7 +85,7 @@ export default function HorairesPage() {
       });
 
       if (!reponse.ok) {
-        setErreur('Horaires indisponibles');
+        setErreur(t('indisponibles'));
         return;
       }
 
@@ -144,14 +136,14 @@ export default function HorairesPage() {
 
       // Un refus muet laissait croire que l'horaire était enregistré.
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Horaires refusés');
+        setErreur(lu?.error || t('horairesRefuses'));
         return;
       }
 
       await charger();
       setJourEdite(null);
       setBrouillon(null);
-      setMessage(`${NOM_DU_JOUR[jour]} enregistré`);
+      setMessage(t('jourEnregistre', { jour: t(`jours.${jour}`) }));
     } catch {
       setErreur(t('serverError'));
     } finally {
@@ -203,7 +195,7 @@ export default function HorairesPage() {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Créneau refusé');
+        setErreur(lu?.error || t('creneauRefuse'));
         return;
       }
 
@@ -248,7 +240,7 @@ export default function HorairesPage() {
     return (
       <div className="text-gray-900">
         <p role="status" className="text-gray-500">
-          {erreur || 'Horaires indisponibles'}
+          {erreur || t('indisponibles')}
         </p>
       </div>
     );
@@ -261,10 +253,10 @@ export default function HorairesPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <Clock className="text-amber-500" />
-              Horaires et disponibilité
+              {t('titre')}
             </h1>
             <p className="text-gray-500 mt-2">
-              Vos horaires d&apos;ouverture, et les créneaux de retrait proposés au client.
+              {t('sousTitre')}
             </p>
           </div>
 
@@ -273,8 +265,8 @@ export default function HorairesPage() {
             disabled={envoi}
             title={
               data.isOpen
-                ? 'Fermer la boutique immédiatement'
-                : 'Rouvrir la boutique immédiatement'
+                ? t('fermerMaintenant')
+                : t('rouvrirMaintenant')
             }
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
               data.isOpen
@@ -300,11 +292,10 @@ export default function HorairesPage() {
 
         {/* Les horaires de la semaine */}
         <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Horaires d&apos;ouverture</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('horairesOuverture')}</h2>
           {/* Le service du midi et celui du soir tiennent dans la même journée. */}
           <p className="text-sm text-gray-500 mb-6">
-            Une journée peut compter plusieurs services — midi et soir, par exemple. Une
-            fermeture après minuit se saisit telle quelle : 17h30 – 01h00.
+            {t('horairesAide')}
           </p>
 
           <div className="space-y-3">
@@ -318,18 +309,18 @@ export default function HorairesPage() {
                     key={jour}
                     className="flex items-center justify-between bg-gray-100 p-4 rounded-lg border border-gray-300"
                   >
-                    <p className="text-gray-900 font-medium flex-1">{NOM_DU_JOUR[jour]}</p>
+                    <p className="text-gray-900 font-medium flex-1">{t(`jours.${jour}`)}</p>
 
                     <div className="flex items-center gap-4">
                       {horaires?.closed ? (
-                        <span className="text-sm text-red-600">Fermé</span>
+                        <span className="text-sm text-red-600">{t('ferme')}</span>
                       ) : (
                         <span className="text-sm text-green-600">
                           {(horaires?.plages || []).map((plage, index) => (
                             <span key={index} className="ml-3 first:ml-0">
                               {plage.open} – {plage.close}
                               {franchitMinuit(plage) && (
-                                <span className="text-gray-500 text-xs"> (le lendemain)</span>
+                                <span className="text-gray-500 text-xs"> {t('lendemain')}</span>
                               )}
                             </span>
                           ))}
@@ -340,10 +331,10 @@ export default function HorairesPage() {
                           distinguent ni à la lecture d'écran, ni autrement. */}
                       <button
                         onClick={() => ouvrirLEdition(jour)}
-                        aria-label={`Modifier ${NOM_DU_JOUR[jour]}`}
+                        aria-label={t('modifierJour', { jour: t(`jours.${jour}`) })}
                         className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded transition text-sm"
                       >
-                        Modifier
+                        {t('modifier')}
                       </button>
                     </div>
                   </div>
@@ -356,7 +347,7 @@ export default function HorairesPage() {
                   className="bg-gray-100 p-4 rounded-lg border border-amber-200 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-gray-900 font-medium">{NOM_DU_JOUR[jour]}</p>
+                    <p className="text-gray-900 font-medium">{t(`jours.${jour}`)}</p>
 
                     <label className="flex items-center gap-2 text-gray-700 text-sm">
                       <input
@@ -369,7 +360,7 @@ export default function HorairesPage() {
                         }
                         className="w-4 h-4"
                       />
-                      Fermé ce jour-là
+                      {t('fermeCeJour')}
                     </label>
                   </div>
 
@@ -379,7 +370,7 @@ export default function HorairesPage() {
                         <div key={index} className="flex items-center gap-2 flex-wrap">
                           <input
                             type="time"
-                            aria-label={`Ouverture ${index + 1} — ${NOM_DU_JOUR[jour]}`}
+                            aria-label={t('ouverture', { n: index + 1, jour: t(`jours.${jour}`) })}
                             value={plage.open}
                             onChange={(e) =>
                               setBrouillon((actuel) =>
@@ -398,7 +389,7 @@ export default function HorairesPage() {
                           <span className="text-gray-500">à</span>
                           <input
                             type="time"
-                            aria-label={`Fermeture ${index + 1} — ${NOM_DU_JOUR[jour]}`}
+                            aria-label={t('fermeture', { n: index + 1, jour: t(`jours.${jour}`) })}
                             value={plage.close}
                             onChange={(e) =>
                               setBrouillon((actuel) =>
@@ -416,7 +407,7 @@ export default function HorairesPage() {
                           />
 
                           {franchitMinuit(plage) && (
-                            <span className="text-xs text-gray-500">jusqu&apos;au lendemain</span>
+                            <span className="text-xs text-gray-500">{t('jusquauLendemain')}</span>
                           )}
 
                           {(brouillon?.plages.length || 0) > 1 && (
@@ -432,7 +423,7 @@ export default function HorairesPage() {
                                     : actuel
                                 )
                               }
-                              title="Retirer ce service"
+                              title={t('retirerService')}
                               className="p-1 text-red-600 hover:text-red-700 transition"
                             >
                               <Trash2 size={16} />
@@ -457,7 +448,7 @@ export default function HorairesPage() {
                           className="flex items-center gap-1 text-sm text-amber-600 hover:text-amber-700 transition"
                         >
                           <Plus size={16} />
-                          Ajouter un service
+                          {t('ajouterService')}
                         </button>
                       )}
                     </div>
@@ -467,10 +458,10 @@ export default function HorairesPage() {
                     <button
                       onClick={() => brouillon && enregistrerLeJour(jour, brouillon)}
                       disabled={envoi}
-                      aria-label={`Enregistrer ${NOM_DU_JOUR[jour]}`}
+                      aria-label={t('enregistrerJour', { jour: t(`jours.${jour}`) })}
                       className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded transition text-sm disabled:opacity-50"
                     >
-                      Enregistrer
+                      {t('enregistrer')}
                     </button>
                     <button
                       onClick={() => {
@@ -479,7 +470,7 @@ export default function HorairesPage() {
                       }}
                       className="px-3 py-1 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition text-sm"
                     >
-                      Annuler
+                      {t('annuler')}
                     </button>
                   </div>
                 </div>
@@ -491,7 +482,7 @@ export default function HorairesPage() {
         {/* Les créneaux de retrait */}
         <div className="bg-white rounded-lg p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Créneaux de retrait</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('creneaux')}</h2>
 
             {!formulaireCreneau && (
               <button
@@ -499,7 +490,7 @@ export default function HorairesPage() {
                 className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg transition"
               >
                 <Plus size={20} />
-                Ajouter un créneau
+                {t('ajouterCreneau')}
               </button>
             )}
           </div>
@@ -509,7 +500,7 @@ export default function HorairesPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label htmlFor="creneau-debut" className="text-gray-700 text-sm">
-                    Début
+                    {t('debut')}
                   </label>
                   <input
                     id="creneau-debut"
@@ -521,7 +512,7 @@ export default function HorairesPage() {
                 </div>
                 <div>
                   <label htmlFor="creneau-fin" className="text-gray-700 text-sm">
-                    Fin
+                    {t('fin')}
                   </label>
                   <input
                     id="creneau-fin"
@@ -533,7 +524,7 @@ export default function HorairesPage() {
                 </div>
                 <div>
                   <label htmlFor="creneau-max" className="text-gray-700 text-sm">
-                    Commandes maximum
+                    {t('commandesMax')}
                   </label>
                   <input
                     id="creneau-max"
@@ -557,13 +548,13 @@ export default function HorairesPage() {
                   disabled={envoi}
                   className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
                 >
-                  Ajouter
+                  {t('ajouter')}
                 </button>
                 <button
                   onClick={() => setFormulaireCreneau(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition"
                 >
-                  Annuler
+                  {t('annuler')}
                 </button>
               </div>
             </div>
@@ -581,14 +572,14 @@ export default function HorairesPage() {
                       {creneau.start} – {creneau.end}
                     </p>
                     <p className="text-gray-500 text-sm">
-                      {creneau.maxOrders} commande{creneau.maxOrders > 1 ? 's' : ''} au maximum
+                      {t('commandesAuMaximum', { n: creneau.maxOrders })}
                     </p>
                   </div>
 
                   <button
                     onClick={() => retirerUnCreneau(creneau.id)}
                     disabled={envoi}
-                    title="Retirer ce créneau"
+                    title={t('retirerCreneau')}
                     className="p-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50"
                   >
                     <Trash2 size={20} />
@@ -598,8 +589,7 @@ export default function HorairesPage() {
             </div>
           ) : (
             <p className="text-gray-500 text-center py-8">
-              Aucun créneau de retrait. Le client se voit alors proposer les heures
-              d&apos;ouverture ci-dessus.
+              {t('aucunCreneau')}
             </p>
           )}
         </div>

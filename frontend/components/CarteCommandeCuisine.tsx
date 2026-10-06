@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Phone, Search, Truck } from 'lucide-react';
 
 import { euro, montantCommercant } from '@/lib/format';
+import { numeroCourt } from '@/lib/numero-commande';
 import {
   MOTIFS_DU_COMMERCANT,
   TEMPS_DE_PREPARATION,
@@ -51,14 +52,6 @@ export interface CommandeCuisine {
   } | null;
 }
 
-/**
- * « #4F82A1C9 » : la fin de l'identifiant, comme sur la fiche de la commande
- * et le ticket imprimé. Le début, horodaté, est presque le même d'une
- * commande à l'autre.
- */
-export function numeroCourt(id: string) {
-  return `#${id.slice(-8).toUpperCase()}`;
-}
 
 /** Les minutes écoulées (positives) ou restantes (négatives) depuis une date. */
 function minutesDepuis(date: string, maintenant: number) {
@@ -151,7 +144,7 @@ export function CarteCommandeCuisine({
   const boutonSecondaire =
     'rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-bold transition hover:bg-gray-50 disabled:opacity-40';
   const boutonPrincipal =
-    'rounded-full px-4 py-3 text-sm font-extrabold text-white transition disabled:opacity-40';
+    'rounded-full px-4 py-3 text-sm font-extrabold text-white transition disabled:opacity-50';
 
   // L'étape suivante de la commande acceptée, avec son libellé.
   const suite =

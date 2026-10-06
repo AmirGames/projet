@@ -65,7 +65,7 @@ export default function ProductMediaPage() {
 
   const fetchMedia = async () => {
     if (!productId) {
-      setError("Veuillez entrer un ID de produit");
+      setError(t('saisirId'));
       return;
     }
 
@@ -77,7 +77,7 @@ export default function ProductMediaPage() {
         },
       });
 
-      if (!res.ok) throw new Error("Erreur lors du chargement des médias");
+      if (!res.ok) throw new Error(t('erreurChargement'));
       const data: MediaResponse = await res.json();
       setMedia(data.data.sort((a, b) => a.displayOrder - b.displayOrder));
       setError("");
@@ -90,7 +90,7 @@ export default function ProductMediaPage() {
 
   const addMedia = async () => {
     if (!mediaUrl) {
-      setError("L'URL du média est requise");
+      setError(t('urlRequise'));
       return;
     }
 
@@ -108,7 +108,7 @@ export default function ProductMediaPage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Erreur lors de l'ajout du média");
+      if (!res.ok) throw new Error(t('erreurAjout'));
       fetchMedia();
       setMediaUrl("");
       setMediaAlt("");
@@ -150,7 +150,7 @@ export default function ProductMediaPage() {
         }
       );
 
-      if (!res.ok) throw new Error("Erreur lors de la réorganisation");
+      if (!res.ok) throw new Error(t('erreurOrdre'));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('genericError'));
     }
@@ -186,10 +186,10 @@ export default function ProductMediaPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <ImageIcon className="w-8 h-8" />
-          Médias des Produits
+          {t('titre')}
         </h1>
         <p className="text-gray-400 mt-1">
-          Gérez les images et vidéos de vos produits
+          {t('sousTitre')}
         </p>
       </div>
 
@@ -201,19 +201,19 @@ export default function ProductMediaPage() {
 
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Charger un média
+          {t('charger')}
         </h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Produit
+              {t('produit')}
             </label>
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg"
             >
-              <option value="">— Choisir un produit —</option>
+              <option value="">{t('choisirProduit')}</option>
               {produits.map((produit) => (
                 <option key={produit.id} value={produit.id}>
                   {produit.name}
@@ -226,7 +226,7 @@ export default function ProductMediaPage() {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  URL du Média
+                  {t('url')}
                 </label>
                 <input
                   type="url"
@@ -239,28 +239,28 @@ export default function ProductMediaPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Texte Alternatif
+                  {t('texteAlt')}
                 </label>
                 <input
                   type="text"
                   value={mediaAlt}
                   onChange={(e) => setMediaAlt(e.target.value)}
-                  placeholder="Description du média"
+                  placeholder={t('descriptionMedia')}
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type de Média
+                  {t('type')}
                 </label>
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value as "image" | "video")}
                   className="w-full px-3 py-2 border rounded-lg"
                 >
-                  <option value="image">Image</option>
-                  <option value="video">Vidéo</option>
+                  <option value="image">{t('image')}</option>
+                  <option value="video">{t('video')}</option>
                 </select>
               </div>
 
@@ -269,13 +269,13 @@ export default function ProductMediaPage() {
                   onClick={addMedia}
                   className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 rounded-lg"
                 >
-                  Ajouter le Média
+                  {t('ajouter')}
                 </button>
                 <button
                   onClick={fetchMedia}
                   className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 rounded-lg"
                 >
-                  Charger les Médias
+                  {t('chargerMedias')}
                 </button>
               </div>
             </>
@@ -290,7 +290,7 @@ export default function ProductMediaPage() {
       ) : media.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <ImageIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucun média pour ce produit</p>
+          <p className="text-gray-400">{t('aucun')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -307,7 +307,7 @@ export default function ProductMediaPage() {
                 {item.type === "image" ? (
                   <img
                     src={item.url}
-                    alt={item.alt || "Produit"}
+                    alt={item.alt || t('produit')}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -330,14 +330,14 @@ export default function ProductMediaPage() {
                   </p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Ordre: {item.displayOrder}
+                  {t("ordre", { n: item.displayOrder })}
                 </p>
                 <button
                   onClick={() => deleteMedia(item.id)}
                   className="mt-2 w-full p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Supprimer
+                  {t('supprimer')}
                 </button>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, Pause, Play, Terminal, Trash2 } from 'lucide-react';
 
 /**
@@ -32,6 +32,7 @@ const COULEURS: Record<string, string> = {
 const NIVEAUX = ['error', 'warn', 'info', 'http', 'debug'] as const;
 
 export default function ConsolePage() {
+  const locale = useLocale();
   const t = useTranslations('superownerConsole');
   const [lignes, setLignes] = useState<Ligne[]>([]);
   const [erreur, setErreur] = useState('');
@@ -170,7 +171,7 @@ export default function ConsolePage() {
         {visibles.map((l) => (
           <div key={l.id} className="whitespace-pre-wrap break-all">
             <span className={COULEURS[l.niveau] ?? 'text-gray-700'}>
-              [{new Date(l.date).toLocaleString('fr-FR')}] {l.niveau.toUpperCase()}
+              [{new Date(l.date).toLocaleString(locale)}] {l.niveau.toUpperCase()}
             </span>{' '}
             <span className="text-gray-800">{l.message}</span>
             {l.meta && <span className="text-gray-500"> {l.meta}</span>}

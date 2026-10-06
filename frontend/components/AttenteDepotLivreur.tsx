@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -22,6 +23,7 @@ export function AttenteDepotLivreur({
   /** L'attente est écoulée : place à la photo du dépôt. */
   surDepot: () => void;
 }) {
+  const t = useTranslations('attenteDepotLivreur');
   const [fin, setFin] = useState<number | null>(finLe ? new Date(finLe).getTime() : null);
   const [ecart, setEcart] = useState(() => (maintenant ? new Date(maintenant).getTime() - Date.now() : 0));
   const [instant, setInstant] = useState(() => Date.now());
@@ -47,12 +49,12 @@ export function AttenteDepotLivreur({
         headers: { Authorization: `Bearer ${token}` },
       });
       const lu = await reponse.json().catch(() => null);
-      if (!reponse.ok) throw new Error(lu?.error || "L'attente n'a pas pu commencer");
+      if (!reponse.ok) throw new Error(lu?.error || t('impossible'));
       setEcart(new Date(lu.data.maintenant).getTime() - Date.now());
       setInstant(Date.now());
       setFin(new Date(lu.data.attenteFinLe).getTime());
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "L'attente n'a pas pu commencer");
+      setErreur(e instanceof Error ? e.message : t('impossible'));
     } finally {
       setEnvoi(false);
     }
@@ -60,13 +62,12 @@ export function AttenteDepotLivreur({
 
   return (
     <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
-      <p className="text-sm font-semibold text-gray-900">Le client ne répond pas ?</p>
+      <p className="text-sm font-semibold text-gray-900">{t('titre')}</p>
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}
       {reste == null ? (
         <>
           <p className="text-xs text-gray-500">
-            Appelez-le. Sans réponse, lancez l&apos;attente : il est prévenu et voit le compte à rebours. Au bout de 6
-            minutes, vous pourrez déposer la commande en lieu sûr.
+            {t('aide')}
           </p>
           <button
             type="button"
@@ -74,12 +75,12 @@ export function AttenteDepotLivreur({
             disabled={envoi}
             className="w-full rounded-lg bg-gray-900 py-2 font-semibold text-white hover:bg-black disabled:opacity-60"
           >
-            ⏱ Lancer l&apos;attente (6 min)
+            {t('lancer')}
           </button>
         </>
       ) : reste > 0 ? (
         <div className="text-center">
-          <p className="text-sm text-amber-800">Le client est prévenu. Attendez encore</p>
+          <p className="text-sm text-amber-800">{t('prevenu')}</p>
           <p className="text-3xl font-bold tabular-nums text-amber-700">
             {Math.floor(reste / 60)}:{String(reste % 60).padStart(2, '0')}
           </p>
@@ -90,7 +91,7 @@ export function AttenteDepotLivreur({
           onClick={surDepot}
           className="w-full rounded-lg bg-green-700 py-2 font-semibold text-white hover:bg-green-800"
         >
-          📦 Déposer la commande en lieu sûr
+          {t('deposer')}
         </button>
       )}
     </div>

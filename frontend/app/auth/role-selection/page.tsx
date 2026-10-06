@@ -34,6 +34,7 @@ interface Roles {
 
 export default function RoleSelectionPage() {
   const t = useTranslations('common');
+  const tr = useTranslations('choixRole');
   const router = useRouter();
   const [roles, setRoles] = useState<Roles | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +68,7 @@ export default function RoleSelectionPage() {
         const data = await api.getRoles();
         setRoles(data.roles);
       } catch (err) {
-        setError("Erreur lors du chargement des rôles");
+        setError(tr('erreurRoles'));
         signalerErreur(err);
       } finally {
         setLoading(false);
@@ -75,7 +76,7 @@ export default function RoleSelectionPage() {
     };
 
     fetchRoles();
-  }, []);
+  }, [tr]);
 
   const handleBecomeMerchant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +109,7 @@ export default function RoleSelectionPage() {
         description: "",
       });
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la création du commerce");
+      setError(err.message || tr('erreurCommerce'));
       signalerErreur(err);
     }
   };
@@ -134,23 +135,23 @@ export default function RoleSelectionPage() {
         vehiclePlate: "",
       });
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la création du profil livreur");
+      setError(err.message || tr('erreurLivreur'));
       signalerErreur(err);
     }
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-[#F7F7F6] flex items-center justify-center"><div className="text-gray-900">Chargement...</div></div>;
+    return <div className="min-h-screen bg-[#F7F7F6] flex items-center justify-center"><div className="text-gray-900">{tr('chargement')}</div></div>;
   }
 
   return (
     <div className="min-h-screen bg-[#F7F7F6] p-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">
-          Mes Rôles
+          {tr('titre')}
         </h1>
         <p className="text-gray-500 text-center mb-8">
-          Gérez vos différents rôles dans ZupOne
+          {tr('sousTitre')}
         </p>
 
         {error && (
@@ -169,21 +170,21 @@ export default function RoleSelectionPage() {
                     roles.customer.active ? "bg-green-500" : "bg-gray-500"
                   }`}
                 />
-                <h2 className="text-xl font-bold text-gray-900">Client</h2>
+                <h2 className="text-xl font-bold text-gray-900">{tr('client')}</h2>
               </div>
               <p className="text-gray-500 mb-4">
-                Commandez auprès des commerçants
+                {tr('clientAide')}
               </p>
               <div className="space-y-2 mb-6">
                 <p className="text-sm text-gray-500">
-                  <span className="text-green-600 font-semibold">Actif</span>
+                  <span className="text-green-600 font-semibold">{tr('actif')}</span>
                 </p>
               </div>
               <button
                 onClick={() => router.push("/client")}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
               >
-                Accéder
+                {tr('acceder')}
               </button>
             </div>
 
@@ -195,10 +196,10 @@ export default function RoleSelectionPage() {
                     roles.merchant.active ? "bg-green-500" : "bg-gray-500"
                   }`}
                 />
-                <h2 className="text-xl font-bold text-gray-900">Commerçant</h2>
+                <h2 className="text-xl font-bold text-gray-900">{tr('commercant')}</h2>
               </div>
               <p className="text-gray-500 mb-4">
-                Gérez votre boutique et vos commandes
+                {tr('commercantAide')}
               </p>
               {roles.merchant.active ? (
                 <div className="space-y-2 mb-6">
@@ -214,7 +215,7 @@ export default function RoleSelectionPage() {
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 mb-6">
-                  Créer votre première boutique
+                  {tr('premiereBoutique')}
                 </p>
               )}
               <div className="space-y-2">
@@ -233,7 +234,7 @@ export default function RoleSelectionPage() {
                     }}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
                   >
-                    Accéder
+                    {tr('acceder')}
                   </button>
                 )}
                 <button
@@ -243,8 +244,8 @@ export default function RoleSelectionPage() {
                   {showMerchantForm
                     ? t('cancel')
                     : roles.merchant.active
-                      ? "+ Ajouter une boutique"
-                      : "Devenir commerçant"}
+                      ? tr('ajouterBoutique')
+                      : tr('devenirCommercant')}
                 </button>
               </div>
             </div>
@@ -257,10 +258,10 @@ export default function RoleSelectionPage() {
                     roles.driver.active ? "bg-green-500" : "bg-gray-500"
                   }`}
                 />
-                <h2 className="text-xl font-bold text-gray-900">Livreur</h2>
+                <h2 className="text-xl font-bold text-gray-900">{tr('livreur')}</h2>
               </div>
               <p className="text-gray-500 mb-4">
-                Livrez les commandes et gagnez
+                {tr('livreurAide')}
               </p>
               {roles.driver.active ? (
                 <div className="space-y-2 mb-6">
@@ -272,7 +273,7 @@ export default function RoleSelectionPage() {
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 mb-6">
-                  Rejoindre notre réseau de livreurs
+                  {tr('rejoindre')}
                 </p>
               )}
               <button
@@ -284,7 +285,7 @@ export default function RoleSelectionPage() {
                     : "bg-orange-600 hover:bg-orange-700 text-white"
                 }`}
               >
-                {roles.driver.active ? "Candidature en cours" : "Devenir livreur"}
+                {roles.driver.active ? tr('candidature') : tr('devenirLivreur')}
               </button>
             </div>
           </div>
@@ -294,13 +295,13 @@ export default function RoleSelectionPage() {
         {showMerchantForm && (
           <div className="mt-8 bg-white rounded-lg p-6 border border-gray-200">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              Créer une boutique
+              {tr('creerBoutique')}
             </h3>
             <form onSubmit={handleBecomeMerchant} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Nom de l'entreprise"
+                  placeholder={tr('nomEntreprise')}
                   value={merchantFormData.businessName}
                   onChange={(e) =>
                     setMerchantFormData({
@@ -313,7 +314,7 @@ export default function RoleSelectionPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Nom de la boutique"
+                  placeholder={tr('nomBoutique')}
                   value={merchantFormData.storeName}
                   onChange={(e) =>
                     setMerchantFormData({
@@ -327,7 +328,7 @@ export default function RoleSelectionPage() {
                 />
                 <input
                   type="text"
-                  placeholder="URL de la boutique (slug)"
+                  placeholder={tr('urlBoutique')}
                   value={merchantFormData.storeSlug}
                   onChange={(e) =>
                     setMerchantFormData({
@@ -349,7 +350,7 @@ export default function RoleSelectionPage() {
                   className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 >
-                  <option value="">Type d'entreprise</option>
+                  <option value="">{tr('typeEntreprise')}</option>
                   {etablissements.map((genre) => (
                     <option key={genre.code} value={genre.code}>
                       {genre.libelle}
@@ -358,7 +359,7 @@ export default function RoleSelectionPage() {
                 </select>
                 {merchantFormData.businessType === "restaurant" && (
                   <select
-                    aria-label="Type de cuisine"
+                    aria-label={tr('typeCuisine')}
                     value={merchantFormData.cuisineType}
                     onChange={(e) =>
                       setMerchantFormData({
@@ -368,7 +369,7 @@ export default function RoleSelectionPage() {
                     }
                     className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="">Type de cuisine (facultatif)</option>
+                    <option value="">{tr('typeCuisineFacultatif')}</option>
                     {cuisines.map((cuisine) => (
                       <option key={cuisine.code} value={cuisine.code}>
                         {cuisine.libelle}
@@ -378,7 +379,7 @@ export default function RoleSelectionPage() {
                 )}
                 <input
                   type="tel"
-                  placeholder="Téléphone"
+                  placeholder={tr('telephone')}
                   value={merchantFormData.phone}
                   onChange={(e) =>
                     setMerchantFormData({
@@ -390,7 +391,7 @@ export default function RoleSelectionPage() {
                   required
                 />
                 <AddressAutocomplete
-                  placeholder="Adresse"
+                  placeholder={tr('adresse')}
                   value={merchantFormData.address}
                   onChange={(valeur) =>
                     setMerchantFormData((prev) => ({ ...prev, address: valeur }))
@@ -408,7 +409,7 @@ export default function RoleSelectionPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Ville"
+                  placeholder={tr('ville')}
                   value={merchantFormData.city}
                   onChange={(e) =>
                     setMerchantFormData({
@@ -421,7 +422,7 @@ export default function RoleSelectionPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Code postal"
+                  placeholder={tr('codePostal')}
                   value={merchantFormData.postalCode}
                   onChange={(e) =>
                     setMerchantFormData({
@@ -434,7 +435,7 @@ export default function RoleSelectionPage() {
                 />
               </div>
               <textarea
-                placeholder="Description de votre boutique"
+                placeholder={tr('description')}
                 value={merchantFormData.description}
                 onChange={(e) =>
                   setMerchantFormData({
@@ -449,7 +450,7 @@ export default function RoleSelectionPage() {
                 type="submit"
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
               >
-                Créer la boutique
+                {tr('creerLaBoutique')}
               </button>
             </form>
           </div>
@@ -459,13 +460,13 @@ export default function RoleSelectionPage() {
         {showDriverForm && (
           <div className="mt-8 bg-white rounded-lg p-6 border border-gray-200">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              Devenir livreur
+              {tr('devenirLivreur')}
             </h3>
             <form onSubmit={handleBecomeDriver} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Nom complet"
+                  placeholder={tr('nomComplet')}
                   value={driverFormData.name}
                   onChange={(e) =>
                     setDriverFormData({
@@ -478,7 +479,7 @@ export default function RoleSelectionPage() {
                 />
                 <input
                   type="email"
-                  placeholder="Email"
+                  placeholder={tr('email')}
                   value={driverFormData.email}
                   onChange={(e) =>
                     setDriverFormData({
@@ -491,7 +492,7 @@ export default function RoleSelectionPage() {
                 />
                 <input
                   type="tel"
-                  placeholder="Téléphone"
+                  placeholder={tr('telephone')}
                   value={driverFormData.phone}
                   onChange={(e) =>
                     setDriverFormData({
@@ -513,14 +514,14 @@ export default function RoleSelectionPage() {
                   className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   required
                 >
-                  <option value="">Type de véhicule</option>
-                  <option value="scooter">Scooter / Moto</option>
-                  <option value="car">Voiture</option>
-                  <option value="bike">Vélo</option>
+                  <option value="">{tr('typeVehicule')}</option>
+                  <option value="scooter">{tr('scooter')}</option>
+                  <option value="car">{tr('voiture')}</option>
+                  <option value="bike">{tr('velo')}</option>
                 </select>
                 <input
                   type="text"
-                  placeholder="Immatriculation"
+                  placeholder={tr('immatriculation')}
                   value={driverFormData.vehiclePlate}
                   onChange={(e) =>
                     setDriverFormData({
@@ -536,7 +537,7 @@ export default function RoleSelectionPage() {
                 type="submit"
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg"
               >
-                Postuler comme livreur
+                {tr('postuler')}
               </button>
             </form>
           </div>
@@ -547,7 +548,7 @@ export default function RoleSelectionPage() {
             href="/client"
             className="text-blue-600 hover:text-blue-700 font-semibold"
           >
-            ← Retour à l'accueil
+            {tr('retour')}
           </Link>
         </div>
       </div>

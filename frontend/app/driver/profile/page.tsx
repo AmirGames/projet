@@ -76,11 +76,11 @@ export default function DriverProfilePage() {
       }
     } catch (err) {
       signalerErreur('Error loading driver data:', err);
-      setError('Erreur lors du chargement du profil');
+      setError(t('erreurChargement'));
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffectChargement(() => {
     loadDriverData();
@@ -116,16 +116,16 @@ export default function DriverProfilePage() {
       });
 
       if (response.ok) {
-        setSuccess('Profil mis à jour avec succès');
+        setSuccess(t('misAJour'));
         setIsEditing(false);
         loadDriverData();
       } else {
         const data = await response.json();
-        setError(data.error || 'Erreur lors de la mise à jour');
+        setError(data.error || t('erreurMiseAJour'));
       }
     } catch (err) {
       signalerErreur('Error updating profile:', err);
-      setError('Erreur de connexion');
+      setError(t('erreurConnexion'));
     }
   };
 
@@ -135,7 +135,7 @@ export default function DriverProfilePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-900">Chargement du profil...</p>
+          <p className="text-gray-900">{t('chargement')}</p>
         </div>
       </div>
     );
@@ -145,12 +145,12 @@ export default function DriverProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-900 text-lg mb-4">Erreur de chargement du profil</p>
+          <p className="text-gray-900 text-lg mb-4">{t('erreurProfil')}</p>
           <button
             onClick={() => router.push('/driver')}
             className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg"
           >
-            Retourner au tableau de bord
+            {t('retourTableau')}
           </button>
         </div>
       </div>
@@ -170,8 +170,8 @@ export default function DriverProfilePage() {
                 </button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Mon profil</h1>
-                <p className="text-gray-500 text-sm">Gérez vos informations personnelles</p>
+                <h1 className="text-2xl font-bold text-gray-900">{t('monProfil')}</h1>
+                <p className="text-gray-500 text-sm">{t('gerez')}</p>
               </div>
             </div>
           </div>
@@ -208,21 +208,21 @@ export default function DriverProfilePage() {
                   ? 'bg-yellow-50 text-yellow-600'
                   : 'bg-gray-100 text-gray-500'
               }`}>
-                {driver.status === 'VALIDATED' && '✓ Validé'}
-                {driver.status === 'PENDING' && '⏳ En attente de validation'}
-                {!driver.status && 'Nouveau'}
+                {driver.status === 'VALIDATED' && t('statutValide')}
+                {driver.status === 'PENDING' && t('statutEnAttente')}
+                {!driver.status && t('statutNouveau')}
               </div>
             </div>
 
             {/* Stats */}
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
               <div className="border-b border-gray-200 pb-4">
-                <p className="text-gray-500 text-sm mb-2">Note moyenne</p>
+                <p className="text-gray-500 text-sm mb-2">{t('noteMoyenne')}</p>
                 <div className="flex items-center gap-2">
                   <Star size={24} className="text-yellow-500" />
                   <div>
                     {driver.rating == null ? (
-                      <p className="text-gray-900 font-semibold">Pas encore noté</p>
+                      <p className="text-gray-900 font-semibold">{t('pasEncoreNote')}</p>
                     ) : (
                       <>
                         <p className="text-gray-900 text-xl font-bold">
@@ -236,12 +236,12 @@ export default function DriverProfilePage() {
               </div>
 
               <div className="border-b border-gray-200 pb-4">
-                <p className="text-gray-500 text-sm mb-2">Livraisons complétées</p>
+                <p className="text-gray-500 text-sm mb-2">{t('livraisonsCompletees')}</p>
                 <p className="text-gray-900 text-2xl font-bold">{driver.completedDeliveries}</p>
               </div>
 
               <div>
-                <p className="text-gray-500 text-sm mb-2">Revenus totaux</p>
+                <p className="text-gray-500 text-sm mb-2">{t('revenusTotaux')}</p>
                 <p className="text-gray-900 text-2xl font-bold">
                   {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(driver.totalEarnings || 0)}
                 </p>
@@ -252,23 +252,23 @@ export default function DriverProfilePage() {
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
               <p className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
                 <FileText size={18} />
-                Documents requis
+                {t('documentsRequis')}
               </p>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">Carte d'identité</span>
+                  <span className="text-gray-500 text-sm">{t('carteIdentite')}</span>
                   <span className={`text-sm font-semibold ${driver.documents?.id_card ? 'text-green-600' : 'text-red-600'}`}>
                     {driver.documents?.id_card ? '✓' : '✗'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">Permis de conduire</span>
+                  <span className="text-gray-500 text-sm">{t('permis')}</span>
                   <span className={`text-sm font-semibold ${driver.documents?.driver_license ? 'text-green-600' : 'text-red-600'}`}>
                     {driver.documents?.driver_license ? '✓' : '✗'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">Assurance</span>
+                  <span className="text-gray-500 text-sm">{t('assurance')}</span>
                   <span className={`text-sm font-semibold ${driver.documents?.insurance ? 'text-green-600' : 'text-red-600'}`}>
                     {driver.documents?.insurance ? '✓' : '✗'}
                   </span>
@@ -281,7 +281,7 @@ export default function DriverProfilePage() {
           <div className="lg:col-span-2">
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-8">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Informations personnelles</h2>
+                <h2 className="text-xl font-bold text-gray-900">{t('infosPerso')}</h2>
                 <button
                   onClick={() => {
                     setIsEditing(!isEditing);
@@ -309,7 +309,7 @@ export default function DriverProfilePage() {
                 <div>
                   <label className="flex items-center gap-2 text-gray-500 text-sm mb-2">
                     <User size={16} />
-                    Nom complet
+                    {t('nomComplet')}
                   </label>
                   <input
                     type="text"
@@ -325,11 +325,11 @@ export default function DriverProfilePage() {
                 <div>
                   <label className="flex items-center gap-2 text-gray-500 text-sm mb-2">
                     <Mail size={16} />
-                    Email
+                    {t('email')}
                   </label>
                   <input
-                    type={t('email')}
-                    name={t('email')}
+                    type="email"
+                    name="email"
                     value={formData.email}
                     onChange={handleInputChange}
                     disabled={!isEditing}
@@ -341,11 +341,11 @@ export default function DriverProfilePage() {
                 <div>
                   <label className="flex items-center gap-2 text-gray-500 text-sm mb-2">
                     <Phone size={16} />
-                    Téléphone
+                    {t('telephone')}
                   </label>
                   <input
                     type="tel"
-                    name={t('phone')}
+                    name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
                     disabled={!isEditing}
@@ -357,7 +357,7 @@ export default function DriverProfilePage() {
                 <div>
                   <label className="flex items-center gap-2 text-gray-500 text-sm mb-2">
                     <MapPin size={16} />
-                    Adresse
+                    {t('adresse')}
                   </label>
                   <textarea
                     name="address"
@@ -376,7 +376,7 @@ export default function DriverProfilePage() {
                       type="submit"
                       className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition"
                     >
-                      Enregistrer les modifications
+                      {t('enregistrer')}
                     </button>
                   </div>
                 )}
@@ -389,12 +389,12 @@ export default function DriverProfilePage() {
             <div className="mt-6 grid grid-cols-2 gap-4">
               <Link href="/driver/earnings">
                 <button className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-3 rounded-lg transition border border-gray-200">
-                  Voir les revenus
+                  {t('voirRevenus')}
                 </button>
               </Link>
               <Link href="/driver/deliveries">
                 <button className="w-full bg-white hover:bg-gray-100 text-gray-900 font-semibold py-3 rounded-lg transition border border-gray-200">
-                  Historique livraisons
+                  {t('historique')}
                 </button>
               </Link>
             </div>

@@ -34,7 +34,7 @@ function Formulaire() {
     }
 
     if (motDePasse !== confirmation) {
-      setErreur('Les deux mots de passe ne sont pas identiques.');
+      setErreur(t('differents'));
       return;
     }
 
@@ -50,14 +50,14 @@ function Formulaire() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || "Ce lien n'est plus valable.");
+        setErreur(donnees.error || t('plusValable'));
         return;
       }
 
       setReussi(true);
       setTimeout(() => router.push('/login'), 2500);
     } catch {
-      setErreur('Serveur injoignable. Vérifiez votre connexion.');
+      setErreur(t('injoignable'));
     } finally {
       setEnCours(false);
     }
@@ -66,16 +66,15 @@ function Formulaire() {
   if (!jeton) {
     return (
       <div className="text-center space-y-4">
-        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Lien incomplet</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('lienIncomplet')}</h1>
         <p className="text-slate-600">
-          Cette adresse ne contient pas de jeton. Ouvrez le lien depuis l&apos;e-mail reçu, ou
-          demandez-en un nouveau.
+          {t('sansJeton')}
         </p>
         <Link
           href="/mot-de-passe-oublie"
           className="inline-block font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600"
         >
-          Demander un nouveau lien
+          {t('nouveauLien')}
         </Link>
       </div>
     );
@@ -85,10 +84,10 @@ function Formulaire() {
     return (
       <div className="text-center space-y-4">
         <CheckCircle2 size={48} className="mx-auto text-gray-900" />
-        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Mot de passe modifié</h1>
-        <p className="text-slate-600">Vous allez être redirigé vers la connexion.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('modifie')}</h1>
+        <p className="text-slate-600">{t('redirection')}</p>
         <Link href="/login" className="inline-block font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
-          Se connecter maintenant
+          {t('seConnecter')}
         </Link>
       </div>
     );
@@ -96,9 +95,9 @@ function Formulaire() {
 
   return (
     <>
-      <h1 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-gray-900">Nouveau mot de passe</h1>
+      <h1 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-gray-900">{t('nouveauMdp')}</h1>
       <p className="text-slate-600 text-center mb-6">
-        Au moins 8 caractères, dont un chiffre, une minuscule et une majuscule.
+        {t('regles')}
       </p>
 
       {erreur && <div className="bg-red-50 border border-red-200 text-red-900 p-4 rounded-lg mb-4">{erreur}</div>}
@@ -106,7 +105,7 @@ function Formulaire() {
       <form onSubmit={valider} className="space-y-4">
         <div>
           <label htmlFor="motdepasse" className="mb-1.5 block text-sm font-semibold text-gray-700">
-            Mot de passe
+            {t('mdp')}
           </label>
           <input
             id="motdepasse"
@@ -125,7 +124,7 @@ function Formulaire() {
 
         <div>
           <label htmlFor="confirmation" className="mb-1.5 block text-sm font-semibold text-gray-700">
-            Confirmation
+            {t('confirmation')}
           </label>
           <input
             id="confirmation"
@@ -153,11 +152,12 @@ function Formulaire() {
 }
 
 export default function Reinitialiser() {
+  const t = useTranslations('resetPassword');
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
-        <Suspense fallback={<p className="text-center text-slate-600">Chargement...</p>}>
+        <Suspense fallback={<p className="text-center text-slate-600">{t('chargement')}</p>}>
           <Formulaire />
         </Suspense>
       </div>

@@ -13,7 +13,7 @@
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Car } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { LignePieceAExaminer, type PieceAExaminer } from '../_ligne-piece';
@@ -86,9 +86,10 @@ const COULEURS: Record<string, string> = {
 };
 
 const jeton = () => localStorage.getItem('accessToken');
-const date = (valeur: string | null) => (valeur ? new Date(valeur).toLocaleDateString('fr-FR') : '—');
+const date = (valeur: string | null, locale: string) => (valeur ? new Date(valeur).toLocaleDateString(locale) : '—');
 
 export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
+  const locale = useLocale();
   const t = useTranslations('superownerChauffeurs');
 
   const [chauffeurs, setChauffeurs] = useState<LigneChauffeur[]>([]);
@@ -291,11 +292,11 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                       chauffeur.vehiculePlaque && <span>{chauffeur.vehiculePlaque}</span>
                     )}
                     <span>{t('piecesCount', { validees: chauffeur.piecesValidees, exigees: chauffeur.piecesExigees })}</span>
-                    {chauffeur.soumisLe && <span>{t('submittedOn', { date: date(chauffeur.soumisLe) })}</span>}
+                    {chauffeur.soumisLe && <span>{t('submittedOn', { date: date(chauffeur.soumisLe, locale) })}</span>}
                     {chauffeur.statut === 'VALIDE' && (
                       <span>
                         {chauffeur.note?.moyenne != null
-                          ? t('rating', { moyenne: chauffeur.note.moyenne.toLocaleString('fr-FR'), avis: chauffeur.note.avis })
+                          ? t('rating', { moyenne: chauffeur.note.moyenne.toLocaleString(locale), avis: chauffeur.note.avis })
                           : t('neverRated')}
                       </span>
                     )}
@@ -327,8 +328,8 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
           ['societe', dossier.societe.raisonSociale],
           ['vehicule', dossier.vehicule ? `${dossier.vehicule.marque} ${dossier.vehicule.modele}` : null],
           ['vehiculePlaque', dossier.vehicule?.plaque ?? null],
-          ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe) : null],
-          ['valideLe', dossier.valideLe ? date(dossier.valideLe) : null],
+          ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe, locale) : null],
+          ['valideLe', dossier.valideLe ? date(dossier.valideLe, locale) : null],
         ]
       : [
           ['email', dossier.email],
@@ -340,8 +341,8 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
           ['numeroLicence', dossier.numeroLicence],
           ['vehicule', [dossier.vehiculeMarque, dossier.vehiculeModele].filter(Boolean).join(' ') || null],
           ['vehiculePlaque', dossier.vehiculePlaque],
-          ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe) : null],
-          ['valideLe', dossier.valideLe ? date(dossier.valideLe) : null],
+          ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe, locale) : null],
+          ['valideLe', dossier.valideLe ? date(dossier.valideLe, locale) : null],
         ];
     const manquantes = dossier.piecesExigees.filter((p) => !dossier.documents.some((d) => d.type === p.type));
 
