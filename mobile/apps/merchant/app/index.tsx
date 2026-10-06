@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView, RefreshControl } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/api';
+import { API_URL, apiFetch, formatEuros, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
 import { displayStatus, isPending, isToday, montantCommercant, Order } from '../lib/orders';
 import { NewOrderEvent, useOrderAlerts } from '../lib/useOrderAlerts';
@@ -108,14 +108,6 @@ export default function MerchantApp() {
     await loadStores(next.accessToken, next.orgId, storedPrefs.storeId);
   };
 
-  // Le serveur ferme les autres sessions et remet des jetons neufs à celle-ci.
-  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string }) => {
-    const current = sessionRef.current;
-    if (!current) return;
-    const renewed = { ...current, ...tokens };
-    setSession(renewed);
-    saveSession(renewed);
-  }, []);
 
   const handleLogout = useCallback(() => {
     const current = sessionRef.current;
@@ -136,6 +128,20 @@ export default function MerchantApp() {
     setBanner(null);
     setUnreadCount(0);
   }, []);
+
+  // Le serveur ferme toutes les sessions du compte, celle-ci comprise (D8) : on
+  // revient à l'écran de connexion. Des jetons neufs, s'il en remettait, sont gardés.
+  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string } | null) => {
+    if (!tokens) {
+      handleLogout();
+      return;
+    }
+    const current = sessionRef.current;
+    if (!current) return;
+    const renewed = { ...current, ...tokens };
+    setSession(renewed);
+    saveSession(renewed);
+  }, [handleLogout]);
 
   // Démarrage : on reprend la session enregistrée et on renouvelle le jeton.
   useEffect(() => {
@@ -181,7 +187,12 @@ export default function MerchantApp() {
       handleLogout();
       Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
     });
-    return () => setUnauthorizedHandler(null);
+    // La session renouvelée en cours d'usage : l'écran garde le jeton valable.
+    setSessionRenewedHandler((renewed) => setSession(renewed));
+    return () => {
+      setUnauthorizedHandler(null);
+      setSessionRenewedHandler(null);
+    };
   }, [handleLogout]);
 
   // Ce téléphone reçoit les commandes même application fermée.

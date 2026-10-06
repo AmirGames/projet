@@ -15,7 +15,7 @@ export interface NewTokens {
  * il faut l'actuel, le nouveau suit la règle de la création de compte, et les
  * autres appareils sont déconnectés.
  */
-export default function ChangePasswordCard({ token, onChanged }: { token: string; onChanged: (tokens: NewTokens) => void }) {
+export default function ChangePasswordCard({ token, onChanged }: { token: string; onChanged: (tokens: NewTokens | null) => void }) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -33,11 +33,12 @@ export default function ChangePasswordCard({ token, onChanged }: { token: string
         method: 'POST',
         body: { currentPassword: current, newPassword: next },
       });
-      if (res.accessToken && res.refreshToken) onChanged({ accessToken: res.accessToken, refreshToken: res.refreshToken });
       setCurrent('');
       setNext('');
       setConfirmation('');
-      Alert.alert('Mot de passe', res.message || 'Mot de passe modifié.');
+      Alert.alert('Mot de passe', res.message || 'Mot de passe modifié. Reconnectez-vous.');
+      // Le serveur ferme toutes les sessions : sans jetons neufs, retour à la connexion.
+      onChanged(res.accessToken && res.refreshToken ? { accessToken: res.accessToken, refreshToken: res.refreshToken } : null);
     } catch (e: any) {
       setError(e.message || 'Le mot de passe n’a pas pu être changé.');
     } finally {

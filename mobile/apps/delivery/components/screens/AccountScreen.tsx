@@ -43,7 +43,7 @@ export default function AccountScreen({
   token: string;
   onBack: () => void;
   onDriverLoaded: (driver: Driver) => void;
-  onPasswordChanged: (tokens: NewTokens) => void;
+  onPasswordChanged: (tokens: NewTokens | null) => void;
 }) {
   const [driver, setDriver] = useState<Driver | null>(null);
   const [docs, setDocs] = useState<Documents | null>(null);

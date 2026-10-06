@@ -59,7 +59,8 @@
     "web": "expo start --web",
     "lint": "expo lint app components lib modules/course-alerts/src",
     "typecheck": "tsc --noEmit",
-    "test:alerts": "node --experimental-strip-types --test tests/course-alerts.test.cjs"
+    "test:alerts": "node --experimental-strip-types --test tests/course-alerts.test.cjs",
+    "test:session": "node --experimental-strip-types --test tests/renouvellement.test.cjs"
   },
   "engines": {
     "node": ">=22.13.0"

@@ -30,7 +30,7 @@ export default function AccountScreen({
 }: {
   token: string;
   onBack: () => void;
-  onPasswordChanged: (tokens: NewTokens) => void;
+  onPasswordChanged: (tokens: NewTokens | null) => void;
 }) {
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
