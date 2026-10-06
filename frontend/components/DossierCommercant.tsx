@@ -18,6 +18,7 @@ import { LienPiece } from '@/components/LienPiece';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { erreurDeTaille, reduireImage } from '@/lib/reduire-image';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -60,14 +61,13 @@ interface Dossier {
   validation: Validation;
 }
 
-const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
-  APPROVED: { icone: Check, classe: 'text-green-600', libelle: 'Validé' },
-  REJECTED: { icone: X, classe: 'text-red-600', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-500', libelle: "En attente d'examen" },
-  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-600', libelle: 'Expiré' },
+// Le libellé : `pieces.<statut>` des traductions.
+const MARQUES: Record<string, { icone: typeof Check; classe: string }> = {
+  APPROVED: { icone: Check, classe: 'text-green-600' },
+  REJECTED: { icone: X, classe: 'text-red-600' },
+  PENDING: { icone: Clock, classe: 'text-gray-500' },
+  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-600' },
 };
-
-const dateCourte = (iso: string) => new Date(iso).toLocaleDateString('fr-FR');
 
 function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) {
   return (
@@ -79,6 +79,9 @@ function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) 
 }
 
 export function DossierCommercant({ orgId }: { orgId: string }) {
+  const t = useTranslations('dossierCommercant');
+  const locale = useLocale();
+  const dateCourte = (iso: string) => new Date(iso).toLocaleDateString(locale);
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState('');
@@ -140,14 +143,14 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Modification impossible');
+        setErreur(lu?.error || t('modificationImpossible'));
         return;
       }
 
       setEcheance(({ [piece.id]: _, ...reste }) => reste);
       await charger();
     } catch {
-      setErreur('Modification impossible');
+      setErreur(t('modificationImpossible'));
     } finally {
       setEnCours('');
     }
@@ -171,7 +174,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Examen impossible');
+        setErreur(lu?.error || t('examenImpossible'));
         return;
       }
 
@@ -199,7 +202,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Validation impossible');
+        setErreur(lu?.error || t('validationImpossible'));
         return;
       }
 
@@ -247,7 +250,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreurUpload(lu?.error || 'Dépôt impossible');
+        setErreurUpload(lu?.error || t('depotImpossible'));
         return;
       }
 
@@ -272,7 +275,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-5">
       <h2 className="text-lg font-bold flex items-center gap-2">
         <FileText size={20} className="text-orange-500" />
-        Dossier du commerçant
+        {t('titre')}
         {dossier.piecesAExaminer > 0 && (
           <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-500/40 text-xs font-semibold">
             {dossier.piecesAExaminer} pièce{dossier.piecesAExaminer > 1 ? 's' : ''} à examiner
@@ -285,20 +288,19 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       {dossier.validation?.valide ? (
         <p className="flex items-center gap-2 text-sm text-green-600">
           <BadgeCheck size={18} />
-          Commerce validé
-          {dossier.validation.approvedAt && ` le ${dateCourte(dossier.validation.approvedAt)}`}
+          {dossier.validation.approvedAt
+            ? t('valideLe', { date: dateCourte(dossier.validation.approvedAt) })
+            : t('valide')}
         </p>
       ) : (
         dossier.validation && (
           <div className="rounded-lg border border-amber-500/40 bg-amber-100 p-4 flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-semibold text-amber-700">En attente de validation</p>
+              <p className="font-semibold text-amber-700">{t('enAttente')}</p>
               <p className="text-sm text-gray-700">
                 {dossier.validation.dossierComplet
-                  ? 'Toutes les pièces exigées sont validées : le commerce peut être validé.'
-                  : `Reste à valider : ${dossier.validation.piecesManquantes
-                      .map((piece) => piece.libelle)
-                      .join(', ')}.`}
+                  ? t('toutValide')
+                  : t('resteAValider', { liste: dossier.validation.piecesManquantes.map((piece) => piece.libelle).join(', ') })}
               </p>
             </div>
             <button
@@ -308,11 +310,11 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
               title={
                 dossier.validation.dossierComplet
                   ? undefined
-                  : 'Validez d’abord les pièces exigées'
+                  : t('validezDabord')
               }
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold text-white transition"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-semibold text-white transition"
             >
-              Valider le commerce
+              {t('validerCommerce')}
             </button>
           </div>
         )
@@ -326,24 +328,23 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
 
       {(dossier.manquePourFacturer.length > 0 || dossier.manquePourEtrePaye.length > 0) && (
         <p className="text-sm text-amber-700">
-          Dossier incomplet : il manque{' '}
-          {[...dossier.manquePourFacturer, ...dossier.manquePourEtrePaye].join(', ')}.
+          {t('incomplet', { liste: [...dossier.manquePourFacturer, ...dossier.manquePourEtrePaye].join(', ') })}
         </p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Ligne libelle="Raison sociale" valeur={dossier.legalName} />
-        <Ligne libelle="Immatriculation" valeur={dossier.registrationNumber} />
-        <Ligne libelle="Numéro de TVA" valeur={dossier.vatNumber} />
-        <Ligne libelle="Adresse de facturation" valeur={adresse || null} />
-        <Ligne libelle="Pays" valeur={dossier.billingCountry} />
+        <Ligne libelle={t('raisonSociale')} valeur={dossier.legalName} />
+        <Ligne libelle={t('immatriculation')} valeur={dossier.registrationNumber} />
+        <Ligne libelle={t('numeroTva')} valeur={dossier.vatNumber} />
+        <Ligne libelle={t('adresseFacturation')} valeur={adresse || null} />
+        <Ligne libelle={t('pays')} valeur={dossier.billingCountry} />
         <Ligne
-          libelle="Propriétaire"
+          libelle={t('proprietaire')}
           valeur={[dossier.ownerFirstName, dossier.ownerLastName].filter(Boolean).join(' ') || null}
         />
-        <Ligne libelle="E-mail du propriétaire" valeur={dossier.ownerEmail} />
-        <Ligne libelle="Téléphone du propriétaire" valeur={dossier.ownerPhone} />
-        <Ligne libelle="Titulaire du compte" valeur={dossier.accountHolder} />
+        <Ligne libelle={t('emailProprietaire')} valeur={dossier.ownerEmail} />
+        <Ligne libelle={t('telephoneProprietaire')} valeur={dossier.ownerPhone} />
+        <Ligne libelle={t('titulaire')} valeur={dossier.accountHolder} />
         {/* Quatre caractères : de quoi rapprocher un virement d'un compte, pas
             de quoi s'en servir. */}
         <Ligne libelle="IBAN" valeur={dossier.ibanMasque} />
@@ -358,7 +359,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
             className="flex items-center gap-1 text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded transition"
           >
             <Upload size={14} />
-            Ajouter
+            {t('ajouter')}
           </button>
         </div>
 
@@ -370,7 +371,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
 
             <div>
               <label htmlFor="type-piece" className="block text-sm text-gray-500 mb-1">
-                Type de pièce
+                {t('typePiece')}
               </label>
               <select
                 id="type-piece"
@@ -378,18 +379,18 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                 onChange={(e) => setTypePiece(e.target.value)}
                 className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
               >
-                <option value="">Choisir…</option>
-                <option value="registration">Extrait d'immatriculation (Kbis, BCE)</option>
-                <option value="identity">Pièce d'identité du propriétaire</option>
-                <option value="vat">Attestation de TVA</option>
-                <option value="bank">Relevé d'identité bancaire</option>
-                <option value="other">Autre document</option>
+                <option value="">{t('choisir')}</option>
+                <option value="registration">{t('registration')}</option>
+                <option value="identity">{t('identity')}</option>
+                <option value="vat">{t('vat')}</option>
+                <option value="bank">{t('bank')}</option>
+                <option value="other">{t('other')}</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="fichier-piece" className="block text-sm text-gray-500 mb-1">
-                Fichier (JPG, PNG, WebP : 2 Mo, PDF : 5 Mo)
+                {t('fichier')}
               </label>
               <input
                 id="fichier-piece"
@@ -411,7 +412,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                 disabled={envoi}
                 className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-medium py-2 rounded transition"
               >
-                {envoi ? 'Envoi…' : 'Déposer'}
+                {envoi ? t('envoi') : t('deposer')}
               </button>
               <button
                 type="button"
@@ -423,7 +424,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                 }}
                 className="px-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded transition"
               >
-                Annuler
+                {t('annuler')}
               </button>
             </div>
           </form>
@@ -443,8 +444,8 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                     <div className="min-w-0">
                       <p className="text-gray-900 text-sm font-medium">{piece.libelle}</p>
                       <p className={`text-xs ${marque.classe}`}>
-                        {marque.libelle}
-                        {piece.expiryDate && ` · expire le ${dateCourte(piece.expiryDate)}`}
+                        {t(`pieces.${MARQUES[piece.status] ? piece.status : 'PENDING'}`)}
+                        {piece.expiryDate && t('expireLe', { date: dateCourte(piece.expiryDate) })}
                         {piece.expiryDate && echeance[piece.id] === undefined && (
                           <button
                             type="button"
@@ -454,7 +455,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                             }}
                             className="ml-2 text-blue-600 hover:underline"
                           >
-                            Modifier
+                            {t('modifier')}
                           </button>
                         )}
                       </p>
@@ -465,7 +466,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                             value={echeance[piece.id]}
                             min={dateMin}
                             onChange={(e) => setEcheance({ ...echeance, [piece.id]: e.target.value })}
-                            aria-label={`Nouvelle date d'expiration pour ${piece.libelle}`}
+                            aria-label={t('nouvelleDate', { piece: piece.libelle })}
                             className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900"
                           />
                           <button
@@ -474,14 +475,14 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                             disabled={enCours === piece.id || !echeance[piece.id]}
                             className="px-2 py-1 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded text-xs"
                           >
-                            Enregistrer
+                            {t('enregistrer')}
                           </button>
                           <button
                             type="button"
                             onClick={() => setEcheance(({ [piece.id]: _, ...reste }) => reste)}
                             className="px-2 py-1 text-gray-500 hover:text-gray-900 text-xs"
                           >
-                            Annuler
+                            {t('annuler')}
                           </button>
                         </div>
                       )}
@@ -495,7 +496,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                           className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
                         >
                           <Eye size={12} />
-                          Aperçu
+                          {t('apercu')}
                         </button>
                         <LienPiece
                           adresse={piece.documentUrl}
@@ -512,25 +513,25 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                     <input
                       value={motif[piece.id] || ''}
                       onChange={(e) => setMotif({ ...motif, [piece.id]: e.target.value })}
-                      placeholder="Motif (obligatoire pour refuser)"
-                      aria-label={`Motif pour ${piece.libelle}`}
+                      placeholder={t('motifPlaceholder')}
+                      aria-label={t('motifPour', { piece: piece.libelle })}
                       className="flex-1 min-w-[12rem] bg-white border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 placeholder-gray-400"
                     />
                     <button
                       type="button"
                       onClick={() => statuer(piece, true)}
                       disabled={enCours === piece.id}
-                      className="px-3 py-1 bg-green-600/80 hover:bg-green-600 disabled:opacity-40 rounded text-sm text-white transition"
+                      className="px-3 py-1 bg-green-600/80 hover:bg-green-600 disabled:opacity-50 rounded text-sm text-white transition"
                     >
-                      Valider
+                      {t('valider')}
                     </button>
                     <button
                       type="button"
                       onClick={() => statuer(piece, false)}
                       disabled={enCours === piece.id}
-                      className="px-3 py-1 bg-red-600/80 hover:bg-red-600 disabled:opacity-40 rounded text-sm text-white transition"
+                      className="px-3 py-1 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 rounded text-sm text-white transition"
                     >
-                      Refuser
+                      {t('refuser')}
                     </button>
                   </div>
                 </li>
