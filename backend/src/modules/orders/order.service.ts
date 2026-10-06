@@ -283,6 +283,7 @@ export class OrderService {
         quantity: number;
         /** Prix unitaire TTC, suppléments compris. */
         price: number;
+        categoryId: string | null;
         supplements: SupplementRetenu[];
       }[] = [];
 
@@ -329,6 +330,7 @@ export class OrderService {
             productId: ligne.productId,
             variantId: ligne.variantId,
             quantity: ligne.quantity,
+            categoryId: produit.categoryId ?? null,
             price: Number(((taux ? TaxService.ttc(base, taux) : base) + supplements.montant).toFixed(2)),
             supplements: supplements.retenus,
           });
@@ -387,7 +389,8 @@ export class OrderService {
           data.storeId,
           data.promoCode,
           Number(totalDesLignes.toFixed(2)),
-          lignesTarifees.map((ligne) => ligne.productId)
+          lignesTarifees.map((ligne) => ligne.productId),
+          lignesTarifees
         );
 
         remise = Number(validation.discountAmount.toFixed(2));
