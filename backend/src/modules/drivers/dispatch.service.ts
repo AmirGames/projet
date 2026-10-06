@@ -765,16 +765,19 @@ export class DispatchService {
 
     // Un livreur déjà en course passe par là : la course s'ajoute à sa
     // tournée plutôt que de mobiliser un livreur de plus.
-    const toutesTournees = prefere ? [] : await this.livreursEnTournee(course, reglages.tournee);
-    const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
-
+    //
     // Ceux qui terminent leur livraison passent après les livreurs libres :
-    // un livreur libre démarre tout de suite. Un livreur déjà dans la
-    // tournée ci-dessus est écarté de cette liste, il prend la course en ajout.
-    const toutBientotLibres = prefere
-      ? []
-      : await this.livreursBientotLibres(retrait, reglages, maintenant, toutesTournees.map((l) => l.id));
+    // un livreur libre démarre tout de suite. Ils ne sont pas proposés en
+    // « +1 course » : à la porte de leur client, partir d'abord chercher une
+    // autre commande ferait attendre celui qu'ils ont en main. Ils prennent la
+    // course à enchaîner, après sa remise.
+    const toutBientotLibres = prefere ? [] : await this.livreursBientotLibres(retrait, reglages, maintenant);
     const bientotLibres = toutBientotLibres.filter((l) => sollicitable(course, l.id));
+    const presDeLaFin = new Set(toutBientotLibres.map((l) => l.id));
+    const toutesTournees = prefere
+      ? []
+      : (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => !presDeLaFin.has(l.id));
+    const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
 
     // Le véhicule couvre-t-il le trajet commerce → client ? (vehicule-distance.service.ts)
     const trajet = trajetDe(course);
