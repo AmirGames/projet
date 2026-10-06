@@ -24,9 +24,12 @@ export async function reduireImage(fichier: File): Promise<Blob> {
   }
 }
 
-/** Le message à montrer si le fichier, une fois réduit, dépasse encore la limite ; sinon null. */
-export function erreurDeTaille(fichier: Blob): string | null {
-  if (fichier.type === 'application/pdf' && fichier.size > TAILLE_MAX_PDF) return 'Le PDF ne doit pas dépasser 5 Mo';
-  if (fichier.type !== 'application/pdf' && fichier.size > TAILLE_MAX_IMAGE) return "L'image ne doit pas dépasser 2 Mo";
+/**
+ * Si le fichier, une fois réduit, dépasse encore la limite : la clé du message
+ * dans l'espace `fichiers` des traductions ; sinon null.
+ */
+export function erreurDeTaille(fichier: Blob): 'pdfTropLourd' | 'imageTropLourde' | null {
+  if (fichier.type === 'application/pdf' && fichier.size > TAILLE_MAX_PDF) return 'pdfTropLourd';
+  if (fichier.type !== 'application/pdf' && fichier.size > TAILLE_MAX_IMAGE) return 'imageTropLourde';
   return null;
 }

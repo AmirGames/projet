@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Banknote, Clock, FileText, Hourglass } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -38,18 +38,19 @@ interface Situation {
   releves: Releve[];
 }
 
-const jour = (date: string) => new Date(date).toLocaleDateString('fr-FR');
+const jour = (date: string | Date, locale: string) => new Date(date).toLocaleDateString(locale);
 
 /** La période se lit « du 6 au 12 janvier », la borne de fin étant exclue. */
-const periode = (releve: Releve) => {
+const bornesDuReleve = (releve: Releve, locale: string) => {
   const fin = new Date(releve.periodEnd);
   fin.setDate(fin.getDate() - 1);
 
-  return `du ${jour(releve.periodStart)} au ${fin.toLocaleDateString('fr-FR')}`;
+  return { debut: jour(releve.periodStart, locale), fin: jour(fin, locale) };
 };
 
 export function MesVersements() {
   const t = useTranslations('mesVersements');
+  const locale = useLocale();
   const [situation, setSituation] = useState<Situation | null>(null);
 
   const charger = useCallback(async () => {
@@ -87,9 +88,7 @@ export function MesVersements() {
           </div>
           <p className="text-3xl font-bold">{euro(situation.duNonArrete)}</p>
           <p className="text-xs text-gray-500 mt-1">
-            {situation.coursesDues} {t('course', { count: situation.coursesDues })}
-            {' livrée'}
-            {situation.coursesDues > 1 ? 's' : ''} {t('pendingStop')}
+            {situation.coursesDues} {t('course', { count: situation.coursesDues })} {t('pendingStop')}
           </p>
         </div>
 
@@ -138,13 +137,13 @@ export function MesVersements() {
               <tbody className="divide-y divide-gray-100">
                 {situation.releves.map((releve) => (
                   <tr key={releve.id}>
-                    <td className="py-3">{periode(releve)}</td>
+                    <td className="py-3">{t('periode', bornesDuReleve(releve, locale))}</td>
                     <td className="py-3 text-right text-gray-500">{releve.deliveryCount}</td>
                     <td className="py-3 text-right font-bold">{euro(releve.amount)}</td>
                     <td className="py-3 pl-4">
                       {releve.status === 'PAID' ? (
                         <span className="text-green-600">
-                          {t('paidOn')} {jour(releve.paidAt as string)}
+                          {t('paidOn')} {jour(releve.paidAt as string, locale)}
                           {releve.methodLibelle ? ` · ${releve.methodLibelle}` : ''}
                           {releve.reference ? ` · ${releve.reference}` : ''}
                         </span>

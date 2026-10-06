@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { Coffee, Play } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const DUREES = [15, 30, 60];
+// Le motif part au serveur en français ; l'affichage suit la langue (`raisons.<rang>`).
 const RAISONS = ['Repas', 'Pause café', 'Plein / recharge', 'Problème véhicule', 'Autre'];
 
 interface Props {
@@ -23,6 +25,7 @@ interface Props {
  * plus de course jusqu'à la fin du compte à rebours.
  */
 export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, surChangement }: Props) {
+  const t = useTranslations('pauseLivreur');
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [raison, setRaison] = useState(RAISONS[0]);
   const [enCours, setEnCours] = useState(false);
@@ -61,7 +64,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
       const donnees = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setErreur(donnees?.error || "La pause n'a pas pu être enregistrée.");
+        setErreur(donnees?.error || t('echec'));
         return;
       }
 
@@ -75,7 +78,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
         pauseReason: donnees.pauseReason,
       });
     } catch {
-      setErreur('Serveur injoignable.');
+      setErreur(t('injoignable'));
     } finally {
       setEnCours(false);
     }
@@ -91,18 +94,18 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
         <div className="flex items-center gap-2 text-amber-800 font-semibold">
-          <Coffee size={18} /> En pause{pauseReason ? ` — ${pauseReason}` : ''}
+          <Coffee size={18} /> {pauseReason ? t('enPauseMotif', { motif: RAISONS.includes(pauseReason) ? t(`raisons.${RAISONS.indexOf(pauseReason)}`) : pauseReason }) : t('enPause')}
         </div>
         <p className="text-3xl font-bold text-gray-900 tabular-nums">
           {mm}:{ss}
         </p>
-        <p className="text-xs text-amber-800/80">Aucune course ne vous sera proposée d&apos;ici là.</p>
+        <p className="text-xs text-amber-800/80">{t('aucuneCourse')}</p>
         <button
           onClick={() => appeler('DELETE')}
           disabled={enCours}
           className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg"
         >
-          <Play size={16} /> Reprendre maintenant
+          <Play size={16} /> {t('reprendre')}
         </button>
         {erreur && <p className="text-sm text-red-600">{erreur}</p>}
       </div>
@@ -112,20 +115,22 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
   return (
     <div className="space-y-2">
       <p className="text-gray-500 text-sm flex items-center gap-2">
-        <Coffee size={16} /> Faire une pause
+        <Coffee size={16} /> {t('faireUnePause')}
       </p>
       {enCourse ? (
-        <p className="text-xs text-gray-500">Disponible une fois la course en cours terminée.</p>
+        <p className="text-xs text-gray-500">{t('disponibleApres')}</p>
       ) : (
         <>
           <select
             value={raison}
             onChange={(e) => setRaison(e.target.value)}
             className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
-            aria-label="Motif de la pause"
+            aria-label={t('motif')}
           >
-            {RAISONS.map((r) => (
-              <option key={r}>{r}</option>
+            {RAISONS.map((r, rang) => (
+              <option key={r} value={r}>
+                {t(`raisons.${rang}`)}
+              </option>
             ))}
           </select>
           <div className="grid grid-cols-3 gap-2">
@@ -136,7 +141,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
                 disabled={enCours}
                 className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 text-sm font-semibold py-2 rounded-lg"
               >
-                {d} min
+                {t('minutes', { n: d })}
               </button>
             ))}
           </div>

@@ -42,11 +42,13 @@ export default function CheckoutPage() {
 }
 
 function ChargementPanier() {
+  const tc = useTranslations('pageCommande');
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <EnTeteClient />
       <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-gray-500">Chargement de votre panier…</p>
+        <p className="text-gray-500">{tc('chargement')}</p>
       </div>
     </div>
   );
@@ -64,6 +66,7 @@ function CheckoutAdresse() {
 
 function CheckoutPanier({ demandee }: { demandee: string }) {
   const t = useTranslations('common');
+  const tc = useTranslations('pageCommande');
   const router = useRouter();
 
   const [boutique, setBoutique] = useState<BoutiqueCommandee | null>(null);
@@ -160,7 +163,7 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Passer la commande</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{tc('titre')}</h1>
             {boutique && <p className="text-sm text-gray-500">{boutique.name}</p>}
           </div>
         </div>
@@ -176,15 +179,14 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold mb-2">Commande envoyée</h2>
+              <h2 className="text-2xl font-bold mb-2">{tc('envoyee')}</h2>
               <p className="text-gray-500">
-                Le commerce doit maintenant la confirmer. Vous recevrez un e-mail dès qu&apos;il
-                l&apos;aura acceptée, avec l&apos;heure prévue.
+                {tc('aConfirmer')}
               </p>
             </div>
 
             <div className="bg-gray-100 rounded-lg p-4">
-              <p className="text-gray-500 text-sm mb-1">Numéro de commande</p>
+              <p className="text-gray-500 text-sm mb-1">{tc('numero')}</p>
               <p className="text-2xl font-bold text-red-600">#{confirmation.numero}</p>
             </div>
 
@@ -192,32 +194,31 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
               href={`/track?commande=${confirmation.id}`}
               className="block w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-full text-white font-semibold transition-colors"
             >
-              Suivre ma commande
+              {tc('suivre')}
             </Link>
           </div>
         ) : !boutique ? (
           <div className="max-w-md mx-auto bg-white border border-gray-200 rounded-lg p-8 space-y-4">
             {aChoisir.length === 0 ? (
               <>
-                <h2 className="text-xl font-bold">Votre panier est vide</h2>
+                <h2 className="text-xl font-bold">{tc('vide')}</h2>
                 <p className="text-gray-500 text-sm">
-                  Choisissez un commerce et composez votre commande.
+                  {tc('videAide')}
                 </p>
                 <Link
                   href="/client"
                   className="inline-block py-3 px-6 bg-gray-900 hover:bg-gray-800 rounded-full text-white font-semibold transition-colors"
                 >
-                  Voir les commerces
+                  {tc('voirCommerces')}
                 </Link>
               </>
             ) : (
               <>
-                <h2 className="text-xl font-bold">Quel panier voulez-vous commander&nbsp;?</h2>
+                <h2 className="text-xl font-bold">{tc('quelPanier')}</h2>
                 {/* Une commande ne peut porter que sur un commerce : mélanger
                     deux paniers n'aurait ni livreur ni cuisine communs. */}
                 <p className="text-gray-500 text-sm">
-                  Vous avez un panier chez plusieurs commerces. Une commande ne concerne qu&apos;un
-                  commerce à la fois.
+                  {tc('plusieurs')}
                 </p>
                 <ul className="space-y-2">
                   {aChoisir.map((panier) => (
@@ -227,10 +228,9 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
                         className="flex items-center justify-between bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3 transition-colors"
                       >
                         <span className="font-semibold">
-                          {panier.storeName || 'Commerce'}
+                          {panier.storeName || tc('commerce')}
                           <span className="block text-xs text-gray-500">
-                            {nombreDArticles(panier.lignes)} article
-                            {nombreDArticles(panier.lignes) > 1 ? 's' : ''}
+                            {tc('articles', { n: nombreDArticles(panier.lignes) })}
                           </span>
                         </span>
                         <span className="text-red-600">{euro(totalDuPanier(panier.lignes))}</span>

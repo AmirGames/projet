@@ -7,18 +7,16 @@ import { LifeBuoy } from 'lucide-react';
 
 import { FilSupport, type MessageSupport } from '@/components/FilSupport';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const SUJETS_RAPIDES = [
-  'Le client ne répond pas',
-  "Le commerce n'a pas préparé la commande",
-  "Je n'arrive pas à trouver l'adresse",
-  'Problème avec mon véhicule',
-];
+/** Les sujets proposés d'un clic (`sujets.<rang>` des traductions). */
+const SUJETS_RAPIDES = [0, 1, 2, 3];
 
 /** Chat en direct avec le support, pour le livreur. */
 export default function SupportLivreurPage() {
+  const t = useTranslations('supportLivreur');
   const router = useRouter();
   const [messages, setMessages] = useState<MessageSupport[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -40,11 +38,11 @@ export default function SupportLivreurPage() {
       if (!res.ok) throw new Error(donnees.error);
       setMessages(donnees.data || []);
     } catch (e) {
-      setErreur(e instanceof Error && e.message ? e.message : 'Le fil n\'a pas pu être chargé.');
+      setErreur(e instanceof Error && e.message ? e.message : t('filEchec'));
     } finally {
       setChargement(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffectChargement(() => {
     charger();
@@ -96,14 +94,14 @@ export default function SupportLivreurPage() {
       });
       const donnees = await res.json();
       if (!res.ok) {
-        setErreur(donnees.error || "Le message n'est pas parti.");
+        setErreur(donnees.error || t('messageEchec'));
         return false;
       }
       setErreur('');
       setMessages((liste) => (liste.some((m) => m.id === donnees.data.id) ? liste : [...liste, donnees.data]));
       return true;
     } catch {
-      setErreur('Serveur injoignable.');
+      setErreur(t('injoignable'));
       return false;
     }
   };
@@ -114,16 +112,16 @@ export default function SupportLivreurPage() {
         <div className="flex items-center gap-3">
           <LifeBuoy className="text-orange-500" size={28} />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Support en direct</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('titre')}</h1>
             <p className="text-gray-500 text-sm">
-              Un souci pendant une course ? Écrivez-nous, la course en cours est jointe automatiquement.
+              {t('aide')}
             </p>
           </div>
         </div>
 
         {messages.length === 0 && !chargement && (
           <div className="flex flex-wrap gap-2">
-            {SUJETS_RAPIDES.map((sujet) => (
+            {SUJETS_RAPIDES.map((rang) => t(`sujets.${rang}`)).map((sujet) => (
               <button
                 key={sujet}
                 onClick={() => envoyer(sujet)}
@@ -149,7 +147,7 @@ export default function SupportLivreurPage() {
             messages={messages}
             moi="DRIVER"
             surEnvoi={envoyer}
-            vide="Posez votre question : l'équipe vous répond ici, en direct."
+            vide={t('vide')}
           />
         )}
       </div>

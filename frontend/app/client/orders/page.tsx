@@ -2,7 +2,7 @@
 
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Clock, MapPin, ChevronRight, RotateCcw } from 'lucide-react';
@@ -11,6 +11,7 @@ import { euro } from '@/lib/format';
 import { remettreAuPanier, type LigneCommandee } from '@/lib/recommander';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { numeroCourt } from '@/lib/numero-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Order {
@@ -53,6 +54,7 @@ const statusTranslationKeys: Record<string, string> = {
 const TERMINEES = ['COMPLETED', 'REJECTED'];
 
 export default function OrdersPage() {
+  const locale = useLocale();
   const t = useTranslations('clientOrders');
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -199,11 +201,11 @@ export default function OrdersPage() {
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <p className="text-gray-900 font-bold text-lg">
-                          Commande #{order.id.slice(0, 8)}
+                          {t('commandeNumero', { numero: numeroCourt(order.id) })}
                         </p>
                         <p className="text-gray-500 text-sm flex items-center gap-2 mt-1">
                           <Clock size={14} />
-                          {new Date(order.createdAt).toLocaleString('fr-FR')}
+                          {new Date(order.createdAt).toLocaleString(locale)}
                         </p>
                       </div>
                       <ChevronRight size={24} className="text-gray-400" />

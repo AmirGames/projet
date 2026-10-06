@@ -107,13 +107,4 @@ export const serviceLabels: Record<Service, string> = {
   EAT: "ZupEat",
   DRIVE: "ZupDrive",
 };
-export const categoryLabels: Record<Category, string> = {
-  orientation: "Informations sur ZupOne",
-  customer: "Support clients",
-  restaurant: "Support restaurants",
-  courier: "Support livreurs",
-  passenger: "Support passagers",
-  driver: "Support chauffeurs",
-  partner: "Support partenaires",
-  commercial: "Devenir partenaire",
-};
+// Le libellé de chaque catégorie : `assistant.categories.<id>` des traductions.

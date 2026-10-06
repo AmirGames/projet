@@ -88,9 +88,9 @@ export default function LoginPage() {
       });
 
       const donnees = await reponse.json();
-      setLienRenvoye(donnees.message || donnees.error || "Demande envoyée.");
+      setLienRenvoye(donnees.message || donnees.error || t('demandeEnvoyee'));
     } catch {
-      setLienRenvoye("Serveur injoignable. Réessayez dans un instant.");
+      setLienRenvoye(t('injoignable'));
     }
   };
 
@@ -159,7 +159,7 @@ export default function LoginPage() {
             role="status"
             className="bg-blue-50 border border-blue-200 text-blue-900 p-4 rounded-lg mb-4"
           >
-            {raison}
+            {t('sessionExpiree')}
           </div>
         )}
 
@@ -200,7 +200,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-              placeholder="your@email.com"
+              placeholder={t('emailPlaceholder')}
               required
             />
           </div>

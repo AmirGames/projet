@@ -15,6 +15,7 @@ import {
   type PanierBoutique,
 } from '@/lib/paniers';
 import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -55,6 +56,7 @@ async function slugDuCommerce(storeId: string): Promise<string | null> {
  * chaque panier, son sous-total et l'adresse de livraison, et on y retourne.
  */
 export function PaniersAccueil() {
+  const t = useTranslations('paniersAccueil');
   const [paniers, setPaniers] = useState<PanierBoutique[]>([]);
   const [adresse, setAdresse] = useState<AdresseLivraison | null>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -136,7 +138,7 @@ export function PaniersAccueil() {
       <button
         type="button"
         onClick={() => setOuvert((o) => !o)}
-        aria-label={`Paniers (${paniers.length})`}
+        aria-label={t('paniers', { n: paniers.length })}
         aria-expanded={ouvert}
         className="relative p-2 rounded-lg text-gray-900 hover:bg-gray-100"
       >
@@ -151,7 +153,7 @@ export function PaniersAccueil() {
       {ouvert && (
         <div className="absolute right-0 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50">
           {paniers.length === 0 ? (
-            <p className="px-4 py-6 text-center text-gray-500 text-sm">Vos paniers sont vides</p>
+            <p className="px-4 py-6 text-center text-gray-500 text-sm">{t('vides')}</p>
           ) : (
             <ul className="divide-y divide-gray-100 max-h-[70vh] overflow-y-auto">
               {paniers.map((panier) => (
@@ -169,7 +171,7 @@ export function PaniersAccueil() {
                     {logos[panier.storeId] ? (
                       <img
                         src={logos[panier.storeId] as string}
-                        alt={panier.storeName || 'Commerce'}
+                        alt={panier.storeName || t('commerce')}
                         className="w-12 h-12 flex-shrink-0 rounded-full bg-white object-contain p-1"
                       />
                     ) : (
@@ -179,14 +181,14 @@ export function PaniersAccueil() {
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold text-gray-900 truncate">
-                        {panier.storeName || 'Commerce'}
+                        {panier.storeName || t('commerce')}
                       </span>
                       <span className="block text-sm text-gray-500">
-                        Sous-total : {euro(totalDuPanier(panier.lignes))}
+                        {t('sousTotal', { montant: euro(totalDuPanier(panier.lignes)) })}
                       </span>
                       {adresse && (
                         <span className="block text-xs text-gray-500 truncate">
-                          Livrer à {adresse.label}
+                          {t('livrerA', { adresse: adresse.label })}
                         </span>
                       )}
                     </span>

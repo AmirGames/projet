@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { cookies, headers } from "next/headers";
 import { ENTETE_REGION, NOM_COOKIE_REGION, baliseLangue, trouverRegion } from "@/i18n/regions";
 import { RegionProvider } from "@/lib/region-context";
@@ -17,10 +17,11 @@ import "./globals.css";
  * hérite, sauf la vitrine qui restreint les siennes au pays du commerce.
  */
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("titresPages");
   return {
     metadataBase: await baseDuSite(),
-    title: "ZupEat — Commandez chez vos commerces de proximité",
-    description: "La plateforme qui relie commerçants, clients et livreurs de proximité.",
+    title: t("siteTitre"),
+    description: t("siteDescription"),
     alternates: await alternatesRegionales(),
   };
 }

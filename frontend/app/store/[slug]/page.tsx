@@ -4,7 +4,7 @@ import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { MapPin, Phone, Clock, Star, X, Bike, Plus, Minus, Check, Trash2, ShoppingBag } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -138,6 +138,7 @@ const groupeManquant = (product: Product, ids: string[] = []) =>
   );
 
 export default function StorefrontPage() {
+  const locale = useLocale();
   const params = useParams();
   const slug = params?.slug as string;
   const router = useRouter();
@@ -917,7 +918,7 @@ export default function StorefrontPage() {
                         {euro(product.price)}
                         <span aria-hidden="true">·</span>
                         <Star size={13} className="fill-gray-900 text-gray-900" />
-                        {product.note!.moyenne.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
+                        {product.note!.moyenne.toLocaleString(locale, { maximumFractionDigits: 1 })}
                       </p>
                     </button>
                   ))}
@@ -996,12 +997,12 @@ export default function StorefrontPage() {
                     <p
                       className="mt-1 flex items-center gap-1 text-sm text-gray-600"
                       aria-label={t('ratedLabel', {
-                        note: product.note.moyenne.toLocaleString('fr-FR'),
+                        note: product.note.moyenne.toLocaleString(locale),
                         n: product.note.nombre,
                       })}
                     >
                       <Star size={14} className="fill-gray-900 text-gray-900" />
-                      {product.note.moyenne.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} ({product.note.nombre})
+                      {product.note.moyenne.toLocaleString(locale, { maximumFractionDigits: 1 })} ({product.note.nombre})
                     </p>
                   )}
                   {product.description && <p className="mt-3 text-gray-600">{product.description}</p>}
@@ -1368,6 +1369,7 @@ function CartePlat({
   onOuvrir: () => void;
   onAjout: (e: React.MouseEvent) => void;
 }) {
+  const locale = useLocale();
   const t = useTranslations('storefront');
 
   return (
@@ -1394,12 +1396,12 @@ function CartePlat({
             <span
               className="inline-flex items-center gap-1 text-gray-600"
               aria-label={t('ratedLabel', {
-                note: product.note.moyenne.toLocaleString('fr-FR'),
+                note: product.note.moyenne.toLocaleString(locale),
                 n: product.note.nombre,
               })}
             >
               <Star size={13} className="fill-gray-900 text-gray-900" />
-              {product.note.moyenne.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} ({product.note.nombre})
+              {product.note.moyenne.toLocaleString(locale, { maximumFractionDigits: 1 })} ({product.note.nombre})
             </span>
           )}
           {!product.isAvailable && (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 export interface Colonne {
   /** Libellé court sous la colonne (peut être vide pour alléger l'axe). */
@@ -48,7 +49,8 @@ const ACCENT = '#ea580c';
  * infobulle au survol ou au focus clavier, et une vue tableau pour qui ne
  * lit pas le graphique.
  */
-export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format, mesure, hauteur = 180, messageVide = 'Aucune course sur la période', clair = false }: Props) {
+export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format, mesure, hauteur = 180, messageVide, clair = false }: Props) {
+  const t = useTranslations('graphiqueColonnes');
   const [survol, setSurvol] = useState<number | null>(null);
   const [tableau, setTableau] = useState(false);
 
@@ -70,7 +72,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
           className={`text-xs underline ${clair ? 'text-gray-500 hover:text-gray-900' : 'text-gray-400 hover:text-white'}`}
           aria-pressed={tableau}
         >
-          {tableau ? 'Voir le graphique' : 'Voir le tableau'}
+          {tableau ? t('voirGraphique') : t('voirTableau')}
         </button>
       </figcaption>
 
@@ -79,7 +81,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
           <table className="w-full text-sm">
             <thead>
               <tr className={`text-left ${clair ? 'text-gray-500' : 'text-gray-400'}`}>
-                <th className="font-medium py-1">Période</th>
+                <th className="font-medium py-1">{t('periode')}</th>
                 <th className="font-medium py-1 text-right">{mesure}</th>
               </tr>
             </thead>
@@ -121,7 +123,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
 
               {vide && (
                 <p className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
-                  {messageVide}
+                  {messageVide ?? t('vide')}
                 </p>
               )}
 

@@ -18,7 +18,7 @@ import { useDonneesModifiees } from '@/lib/temps-reel';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -36,12 +36,18 @@ import { useEffectChargement } from '@/lib/use-effect-chargement';
 // Leaflet touche à `window` dès son chargement : pas de rendu côté serveur.
 const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ssr: false,
-  loading: () => (
-    <div className="h-[320px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-500">
-      Chargement de la carte…
-    </div>
-  ),
+  loading: () => <ChargementCarte />,
 });
+
+function ChargementCarte() {
+  const t = useTranslations('suiviLivraison');
+
+  return (
+    <div className="h-[320px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-500">
+      {t('chargementCarte')}
+    </div>
+  );
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -100,22 +106,24 @@ interface Fiche {
 }
 
 /** Les champs que la plateforme corrige, et rien d'autre. */
+// Les libellés : `champs.<champ>` des traductions.
 const CHAMPS = [
-  { champ: 'address', libelle: 'Adresse', type: 'text' },
-  { champ: 'postalCode', libelle: 'Code postal', type: 'text' },
-  { champ: 'city', libelle: 'Ville', type: 'text' },
-  { champ: 'slug', libelle: 'Adresse publique', type: 'text' },
-  { champ: 'phone', libelle: 'Téléphone', type: 'tel' },
-  { champ: 'email', libelle: 'E-mail', type: 'email' },
-  { champ: 'latitude', libelle: 'Latitude', type: 'text' },
-  { champ: 'longitude', libelle: 'Longitude', type: 'text' },
+  { champ: 'address', type: 'text' },
+  { champ: 'postalCode', type: 'text' },
+  { champ: 'city', type: 'text' },
+  { champ: 'slug', type: 'text' },
+  { champ: 'phone', type: 'tel' },
+  { champ: 'email', type: 'email' },
+  { champ: 'latitude', type: 'text' },
+  { champ: 'longitude', type: 'text' },
 ] as const;
 
-const jour = (date: string) => new Date(date).toLocaleDateString('fr-FR');
 
 export default function FicheBoutiquePage() {
   const t = useTranslations('superownerStoreDetail');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const jour = (date: string) => new Date(date).toLocaleDateString(locale);
   const params = useParams();
   const storeId = params.storeId as string;
 
@@ -424,10 +432,9 @@ export default function FicheBoutiquePage() {
         <div className="p-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 flex gap-3">
           <AlertTriangle size={20} className="flex-shrink-0 text-amber-600" />
           <div>
-            <p className="font-semibold">Cette boutique n&apos;est pas située</p>
+            <p className="font-semibold">{t('pasSituee')}</p>
             <p className="text-sm text-amber-800/80">
-              Sans coordonnées, aucun livreur ne lui est proposé et ses zones de livraison ne
-              s&apos;appliquent pas. Corrigez son adresse : elle sera située automatiquement.
+              {t('pasSitueeAide')}
             </p>
           </div>
         </div>
@@ -436,20 +443,18 @@ export default function FicheBoutiquePage() {
       {enEdition ? (
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div>
-            <h2 className="font-semibold text-gray-900">Corriger la fiche</h2>
+            <h2 className="font-semibold text-gray-900">{t('corriger')}</h2>
             {/* Dire la limite, plutôt que de laisser chercher le champ absent. */}
             <p className="text-sm text-gray-500 mt-1">
-              La plateforme ne corrige que ces champs. Le nom, le catalogue, les prix et les
-              horaires appartiennent au commerçant. Chaque correction part au journal et lui est
-              annoncée.
+              {t('limite')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {CHAMPS.map(({ champ, libelle, type }) => (
+            {CHAMPS.map(({ champ, type }) => (
               <div key={champ}>
                 <label htmlFor={`champ-${champ}`} className="block text-sm text-gray-500 mb-1">
-                  {libelle}
+                  {t(`champs.${champ}`)}
                 </label>
                 <input
                   id={`champ-${champ}`}
@@ -467,7 +472,7 @@ export default function FicheBoutiquePage() {
               recopier. Ici, le point se pose à la main. */}
           <div>
             <p className="text-sm text-gray-500 mb-2">
-              Ou posez la boutique directement sur la carte.
+              {t('poserCarte')}
             </p>
             <CarteZones
               latitude={
@@ -489,8 +494,7 @@ export default function FicheBoutiquePage() {
           </div>
 
           <p className="text-xs text-gray-500">
-            Laissez la latitude et la longitude vides en corrigeant l&apos;adresse : la boutique
-            sera située d&apos;après celle-ci.
+            {t('laissezVide')}
           </p>
 
           <div className="flex gap-2">
@@ -498,13 +502,13 @@ export default function FicheBoutiquePage() {
               onClick={enregistrer}
               className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-medium transition"
             >
-              Enregistrer la correction
+              {t('enregistrer')}
             </button>
             <button
               onClick={() => setEnEdition(false)}
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
             >
-              Annuler
+              {t('annuler')}
             </button>
           </div>
         </div>
@@ -513,19 +517,16 @@ export default function FicheBoutiquePage() {
           <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <MapPin size={18} className="text-orange-500" />
-              Coordonnées
+              {t('coordonnees')}
             </h2>
 
             <dl className="text-sm space-y-2">
               {[
-                ['Adresse', [fiche.address, fiche.postalCode, fiche.city].filter(Boolean).join(', ')],
-                ['Adresse publique', `/store/${fiche.slug}`],
-                ['Téléphone', fiche.phone],
-                ['E-mail', fiche.email],
-                [
-                  'Position',
-                  fiche.situee ? `${fiche.latitude}, ${fiche.longitude}` : 'non située',
-                ],
+                [t('champs.address'), [fiche.address, fiche.postalCode, fiche.city].filter(Boolean).join(', ')],
+                [t('champs.slug'), `/store/${fiche.slug}`],
+                [t('champs.phone'), fiche.phone],
+                [t('champs.email'), fiche.email],
+                [t('position'), fiche.situee ? `${fiche.latitude}, ${fiche.longitude}` : t('nonSituee')],
               ].map(([libelle, valeur]) => (
                 <div key={libelle as string} className="flex justify-between gap-4">
                   <dt className="text-gray-500">{libelle}</dt>
@@ -536,20 +537,20 @@ export default function FicheBoutiquePage() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-gray-900">Activité</h2>
+            <h2 className="font-semibold text-gray-900">{t('activiteTitre')}</h2>
 
             <dl className="text-sm space-y-2">
               {[
-                ['Produits', String(fiche._count.products)],
-                ['Catégories', String(fiche._count.categories)],
-                ['Commandes', String(fiche._count.orders)],
-                ["Chiffre d'affaires", euro(fiche.chiffreDaffaires)],
-                ['Note', `${fiche.rating.toFixed(2)} / 5`],
+                [t('activite.produits'), String(fiche._count.products)],
+                [t('activite.categories'), String(fiche._count.categories)],
+                [t('activite.commandes'), String(fiche._count.orders)],
+                [t('activite.ca'), euro(fiche.chiffreDaffaires)],
+                [t('activite.note'), t('activite.surCinq', { note: fiche.rating.toFixed(2) })],
                 [
-                  'Dernière commande',
-                  fiche.derniereCommande ? jour(fiche.derniereCommande.createdAt) : 'aucune',
+                  t('activite.derniere'),
+                  fiche.derniereCommande ? jour(fiche.derniereCommande.createdAt) : t('activite.aucune'),
                 ],
-                ['Ouverte depuis', jour(fiche.createdAt)],
+                [t('activite.ouverte'), jour(fiche.createdAt)],
               ].map(([libelle, valeur]) => (
                 <div key={libelle} className="flex justify-between gap-4">
                   <dt className="text-gray-500">{libelle}</dt>
@@ -560,24 +561,26 @@ export default function FicheBoutiquePage() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-gray-900">Livraison</h2>
+            <h2 className="font-semibold text-gray-900">{t('livraison')}</h2>
             {/* En lecture seule : ces montants sont ceux du commerçant. */}
             <p className="text-xs text-gray-500">
-              Réglé par le commerçant — la plateforme ne le modifie pas.
+              {t('regleParCommercant')}
             </p>
 
             {fiche.deliveryZones.length === 0 ? (
               <p className="text-sm text-gray-500">
-                Aucune zone : la boutique facture {euro(fiche.deliveryCost)} partout, à partir de{' '}
-                {euro(fiche.minDeliveryAmount)}.
+                {t('aucuneZone', { frais: euro(fiche.deliveryCost), minimum: euro(fiche.minDeliveryAmount) })}
               </p>
             ) : (
               <ul className="text-sm space-y-1">
                 {fiche.deliveryZones.map((zone) => (
                   <li key={zone.id} className="flex justify-between gap-4">
                     <span className="text-gray-500">
-                      {zone.name} · {zone.type === 'RADIUS' ? `${zone.radiusKm} km` : `polygone (${zone.polygon?.length ?? 0} pts)`}
-                      {!zone.isActive && ' (inactive)'}
+                      {zone.name} ·{' '}
+                      {zone.type === 'RADIUS'
+                        ? t('zoneRayon', { km: zone.radiusKm ?? 0 })
+                        : t('zonePolygone', { n: zone.polygon?.length ?? 0 })}
+                      {!zone.isActive && t('inactive')}
                     </span>
                     <span className="text-gray-900">
                       {euro(zone.baseFee)} · min. {euro(zone.minOrder)}
@@ -592,22 +595,22 @@ export default function FicheBoutiquePage() {
           <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <FileText size={18} className="text-orange-500" />
-              Dernières commandes
+              {t('dernieres')}
             </h2>
 
             {(!fiche.dernieresCommandes || fiche.dernieresCommandes.length === 0) ? (
-              <p className="text-sm text-gray-500">Aucune commande pour l&apos;instant.</p>
+              <p className="text-sm text-gray-500">{t('aucuneCommande')}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-gray-500 border-b border-gray-200">
-                      <th className="text-left py-2 pr-4">Date</th>
-                      <th className="text-left py-2 pr-4">Client</th>
-                      <th className="text-right py-2 pr-4">Total</th>
-                      <th className="text-right py-2 pr-4">Formule</th>
-                      <th className="text-right py-2 pr-4">Commission</th>
-                      <th className="text-right py-2">Montant dû</th>
+                      <th className="text-left py-2 pr-4">{t('date')}</th>
+                      <th className="text-left py-2 pr-4">{t('client')}</th>
+                      <th className="text-right py-2 pr-4">{t('total')}</th>
+                      <th className="text-right py-2 pr-4">{t('formuleCol')}</th>
+                      <th className="text-right py-2 pr-4">{t('commission')}</th>
+                      <th className="text-right py-2">{t('montantDu')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -626,7 +629,7 @@ export default function FicheBoutiquePage() {
                               {c.tierAtOrder}
                             </span>
                           ) : (
-                            <span className="text-xs bg-gray-50 px-2 py-0.5 rounded text-gray-500" title="Formule inconnue — migration non appliquée">
+                            <span className="text-xs bg-gray-50 px-2 py-0.5 rounded text-gray-500" title={t('formuleInconnue')}>
                               ~{c.commissionPercent.toFixed(0)} %
                             </span>
                           )}
@@ -635,7 +638,7 @@ export default function FicheBoutiquePage() {
                           {c.commissionAmount > 0 ? (
                             <span className="text-blue-600">{c.commissionPercent.toFixed(2)} %</span>
                           ) : (
-                            <span className="text-yellow-600" title="Commande non encore facturée">
+                            <span className="text-yellow-600" title={t('nonFacturee')}>
                               ~{c.commissionPercent.toFixed(2)} %
                             </span>
                           )}
@@ -649,7 +652,7 @@ export default function FicheBoutiquePage() {
                   <tfoot>
                     <tr className="border-t border-gray-300">
                       <td colSpan={5} className="py-2 text-gray-500 text-xs">
-                        Total commissions sur ces 20 commandes
+                        {t('totalCommissions')}
                       </td>
                       <td className="py-2 text-right font-bold text-orange-600">
                         {euro(fiche.dernieresCommandes.reduce((s, c) => s + c.commissionAmount, 0))}
@@ -658,18 +661,20 @@ export default function FicheBoutiquePage() {
                   </tfoot>
                 </table>
                 <p className="text-xs text-gray-500 mt-2">
-                  <span className="text-blue-600">Bleu</span> = taux figé à la commande. &nbsp;
-                  <span className="text-yellow-600">Jaune</span> = commande ancienne, taux estimé.
+                  {t.rich('legendeTaux', {
+                    bleu: (morceau) => <span className="text-blue-600">{morceau}</span>,
+                    jaune: (morceau) => <span className="text-yellow-600">{morceau}</span>,
+                  })}
                 </p>
               </div>
             )}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-gray-900">Qui contacter</h2>
+            <h2 className="font-semibold text-gray-900">{t('quiContacter')}</h2>
 
             {fiche.org.memberships.length === 0 ? (
-              <p className="text-sm text-gray-500">Aucun compte rattaché.</p>
+              <p className="text-sm text-gray-500">{t('aucunCompte')}</p>
             ) : (
               <ul className="text-sm space-y-2">
                 {fiche.org.memberships.map((adhesion) => (

@@ -1,5 +1,10 @@
 # Guide de Migration i18n - 6 Pages Restantes
 
+> **Historique (octobre 2026)** : la migration est terminée, tout le site passe par `next-intl`.
+> Ce document décrit l'ancienne migration de l'espace superowner ; les règles en vigueur sont
+> dans `frontend/ARCHITECTURE.md`, section « F. Traductions », et le contrôle dans
+> `scripts/verif-traductions.mjs`.
+
 Ce guide détaille les modifications précises à apporter à chaque page pour la migration i18n.
 
 ---

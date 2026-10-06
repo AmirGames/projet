@@ -2,7 +2,7 @@
 
 import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Bell, Search, Trash2, Settings, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -21,6 +21,7 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+  const locale = useLocale();
   const t = useTranslations('superownerNotifications');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -340,12 +341,12 @@ export default function NotificationsPage() {
                 </div>
 
                 <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
-                  <span>{new Date(notif.createdAt).toLocaleString('fr-FR')}</span>
+                  <span>{new Date(notif.createdAt).toLocaleString(locale)}</span>
                   <span>•</span>
                   <span className="bg-gray-100 px-2 py-1 rounded">{notif.targetAudience}</span>
                   <span>•</span>
                   <span className={`font-medium ${notif.read ? 'text-gray-500' : 'text-blue-600'}`}>
-                    {notif.read ? 'Lu' : 'Non lu'}
+                    {notif.read ? t('lu') : t('nonLu')}
                   </span>
                 </div>
               </div>

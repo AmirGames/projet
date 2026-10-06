@@ -289,7 +289,7 @@ export default function FormulesPage() {
                       <div key={index} className="flex items-center gap-2">
                         <input
                           value={avantage}
-                          aria-label={`Argument ${index + 1} de ${formule.code}`}
+                          aria-label={t('argumentN', { n: index + 1, code: formule.code })}
                           onChange={(e) => {
                             const copie = [...brouillon.avantages];
                             copie[index] = e.target.value;

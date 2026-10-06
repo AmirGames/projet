@@ -14,10 +14,11 @@ export interface EspaceAccessible {
 
 // Ordre d'affichage dans le sélecteur : de l'usage courant à l'administration.
 const ESPACES: Record<Espace, Omit<EspaceAccessible, 'id'>> = {
-  client: { libelle: 'Espace client', href: '/client' },
-  driver: { libelle: 'Espace livreur', href: '/driver' },
-  merchant: { libelle: 'Espace commerçant', href: '/merchant' },
-  superowner: { libelle: 'Super Owner', href: '/superowner' },
+  // Libellé vide : l'écran affiche `selecteurEspace.espaces.<id>` des traductions.
+  client: { libelle: '', href: '/client' },
+  driver: { libelle: '', href: '/driver' },
+  merchant: { libelle: '', href: '/merchant' },
+  superowner: { libelle: '', href: '/superowner' },
 };
 
 interface RolesCompte {

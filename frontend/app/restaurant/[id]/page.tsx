@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from '@/components/LienRegional';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -20,6 +21,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * continuent de fonctionner, le temps d'un aller-retour.
  */
 export default function AncienneVitrine() {
+  const t = useTranslations('ancienneVitrine');
   const params = useParams();
   const router = useRouter();
   const [introuvable, setIntrouvable] = useState(false);
@@ -54,9 +56,9 @@ export default function AncienneVitrine() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-6">
         <div className="text-center">
-          <p className="text-white font-semibold mb-2">Ce commerce est introuvable</p>
+          <p className="text-gray-900 font-semibold mb-2">{t('introuvable')}</p>
           <Link href="/client" className="text-orange-500 hover:underline">
-            Voir tous les commerces
+            {t('voirTous')}
           </Link>
         </div>
       </div>

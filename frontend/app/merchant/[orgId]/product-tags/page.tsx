@@ -58,7 +58,7 @@ export default function ProductTagPage() {
         },
       });
 
-      if (!res.ok) throw new Error("Erreur lors du chargement des étiquettes");
+      if (!res.ok) throw new Error(t('erreurChargement'));
       const data: TagsResponse = await res.json();
       setTags(data.data);
       setTotal(data.total);
@@ -112,7 +112,7 @@ export default function ProductTagPage() {
 
   const saveTag = async () => {
     if (!formData.name.trim()) {
-      setError("Le nom de l'étiquette est requis");
+      setError(t('nomRequis'));
       return;
     }
 
@@ -134,7 +134,7 @@ export default function ProductTagPage() {
       if (!res.ok) throw new Error(t('saveError'));
       fetchTags();
       closeModal();
-      setSuccess(editingId ? "Étiquette mise à jour" : "Étiquette créée");
+      setSuccess(editingId ? t('misAJour') : t('creee'));
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('genericError'));
@@ -142,7 +142,7 @@ export default function ProductTagPage() {
   };
 
   const deleteTag = async (tagId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette étiquette ?"))
+    if (!confirm(t('confirmerSuppression')))
       return;
 
     try {
@@ -155,7 +155,7 @@ export default function ProductTagPage() {
 
       if (!res.ok) throw new Error(t('deleteError'));
       fetchTags();
-      setSuccess("Étiquette supprimée");
+      setSuccess(t('supprimee'));
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('genericError'));
@@ -168,10 +168,10 @@ export default function ProductTagPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Tag className="w-8 h-8" />
-            Étiquettes de Produits
+            {t('titre')}
           </h1>
           <p className="text-gray-400 mt-1">
-            Gérez les étiquettes pour vos produits
+            {t('sousTitre')}
           </p>
         </div>
         <button
@@ -179,7 +179,7 @@ export default function ProductTagPage() {
           className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          Nouvelle Étiquette
+          {t('nouvelle')}
         </button>
       </div>
 
@@ -199,33 +199,33 @@ export default function ProductTagPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 w-full max-w-md">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingId ? "Modifier l'étiquette" : "Créer une étiquette"}
+              {editingId ? t('modifier') : t('creer')}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom
+                  {t('nom')}
                 </label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="Nom de l'étiquette"
+                  placeholder={t('nomPlaceholder')}
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  {t('description')}
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Description"
+                  placeholder={t('description')}
                   rows={3}
                   maxLength={200}
                   className="w-full px-3 py-2 border rounded-lg"
@@ -234,7 +234,7 @@ export default function ProductTagPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Couleur
+                  {t('couleur')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -259,13 +259,13 @@ export default function ProductTagPage() {
                 onClick={closeModal}
                 className="flex-1 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                Annuler
+                {t('annuler')}
               </button>
               <button
                 onClick={saveTag}
                 className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 rounded-lg"
               >
-                Enregistrer
+                {t('enregistrer')}
               </button>
             </div>
           </div>
@@ -279,7 +279,7 @@ export default function ProductTagPage() {
       ) : tags.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Tag className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucune étiquette trouvée</p>
+          <p className="text-gray-400">{t('aucune')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -336,7 +336,7 @@ export default function ProductTagPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {skip + 1} à {Math.min(skip + take, total)} sur {total}
+          {t("affichage", { debut: skip + 1, fin: Math.min(skip + take, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -344,14 +344,14 @@ export default function ProductTagPage() {
             disabled={skip === 0}
             className="px-3 py-1 border rounded-lg disabled:opacity-50"
           >
-            Précédent
+            {t('precedent')}
           </button>
           <button
             onClick={() => setSkip(skip + take)}
             disabled={skip + take >= total}
             className="px-3 py-1 border rounded-lg disabled:opacity-50"
           >
-            Suivant
+            {t('suivant')}
           </button>
         </div>
       </div>

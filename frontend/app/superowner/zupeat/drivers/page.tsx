@@ -11,7 +11,7 @@
 import { useCallback, useState } from 'react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { Bike, Car, Check, Eye, ExternalLink, Truck, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
@@ -81,14 +81,16 @@ const COULEURS: Record<string, string> = {
   INACTIVE: 'bg-gray-100 text-gray-700',
 };
 
-const VEHICULES: Record<string, { icone: typeof Car; libelle: string }> = {
-  car: { icone: Car, libelle: 'Voiture' },
-  scooter: { icone: Truck, libelle: 'Scooter' },
-  bike: { icone: Bike, libelle: 'Vélo' },
+// Libellé de chaque véhicule : `vehicules.<type>` des traductions.
+const VEHICULES: Record<string, { icone: typeof Car }> = {
+  car: { icone: Car },
+  scooter: { icone: Truck },
+  bike: { icone: Bike },
 };
 
 export default function LivreursPage() {
   const t = useTranslations('superownerDrivers');
+  const locale = useLocale();
   const tCommon = useTranslations('common');
 
   const [livreurs, setLivreurs] = useState<Livreur[]>([]);
@@ -298,9 +300,11 @@ export default function LivreursPage() {
         <div className="space-y-3">
           {livreurs.map((livreur) => {
             const ouvert = dossier?.driver.id === livreur.id;
-            const vehicule = VEHICULES[livreur.vehicleType] || {
-              icone: Car,
-              libelle: livreur.vehicleType,
+            const vehicule = {
+              icone: VEHICULES[livreur.vehicleType]?.icone ?? Car,
+              libelle: VEHICULES[livreur.vehicleType]
+                ? t(`vehicules.${livreur.vehicleType}`)
+                : livreur.vehicleType,
             };
             const IconeVehicule = vehicule.icone;
 
@@ -335,7 +339,6 @@ export default function LivreursPage() {
                       <span>
                         {/* « 0/4 pièces validées » : l'accord suit le nombre attendu. */}
                         {livreur.piecesValidees}/{livreur.piecesAttendues} {t('piecesLabel', { count: livreur.piecesAttendues })}
-                        {livreur.piecesAttendues > 1 ? 's' : ''}
                       </span>
                       <span>
                         {livreur.totalDeliveries} {livreur.totalDeliveries > 1 ? t('deliveries_plural') : t('delivery')}
@@ -352,7 +355,7 @@ export default function LivreursPage() {
                       <p className="text-xs text-red-700 mt-2">{livreur.statusReason}</p>
                     )}
                     {livreur.suppressionDemandeeLe && (
-                      <p className="text-xs text-amber-700 mt-1">🗑️ Suppression du compte demandée</p>
+                      <p className="text-xs text-amber-700 mt-1">{t('suppression.compteDemandee')}</p>
                     )}
                   </div>
 
@@ -368,29 +371,34 @@ export default function LivreursPage() {
                     {dossier.suppression && (
                       <div className="rounded-lg border border-amber-500/40 bg-amber-100 p-4 text-sm text-amber-800">
                         <p className="font-semibold text-amber-700">
-                          🗑️ Suppression demandée le{' '}
-                          {new Date(dossier.suppression.demandeeLe).toLocaleDateString('fr-FR')}
+                          {t('suppression.demandeeLe', {
+                            date: new Date(dossier.suppression.demandeeLe).toLocaleDateString(locale),
+                          })}
                         </p>
                         <p className="mt-1">
-                          Seul le compte livreur est à supprimer : son compte client ZupEat reste actif (ne supprimez
-                          pas le compte utilisateur).
+                          {t('suppression.seulLivreur')}
                         </p>
                         {dossier.suppression.montantDu > 0 ? (
                           <p className="mt-1">
-                            Reste à verser : <strong>{euro(dossier.suppression.montantDu)}</strong>
+                            {t.rich('suppression.resteAVerser', {
+                              montant: euro(dossier.suppression.montantDu),
+                              fort: (morceau) => <strong>{morceau}</strong>,
+                            })}
                             {dossier.suppression.versementLe &&
-                              `, avec l’arrêté du ${new Date(dossier.suppression.versementLe).toLocaleDateString('fr-FR', {
-                                weekday: 'long',
-                                day: 'numeric',
-                                month: 'long',
-                              })}`}
+                              t('suppression.avecArrete', {
+                                date: new Date(dossier.suppression.versementLe).toLocaleDateString(locale, {
+                                  weekday: 'long',
+                                  day: 'numeric',
+                                  month: 'long',
+                                }),
+                              })}
                             {dossier.suppression.ibanValide
-                              ? ` (IBAN •••${dossier.suppression.ibanFin}).`
-                              : ' — IBAN manquant ou invalide.'}{' '}
-                            N’effacez pas ses données avant ce versement.
+                              ? t('suppression.iban', { fin: dossier.suppression.ibanFin ?? '' })
+                              : t('suppression.ibanManquant')}{' '}
+                            {t('suppression.nEffacezPas')}
                           </p>
                         ) : (
-                          <p className="mt-1">Rien à lui verser : ses données de livreur peuvent être effacées.</p>
+                          <p className="mt-1">{t('suppression.rien')}</p>
                         )}
                       </div>
                     )}
@@ -424,7 +432,7 @@ export default function LivreursPage() {
                               </p>
                               {piece.expiryDate && (
                                 <p className="text-xs text-gray-500">
-                                  {t('expiresOn')} {new Date(piece.expiryDate).toLocaleDateString('fr-FR')}
+                                  {t('expiresOn')} {new Date(piece.expiryDate).toLocaleDateString(locale)}
                                   {echeance[piece.id] === undefined && (
                                     <button
                                       type="button"

@@ -32,7 +32,7 @@ import {
 
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import ChangerMotDePasse from '@/components/ChangerMotDePasse';
 import { LienPiece } from '@/components/LienPiece';
@@ -86,11 +86,12 @@ interface Profil {
   };
 }
 
-const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
-  APPROVED: { icone: Check, classe: 'text-green-600', libelle: 'Validé' },
-  REJECTED: { icone: X, classe: 'text-red-600', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-500', libelle: "En attente d'examen" },
-  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-600', libelle: 'Expiré — déposez une version à jour' },
+// Libellé de chaque état de pièce : `pieces.<statut>` des traductions.
+const MARQUES: Record<string, { icone: typeof Check; classe: string }> = {
+  APPROVED: { icone: Check, classe: 'text-green-600' },
+  REJECTED: { icone: X, classe: 'text-red-600' },
+  PENDING: { icone: Clock, classe: 'text-gray-500' },
+  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-600' },
 };
 
 /** Le délai de prévenance : c'est aussi celui du rappel envoyé par la plateforme. */
@@ -134,6 +135,7 @@ const CHAMP =
 
 export default function ProfilCommercantPage() {
   const t = useTranslations('merchantProfile');
+  const locale = useLocale();
   const [profil, setProfil] = useState<Profil | null>(null);
   const [orgId, setOrgId] = useState('');
   const [chargement, setChargement] = useState(true);
@@ -201,7 +203,7 @@ export default function ProfilCommercantPage() {
     const org = localStorage.getItem('currentOrgId');
 
     if (!jeton || !org) {
-      setErreur('Reconnectez-vous pour voir votre profil');
+      setErreur(t('reconnectez'));
       setChargement(false);
       return;
     }
@@ -215,7 +217,7 @@ export default function ProfilCommercantPage() {
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(lu.error || 'Impossible de charger votre profil');
+        setErreur(lu.error || t('chargementImpossible'));
         return;
       }
 
@@ -253,12 +255,12 @@ export default function ProfilCommercantPage() {
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(lu.error || 'Enregistrement impossible');
+        setErreur(lu.error || t('enregistrementImpossible'));
         return;
       }
 
       remplir(lu.data);
-      setMessage('Profil enregistré');
+      setMessage(t('enregistre'));
     } catch {
       setErreur(t('serverError'));
     } finally {
@@ -271,12 +273,12 @@ export default function ProfilCommercantPage() {
     setErreurPiece('');
 
     if (!piece.type) {
-      setErreurPiece('Choisissez une pièce');
+      setErreurPiece(t('choisissezPiece'));
       return;
     }
 
     if (!piece.file && !piece.documentUrl) {
-      setErreurPiece('Uploader un fichier ou fournir un lien');
+      setErreurPiece(t('fichierOuLien'));
       return;
     }
 
@@ -301,7 +303,7 @@ export default function ProfilCommercantPage() {
         const lu = await reponse.json().catch(() => null);
 
         if (!reponse.ok) {
-          setErreurPiece(lu?.error || 'Upload impossible');
+          setErreurPiece(lu?.error || t('uploadImpossible'));
           return;
         }
       } else {
@@ -318,7 +320,7 @@ export default function ProfilCommercantPage() {
         const lu = await reponse.json().catch(() => null);
 
         if (!reponse.ok) {
-          setErreurPiece(lu?.error || 'Dépôt impossible');
+          setErreurPiece(lu?.error || t('depotImpossible'));
           return;
         }
       }
@@ -346,14 +348,14 @@ export default function ProfilCommercantPage() {
   };
 
   if (chargement) {
-    return <div className="p-8 text-gray-500">Chargement…</div>;
+    return <div className="p-8 text-gray-500">{t('chargement')}</div>;
   }
 
   if (!profil) {
     return (
       <div className="p-8">
         <p role="status" className="text-red-600">
-          {erreur || 'Profil introuvable'}
+          {erreur || t('introuvable')}
         </p>
       </div>
     );
@@ -367,11 +369,11 @@ export default function ProfilCommercantPage() {
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-3"
         >
           <ArrowLeft size={16} />
-          Mes commerces
+          {t('mesCommerces')}
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Mon profil</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('monProfil')}</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Ce qui figure sur vos factures, et le compte sur lequel vous êtes payé.
+          {t('sousTitre')}
         </p>
       </div>
 
@@ -383,15 +385,14 @@ export default function ProfilCommercantPage() {
           role="status"
           className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm space-y-1"
         >
-          <p className="font-semibold">Votre compte est suspendu</p>
-          {profil.suspensionReason && <p>Motif : {profil.suspensionReason}</p>}
+          <p className="font-semibold">{t('suspendu')}</p>
+          {profil.suspensionReason && <p>{t('motif', { motif: profil.suspensionReason })}</p>}
           <p>
-            Votre espace est fermé, mais ce dossier reste ouvert : complétez ce qui manque
-            ci-dessous, puis{' '}
+            {t('suspenduAide')}{' '}
             <Link href={`/merchant/${orgId}/support`} className="underline hover:text-red-800">
-              prévenez le support
+              {t('prevenezSupport')}
             </Link>
-            . C&apos;est la plateforme qui lève la suspension.
+            {t('suspenduFin')}
           </p>
         </div>
       )}
@@ -403,16 +404,15 @@ export default function ProfilCommercantPage() {
           role="status"
           className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 text-sm space-y-1"
         >
-          <p className="font-semibold">Votre commerce est en attente de validation</p>
+          <p className="font-semibold">{t('enAttente')}</p>
           <p>
-            Vous pouvez préparer votre boutique — produits, catégories, horaires — mais vous
-            pourrez l&apos;ouvrir une fois vos documents validés par la plateforme.
+            {t('enAttenteAide')}
           </p>
           {/* Ce qu'il reste à déposer d'un côté, ce qui attend la plateforme de
               l'autre : une pièce déposée ne doit plus apparaître « à fournir ». */}
           {profil.validation.piecesAFournir?.length > 0 && (
             <p>
-              <strong>À fournir :</strong>{' '}
+              <strong>{t('aFournir')}</strong>{' '}
               {profil.validation.piecesAFournir.map((piece) => piece.libelle).join(', ')}.
             </p>
           )}
@@ -423,18 +423,17 @@ export default function ProfilCommercantPage() {
             profil.validation.piecesEnExamen?.length > 0 && (
               <p className="flex items-center gap-2 font-semibold text-green-700">
                 <Check size={16} aria-hidden />
-                Toutes vos pièces obligatoires sont déposées. La plateforme les examine et
-                vous prévient dans votre espace dès qu&apos;elles sont validées.
+                {t('toutDepose')}
               </p>
             )}
           {profil.validation.piecesEnExamen?.length > 0 && (
             <p className="text-blue-800/80">
-              En cours d&apos;examen :{' '}
+              {t('enExamen')}{' '}
               {profil.validation.piecesEnExamen.map((piece) => piece.libelle).join(', ')}.
             </p>
           )}
           {profil.validation.piecesManquantes.length === 0 && (
-            <p>Vos pièces sont validées : la plateforme va valider votre commerce.</p>
+            <p>{t('piecesValidees')}</p>
           )}
         </div>
       )}
@@ -448,12 +447,12 @@ export default function ProfilCommercantPage() {
         >
           {profil.manquePourFacturer.length > 0 && (
             <p>
-              <strong>Pour être facturé</strong>, il manque {profil.manquePourFacturer.join(', ')}.
+              {t.rich('manqueFacturer', { liste: profil.manquePourFacturer.join(', '), b: (c) => <strong>{c}</strong> })}
             </p>
           )}
           {profil.manquePourEtrePaye.length > 0 && (
             <p>
-              <strong>Pour être payé</strong>, il manque {profil.manquePourEtrePaye.join(', ')}.
+              {t.rich('manquePaye', { liste: profil.manquePourEtrePaye.join(', '), b: (c) => <strong>{c}</strong> })}
             </p>
           )}
         </div>
@@ -473,23 +472,20 @@ export default function ProfilCommercantPage() {
       <form onSubmit={enregistrer} className="space-y-6">
         {preRempli && (
           <p className="text-sm text-sky-800 bg-sky-50 border border-sky-200 rounded-lg p-3">
-            Nous avons pré-rempli ce formulaire avec ce que vous avez donné à
-            l&apos;inscription. Vérifiez-le — la raison sociale et l&apos;adresse de
-            facturation peuvent différer de celles de la boutique — puis
-            enregistrez.
+            {t('preRempli')}
           </p>
         )}
 
         <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <Building2 size={20} className="text-orange-500" />
-            Identité de facturation
+            {t('identiteFacturation')}
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="legalName" className="block text-sm text-gray-500 mb-1">
-                Raison sociale
+                {t('raisonSociale')}
               </label>
               <input
                 id="legalName"
@@ -502,7 +498,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="registrationNumber" className="block text-sm text-gray-500 mb-1">
-                Numéro d&apos;immatriculation
+                {t('immatriculation')}
               </label>
               <input
                 id="registrationNumber"
@@ -515,7 +511,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="billingCountry" className="block text-sm text-gray-500 mb-1">
-                Pays
+                {t('pays')}
               </label>
               <select
                 id="billingCountry"
@@ -533,7 +529,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="vatNumber" className="block text-sm text-gray-500 mb-1">
-                Numéro de TVA
+                {t('numeroTva')}
               </label>
               <input
                 id="vatNumber"
@@ -546,7 +542,7 @@ export default function ProfilCommercantPage() {
 
             <div className="sm:col-span-2">
               <label htmlFor="billingAddress" className="block text-sm text-gray-500 mb-1">
-                Adresse de facturation
+                {t('adresseFacturation')}
               </label>
               <AddressAutocomplete
                 clair
@@ -573,7 +569,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="billingPostalCode" className="block text-sm text-gray-500 mb-1">
-                Code postal
+                {t('codePostal')}
               </label>
               <input
                 id="billingPostalCode"
@@ -585,7 +581,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="billingCity" className="block text-sm text-gray-500 mb-1">
-                Ville
+                {t('ville')}
               </label>
               <input
                 id="billingCity"
@@ -600,13 +596,13 @@ export default function ProfilCommercantPage() {
         <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <User size={20} className="text-orange-500" />
-            Le propriétaire du commerce
+            {t('proprietaire')}
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="ownerFirstName" className="block text-sm text-gray-500 mb-1">
-                Prénom
+                {t('prenom')}
               </label>
               <input
                 id="ownerFirstName"
@@ -618,7 +614,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="ownerLastName" className="block text-sm text-gray-500 mb-1">
-                Nom
+                {t('nom')}
               </label>
               <input
                 id="ownerLastName"
@@ -630,7 +626,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="ownerEmail" className="block text-sm text-gray-500 mb-1">
-                E-mail
+                {t('email')}
               </label>
               <input
                 id="ownerEmail"
@@ -643,7 +639,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="ownerPhone" className="block text-sm text-gray-500 mb-1">
-                Téléphone
+                {t('telephone')}
               </label>
               <input
                 id="ownerPhone"
@@ -655,7 +651,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="ownerBirthDate" className="block text-sm text-gray-500 mb-1">
-                Date de naissance
+                {t('dateNaissance')}
               </label>
               <input
                 id="ownerBirthDate"
@@ -671,23 +667,23 @@ export default function ProfilCommercantPage() {
         <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <Landmark size={20} className="text-orange-500" />
-            Compte bancaire
+            {t('compteBancaire')}
           </h2>
 
           <p className="text-sm text-gray-500">
-            C&apos;est sur ce compte que vos versements sont virés, et il figure sur vos factures.
+            {t('compteBancaireAide')}
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="iban" className="block text-sm text-gray-500 mb-1">
-                IBAN
+                {t('iban')}
               </label>
               <input
                 id="iban"
                 value={form.iban}
                 onChange={(e) => setForm({ ...form, iban: e.target.value })}
-                placeholder={profil.ibanRenseigne ? 'Laissez vide pour ne pas le changer' : 'FR76…'}
+                placeholder={profil.ibanRenseigne ? t('ibanLaissezVide') : 'FR76…'}
                 className={CHAMP}
               />
               {/* Il n'est jamais réaffiché : quatre caractères suffisent à
@@ -695,14 +691,14 @@ export default function ProfilCommercantPage() {
               <p className="text-xs text-gray-500 mt-1 flex items-center gap-2">
                 <CreditCard size={12} />
                 {profil.ibanRenseigne
-                  ? `Compte enregistré : ${profil.ibanMasque}. Par sécurité, il n'est jamais réaffiché en entier.`
-                  : 'Aucun compte enregistré.'}
+                  ? t('compteEnregistre', { iban: profil.ibanMasque ?? '' })
+                  : t('aucunCompte')}
               </p>
             </div>
 
             <div>
               <label htmlFor="bic" className="block text-sm text-gray-500 mb-1">
-                BIC
+                {t('bic')}
               </label>
               <input
                 id="bic"
@@ -714,7 +710,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="accountHolder" className="block text-sm text-gray-500 mb-1">
-                Titulaire du compte
+                {t('titulaire')}
               </label>
               <input
                 id="accountHolder"
@@ -738,11 +734,11 @@ export default function ProfilCommercantPage() {
       <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <FileText size={20} className="text-orange-500" />
-          Vos justificatifs
+          {t('justificatifs')}
         </h2>
 
         {profil.documents.length === 0 ? (
-          <p className="text-sm text-gray-500">Aucune pièce déposée.</p>
+          <p className="text-sm text-gray-500">{t('aucunePiece')}</p>
         ) : (
           <ul className="space-y-2">
             {profil.documents.map((document) => {
@@ -756,7 +752,7 @@ export default function ProfilCommercantPage() {
                 >
                   <div className="min-w-0">
                     <p className="text-gray-900 text-sm font-medium">{document.libelle}</p>
-                    <p className={`text-xs ${marque.classe}`}>{marque.libelle}</p>
+                    <p className={`text-xs ${marque.classe}`}>{t(`pieces.${MARQUES[document.status] ? document.status : 'PENDING'}`)}</p>
                     {document.expiryDate && document.status !== 'EXPIRED' && (
                       <p
                         className={`text-xs ${
@@ -765,11 +761,9 @@ export default function ProfilCommercantPage() {
                             : 'text-gray-500'
                         }`}
                       >
-                        Expire le {new Date(document.expiryDate).toLocaleDateString('fr-FR')}
+                        {t('expireLe', { date: new Date(document.expiryDate).toLocaleDateString(locale) })}
                         {joursAvant(document.expiryDate) <= JOURS_AVANT_EXPIRATION &&
-                          ` — dans ${joursAvant(document.expiryDate)} jour${
-                            joursAvant(document.expiryDate) > 1 ? 's' : ''
-                          }, déposez-en une nouvelle`}
+                          t('expireDans', { n: joursAvant(document.expiryDate) })}
                       </p>
                     )}
                     {document.reviewNote && (
@@ -788,7 +782,7 @@ export default function ProfilCommercantPage() {
                     <button
                       type="button"
                       onClick={() => retirer(document.id)}
-                      title={`Retirer ${document.libelle}`}
+                      title={t('retirer', { piece: document.libelle })}
                       className="text-gray-500 hover:text-red-600 transition"
                     >
                       <Trash2 size={16} />
@@ -810,7 +804,7 @@ export default function ProfilCommercantPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="piece-type" className="block text-sm text-gray-500 mb-1">
-                Pièce à déposer
+                {t('pieceADeposer')}
               </label>
               <select
                 id="piece-type"
@@ -818,7 +812,7 @@ export default function ProfilCommercantPage() {
                 onChange={(e) => setPiece({ ...piece, type: e.target.value })}
                 className={CHAMP}
               >
-                <option value="">Choisir…</option>
+                <option value="">{t('choisir')}</option>
                 {profil.typesDocument.map((attendue) => (
                   <option key={attendue.type} value={attendue.type}>
                     {attendue.libelle}
@@ -829,7 +823,7 @@ export default function ProfilCommercantPage() {
 
             <div>
               <label htmlFor="piece-expiration" className="block text-sm text-gray-500 mb-1">
-                Date d&apos;expiration (si la pièce en a une)
+                {t('expiration')}
               </label>
               <input
                 id="piece-expiration"
@@ -842,7 +836,7 @@ export default function ProfilCommercantPage() {
 
             <div className="sm:col-span-2">
               <label htmlFor="piece-fichier" className="block text-sm text-gray-500 mb-1">
-                Fichier (PDF, image ou document)
+                {t('fichier')}
               </label>
               <input
                 id="piece-fichier"
@@ -855,14 +849,14 @@ export default function ProfilCommercantPage() {
                 className={CHAMP}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Fichiers acceptés : PDF, images (JPG, PNG, WebP), documents Word. Max 10 MB.
+                {t('fichiersAcceptes')}
               </p>
             </div>
 
             <div className="sm:col-span-2">
-              <p className="text-xs text-gray-500 mb-2">OU</p>
+              <p className="text-xs text-gray-500 mb-2">{t('ou')}</p>
               <label htmlFor="piece-lien" className="block text-sm text-gray-500 mb-1">
-                Lien vers le document
+                {t('lien')}
               </label>
               <input
                 id="piece-lien"
@@ -873,7 +867,7 @@ export default function ProfilCommercantPage() {
                 className={CHAMP}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Vous pouvez aussi fournir un lien externe vers votre document.
+                {t('lienAide')}
               </p>
             </div>
           </div>
@@ -884,7 +878,7 @@ export default function ProfilCommercantPage() {
             className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition"
           >
             <Upload size={16} />
-            {envoiPiece ? 'Dépôt…' : 'Déposer la pièce'}
+            {envoiPiece ? t('depot') : t('deposer')}
           </button>
         </form>
       </section>

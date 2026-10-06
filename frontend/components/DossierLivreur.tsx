@@ -14,6 +14,7 @@ import { AlertCircle, Check, Clock, FileText, Upload, X } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { erreurDeTaille, reduireImage } from '@/lib/reduire-image';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -37,43 +38,36 @@ interface Dossier {
   documents: Piece[];
 }
 
-const ETATS: Record<string, { titre: string; texte: string; couleur: string }> = {
+// Titre et texte de chaque état : `etats.<statut>.titre|texte` des traductions.
+const ETATS: Record<string, { couleur: string }> = {
   PENDING: {
-    titre: 'Dossier en cours de validation',
-    texte:
-      'Déposez les pièces demandées. Tant que la plateforme ne les a pas validées, vous ne pouvez pas prendre de course.',
     couleur: 'border-amber-200 bg-amber-50 text-amber-800',
   },
   ACTIVE: {
-    titre: 'Compte validé',
-    texte: 'Vous pouvez vous mettre en ligne et recevoir des courses.',
     couleur: 'border-green-200 bg-green-50 text-green-800',
   },
   REJECTED: {
-    titre: 'Dossier refusé',
-    texte: 'Corrigez les pièces signalées et déposez-les à nouveau.',
     couleur: 'border-red-200 bg-red-50 text-red-800',
   },
   SUSPENDED: {
-    titre: 'Compte suspendu',
-    texte: 'Vous ne recevez plus de course.',
     couleur: 'border-red-200 bg-red-50 text-red-800',
   },
   INACTIVE: {
-    titre: 'Compte désactivé',
-    texte: 'Contactez la plateforme pour le rétablir.',
     couleur: 'border-gray-200 bg-white text-gray-700',
   },
 };
 
-const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
-  APPROVED: { icone: Check, classe: 'text-green-600', libelle: 'Validée' },
-  REJECTED: { icone: X, classe: 'text-red-600', libelle: 'Refusée' },
-  EXPIRED: { icone: AlertCircle, classe: 'text-amber-600', libelle: 'Expirée' },
-  PENDING: { icone: Clock, classe: 'text-gray-500', libelle: "En attente d'examen" },
+// Libellé de chaque état de pièce : `pieces.<statut>` des traductions.
+const MARQUES: Record<string, { icone: typeof Check; classe: string }> = {
+  APPROVED: { icone: Check, classe: 'text-green-600' },
+  REJECTED: { icone: X, classe: 'text-red-600' },
+  EXPIRED: { icone: AlertCircle, classe: 'text-amber-600' },
+  PENDING: { icone: Clock, classe: 'text-gray-500' },
 };
 
 export function DossierLivreur({ surChangement }: { surChangement?: () => void }) {
+  const t = useTranslations('dossierLivreur');
+  const tFichiers = useTranslations('fichiers');
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
@@ -114,24 +108,24 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
     setErreur('');
 
     if (!formulaire.type) {
-      setErreur('Choisissez une pièce');
+      setErreur(t('choisirPiece'));
       return;
     }
 
     if (modeUpload === 'file' && !fichier) {
-      setErreur('Choisissez un fichier');
+      setErreur(t('choisirFichier'));
       return;
     }
 
     if (modeUpload === 'link' && !formulaire.documentUrl) {
-      setErreur('Donnez un lien vers le document');
+      setErreur(t('donnerLien'));
       return;
     }
 
     const aEnvoyer = modeUpload === 'file' ? await reduireImage(fichier!) : null;
     const trop = aEnvoyer && erreurDeTaille(aEnvoyer);
     if (trop) {
-      setErreur(trop);
+      setErreur(tFichiers(trop));
       return;
     }
 
@@ -171,7 +165,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Dépôt impossible');
+        setErreur(lu?.error || t('depotImpossible'));
         return;
       }
 
@@ -180,7 +174,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
       await charger();
       surChangement?.();
     } catch {
-      setErreur('Erreur de connexion');
+      setErreur(t('erreurConnexion'));
     } finally {
       setEnvoi(false);
     }
@@ -188,14 +182,15 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
   if (chargement || !dossier) return null;
 
-  const etat = ETATS[dossier.status] || ETATS.PENDING;
+  const statutConnu = ETATS[dossier.status] ? dossier.status : 'PENDING';
+  const etat = ETATS[statutConnu];
   const deposees = new Map(dossier.documents.map((piece) => [piece.type, piece]));
 
   return (
     <div className="space-y-4">
       <div role="status" className={`rounded-lg border px-4 py-3 ${etat.couleur}`}>
-        <p className="font-semibold">{etat.titre}</p>
-        <p className="text-sm">{dossier.statusReason || etat.texte}</p>
+        <p className="font-semibold">{t(`etats.${statutConnu}.titre`)}</p>
+        <p className="text-sm">{dossier.statusReason || t(`etats.${statutConnu}.texte`)}</p>
       </div>
 
       {/* Validé, le dossier n'a plus besoin d'être déroulé à chaque visite. */}
@@ -203,7 +198,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
         <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <FileText size={20} className="text-orange-500" />
-            Vos pièces
+            {t('vosPieces')}
           </h2>
 
           <ul className="space-y-2">
@@ -221,13 +216,13 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                     <p className="text-gray-900 text-sm font-medium">{attendue.libelle}</p>
                     {piece ? (
                       <>
-                        <p className={`text-xs ${marque?.classe}`}>{marque?.libelle}</p>
+                        <p className={`text-xs ${marque?.classe}`}>{t(`pieces.${MARQUES[piece.status] ? piece.status : 'PENDING'}`)}</p>
                         {piece.reviewNote && (
                           <p className="text-xs text-red-700 mt-1">{piece.reviewNote}</p>
                         )}
                       </>
                     ) : (
-                      <p className="text-xs text-gray-500">Pas encore déposée</p>
+                      <p className="text-xs text-gray-500">{t('pasEncore')}</p>
                     )}
                   </div>
 
@@ -246,7 +241,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
             <div>
               <label htmlFor="piece-type" className="block text-sm text-gray-500 mb-1">
-                Pièce à déposer
+                {t('pieceADeposer')}
               </label>
               <select
                 id="piece-type"
@@ -254,7 +249,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                 onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
                 className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
               >
-                <option value="">Choisir…</option>
+                <option value="">{t('choisir')}</option>
                 {dossier.piecesAttendues.map((attendue) => (
                   <option key={attendue.type} value={attendue.type}>
                     {attendue.libelle}
@@ -274,7 +269,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Fichier
+                  {t('fichier')}
                 </button>
                 <button
                   type="button"
@@ -285,14 +280,14 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Lien URL
+                  {t('lienUrl')}
                 </button>
               </div>
 
               {modeUpload === 'file' ? (
                 <div>
                   <label htmlFor="piece-fichier" className="block text-sm text-gray-500 mb-1">
-                    Sélectionner un fichier (JPG, PNG, PDF)
+                    {t('selectionner')}
                   </label>
                   {/* Une clé par mode : sans elle, React réutilisait ce champ
                       libre pour le champ du lien (contrôlé), et le signalait. */}
@@ -306,14 +301,14 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                   />
                   {fichier && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Fichier sélectionné: {fichier.name} ({Math.round(fichier.size / 1024)} KB)
+                      {t('fichierSelectionne', { nom: fichier.name, ko: Math.round(fichier.size / 1024) })}
                     </p>
                   )}
                 </div>
               ) : (
                 <div>
                   <label htmlFor="piece-lien" className="block text-sm text-gray-500 mb-1">
-                    Lien vers le document
+                    {t('lienDocument')}
                   </label>
                   <input
                     key="lien"
@@ -330,7 +325,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
             <div>
               <label htmlFor="piece-expiration" className="block text-sm text-gray-500 mb-1">
-                Date d&apos;expiration (si la pièce en a une)
+                {t('expiration')}
               </label>
               <input
                 id="piece-expiration"
@@ -347,7 +342,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition"
             >
               <Upload size={16} />
-              {envoi ? 'Dépôt…' : 'Déposer la pièce'}
+              {envoi ? t('depot') : t('deposer')}
             </button>
           </form>
         </div>

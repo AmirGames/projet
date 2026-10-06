@@ -16,6 +16,7 @@ import { usePays } from "@/lib/pays-client";
 export default function SignupPage() {
   const t = useTranslations('auth.signup');
   const tMdp = useTranslations('motDePasse');
+  const tConditions = useTranslations('acceptationConditions');
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -87,7 +88,7 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label htmlFor="pays" className="mb-1.5 block text-sm font-semibold text-gray-700">Pays</label>
+            <label htmlFor="pays" className="mb-1.5 block text-sm font-semibold text-gray-700">{t('pays')}</label>
             <SelecteurPays
               pays={pays}
               onChange={setPays}
@@ -114,7 +115,7 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-              placeholder="your@email.com"
+              placeholder={t('emailPlaceholder')}
               required
             />
           </div>
@@ -150,8 +151,8 @@ export default function SignupPage() {
             coche={conditionsAcceptees}
             onChange={setConditionsAcceptees}
             documents={[
-              { href: "/cgu", libelle: "les conditions générales d’utilisation" },
-              { href: "/cgv", libelle: "les conditions générales de vente" },
+              { href: "/cgu", libelle: tConditions('docs.cgu') },
+              { href: "/cgv", libelle: tConditions('docs.cgv') },
             ]}
           />
 

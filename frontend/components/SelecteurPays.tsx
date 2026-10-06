@@ -1,6 +1,7 @@
 'use client';
 
 import { PAYS, type Pays } from '@/lib/pays-infos';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   pays: Pays;
@@ -12,6 +13,8 @@ interface Props {
 
 /** Choix du pays dans un formulaire, prérempli par la détection. */
 export function SelecteurPays({ pays, onChange, className = '', id = 'pays' }: Props) {
+  const tPays = useTranslations('pays');
+
   return (
     <select
       id={id}
@@ -21,7 +24,7 @@ export function SelecteurPays({ pays, onChange, className = '', id = 'pays' }: P
     >
       {(Object.keys(PAYS) as Pays[]).map((code) => (
         <option key={code} value={code}>
-          {PAYS[code].drapeau} {PAYS[code].nom}
+          {PAYS[code].drapeau} {tPays(code)}
         </option>
       ))}
     </select>

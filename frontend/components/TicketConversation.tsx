@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Send } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -30,6 +30,7 @@ interface Props {
 }
 
 export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, onSent, clair = false }: Props) {
+  const locale = useLocale();
   const t = useTranslations('ticketConversation');
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [body, setBody] = useState('');
@@ -142,7 +143,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
                   </p>
                   <p className={`text-sm whitespace-pre-wrap ${clair ? 'text-gray-900' : 'text-white'}`}>{message.body}</p>
                   <p className="text-xs text-gray-500 mt-2">
-                    {new Date(message.createdAt).toLocaleString('fr-FR')}
+                    {new Date(message.createdAt).toLocaleString(locale)}
                   </p>
                 </div>
               </div>

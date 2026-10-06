@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,16 +22,17 @@ interface CommandeActive {
 /** En attente, refusée ou terminée : rien à suivre. */
 const STATUTS_ACTIFS = ['ACCEPTED', 'PREPARING', 'READY'];
 
-const heure = (iso: string) =>
-  new Date(iso).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+const heure = (iso: string, locale: string) =>
+  new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
+/** La clé de traduction de l'état, côté client. */
 function libelle(c: CommandeActive): string {
-  if (c.status === 'ACCEPTED') return 'Commande acceptée';
-  if (c.status === 'PREPARING') return 'En préparation';
-  if (c.deliveryType === 'PICKUP') return 'Prête à être retirée';
-  if (c.deliveryStatus === 'PICKED_UP') return 'En route';
-  if (c.deliveryStatus === 'ACCEPTED') return 'Livreur en chemin vers le commerce';
-  return 'Prête, en attente du livreur';
+  if (c.status === 'ACCEPTED') return 'acceptee';
+  if (c.status === 'PREPARING') return 'enPreparation';
+  if (c.deliveryType === 'PICKUP') return 'preteARetirer';
+  if (c.deliveryStatus === 'PICKED_UP') return 'enRoute';
+  if (c.deliveryStatus === 'ACCEPTED') return 'livreurEnChemin';
+  return 'preteAttenteLivreur';
 }
 
 /**
@@ -39,6 +41,8 @@ function libelle(c: CommandeActive): string {
  * Un clic mène au suivi (`/client/orders/[id]`).
  */
 export function BandeauCommandeEnCours() {
+  const t = useTranslations('bandeauCommande');
+  const locale = useLocale();
   const pathname = usePathname();
   const [commandes, setCommandes] = useState<CommandeActive[]>([]);
 
@@ -89,16 +93,18 @@ export function BandeauCommandeEnCours() {
         </span>
         <div className="flex-1 min-w-0">
           {commandes.length > 1 ? (
-            <p className="font-semibold">{commandes.length} commandes en cours</p>
+            <p className="font-semibold">{t('plusieurs', { n: commandes.length })}</p>
           ) : (
             <>
               <p className="font-semibold truncate">
                 {premiere.estimatedReadyAt
-                  ? `${premiere.deliveryType === 'PICKUP' ? 'Prête vers' : 'Préparée vers'} ${heure(premiere.estimatedReadyAt)}`
-                  : libelle(premiere)}
+                  ? t(premiere.deliveryType === 'PICKUP' ? 'preteVers' : 'prepareeVers', {
+                      heure: heure(premiere.estimatedReadyAt, locale),
+                    })
+                  : t(libelle(premiere))}
               </p>
               <p className="text-sm text-green-100 truncate">
-                {libelle(premiere)}
+                {t(libelle(premiere))}
                 {premiere.store?.name ? ` • ${premiere.store.name}` : ''}
               </p>
             </>

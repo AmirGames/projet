@@ -3,7 +3,7 @@
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Download, Eye } from 'lucide-react';
 import Link from 'next/link';
 
@@ -35,6 +35,7 @@ const statusColors: Record<string, string> = {
 
 export default function InvoicesPage() {
   const t = useTranslations('merchantInvoices');
+  const locale = useLocale();
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
@@ -139,35 +140,41 @@ export default function InvoicesPage() {
   };
 
   const generateCSV = (invoice: any) => {
-    let csv = 'FACTURE\n\n';
-    csv += `Numéro: ${invoice.invoiceNumber}\n`;
-    csv += `Date: ${new Date(invoice.invoiceDate).toLocaleDateString('fr-FR')}\n`;
-    csv += `Échéance: ${new Date(invoice.dueDate).toLocaleDateString('fr-FR')}\n\n`;
-    
-    csv += 'INFORMATIONS BOUTIQUE\n';
-    csv += `${invoice.storeInfo.name}\n`;
-    csv += `${invoice.storeInfo.address}\n`;
-    csv += `${invoice.storeInfo.city}\n`;
-    csv += `${invoice.storeInfo.email}\n`;
-    csv += `${invoice.storeInfo.phone}\n\n`;
-    
-    csv += 'CLIENT\n';
-    csv += `${invoice.customerInfo.name}\n`;
-    csv += `${invoice.customerInfo.email}\n`;
-    csv += `${invoice.customerInfo.phone}\n\n`;
-    
-    csv += 'ARTICLES\n';
-    csv += 'Description,SKU,Quantité,Prix Unitaire,Total\n';
+    // Un champ peut contenir une virgule ou un guillemet (« Pizza, grande ») :
+    // entre guillemets, il reste dans sa colonne.
+    const champ = (valeur: unknown) => `"${String(valeur ?? '').replace(/"/g, '""')}"`;
+    const ligne = (...valeurs: unknown[]) => valeurs.map(champ).join(',') + '\n';
+    const date = (iso: string) => new Date(iso).toLocaleDateString(locale);
+
+    let csv = `${t('csv.facture')}\n\n`;
+    csv += ligne(t('csv.numero'), invoice.invoiceNumber);
+    csv += ligne(t('csv.date'), date(invoice.invoiceDate));
+    csv += ligne(t('csv.echeance'), date(invoice.dueDate)) + '\n';
+
+    csv += `${t('csv.boutique')}\n`;
+    csv += ligne(invoice.storeInfo.name);
+    csv += ligne(invoice.storeInfo.address);
+    csv += ligne(invoice.storeInfo.city);
+    csv += ligne(invoice.storeInfo.email);
+    csv += ligne(invoice.storeInfo.phone) + '\n';
+
+    csv += `${t('csv.client')}\n`;
+    csv += ligne(invoice.customerInfo.name);
+    csv += ligne(invoice.customerInfo.email);
+    csv += ligne(invoice.customerInfo.phone) + '\n';
+
+    csv += `${t('csv.articles')}\n`;
+    csv += ligne(t('csv.description'), t('csv.sku'), t('csv.quantite'), t('csv.prixUnitaire'), t('csv.total'));
     invoice.items.forEach((item: any) => {
-      csv += `${item.description},${item.sku},${item.quantity},${item.unitPrice},${item.total}\n`;
+      csv += ligne(item.description, item.sku, item.quantity, item.unitPrice, item.total);
     });
-    
-    csv += '\nRÉSUMÉ\n';
-    csv += `Sous-total,${invoice.subtotal}\n`;
-    csv += `Taxes,${invoice.tax}\n`;
-    csv += `Frais,${invoice.fees}\n`;
-    csv += `TOTAL,${invoice.total}\n`;
-    
+
+    csv += `\n${t('csv.resume')}\n`;
+    csv += ligne(t('csv.sousTotal'), invoice.subtotal);
+    csv += ligne(t('csv.taxes'), invoice.tax);
+    csv += ligne(t('csv.frais'), invoice.fees);
+    csv += ligne(t('csv.totalMaj'), invoice.total);
+
     return csv;
   };
 
@@ -285,18 +292,18 @@ export default function InvoicesPage() {
                         {euro(invoice.amount)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {invoice.itemCount} article{invoice.itemCount > 1 ? 's' : ''}
+                        {t('articles', { n: invoice.itemCount })}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[invoice.status] || statusColors.PENDING}`}>
                           {invoice.status === 'SUCCEEDED' && t('statusSucceeded')}
                           {invoice.status === 'PENDING' && t('statusPending')}
                           {invoice.status === 'FAILED' && t('statusFailed')}
-                          {invoice.status === 'REFUNDED' && 'Remboursée'}
+                          {invoice.status === 'REFUNDED' && t('statusRefunded')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(invoice.date).toLocaleDateString('fr-FR')}
+                        {new Date(invoice.date).toLocaleDateString(locale)}
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
                         <div className="flex items-center justify-center gap-2">

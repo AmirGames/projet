@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = { title: 'Gestion des données — ZupEat' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('titresPages');
+  return { title: `${t('gestionDesDonnees')} — ZupEat` };
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return children;

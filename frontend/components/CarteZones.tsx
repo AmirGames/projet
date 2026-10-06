@@ -358,18 +358,18 @@ export function CarteZones({
         ref={conteneur}
         data-carte-zones
         style={{ height: `${hauteur}px` }}
-        className="w-full rounded-lg overflow-hidden border border-slate-700 bg-slate-800 z-0"
+        className="w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-100 z-0"
       />
 
-      <p className="text-xs text-slate-400 mt-2">
+      <p className="text-xs text-gray-500 mt-2">
         {latitude == null
-          ? "Votre boutique n'est pas encore située : renseignez son adresse ou posez-la sur la carte."
+          ? t('aide.nonSituee')
           : dessin != null
-            ? "Cliquez sur la carte pour poser les sommets de la zone, dans l'ordre."
+            ? t('aide.dessin')
             : zoneActive
-              ? 'Tirez la poignée orange pour régler le rayon.'
+              ? t('aide.rayon')
               : onPosition
-                ? 'Déplacez le point de la boutique pour corriger sa position.'
+                ? t('aide.position')
                 : ''}
       </p>
     </div>

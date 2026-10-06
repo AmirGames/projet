@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { connexionTempsReel, suivreSalon, useConnexionTempsReel } from '@/lib/temps-reel';
 import { useStockageLocal } from '@/lib/navigateur';
 import type { Retard } from '@/components/RetardLivraison';
+import { useTranslations } from 'next-intl';
 
 interface OrderUpdate {
   orderId: string;
@@ -38,6 +39,7 @@ export interface StatusNotification {
 }
 
 export function useOrderTracking(orderId: string) {
+  const t = useTranslations('suiviCommande');
   const [orderStatus, setOrderStatus] = useState<string>('');
   const [deliveryLocation, setDeliveryLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
@@ -103,8 +105,8 @@ export function useOrderTracking(orderId: string) {
         // téléphone si le client l'a permise — la page est souvent en fond.
         if (data.livreurProche) {
           setLivreurProche(true);
-          const titre = 'Votre livreur est bientôt là';
-          const texte = 'Vous pouvez descendre devant la porte.';
+          const titre = t('livreurProcheTitre');
+          const texte = t('livreurProcheTexte');
           setNotification({
             status: 'PICKED_UP',
             title: titre,
@@ -134,7 +136,7 @@ export function useOrderTracking(orderId: string) {
       socketInstance.off('delivery-update', surLivraison);
       quitter();
     };
-  }, [orderId]);
+  }, [orderId, t]);
 
   const updateOrderStatus = useCallback((status: string) => {
     setOrderStatus(status);

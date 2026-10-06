@@ -6,7 +6,7 @@ import { ArrowLeft, Check, CreditCard, Clock, Gift, Store } from 'lucide-react';
 
 import { euro, parSemaine } from '@/lib/format';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 /**
  * La formule du commerçant, et le moyen d'en changer.
@@ -52,6 +52,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function MaFormulePage() {
   const t = useTranslations('merchantSubscription');
+  const locale = useLocale();
   const [grille, setGrille] = useState<Formule[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [demande, setDemande] = useState<Demande | null>(null);
@@ -66,7 +67,7 @@ export default function MaFormulePage() {
     const org = localStorage.getItem('currentOrgId');
 
     if (!jeton || !org) {
-      setErreur('Reconnectez-vous pour voir votre formule');
+      setErreur(t('reconnectez'));
       setChargement(false);
       return;
     }
@@ -80,7 +81,7 @@ export default function MaFormulePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Impossible de charger votre formule');
+        setErreur(donnees.error || t('chargementImpossible'));
         return;
       }
 
@@ -118,11 +119,11 @@ export default function MaFormulePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Demande refusée');
+        setErreur(donnees.error || t('demandeRefusee'));
         return;
       }
 
-      setMessage(donnees.message || 'Demande envoyée');
+      setMessage(donnees.message || t('demandeEnvoyee'));
       await charger();
     } catch {
       setErreur(t('serverError'));
@@ -132,7 +133,7 @@ export default function MaFormulePage() {
   };
 
   if (chargement) {
-    return <div className="p-8 text-gray-500">Chargement de votre formule…</div>;
+    return <div className="p-8 text-gray-500">{t('chargement')}</div>;
   }
 
   return (
@@ -148,9 +149,9 @@ export default function MaFormulePage() {
             <ArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Ma formule</h1>
+            <h1 className="text-3xl font-bold">{t('titre')}</h1>
             <p className="text-gray-500 text-sm">
-              Ce à quoi vous avez souscrit, et ce que proposent les autres formules.
+              {t('sousTitre')}
             </p>
           </div>
         </div>
@@ -168,38 +169,35 @@ export default function MaFormulePage() {
 
         {quota && (
           <section className="bg-white border border-gray-200 rounded-lg p-6">
-            <p className="text-sm text-gray-500 mb-1">Formule en cours</p>
+            <p className="text-sm text-gray-500 mb-1">{t('enCours')}</p>
             <div className="flex items-baseline gap-3 flex-wrap">
               <h2 className="text-2xl font-bold">{quota.tierLabel}</h2>
               <span className="flex items-center gap-1 text-gray-500">
                 <Store size={16} />
-                {quota.used} boutique{quota.used > 1 ? 's' : ''} sur {quota.max}
+                {t('boutiquesSur', { n: quota.used, max: quota.max })}
               </span>
             </div>
 
             {quota.customTerms && (
               <p className="mt-3 text-sm text-amber-700">
-                Vous bénéficiez de conditions négociées avec la plateforme : elles remplacent celles de la
-                formule.
+                {t('conditionsNegociees')}
               </p>
             )}
 
             {quota.commissionFree && (
               <p className="mt-3 flex items-center gap-2 text-sm text-pink-700">
                 <Gift size={16} className="flex-shrink-0" />
-                Offert : aucune commission sur vos ventes
                 {quota.commissionFreeUntil
-                  ? ` jusqu'au ${new Date(quota.commissionFreeUntil).toLocaleDateString('fr-FR')} inclus.`
-                  : '.'}
+                  ? t('offertJusquau', { date: new Date(quota.commissionFreeUntil).toLocaleDateString(locale) })
+                  : t('offert')}
               </p>
             )}
 
             {!quota.canCreate && (
               <p className="mt-3 text-sm text-amber-700">
-                Vous avez atteint la limite de votre formule.
                 {quota.upgradeAvailable
-                  ? ` La formule ${quota.nextTierLabel} en autorise davantage.`
-                  : ' Pour aller au-delà, adressez une demande au support.'}
+                  ? t('limiteAvecSuivante', { formule: quota.nextTierLabel ?? '' })
+                  : t('limiteSupport')}
               </p>
             )}
           </section>
@@ -211,14 +209,11 @@ export default function MaFormulePage() {
             <div>
               <p className="font-semibold text-blue-800">{demande.title}</p>
               <p className="text-sm text-blue-700/80">
-                Demande déposée le{' '}
-                {new Date(demande.createdAt).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                })}
-                , en attente du support.{' '}
+                {t('demandeDeposee', {
+                  date: new Date(demande.createdAt).toLocaleDateString(locale, { day: 'numeric', month: 'long' }),
+                })}{' '}
                 <Link href={`/merchant/${orgId}/support`} className="underline">
-                  Suivre la discussion
+                  {t('suivre')}
                 </Link>
               </p>
             </div>
@@ -242,7 +237,7 @@ export default function MaFormulePage() {
                   <h3 className="text-xl font-bold">{formule.libelle}</h3>
                   {actuelle && (
                     <span className="px-2 py-0.5 rounded border border-orange-500/50 bg-orange-100 text-orange-700 text-xs font-semibold uppercase tracking-wide">
-                      En cours
+                      {t('badgeEnCours')}
                     </span>
                   )}
                 </div>
@@ -250,18 +245,18 @@ export default function MaFormulePage() {
                 {/* Affiché à la semaine, facturé au mois : le montant réellement
                     prélevé reste écrit juste en dessous. */}
                 <p className="text-3xl font-bold mb-1">
-                  {formule.prixMensuel === 0 ? 'Gratuit' : euro(parSemaine(formule.prixMensuel))}
+                  {formule.prixMensuel === 0 ? t('gratuit') : euro(parSemaine(formule.prixMensuel))}
                   {formule.prixMensuel > 0 && (
-                    <span className="text-sm font-normal text-gray-500"> / semaine</span>
+                    <span className="text-sm font-normal text-gray-500"> {t('parSemaine')}</span>
                   )}
                 </p>
                 {formule.prixMensuel > 0 && (
                   <p className="text-xs text-gray-500 mb-1">
-                    Soit {euro(formule.prixMensuel)} facturés par mois
+                    {t('soitParMois', { montant: euro(formule.prixMensuel) })}
                   </p>
                 )}
                 <p className="text-sm text-gray-500 mb-4">
-                  {formule.maxBoutiques} boutique{formule.maxBoutiques > 1 ? 's' : ''}
+                  {t('boutiques', { n: formule.maxBoutiques })}
                 </p>
 
                 <ul className="space-y-2 mb-6 flex-1">
@@ -274,7 +269,7 @@ export default function MaFormulePage() {
                 </ul>
 
                 {actuelle ? (
-                  <p className="text-center text-sm text-gray-500 py-2">Votre formule</p>
+                  <p className="text-center text-sm text-gray-500 py-2">{t('votreFormule')}</p>
                 ) : (
                   <button
                     type="button"
@@ -282,17 +277,17 @@ export default function MaFormulePage() {
                     disabled={Boolean(demande) || envoi === formule.code}
                     title={
                       demande
-                        ? 'Une demande est déjà en cours de traitement'
-                        : `Demander la formule ${formule.libelle}`
+                        ? t('demandeEnCours')
+                        : t('demanderFormule', { formule: formule.libelle })
                     }
                     className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold transition ${
                       demande
                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                        : 'bg-orange-600 hover:bg-orange-700'
+                        : 'bg-orange-600 hover:bg-orange-700 text-white'
                     }`}
                   >
                     <CreditCard size={18} />
-                    {envoi === formule.code ? 'Envoi…' : 'Demander cette formule'}
+                    {envoi === formule.code ? t('envoi') : t('demanderCette')}
                   </button>
                 )}
               </section>
@@ -302,8 +297,7 @@ export default function MaFormulePage() {
 
         {/* Dire ce qui se passe vaut mieux qu'un bouton qui prétend encaisser. */}
         <p className="text-sm text-gray-500">
-          Le paiement en ligne n'est pas encore ouvert : votre demande part au support, qui
-          applique la formule et vous répond dans votre espace.
+          {t('paiementPasOuvert')}
         </p>
       </div>
     </div>

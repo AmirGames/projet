@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import ReactMarkdown from "react-markdown";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
   assistantRequest,
-  categoryLabels,
   serviceLabels,
   type AssistantConfig,
   type Category,
@@ -25,6 +25,7 @@ export function safeAssistantLink(value: string) {
     : undefined;
 }
 export function SafeAssistantContent({ content }: { content: string }) {
+  const t = useTranslations("assistant");
   return (
     <ReactMarkdown
       skipHtml
@@ -38,7 +39,7 @@ export function SafeAssistantContent({ content }: { content: string }) {
           ) : (
             <span>{children}</span>
           ),
-        img: () => <span>[Image non prise en charge]</span>,
+        img: () => <span>{t('imageNonPriseEnCharge')}</span>,
         p: ({ children }) => (
           <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words">
             {children}
@@ -62,6 +63,8 @@ export default function AssistantWidget() {
   );
 }
 function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
+  const t = useTranslations("assistant");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [config, setConfig] = useState<AssistantConfig | null>(null);
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -102,7 +105,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
     void work()
       .catch((e) => {
         if (epoch.current === current)
-          setError(e instanceof Error ? e.message : "Assistant indisponible.");
+          setError(e instanceof Error ? e.message : t('indisponible'));
       })
       .finally(() => {
         if (epoch.current === current) setBusy(false);
@@ -278,14 +281,14 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
       <button
         ref={launcher}
         type="button"
-        aria-label="Ouvrir Assistant ZupOne"
+        aria-label={t('ouvrir')}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
         className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gray-950 text-white px-4 py-3 shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 print:hidden"
       >
         <MessageCircle size={22} aria-hidden="true" />
-        <span className="hidden sm:inline">Assistant ZupOne</span>
+        <span className="hidden sm:inline">{t('titre')}</span>
       </button>
       {open && (
         <>
@@ -311,25 +314,25 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
             >
               <div className="flex-1">
                 <h2 id="zupone-assistant-title" className="font-bold">
-                  Assistant ZupOne
+                  {t('titre')}
                 </h2>
                 <p className="text-sm">
                   {serviceLabels[activeService]} ·{" "}
-                  {conversation?.specialty || "Orientation"}
+                  {conversation?.specialty || t("orientation")}
                 </p>
                 <p className="text-xs mt-1">
-                  Assistant IA ·{" "}
+                  {t('assistantIa')}{" "}
                   {config?.mode === "simulation"
-                    ? "Simulation de développement"
+                    ? t("mode.simulation")
                     : config?.mode === "degraded"
-                      ? "Aide guidée, IA indisponible"
+                      ? t("mode.degrade")
                       : config?.provider === "ollama"
-                        ? "IA locale ; les réponses peuvent comporter des erreurs"
-                        : "Les réponses IA peuvent comporter des erreurs"}
+                        ? t("mode.locale")
+                        : t("mode.reel")}
                 </p>
               </div>
               <button
-                aria-label="Fermer Assistant ZupOne"
+                aria-label={t('fermer')}
                 onClick={() => setOpen(false)}
                 className="p-1 rounded focus-visible:outline"
               >
@@ -349,20 +352,20 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                     onClick={refresh}
                     disabled={busy}
                   >
-                    Reconnecter et vérifier l’état
+                    {t('reconnecter')}
                   </button>
                 </div>
               )}
               {!config && !error && (
                 <p role="status" className="p-4">
-                  Connexion à l’assistant…
+                  {t('connexion')}
                 </p>
               )}
               {conversation && (
                 <>
                   <div
                     role="log"
-                    aria-label="Historique de la conversation"
+                    aria-label={t('historique')}
                     aria-live="polite"
                     aria-relevant="additions"
                     className="p-3 space-y-3"
@@ -374,14 +377,14 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                       >
                         <p className="text-xs font-medium mb-1">
                           {m.author === "USER"
-                            ? "Vous"
+                            ? t("auteur.vous")
                             : m.author === "SYSTEM"
-                              ? "Changement de contexte"
-                              : `Assistant IA · ${serviceLabels[m.service]}`}
+                              ? t("auteur.systeme")
+                              : t("auteur.assistant", { service: serviceLabels[m.service] })}
                         </p>
                         {m.mode === "degraded" && m.author === "ASSISTANT" && (
                           <p className="text-xs text-amber-800 mb-1">
-                            Réponse en mode dégradé
+                            {t('degradee')}
                           </p>
                         )}
                         <SafeAssistantContent content={m.content} />
@@ -391,13 +394,13 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                   </div>
                   <div
                     className="p-3 flex flex-wrap gap-2"
-                    aria-label="Services et catégories"
+                    aria-label={t('servicesCategories')}
                   >
                     {showServices ? (
                       <>
                         {partnerChoice && (
                           <p className="w-full text-sm">
-                            Votre demande de partenariat concerne quel service ?
+                            {t('partenariatService')}
                           </p>
                         )}
                         <button
@@ -429,7 +432,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                           }
                           onClick={() => choose("ONE", "orientation")}
                         >
-                          Informations sur ZupOne
+                          {t('infosZupone')}
                         </button>
                         <button
                           className={buttonClass}
@@ -439,7 +442,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                             setPartnerChoice(true);
                           }}
                         >
-                          Devenir partenaire
+                          {t('devenirPartenaire')}
                         </button>
                       </>
                     ) : (
@@ -453,15 +456,15 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                             key={c.agentId}
                             onClick={() => choose(activeService, c.id)}
                           >
-                            {categoryLabels[c.id]}
+                            {t(`categories.${c.id}`)}
                           </button>
                         ))
                     )}
                   </div>
                   {showGuides && conversation.category && (
-                    <section aria-label="Aide guidée" className="px-3 pb-3">
+                    <section aria-label={t('aideGuidee')} className="px-3 pb-3">
                       <p className="text-sm font-medium mb-2">
-                        Questions fréquentes
+                        {t('questionsFrequentes')}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {config?.guideQuestions
@@ -500,10 +503,13 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                       conversation.category,
                     ) && (
                       <p className="px-4 py-2 text-sm">
-                        <a className="underline" href="/login">
-                          Connectez-vous
-                        </a>{" "}
-                        avant tout accès privé.
+                        {t.rich("connectezVous", {
+                          lien: (morceau) => (
+                            <a className="underline" href="/login">
+                              {morceau}
+                            </a>
+                          ),
+                        })}
                       </p>
                     )
                   )}
@@ -514,22 +520,20 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                     >
                       <p className="font-semibold">
                         {action.state === "PENDING"
-                          ? "Confirmation attendue"
+                          ? t("action.attendue")
                           : action.state === "EXECUTING"
-                            ? "Opération en cours — résultat à vérifier"
+                            ? t("action.enCours")
                             : action.state === "EXECUTED"
-                              ? "Action exécutée, résultat confirmé"
-                              : "Proposition annulée"}
+                              ? t("action.executee")
+                              : t("action.annulee")}
                       </p>
                       <p className="my-2">{action.summary}</p>
                       {action.state === "PENDING" && (
                         <>
                           <p className="text-xs mb-2">
-                            Valable jusqu’au{" "}
-                            {new Date(action.expiresAt).toLocaleTimeString(
-                              "fr-BE",
-                            )}
-                            . Les droits seront vérifiés à nouveau.
+                            {t("action.valable", {
+                              heure: new Date(action.expiresAt).toLocaleTimeString(locale),
+                            })}
                           </p>
                           <button
                             className={buttonClass}
@@ -549,7 +553,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                               })
                             }
                           >
-                            Confirmer cette action
+                            {t('confirmerAction')}
                           </button>
                         </>
                       )}
@@ -559,7 +563,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                           onClick={refresh}
                           disabled={busy}
                         >
-                          Consulter l’état
+                          {t('consulterEtat')}
                         </button>
                       )}
                     </div>
@@ -570,23 +574,21 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                       className="m-3 p-3 border border-blue-200 rounded-xl bg-blue-50 text-sm"
                     >
                       <p className="font-semibold">
-                        Demande de conseiller{" "}
                         {h.state === "RESOLVED" || h.state === "CLOSED"
-                          ? "traitée"
+                          ? t("conseiller.traitee")
                           : h.state === "IN_PROGRESS"
-                            ? "prise en charge"
-                            : "enregistrée"}
+                            ? t("conseiller.priseEnCharge")
+                            : t("conseiller.enregistree")}
                       </p>
                       <p className="text-xs break-all">
-                        Référence {h.ticketId || h.id} ·{" "}
+                        {t("conseiller.reference", { ref: h.ticketId || h.id })} ·{" "}
                         {serviceLabels[h.service]} · {h.specialty}
                       </p>
                       {h.reply ? (
                         <SafeAssistantContent content={h.reply} />
                       ) : (
                         <p>
-                          Aucun délai de réponse confirmé. La réponse pourra
-                          être consultée ici.
+                          {t('aucunDelai')}
                         </p>
                       )}
                     </div>
@@ -610,7 +612,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                       }}
                     >
                       <label className="block text-sm">
-                        Motif à transmettre au conseiller
+                        {t('motif')}
                         <textarea
                           required
                           minLength={2}
@@ -621,25 +623,22 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                         />
                       </label>
                       <p className="text-xs">
-                        Seuls ce motif et un résumé minimal du contexte seront
-                        transmis. N’envoyez pas de secret. Pour une démarche
-                        commerciale, ce bouton vaut accord de transmission de
-                        votre demande.
+                        {t('motifAide')}
                       </p>
                       <button disabled={busy} className={buttonClass}>
-                        Transmettre ma demande
+                        {t('transmettre')}
                       </button>
                       <button
                         type="button"
                         className="ml-3 underline text-sm"
                         onClick={() => setHandoff(false)}
                       >
-                        Annuler
+                        {t('annuler')}
                       </button>
                     </form>
                   )}
                   <nav
-                    aria-label="Actions de conversation"
+                    aria-label={t('actionsConversation')}
                     className="p-3 flex flex-wrap gap-x-3 gap-y-2 text-xs border-t"
                   >
                     <button
@@ -647,21 +646,21 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                       className="underline"
                       onClick={() => setPicker("category")}
                     >
-                      Changer de catégorie
+                      {t('changerCategorie')}
                     </button>
                     <button
                       disabled={busy}
                       className="underline"
                       onClick={() => setPicker("service")}
                     >
-                      Changer de service
+                      {t('changerService')}
                     </button>
                     <button
                       disabled={busy}
                       className="underline"
                       onClick={() => setHandoff(true)}
                     >
-                      Parler à un conseiller
+                      {t('conseiller.parler')}
                     </button>
                     <button
                       disabled={busy}
@@ -686,21 +685,20 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                         })
                       }
                     >
-                      Nouvelle conversation
+                      {t('nouvelle')}
                     </button>
                     <button
                       disabled={busy}
                       className="underline"
                       onClick={() => setDeleteConfirm(true)}
                     >
-                      Supprimer cette conversation
+                      {t('supprimer')}
                     </button>
                   </nav>
                   {deleteConfirm && (
                     <div className="m-3 p-3 border border-red-200 rounded-lg text-sm">
                       <p>
-                        Supprimer définitivement cet historique ? Les tickets
-                        métier déjà créés suivent leur propre conservation.
+                        {t('supprimerConfirm')}
                       </p>
                       <button
                         disabled={busy}
@@ -718,25 +716,24 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                           })
                         }
                       >
-                        Confirmer la suppression
+                        {t('confirmerSuppression')}
                       </button>
                       <button
                         className="underline"
                         onClick={() => setDeleteConfirm(false)}
                       >
-                        Annuler
+                        {t('annuler')}
                       </button>
                     </div>
                   )}
                   <p className="px-3 text-xs text-gray-500">
-                    Nouvelle conversation conserve les précédentes. Conservation
-                    configurée : {config?.retentionDays} jour(s).
+                    {t("conservation", { jours: config?.retentionDays ?? 0 })}
                   </p>
                   {history.length > 0 && (
                     <label className="block p-3 text-xs">
-                      Reprendre une conversation
+                      {t('reprendre')}
                       <select
-                        aria-label="Reprendre une conversation"
+                        aria-label={t('reprendre')}
                         value={conversation.id}
                         disabled={busy}
                         onChange={(e) =>
@@ -751,7 +748,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                         className="block border p-2 mt-1 w-full rounded text-gray-900"
                       >
                         <option value={conversation.id}>
-                          Conversation actuelle
+                          {t('actuelle')}
                         </option>
                         {history
                           .filter((c) => c.id !== conversation.id)
@@ -759,8 +756,8 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                             <option key={c.id} value={c.id}>
                               {serviceLabels[c.service]} ·{" "}
                               {c.category
-                                ? categoryLabels[c.category]
-                                : "Orientation"}{" "}
+                                ? t(`categories.${c.category}`)
+                                : t("orientation")}{" "}
                               · {c.id.slice(-6)}
                             </option>
                           ))}
@@ -773,7 +770,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
             <footer className="border-t p-3 bg-white shrink-0">
               {busy && (
                 <p role="status" className="text-xs mb-2">
-                  Traitement en cours…
+                  {t('traitement')}
                 </p>
               )}
               <form
@@ -785,8 +782,8 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
               >
                 <textarea
                   ref={input}
-                  aria-label="Votre message à Assistant ZupOne"
-                  placeholder="Votre message…"
+                  aria-label={t('votreMessageA')}
+                  placeholder={t('votreMessage')}
                   rows={2}
                   maxLength={4000}
                   value={text}
@@ -806,7 +803,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                 />
                 <button
                   type="submit"
-                  aria-label="Envoyer le message"
+                  aria-label={t('envoyer')}
                   disabled={busy || !conversation || !text.trim()}
                   className="rounded-xl bg-gray-950 text-white p-3 disabled:opacity-40 focus-visible:outline focus-visible:outline-blue-600"
                 >
@@ -818,11 +815,11 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                   href={config.privacyUrl}
                   className="text-xs underline text-gray-500 mt-2 inline-block"
                 >
-                  Politique de confidentialité
+                  {t('confidentialite')}
                 </a>
               )}
               <span className="text-xs text-gray-400 block">
-                Pièces jointes indisponibles. Ne partagez aucun secret.
+                {t('piecesJointes')}
               </span>
             </footer>
           </div>

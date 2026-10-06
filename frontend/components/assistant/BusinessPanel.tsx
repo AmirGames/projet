@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { assistantRequest, type Conversation } from "@/lib/assistant-api";
 
 interface Resource {
@@ -28,6 +29,7 @@ export function BusinessPanel({
   run: (work: () => Promise<void>) => void;
   onConversation: (c: Conversation) => void;
 }) {
+  const t = useTranslations("assistant.panneau");
   const [resources, setResources] = useState<Resource[]>([]);
   const [products, setProducts] = useState<Resource[]>([]);
   const [storeId, setStoreId] = useState(conversation.storeId || "");
@@ -74,7 +76,7 @@ export function BusinessPanel({
     return null;
   return (
     <section
-      aria-label="Données et actions de votre contexte"
+      aria-label={t('contexte')}
       className="border-t border-gray-200 p-3 space-y-2 bg-gray-50 text-sm"
     >
       <button
@@ -83,22 +85,22 @@ export function BusinessPanel({
         className="underline font-medium disabled:opacity-50"
       >
         {category === "restaurant"
-          ? "Choisir un établissement autorisé"
+          ? t("choisirEtablissement")
           : category === "customer"
-            ? "Mes commandes"
-            : "Mes courses autorisées"}
+            ? t("mesCommandes")
+            : t("mesCourses")}
       </button>
       {category === "restaurant" && resources.length > 0 && (
         <label className="block">
-          Établissement
+          {t('etablissement')}
           <select
-            aria-label="Établissement autorisé"
+            aria-label={t('etablissementAutorise')}
             value={storeId}
             disabled={busy}
             onChange={(e) => chooseStore(e.target.value)}
             className="block w-full rounded border p-2 text-gray-900"
           >
-            <option value="">Choisir…</option>
+            <option value="">{t('choisir')}</option>
             {resources.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
@@ -111,21 +113,21 @@ export function BusinessPanel({
         resources.map((r) => (
           <article key={r.id} className="rounded bg-white border p-2">
             <p>
-              {r.store?.name || "Course"} — {r.status || r.statut}
+              {r.store?.name || t("course")} — {r.status || r.statut}
             </p>
-            <p className="text-xs break-all">Référence {r.orderId || r.id}</p>
+            <p className="text-xs break-all">{t("reference", { ref: r.orderId || r.id })}</p>
             {r.paymentStatus && (
               <p>
-                Paiement : {r.paymentStatus} — {r.totalAmount} €
+                {t("paiement", { statut: r.paymentStatus, montant: r.totalAmount ?? "" })}
               </p>
             )}
             {r.prixCentimes !== undefined && (
               <p>
-                Prix annoncé : {(r.prixCentimes / 100).toFixed(2)} {r.devise}
+                {t("prixAnnonce", { prix: (r.prixCentimes / 100).toFixed(2), devise: r.devise ?? "" })}
               </p>
             )}
             {r.driverPayout && (
-              <p>Gain personnel enregistré : {r.driverPayout} €</p>
+              <p>{t("gain", { montant: r.driverPayout })}</p>
             )}
             {category === "customer" && (
               <button
@@ -139,7 +141,7 @@ export function BusinessPanel({
                   })
                 }
               >
-                Actualiser le suivi
+                {t('actualiser')}
               </button>
             )}
             {category === "passenger" &&
@@ -153,20 +155,20 @@ export function BusinessPanel({
                     })
                   }
                 >
-                  Demander l’annulation
+                  {t('demanderAnnulation')}
                 </button>
               )}
           </article>
         ))}
       {details && (
         <p role="status">
-          Statut actuel : {details.status} ; paiement : {details.paymentStatus}.
+          {t("statutActuel", { statut: details.status ?? "", paiement: details.paymentStatus ?? "" })}
         </p>
       )}
       {category === "restaurant" && storeId && (
         <>
           <p className="font-medium">
-            Établissement sélectionné :{" "}
+            {t("etablissementSelectionne")}{" "}
             {conversation.storeName ||
               resources.find((r) => r.id === storeId)?.name ||
               storeId}
@@ -183,7 +185,7 @@ export function BusinessPanel({
                 })
               }
             >
-              Voir les produits
+              {t('voirProduits')}
             </button>
             <button
               disabled={busy}
@@ -196,7 +198,7 @@ export function BusinessPanel({
                 })
               }
             >
-              Voir les commandes
+              {t('voirCommandes')}
             </button>
             <button
               disabled={busy}
@@ -218,35 +220,35 @@ export function BusinessPanel({
                     Object.entries(result.operatingHours || {})
                       .map(
                         ([day, h]) =>
-                          `${day} : ${h.closed ? "fermé" : (h.plages || [{ open: h.open, close: h.close }]).map((p) => `${p.open}–${p.close}`).join(", ")}`,
+                          `${t(`jours.${day}`)} : ${h.closed ? t("ferme") : (h.plages || [{ open: h.open, close: h.close }]).map((p) => `${p.open}–${p.close}`).join(", ")}`,
                       )
                       .join("\n"),
                   );
                 })
               }
             >
-              Voir les horaires
+              {t('voirHoraires')}
             </button>
           </div>
           {hours && <p className="whitespace-pre-wrap">{hours}</p>}
           {orders.map((order) => (
             <p key={order.id} className="rounded border p-2 bg-white">
-              Commande {order.id} — {order.status}
+              {t("commande", { id: order.id, statut: order.status ?? "" })}
             </p>
           ))}
           {products.length > 0 && (
             <>
               <select
-                aria-label="Produit à modifier"
+                aria-label={t('produitAModifier')}
                 value={productId}
                 disabled={busy}
                 onChange={(e) => setProductId(e.target.value)}
                 className="w-full border rounded p-2 text-gray-900"
               >
-                <option value="">Choisir un produit…</option>
+                <option value="">{t('choisirProduit')}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} — {p.isAvailable ? "disponible" : "indisponible"}
+                    {p.name} — {p.isAvailable ? t("disponible") : t("indisponible")}
                   </option>
                 ))}
               </select>
@@ -265,7 +267,7 @@ export function BusinessPanel({
                       })
                     }
                   >
-                    Rendre {available ? "disponible" : "indisponible"}
+                    {available ? t("rendreDisponible") : t("rendreIndisponible")}
                   </button>
                 ))}
               </div>
@@ -273,41 +275,30 @@ export function BusinessPanel({
           )}
           <details>
             <summary className="cursor-pointer font-medium">
-              Proposer des horaires
+              {t('proposerHoraires')}
             </summary>
             <p className="text-xs my-2">
-              Une plage pour ce jour ; la confirmation indique l’établissement.
-              Pour plusieurs plages, utilisez le gestionnaire d’horaires.
+              {t('unePlage')}
             </p>
             <div className="flex flex-wrap gap-2">
               <select
-                aria-label="Jour à modifier"
+                aria-label={t('jourAModifier')}
                 value={day}
                 onChange={(e) => setDay(e.target.value)}
                 className="border rounded p-1 text-gray-900"
               >
                 {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map(
-                  (d, i) => (
+                  (d) => (
                     <option key={d} value={d}>
-                      {
-                        [
-                          "Lundi",
-                          "Mardi",
-                          "Mercredi",
-                          "Jeudi",
-                          "Vendredi",
-                          "Samedi",
-                          "Dimanche",
-                        ][i]
-                      }
+                      {t(`jours.${d}`)}
                     </option>
                   ),
                 )}
               </select>
               <label>
-                Ouverture
+                {t('ouverture')}
                 <input
-                  aria-label="Heure d’ouverture"
+                  aria-label={t('heureOuverture')}
                   type="time"
                   value={opening}
                   onChange={(e) => setOpening(e.target.value)}
@@ -315,9 +306,9 @@ export function BusinessPanel({
                 />
               </label>
               <label>
-                Fermeture
+                {t('fermeture')}
                 <input
-                  aria-label="Heure de fermeture"
+                  aria-label={t('heureFermeture')}
                   type="time"
                   value={closing}
                   onChange={(e) => setClosing(e.target.value)}
@@ -330,7 +321,7 @@ export function BusinessPanel({
                   checked={closed}
                   onChange={(e) => setClosed(e.target.checked)}
                 />{" "}
-                Fermé
+                {t('fermeCase')}
               </label>
             </div>
             <button
@@ -347,7 +338,7 @@ export function BusinessPanel({
                 })
               }
             >
-              Préparer la confirmation
+              {t('preparer')}
             </button>
           </details>
         </>

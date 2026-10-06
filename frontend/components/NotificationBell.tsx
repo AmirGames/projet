@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/lib/use-notifications';
 
 /** `clair` : sur un en-tête blanc, la cloche passe en sombre. */
 export function NotificationBell({ clair = false }: { clair?: boolean } = {}) {
+  const locale = useLocale();
   const t = useTranslations('notificationBell');
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -99,7 +100,7 @@ export function NotificationBell({ clair = false }: { clair?: boolean } = {}) {
                       <p className={`font-semibold text-sm ${clair ? 'text-gray-900' : 'text-white'}`}>{notif.title}</p>
                       <p className={`text-xs mt-1 ${clair ? 'text-gray-600' : 'text-gray-400'}`}>{notif.message}</p>
                       <p className="text-gray-500 text-xs mt-2">
-                        {new Date(notif.createdAt).toLocaleString('fr-FR')}
+                        {new Date(notif.createdAt).toLocaleString(locale)}
                       </p>
                     </div>
                     {!notif.isRead && <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 flex-shrink-0" />}

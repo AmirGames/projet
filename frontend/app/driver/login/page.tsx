@@ -55,7 +55,7 @@ export default function DriverLoginPage() {
       if (await confierSessionCentrale(data.accessToken, '/driver')) return;
       router.push('/driver');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de la connexion');
+      setError(err instanceof Error ? err.message : t('connexion.erreur'));
     } finally {
       setLoading(false);
     }
@@ -72,8 +72,8 @@ export default function DriverLoginPage() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Espace Livreur</h1>
-          <p className="text-gray-400 text-center mb-8">Connectez-vous pour gérer vos livraisons</p>
+          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('connexion.titre')}</h1>
+          <p className="text-gray-400 text-center mb-8">{t('connexion.sousTitre')}</p>
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
@@ -85,14 +85,14 @@ export default function DriverLoginPage() {
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+              <label className="block text-gray-700 text-sm font-semibold mb-2">{t('connexion.email')}</label>
               <div className="relative">
                 <Mail size={18} className="absolute left-3 top-3 text-gray-500" />
                 <input
-                  type={t('email')}
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre@email.com"
+                  placeholder={t('connexion.exempleEmail')}
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
@@ -101,7 +101,7 @@ export default function DriverLoginPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-gray-700 text-sm font-semibold mb-2">Mot de passe</label>
+              <label className="block text-gray-700 text-sm font-semibold mb-2">{t('connexion.motDePasse')}</label>
               <div className="relative">
                 <Lock size={18} className="absolute left-3 top-3 text-gray-500" />
                 <input
@@ -121,20 +121,23 @@ export default function DriverLoginPage() {
               disabled={loading}
               className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-full transition"
             >
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {loading ? t('connexion.encours') : t('connexion.seConnecter')}
             </button>
           </form>
 
           {/* Footer */}
           <p className="text-gray-400 text-center text-sm mt-8">
-            Pas encore inscrit ?{' '}
+            {t('connexion.pasInscrit')}{' '}
             <Link href="/driver/signup" className="text-primary hover:text-primary-hover font-medium transition">
-              S'inscrire ici
+              {t('connexion.inscrire')}
             </Link>
           </p>
 
           <p className="text-gray-500 text-center text-xs mt-6 border-t border-gray-200 pt-6">
-            Besoin d'aide ? <Link href="/" className="text-primary hover:text-primary-hover font-medium transition">Contactez le support</Link>
+            {t('connexion.besoinAide')}{' '}
+            <Link href="/" className="text-primary hover:text-primary-hover font-medium transition">
+              {t('connexion.contacter')}
+            </Link>
           </p>
         </div>
       </div>
