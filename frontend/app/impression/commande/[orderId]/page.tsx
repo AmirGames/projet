@@ -6,6 +6,9 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
+import { useLocale, useTranslations } from 'next-intl';
+import { numeroCourt } from '@/lib/numero-commande';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
@@ -30,6 +33,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * `useCurrentStore`, qui n'existe que dans l'espace commerçant.
  */
 function DocumentImprimable() {
+  const t = useTranslations('impressionCommande');
+  const locale = useLocale();
   const params = useParams();
   const recherche = useSearchParams();
 
@@ -45,7 +50,7 @@ function DocumentImprimable() {
 
   const charger = useCallback(async () => {
     if (!storeId) {
-      setErreur("Aucune boutique indiquée : ajoutez ?storeId=... à l'adresse.");
+      setErreur(t('aucuneBoutique'));
       setChargement(false);
       return;
     }
@@ -59,7 +64,7 @@ function DocumentImprimable() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Document introuvable pour cette boutique');
+        setErreur(donnees.error || t('introuvableBoutique'));
         return;
       }
 
@@ -69,7 +74,7 @@ function DocumentImprimable() {
     } finally {
       setChargement(false);
     }
-  }, [storeId, orderId]);
+  }, [storeId, orderId, t]);
 
   useEffectChargement(() => {
     charger();
@@ -88,11 +93,11 @@ function DocumentImprimable() {
   }, [facture, impressionAutomatique]);
 
   if (chargement) {
-    return <p className="etat">Préparation du document…</p>;
+    return <p className="etat">{t('preparation')}</p>;
   }
 
   if (erreur || !facture) {
-    return <p className="etat etat-erreur">{erreur || 'Document introuvable'}</p>;
+    return <p className="etat etat-erreur">{erreur || t('introuvable')}</p>;
   }
 
   const ticket = format === 'ticket';
@@ -115,13 +120,13 @@ function DocumentImprimable() {
       {/* Barre d'action : jamais sur le papier. */}
       <div className="barre print:hidden">
         <button type="button" onClick={() => window.print()}>
-          Imprimer
+          {t('imprimer')}
         </button>
         <a href={`?storeId=${storeId}&format=${ticket ? 'a4' : 'ticket'}&auto=0`}>
-          Passer en {ticket ? 'A4' : 'ticket 80 mm'}
+          {ticket ? t('passerA4') : t('passerTicket')}
         </a>
         <button type="button" onClick={() => window.close()}>
-          Fermer
+          {t('fermer')}
         </button>
       </div>
 
@@ -133,7 +138,7 @@ function DocumentImprimable() {
           <header className="entete">
             <p className="enseigne">{raisonSociale}</p>
             {emetteur.legalName && emetteur.legalName !== emetteur.name && (
-              <p>Enseigne : {emetteur.name}</p>
+              <p>{t('enseigne', { nom: emetteur.name })}</p>
             )}
             {emetteur.address && <p>{emetteur.address}</p>}
             {(emetteur.postalCode || emetteur.city) && (
@@ -145,24 +150,23 @@ function DocumentImprimable() {
             {/* Sans numéro de TVA, le document ne vaut pas justificatif : il ne
                 permet ni de récupérer la taxe, ni de passer la dépense. */}
             {emetteur.vatNumber ? (
-              <p className="tva-emetteur">N° TVA : {emetteur.vatNumber}</p>
+              <p className="tva-emetteur">{t('numeroTva', { numero: emetteur.vatNumber })}</p>
             ) : (
               <p className="avertissement print:hidden">
-                Aucun numéro de TVA enregistré — renseignez-le dans votre profil,
-                sans quoi ce document n&apos;est pas une facture valable.
+                {t('sansTva')}
               </p>
             )}
-            {emetteur.registrationNumber && <p>N° d&apos;entreprise : {emetteur.registrationNumber}</p>}
+            {emetteur.registrationNumber && <p>{t('numeroEntreprise', { numero: emetteur.registrationNumber })}</p>}
           </header>
 
           <hr />
 
           <section className="repere">
-            <p className="titre">{ticket ? 'TICKET' : 'FACTURE'} {facture.invoiceNumber}</p>
-            <p>{new Date(facture.invoiceDate).toLocaleString('fr-FR')}</p>
-            <p>Commande {orderId.slice(-8).toUpperCase()}</p>
-            <p>{facture.deliveryType === 'PICKUP' ? 'À emporter' : 'Livraison'}</p>
-            <p>Client : {facture.customerInfo.name}</p>
+            <p className="titre">{ticket ? t('ticket') : t('facture')} {facture.invoiceNumber}</p>
+            <p>{new Date(facture.invoiceDate).toLocaleString(locale)}</p>
+            <p>{t('commande', { numero: numeroCourt(orderId) })}</p>
+            <p>{facture.deliveryType === 'PICKUP' ? t('aEmporter') : t('livraison')}</p>
+            <p>{t('client', { nom: facture.customerInfo.name })}</p>
             {!ticket && facture.customerInfo.email && <p>{facture.customerInfo.email}</p>}
             {!ticket && facture.customerInfo.phone && <p>{facture.customerInfo.phone}</p>}
           </section>
@@ -172,10 +176,10 @@ function DocumentImprimable() {
           <table className="lignes">
             <thead>
               <tr>
-                <th className="g">Désignation</th>
-                <th className="c">Qté</th>
+                <th className="g">{t('designation')}</th>
+                <th className="c">{t('qte')}</th>
                 <th className="d">P.U.</th>
-                <th className="d">Total</th>
+                <th className="d">{t('total')}</th>
               </tr>
             </thead>
             <tbody>
@@ -202,23 +206,23 @@ function DocumentImprimable() {
           <table className="totaux">
             <tbody>
               <tr>
-                <td>Sous-total articles</td>
+                <td>{t('sousTotal')}</td>
                 <td className="d">{euro(facture.subtotal)}</td>
               </tr>
               {facture.discount > 0 && (
                 <tr>
-                  <td>Remise{facture.promoCode ? ` (${facture.promoCode})` : ''}</td>
+                  <td>{facture.promoCode ? t('remiseCode', { code: facture.promoCode }) : t('remise')}</td>
                   <td className="d">- {euro(facture.discount)}</td>
                 </tr>
               )}
               {facture.fees > 0 && (
                 <tr>
-                  <td>Frais de livraison</td>
+                  <td>{t('fraisLivraison')}</td>
                   <td className="d">{euro(facture.fees)}</td>
                 </tr>
               )}
               <tr className="total">
-                <td>TOTAL {facture.taxIncluded ? 'TTC' : ''}</td>
+                <td>TOTAL {facture.taxIncluded ? t('ttc') : ''}</td>
                 <td className="d">{euro(facture.total)}</td>
               </tr>
             </tbody>
@@ -232,16 +236,16 @@ function DocumentImprimable() {
               <table className="recap-tva">
                 <thead>
                   <tr>
-                    <th className="g">Taux</th>
-                    <th className="d">Base HT</th>
-                    <th className="d">TVA</th>
-                    <th className="d">TTC</th>
+                    <th className="g">{t('taux')}</th>
+                    <th className="d">{t('baseHt')}</th>
+                    <th className="d">{t('tva')}</th>
+                    <th className="d">{t('ttc')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {taxLignes.map((ligne) => (
                     <tr key={ligne.taux}>
-                      <td className="g">{ligne.taux.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %</td>
+                      <td className="g">{ligne.taux.toLocaleString(locale, { maximumFractionDigits: 2 })} %</td>
                       <td className="d">{euro(ligne.base - ligne.taxe)}</td>
                       <td className="d">{euro(ligne.taxe)}</td>
                       <td className="d">{euro(ligne.base)}</td>
@@ -249,7 +253,7 @@ function DocumentImprimable() {
                   ))}
                   {taxLignes.length > 1 && (
                     <tr style={{ fontWeight: 600, borderTop: '1px solid #000' }}>
-                      <td className="g">Total TVA</td>
+                      <td className="g">{t('totalTva')}</td>
                       <td className="d" />
                       <td className="d">{euro(taxTotale)}</td>
                       <td className="d" />
@@ -258,13 +262,12 @@ function DocumentImprimable() {
                 </tbody>
               </table>
               {facture.fees > 0 && (
-                <p className="note">Frais de livraison non soumis à la taxe.</p>
+                <p className="note">{t('livraisonNonTaxee')}</p>
               )}
             </>
           ) : (
             <p className="note print:hidden">
-              Aucune taxe sur cette commande : aucun taux n&apos;était réglé au moment où
-              elle a été passée.
+              {t('aucuneTaxe')}
             </p>
           )}
 
@@ -279,12 +282,11 @@ function DocumentImprimable() {
 
           <footer className="pied">
             <p>
-              Paiement :{' '}
               {facture.paymentStatus === 'SUCCEEDED' || facture.paymentStatus === 'PAID'
-                ? 'réglé'
-                : 'en attente'}
+                ? t('paiementRegle')
+                : t('paiementEnAttente')}
             </p>
-            <p>Merci et à bientôt !</p>
+            <p>{t('merci')}</p>
           </footer>
         </div>
       </div>
@@ -455,10 +457,11 @@ function DocumentImprimable() {
 }
 
 export default function PageImpressionCommande() {
+  const t = useTranslations('impressionCommande');
   // `useSearchParams` impose une frontière de suspense au build, comme sur la
   // page de confirmation de commande.
   return (
-    <Suspense fallback={<p className="etat">Préparation du document…</p>}>
+    <Suspense fallback={<p className="etat">{t('preparation')}</p>}>
       <DocumentImprimable />
     </Suspense>
   );

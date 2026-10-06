@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { accueilDe } from '@/lib/domaines';
@@ -20,23 +21,24 @@ export async function generateMetadata(): Promise<Metadata> {
  * ni date ni ville.
  */
 export default function AccueilZupDrive() {
-  const prevenir = `mailto:${EMAIL_CONTACT}?subject=${encodeURIComponent('Prévenez-moi de l’ouverture de ZupDrive')}`;
+  const t = useTranslations('accueilZupdrive');
+  const prevenir = `mailto:${EMAIL_CONTACT}?subject=${encodeURIComponent(t('sujetPrevenir'))}`;
 
   const atouts = [
     {
       icone: '💶',
-      titre: 'Prix connu à l’avance',
-      texte: 'Le montant de la course est affiché avant la réservation.',
+      titre: t('prix'),
+      texte: t('prixTexte'),
     },
     {
       icone: '🪪',
-      titre: 'Chauffeurs professionnels',
-      texte: 'Carte VTC ou autorisation régionale, permis et assurance : chaque dossier est vérifié.',
+      titre: t('pros'),
+      texte: t('prosTexte'),
     },
     {
       icone: '🔑',
-      titre: 'Un seul compte',
-      texte: 'Votre compte ZupOne sert pour vos trajets comme pour vos commandes.',
+      titre: t('compte'),
+      texte: t('compteTexte'),
     },
   ];
 
@@ -47,34 +49,34 @@ export default function AccueilZupDrive() {
           href={accueilDe('public')}
           className="hidden text-sm font-semibold text-gray-700 hover:text-gray-900 sm:inline"
         >
-          Commander sur ZupEat
+          {t('commanderZupeat')}
         </Link>
         <Link
           href="/devenir-chauffeur"
           className={`rounded-full px-5 py-2 text-sm font-semibold hover:no-underline ${MARQUES.zupdrive.bouton}`}
         >
-          Devenir chauffeur
+          {t('devenirChauffeur')}
         </Link>
       </EnTeteMarque>
 
       <BandeauMarque
         marque="zupdrive"
-        badge="Bientôt disponible"
-        titre="Vos trajets avec chauffeur, près de chez vous"
-        texte="ZupDrive prépare son service de transport de personnes (VTC). Vous réserverez votre chauffeur depuis le même compte que vos commandes ZupEat."
+        badge={t('bientot')}
+        titre={t('titre')}
+        texte={t('texte')}
         emojis={['🚗', '📍', '🧳', '🚕', '🛣️', '⭐']}
       >
         <Link
           href="/devenir-chauffeur"
           className="rounded-full bg-white px-8 py-4 text-center font-bold text-gray-900 hover:bg-gray-100 hover:no-underline"
         >
-          Je suis chauffeur
+          {t('jeSuisChauffeur')}
         </Link>
         <a
           href={prevenir}
           className="rounded-full bg-white/15 px-8 py-4 text-center font-bold text-white ring-1 ring-white/40 hover:bg-white/25 hover:no-underline"
         >
-          Être prévenu de l&apos;ouverture
+          {t('prevenir')}
         </a>
       </BandeauMarque>
 
@@ -94,16 +96,16 @@ export default function AccueilZupDrive() {
       <div className="mx-auto max-w-7xl px-4 pb-16 md:px-6">
         <section className="flex flex-col items-start gap-6 rounded-3xl bg-orange-50 p-8 md:flex-row md:items-center md:justify-between md:p-12">
           <div>
-            <h2 className="text-3xl font-extrabold tracking-tight">En attendant, ZupEat est ouvert</h2>
+            <h2 className="text-3xl font-extrabold tracking-tight">{t('enAttendant')}</h2>
             <p className="mt-3 max-w-xl text-gray-600">
-              Commandez chez les restaurants et commerces de votre quartier, livrés ou à emporter.
+              {t('enAttendantTexte')}
             </p>
           </div>
           <Link
             href={accueilDe('public')}
             className={`flex-shrink-0 rounded-full px-8 py-4 font-bold hover:no-underline ${MARQUES.zupeat.bouton}`}
           >
-            Découvrir ZupEat
+            {t('decouvrir')}
           </Link>
         </section>
       </div>
