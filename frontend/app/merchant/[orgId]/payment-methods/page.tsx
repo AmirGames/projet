@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -189,7 +190,7 @@ export default function PaymentMethodsPage() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Chargement des méthodes de paiement...</p>
+            <p className="text-gray-500">{t('chargement')}</p>
           </div>
         </div>
       </div>
@@ -201,7 +202,7 @@ export default function PaymentMethodsPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Méthodes de Paiement</h1>
+            <h1 className="text-3xl font-bold">{t('titre')}</h1>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => ouvrirModale()}
@@ -210,17 +211,17 @@ export default function PaymentMethodsPage() {
                 <Plus size={18} /> Ajouter une méthode
               </button>
               <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-500 hover:text-gray-700 text-sm">
-                ← Retour
+                {t('retour')}
               </Link>
             </div>
           </div>
-          <p className="text-gray-500">Configurez les méthodes de paiement acceptées</p>
+          <p className="text-gray-500">{t('sousTitre')}</p>
         </div>
 
         <div className="space-y-4">
           {methods.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-              Aucune méthode de paiement configurée
+              {t('aucune')}
             </div>
           ) : (
             methods.map((method) => (
@@ -230,26 +231,26 @@ export default function PaymentMethodsPage() {
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-bold">{method.name}</h3>
                       {method.isDefault && (
-                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded">Par défaut</span>
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded">{t('parDefaut')}</span>
                       )}
                       <span className={`px-2 py-1 text-xs rounded ${
                         method.isActive
                           ? 'bg-green-50 text-green-600'
                           : 'bg-gray-600/20 text-gray-500'
                       }`}>
-                        {method.isActive ? t('active') : 'Inactif'}
+                        {method.isActive ? t('active') : t('inactif')}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-3">{method.type}</p>
+                    <p className="text-sm text-gray-500 mb-3">{t.has(`types.${method.type}`) ? t(`types.${method.type}`) : method.type}</p>
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-500">Commission</p>
+                        <p className="text-gray-500">{t('commission')}</p>
                         <p className="font-bold text-blue-600">{Number(method.commissionPercent).toFixed(2)}%</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Frais fixes</p>
-                        <p className="font-bold text-green-600">${Number(method.fixedFee).toFixed(2)}</p>
+                        <p className="text-gray-500">{t('fraisFixes')}</p>
+                        <p className="font-bold text-green-600">{euro(Number(method.fixedFee))}</p>
                       </div>
                     </div>
                   </div>
@@ -268,7 +269,7 @@ export default function PaymentMethodsPage() {
                     </button>
                     <button
                       onClick={() => ouvrirModale(method)}
-                      title="Modifier cette méthode"
+                      title={t('modifierMethode')}
                       className="p-2 hover:bg-gray-200 rounded transition text-blue-600"
                     >
                       <Edit2 size={18} />
@@ -295,14 +296,14 @@ export default function PaymentMethodsPage() {
                 disabled={page === 0}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
               >
-                Précédent
+                {t('precedent')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
               >
-                Suivant
+                {t('suivant')}
               </button>
             </div>
           </div>
@@ -316,7 +317,7 @@ export default function PaymentMethodsPage() {
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">
-                  {enEdition ? 'Modifier la méthode' : 'Nouvelle méthode de paiement'}
+                  {enEdition ? t('modifier') : t('nouvelle')}
                 </h2>
                 <button
                   type="button"
@@ -331,18 +332,18 @@ export default function PaymentMethodsPage() {
 
               {!enEdition && (
                 <div>
-                  <label className="block text-sm text-gray-500 mb-1">Type</label>
+                  <label className="block text-sm text-gray-500 mb-1">{t('type')}</label>
                   <select
                     value={formulaire.type}
                     onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   >
-                    <option value="CASH">Espèces</option>
-                    <option value="CREDIT_CARD">Carte de crédit</option>
-                    <option value="DEBIT_CARD">Carte de débit</option>
+                    <option value="CASH">{t('especes')}</option>
+                    <option value="CREDIT_CARD">{t('carteCredit')}</option>
+                    <option value="DEBIT_CARD">{t('carteDebit')}</option>
                     <option value="STRIPE">Stripe</option>
                     <option value="PAYPAL">PayPal</option>
-                    <option value="BANK_TRANSFER">Virement bancaire</option>
+                    <option value="BANK_TRANSFER">{t('virement')}</option>
                     <option value="APPLE_PAY">Apple Pay</option>
                     <option value="GOOGLE_PAY">Google Pay</option>
                   </select>
@@ -350,21 +351,21 @@ export default function PaymentMethodsPage() {
               )}
 
               <div>
-                <label className="block text-sm text-gray-500 mb-1">Nom affiché</label>
+                <label className="block text-sm text-gray-500 mb-1">{t('nomAffiche')}</label>
                 <input
                   type="text"
                   required
                   minLength={2}
                   value={formulaire.name}
                   onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
-                  placeholder="Ex : Paiement en espèces"
+                  placeholder={t('exempleNom')}
                   className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-500 mb-1">Commission (%)</label>
+                  <label className="block text-sm text-gray-500 mb-1">{t('commissionPourcent')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -378,7 +379,7 @@ export default function PaymentMethodsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-500 mb-1">Frais fixes (€)</label>
+                  <label className="block text-sm text-gray-500 mb-1">{t('fraisFixesEuros')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -397,7 +398,7 @@ export default function PaymentMethodsPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, isDefault: e.target.checked })}
                   className="w-4 h-4 accent-red-500"
                 />
-                <span className="text-sm">Méthode proposée par défaut</span>
+                <span className="text-sm">{t('parDefautCase')}</span>
               </label>
 
               <div className="flex gap-2 pt-2">
@@ -413,7 +414,7 @@ export default function PaymentMethodsPage() {
                   onClick={() => setModaleOuverte(false)}
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
-                  Annuler
+                  {t('annuler')}
                 </button>
               </div>
             </form>

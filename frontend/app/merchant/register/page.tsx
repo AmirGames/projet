@@ -45,6 +45,8 @@ interface FormErrors {
 export default function MerchantRegisterPage() {
   const t = useTranslations('merchantAuth');
   const tMdp = useTranslations('motDePasse');
+  const tConditions = useTranslations('acceptationConditions');
+  const tPays = useTranslations('pays');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -84,55 +86,55 @@ export default function MerchantRegisterPage() {
     const newErrors: FormErrors = {};
 
     if (!formData.businessName.trim()) {
-      newErrors.businessName = "Le nom de l\'entreprise est requis";
+      newErrors.businessName = t('inscription.erreurs.entreprise');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "L\'email est requis";
+      newErrors.email = t('inscription.erreurs.email');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email invalide';
+      newErrors.email = t('inscription.erreurs.emailInvalide');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Le mot de passe est requis';
+      newErrors.password = t('inscription.erreurs.motDePasse');
     } else if (!motDePasseValide(formData.password)) {
       newErrors.password = tMdp('invalide');
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      newErrors.confirmPassword = t('inscription.erreurs.differents');
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Le téléphone est requis';
+      newErrors.phone = t('inscription.erreurs.telephone');
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = "L\'adresse est requise";
+      newErrors.address = t('inscription.erreurs.adresse');
     }
 
     if (!formData.city.trim()) {
-      newErrors.city = 'La ville est requise';
+      newErrors.city = t('inscription.erreurs.ville');
     }
 
     if (!formData.postalCode.trim()) {
-      newErrors.postalCode = 'Le code postal est requis';
+      newErrors.postalCode = t('inscription.erreurs.codePostal');
     } else if (!PAYS[pays].codePostal.test(formData.postalCode.trim())) {
-      newErrors.postalCode = `Code postal invalide pour la ${PAYS[pays].nom} (ex. ${PAYS[pays].exempleCodePostal})`;
+      newErrors.postalCode = t('inscription.erreurs.codePostalInvalide', { pays: tPays(pays), exemple: PAYS[pays].exempleCodePostal });
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'La description est requise';
+      newErrors.description = t('inscription.erreurs.description');
     }
 
     if (!formData.storeName.trim()) {
-      newErrors.storeName = 'Le nom de la boutique est requis';
+      newErrors.storeName = t('inscription.erreurs.boutique');
     }
 
     if (!formData.storeSlug.trim()) {
-      newErrors.storeSlug = "L\'URL de la boutique est requise";
+      newErrors.storeSlug = t('inscription.erreurs.url');
     } else if (!/^[a-z0-9-]+$/.test(formData.storeSlug)) {
-      newErrors.storeSlug = "L\'URL ne peut contenir que des lettres minuscules, chiffres et tirets";
+      newErrors.storeSlug = t('inscription.erreurs.urlFormat');
     }
 
     setErrors(newErrors);
@@ -200,7 +202,7 @@ export default function MerchantRegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setApiError(data.error || data.message || "Erreur lors de l\'inscription");
+        setApiError(data.error || data.message || t('inscription.erreurs.inscription'));
         return;
       }
 
@@ -238,8 +240,8 @@ export default function MerchantRegisterPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Inscrivez votre Commerçant</h1>
-          <p className="text-gray-500">Créez votre compte et lancez votre site de commande en 5 minutes</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('inscription.titre')}</h1>
+          <p className="text-gray-500">{t('inscription.sousTitre')}</p>
         </div>
 
         {/* Success Message */}
@@ -247,7 +249,7 @@ export default function MerchantRegisterPage() {
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
             <CheckCircle size={24} className="text-green-600" />
             <div>
-              <p className="font-semibold text-green-600">Succès!</p>
+              <p className="font-semibold text-green-600">{t('inscription.succes')}</p>
               <p className="text-green-600/80 text-sm">{successMessage}</p>
             </div>
           </div>
@@ -258,7 +260,7 @@ export default function MerchantRegisterPage() {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
             <AlertCircle size={24} className="text-red-600" />
             <div>
-              <p className="font-semibold text-red-600">Erreur</p>
+              <p className="font-semibold text-red-600">{t('inscription.erreur')}</p>
               <p className="text-red-600/80 text-sm">{apiError}</p>
             </div>
           </div>
@@ -271,13 +273,13 @@ export default function MerchantRegisterPage() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">1</span>
-                Informations Commerciales
+                {t('inscription.infosCommerciales')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom de l'Entreprise *
+                    {t('inscription.nomEntreprise')}
                   </label>
                   <input
                     type="text"
@@ -287,14 +289,14 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
                       errors.businessName ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Ex: Restaurant ACME"
+                    placeholder={t('inscription.exempleEntreprise')}
                   />
                   {errors.businessName && <p className="text-red-600 text-sm mt-1">{errors.businessName}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type de Commerce *
+                    {t('inscription.typeCommerce')}
                   </label>
                   <select
                     name="businessType"
@@ -315,7 +317,7 @@ export default function MerchantRegisterPage() {
                 {formData.businessType === 'restaurant' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Type de cuisine
+                      {t('inscription.typeCuisine')}
                     </label>
                     <select
                       name="cuisineType"
@@ -323,7 +325,7 @@ export default function MerchantRegisterPage() {
                       onChange={handleChange}
                       className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                     >
-                      <option value="">Non précisé</option>
+                      <option value="">{t('inscription.nonPrecise')}</option>
                       {cuisines.map((cuisine) => (
                         <option key={cuisine.code} value={cuisine.code}>
                           {cuisine.libelle}
@@ -335,7 +337,7 @@ export default function MerchantRegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Professionnel *
+                    {t('inscription.emailPro')}
                   </label>
                   <input
                     type="email"
@@ -345,14 +347,14 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="contact@example.com"
+                    placeholder={t('inscription.exempleEmail')}
                   />
                   {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone *
+                    {t('inscription.telephone')}
                   </label>
                   <input
                     type="tel"
@@ -369,7 +371,7 @@ export default function MerchantRegisterPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description du Commerce *
+                    {t('inscription.description')}
                   </label>
                   <textarea
                     name="description"
@@ -379,14 +381,14 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
                       errors.description ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Décrivez votre commerce, spécialités, etc..."
+                    placeholder={t('inscription.exempleDescription')}
                   />
                   {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Site Web (optionnel)
+                    {t('inscription.siteWeb')}
                   </label>
                   <input
                     type="url"
@@ -404,13 +406,13 @@ export default function MerchantRegisterPage() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">2</span>
-                Adresse
+                {t('inscription.adresseTitre')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label htmlFor="pays" className="block text-sm font-medium text-gray-700 mb-2">
-                    Pays *
+                    {t('inscription.pays')}
                   </label>
                   <SelecteurPays
                     pays={pays}
@@ -421,7 +423,7 @@ export default function MerchantRegisterPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse *
+                    {t('inscription.adresse')}
                   </label>
                   <AddressAutocomplete
                     clair
@@ -446,7 +448,7 @@ export default function MerchantRegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ville *
+                    {t('inscription.ville')}
                   </label>
                   <input
                     type="text"
@@ -463,7 +465,7 @@ export default function MerchantRegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Code Postal *
+                    {t('inscription.codePostal')}
                   </label>
                   <input
                     type="text"
@@ -484,13 +486,13 @@ export default function MerchantRegisterPage() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">3</span>
-                Configuration de la Boutique
+                {t('inscription.configuration')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom de la Boutique *
+                    {t('inscription.nomBoutique')}
                   </label>
                   <input
                     type="text"
@@ -507,7 +509,7 @@ export default function MerchantRegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL de la Boutique *
+                    {t('inscription.urlBoutique')}
                   </label>
                   <div className="flex items-center">
                     <span className="px-3 py-2 bg-gray-100 border border-gray-300 border-r-0 rounded-l-lg text-gray-500 text-sm">
@@ -529,7 +531,7 @@ export default function MerchantRegisterPage() {
               </div>
 
               <p className="text-gray-500 text-sm mt-2">
-                💡 L'URL se génère automatiquement à partir du nom de la boutique. Elle ne peut contenir que des lettres minuscules, chiffres et tirets.
+                {t('inscription.urlAide')}
               </p>
             </div>
 
@@ -537,13 +539,13 @@ export default function MerchantRegisterPage() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">4</span>
-                Sécurité
+                {t('inscription.securite')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mot de Passe *
+                    {t('inscription.motDePasse')}
                   </label>
                   <input
                     type="password"
@@ -562,7 +564,7 @@ export default function MerchantRegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirmer le Mot de Passe *
+                    {t('inscription.confirmer')}
                   </label>
                   <input
                     type="password"
@@ -585,8 +587,8 @@ export default function MerchantRegisterPage() {
               coche={conditionsAcceptees}
               onChange={setConditionsAcceptees}
               documents={[
-                { href: '/cgu', libelle: 'les conditions générales d’utilisation' },
-                { href: '/conditions-commercants', libelle: 'les conditions générales commerçants' },
+                { href: '/cgu', libelle: tConditions('docs.cgu') },
+                { href: '/conditions-commercants', libelle: tConditions('docs.commercants') },
               ]}
             />
 
@@ -599,18 +601,18 @@ export default function MerchantRegisterPage() {
               {loading ? (
                 <>
                   <Loader size={20} className="animate-spin" />
-                  Création en cours...
+                  {t('inscription.creation')}
                 </>
               ) : (
-                'Créer mon Compte & Ma Boutique'
+                t('inscription.creer')
               )}
             </button>
 
             {/* Sign In Link */}
             <p className="text-center text-gray-500 text-sm">
-              Déjà inscrit?{' '}
+              {t('inscription.dejaInscrit')}{' '}
               <a href="/login" className="text-red-600 hover:text-red-700 font-semibold">
-                Se connecter
+                {t('inscription.seConnecter')}
               </a>
             </p>
           </form>
@@ -619,7 +621,7 @@ export default function MerchantRegisterPage() {
         {/* Info Box */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-blue-600 text-sm">
-            ℹ️ <strong>Après inscription:</strong> Votre boutique en ligne sera créée automatiquement et accessible depuis votre tableau de bord. Vous pourrez immédiatement ajouter des produits et commencer à recevoir des commandes.
+            {t.rich('inscription.apres', { b: (c) => <strong>{c}</strong> })}
           </p>
         </div>
       </div>

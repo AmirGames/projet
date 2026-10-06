@@ -30,13 +30,7 @@ const ROLE_COLORS: { [key in StaffRole]: string } = {
   SUPPORT: 'bg-pink-600',
 };
 
-const ROLE_LABELS: { [key in StaffRole]: string } = {
-  MANAGER: 'Gérant',
-  CASHIER: 'Caissier',
-  KITCHEN: 'Cuisine',
-  DELIVERY: 'Livraison',
-  SUPPORT: 'Support',
-};
+// Le libellé de chaque rôle : `roles.<role>` des traductions.
 
 const STATUS_COLORS: { [key in StaffStatus]: string } = {
   ACTIVE: 'text-green-600',
@@ -99,7 +93,7 @@ export default function StaffPage() {
     }
 
     if (!formData.email.trim()) {
-      setFormError("L\'email est requis");
+      setFormError(t('emailRequis'));
       return;
     }
 
@@ -143,7 +137,7 @@ export default function StaffPage() {
   };
 
   const handleDeleteStaff = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this staff member?')) return;
+    if (!confirm(t('confirmerSuppression'))) return;
 
     setSaving(true);
     try {
@@ -229,27 +223,27 @@ export default function StaffPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <Users className="text-amber-500" />
-              Équipe
+              {t('titre')}
             </h1>
-            <p className="text-gray-500 mt-2">Gérez les membres de votre équipe</p>
+            <p className="text-gray-500 mt-2">{t('sousTitre')}</p>
           </div>
           <button
             onClick={handleAddStaff}
             className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg transition"
           >
             <Plus size={20} />
-            Ajouter Membre
+            {t('ajouterMembre')}
           </button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div className="bg-white rounded-lg p-4 border border-gray-200">
-            <p className="text-gray-500 text-sm">Total Membres</p>
+            <p className="text-gray-500 text-sm">{t('totalMembres')}</p>
             <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-gray-200">
-            <p className="text-gray-500 text-sm">Actifs</p>
+            <p className="text-gray-500 text-sm">{t('actifs')}</p>
             <p className="text-3xl font-bold text-green-600 mt-1">{stats.active}</p>
           </div>
         </div>
@@ -258,7 +252,7 @@ export default function StaffPage() {
         {showForm && (
           <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {editingStaff ? 'Modifier Membre' : 'Nouveau Membre'}
+              {editingStaff ? t('modifierMembre') : t('nouveauMembre')}
             </h2>
             {formError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-800">
@@ -267,27 +261,27 @@ export default function StaffPage() {
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-gray-700 text-sm block mb-2">Nom</label>
+                <label className="text-gray-700 text-sm block mb-2">{t('nom')}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Jean Dupont"
+                  placeholder={t('exempleNom')}
                   className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-gray-700 text-sm block mb-2">Email</label>
+                <label className="text-gray-700 text-sm block mb-2">{t('email')}</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="jean@example.com"
+                  placeholder={t('exempleEmail')}
                   className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-gray-700 text-sm block mb-2">Téléphone</label>
+                <label className="text-gray-700 text-sm block mb-2">{t('telephone')}</label>
                 <input
                   type="tel"
                   value={formData.phone}
@@ -297,17 +291,17 @@ export default function StaffPage() {
                 />
               </div>
               <div>
-                <label className="text-gray-700 text-sm block mb-2">Rôle</label>
+                <label className="text-gray-700 text-sm block mb-2">{t('role')}</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as StaffRole })}
                   className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 >
-                  <option value="CASHIER">Caissier</option>
-                  <option value="KITCHEN">Cuisine</option>
-                  <option value="DELIVERY">Livraison</option>
-                  <option value="SUPPORT">Support</option>
-                  <option value="MANAGER">Gérant</option>
+                  <option value="CASHIER">{t('caissier')}</option>
+                  <option value="KITCHEN">{t('cuisine')}</option>
+                  <option value="DELIVERY">{t('livraison')}</option>
+                  <option value="SUPPORT">{t('support')}</option>
+                  <option value="MANAGER">{t('gerant')}</option>
                 </select>
               </div>
             </div>
@@ -327,7 +321,7 @@ export default function StaffPage() {
                 }}
                 className="px-4 py-2 bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition"
               >
-                Annuler
+                {t('annuler')}
               </button>
             </div>
           </div>
@@ -341,7 +335,7 @@ export default function StaffPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher un membre..."
+              placeholder={t('rechercher')}
               className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:border-amber-500 focus:outline-none"
             />
           </div>
@@ -354,12 +348,12 @@ export default function StaffPage() {
               <table className="w-full">
                 <thead className="bg-gray-100 border-b border-gray-300">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nom</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Téléphone</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Rôle</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Statut</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">{t('nom')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">{t('email')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">{t('telephone')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">{t('role')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">{t('statut')}</th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -370,12 +364,12 @@ export default function StaffPage() {
                       <td className="px-6 py-4 text-sm text-gray-700">{s.phone || '-'}</td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-white text-xs font-medium ${ROLE_COLORS[s.role]}`}>
-                          {ROLE_LABELS[s.role]}
+                          {t(`roles.${s.role}`)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`font-medium ${STATUS_COLORS[s.status]}`}>
-                          {s.status === 'ACTIVE' ? t('statusActive') : s.status === 'INACTIVE' ? 'Inactif' : t('statusSuspended')}
+                          {s.status === 'ACTIVE' ? t('statusActive') : s.status === 'INACTIVE' ? t('inactif') : t('statusSuspended')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-right flex gap-2 justify-end">
@@ -422,7 +416,7 @@ export default function StaffPage() {
                 className="bg-orange-600 text-white hover:bg-orange-700 mt-4 px-4 py-2 rounded-lg transition inline-flex items-center gap-2"
               >
                 <Plus size={20} />
-                Ajouter votre premier membre
+                {t('premier')}
               </button>
             )}
           </div>

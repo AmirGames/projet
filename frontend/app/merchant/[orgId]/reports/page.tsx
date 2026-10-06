@@ -153,15 +153,15 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <TrendingUp className="text-amber-500" />
-            Rapports & Analytics
+            {t('titre')}
           </h1>
-          <p className="text-gray-500 mt-2">Analysez les performances de votre boutique</p>
+          <p className="text-gray-500 mt-2">{t('sousTitre')}</p>
         </div>
 
         {/* Filters */}
         <div className="mt-6 bg-white rounded-lg p-4 border border-gray-200 flex gap-4 items-end">
           <div>
-            <label className="text-gray-700 text-sm block mb-2">Date Début</label>
+            <label className="text-gray-700 text-sm block mb-2">{t('dateDebut')}</label>
             <input
               type="date"
               value={startDate}
@@ -170,7 +170,7 @@ export default function ReportsPage() {
             />
           </div>
           <div>
-            <label className="text-gray-700 text-sm block mb-2">Date Fin</label>
+            <label className="text-gray-700 text-sm block mb-2">{t('dateFin')}</label>
             <input
               type="date"
               value={endDate}
@@ -210,19 +210,19 @@ export default function ReportsPage() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <p className="text-gray-500 text-sm">Total Commandes</p>
+                <p className="text-gray-500 text-sm">{t('totalCommandes')}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">{salesReport.totalOrders}</p>
               </div>
               <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <p className="text-gray-500 text-sm">Revenu Total</p>
+                <p className="text-gray-500 text-sm">{t('revenuTotal')}</p>
                 <p className="text-3xl font-bold text-green-600 mt-2">{salesReport.totalRevenue.toFixed(2)} €</p>
               </div>
               <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <p className="text-gray-500 text-sm">Panier Moyen</p>
+                <p className="text-gray-500 text-sm">{t('panierMoyen')}</p>
                 <p className="text-3xl font-bold text-blue-600 mt-2">{salesReport.averageOrderValue.toFixed(2)} €</p>
               </div>
               <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <p className="text-gray-500 text-sm">Taxes</p>
+                <p className="text-gray-500 text-sm">{t('taxes')}</p>
                 <p className="text-3xl font-bold text-yellow-600 mt-2">{salesReport.totalTax.toFixed(2)} €</p>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function ReportsPage() {
             {/* Breakdown */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Statut Commandes</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">{t('statutCommandes')}</h3>
                 <div className="space-y-2">
                   {Object.entries(salesReport.statusBreakdown).map(([status, count]) => (
                     <div key={status} className="flex justify-between items-center">
@@ -241,7 +241,7 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Statut Paiement</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">{t('statutPaiement')}</h3>
                 <div className="space-y-2">
                   {Object.entries(salesReport.paymentBreakdown).map(([status, count]) => (
                     <div key={status} className="flex justify-between items-center">
@@ -259,7 +259,7 @@ export default function ReportsPage() {
               className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg transition disabled:opacity-50"
             >
               <Download size={20} />
-              Exporter en CSV
+              {t('exporter')}
             </button>
           </div>
         )}
@@ -271,11 +271,11 @@ export default function ReportsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-gray-900">Date</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Revenu</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Taxes</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Frais</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Commandes</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('date')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('revenu')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('taxes')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('frais')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('commandes')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -297,7 +297,7 @@ export default function ReportsPage() {
               className="bg-orange-600 text-white hover:bg-orange-700 mt-4 flex items-center gap-2 px-4 py-2 rounded-lg transition disabled:opacity-50"
             >
               <Download size={20} />
-              Exporter en CSV
+              {t('exporter')}
             </button>
           </div>
         )}
@@ -309,11 +309,11 @@ export default function ReportsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-gray-900">Produit</th>
-                    <th className="px-6 py-3 text-left text-gray-900">SKU</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Vendus</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Revenu</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Prix Moyen</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('produit')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('sku')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('vendus')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('revenu')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('prixMoyen')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -335,7 +335,7 @@ export default function ReportsPage() {
               className="bg-orange-600 text-white hover:bg-orange-700 mt-4 flex items-center gap-2 px-4 py-2 rounded-lg transition disabled:opacity-50"
             >
               <Download size={20} />
-              Exporter en CSV
+              {t('exporter')}
             </button>
           </div>
         )}
@@ -347,12 +347,12 @@ export default function ReportsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-gray-900">Nom</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Email</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Commandes</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Total Dépensé</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Panier Moyen</th>
-                    <th className="px-6 py-3 text-left text-gray-900">Dernière Visite</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('nom')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('email')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('commandes')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('totalDepense')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('panierMoyen')}</th>
+                    <th className="px-6 py-3 text-left text-gray-900">{t('derniereVisite')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -377,7 +377,7 @@ export default function ReportsPage() {
               className="bg-orange-600 text-white hover:bg-orange-700 mt-4 flex items-center gap-2 px-4 py-2 rounded-lg transition disabled:opacity-50"
             >
               <Download size={20} />
-              Exporter en CSV
+              {t('exporter')}
             </button>
           </div>
         )}

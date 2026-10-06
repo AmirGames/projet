@@ -8,6 +8,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -59,14 +60,17 @@ interface Facture {
 }
 
 /** Le paiement de la commande, tel que la base le nomme (PaymentStatus). */
-const ETATS_PAIEMENT: Record<string, { libelle: string; classe: string }> = {
-  SUCCEEDED: { libelle: 'Payée', classe: 'bg-green-100 text-green-600' },
-  PENDING: { libelle: 'En attente de paiement', classe: 'bg-orange-100 text-orange-600' },
-  FAILED: { libelle: 'Paiement échoué', classe: 'bg-red-100 text-red-600' },
-  REFUNDED: { libelle: 'Remboursée', classe: 'bg-gray-500/20 text-gray-700' },
+// Le libellé : `paiements.<statut>` des traductions.
+const ETATS_PAIEMENT: Record<string, { classe: string }> = {
+  SUCCEEDED: { classe: 'bg-green-100 text-green-600' },
+  PENDING: { classe: 'bg-orange-100 text-orange-600' },
+  FAILED: { classe: 'bg-red-100 text-red-600' },
+  REFUNDED: { classe: 'bg-gray-500/20 text-gray-700' },
 };
 
 export default function FacturePage() {
+  const t = useTranslations('factureCommercant');
+  const locale = useLocale();
   const params = useParams();
   const orgId = params?.orgId as string;
   const orderId = params?.orderId as string;
@@ -91,24 +95,24 @@ export default function FacturePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Facture introuvable pour la boutique sélectionnée');
+        setErreur(donnees.error || t('introuvableBoutique'));
         setFacture(null);
         return;
       }
 
       setFacture(donnees);
     } catch {
-      setErreur('Impossible de charger la facture');
+      setErreur(t('chargementImpossible'));
     } finally {
       setLoading(false);
     }
-  }, [storeId, orderId]);
+  }, [storeId, orderId, t]);
 
   useEffectChargement(() => {
     if (!boutiqueEnCours) charger();
   }, [boutiqueEnCours, charger]);
 
-  if (loading) return <div className="text-center py-8 text-gray-500">Chargement...</div>;
+  if (loading) return <div className="text-center py-8 text-gray-500">{t('chargement')}</div>;
 
   if (erreur || !facture) {
     return (
@@ -120,7 +124,7 @@ export default function FacturePage() {
           <ArrowLeft size={18} /> Retour aux factures
         </Link>
         <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
-          {erreur || 'Facture introuvable'}
+          {erreur || t('introuvable')}
         </div>
       </div>
     );
@@ -134,7 +138,7 @@ export default function FacturePage() {
           href={`/merchant/${orgId}/invoices`}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm"
         >
-          <ArrowLeft size={16} /> Retour aux factures
+          <ArrowLeft size={16} /> {t('retour')}
         </Link>
         <div className="flex items-center gap-2">
           {/* L'impression passe par une page dédiée, hors de l'espace
@@ -150,7 +154,7 @@ export default function FacturePage() {
             }
             className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white hover:bg-orange-500 rounded-lg font-medium transition-colors"
           >
-            <Printer size={18} /> Imprimer la facture (A4)
+            <Printer size={18} /> {t('imprimerA4')}
           </button>
           <button
             onClick={() =>
@@ -162,7 +166,7 @@ export default function FacturePage() {
             }
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
           >
-            <Printer size={18} /> Ticket 80 mm
+            <Printer size={18} /> {t('ticket')}
           </button>
         </div>
       </div>
@@ -171,12 +175,12 @@ export default function FacturePage() {
       <div className="zone-impression bg-white border border-gray-200 rounded-lg p-8 space-y-8 print:bg-white print:text-black">
         <div className="flex justify-between items-start gap-6 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold">Facture {facture.invoiceNumber}</h1>
+            <h1 className="text-2xl font-bold">{t('facture', { numero: facture.invoiceNumber })}</h1>
             <p className="text-gray-500 print:text-gray-700 text-sm mt-1">
-              Émise le {new Date(facture.invoiceDate).toLocaleDateString('fr-FR')}
+              {t('emiseLe', { date: new Date(facture.invoiceDate).toLocaleDateString(locale) })}
             </p>
             <p className="text-gray-500 print:text-gray-700 text-sm">
-              Échéance le {new Date(facture.dueDate).toLocaleDateString('fr-FR')}
+              {t('echeanceLe', { date: new Date(facture.dueDate).toLocaleDateString(locale) })}
             </p>
           </div>
           <span
@@ -184,17 +188,17 @@ export default function FacturePage() {
               (ETATS_PAIEMENT[facture.paymentStatus] || ETATS_PAIEMENT.PENDING).classe
             }`}
           >
-            {(ETATS_PAIEMENT[facture.paymentStatus] || ETATS_PAIEMENT.PENDING).libelle}
+            {t(`paiements.${ETATS_PAIEMENT[facture.paymentStatus] ? facture.paymentStatus : 'PENDING'}`)}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
           <div>
-            <p className="text-gray-500 print:text-gray-700 uppercase text-xs mb-2">Émetteur</p>
+            <p className="text-gray-500 print:text-gray-700 uppercase text-xs mb-2">{t('emetteur')}</p>
             <p className="font-bold">{facture.storeInfo.legalName || facture.storeInfo.name}</p>
             {facture.storeInfo.legalName && facture.storeInfo.legalName !== facture.storeInfo.name && (
               <p className="text-gray-500 print:text-gray-700">
-                Enseigne : {facture.storeInfo.name}
+                {t('enseigne', { nom: facture.storeInfo.name })}
               </p>
             )}
             {facture.storeInfo.address && <p>{facture.storeInfo.address}</p>}
@@ -208,27 +212,27 @@ export default function FacturePage() {
                 ni de récupérer la taxe, ni de justifier la dépense. */}
             {facture.storeInfo.vatNumber ? (
               <p className="mt-2">
-                <span className="text-gray-500 print:text-gray-700">N° TVA : </span>
+                <span className="text-gray-500 print:text-gray-700">{t('numeroTva')} </span>
                 {facture.storeInfo.vatNumber}
               </p>
             ) : (
               <p className="mt-2 text-amber-600 print:hidden text-xs">
-                Aucun numéro de TVA : renseignez-le dans{' '}
+                {t('aucunTva')}{' '}
                 <Link href="/merchant/profil" className="underline">
-                  votre profil
+                  {t('votreProfil')}
                 </Link>{' '}
-                — une facture sans ce numéro n&apos;est pas valable.
+                {t('aucunTvaFin')}
               </p>
             )}
             {facture.storeInfo.registrationNumber && (
               <p>
-                <span className="text-gray-500 print:text-gray-700">SIRET / BCE : </span>
+                <span className="text-gray-500 print:text-gray-700">{t('siret')} </span>
                 {facture.storeInfo.registrationNumber}
               </p>
             )}
           </div>
           <div>
-            <p className="text-gray-500 print:text-gray-700 uppercase text-xs mb-2">Client</p>
+            <p className="text-gray-500 print:text-gray-700 uppercase text-xs mb-2">{t('client')}</p>
             <p className="font-bold">{facture.customerInfo.name}</p>
             <p className="break-all">{facture.customerInfo.email}</p>
             <p>{facture.customerInfo.phone}</p>
@@ -239,17 +243,17 @@ export default function FacturePage() {
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 print:border-gray-300 text-gray-500 print:text-gray-700">
               <tr>
-                <th className="text-left py-2">Désignation</th>
-                <th className="text-center py-2">Qté</th>
-                <th className="text-right py-2">Prix unitaire</th>
-                <th className="text-right py-2">Total</th>
+                <th className="text-left py-2">{t('designation')}</th>
+                <th className="text-center py-2">{t('qte')}</th>
+                <th className="text-right py-2">{t('prixUnitaire')}</th>
+                <th className="text-right py-2">{t('total')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 print:divide-gray-300">
               {facture.items.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-4 text-gray-500 print:text-gray-700">
-                    Aucune ligne sur cette facture
+                    {t('aucuneLigne')}
                   </td>
                 </tr>
               ) : (
@@ -264,7 +268,7 @@ export default function FacturePage() {
                       {ligne.description}
                       {ligne.variant && <span className="text-gray-500"> — {ligne.variant}</span>}
                       {ligne.sku && (
-                        <span className="text-gray-500 text-xs block">Réf. {ligne.sku}</span>
+                        <span className="text-gray-500 text-xs block">{t('ref', { sku: ligne.sku })}</span>
                       )}
                     </td>
                     <td className="py-3 text-center">{ligne.quantity}</td>
@@ -280,17 +284,17 @@ export default function FacturePage() {
         <div className="flex justify-end">
           <div className="w-full max-w-xs space-y-2 text-sm">
             <div className="flex justify-between text-gray-500 print:text-gray-700">
-              <span>Sous-total</span>
+              <span>{t('sousTotal')}</span>
               <span>{euro(facture.subtotal)}</span>
             </div>
             {facture.fees > 0 && (
               <div className="flex justify-between text-gray-500 print:text-gray-700">
-                <span>Frais de livraison</span>
+                <span>{t('fraisLivraison')}</span>
                 <span>{euro(facture.fees)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 print:border-gray-300">
-              <span>Total{facture.taxIncluded ? ' TTC' : ''}</span>
+              <span>{facture.taxIncluded ? t('totalTtc') : t('total')}</span>
               <span className="text-green-600 print:text-black">{euro(facture.total)}</span>
             </div>
 
@@ -304,11 +308,11 @@ export default function FacturePage() {
                   {lignes.map((l) => (
                     <div key={l.taux} className="space-y-0.5">
                       <div className="flex justify-between">
-                        <span>Base HT {l.taux} %</span>
+                        <span>{t('baseHt', { taux: l.taux })}</span>
                         <span>{euro(l.base - l.taxe)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>TVA {l.taux} %</span>
+                        <span>{t('tvaTaux', { taux: l.taux })}</span>
                         <span>{euro(l.taxe)}</span>
                       </div>
                     </div>
@@ -317,8 +321,7 @@ export default function FacturePage() {
               );
             })() : (
               <p className="pt-2 text-xs text-gray-500 print:hidden">
-                Aucune TVA sur cette commande. Réglez votre taux dans les taxes de la boutique : il
-                s&apos;appliquera aux commandes suivantes.
+                {t('aucuneTva')}
               </p>
             )}
           </div>
@@ -326,7 +329,7 @@ export default function FacturePage() {
 
         {facture.notes && (
           <div className="pt-4 border-t border-gray-200 print:border-gray-300">
-            <p className="text-gray-500 print:text-gray-700 uppercase text-xs mb-2">Note</p>
+            <p className="text-gray-500 print:text-gray-700 uppercase text-xs mb-2">{t('note')}</p>
             <p className="text-sm whitespace-pre-wrap">{facture.notes}</p>
           </div>
         )}
@@ -337,7 +340,7 @@ export default function FacturePage() {
           href={`/merchant/${orgId}/orders/${orderId}`}
           className="text-sm text-gray-500 hover:text-gray-900"
         >
-          Voir la commande associée
+          {t('voirCommande')}
         </Link>
       </div>
     </div>

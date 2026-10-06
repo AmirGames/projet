@@ -21,7 +21,8 @@ import { ReponseCommande } from '@/components/ReponseCommande';
 import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { numeroCourt } from '@/lib/numero-commande';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -76,13 +77,14 @@ interface Commande {
   rejectionNote?: string | null;
 }
 
-const STATUTS: { valeur: string; libelle: string }[] = [
-  { valeur: 'PENDING', libelle: 'En attente' },
-  { valeur: 'ACCEPTED', libelle: 'Acceptée' },
-  { valeur: 'PREPARING', libelle: 'En préparation' },
-  { valeur: 'READY', libelle: 'Prête' },
-  { valeur: 'COMPLETED', libelle: 'Terminée' },
-  { valeur: 'REJECTED', libelle: 'Refusée' },
+// Le libellé de chaque statut : `statuts.<valeur>` des traductions.
+const STATUTS: { valeur: string }[] = [
+  { valeur: 'PENDING' },
+  { valeur: 'ACCEPTED' },
+  { valeur: 'PREPARING' },
+  { valeur: 'READY' },
+  { valeur: 'COMPLETED' },
+  { valeur: 'REJECTED' },
 ];
 
 const COULEURS: Record<string, string> = {
@@ -96,6 +98,7 @@ const COULEURS: Record<string, string> = {
 
 export default function DetailCommandePage() {
   const t = useTranslations('merchantOrderDetail');
+  const locale = useLocale();
   const params = useParams();
   const orgId = params?.orgId as string;
   const orderId = params?.orderId as string;
@@ -126,7 +129,7 @@ export default function DetailCommandePage() {
       if (!reponse.ok) {
         // Une commande d'une autre boutique renvoie 404 : c'est le cas
         // classique après un changement de boutique dans l'en-tête.
-        setErreur(donnees.error || "Cette commande est introuvable dans la boutique sélectionnée");
+        setErreur(donnees.error || t('introuvableBoutique'));
         setCommande(null);
         return;
       }
@@ -137,7 +140,7 @@ export default function DetailCommandePage() {
     } finally {
       setLoading(false);
     }
-  }, [storeId, orderId]);
+  }, [storeId, orderId, t]);
 
   useEffectChargement(() => {
     if (!boutiqueEnCours) charger();
@@ -184,7 +187,7 @@ export default function DetailCommandePage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8 text-gray-500">Chargement...</div>;
+  if (loading) return <div className="text-center py-8 text-gray-500">{t('chargement')}</div>;
 
   if (erreur || !commande) {
     return (
@@ -193,10 +196,10 @@ export default function DetailCommandePage() {
           href={`/merchant/${orgId}/orders`}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900"
         >
-          <ArrowLeft size={18} /> Retour aux commandes
+          <ArrowLeft size={18} /> {t('retour')}
         </Link>
         <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
-          {erreur || 'Commande introuvable'}
+          {erreur || t('introuvable')}
         </div>
       </div>
     );
@@ -213,10 +216,10 @@ export default function DetailCommandePage() {
             href={`/merchant/${orgId}/orders`}
             className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm mb-2"
           >
-            <ArrowLeft size={16} /> Retour aux commandes
+            <ArrowLeft size={16} /> {t('retour')}
           </Link>
           <h1 className="text-3xl font-bold">
-            Commande {commande.id.slice(-8).toUpperCase()}
+            {t('commandeNumero', { numero: numeroCourt(commande.id) })}
           </h1>
           <p className="text-gray-500 mt-1 flex items-center gap-2">
             <Clock size={16} />
@@ -243,7 +246,7 @@ export default function DetailCommandePage() {
               COULEURS[commande.status] || 'bg-gray-500/20 text-gray-500'
             }`}
           >
-            {STATUTS.find((s) => s.valeur === commande.status)?.libelle || commande.status}
+            {STATUTS.some((s) => s.valeur === commande.status) ? t(`statuts.${commande.status}`) : commande.status}
           </span>
         </div>
       </div>
@@ -256,20 +259,20 @@ export default function DetailCommandePage() {
         <div className="bg-white border border-gray-200 rounded-lg p-6 lg:col-span-2">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Package size={20} className="text-blue-500" />
-            Articles ({lignes.length})
+            {t('articles', { n: lignes.length })}
           </h2>
 
           {lignes.length === 0 ? (
-            <p className="text-gray-500">Aucun article enregistré sur cette commande</p>
+            <p className="text-gray-500">{t('aucunArticle')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-gray-500 border-b border-gray-200">
                   <tr>
-                    <th className="text-left py-2">Produit</th>
-                    <th className="text-center py-2">Qté</th>
-                    <th className="text-right py-2">Prix unitaire</th>
-                    <th className="text-right py-2">Total</th>
+                    <th className="text-left py-2">{t('produit')}</th>
+                    <th className="text-center py-2">{t('qte')}</th>
+                    <th className="text-right py-2">{t('prixUnitaire')}</th>
+                    <th className="text-right py-2">{t('total')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -308,12 +311,12 @@ export default function DetailCommandePage() {
 
           <div className="mt-4 pt-4 border-t border-gray-200 space-y-2 text-sm">
             <div className="flex justify-between text-gray-500">
-              <span>Sous-total</span>
+              <span>{t('sousTotal')}</span>
               <span>{euro(sousTotal)}</span>
             </div>
             {Number(commande.discountAmount) > 0 && (
               <div className="flex justify-between text-gray-500">
-                <span>Remise{commande.promoCode ? ` (${commande.promoCode})` : ''}</span>
+                <span>{commande.promoCode ? t('remiseCode', { code: commande.promoCode }) : t('remise')}</span>
                 <span>−{euro(commande.discountAmount)}</span>
               </div>
             )}
@@ -322,13 +325,13 @@ export default function DetailCommandePage() {
                 compris) passait pour son montant : 15 € d'articles
                 s'affichaient 20,25 €. */}
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
-              <span>Montant de la commande</span>
+              <span>{t('montant')}</span>
               <span className="text-green-600">{euro(montantCommercant(commande))}</span>
             </div>
             {/* Il livre lui-même : la livraison est à lui, sur sa propre ligne. */}
             {commande.deliveryMode !== 'PLATFORM' && Number(commande.feesAmount) > 0 && (
               <div className="flex justify-between text-gray-500">
-                <span>+ Frais de livraison (pour vous)</span>
+                <span>{t('fraisLivraison')}</span>
                 <span>{euro(commande.feesAmount)}</span>
               </div>
             )}
@@ -338,24 +341,23 @@ export default function DetailCommandePage() {
               (commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0)) && (
               <div className="pt-2 border-t border-gray-200 space-y-1 text-xs text-gray-500">
                 <div className="flex justify-between">
-                  <span>Payé par le client</span>
+                  <span>{t('payeClient')}</span>
                   <span>{euro(commande.totalAmount)}</span>
                 </div>
                 {commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0 && (
                   <div className="flex justify-between">
-                    <span>dont livraison (livreur de la plateforme)</span>
+                    <span>{t('dontLivraison')}</span>
                     <span>{euro(commande.feesAmount)}</span>
                   </div>
                 )}
                 {Number(commande.serviceFeeAmount) > 0 && (
                   <div className="flex justify-between">
-                    <span>dont frais de service (plateforme)</span>
+                    <span>{t('dontService')}</span>
                     <span>{euro(commande.serviceFeeAmount)}</span>
                   </div>
                 )}
                 <p className="text-amber-700">
-                  Ces sommes ne vous reviennent pas : elles sont reportées sur votre relevé du mois,
-                  avec la commission.
+                  {t('sommesPasAVous')}
                 </p>
               </div>
             )}
@@ -366,20 +368,19 @@ export default function DetailCommandePage() {
             {Number(commande.taxAmount) > 0 ? (
               <div className="pt-2 border-t border-gray-200 space-y-1 text-gray-500">
                 <div className="flex justify-between">
-                  <span>Total HT</span>
+                  <span>{t('totalHt')}</span>
                   <span>{euro(montantCommercant(commande) - Number(commande.taxAmount))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>
-                    dont TVA
-                    {Number(commande.taxRate) > 0 ? ` ${Number(commande.taxRate)} %` : ''}
+                    {Number(commande.taxRate) > 0 ? t('dontTvaTaux', { taux: Number(commande.taxRate) }) : t('dontTva')}
                   </span>
                   <span>{euro(commande.taxAmount)}</span>
                 </div>
               </div>
             ) : (
               <p className="pt-2 text-xs text-gray-500">
-                Aucune TVA sur cette commande.
+                {t('aucuneTva')}
               </p>
             )}
           </div>
@@ -389,7 +390,7 @@ export default function DetailCommandePage() {
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <User size={20} className="text-purple-500" />
-              Client
+              {t('client')}
             </h2>
             <p className="font-medium">{commande.customerName}</p>
             <p className="text-sm text-gray-500 break-all">{commande.customerEmail}</p>
@@ -403,7 +404,7 @@ export default function DetailCommandePage() {
             </h2>
             {commande.deliveryType === 'DELIVERY' ? (
               <div className="text-sm text-gray-700 space-y-1">
-                <p>{commande.deliveryAddress || 'Adresse non renseignée'}</p>
+                <p>{commande.deliveryAddress || t('adresseNonRenseignee')}</p>
                 <p>
                   {[commande.deliveryPostal, commande.deliveryCity].filter(Boolean).join(' ') ||
                     t('cityUnknown')}
@@ -412,18 +413,18 @@ export default function DetailCommandePage() {
             ) : (
               <p className="text-sm text-gray-700">
                 {commande.pickupTime
-                  ? new Date(commande.pickupTime).toLocaleString('fr-FR')
-                  : 'Heure de retrait non précisée'}
+                  ? new Date(commande.pickupTime).toLocaleString(locale)
+                  : t('heureNonPrecisee')}
               </p>
             )}
             <p className="text-sm text-gray-500 mt-3">
-              Paiement : <span className="text-gray-800">{commande.paymentStatus}</span>
+              {t('paiement')} <span className="text-gray-800">{t.has(`paiements.${commande.paymentStatus}`) ? t(`paiements.${commande.paymentStatus}`) : commande.paymentStatus}</span>
             </p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4">
-              {commande.status === 'PENDING' ? 'Accepter ou refuser' : 'Suivi de la commande'}
+              {commande.status === 'PENDING' ? t('accepterRefuser') : t('suivi')}
             </h2>
             {storeId && (
               <ReponseCommande storeId={storeId} commande={commande} surChangement={charger} />
@@ -442,7 +443,7 @@ export default function DetailCommandePage() {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
           <StickyNote size={20} className="text-yellow-500" />
-          Note interne
+          {t('noteInterne')}
         </h2>
         {commande.notes && (
           <p className="text-sm text-gray-700 bg-gray-100 rounded-lg p-3 mb-3 whitespace-pre-wrap">
@@ -453,7 +454,7 @@ export default function DetailCommandePage() {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
-          placeholder="Ajouter une note visible uniquement par votre équipe"
+          placeholder={t('notePlaceholder')}
           className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
         />
         <button
@@ -461,7 +462,7 @@ export default function DetailCommandePage() {
           disabled={enregistrement || !note.trim()}
           className="mt-3 px-4 py-2 bg-orange-600 text-white hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
         >
-          Enregistrer la note
+          {t('enregistrerNote')}
         </button>
       </div>
     </div>

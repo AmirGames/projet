@@ -185,7 +185,7 @@ export default function MarketingPage() {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-500">Chargement des campagnes...</p>
+              <p className="text-gray-500">{t('chargement')}</p>
             </div>
           </div>
         </div>
@@ -198,20 +198,20 @@ export default function MarketingPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Campagnes Marketing</h1>
+            <h1 className="text-3xl font-bold">{t('titre')}</h1>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => { setMessage(''); setModaleOuverte(true); }}
                 className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                <Plus size={18} /> Nouvelle campagne
+                <Plus size={18} /> {t('nouvelle')}
               </button>
               <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-500 hover:text-gray-700 text-sm">
-                ← Retour
+                {t('retour')}
               </Link>
             </div>
           </div>
-          <p className="text-gray-500">Créez et gérez vos campagnes marketing</p>
+          <p className="text-gray-500">{t('sousTitre')}</p>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
@@ -225,7 +225,7 @@ export default function MarketingPage() {
                   : 'bg-white hover:bg-gray-100 text-gray-500 border border-gray-200'
               }`}
             >
-              {s === 'ALL' ? t('all') : s}
+              {s === 'ALL' ? t('all') : t(`statuts.${s}`)}
             </button>
           ))}
         </div>
@@ -233,7 +233,7 @@ export default function MarketingPage() {
         <div className="space-y-4">
           {campaigns.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
-              Aucune campagne trouvée
+              {t('aucune')}
             </div>
           ) : (
             campaigns.map((campaign) => (
@@ -241,14 +241,17 @@ export default function MarketingPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-bold">{campaign.name}</h3>
-                    <p className="text-sm text-gray-500">{campaign.type} · {campaign.targetAudience}</p>
+                    <p className="text-sm text-gray-500">
+                      {t.has(`canaux.${campaign.type}`) ? t(`canaux.${campaign.type}`) : campaign.type} ·{' '}
+                      {t.has(`publics.${campaign.targetAudience}`) ? t(`publics.${campaign.targetAudience}`) : campaign.targetAudience}
+                    </p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
                     campaign.status === 'ACTIVE' ? 'bg-green-50 text-green-600 border-green-200'
                     : campaign.status === 'DRAFT' ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
                     : 'bg-gray-600/20 text-gray-500 border-gray-600/50'
                   }`}>
-                    {campaign.status}
+                    {t.has(`statuts.${campaign.status}`) ? t(`statuts.${campaign.status}`) : campaign.status}
                   </span>
                 </div>
 
@@ -256,19 +259,19 @@ export default function MarketingPage() {
 
                 <div className="grid grid-cols-4 gap-2 mb-4 text-xs">
                   <div className="bg-gray-50 p-2 rounded">
-                    <p className="text-gray-500">Envoyés</p>
+                    <p className="text-gray-500">{t('envoyes')}</p>
                     <p className="font-bold">{campaign.sentCount}</p>
                   </div>
                   <div className="bg-gray-50 p-2 rounded">
-                    <p className="text-gray-500">Ouverts</p>
+                    <p className="text-gray-500">{t('ouverts')}</p>
                     <p className="font-bold">{campaign.openCount}</p>
                   </div>
                   <div className="bg-gray-50 p-2 rounded">
-                    <p className="text-gray-500">Clics</p>
+                    <p className="text-gray-500">{t('clics')}</p>
                     <p className="font-bold">{campaign.clickCount}</p>
                   </div>
                   <div className="bg-gray-50 p-2 rounded">
-                    <p className="text-gray-500">Taux ouverture</p>
+                    <p className="text-gray-500">{t('tauxOuverture')}</p>
                     <p className="font-bold">{campaign.sentCount > 0 ? Math.round((campaign.openCount / campaign.sentCount) * 100) : 0}%</p>
                   </div>
                 </div>
@@ -279,17 +282,17 @@ export default function MarketingPage() {
                       onClick={() => changerStatut(campaign, 'COMPLETED')}
                       className="px-3 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition"
                     >
-                      Terminer
+                      {t('terminer')}
                     </button>
                   ) : campaign.status === 'COMPLETED' ? (
-                    <span className="px-3 py-1 text-gray-500 text-xs">Terminée</span>
+                    <span className="px-3 py-1 text-gray-500 text-xs">{t('terminee')}</span>
                   ) : (
                     <button
                       onClick={() => changerStatut(campaign, 'ACTIVE')}
                       className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition"
                     >
                       <Send size={14} className="inline mr-1" />
-                      Envoyer
+                      {t('envoyer')}
                     </button>
                   )}
                   <button
@@ -297,7 +300,7 @@ export default function MarketingPage() {
                     className="px-3 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 transition"
                   >
                     <Trash2 size={14} className="inline mr-1" />
-                    Supprimer
+                    {t('supprimer')}
                   </button>
                 </div>
               </div>
@@ -314,14 +317,14 @@ export default function MarketingPage() {
                 disabled={page === 0}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded"
               >
-                Précédent
+                {t('precedent')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded"
               >
-                Suivant
+                {t('suivant')}
               </button>
             </div>
           </div>
@@ -334,7 +337,7 @@ export default function MarketingPage() {
               className="bg-white border border-gray-200 rounded-lg p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold">Nouvelle campagne</h2>
+                <h2 className="text-xl font-bold">{t('nouvelle')}</h2>
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(false)}
@@ -347,34 +350,34 @@ export default function MarketingPage() {
               {message && <div className="bg-gray-100 rounded-lg p-3 text-sm">{message}</div>}
 
               <div>
-                <label className="block text-sm text-gray-500 mb-1">Nom de la campagne</label>
+                <label className="block text-sm text-gray-500 mb-1">{t('nom')}</label>
                 <input
                   type="text"
                   required
                   minLength={2}
                   value={formulaire.name}
                   onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
-                  placeholder="Ex : Offre de rentrée"
+                  placeholder={t('exempleNom')}
                   className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-500 mb-1">Canal</label>
+                  <label className="block text-sm text-gray-500 mb-1">{t('canal')}</label>
                   <select
                     value={formulaire.type}
                     onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   >
-                    <option value="EMAIL">E-mail</option>
-                    <option value="SMS">SMS</option>
-                    <option value="PUSH">Notification push</option>
-                    <option value="INAPP">Dans l&apos;application</option>
+                    <option value="EMAIL">{t('email')}</option>
+                    <option value={t('sms')}>{t('sms')}</option>
+                    <option value="PUSH">{t('push')}</option>
+                    <option value="INAPP">{t('inapp')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-500 mb-1">Destinataires</label>
+                  <label className="block text-sm text-gray-500 mb-1">{t('destinataires')}</label>
                   <select
                     value={formulaire.targetAudience}
                     onChange={(e) =>
@@ -382,17 +385,17 @@ export default function MarketingPage() {
                     }
                     className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   >
-                    <option value="all">Tous les clients</option>
-                    <option value="new">Nouveaux clients</option>
-                    <option value="returning">Clients fidèles</option>
-                    <option value="inactive">Clients inactifs</option>
+                    <option value="all">{t('tous')}</option>
+                    <option value="new">{t('nouveaux')}</option>
+                    <option value="returning">{t('fideles')}</option>
+                    <option value="inactive">{t('inactifs')}</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm text-gray-500 mb-1">
-                  Description <span className="text-gray-500">(interne, facultative)</span>
+                  Description <span className="text-gray-500">{t('interne')}</span>
                 </label>
                 <input
                   type="text"
@@ -403,13 +406,13 @@ export default function MarketingPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-500 mb-1">Message envoyé</label>
+                <label className="block text-sm text-gray-500 mb-1">{t('message')}</label>
                 <textarea
                   required
                   rows={5}
                   value={formulaire.message}
                   onChange={(e) => setFormulaire({ ...formulaire, message: e.target.value })}
-                  placeholder="Bonjour, profitez de -10 % sur votre prochaine commande..."
+                  placeholder={t('exempleMessage')}
                   className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                 />
               </div>
@@ -427,7 +430,7 @@ export default function MarketingPage() {
                   onClick={() => setModaleOuverte(false)}
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
-                  Annuler
+                  {t('annuler')}
                 </button>
               </div>
             </form>
