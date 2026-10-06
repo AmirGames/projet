@@ -4,15 +4,16 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
 import { AnnouncementService, PUBLICS_CONNUS } from "../marketing/announcement.service";
-import { getQueryNumber, isSystemAdmin } from "./shared";
+import { isSystemAdmin } from "./shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
 // GET /admin/notifications - Annonces diffusées par la plateforme
 router.get("/notifications", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(getQueryNumber(req.query.limit, 50), 200);
-    const offset = getQueryNumber(req.query.offset, 0);
+    const limit = limiteBornee(req.query.limit, 50, 200);
+    const offset = decalage(req.query.offset);
 
     const where = { type: "PLATFORM_ANNOUNCEMENT" as const };
 

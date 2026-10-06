@@ -4,14 +4,15 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../webhooks/webhook.service";
 import { SecurityEventService } from "../auth/security-event.service";
 import { isSuperOwner } from "./shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
 // GET /superowner/webhooks - Abonnements enregistrés
 router.get("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
 
     res.json(await WebhookService.list(limit, offset));
   } catch (err) {

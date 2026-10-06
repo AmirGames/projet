@@ -6,14 +6,15 @@ import { PlanService, nombreOuNull } from "../plans/plan.service";
 import { fraisDusALaPlateforme, fraisDeServiceDus } from "../delivery/delivery-mode.service";
 import { isSuperOwner } from "./shared";
 import { detailFacturation, moisDe } from "./billing-detail.service";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
 // GET /superowner/billing - Commissions dues par commerçant sur le mois courant
 router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
 
     /**
      * Le taux de commission vient de la formule du commerçant.
@@ -202,8 +203,8 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
 // GET /superowner/financial-reports - Synthèse mensuelle des douze derniers mois
 router.get("/financial-reports", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 12, 36);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 12, 36);
+    const offset = decalage(req.query.offset);
 
     const config = await db.systemConfig.findFirst();
     const taux = Number(config?.platformFeePercent ?? 5) / 100;

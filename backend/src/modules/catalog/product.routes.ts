@@ -8,6 +8,7 @@ import { authMiddleware, authFacultative, checkOrgStatus } from "../auth/auth.mi
 import { logger } from "../../config/logger";
 
 import { emitStoreEvent } from "../realtime/socket";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -79,8 +80,8 @@ router.get("/", authMiddleware, autoriserCatalogue, async (req: Request, res: Re
       throw new ApiError(400, "Paramètre 'orgId' ou 'storeId' requis", "MISSING_PARAM");
     }
 
-    const limit = parseInt((req.query.limit as string) || "100") || 100;
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
+    const limit = limiteBornee(req.query.limit, 100, 500);
+    const offset = decalage(req.query.offset);
 
     let products;
     let total;
@@ -110,8 +111,8 @@ router.get("/", authMiddleware, autoriserCatalogue, async (req: Request, res: Re
 router.get("/store/:storeId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 200);
-    const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+    const limit = limiteBornee(req.query.limit, 100, 200);
+    const offset = decalage(req.query.offset);
 
     const { products, total } = await CataloguePublicService.productsByStore(storeId, limit, offset, req);
 
@@ -132,8 +133,8 @@ router.get("/store/:storeId", authFacultative, async (req: Request, res: Respons
 router.get("/category/:categoryId", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const categoryId = req.params.categoryId as string;
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 200);
-    const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+    const limit = limiteBornee(req.query.limit, 100, 200);
+    const offset = decalage(req.query.offset);
 
     const products = await CataloguePublicService.productsByCategory(categoryId, limit, offset, req);
 

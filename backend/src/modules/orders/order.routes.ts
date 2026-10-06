@@ -13,6 +13,7 @@ import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-c
 
 import { DispatchService } from "../drivers/dispatch.service";
 import { SurveillanceCoursesService } from "../drivers/surveillance-courses.service";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -22,8 +23,8 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
     const orgId = req.query.orgId as string;
     const storeId = req.query.storeId as string;
     const status = req.query.status as string | undefined;
-    const limit = parseInt((req.query.limit as string) || "100") || 100;
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
+    const limit = limiteBornee(req.query.limit, 100, 500);
+    const offset = decalage(req.query.offset);
 
     if (!orgId && !storeId) {
       throw new ApiError(400, "Paramètre 'orgId' ou 'storeId' requis", "MISSING_PARAM");
@@ -222,8 +223,8 @@ router.get("/:id", limiterSuivi, async (req: Request, res: Response, next: NextF
 router.get("/store/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
-    const limit = parseInt((req.query.limit as string) || "100") || 100;
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
+    const limit = limiteBornee(req.query.limit, 100, 500);
+    const offset = decalage(req.query.offset);
 
     const orders = await OrderService.getByStoreId(storeId, limit, offset);
     const total = await OrderService.countByStoreId(storeId);

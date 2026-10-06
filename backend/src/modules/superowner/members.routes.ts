@@ -2,14 +2,15 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
 import { isSuperOwner } from "./shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
 // GET /superowner/members/clients - Liste des clients
 router.get("/members/clients", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const status = req.query.status as string;
 
     const where = {
@@ -58,8 +59,8 @@ router.get("/members/clients", authMiddleware, isSuperOwner, async (req: Request
 // GET /superowner/members/merchants - Liste des commerçants
 router.get("/members/merchants", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const status = req.query.status as string;
 
     const where = status && status !== 'all' ? { status } : {};
@@ -102,8 +103,8 @@ router.get("/members/merchants", authMiddleware, isSuperOwner, async (req: Reque
 // GET /superowner/members/deliveries - Liste des livreurs
 router.get("/members/deliveries", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const status = req.query.status as string;
 
     const where = status && status !== 'all' ? { status } : {};
@@ -150,8 +151,8 @@ router.get("/members/deliveries", authMiddleware, isSuperOwner, async (req: Requ
 // GET /superowner/members/drivers - Liste des drivers (VTC/Taxi/Coursiers)
 router.get("/members/drivers", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = limiteBornee(req.query.limit, 20, 100);
+    const offset = decalage(req.query.offset);
     const status = req.query.status as string;
 
     const where = status && status !== 'all' ? { status } : {};

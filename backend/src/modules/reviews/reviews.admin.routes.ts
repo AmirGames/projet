@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
 import { ReviewModerationService } from "./review-moderation.service";
 import { isSuperOwner } from "../superowner/shared";
+import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
@@ -10,8 +11,8 @@ const router = Router();
 router.get("/review-reports", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const etat = req.query.etat === "TRAITES" ? "TRAITES" : "EN_ATTENTE";
-    const skip = parseInt((req.query.skip as string) || "0") || 0;
-    const take = Math.min(parseInt((req.query.take as string) || "50") || 50, 100);
+    const skip = decalage(req.query.skip);
+    const take = limiteBornee(req.query.take, 50, 100);
 
     res.json(await ReviewModerationService.lister(etat, skip, take));
   } catch (err) {
