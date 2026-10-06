@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
+import { ecarterAssistant, inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -101,6 +101,7 @@ await appeler('/api/products', {
 
 const nav = await chromium.launch();
 const page = await nav.newPage();
+await ecarterAssistant(page);
 const erreurs = [];
 page.on('console', (m) => {
   if (m.type() === 'error') erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
@@ -219,9 +220,14 @@ await page.waitForTimeout(1500);
 
 const tunnel = await texte();
 check('le tunnel de commande s’ouvre', /Options de livraison/i.test(tunnel), tunnel.slice(0, 400));
+// La vitrine n'invente plus de frais de service : elle annonce ceux que le
+// serveur prélève (/api/client/service-fee), ni plus, ni moins.
+const fraisServeur = Number((await appeler('/api/client/service-fee')).donnees?.data?.frais) || 0;
 check(
-  'les frais de service inventés ont disparu',
-  !/Frais de service/.test(tunnel),
+  'seuls les frais de service du serveur sont annoncés',
+  fraisServeur > 0
+    ? new RegExp(`Frais de service\\D*${fraisServeur.toFixed(2).replace('.', ',')}`).test(tunnel)
+    : !/Frais de service/.test(tunnel),
   tunnel.slice(0, 900)
 );
 
