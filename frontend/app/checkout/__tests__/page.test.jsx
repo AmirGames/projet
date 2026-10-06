@@ -24,7 +24,16 @@ jest.mock('next/link', () => ({
   ),
 }));
 
-jest.mock('next-intl', () => ({ useTranslations: () => (cle) => cle }));
+// Les vrais messages français : le test lit ce que le client lit.
+jest.mock('next-intl', () => {
+  const messages = jest.requireActual('../../../messages/fr.json');
+  const traduire = (espace) => (cle, valeurs = {}) => {
+    const texte = `${espace}.${cle}`.split('.').reduce((noeud, partie) => noeud?.[partie], messages);
+    if (typeof texte !== 'string') return cle;
+    return texte.replace(/\{(\w+)\}/g, (_, nom) => String(valeurs[nom] ?? `{${nom}}`));
+  };
+  return { useTranslations: traduire };
+});
 jest.mock('@/components/EnTeteClient', () => ({ EnTeteClient: () => null }));
 jest.mock('@/components/TunnelCommande', () => {
   const { useState } = require('react');
