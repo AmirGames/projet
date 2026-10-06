@@ -142,6 +142,20 @@ export const SsoService = {
             })
           : { count: 0 };
       if (count !== 1) {
+        // Deux renouvellements vraiment simultanés lisent tous deux le jeton
+        // « non consommé » : le perdant ne l'a pas volé, il est arrivé à
+        // quelques millisecondes du gagnant. On relit : consommé à l'instant,
+        // c'est une concurrence (409, la session reste ouverte) ; sinon,
+        // c'est une réutilisation d'un jeton plus ancien, la session est fermée.
+        const relue = ligne && ligne.sessionId === sid
+          ? await db.jetonRafraichissement.findUnique({
+              where: { jtiHash: empreinte(decoded.jti) },
+              select: { usedAt: true },
+            })
+          : null;
+        if (relue?.usedAt && Date.now() - relue.usedAt.getTime() < TOLERANCE_CONCURRENCE_MS) {
+          throw new ApiError(409, "Renouvellement déjà en cours. Réessayez.", "REFRESH_CONCURRENT");
+        }
         await this.fermer(sid);
         throw invalide();
       }
