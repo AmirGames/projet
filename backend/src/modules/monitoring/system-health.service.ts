@@ -1,4 +1,5 @@
 import { PREFIXE_SAUVEGARDE_COMPLETE } from "./backup.service";
+import { Outbox } from "../jobs/outbox.service";
 import { db } from "../../services/db";
 
 /**
@@ -6,7 +7,7 @@ import { db } from "../../services/db";
  *
  * La carte du tableau de bord affichait « 0 % » en permanence : la route ne
  * renvoyait pas le champ que la page lisait. Un indicateur qui ne mesure rien
- * est pire qu'absent — celui-ci repose sur cinq relevés, et chacun dit ce
+ * est pire qu'absent — celui-ci repose sur six relevés, et chacun dit ce
  * qu'il faut faire pour le remonter.
  */
 
@@ -26,6 +27,7 @@ export interface Controle {
   remede: string;
 }
 
+const MINUTE = 60 * 1000;
 const JOUR = 24 * 60 * 60 * 1000;
 
 /** Un score continu ramené à un état lisible. */
@@ -50,7 +52,7 @@ async function controlerBase(): Promise<Controle> {
     return {
       cle: "base",
       libelle: "Base de données",
-      poids: 30,
+      poids: 25,
       score,
       etat: etatDuScore(score),
       detail: `Aller-retour en ${duree} ms`,
@@ -63,7 +65,7 @@ async function controlerBase(): Promise<Controle> {
     return {
       cle: "base",
       libelle: "Base de données",
-      poids: 30,
+      poids: 25,
       score: 0,
       etat: "PANNE",
       detail: err instanceof Error ? err.message : "Injoignable",
@@ -190,7 +192,7 @@ async function controlerWebhooks(): Promise<Controle> {
     return {
       cle: "webhooks",
       libelle: "Webhooks",
-      poids: 15,
+      poids: 10,
       score: 1,
       etat: "OK",
       detail: "Aucun envoi sur les dernières 24 h",
@@ -203,7 +205,7 @@ async function controlerWebhooks(): Promise<Controle> {
   return {
     cle: "webhooks",
     libelle: "Webhooks",
-    poids: 15,
+    poids: 10,
     score,
     etat: etatDuScore(score),
     detail: `${reussies} envoi${reussies > 1 ? "s" : ""} sur ${total} ${
@@ -213,6 +215,42 @@ async function controlerWebhooks(): Promise<Controle> {
       score >= 0.9
         ? ""
         : "Des envois échouent : vérifiez les adresses appelées dans Webhooks, et désactivez celles qui ne répondent plus.",
+  };
+}
+
+/**
+ * Les messages en file partent-ils (e-mails de suivi de commande).
+ *
+ * Un message dû depuis plus de cinq minutes veut dire que le worker ne tourne
+ * pas ou que le courriel est en panne ; un message abandonné (FAILED) est un
+ * e-mail qui n'est jamais parti.
+ */
+async function controlerNotifications(): Promise<Controle> {
+  const [etat, abandonnes] = await Promise.all([
+    Outbox.etat(),
+    db.outboxMessage.count({ where: { status: "FAILED", createdAt: { gte: new Date(Date.now() - 7 * JOUR) } } }),
+  ]);
+
+  let score = 1;
+  if (etat.retardMs > 5 * MINUTE) score = etat.retardMs > 60 * MINUTE ? 0 : 0.5;
+  if (abandonnes > 0) score = Math.min(score, 0.5);
+
+  const problemes: string[] = [];
+  if (etat.retardMs > 5 * MINUTE) problemes.push(`un message attend depuis ${Math.round(etat.retardMs / MINUTE)} min`);
+  if (abandonnes > 0) problemes.push(`${abandonnes} message${abandonnes > 1 ? "s" : ""} abandonné${abandonnes > 1 ? "s" : ""} en 7 jours`);
+
+  return {
+    cle: "notifications",
+    libelle: "Notifications",
+    poids: 10,
+    score,
+    etat: etatDuScore(score),
+    detail: problemes.length === 0
+      ? etat.enAttente === 0 ? "Aucun message en attente" : `${etat.enAttente} message${etat.enAttente > 1 ? "s" : ""} en cours d'envoi`
+      : problemes.join(" ; "),
+    remede: score === 1
+      ? ""
+      : "Vérifiez le service de courriel (SMTP) et les journaux du serveur ; les messages abandonnés sont dans la table OutboxMessage (statut FAILED).",
   };
 }
 
@@ -231,6 +269,7 @@ export class SystemHealthService {
       controlerSauvegardes(),
       controlerAttribution(),
       controlerWebhooks(),
+      controlerNotifications(),
     ]);
 
     const points = controles.reduce(
