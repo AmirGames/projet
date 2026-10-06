@@ -1127,6 +1127,13 @@ model Order {
   merchantPayoutId String?
   merchantPayout   MerchantPayout? @relation(fields: [merchantPayoutId], references: [id], onDelete: SetNull)
 
+  /// Clé de tentative d'achat fournie par le client (en-tête Idempotency-Key) :
+  /// le même achat envoyé deux fois (double clic, nouvel essai après un délai)
+  /// rend la même commande. L'empreinte du contenu refuse la même clé pour un
+  /// panier différent.
+  idempotencyKey   String?
+  idempotencyHash  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1137,6 +1144,7 @@ model Order {
   @@index([deletedAt])
   @@index([submittedAt])
   @@index([merchantPayoutId])
+  @@unique([storeId, idempotencyKey])
 }
 
 /// Un jeton de suivi porté par un lien envoyé au client (e-mail, SMS).

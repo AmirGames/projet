@@ -433,7 +433,7 @@ export const paymentService = {
         paymentStatus: { in: ["PENDING", "FAILED"] },
         createdAt: { lt: new Date(Date.now() - delaiMinutes * 60 * 1000) },
       },
-      select: { id: true, paymentId: true },
+      select: { id: true, paymentId: true, storeId: true, promoCode: true },
       take: 50,
     });
 
@@ -449,10 +449,16 @@ export const paymentService = {
           await this.annulerIntention(commande.paymentId);
         }
 
-        await db.order.updateMany({
-          where: { id: commande.id, submittedAt: null },
+        const { count } = await db.order.updateMany({
+          where: { id: commande.id, submittedAt: null, deletedAt: null },
           data: { deletedAt: new Date() },
         });
+        // L'utilisation du code promo réservée à la création est rendue,
+        // une seule fois : seul l'appel qui retire la commande la libère.
+        if (count === 1 && commande.promoCode) {
+          const { PromotionService } = await import("../marketing/promotion.service");
+          await PromotionService.libererUtilisation(commande.storeId, commande.promoCode);
+        }
         retirees += 1;
       } catch (err) {
         logger.warn("Commande non payée impossible à retirer", {

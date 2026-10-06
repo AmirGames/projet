@@ -254,6 +254,17 @@ export class PromotionService {
     };
   }
 
+  /**
+   * Rend l'utilisation réservée par une commande jamais payée, retirée ensuite.
+   * Ne descend jamais sous zéro.
+   */
+  static async libererUtilisation(storeId: string, code: string) {
+    await db.promotion.updateMany({
+      where: { storeId, code, currentUses: { gt: 0 } },
+      data: { currentUses: { decrement: 1 } },
+    });
+  }
+
   static async applyPromotion(id: string) {
     try {
       return await db.promotion.update({

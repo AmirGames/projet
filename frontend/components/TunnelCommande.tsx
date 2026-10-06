@@ -1,5 +1,6 @@
 'use client';
 
+import { cleDeTentative, oublierTentative } from '@/lib/cle-tentative';
 import { signalerErreur } from '@/lib/erreurs';
 /**
  * Commander en tant qu'invité : coordonnées, mode de livraison, adresse.
@@ -541,13 +542,16 @@ export function TunnelCommande({
       // Connecté, le jeton range la commande dans son historique : l'adresse
       // saisie seule ne suffit plus à la rattacher à un compte.
       const jeton = user ? localStorage.getItem('accessToken') : null;
+      const corps = JSON.stringify(orderData);
       const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Renvoyé tel quel, cet achat rend la même commande au lieu d'en créer une seconde.
+          'Idempotency-Key': cleDeTentative(corps),
           ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}),
         },
-        body: JSON.stringify(orderData),
+        body: corps,
       });
 
       if (!response.ok) {
@@ -556,6 +560,7 @@ export function TunnelCommande({
         return;
       }
 
+      oublierTentative();
       const recue = await response.json();
       if (checkoutForm.deliveryType === 'DELIVERY' && checkoutForm.deliveryAddress) {
         enregistrerAdresseLivraison({

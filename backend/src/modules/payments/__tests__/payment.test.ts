@@ -27,6 +27,8 @@ jest.mock("../stripe", () => ({
   STRIPE_CONFIG: { currency: "eur", webhookSecret: SECRET },
 }));
 const annoncerAuCommercant = fn();
+const libererUtilisation = fn();
+jest.mock("../../marketing/promotion.service", () => ({ PromotionService: { libererUtilisation } }));
 const enregistrerOutbox = fn();
 const traiterLesDus = fn();
 jest.mock("../../jobs/outbox.service", () => ({ Outbox: { enregistrer: enregistrerOutbox, traiterLesDus } }));
@@ -417,6 +419,19 @@ describe("abandonnerLesPaiementsNonAboutis", () => {
     expect(await paymentService.abandonnerLesPaiementsNonAboutis()).toBe(1);
     expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith("pi_1");
     expect(db.order.updateMany.mock.calls[0][0].data.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it("rend l'utilisation du code promo d'une commande abandonnée, une seule fois (C-15)", async () => {
+    db.order.findMany.mockResolvedValue([{ id: "cmd-1", paymentId: null, storeId: "s1", promoCode: "BIENVENUE" }]);
+    db.order.updateMany.mockResolvedValue({ count: 1 });
+    await paymentService.abandonnerLesPaiementsNonAboutis();
+    expect(libererUtilisation).toHaveBeenCalledWith("s1", "BIENVENUE");
+
+    // Retirée entre-temps par un autre passage : rien à rendre de plus.
+    libererUtilisation.mockClear();
+    db.order.updateMany.mockResolvedValue({ count: 0 });
+    await paymentService.abandonnerLesPaiementsNonAboutis();
+    expect(libererUtilisation).not.toHaveBeenCalled();
   });
 
   it("transmet au lieu de retirer si l'encaissement a eu lieu sans webhook", async () => {

@@ -117,17 +117,32 @@ router.post("/", authFacultative, async (req: Request, res: Response, next: Next
 
     logger.info("Creating order", { customerName: body.customerName, storeId: body.storeId });
 
-    const order = await OrderService.create({ ...body, userId: req.userId });
+    const cle = req.get("Idempotency-Key")?.trim();
+    if (cle !== undefined && !/^[A-Za-z0-9_-]{8,100}$/.test(cle)) {
+      throw new ApiError(400, "Idempotency-Key invalide (8 à 100 caractères : lettres, chiffres, - et _)", "INVALID_IDEMPOTENCY_KEY");
+    }
 
-    await enregistrerAcceptation(req, {
-      email: body.customerEmail,
-      orderId: order.id,
-      documents: ["cgv", "confidentialite"],
-    });
+    const order = await OrderService.create(
+      { ...body, userId: req.userId },
+      {
+        cleIdempotence: cle || undefined,
+        // Preuve d'acceptation écrite avec la commande : si l'une échoue, aucune
+        // n'existe, et un nouvel essai ne laisse pas une commande sans preuve.
+        acceptation: (tx, commande) =>
+          enregistrerAcceptation(
+            req,
+            { email: body.customerEmail, orderId: commande.id, documents: ["cgv", "confidentialite"] },
+            tx
+          ),
+      }
+    );
 
-    res.status(201).json({
-      message: "Commande créée",
-      order,
+    const { rejouee, ...commande } = order as typeof order & { rejouee?: boolean };
+
+    // Même tentative rejouée : 200 et la commande d'origine, pas une seconde création.
+    res.status(rejouee ? 200 : 201).json({
+      message: rejouee ? "Commande déjà créée" : "Commande créée",
+      order: commande,
     });
   } catch (err) {
     next(err);

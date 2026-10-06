@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { type Appelant, commandeVisible, genererJetonDeSuivi } from "./suivi-commande.service";
 import { db } from "../../services/db";
 import { EmailService } from "../notifications/email.service";
@@ -49,6 +50,35 @@ export interface OrderData {
     /** Les suppléments choisis, par identifiant (voir SupplementService). */
     supplements?: string[];
   }[];
+}
+
+/** Ce que la route ajoute à la création d'une commande. */
+export interface OptionsCreation {
+  /** En-tête Idempotency-Key : l'identifiant de la tentative d'achat. */
+  cleIdempotence?: string;
+  /** Écrit dans la transaction de création (preuve d'acceptation des conditions). */
+  acceptation?: (tx: any, commande: { id: string }) => Promise<unknown>;
+}
+
+/**
+ * L'empreinte du contenu d'un achat : ce qui change l'achat (boutique, client,
+ * panier, livraison, code promo, paiement, pourboire), indépendamment de l'ordre
+ * des champs.
+ */
+export function empreinteDeLAchat(data: OrderData): string {
+  const canonique = (valeur: unknown): unknown =>
+    Array.isArray(valeur)
+      ? valeur.map(canonique)
+      : valeur && typeof valeur === "object"
+        ? Object.fromEntries(
+            Object.entries(valeur as Record<string, unknown>)
+              .filter(([, v]) => v !== undefined)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([k, v]) => [k, canonique(v)])
+          )
+        : valeur;
+  const { customerId: _c, ...contenu } = data as OrderData & { customerId?: string };
+  return createHash("sha256").update(JSON.stringify(canonique(contenu))).digest("hex");
 }
 
 export class OrderService {
@@ -186,8 +216,15 @@ export class OrderService {
     return cree.id;
   }
 
-  static async create(data: OrderData) {
+  static async create(data: OrderData, options: OptionsCreation = {}) {
     try {
+      // Même achat rejoué : on rend la commande déjà créée, sans rien recréer.
+      const empreinteAchat = options.cleIdempotence ? empreinteDeLAchat(data) : null;
+      if (options.cleIdempotence && empreinteAchat) {
+        const rejouee = await this.rejouerSiConnue(data.storeId, options.cleIdempotence, empreinteAchat);
+        if (rejouee) return rejouee;
+      }
+
       /**
        * Une boutique fermée n'accepte pas de commande.
        *
@@ -383,6 +420,7 @@ export class OrderService {
        */
       let remise = 0;
       let codePromo: string | null = null;
+      let reservationPromo: { id: string; maxUses: number | null } | null = null;
 
       if (data.promoCode) {
         const validation = await PromotionService.validateAndApply(
@@ -396,9 +434,10 @@ export class OrderService {
         remise = Number(validation.discountAmount.toFixed(2));
         codePromo = validation.promotion.code;
 
-        // Le compteur d'utilisations n'avançait jamais : une limite de dix
-        // usages n'en limitait aucun.
-        await PromotionService.applyPromotion(validation.promotion.id);
+        // Réservée avec la création de la commande, dans la même transaction
+        // (voir plus bas) : un échec rend l'utilisation, et deux commandes
+        // simultanées ne dépassent pas le plafond.
+        reservationPromo = { id: validation.promotion.id, maxUses: validation.promotion.maxUses ?? null };
       }
 
       /** Le moyen de paiement doit être celui de cette boutique, et actif. */
@@ -553,10 +592,26 @@ export class OrderService {
       // est gardée.
       const suivi = genererJetonDeSuivi();
 
-      const order = await db.order.create({
+      const order = await db.$transaction(async (tx) => {
+      // Une utilisation de la promotion, réservée sous condition du plafond.
+      if (reservationPromo) {
+        const { count } = await tx.promotion.updateMany({
+          where: {
+            id: reservationPromo.id,
+            ...(reservationPromo.maxUses != null ? { currentUses: { lt: reservationPromo.maxUses } } : {}),
+          },
+          data: { currentUses: { increment: 1 } },
+        });
+        if (count !== 1) {
+          throw new ApiError(400, "Ce code promo a atteint sa limite d'utilisation", "MAX_USES_REACHED");
+        }
+      }
+
+      const creee = await tx.order.create({
         data: {
           storeId: data.storeId,
           trackingTokenHash: suivi.empreinte,
+          ...(options.cleIdempotence ? { idempotencyKey: options.cleIdempotence, idempotencyHash: empreinteAchat } : {}),
           ...(enLigne ? { submittedAt: null } : {}),
           customerName: data.customerName,
           customerEmail: data.customerEmail,
@@ -612,6 +667,11 @@ export class OrderService {
         },
       });
 
+      // La preuve d'acceptation naît avec la commande, ou pas du tout.
+      if (options.acceptation) await options.acceptation(tx, creee);
+      return creee;
+      });
+
       if (!enLigne) {
         await this.annoncerAuCommercant(order);
       }
@@ -621,8 +681,53 @@ export class OrderService {
 
       return { ...commande, paiementEnLigne: enLigne, trackingToken: suivi.jeton };
     } catch (error: any) {
+      // Deux envois simultanés de la même tentative : le second heurte
+      // l'unicité de la clé et reprend la commande du premier.
+      if (error?.code === "P2002" && options.cleIdempotence) {
+        const rejouee = await this.rejouerSiConnue(data.storeId, options.cleIdempotence, empreinteDeLAchat(data));
+        if (rejouee) return rejouee;
+      }
       throw error;
     }
+  }
+
+  /**
+   * La commande déjà créée pour cette clé de tentative.
+   *
+   * Même clé et même contenu : la même commande, avec un nouveau jeton de suivi
+   * (le premier n'est gardé qu'en empreinte, il ne peut pas être redonné).
+   * Même clé et contenu différent : refus, jamais une autre commande servie
+   * sous une clé déjà prise.
+   */
+  static async rejouerSiConnue(storeId: string, cle: string, empreinte: string) {
+    const existante = await db.order.findUnique({
+      where: { storeId_idempotencyKey: { storeId, idempotencyKey: cle } },
+      include: {
+        items: {
+          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
+        },
+      },
+    });
+    if (!existante) return null;
+
+    if (existante.idempotencyHash !== empreinte) {
+      throw new ApiError(
+        409,
+        "Cette clé de tentative a déjà servi pour un autre panier.",
+        "IDEMPOTENCY_KEY_REUSED"
+      );
+    }
+
+    const moyen = existante.paymentMethodId
+      ? await db.paymentMethod.findUnique({ where: { id: existante.paymentMethodId }, select: { type: true } })
+      : null;
+    const enLigne = payeEnLigne(moyen?.type, getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY));
+
+    const suivi = genererJetonDeSuivi();
+    await db.orderTrackingToken.create({ data: { orderId: existante.id, tokenHash: suivi.empreinte } });
+
+    const { trackingTokenHash: _empreinte, idempotencyKey: _cle, idempotencyHash: _hash, ...commande } = existante;
+    return { ...commande, paiementEnLigne: enLigne, trackingToken: suivi.jeton, rejouee: true };
   }
 
   /**

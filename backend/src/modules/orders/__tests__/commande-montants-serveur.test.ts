@@ -17,7 +17,10 @@ const db: any = {
   paymentMethod: { findFirst: jest.fn() },
   systemConfig: { findFirst: jest.fn() },
   planTier: { findUnique: jest.fn() },
-  order: { create: jest.fn() },
+  order: { create: jest.fn(), findUnique: jest.fn() },
+  promotion: { updateMany: jest.fn() },
+  orderTrackingToken: { create: jest.fn() },
+  $transaction: jest.fn(),
 };
 
 jest.mock("../../../services/db", () => ({ db }));
@@ -57,7 +60,7 @@ jest.mock("../../delivery/delivery-zone.service", () => ({
     controlerLaLivraison: jest.fn(async () => ({ frais: 3.5, mode: "OWN" })),
   },
 }));
-jest.mock("../../marketing/promotion.service", () => ({ PromotionService: {} }));
+jest.mock("../../marketing/promotion.service", () => ({ PromotionService: { validateAndApply: jest.fn() } }));
 jest.mock("../../legal/acceptation-conditions.service", () => {
   const { z } = jest.requireActual<typeof import("zod")>("zod");
   return {
@@ -66,8 +69,9 @@ jest.mock("../../legal/acceptation-conditions.service", () => {
   };
 });
 
-import { OrderService } from "../order.service";
+import { OrderService, empreinteDeLAchat } from "../order.service";
 import { DeliveryZoneService } from "../../delivery/delivery-zone.service";
+import { PromotionService } from "../../marketing/promotion.service";
 import orderRouter from "../order.routes";
 import { errorHandler } from "../../../middleware/errorHandler";
 
@@ -93,6 +97,9 @@ const commande = (surcharge: Record<string, unknown> = {}) => ({
 const commandeEnregistree = () => (db.order.create.mock.calls.at(-1) as any[])[0].data;
 
 beforeEach(() => {
+  db.order.findUnique.mockReset();
+  db.order.create.mockReset();
+  db.$transaction.mockImplementation(async (f: any) => f(db));
   db.store.findUnique.mockResolvedValue({
     isOpen: true,
     operatingHours: null,
@@ -223,3 +230,121 @@ describe("OrderService.create — commerce suspendu ou fermé", () => {
     expect(db.order.create).not.toHaveBeenCalled();
   });
 });
+
+describe("idempotence de création (C-14)", () => {
+  const CLE = "tentative-0001";
+
+  it("même clé et même panier : la commande déjà créée, un seul enregistrement", async () => {
+    const premiere = await OrderService.create(commande() as any, { cleIdempotence: CLE });
+    const enregistree = commandeEnregistree();
+    expect(enregistree).toMatchObject({ idempotencyKey: CLE });
+    expect(typeof enregistree.idempotencyHash).toBe("string");
+
+    // Deuxième envoi : la base connaît la clé.
+    db.order.findUnique.mockResolvedValue({
+      id: "cmd-1", ...enregistree, items: [], paymentMethodId: null, trackingTokenHash: "h",
+    });
+    const rejeu: any = await OrderService.create(commande() as any, { cleIdempotence: CLE });
+
+    expect(db.order.create).toHaveBeenCalledTimes(1);
+    expect(rejeu.id).toBe("cmd-1");
+    expect(rejeu.rejouee).toBe(true);
+    // Un nouveau jeton de suivi : le premier n'est conservé qu'en empreinte.
+    expect(rejeu.trackingToken).toBeTruthy();
+    expect(rejeu.trackingToken).not.toBe((premiere as any).trackingToken);
+    expect(db.orderTrackingToken.create).toHaveBeenCalledTimes(1);
+    expect(rejeu).not.toHaveProperty("trackingTokenHash");
+    expect(rejeu).not.toHaveProperty("idempotencyHash");
+  });
+
+  it("même clé, panier différent : refus, jamais une autre commande", async () => {
+    await OrderService.create(commande() as any, { cleIdempotence: CLE });
+    const enregistree = commandeEnregistree();
+    db.order.findUnique.mockResolvedValue({ id: "cmd-1", ...enregistree, items: [] });
+    db.order.create.mockClear();
+
+    await expect(
+      OrderService.create(commande({ items: [{ productId: "pizza", quantity: 9 }] }) as any, { cleIdempotence: CLE })
+    ).rejects.toMatchObject({ statusCode: 409, code: "IDEMPOTENCY_KEY_REUSED" });
+    expect(db.order.create).not.toHaveBeenCalled();
+  });
+
+  it("deux envois simultanés : le second heurte l'unicité et reprend la commande du premier", async () => {
+    await OrderService.create(commande() as any, { cleIdempotence: CLE });
+    const enregistree = commandeEnregistree();
+    db.order.findUnique.mockResolvedValueOnce(null).mockResolvedValue({ id: "cmd-1", ...enregistree, items: [] });
+    db.order.create.mockRejectedValueOnce(Object.assign(new Error("unique"), { code: "P2002" }));
+
+    const rejeu: any = await OrderService.create(commande() as any, { cleIdempotence: CLE });
+    expect(rejeu.id).toBe("cmd-1");
+    expect(rejeu.rejouee).toBe(true);
+  });
+
+  it("sans clé, le comportement est inchangé (anciens clients)", async () => {
+    await OrderService.create(commande() as any);
+    expect(db.order.findUnique).not.toHaveBeenCalled();
+    expect(commandeEnregistree()).not.toHaveProperty("idempotencyKey");
+  });
+
+  it("la preuve d'acceptation s'écrit dans la transaction de création", async () => {
+    const acceptation = jest.fn(async (_tx: unknown, _commande: unknown) => undefined);
+    await OrderService.create(commande() as any, { acceptation });
+    expect(acceptation).toHaveBeenCalledWith(db, expect.objectContaining({ id: "cmd-1" }));
+  });
+
+  it("l'ordre des champs ne change pas l'empreinte du contenu", () => {
+    const a = empreinteDeLAchat({ storeId: "s", items: [{ productId: "p", quantity: 1 }] } as any);
+    const b = empreinteDeLAchat({ items: [{ quantity: 1, productId: "p" }], storeId: "s" } as any);
+    expect(a).toBe(b);
+    expect(a).not.toBe(empreinteDeLAchat({ storeId: "s", items: [{ productId: "p", quantity: 2 }] } as any));
+  });
+});
+
+describe("quota de promotion (C-15)", () => {
+  const promotion = { id: "promo-1", code: "BIENVENUE", maxUses: 1 };
+  beforeEach(() => {
+    (PromotionService.validateAndApply as jest.Mock).mockResolvedValue({
+      promotion: { ...promotion, code: "BIENVENUE" },
+      discountAmount: 2,
+      finalTotal: 0,
+    } as never);
+  });
+
+  it("la réservation est conditionnelle au plafond et part avec la commande", async () => {
+    db.promotion.updateMany.mockResolvedValue({ count: 1 });
+    await OrderService.create({ ...(commande() as any), promoCode: "BIENVENUE" });
+    expect(db.promotion.updateMany).toHaveBeenCalledWith({
+      where: { id: "promo-1", currentUses: { lt: 1 } },
+      data: { currentUses: { increment: 1 } },
+    });
+    expect(db.order.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("dernière utilisation prise par un autre : refus, aucune commande", async () => {
+    db.promotion.updateMany.mockResolvedValue({ count: 0 });
+    await expect(OrderService.create({ ...(commande() as any), promoCode: "BIENVENUE" })).rejects.toMatchObject({
+      code: "MAX_USES_REACHED",
+    });
+    expect(db.order.create).not.toHaveBeenCalled();
+  });
+
+  it("sans plafond, l'utilisation est comptée sans condition", async () => {
+    (PromotionService.validateAndApply as jest.Mock).mockResolvedValue({
+      promotion: { id: "promo-2", code: "TOUJOURS", maxUses: null },
+      discountAmount: 1,
+      finalTotal: 0,
+    } as never);
+    db.promotion.updateMany.mockResolvedValue({ count: 1 });
+    await OrderService.create({ ...(commande() as any), promoCode: "TOUJOURS" });
+    expect(db.promotion.updateMany.mock.calls[0][0].where).toEqual({ id: "promo-2" });
+  });
+
+  it("si la création échoue, l'utilisation n'est pas consommée (même transaction)", async () => {
+    db.promotion.updateMany.mockResolvedValue({ count: 1 });
+    db.order.create.mockRejectedValueOnce(new Error("base coupée"));
+    await expect(OrderService.create({ ...(commande() as any), promoCode: "BIENVENUE" })).rejects.toThrow("base coupée");
+    // Les deux écritures sont dans db.$transaction : l'annulation est celle de la base.
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
+  });
+});
+

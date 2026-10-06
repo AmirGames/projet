@@ -44,13 +44,14 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 export async function apiFetch<T = any>(
   path: string,
   token: string | null,
-  options: { method?: string; body?: unknown } = {}
+  options: { method?: string; body?: unknown; headers?: Record<string, string> } = {}
 ): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers ?? {}),
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
