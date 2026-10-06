@@ -17,15 +17,13 @@ const createCustomerSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+// Seul le carnet de la boutique se modifie ; les coordonnées de la fiche globale
+// appartiennent au client. .strict() : un champ de contact est refusé (400), pas
+// ignoré en silence.
 const updateCustomerSchema = z.object({
-  name: z.string().min(2).max(100).optional(),
-  phone: z.string().max(20).optional(),
-  address: z.string().max(200).optional(),
-  city: z.string().max(100).optional(),
-  postalCode: z.string().max(20).optional(),
   notes: z.string().max(500).optional(),
   status: z.enum(["ACTIVE", "BLOCKED", "INACTIVE"]).optional(),
-});
+}).strict();
 
 // GET /customers - List all customers for a store (protected)
 router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {

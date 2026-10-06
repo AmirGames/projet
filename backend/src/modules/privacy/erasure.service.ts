@@ -67,6 +67,8 @@ export async function completeErasure(userId: string): Promise<{ status: string 
       await tx.courierRating.deleteMany({ where: { customerId: customer.id } });
       await tx.favoriteStore.deleteMany({ where: { customerId: customer.id } });
       await tx.customerCart.deleteMany({ where: { customerId: customer.id } });
+      // Notes des commerçants sur ce client : donnée personnelle, effacée avec la fiche.
+      await tx.storeCustomer.deleteMany({ where: { customerId: customer.id } });
       await tx.customer.update({ where: { id: customer.id }, data: { userId: null, name: "Client supprimé", email: `supprime-${customer.id}@zupeat.invalid`, phone: null, address: null, city: null, postalCode: null, latitude: null, longitude: null, savedAddresses: [], notes: null, deletedAt: new Date(), status: "INACTIVE" } });
       await tx.erasureRecord.upsert({ where: { subjectId_scope: { subjectId: customer.id, scope: "CUSTOMER" } }, create: { subjectId: customer.id, scope: "CUSTOMER" }, update: {} });
     }
