@@ -17,7 +17,7 @@ CREATE TABLE "AuditLog" (
 -- CreateTable ComplianceCheck
 CREATE TABLE "ComplianceCheck" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "driverId" TEXT NOT NULL,
+    "chauffeurId" TEXT NOT NULL,
     "type" TEXT NOT NULL CHECK ("type" IN ('DOCUMENT_VALIDATION', 'BACKGROUND_CHECK', 'FINANCIAL_VERIFICATION', 'PERIODIC_REVIEW')),
     "status" TEXT NOT NULL CHECK ("status" IN ('PENDING', 'IN_PROGRESS', 'PASSED', 'FAILED', 'MANUAL_REVIEW_NEEDED')) DEFAULT 'PENDING',
     "findings" JSONB NOT NULL DEFAULT '[]',
@@ -27,13 +27,13 @@ CREATE TABLE "ComplianceCheck" (
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "ComplianceCheck_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "ComplianceCheck_chauffeurId_fkey" FOREIGN KEY ("chauffeurId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable DocumentVerificationWorkflow
 CREATE TABLE "DocumentVerificationWorkflow" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "driverId" TEXT NOT NULL,
+    "chauffeurId" TEXT NOT NULL,
     "documentType" TEXT NOT NULL CHECK ("documentType" IN ('PERMIS', 'ASSURANCE', 'INSPECTION', 'IDENTITE')),
     "status" TEXT NOT NULL CHECK ("status" IN ('PENDING_UPLOAD', 'UPLOADED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'EXPIRED')) DEFAULT 'PENDING_UPLOAD',
     "uploadedAt" TIMESTAMP(3),
@@ -43,8 +43,8 @@ CREATE TABLE "DocumentVerificationWorkflow" (
     "nextReviewDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "DocumentVerificationWorkflow_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    UNIQUE("driverId", "documentType")
+    CONSTRAINT "DocumentVerificationWorkflow_chauffeurId_fkey" FOREIGN KEY ("chauffeurId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE("chauffeurId", "documentType")
 );
 
 -- CreateTable ComplianceReport
@@ -71,13 +71,13 @@ CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");
 CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 
 -- CreateIndex on ComplianceCheck
-CREATE INDEX "ComplianceCheck_driverId_idx" ON "ComplianceCheck"("driverId");
+CREATE INDEX "ComplianceCheck_chauffeurId_idx" ON "ComplianceCheck"("chauffeurId");
 CREATE INDEX "ComplianceCheck_type_idx" ON "ComplianceCheck"("type");
 CREATE INDEX "ComplianceCheck_status_idx" ON "ComplianceCheck"("status");
 CREATE INDEX "ComplianceCheck_expiresAt_idx" ON "ComplianceCheck"("expiresAt");
 
 -- CreateIndex on DocumentVerificationWorkflow
-CREATE INDEX "DocumentVerificationWorkflow_driverId_idx" ON "DocumentVerificationWorkflow"("driverId");
+CREATE INDEX "DocumentVerificationWorkflow_chauffeurId_idx" ON "DocumentVerificationWorkflow"("chauffeurId");
 CREATE INDEX "DocumentVerificationWorkflow_status_idx" ON "DocumentVerificationWorkflow"("status");
 CREATE INDEX "DocumentVerificationWorkflow_nextReviewDate_idx" ON "DocumentVerificationWorkflow"("nextReviewDate");
 
