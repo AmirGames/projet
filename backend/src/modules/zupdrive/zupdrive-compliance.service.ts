@@ -7,6 +7,7 @@ import type {
 } from "@prisma/client";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
+import { ApiError } from "../../middleware/api-error";
 
 /**
  * Compliance et Audit pour ZupDrive.
@@ -168,6 +169,9 @@ export class ZupDriveComplianceService {
     expiresAt: Date;
     notes?: string;
   }): Promise<ComplianceCheck> {
+    const chauffeur = await db.chauffeurDrive.findUnique({ where: { id: data.chauffeurId }, select: { id: true } });
+    if (!chauffeur) throw new ApiError(404, "Chauffeur introuvable", "CHAUFFEUR_NOT_FOUND");
+
     const check = await db.complianceCheck.create({
       data: {
         chauffeurId: data.chauffeurId,
@@ -205,6 +209,9 @@ export class ZupDriveComplianceService {
     completedBy?: string,
     notes?: string
   ): Promise<void> {
+    const existant = await db.complianceCheck.findUnique({ where: { id: checkId }, select: { id: true } });
+    if (!existant) throw new ApiError(404, "Contrôle introuvable", "COMPLIANCE_CHECK_NOT_FOUND");
+
     await db.complianceCheck.update({
       where: { id: checkId },
       data: {
