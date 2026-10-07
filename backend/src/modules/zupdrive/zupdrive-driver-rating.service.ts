@@ -9,9 +9,12 @@
  * - Incentives et badges
  *
  * Métrique clé: Rating moyen = qualité perçue du service
+ * La moyenne vient de NoteCourseDrive (notes des passagers), jamais d'une
+ * colonne stockée ; RatingCourseDrive ne porte que le détail par catégorie.
  * Impact: Affecte visibilité des courses, priorité de matching
  */
 
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
 
@@ -71,7 +74,7 @@ export const ZupDriveDriverRatingService = {
       throw new ApiError(404, "Course non trouvée");
     }
 
-    if (course.statut !== "COMPLETED") {
+    if (course.statut !== "TERMINEE") {
       throw new ApiError(400, "Peut noter que les courses complétées");
     }
 
@@ -79,11 +82,16 @@ export const ZupDriveDriverRatingService = {
       throw new ApiError(403, "Seul le passager peut noter");
     }
 
+    // Le chauffeur noté est celui de la course, jamais celui annoncé par le client.
+    if (!course.chauffeurId || course.chauffeurId !== data.chauffeurId) {
+      throw new ApiError(400, "Chauffeur invalide pour cette course");
+    }
+
     // Vérifier qu'on n'a pas déjà noté
     const existing = await db.ratingCourseDrive.findFirst({
       where: {
         courseId: data.courseId,
-        passagerId: data.passengerId,
+        passengerId: data.passengerId,
       },
     });
 
@@ -95,17 +103,19 @@ export const ZupDriveDriverRatingService = {
     await db.ratingCourseDrive.create({
       data: {
         courseId: data.courseId,
-        chauffeurId: data.chauffeurId,
-        passagerId: data.passengerId,
-        note: data.rating,
-        commentaire: data.comment || null,
-        categories: data.categories as any,
+        chauffeurId: course.chauffeurId,
+        passengerId: data.passengerId,
+        rating: data.rating,
+        comment: data.comment || null,
+        cleanliness: data.categories?.cleanliness,
+        driving: data.categories?.driving,
+        communication: data.categories?.communication,
+        comfort: data.categories?.comfort,
         tags: data.tags || [],
       },
     });
-
-    // Recalculer la réputation du chauffeur
-    await this.updateReputationScore(data.chauffeurId);
+    // Aucune moyenne à mettre à jour : elle est calculée à la lecture depuis
+    // NoteCourseDrive (voir getReputationScore).
   },
 
   /**
@@ -116,14 +126,15 @@ export const ZupDriveDriverRatingService = {
       where: { id: chauffeurId },
       select: {
         id: true,
-        rating: true,
         courses: {
           select: {
             id: true,
             statut: true,
           },
         },
-        ratings: {
+        // La moyenne est celle des notes des passagers (NoteCourseDrive).
+        notes: {
+          where: { auteur: "PASSAGER" },
           select: {
             note: true,
             createdAt: true,
@@ -137,8 +148,8 @@ export const ZupDriveDriverRatingService = {
       throw new ApiError(404, "Chauffeur non trouvé");
     }
 
-    const ratings = chauffeur.ratings || [];
-    const courses = chauffeur.courses || [];
+    const ratings = chauffeur.notes;
+    const courses = chauffeur.courses;
 
     // Calculer les stats
     const totalRatings = ratings.length;
@@ -156,11 +167,11 @@ export const ZupDriveDriverRatingService = {
     };
 
     // Taux de complétion
-    const completedCourses = courses.filter((c) => c.statut === "COMPLETED").length;
+    const completedCourses = courses.filter((c) => c.statut === "TERMINEE").length;
     const completionRate = courses.length > 0 ? (completedCourses / courses.length) * 100 : 0;
 
     // Taux d'annulation
-    const cancelledCourses = courses.filter((c) => c.statut === "CANCELLED").length;
+    const cancelledCourses = courses.filter((c) => c.statut === "ANNULEE").length;
     const cancellationRate = courses.length > 0 ? (cancelledCourses / courses.length) * 100 : 0;
 
     // Calculer le score de réputation (0-100)
@@ -246,21 +257,6 @@ export const ZupDriveDriverRatingService = {
   },
 
   /**
-   * Mettre à jour le score de réputation (appelé après chaque rating)
-   */
-  async updateReputationScore(chauffeurId: string): Promise<void> {
-    const score = await this.getReputationScore(chauffeurId);
-
-    await db.chauffeurDrive.update({
-      where: { id: chauffeurId },
-      data: {
-        rating: score.averageRating,
-        // Store full reputation data if we had a column for it
-      },
-    });
-  },
-
-  /**
    * Obtenir les avis pour un chauffeur
    */
   async getReviews(
@@ -269,12 +265,12 @@ export const ZupDriveDriverRatingService = {
     offset: number = 0,
     sortBy: "recent" | "highest" | "lowest" = "recent"
   ) {
-    let orderBy: any = { createdAt: "desc" };
+    let orderBy: Prisma.RatingCourseDriveOrderByWithRelationInput = { createdAt: "desc" };
 
     if (sortBy === "highest") {
-      orderBy = { note: "desc" };
+      orderBy = { rating: "desc" };
     } else if (sortBy === "lowest") {
-      orderBy = { note: "asc" };
+      orderBy = { rating: "asc" };
     }
 
     const reviews = await db.ratingCourseDrive.findMany({
@@ -284,10 +280,14 @@ export const ZupDriveDriverRatingService = {
       skip: offset,
       select: {
         id: true,
-        note: true,
-        commentaire: true,
+        rating: true,
+        comment: true,
         tags: true,
-        categories: true,
+        cleanliness: true,
+        driving: true,
+        communication: true,
+        comfort: true,
+        anonymous: true,
         createdAt: true,
         passenger: {
           select: {
@@ -298,7 +298,12 @@ export const ZupDriveDriverRatingService = {
       },
     });
 
-    return reviews;
+    // Une notation anonyme ne révèle pas le passager.
+    return reviews.map(({ anonymous, passenger, ...avis }) => ({
+      ...avis,
+      anonymous,
+      passenger: anonymous ? null : passenger,
+    }));
   },
 
   /**
@@ -387,63 +392,68 @@ export const ZupDriveDriverRatingService = {
   },
 
   /**
-   * Obtenir les chauffeurs top-rated
+   * Obtenir les chauffeurs top-rated (moyenne des notes des passagers >= 4.5).
    */
   async getTopRatedDrivers(limit: number = 10) {
-    const drivers = await db.chauffeurDrive.findMany({
-      where: {
-        rating: { gte: 4.5 },
-      },
-      orderBy: { rating: "desc" },
+    const moyennes = await db.noteCourseDrive.groupBy({
+      by: ["chauffeurId"],
+      where: { auteur: "PASSAGER" },
+      _avg: { note: true },
+      _count: { _all: true },
+      having: { note: { _avg: { gte: 4.5 } } },
+      orderBy: { _avg: { note: "desc" } },
       take: limit,
-      select: {
-        id: true,
-        nomComplet: true,
-        region: true,
-        rating: true,
-        _count: {
-          select: { ratings: true, courses: true },
-        },
-      },
     });
 
-    return drivers.map((d) => ({
-      id: d.id,
-      nomComplet: d.nomComplet,
-      region: d.region,
-      averageRating: d.rating,
-      totalRatings: d._count.ratings,
-      totalCourses: d._count.courses,
-    }));
+    return this.detaillerChauffeurs(moyennes);
   },
 
   /**
-   * Obtenir les chauffeurs ayant besoin d'amélioration
+   * Obtenir les chauffeurs ayant besoin d'amélioration (moyenne < 3.5).
+   * Un chauffeur jamais noté n'a pas de moyenne : il n'y figure pas.
    */
   async getDriversNeedingImprovement(limit: number = 10) {
-    const drivers = await db.chauffeurDrive.findMany({
-      where: {
-        rating: { lt: 3.5 },
-      },
-      orderBy: { rating: "asc" },
+    const moyennes = await db.noteCourseDrive.groupBy({
+      by: ["chauffeurId"],
+      where: { auteur: "PASSAGER" },
+      _avg: { note: true },
+      _count: { _all: true },
+      having: { note: { _avg: { lt: 3.5 } } },
+      orderBy: { _avg: { note: "asc" } },
       take: limit,
-      select: {
-        id: true,
-        nomComplet: true,
-        rating: true,
-        _count: {
-          select: { ratings: true },
-        },
-      },
     });
 
-    return drivers.map((d) => ({
+    return (await this.detaillerChauffeurs(moyennes)).map((d) => ({
       id: d.id,
       nomComplet: d.nomComplet,
-      averageRating: d.rating,
-      totalRatings: d._count.ratings,
+      averageRating: d.averageRating,
+      totalRatings: d.totalRatings,
       status: "NEEDS_IMPROVEMENT",
     }));
+  },
+
+  /** Associe à chaque moyenne le nom, la région et le nombre de courses du chauffeur. */
+  async detaillerChauffeurs(
+    moyennes: { chauffeurId: string; _avg: { note: number | null }; _count: { _all: number } }[]
+  ) {
+    const chauffeurs = await db.chauffeurDrive.findMany({
+      where: { id: { in: moyennes.map((m) => m.chauffeurId) } },
+      select: { id: true, nomComplet: true, region: true, _count: { select: { courses: true } } },
+    });
+    const parId = new Map(chauffeurs.map((c) => [c.id, c]));
+
+    return moyennes.flatMap((m) => {
+      const c = parId.get(m.chauffeurId);
+      if (!c) return [];
+      return [{
+        id: c.id,
+        nomComplet: c.nomComplet,
+        region: c.region,
+        averageRating: Math.round((m._avg.note ?? 0) * 100) / 100,
+        totalRatings: m._count._all,
+        totalCourses: c._count.courses,
+      }];
+    });
   },
 };
 

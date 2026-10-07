@@ -2,9 +2,18 @@ import { Router } from "express";
 import { z } from "zod";
 import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveDriverManagementService } from "./zupdrive-driver-management.service";
-import { ApiError } from "../../middleware/api-error";
 
 const router = Router();
+
+const idSchema = z.string().min(1).max(64);
+
+const listQuery = z.object({
+  status: z.enum(["BROUILLON", "SOUMIS", "VALIDE", "REFUSE", "SUSPENDU"]).optional(),
+  minRating: z.coerce.number().min(0).max(5).optional(),
+  region: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
 /**
  * GET /api/zupdrive/admin/drivers
@@ -13,24 +22,16 @@ const router = Router();
 router.get(
   "/drivers",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      status: z.enum(["VALIDE", "SUSPENDU", "EN_ATTENTE_VALIDATION"]).optional(),
-      minRating: z.coerce.number().min(0).max(5).optional(),
-      region: z.string().optional(),
-      limit: z.coerce.number().min(1).max(100).optional().default("50"),
-      offset: z.coerce.number().min(0).optional().default("0"),
-    }),
-  }),
+  validateRequest({ query: listQuery }),
   async (req, res, next) => {
     try {
-      const { status, minRating, region, limit, offset } = req.query as any;
+      const { status, minRating, region, limit, offset } = listQuery.parse(req.query);
       const result = await ZupDriveDriverManagementService.listDrivers({
         status,
         minRating,
         region,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
+        limit,
+        offset,
       });
 
       res.json(result);
@@ -54,7 +55,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { reason } = req.body;
 
       await ZupDriveDriverManagementService.suspendDriver(id, reason);
@@ -69,9 +70,9 @@ router.post(
  * POST /api/zupdrive/admin/drivers/:id/reactivate
  * Réactiver un chauffeur suspendu
  */
-router.post("/drivers/:id/reactivate", adminAuth, async (req, res, next) => {
+router.post("/drivers/:id/reactivate", ...adminAuth, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const id = idSchema.parse(req.params.id);
 
     await ZupDriveDriverManagementService.reactivateDriver(id);
     res.json({ success: true, message: "Chauffeur réactivé" });
@@ -95,7 +96,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { type, expiresAt } = req.body;
 
       await ZupDriveDriverManagementService.validateDocument(
@@ -115,9 +116,9 @@ router.post(
  * GET /api/zupdrive/admin/drivers/:id/infractions
  * Récupérer l'historique des infractions
  */
-router.get("/drivers/:id/infractions", adminAuth, async (req, res, next) => {
+router.get("/drivers/:id/infractions", ...adminAuth, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const id = idSchema.parse(req.params.id);
 
     const infractions = await ZupDriveDriverManagementService.getDriverInfractions(id);
     res.json(infractions);
@@ -142,7 +143,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { type, description, severity } = req.body;
 
       const infractionId = await ZupDriveDriverManagementService.reportInfraction(
@@ -177,7 +178,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { resolution } = req.body;
 
       await ZupDriveDriverManagementService.resolveInfraction(id, resolution);
@@ -192,9 +193,9 @@ router.post(
  * GET /api/zupdrive/admin/drivers/:id/stats
  * Statistiques détaillées d'un chauffeur
  */
-router.get("/drivers/:id/stats", adminAuth, async (req, res, next) => {
+router.get("/drivers/:id/stats", ...adminAuth, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const id = idSchema.parse(req.params.id);
 
     const stats = await ZupDriveDriverManagementService.getDriverStats(id);
     res.json(stats);

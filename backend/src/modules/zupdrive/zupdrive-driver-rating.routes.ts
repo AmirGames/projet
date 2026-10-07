@@ -11,26 +11,15 @@ import { z } from "zod";
 import { ZupDriveDriverRatingService } from "./zupdrive-driver-rating.service";
 import { UnifiedRolesService } from "../auth/unified-roles.service";
 import { db } from "../../services/db";
+import { authMiddleware } from "../auth/auth.middleware";
 
 const router = Router();
 
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-    }
-  }
-}
+// Identité vérifiée par le jeton d'accès et la session (req.userId est posé
+// par authMiddleware ; jamais lu tel quel dans un en-tête).
+const authenticate = authMiddleware;
 
-const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  req.userId = token;
-  next();
-};
+const noteSchema = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
 
 // ============================================================================
 // PASSENGER ENDPOINTS
@@ -48,14 +37,14 @@ router.post(
       const schema = z.object({
         courseId: z.string(),
         chauffeurId: z.string(),
-        rating: z.number().min(1).max(5).int(),
+        rating: noteSchema,
         comment: z.string().optional(),
         categories: z
           .object({
-            cleanliness: z.number().min(1).max(5).optional(),
-            driving: z.number().min(1).max(5).optional(),
-            communication: z.number().min(1).max(5).optional(),
-            comfort: z.number().min(1).max(5).optional(),
+            cleanliness: noteSchema.optional(),
+            driving: noteSchema.optional(),
+            communication: noteSchema.optional(),
+            comfort: noteSchema.optional(),
           })
           .optional(),
         tags: z
@@ -71,7 +60,7 @@ router.post(
         chauffeurId: validated.chauffeurId,
         passengerId: req.userId!,
         courseId: validated.courseId,
-        rating: validated.rating as any,
+        rating: validated.rating,
         comment: validated.comment,
         categories: validated.categories,
         tags: validated.tags,
@@ -118,6 +107,7 @@ router.get(
  */
 router.get(
   "/ratings/chauffeur/:chauffeurId/reviews",
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const chauffeurId = (req.params.chauffeurId as string) || "";
@@ -293,20 +283,12 @@ router.get(
         return res.status(403).json({ error: "Admin only" });
       }
 
-      const [
-        totalDrivers,
-        avgRating,
-        ratingDistribution,
-        topDrivers,
-        driversNeedingHelp,
-      ] = await Promise.all([
+      const [totalDrivers, avgRating, topDrivers, driversNeedingHelp] = await Promise.all([
         db.chauffeurDrive.count(),
-        db.chauffeurDrive.aggregate({
-          _avg: { rating: true },
-        }),
-        db.chauffeurDrive.groupBy({
-          by: ["rating"],
-          _count: true,
+        // Moyenne générale des notes des passagers (NoteCourseDrive).
+        db.noteCourseDrive.aggregate({
+          where: { auteur: "PASSAGER" },
+          _avg: { note: true },
         }),
         ZupDriveDriverRatingService.getTopRatedDrivers(5),
         ZupDriveDriverRatingService.getDriversNeedingImprovement(5),
@@ -316,7 +298,7 @@ router.get(
         success: true,
         dashboard: {
           totalDrivers,
-          averageRating: Math.round((avgRating._avg.rating || 0) * 100) / 100,
+          averageRating: Math.round((avgRating._avg.note || 0) * 100) / 100,
           topDrivers,
           driversNeedingHelp,
           message: "Rating system dashboard",

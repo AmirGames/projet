@@ -1,4 +1,6 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
+import { NoteCourseDriveService } from "./note-course-drive.service";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
 
@@ -7,12 +9,24 @@ import { ApiError } from "../../middleware/api-error";
  * Suspension, réactivation, validation des documents, historique des infractions.
  */
 
+/** Les statuts réels du dossier chauffeur (ChauffeurDrive.statut). */
+export type StatutChauffeur = "BROUILLON" | "SOUMIS" | "VALIDE" | "REFUSE" | "SUSPENDU";
+
+/** Les pièces que l'équipe peut valider ici, et leur type dans DocumentChauffeurDrive. */
+const TYPE_PIECE: Record<"PERMIS" | "ASSURANCE" | "INSPECTION" | "IDENTITE", string> = {
+  PERMIS: "permis",
+  ASSURANCE: "assurance",
+  INSPECTION: "controle_technique",
+  IDENTITE: "identite",
+};
+
 export interface DriverInfo {
   id: string;
   nomComplet: string;
   email: string;
   phone: string;
-  status: "VALIDE" | "SUSPENDU" | "EN_ATTENTE_VALIDATION";
+  status: StatutChauffeur;
+  /** Moyenne des notes des passagers (NoteCourseDrive), 0 tant que personne n'a noté. */
   rating: number;
   totalCourses: number;
   acceptanceRate: number;
@@ -24,18 +38,18 @@ export interface DriverInfo {
 
 export interface DriverDocument {
   id: string;
-  driverId: string;
+  chauffeurId: string;
   type: "PERMIS" | "ASSURANCE" | "INSPECTION" | "IDENTITE";
-  status: "VALIDE" | "EXPIREE" | "EN_ATTENTE";
+  /** DocumentChauffeurDrive.statut : PENDING, APPROVED, REJECTED, EXPIRED. */
+  status: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
   url: string;
-  expiresAt: Date;
+  expiresAt?: Date;
   verifiedAt?: Date;
-  verifiedBy?: string;
 }
 
 export interface DriverInfraction {
   id: string;
-  driverId: string;
+  chauffeurId: string;
   type: "PLAINTE_PASSAGER" | "ACCIDENT" | "INFRACTION_CODE_ROUTE" | "AUTRE";
   description: string;
   severity: "BASSE" | "MOYENNE" | "HAUTE";
@@ -49,7 +63,7 @@ export class ZupDriveDriverManagementService {
    * Lister tous les chauffeurs avec filtres et pagination.
    */
   static async listDrivers(filters: {
-    status?: "VALIDE" | "SUSPENDU" | "EN_ATTENTE_VALIDATION";
+    status?: StatutChauffeur;
     region?: string;
     minRating?: number;
     limit?: number;
@@ -58,9 +72,19 @@ export class ZupDriveDriverManagementService {
     const limit = Math.min(filters.limit || 50, 100);
     const offset = filters.offset || 0;
 
-    const where: any = {};
+    const where: Prisma.ChauffeurDriveWhereInput = {};
     if (filters.status) where.statut = filters.status;
-    if (filters.minRating) where.rating = { gte: filters.minRating };
+    if (filters.region) where.region = filters.region;
+    if (filters.minRating) {
+      // Moyenne des notes des passagers, calculée depuis NoteCourseDrive.
+      const qualifies = await db.noteCourseDrive.groupBy({
+        by: ["chauffeurId"],
+        where: { auteur: "PASSAGER" },
+        _avg: { note: true },
+        having: { note: { _avg: { gte: filters.minRating } } },
+      });
+      where.id = { in: qualifies.map((q) => q.chauffeurId) };
+    }
 
     const [drivers, total] = await Promise.all([
       db.chauffeurDrive.findMany({
@@ -68,34 +92,38 @@ export class ZupDriveDriverManagementService {
         select: {
           id: true,
           nomComplet: true,
-          email: true,
-          phone: true,
+          telephone: true,
+          user: { select: { email: true } },
           statut: true,
-          rating: true,
-          courses: { select: { id: true } },
-          propositions: { select: { id: true } },
-          earnings: { select: { amountCentimes: true } },
+          _count: { select: { courses: true, propositions: true } },
+          payouts: {
+            where: { status: { in: ["PENDING", "PROCESSED"] } },
+            select: { amountCentimes: true },
+          },
           suspendedAt: true,
           suspensionReason: true,
           createdAt: true,
         },
+        orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
       }),
       db.chauffeurDrive.count({ where }),
     ]);
 
+    const notes = await NoteCourseDriveService.moyennesChauffeurs(drivers.map((d) => d.id));
+
     return {
       drivers: drivers.map((d) => ({
         id: d.id,
         nomComplet: d.nomComplet,
-        email: d.email || "",
-        phone: d.phone || "",
-        status: d.statut as "VALIDE" | "SUSPENDU" | "EN_ATTENTE_VALIDATION",
-        rating: d.rating || 0,
-        totalCourses: d.courses.length,
-        acceptanceRate: d.courses.length > 0 ? d.propositions.length / d.courses.length : 0,
-        totalEarnings: d.earnings.reduce((sum, e) => sum + e.amountCentimes, 0),
+        email: d.user.email,
+        phone: d.telephone || "",
+        status: d.statut as StatutChauffeur,
+        rating: notes.get(d.id)?.moyenne ?? 0,
+        totalCourses: d._count.courses,
+        acceptanceRate: d._count.courses > 0 ? d._count.propositions / d._count.courses : 0,
+        totalEarnings: d.payouts.reduce((sum, e) => sum + e.amountCentimes, 0),
         createdAt: d.createdAt,
         suspendedAt: d.suspendedAt || undefined,
         suspensionReason: d.suspensionReason || undefined,
@@ -115,6 +143,8 @@ export class ZupDriveDriverManagementService {
       where: { id: driverId },
       data: {
         statut: "SUSPENDU",
+        // Une suspension met le chauffeur hors ligne (voir schema.prisma, enLigne).
+        enLigne: false,
         suspendedAt: new Date(),
         suspensionReason: reason,
       },
@@ -146,59 +176,32 @@ export class ZupDriveDriverManagementService {
   }
 
   /**
-   * Valider les documents d'un chauffeur.
+   * Valider une pièce déjà déposée par le chauffeur (DocumentChauffeurDrive).
+   * Seule la version en vigueur (non archivée) du type demandé est validée ;
+   * une pièce jamais déposée ne se valide pas. Le passage du dossier à VALIDE
+   * reste une décision d'équipe (ChauffeurOnboardingService.valider).
    */
   static async validateDocument(
-    driverId: string,
+    chauffeurId: string,
     documentType: "PERMIS" | "ASSURANCE" | "INSPECTION" | "IDENTITE",
     expiresAt: Date
   ): Promise<void> {
-    const driver = await db.chauffeurDrive.findUnique({ where: { id: driverId } });
-    if (!driver) throw new ApiError(404, "Chauffeur non trouvé");
+    const chauffeur = await db.chauffeurDrive.findUnique({ where: { id: chauffeurId }, select: { id: true } });
+    if (!chauffeur) throw new ApiError(404, "Chauffeur non trouvé");
 
-    // Créer ou mettre à jour le document
-    await db.chauffeurDocument.upsert({
-      where: {
-        driverId_type: {
-          driverId,
-          type: documentType,
-        },
-      },
-      create: {
-        driverId,
-        type: documentType,
-        status: "VALIDE",
-        url: "", // À remplir par upload
-        expiresAt,
-        verifiedAt: new Date(),
-        verifiedBy: "ADMIN", // TODO: remplacer par admin ID réel
-      },
-      update: {
-        status: "VALIDE",
-        expiresAt,
-        verifiedAt: new Date(),
-        verifiedBy: "ADMIN",
-      },
+    const piece = await db.documentChauffeurDrive.findFirst({
+      where: { chauffeurId, type: TYPE_PIECE[documentType], archiveeLe: null },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    if (!piece) throw new ApiError(404, "Document non déposé par le chauffeur");
+
+    await db.documentChauffeurDrive.update({
+      where: { id: piece.id },
+      data: { statut: "APPROVED", dateExpiration: expiresAt, examineLe: new Date(), noteExamen: null },
     });
 
-    // Vérifier si tous les documents requis sont validés
-    const requiredDocs = ["PERMIS", "ASSURANCE", "IDENTITE"];
-    const validatedDocs = await db.chauffeurDocument.findMany({
-      where: {
-        driverId,
-        type: { in: requiredDocs as any },
-        status: "VALIDE",
-      },
-    });
-
-    if (validatedDocs.length === requiredDocs.length && driver.statut === "EN_ATTENTE_VALIDATION") {
-      // Tous les documents sont validés, activer le chauffeur
-      await db.chauffeurDrive.update({
-        where: { id: driverId },
-        data: { statut: "VALIDE" },
-      });
-      logger.info(`Driver ${driverId} validated and activated`);
-    }
+    logger.info(`Document ${documentType} of chauffeur ${chauffeurId} validated`);
   }
 
   /**
@@ -206,11 +209,11 @@ export class ZupDriveDriverManagementService {
    */
   static async getDriverInfractions(driverId: string): Promise<DriverInfraction[]> {
     const infractions = await db.chauffeurInfraction.findMany({
-      where: { driverId },
+      where: { chauffeurId: driverId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
-        driverId: true,
+        chauffeurId: true,
         type: true,
         description: true,
         severity: true,
@@ -222,7 +225,7 @@ export class ZupDriveDriverManagementService {
 
     return infractions.map((i) => ({
       id: i.id,
-      driverId: i.driverId,
+      chauffeurId: i.chauffeurId,
       type: i.type as "PLAINTE_PASSAGER" | "ACCIDENT" | "INFRACTION_CODE_ROUTE" | "AUTRE",
       description: i.description,
       severity: i.severity as "BASSE" | "MOYENNE" | "HAUTE",
@@ -246,7 +249,7 @@ export class ZupDriveDriverManagementService {
 
     const infraction = await db.chauffeurInfraction.create({
       data: {
-        driverId,
+        chauffeurId: driverId,
         type,
         description,
         severity,
@@ -289,13 +292,14 @@ export class ZupDriveDriverManagementService {
       select: {
         id: true,
         nomComplet: true,
-        rating: true,
         statut: true,
         courses: {
           select: { id: true, statut: true, prixCentimes: true, createdAt: true },
         },
-        earnings: { select: { amountCentimes: true } },
-        notes: { select: { note: true } },
+        payouts: {
+          where: { status: { in: ["PENDING", "PROCESSED"] } },
+          select: { amountCentimes: true },
+        },
         infractions: { select: { severity: true } },
         suspendedAt: true,
       },
@@ -305,14 +309,16 @@ export class ZupDriveDriverManagementService {
 
     const completedCourses = driver.courses.filter((c) => c.statut === "TERMINEE");
     const cancelledCourses = driver.courses.filter((c) => c.statut === "ANNULEE");
-    const totalEarnings = driver.earnings.reduce((sum, e) => sum + e.amountCentimes, 0);
+    const totalEarnings = driver.payouts.reduce((sum, e) => sum + e.amountCentimes, 0);
     const highSeverityInfractions = driver.infractions.filter((i) => i.severity === "HAUTE").length;
+
+    const { moyenne } = await NoteCourseDriveService.moyenneChauffeur(driverId);
 
     return {
       id: driver.id,
       name: driver.nomComplet,
       status: driver.statut,
-      rating: driver.rating,
+      rating: moyenne,
       suspendedAt: driver.suspendedAt,
       stats: {
         totalCourses: driver.courses.length,

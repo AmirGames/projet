@@ -31,10 +31,10 @@ export const ZupDriveAuthService = {
     // Vérifier que la session existe et est valide
     const session = await db.sessionConnexion.findUnique({
       where: { id: sessionId },
-      select: { userId: true, expiresAt: true },
+      select: { userId: true, expiresAt: true, revokedAt: true },
     });
 
-    if (!session) {
+    if (!session || session.revokedAt) {
       throw new ApiError(401, 'Session invalide');
     }
 
@@ -52,10 +52,17 @@ export const ZupDriveAuthService = {
       select: { id: true, statut: true },
     });
 
-    const admin = await db.admin.findUnique({
-      where: { userId },
-      select: { id: true },
+    // Équipe : le superowner, ou un accès équipe sur la plateforme DRIVE.
+    const compte = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        isSuperOwner: true,
+        accesEquipe: { where: { plateforme: 'DRIVE' }, select: { role: true } },
+      },
     });
+    const accesEquipe = compte?.accesEquipe[0];
+    const admin = !!compte?.isSuperOwner || !!accesEquipe;
+    const roleEquipe: 'ADMIN' | 'SUPPORT' = !compte?.isSuperOwner && accesEquipe?.role === 'SUPPORT' ? 'SUPPORT' : 'ADMIN';
 
     if (!driver && !admin) {
       throw new ApiError(403, 'Utilisateur non autorisé pour ZupDrive');
@@ -70,7 +77,7 @@ export const ZupDriveAuthService = {
       userId,
       sessionId,
       driverId: driver?.id,
-      role: admin ? 'ADMIN' : 'DRIVER',
+      role: admin ? roleEquipe : 'DRIVER',
     };
   },
 
@@ -96,24 +103,20 @@ export const ZupDriveAuthService = {
     accessToken: string;
     refreshToken: string;
   }> {
-    const payload = AuthService.verifyRefreshToken(refreshToken);
+    // Rotation du jeton, détection de réutilisation et session active : tout
+    // est vérifié par le SSO partagé, qui consomme le jeton une seule fois.
+    const { decoded, sid, refreshToken: nouveauRefresh } = await SsoService.renouveler(refreshToken);
 
-    // Valider que la session existe toujours
-    const session = await db.sessionConnexion.findUnique({
-      where: { id: payload.sid },
-      select: { expiresAt: true, userId: true },
-    });
-
-    if (!session || session.expiresAt < new Date()) {
+    if (!sid) {
       throw new ApiError(401, 'Session expirée, reconnexion requise');
     }
 
     // Vérifier que l'utilisateur a toujours accès à ZupDrive
-    await this.validateDriverSession(payload.sub, payload.sid);
+    await this.validateDriverSession(decoded.userId, sid);
 
     return {
-      accessToken: AuthService.generateAccessToken(payload.sub, payload.sid),
-      refreshToken: await SsoService.emettreRefresh(payload.sub, payload.sid),
+      accessToken: AuthService.generateAccessToken(decoded.userId, sid),
+      refreshToken: nouveauRefresh,
     };
   },
 
@@ -135,7 +138,11 @@ export const ZupDriveAuthService = {
   async getAuthContext(token: string): Promise<ZupDriveAuthContext> {
     const payload = AuthService.verifyAccessToken(token);
 
-    return this.validateDriverSession(payload.sub, payload.sid);
+    if (!payload.sid) {
+      throw new ApiError(401, 'Session invalide');
+    }
+
+    return this.validateDriverSession(payload.userId, payload.sid);
   },
 };
 
