@@ -178,6 +178,12 @@ export const paymentService = {
       return;
     }
 
+    // Les remboursements d'une course ZupDrive : relus chez Stripe, jamais pris pour ceux d'une commande.
+    if (["charge.refunded", "refund.failed", "refund.updated"].includes(evenement.type)) {
+      const intentionId = idIntention(objet.payment_intent);
+      if (intentionId && (await ZupDrivePaymentService.surRemboursement(intentionId))) return;
+    }
+
     switch (evenement.type) {
       // Un pourboire laissé après la livraison porte aussi l'orderId : il
       // passe à part, sans quoi il serait pris pour le paiement de la commande.

@@ -281,6 +281,7 @@ export class CourseDriveService {
     if (course.statut === "ANNULEE") return this.maCourse(passagerId, courseId);
 
     await this.annuler(course.id, ["RECHERCHE", "ACCEPTEE", "ARRIVEE"], "PASSAGER", motif);
+    await this.rembourserSiPayee(course.id, "Course annulée par le passager");
 
     if (course.chauffeurId) {
       await this.prevenirChauffeur(course.chauffeurId, "Course annulée", "Le passager a annulé la course.");
@@ -568,6 +569,7 @@ export class CourseDriveService {
       throw new ApiError(404, "Course introuvable", "RIDE_NOT_FOUND");
     }
     await this.annuler(courseId, ["ACCEPTEE", "ARRIVEE"], "CHAUFFEUR", motif);
+    await this.rembourserSiPayee(courseId, "Course annulée par le chauffeur");
     await this.prevenirPassager(
       courseId,
       "Votre course a été annulée",
@@ -607,6 +609,7 @@ export class CourseDriveService {
       });
       if (count === 1) {
         logger.info("ZupDrive ride without driver", { courseId });
+        await this.rembourserSiPayee(courseId, "Aucun chauffeur disponible");
         await this.prevenirPassager(
           courseId,
           "Aucun chauffeur disponible",
@@ -698,7 +701,8 @@ export class CourseDriveService {
     for (const course of enRecherche) {
       if (await this.proposerAuSuivant(course.id, maintenant)) proposees++;
     }
-    return { expirees, proposees, enRecherche: enRecherche.length };
+    const remboursees = await ZupDrivePaymentService.rembourserLesCoursesNonAboutiesPayees();
+    return { expirees, proposees, enRecherche: enRecherche.length, remboursees };
   }
 
   // -------------------------------------------------------------------------
@@ -718,6 +722,16 @@ export class CourseDriveService {
       data: { statut: "CADUQUE" },
     });
     logger.info("ZupDrive ride cancelled", { courseId, par });
+  }
+
+  /**
+   * Une course payée qui n'aboutit pas rend l'argent au passager. Un échec ne défait pas l'annulation :
+   * le balayage (rembourserLesCoursesNonAboutiesPayees) reprend jusqu'au remboursement.
+   */
+  private static async rembourserSiPayee(courseId: string, raison: string) {
+    await ZupDrivePaymentService.rembourserCourse(courseId, raison).catch((err) =>
+      logger.warn("ZupDrive refund failed, will be retried", { courseId, err })
+    );
   }
 
   /** Prévenir : un échec d'envoi ne défait jamais une étape déjà enregistrée. */
