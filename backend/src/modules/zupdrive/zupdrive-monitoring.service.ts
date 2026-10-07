@@ -97,7 +97,7 @@ export const ZupDriveMonitoringService = {
   /**
    * Envoyer notification via multiple channels
    */
-  private async sendNotificationChannels(
+  async sendNotificationChannels(
     notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
@@ -122,7 +122,7 @@ export const ZupDriveMonitoringService = {
   /**
    * Envoyer push notification (mobile)
    */
-  private async sendPushNotification(
+  async sendPushNotification(
     notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
@@ -134,7 +134,7 @@ export const ZupDriveMonitoringService = {
   /**
    * Envoyer email
    */
-  private async sendEmailNotification(
+  async sendEmailNotification(
     notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
@@ -146,7 +146,7 @@ export const ZupDriveMonitoringService = {
   /**
    * Broadcast WebSocket
    */
-  private async broadcastWebSocketNotification(
+  async broadcastWebSocketNotification(
     notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
@@ -304,7 +304,7 @@ export const ZupDriveMonitoringService = {
   /**
    * Obtenir le statut des documents
    */
-  private async getDocumentStatus(
+  async getDocumentStatus(
     chauffeurId: string
   ): Promise<"COMPLETE" | "PENDING" | "ISSUES"> {
     const documents = await db.documentChauffeurDrive.findMany({
@@ -326,7 +326,7 @@ export const ZupDriveMonitoringService = {
   /**
    * Obtenir le dernier rapport de conformité
    */
-  private async getLatestComplianceReport(chauffeurId: string) {
+  async getLatestComplianceReport(chauffeurId: string) {
     return db.complianceReportDrive.findFirst({
       where: { chauffeurId },
       orderBy: { createdAt: "desc" },
@@ -340,7 +340,7 @@ export const ZupDriveMonitoringService = {
   /**
    * Obtenir les badges du chauffeur
    */
-  private async getDriverBadges(chauffeurId: string): Promise<string[]> {
+  async getDriverBadges(chauffeurId: string): Promise<string[]> {
     const reputation = await db.chauffeurDrive.findUnique({
       where: { id: chauffeurId },
       select: {

@@ -9,7 +9,7 @@
 import { db } from "../../services/db";
 import { SsoService } from "../auth/sso.service";
 import { AuthService } from "../auth/auth.service";
-import { ApiError } from "../../utils/errors";
+import { ApiError } from "../../middleware/api-error";
 
 interface ZupDriveAuthContext {
   userId: string;

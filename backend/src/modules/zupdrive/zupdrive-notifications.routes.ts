@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveNotificationsService } from "./zupdrive-notifications.service";
 
 const router = Router();
@@ -16,7 +15,7 @@ const router = Router();
  */
 router.post(
   "/admin/templates",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       key: z.string().min(3).max(100),
@@ -44,7 +43,7 @@ router.post(
  */
 router.get(
   "/admin/templates",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       activeOnly: z.coerce.boolean().optional().default("true"),
@@ -85,7 +84,7 @@ router.get("/admin/templates/:key", adminAuth, async (req, res, next) => {
  */
 router.post(
   "/admin/send",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       recipientId: z.string(),
@@ -112,7 +111,7 @@ router.post(
  */
 router.post(
   "/admin/trigger-event",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       type: z.enum(["DOCUMENT_EXPIRY", "INFRACTION_REPORTED", "SUSPENSION", "PAYMENT_ISSUE"]),
@@ -140,7 +139,7 @@ router.post(
  */
 router.post(
   "/admin/alerts",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       driverId: z.string(),
@@ -221,7 +220,7 @@ router.patch(
  */
 router.get(
   "/admin/history",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       recipientId: z.string().optional(),

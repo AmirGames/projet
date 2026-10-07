@@ -356,7 +356,7 @@ export const ZupDriveDocumentValidationService = {
   /**
    * Helper: Mapper les données Prisma
    */
-  private mapDocumentResult(
+  mapDocumentResult(
     doc: any
   ): DocumentValidationResult {
     return {

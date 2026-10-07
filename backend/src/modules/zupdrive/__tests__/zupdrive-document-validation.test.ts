@@ -8,19 +8,18 @@
  * - Readiness check
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ZupDriveDocumentValidationService } from "../zupdrive-document-validation.service";
 import { db } from "../../../services/db";
 
-vi.mock("../../../services/db", () => ({
+jest.mock("../../../services/db", () => ({
   db: {
     chauffeurDrive: {
-      findUnique: vi.fn(),
+      findUnique: jest.fn(),
     },
     documentChauffeurDrive: {
-      upsert: vi.fn(),
-      update: vi.fn(),
-      findMany: vi.fn(),
+      upsert: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
     },
   },
 }));
@@ -31,16 +30,16 @@ describe("ZupDriveDocumentValidationService", () => {
   const adminId = "admin-123";
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("uploadDocument", () => {
     it("devrait uploader un document en statut PENDING", async () => {
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         statut: "BROUILLON",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.upsert).mockResolvedValueOnce({
+      jest.mocked(db.documentChauffeurDrive.upsert).mockResolvedValueOnce({
         id: "doc-1",
         chauffeurId: mockChauffeurId,
         type: "PERMIS",
@@ -62,7 +61,7 @@ describe("ZupDriveDocumentValidationService", () => {
     });
 
     it("devrait rejeter si chauffeur n'existe pas", async () => {
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(null);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(null);
 
       await expect(
         ZupDriveDocumentValidationService.uploadDocument({
@@ -74,7 +73,7 @@ describe("ZupDriveDocumentValidationService", () => {
     });
 
     it("devrait rejeter si chauffeur est en statut SOUMIS", async () => {
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         statut: "SOUMIS",
       } as any);
 
@@ -90,7 +89,7 @@ describe("ZupDriveDocumentValidationService", () => {
 
   describe("approveDocument", () => {
     it("devrait changer PENDING → APPROVED", async () => {
-      vi.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
         id: "doc-1",
         type: "PERMIS",
         statut: "APPROVED",
@@ -110,7 +109,7 @@ describe("ZupDriveDocumentValidationService", () => {
 
   describe("rejectDocument", () => {
     it("devrait changer PENDING → REJECTED avec raison", async () => {
-      vi.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
         id: "doc-1",
         type: "PERMIS",
         statut: "REJECTED",
@@ -135,11 +134,11 @@ describe("ZupDriveDocumentValidationService", () => {
       const now = new Date();
       const inFuture = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 jours
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         region: "BRUXELLES",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         {
           id: "doc-1",
           type: "PERMIS",
@@ -179,11 +178,11 @@ describe("ZupDriveDocumentValidationService", () => {
       const now = new Date();
       const inPast = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 jours passés
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         region: "BRUXELLES",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         {
           id: "doc-1",
           type: "PERMIS",
@@ -205,11 +204,11 @@ describe("ZupDriveDocumentValidationService", () => {
     it("devrait marquer allValidated=true si tous les docs requis sont APPROVED", async () => {
       const inFuture = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         region: "BRUXELLES",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         {
           id: "doc-1",
           type: "PERMIS",
@@ -249,11 +248,11 @@ describe("ZupDriveDocumentValidationService", () => {
     it("devrait retourner canApprove=true si tous docs APPROVED", async () => {
       const inFuture = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         region: "BRUXELLES",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         { id: "doc-1", type: "PERMIS", statut: "APPROVED", dateExpiration: inFuture },
         { id: "doc-2", type: "ASSURANCE", statut: "APPROVED", dateExpiration: inFuture },
         { id: "doc-3", type: "INSPECTION", statut: "APPROVED", dateExpiration: inFuture },
@@ -271,11 +270,11 @@ describe("ZupDriveDocumentValidationService", () => {
     it("devrait retourner canApprove=false si docs REJECTED", async () => {
       const inFuture = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         region: "BRUXELLES",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         { id: "doc-1", type: "PERMIS", statut: "REJECTED", dateExpiration: inFuture },
         { id: "doc-2", type: "ASSURANCE", statut: "APPROVED", dateExpiration: inFuture },
       ] as any);
@@ -291,11 +290,11 @@ describe("ZupDriveDocumentValidationService", () => {
     it("devrait retourner canApprove=false si docs PENDING", async () => {
       const inFuture = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         region: "BRUXELLES",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         { id: "doc-1", type: "PERMIS", statut: "APPROVED", dateExpiration: inFuture },
         { id: "doc-2", type: "ASSURANCE", statut: "PENDING", dateExpiration: inFuture },
       ] as any);
@@ -313,12 +312,12 @@ describe("ZupDriveDocumentValidationService", () => {
     it("devrait marquer les docs expirés", async () => {
       const past = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         { id: "doc-1", type: "PERMIS", statut: "APPROVED" },
         { id: "doc-2", type: "ASSURANCE", statut: "APPROVED" },
       ] as any);
 
-      vi.mocked(db.documentChauffeurDrive.update)
+      jest.mocked(db.documentChauffeurDrive.update)
         .mockResolvedValueOnce({ statut: "EXPIRED" })
         .mockResolvedValueOnce({ statut: "EXPIRED" });
 
@@ -334,7 +333,7 @@ describe("ZupDriveDocumentValidationService", () => {
     it("devrait envoyer rappel 30 jours avant expiration", async () => {
       const in25Days = new Date(Date.now() + 25 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         {
           id: "doc-1",
           chauffeurId: mockChauffeurId,
@@ -345,7 +344,7 @@ describe("ZupDriveDocumentValidationService", () => {
         },
       ] as any);
 
-      vi.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
         id: "doc-1",
       } as any);
 
@@ -358,11 +357,11 @@ describe("ZupDriveDocumentValidationService", () => {
   describe("Integration: Full validation workflow", () => {
     it("flow: upload → admin review → approve → ready for chauffeur approval", async () => {
       // 1. Upload
-      vi.mocked(db.chauffeurDrive.findUnique)
+      jest.mocked(db.chauffeurDrive.findUnique)
         .mockResolvedValueOnce({ statut: "BROUILLON" } as any)
         .mockResolvedValueOnce({ region: "BRUXELLES" } as any);
 
-      vi.mocked(db.documentChauffeurDrive.upsert).mockResolvedValueOnce({
+      jest.mocked(db.documentChauffeurDrive.upsert).mockResolvedValueOnce({
         id: "doc-1",
         type: "PERMIS",
         statut: "PENDING",
@@ -377,7 +376,7 @@ describe("ZupDriveDocumentValidationService", () => {
       expect(uploaded.status).toBe("PENDING");
 
       // 2. Admin approves
-      vi.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.documentChauffeurDrive.update).mockResolvedValueOnce({
         id: "doc-1",
         type: "PERMIS",
         statut: "APPROVED",
@@ -392,11 +391,11 @@ describe("ZupDriveDocumentValidationService", () => {
       expect(approved.status).toBe("APPROVED");
 
       // 3. Check readiness
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         region: "BRUXELLES",
       } as any);
 
-      vi.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
         approved as any, // This one approved
         {
           id: "doc-2",

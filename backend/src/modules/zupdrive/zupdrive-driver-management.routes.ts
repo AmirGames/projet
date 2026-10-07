@@ -1,9 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveDriverManagementService } from "./zupdrive-driver-management.service";
-import { ApiError } from "../../utils/errors";
+import { ApiError } from "../../middleware/api-error";
 
 const router = Router();
 
@@ -13,7 +12,7 @@ const router = Router();
  */
 router.get(
   "/drivers",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       status: z.enum(["VALIDE", "SUSPENDU", "EN_ATTENTE_VALIDATION"]).optional(),
@@ -47,7 +46,7 @@ router.get(
  */
 router.post(
   "/drivers/:id/suspend",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       reason: z.string().min(5).max(500),
@@ -87,7 +86,7 @@ router.post("/drivers/:id/reactivate", adminAuth, async (req, res, next) => {
  */
 router.post(
   "/drivers/:id/validate-document",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       type: z.enum(["PERMIS", "ASSURANCE", "INSPECTION", "IDENTITE"]),
@@ -133,7 +132,7 @@ router.get("/drivers/:id/infractions", adminAuth, async (req, res, next) => {
  */
 router.post(
   "/drivers/:id/report-infraction",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       type: z.enum(["PLAINTE_PASSAGER", "ACCIDENT", "INFRACTION_CODE_ROUTE", "AUTRE"]),
@@ -170,7 +169,7 @@ router.post(
  */
 router.post(
   "/infractions/:id/resolve",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       resolution: z.string().min(10).max(1000),

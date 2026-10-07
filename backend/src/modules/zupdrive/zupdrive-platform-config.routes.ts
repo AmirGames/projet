@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDrivePlatformConfigService } from "./zupdrive-platform-config.service";
 
 const router = Router();
@@ -16,7 +15,7 @@ const router = Router();
  */
 router.post(
   "/commissions",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       name: z.string().min(3).max(100),
@@ -43,7 +42,7 @@ router.post(
  */
 router.get(
   "/commissions",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       activeOnly: z.coerce.boolean().optional().default("true"),
@@ -70,7 +69,7 @@ router.get(
  */
 router.post(
   "/regions",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       region: z.enum(["BRUXELLES", "WALLONIE", "FLANDRE"]),
@@ -111,7 +110,7 @@ router.get("/regions", adminAuth, async (req, res, next) => {
  */
 router.get(
   "/regions/:region",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     params: z.object({
       region: z.enum(["BRUXELLES", "WALLONIE", "FLANDRE"]),
@@ -138,7 +137,7 @@ router.get(
  */
 router.post(
   "/pricing-rules",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       name: z.string().min(3).max(100),
@@ -167,7 +166,7 @@ router.post(
  */
 router.get(
   "/pricing-rules",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       activeOnly: z.coerce.boolean().optional().default("true"),
@@ -194,7 +193,7 @@ router.get(
  */
 router.post(
   "/settings",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       key: z.string().min(3).max(100),
@@ -233,7 +232,7 @@ router.get("/settings", adminAuth, async (req, res, next) => {
  */
 router.get(
   "/settings/:key",
-  adminAuth,
+  ...adminAuth,
   async (req, res, next) => {
     try {
       const { key } = req.params;

@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveReportingService } from "./zupdrive-reporting.service";
 
 const router = Router();
@@ -16,7 +15,7 @@ const router = Router();
  */
 router.post(
   "/admin/driver-performance",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       driverId: z.string(),
@@ -49,7 +48,7 @@ router.post(
  */
 router.post(
   "/admin/financial",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       startDate: z.string().datetime(),
@@ -80,7 +79,7 @@ router.post(
  */
 router.post(
   "/admin/compliance",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       includeRecommendations: z.boolean().optional(),
@@ -106,7 +105,7 @@ router.post(
  */
 router.post(
   "/admin/scheduled",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       name: z.string().min(3).max(200),
@@ -132,7 +131,7 @@ router.post(
  */
 router.get(
   "/admin/scheduled",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       activeOnly: z.coerce.boolean().optional().default("true"),
@@ -155,7 +154,7 @@ router.get(
  */
 router.patch(
   "/admin/scheduled/:reportId",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       name: z.string().min(3).max(200).optional(),

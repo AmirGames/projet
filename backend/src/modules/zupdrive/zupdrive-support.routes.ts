@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveSupportService } from "./zupdrive-support.service";
 
 const router = Router();
@@ -38,7 +37,7 @@ router.post(
  */
 router.get(
   "/admin/tickets",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       status: z.enum(["OUVERT", "EN_COURS", "EN_ATTENTE_CLIENT", "RESOLU", "FERME"]).optional(),
@@ -80,7 +79,7 @@ router.get("/admin/tickets/:id", adminAuth, async (req, res, next) => {
  */
 router.post(
   "/admin/tickets/:id/assign",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       agentId: z.string(),
@@ -138,7 +137,7 @@ router.post(
  */
 router.patch(
   "/admin/tickets/:id/status",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       status: z.enum(["OUVERT", "EN_COURS", "EN_ATTENTE_CLIENT", "RESOLU", "FERME"]),
@@ -163,7 +162,7 @@ router.patch(
  */
 router.post(
   "/admin/tickets/:id/escalate",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       newPriority: z.enum(["MOYENNE", "HAUTE", "CRITIQUE"]),
@@ -187,7 +186,7 @@ router.post(
  */
 router.post(
   "/admin/tickets/:id/close",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       resolution: z.string().min(10).max(2000),

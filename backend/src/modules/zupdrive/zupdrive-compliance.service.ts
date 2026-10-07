@@ -1,6 +1,6 @@
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
-import { ApiError } from "../../utils/errors";
+import { ApiError } from "../../middleware/api-error";
 
 /**
  * Compliance et Audit pour ZupDrive.

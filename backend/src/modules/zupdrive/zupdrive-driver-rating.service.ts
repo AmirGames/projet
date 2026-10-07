@@ -248,7 +248,7 @@ export const ZupDriveDriverRatingService = {
   /**
    * Mettre à jour le score de réputation (appelé après chaque rating)
    */
-  private async updateReputationScore(chauffeurId: string): Promise<void> {
+  async updateReputationScore(chauffeurId: string): Promise<void> {
     const score = await this.getReputationScore(chauffeurId);
 
     await db.chauffeurDrive.update({
@@ -304,7 +304,7 @@ export const ZupDriveDriverRatingService = {
   /**
    * Générer des badges basés sur la performance
    */
-  private generateBadges(stats: {
+  generateBadges(stats: {
     averageRating: number;
     totalRatings: number;
     completionRate: number;
@@ -349,7 +349,7 @@ export const ZupDriveDriverRatingService = {
   /**
    * Générer des recommandations pour l'amélioration
    */
-  private generateRecommendations(stats: {
+  generateRecommendations(stats: {
     averageRating: number;
     totalRatings: number;
     completionRate: number;

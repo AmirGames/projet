@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveComplianceService } from "./zupdrive-compliance.service";
 
 const router = Router();
@@ -16,7 +15,7 @@ const router = Router();
  */
 router.post(
   "/admin/audit-logs",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       action: z.string().min(3).max(200),
@@ -47,7 +46,7 @@ router.post(
  */
 router.get(
   "/admin/audit-logs",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       resourceId: z.string().optional(),
@@ -85,7 +84,7 @@ router.get(
  */
 router.post(
   "/admin/checks",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       driverId: z.string(),
@@ -128,7 +127,7 @@ router.get("/admin/checks/:driverId", adminAuth, async (req, res, next) => {
  */
 router.patch(
   "/admin/checks/:checkId",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       status: z.enum(["IN_PROGRESS", "PASSED", "FAILED", "MANUAL_REVIEW_NEEDED"]),
@@ -159,7 +158,7 @@ router.patch(
  */
 router.post(
   "/admin/document-verification",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       driverId: z.string(),
@@ -182,7 +181,7 @@ router.post(
  */
 router.patch(
   "/admin/document-verification/:workflowId",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       status: z.enum(["UPLOADED", "UNDER_REVIEW", "APPROVED", "REJECTED", "EXPIRED"]),
@@ -213,7 +212,7 @@ router.patch(
  */
 router.get(
   "/admin/expiring-documents",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       daysThreshold: z.coerce.number().min(1).optional().default("30"),
@@ -240,7 +239,7 @@ router.get(
  */
 router.post(
   "/admin/reports",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       reportType: z.enum(["MONTHLY", "QUARTERLY", "ANNUAL", "AD_HOC"]),
@@ -263,7 +262,7 @@ router.post(
  */
 router.get(
   "/admin/reports",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       limit: z.coerce.number().min(1).max(100).optional().default("50"),

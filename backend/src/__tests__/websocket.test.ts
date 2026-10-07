@@ -2,16 +2,15 @@
  * Tests: WebSocket Service & Event Broadcasting
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { WebSocketService } from '../services/websocket';
 import { EventBroadcaster } from '../services/event-broadcaster';
 import { WebSocket, WebSocketServer } from 'ws';
 
 // Mock WebSocketServer
-vi.mock('ws', () => ({
-  WebSocket: vi.fn(),
-  WebSocketServer: vi.fn(() => ({
-    on: vi.fn(),
+jest.mock('ws', () => ({
+  WebSocket: jest.fn(),
+  WebSocketServer: jest.fn(() => ({
+    on: jest.fn(),
     clients: new Set(),
   })),
 }));
@@ -107,7 +106,7 @@ describe('WebSocket Service', () => {
 describe('Event Broadcaster', () => {
   describe('Event Types', () => {
     it('should broadcast course completed event', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.courseCompleted({
         userId: 'user-123',
@@ -123,7 +122,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast earning updated event', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.earningUpdated({
         userId: 'user-123',
@@ -137,7 +136,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast rating received event', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.ratingReceived({
         userId: 'user-123',
@@ -152,7 +151,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast payout status changed event', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.payoutStatusChanged({
         userId: 'user-123',
@@ -166,7 +165,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast compliance alert (admin event)', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.complianceAlert({
         chauffeurId: 'chauffeur-123',
@@ -180,7 +179,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast driver status changed event', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.driverStatusChanged({
         chauffeurId: 'chauffeur-123',
@@ -193,7 +192,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast dashboard update (admin event)', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.dashboardUpdate({
         activeDrivers: 245,
@@ -208,7 +207,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast badge earned event', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.badgeEarned({
         userId: 'user-123',
@@ -222,7 +221,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast reputation changed event', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.reputationChanged({
         userId: 'user-123',
@@ -239,7 +238,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should broadcast document events', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.documentApproved({
         userId: 'user-123',
@@ -255,7 +254,7 @@ describe('Event Broadcaster', () => {
 
   describe('Event Data Structure', () => {
     it('should include timestamp in all events', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.courseCompleted({
         userId: 'user-123',
@@ -272,7 +271,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should include userId when provided', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.courseCompleted({
         userId: 'user-123',
@@ -289,7 +288,7 @@ describe('Event Broadcaster', () => {
     });
 
     it('should mark admin events appropriately', () => {
-      const spy = vi.spyOn(EventBroadcaster, 'broadcast');
+      const spy = jest.spyOn(EventBroadcaster, 'broadcast');
 
       EventBroadcaster.complianceAlert({
         chauffeurId: 'chauffeur-123',

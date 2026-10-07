@@ -181,7 +181,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Vérification intégrité des documents
    */
-  private async checkDocumentIntegrity(
+  async checkDocumentIntegrity(
     chauffeur: any
   ): Promise<ComplianceCheckResult> {
     const required = ["PERMIS", "ASSURANCE", "INSPECTION", "IDENTITE"];
@@ -207,7 +207,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Cohérence entre documents
    */
-  private async checkDocumentConsistency(
+  async checkDocumentConsistency(
     chauffeur: any
   ): Promise<ComplianceCheckResult> {
     const docs = chauffeur.documents || [];
@@ -262,7 +262,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Vérification identité
    */
-  private async checkIdentityVerification(
+  async checkIdentityVerification(
     chauffeur: any
   ): Promise<ComplianceCheckResult> {
     const identiteDoc = chauffeur.documents?.find((d: any) => d.type === "IDENTITE");
@@ -301,7 +301,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Historique infractions
    */
-  private async checkInfractionHistory(
+  async checkInfractionHistory(
     chauffeur: any
   ): Promise<ComplianceCheckResult> {
     const infractions = chauffeur.infractions || [];
@@ -342,7 +342,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Patterns comportementaux
    */
-  private async checkBehavioralPatterns(
+  async checkBehavioralPatterns(
     chauffeur: any
   ): Promise<ComplianceCheckResult> {
     const courses = chauffeur.courses || [];
@@ -398,7 +398,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Anomalies géographiques
    */
-  private async checkGeographicAnomalies(
+  async checkGeographicAnomalies(
     chauffeur: any,
     region?: string
   ): Promise<ComplianceCheckResult> {
@@ -432,7 +432,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Détection doublons
    */
-  private async checkDuplicateDetection(
+  async checkDuplicateDetection(
     chauffeur: any
   ): Promise<ComplianceCheckResult> {
     // Vérifier s'il y a d'autres comptes avec les mêmes documents
@@ -481,7 +481,7 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Indicateurs fraude
    */
-  private async checkFraudIndicators(
+  async checkFraudIndicators(
     chauffeur: any
   ): Promise<ComplianceCheckResult> {
     const indicators: string[] = [];
@@ -524,14 +524,14 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Helpers
    */
-  private scoreToLevel(score: number): RiskLevel {
+  scoreToLevel(score: number): RiskLevel {
     if (score >= 75) return "CRITICAL";
     if (score >= 50) return "HIGH";
     if (score >= 25) return "MEDIUM";
     return "LOW";
   },
 
-  private stringSimilarity(str1: string, str2: string): number {
+  stringSimilarity(str1: string, str2: string): number {
     const longer = str1.length > str2.length ? str1 : str2;
     const shorter = str1.length > str2.length ? str2 : str1;
 
@@ -541,7 +541,7 @@ export const ZupDriveComplianceChecksService = {
     return (longer.length - editDistance) / longer.length;
   },
 
-  private levenshteinDistance(str1: string, str2: string): number {
+  levenshteinDistance(str1: string, str2: string): number {
     const matrix: number[][] = [];
 
     for (let i = 0; i <= str2.length; i++) {
@@ -569,7 +569,7 @@ export const ZupDriveComplianceChecksService = {
     return matrix[str2.length][str1.length];
   },
 
-  private generateRecommendations(
+  generateRecommendations(
     checks: ComplianceCheckResult[]
   ): string[] {
     const recommendations: string[] = [];

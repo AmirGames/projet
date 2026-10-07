@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveWebhooksService } from "./zupdrive-webhooks.service";
 
 const router = Router();
@@ -16,7 +15,7 @@ const router = Router();
  */
 router.post(
   "/admin/endpoints",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       url: z.string().url(),
@@ -42,7 +41,7 @@ router.post(
  */
 router.get(
   "/admin/endpoints",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       activeOnly: z.coerce.boolean().optional().default("true"),
@@ -65,7 +64,7 @@ router.get(
  */
 router.patch(
   "/admin/endpoints/:endpointId",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       url: z.string().url().optional(),
@@ -108,7 +107,7 @@ router.delete("/admin/endpoints/:endpointId", adminAuth, async (req, res, next) 
  */
 router.post(
   "/admin/events",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       eventType: z.string(),
@@ -137,7 +136,7 @@ router.post(
  */
 router.get(
   "/admin/deliveries",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       webhookId: z.string().optional(),
@@ -166,7 +165,7 @@ router.get(
  */
 router.post(
   "/admin/providers",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       provider: z.enum(["SENDGRID", "TWILIO", "MAILGUN", "AWS_SES", "STRIPE", "CUSTOM"]),
@@ -192,7 +191,7 @@ router.post(
  */
 router.get(
   "/admin/providers",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       activeOnly: z.coerce.boolean().optional().default("true"),
@@ -215,7 +214,7 @@ router.get(
  */
 router.patch(
   "/admin/providers/:integrationId",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     body: z.object({
       apiKey: z.string().optional(),

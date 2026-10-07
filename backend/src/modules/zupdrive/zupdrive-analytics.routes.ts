@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { validateRequest } from "../../middleware/validation";
-import { adminAuth } from "../../middleware/auth";
+import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveAnalyticsService } from "./zupdrive-analytics.service";
 
 const router = Router();
@@ -12,7 +11,7 @@ const router = Router();
  */
 router.get(
   "/period",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       startDate: z.string().datetime(),
@@ -41,7 +40,7 @@ router.get(
  */
 router.get(
   "/drivers",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       startDate: z.string().datetime(),
@@ -72,7 +71,7 @@ router.get(
  */
 router.get(
   "/regions",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       startDate: z.string().datetime(),
@@ -101,7 +100,7 @@ router.get(
  */
 router.get(
   "/payments",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       startDate: z.string().datetime(),
@@ -130,7 +129,7 @@ router.get(
  */
 router.get(
   "/compare",
-  adminAuth,
+  ...adminAuth,
   validateRequest({
     query: z.object({
       period1Start: z.string().datetime(),

@@ -2,27 +2,26 @@
  * Tests: Driver Rating & Reputation System
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ZupDriveDriverRatingService } from "../zupdrive-driver-rating.service";
 import { db } from "../../../services/db";
 
-vi.mock("../../../services/db", () => ({
+jest.mock("../../../services/db", () => ({
   db: {
     courseDrive: {
-      findUnique: vi.fn(),
+      findUnique: jest.fn(),
     },
     ratingCourseDrive: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
-      findMany: vi.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      findMany: jest.fn(),
     },
     chauffeurDrive: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-      findMany: vi.fn(),
-      groupBy: vi.fn(),
-      aggregate: vi.fn(),
-      count: vi.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+      groupBy: jest.fn(),
+      aggregate: jest.fn(),
+      count: jest.fn(),
     },
   },
 }));
@@ -33,26 +32,26 @@ describe("ZupDriveDriverRatingService", () => {
   const mockCourseId = "course-789";
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("submitRating", () => {
     it("devrait créer un rating pour une course complétée", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "COMPLETED",
         passagerId: mockPassengerId,
         chauffeurId: mockChauffeurId,
       } as any);
 
-      vi.mocked(db.ratingCourseDrive.findFirst).mockResolvedValueOnce(null);
+      jest.mocked(db.ratingCourseDrive.findFirst).mockResolvedValueOnce(null);
 
-      vi.mocked(db.ratingCourseDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.ratingCourseDrive.create).mockResolvedValueOnce({
         id: "rating-1",
         note: 5,
       } as any);
 
-      vi.mocked(db.chauffeurDrive.findUnique)
+      jest.mocked(db.chauffeurDrive.findUnique)
         .mockResolvedValueOnce({
           id: mockChauffeurId,
           rating: 4.8,
@@ -76,7 +75,7 @@ describe("ZupDriveDriverRatingService", () => {
     });
 
     it("devrait rejeter si course n'existe pas", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(null);
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(null);
 
       await expect(
         ZupDriveDriverRatingService.submitRating({
@@ -89,7 +88,7 @@ describe("ZupDriveDriverRatingService", () => {
     });
 
     it("devrait rejeter si course n'est pas complétée", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "IN_PROGRESS",
       } as any);
@@ -105,13 +104,13 @@ describe("ZupDriveDriverRatingService", () => {
     });
 
     it("devrait rejeter si déjà noté", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "COMPLETED",
         passagerId: mockPassengerId,
       } as any);
 
-      vi.mocked(db.ratingCourseDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.ratingCourseDrive.findFirst).mockResolvedValueOnce({
         id: "existing-rating",
       } as any);
 
@@ -130,7 +129,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait calculer EXCELLENT pour un chauffeur avec 4.8+ stars", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 4.85,
         courses: Array(100)
@@ -151,7 +150,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait calculer POOR pour un chauffeur avec <2.0 stars", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 1.8,
         courses: Array(50)
@@ -171,7 +170,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait pénaliser un haut taux d'annulation", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 4.5,
         courses: [
@@ -196,7 +195,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait générer les badges TOP_RATED", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 4.85,
         courses: Array(100)
@@ -216,7 +215,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait générer les badges CONSISTENT", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 4.0,
         courses: Array(200)
@@ -241,7 +240,7 @@ describe("ZupDriveDriverRatingService", () => {
         { id: "review-2", note: 4, createdAt: new Date(Date.now() - 1000) },
       ];
 
-      vi.mocked(db.ratingCourseDrive.findMany).mockResolvedValueOnce(reviews as any);
+      jest.mocked(db.ratingCourseDrive.findMany).mockResolvedValueOnce(reviews as any);
 
       const result = await ZupDriveDriverRatingService.getReviews(mockChauffeurId, 10, 0);
 
@@ -249,7 +248,7 @@ describe("ZupDriveDriverRatingService", () => {
     });
 
     it("devrait supporter le tri par note la plus élevée", async () => {
-      vi.mocked(db.ratingCourseDrive.findMany).mockResolvedValueOnce([] as any);
+      jest.mocked(db.ratingCourseDrive.findMany).mockResolvedValueOnce([] as any);
 
       await ZupDriveDriverRatingService.getReviews(mockChauffeurId, 10, 0, "highest");
 
@@ -265,7 +264,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait calculer correctement la distribution des ratings", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 4.0,
         courses: Array(10)
@@ -298,7 +297,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait recommander l'amélioration si faible rating", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 2.0,
         courses: Array(50)
@@ -320,7 +319,7 @@ describe("ZupDriveDriverRatingService", () => {
     it("devrait encourager les chauffeurs excellents", async () => {
       const now = new Date();
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         rating: 4.9,
         courses: Array(200)

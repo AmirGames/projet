@@ -5,25 +5,24 @@
  * et l'indépendance des rôles
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { UnifiedRolesService } from "../unified-roles.service";
 import { db } from "../../../services/db";
 
 // Mock Prisma
-vi.mock("../../../services/db", () => ({
+jest.mock("../../../services/db", () => ({
   db: {
     user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-      create: vi.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      create: jest.fn(),
     },
     customer: {
-      findUnique: vi.fn(),
+      findUnique: jest.fn(),
     },
     chauffeurDrive: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
   },
 }));
@@ -34,12 +33,12 @@ describe("UnifiedRolesService", () => {
   const mockChauffeurId = "chauffeur-789";
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("loadUserRoleContext", () => {
     it("devrait charger un client avec rôles CLIENT_ZUPEAT + PASSENGER_ZUPDRIVE", async () => {
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: mockUserId,
         email: "client@example.com",
         customer: { id: mockCustomerId, status: "ACTIVE" },
@@ -56,7 +55,7 @@ describe("UnifiedRolesService", () => {
     });
 
     it("devrait ajouter CHAUFFEUR_VTCZTC si statut=VALIDE", async () => {
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: mockUserId,
         email: "chauffeur@example.com",
         customer: { id: mockCustomerId, status: "ACTIVE" },
@@ -74,7 +73,7 @@ describe("UnifiedRolesService", () => {
     });
 
     it("ne devrait PAS ajouter CHAUFFEUR_VTCZTC si statut=BROUILLON", async () => {
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: mockUserId,
         email: "candidate@example.com",
         customer: { id: mockCustomerId, status: "ACTIVE" },
@@ -91,7 +90,7 @@ describe("UnifiedRolesService", () => {
     });
 
     it("devrait gérer les admins ZupDrive avec rôle ADMIN_ZUPDRIVE", async () => {
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: mockUserId,
         email: "admin@zupdrive.com",
         customer: null,
@@ -127,19 +126,19 @@ describe("UnifiedRolesService", () => {
 
   describe("createChauffeurCandidacy", () => {
     it("devrait créer un dossier en statut BROUILLON", async () => {
-      vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.customer.findUnique).mockResolvedValueOnce({
         status: "ACTIVE",
       } as any);
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(null);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(null);
 
-      vi.mocked(db.chauffeurDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.create).mockResolvedValueOnce({
         id: mockChauffeurId,
         userId: mockUserId,
         statut: "BROUILLON",
       } as any);
 
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: mockUserId,
         email: "client@example.com",
         customer: { id: mockCustomerId, status: "ACTIVE" },
@@ -172,7 +171,7 @@ describe("UnifiedRolesService", () => {
     });
 
     it("devrait rejeter si client n'est pas ACTIVE", async () => {
-      vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.customer.findUnique).mockResolvedValueOnce({
         status: "BLOCKED",
       } as any);
 
@@ -189,16 +188,16 @@ describe("UnifiedRolesService", () => {
 
   describe("submitChauffeurApplication", () => {
     it("devrait passer de BROUILLON à SOUMIS", async () => {
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         statut: "BROUILLON",
       } as any);
 
-      vi.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
         statut: "SOUMIS",
         soumisLe: new Date(),
       } as any);
 
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: mockUserId,
         email: "client@example.com",
         customer: { id: mockCustomerId, status: "ACTIVE" },
@@ -217,17 +216,17 @@ describe("UnifiedRolesService", () => {
 
   describe("approveChauffeur", () => {
     it("devrait passer de SOUMIS à VALIDE et ajouter rôle CHAUFFEUR_VTCZTC", async () => {
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         userId: mockUserId,
         statut: "SOUMIS",
       } as any);
 
-      vi.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
         statut: "VALIDE",
         valideLe: new Date(),
       } as any);
 
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
         id: mockUserId,
         email: "client@example.com",
         customer: { id: mockCustomerId, status: "ACTIVE" },
@@ -258,7 +257,7 @@ describe("UnifiedRolesService", () => {
     it("devrait suspendre le chauffeur (CLIENT reste intact)", async () => {
       const suspendDate = new Date();
 
-      vi.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
         statut: "SUSPENDU",
         motifStatut: "Comportement inapproprié",
       } as any);
@@ -291,7 +290,7 @@ describe("UnifiedRolesService", () => {
         accesEquipe: [],
       };
 
-      vi.mocked(db.user.findUnique)
+      jest.mocked(db.user.findUnique)
         .mockResolvedValueOnce(validDriver as any)
         .mockResolvedValueOnce(validDriver as any);
 
@@ -302,11 +301,11 @@ describe("UnifiedRolesService", () => {
       expect(beforeContext.roles).toContain("CHAUFFEUR_VTCZTC");
 
       // Suspend driver
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         statut: "VALIDE",
       } as any);
 
-      vi.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
         statut: "SUSPENDU",
       } as any);
 
@@ -326,7 +325,7 @@ describe("UnifiedRolesService", () => {
         accesEquipe: [],
       };
 
-      vi.mocked(db.user.findUnique).mockResolvedValueOnce(
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(
         suspendedDriver as any
       );
 

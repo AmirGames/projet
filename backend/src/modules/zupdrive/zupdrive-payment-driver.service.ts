@@ -458,7 +458,7 @@ export const ZupDrivePaymentDriverService = {
   /**
    * Prochaine date de payout (lundi)
    */
-  private getNextPayoutDate(): Date {
+  getNextPayoutDate(): Date {
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? 1 : 8); // Prochain lundi

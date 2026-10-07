@@ -2,31 +2,30 @@
  * Tests: Driver Payment & Payout System
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ZupDrivePaymentDriverService } from "../zupdrive-payment-driver.service";
 import { db } from "../../../services/db";
 
-vi.mock("../../../services/db", () => ({
+jest.mock("../../../services/db", () => ({
   db: {
     courseDrive: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      groupBy: vi.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      groupBy: jest.fn(),
     },
     chauffeurDrive: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-      count: vi.fn(),
-      aggregate: vi.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn(),
     },
     platformSettingsDrive: {
-      findFirst: vi.fn(),
+      findFirst: jest.fn(),
     },
     driverPayoutDrive: {
-      create: vi.fn(),
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      update: vi.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
     },
   },
 }));
@@ -37,17 +36,17 @@ describe("ZupDrivePaymentDriverService", () => {
   const now = new Date();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("calculateCourseEarnings", () => {
     it("devrait calculer les revenus pour une course complétée", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "COMPLETED",
       } as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 25,
       } as any);
 
@@ -69,7 +68,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait rejeter si la course n'existe pas", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(null);
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(null);
 
       await expect(
         ZupDrivePaymentDriverService.calculateCourseEarnings({
@@ -86,7 +85,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait rejeter si la course n'est pas complétée", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "IN_PROGRESS",
       } as any);
@@ -106,12 +105,12 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait appliquer la commission variable", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "COMPLETED",
       } as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 30, // Taux plus élevé
       } as any);
 
@@ -133,7 +132,7 @@ describe("ZupDrivePaymentDriverService", () => {
 
   describe("getDriverEarnings", () => {
     it("devrait calculer les revenus d'une journée", async () => {
-      vi.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
         {
           id: "course-1",
           prixTotal: 1000,
@@ -150,7 +149,7 @@ describe("ZupDrivePaymentDriverService", () => {
         },
       ] as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 25,
       } as any);
 
@@ -167,7 +166,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait retourner 0 si aucune course", async () => {
-      vi.mocked(db.courseDrive.findMany).mockResolvedValueOnce([]);
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([]);
 
       const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(
         mockChauffeurId,
@@ -190,9 +189,9 @@ describe("ZupDrivePaymentDriverService", () => {
           dureeMinutes: 10,
         }));
 
-      vi.mocked(db.courseDrive.findMany).mockResolvedValueOnce(courses as any);
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce(courses as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 25,
       } as any);
 
@@ -209,7 +208,7 @@ describe("ZupDrivePaymentDriverService", () => {
 
   describe("preparePayout", () => {
     it("devrait préparer un payout avec revenus", async () => {
-      vi.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
         {
           id: "course-1",
           prixTotal: 2000,
@@ -219,17 +218,17 @@ describe("ZupDrivePaymentDriverService", () => {
         },
       ] as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 25,
       } as any);
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         user: { id: "user-123", name: "Jean Dupont" },
         bankDetails: { iban: "BE68539007547034" },
       } as any);
 
-      vi.mocked(db.driverPayoutDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.driverPayoutDrive.create).mockResolvedValueOnce({
         id: "payout-123",
         chauffeurId: mockChauffeurId,
         montant: 1700,
@@ -247,7 +246,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait rejeter si pas de revenu", async () => {
-      vi.mocked(db.courseDrive.findMany).mockResolvedValueOnce([] as any);
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([] as any);
 
       await expect(
         ZupDrivePaymentDriverService.preparePayout(mockChauffeurId)
@@ -255,7 +254,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait rejeter si pas de détails bancaires", async () => {
-      vi.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
         {
           id: "course-1",
           prixTotal: 1000,
@@ -265,11 +264,11 @@ describe("ZupDrivePaymentDriverService", () => {
         },
       ] as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 25,
       } as any);
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
         id: mockChauffeurId,
         user: { id: "user-123", name: "Jean Dupont" },
         bankDetails: null,
@@ -283,7 +282,7 @@ describe("ZupDrivePaymentDriverService", () => {
 
   describe("processPayout", () => {
     it("devrait changer le statut à PROCESSING", async () => {
-      vi.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
         id: "payout-123",
         chauffeurId: mockChauffeurId,
         montant: 1700,
@@ -292,7 +291,7 @@ describe("ZupDrivePaymentDriverService", () => {
         periodeFinale: now,
       } as any);
 
-      vi.mocked(db.driverPayoutDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.driverPayoutDrive.update).mockResolvedValueOnce({
         id: "payout-123",
         chauffeurId: mockChauffeurId,
         montant: 1700,
@@ -314,7 +313,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait rejeter si payout n'existe pas", async () => {
-      vi.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce(null);
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce(null);
 
       await expect(
         ZupDrivePaymentDriverService.processPayout("invalid")
@@ -322,7 +321,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait rejeter si déjà traité", async () => {
-      vi.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
         id: "payout-123",
         chauffeurId: mockChauffeurId,
         montant: 1700,
@@ -339,7 +338,7 @@ describe("ZupDrivePaymentDriverService", () => {
 
   describe("getPayoutStatus", () => {
     it("devrait retourner le statut d'un payout", async () => {
-      vi.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
         id: "payout-123",
         montant: 1700,
         statut: "PROCESSING",
@@ -355,7 +354,7 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait inclure la raison d'échec si applicable", async () => {
-      vi.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
         id: "payout-123",
         montant: 1700,
         statut: "FAILED",
@@ -373,7 +372,7 @@ describe("ZupDrivePaymentDriverService", () => {
   describe("getFinancialDashboard", () => {
     it("devrait agréger les données financières", async () => {
       // Mock getDriverEarnings responses for today/week/month
-      vi.mocked(db.courseDrive.findMany)
+      jest.mocked(db.courseDrive.findMany)
         .mockResolvedValueOnce([
           { id: "course-1", prixTotal: 1000, pourboire: 100, distanceKm: 5, dureeMinutes: 10 },
         ] as any)
@@ -385,11 +384,11 @@ describe("ZupDrivePaymentDriverService", () => {
           { id: "course-1", prixTotal: 15000, pourboire: 1500, distanceKm: 75, dureeMinutes: 150 },
         ] as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValue({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValue({
         commissionPercentage: 25,
       } as any);
 
-      vi.mocked(db.driverPayoutDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.driverPayoutDrive.findMany).mockResolvedValueOnce([
         {
           id: "payout-1",
           montant: 5000,
@@ -411,12 +410,12 @@ describe("ZupDrivePaymentDriverService", () => {
 
   describe("Commission calculations", () => {
     it("devrait calculer correctement avec commission 20%", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "COMPLETED",
       } as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 20,
       } as any);
 
@@ -436,12 +435,12 @@ describe("ZupDrivePaymentDriverService", () => {
     });
 
     it("devrait calculer correctement avec commission 30%", async () => {
-      vi.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
         id: mockCourseId,
         statut: "COMPLETED",
       } as any);
 
-      vi.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
+      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
         commissionPercentage: 30,
       } as any);
 

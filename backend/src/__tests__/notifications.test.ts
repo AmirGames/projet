@@ -2,15 +2,14 @@
  * Tests: Notifications Service
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import NotificationsService from '../services/notifications';
 import { notificationsService } from '../services/notifications';
 
 // Mock dependencies
-vi.mock('nodemailer', () => ({
+jest.mock('nodemailer', () => ({
   default: {
-    createTransport: vi.fn(() => ({
-      sendMail: vi.fn().mockResolvedValue({ response: 'ok' }),
+    createTransport: jest.fn(() => ({
+      sendMail: jest.fn().mockResolvedValue({ response: 'ok' }),
     })),
   },
 }));
@@ -27,7 +26,7 @@ describe('Notifications Service', () => {
 
   describe('Priority-based Routing', () => {
     it('should route LOW priority to in-app only', async () => {
-      const spy = vi.spyOn(notificationsService, 'send');
+      const spy = jest.spyOn(notificationsService, 'send');
 
       await notificationsService.send({
         ...mockPayload,

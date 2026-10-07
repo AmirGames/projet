@@ -4,20 +4,19 @@
  * Valide les vérifications automatisées de conformité
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ZupDriveComplianceChecksService } from "../zupdrive-compliance-checks.service";
 import { db } from "../../../services/db";
 
-vi.mock("../../../services/db", () => ({
+jest.mock("../../../services/db", () => ({
   db: {
     chauffeurDrive: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     complianceReport: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-      findFirst: vi.fn(),
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
     },
   },
 }));
@@ -27,7 +26,7 @@ describe("ZupDriveComplianceChecksService", () => {
   const mockUserId = "user-123";
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("runFullCompliance", () => {
@@ -76,8 +75,8 @@ describe("ZupDriveComplianceChecksService", () => {
         ],
       };
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 0,
         riskLevel: "LOW",
@@ -145,8 +144,8 @@ describe("ZupDriveComplianceChecksService", () => {
         ],
       };
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 55,
         riskLevel: "HIGH",
@@ -184,8 +183,8 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 85,
         riskLevel: "CRITICAL",
@@ -223,14 +222,14 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
 
       // Simulate finding a duplicate
-      vi.mocked(db.chauffeurDrive.findMany).mockResolvedValueOnce([
+      jest.mocked(db.chauffeurDrive.findMany).mockResolvedValueOnce([
         { id: "chauffeur-999", nomComplet: "Another Jean Dupont" },
       ]);
 
-      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 80,
         riskLevel: "CRITICAL",
@@ -264,8 +263,8 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 40,
         riskLevel: "MEDIUM",
@@ -306,8 +305,8 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 50,
         riskLevel: "HIGH",
@@ -359,8 +358,8 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 30,
         riskLevel: "MEDIUM",
@@ -382,7 +381,7 @@ describe("ZupDriveComplianceChecksService", () => {
         { id: "report-3", riskScore: 55, riskLevel: "HIGH", createdAt: new Date() },
       ];
 
-      vi.mocked(db.complianceReportDrive.findMany).mockResolvedValueOnce(mockReports as any);
+      jest.mocked(db.complianceReportDrive.findMany).mockResolvedValueOnce(mockReports as any);
 
       const reports = await ZupDriveComplianceChecksService.getPreviousReports(
         mockChauffeurId,
