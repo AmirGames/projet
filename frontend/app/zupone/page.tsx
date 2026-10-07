@@ -60,7 +60,7 @@ export default async function VitrineZupOne() {
     { icone: '🔒', titre: t('paymentTitle'), texte: t('paymentText') },
   ];
 
-  const rejoindre: { icone: string; marque: Marque; titre: string; texte: string; lien: string; action: string }[] = [
+  const rejoindre: { icone: string; marque: Marque; titre: string; texte: string; lien: string; action: string; bientot?: boolean }[] = [
     {
       icone: '🏪',
       marque: 'zupeat',
@@ -84,6 +84,7 @@ export default async function VitrineZupOne() {
       texte: t('driverText'),
       lien: lienVersEspace('drive', '/devenir-chauffeur'),
       action: t('driverAction'),
+      bientot: true,
     },
   ];
 
@@ -186,6 +187,11 @@ export default async function VitrineZupOne() {
                 {r.icone}
               </span>
               <h3 className="mb-2 text-xl font-bold">{r.titre}</h3>
+              {r.bientot && (
+                <span className={`mb-3 self-start rounded-full px-3 py-1 text-xs font-bold ${MARQUES[r.marque].teinte}`}>
+                  {t('comingSoon')}
+                </span>
+              )}
               <p className="mb-6 flex-1 text-gray-600">{r.texte}</p>
               <span className={`font-bold ${MARQUES[r.marque].accent}`}>
                 {r.action} <span className="inline-block transition-transform group-hover:translate-x-1">→</span>

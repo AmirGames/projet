@@ -2,7 +2,8 @@
 
 import Link from '@/components/LienRegional';
 import { accueilDe } from '@/lib/domaines';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { MARQUES } from '@/lib/marques';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { LogOut, Menu } from 'lucide-react';
@@ -12,9 +13,13 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const t = useTranslations('nav');
+  // Le dossier et les trajets du chauffeur sont ZupDrive, pas ZupEat.
+  const estZupDrive = /^(\/[a-z]{2}-[a-z]{2})?\/(chauffeur|trajet)(\/|$)/i.test(pathname ?? '');
+  const marque = MARQUES[estZupDrive ? 'zupdrive' : 'zupeat'];
 
   const handleLogout = () => {
     logout();
@@ -27,10 +32,10 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 text-gray-900 hover:no-underline">
-            <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm ${marque.logo}`}>
               Z
             </div>
-            <span className="font-extrabold tracking-tight text-xl hidden sm:inline">ZupEat</span>
+            <span className="font-extrabold tracking-tight text-xl hidden sm:inline">{marque.nom}</span>
           </Link>
 
           {/* Desktop Navigation */}
