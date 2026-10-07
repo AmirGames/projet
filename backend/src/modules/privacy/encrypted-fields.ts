@@ -47,6 +47,8 @@ export function encryptData(model: string, data: any): any {
   for (const [name, value] of Object.entries(data)) {
     const schema = field(model, name);
     if (ENCRYPTED_FIELDS[model]?.includes(name) && value != null && value !== Prisma.DbNull && value !== Prisma.JsonNull && value !== Prisma.AnyNull) {
+      // Déjà chiffré en amont (ex. origine de la requête) : ne pas rechiffrer.
+      if (isEncrypted(value)) continue;
       const scalar = schema?.type === "Json" ? value : typeof value === "object" && "set" in value ? (value as any).set : value;
       if (scalar == null) continue;
       const encoded = encrypt(JSON.stringify(scalar), `${model}.${name}`);

@@ -68,3 +68,14 @@ test("ZIP produit un répertoire central et PDF un document avec table xref", ()
   const pdf = summaryPdf(["Profil (test)", "Ligne \\ 2"]).toString();
   expect(pdf.startsWith("%PDF-1.4")).toBe(true); expect(pdf).toContain("xref"); expect(pdf).toContain("\\(test\\)");
 });
+
+describe("encryptData : valeur déjà chiffrée", () => {
+  it("ne rechiffre pas une origine déjà chiffrée en amont (journal d'audit)", async () => {
+    const { encrypt } = await import("../crypto");
+    const { encryptData, decryptResult } = await import("../encrypted-fields");
+    const deja = encrypt(JSON.stringify("203.0.113.7"), "SystemAuditLog.ipAddress");
+    const ecrit = encryptData("SystemAuditLog", { action: "X", ipAddress: deja });
+    expect(ecrit.ipAddress).toBe(deja);
+    expect(decryptResult("SystemAuditLog", ecrit).ipAddress).toBe("203.0.113.7");
+  });
+});
