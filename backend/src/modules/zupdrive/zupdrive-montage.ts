@@ -13,6 +13,7 @@ import zupdriveWebhooksRouter from "./zupdrive-webhooks.routes";
 import zupdriveComplianceRouter from "./zupdrive-compliance.routes";
 import zupdriveComplianceChecksRouter from "./zupdrive-compliance-checks.routes";
 import zupdriveAnalyticsRouter from "./zupdrive-analytics.routes";
+import zupdrivePaymentDriverRouter from "./zupdrive-payment-driver.routes";
 
 export interface MontageRouteur {
   prefixe: string;
@@ -52,6 +53,9 @@ export const MONTAGE_ZUPDRIVE: MontageRouteur[] = [
   { prefixe: "/api/zupdrive/compliance-checks", routeur: zupdriveComplianceChecksRouter },
   // Statistiques en lecture seule (section « courses-drive »).
   { prefixe: "/api/zupdrive/analytics", routeur: zupdriveAnalyticsRouter },
+  // Revenus et versements du chauffeur (/earnings, /payouts/*) et administration financière (/admin/*).
+  // Hors de /payment : GET /payment/:courseId y masquerait /earnings.
+  { prefixe: "/api/zupdrive/finance", routeur: zupdrivePaymentDriverRouter },
 ];
 
 export function monterZupDrive(app: Application): void {
