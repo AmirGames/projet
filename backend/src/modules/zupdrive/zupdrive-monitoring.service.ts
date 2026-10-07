@@ -15,6 +15,7 @@
  * - WebSocket (real-time dashboard)
  */
 
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
 
@@ -43,7 +44,7 @@ export interface NotificationPayload {
   chauffeurId?: string;
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Prisma.InputJsonObject;
   priority: "low" | "medium" | "high" | "critical";
   actionUrl?: string;
 }
@@ -75,12 +76,12 @@ export const ZupDriveMonitoringService = {
           userId: payload.userId,
           chauffeurId: payload.chauffeurId,
           type: payload.type,
-          titre: payload.title,
+          title: payload.title,
           message: payload.message,
-          donnees: payload.data || {},
-          priorite: payload.priority,
-          urlAction: payload.actionUrl,
-          lue: false,
+          data: payload.data ?? {},
+          priority: payload.priority,
+          actionUrl: payload.actionUrl,
+          read: false,
         },
       });
 
@@ -123,7 +124,7 @@ export const ZupDriveMonitoringService = {
    * Envoyer push notification (mobile)
    */
   async sendPushNotification(
-    notificationId: string,
+    _notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
     // TODO: Integration with Firebase Cloud Messaging or OneSignal
@@ -135,7 +136,7 @@ export const ZupDriveMonitoringService = {
    * Envoyer email
    */
   async sendEmailNotification(
-    notificationId: string,
+    _notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
     // TODO: Integration with email service (SendGrid, Mailgun)
@@ -147,7 +148,7 @@ export const ZupDriveMonitoringService = {
    * Broadcast WebSocket
    */
   async broadcastWebSocketNotification(
-    notificationId: string,
+    _notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
     // TODO: WebSocket broadcast to connected clients
@@ -162,18 +163,18 @@ export const ZupDriveMonitoringService = {
     return db.notificationDrive.findMany({
       where: {
         userId,
-        lue: false,
+        read: false,
       },
       orderBy: { createdAt: "desc" },
       take: limit,
       select: {
         id: true,
         type: true,
-        titre: true,
+        title: true,
         message: true,
-        donnees: true,
-        priorite: true,
-        urlAction: true,
+        data: true,
+        priority: true,
+        actionUrl: true,
         createdAt: true,
       },
     });
@@ -193,7 +194,7 @@ export const ZupDriveMonitoringService = {
 
     await db.notificationDrive.update({
       where: { id: notificationId },
-      data: { lue: true },
+      data: { read: true, readAt: new Date() },
     });
   },
 
@@ -204,18 +205,65 @@ export const ZupDriveMonitoringService = {
     const result = await db.notificationDrive.updateMany({
       where: {
         userId,
-        lue: false,
+        read: false,
       },
-      data: { lue: true },
+      data: { read: true, readAt: new Date() },
     });
 
     return result.count;
   },
 
   /**
+   * Note moyenne reçue par un chauffeur : moyenne des notes données par les
+   * passagers (NoteCourseDrive). Sans note, la moyenne vaut 0 et le nombre 0.
+   */
+  async getNoteMoyenne(
+    chauffeurId: string
+  ): Promise<{ moyenne: number; nombre: number }> {
+    const agg = await db.noteCourseDrive.aggregate({
+      where: { chauffeurId, auteur: "PASSAGER" },
+      _avg: { note: true },
+      _count: { _all: true },
+    });
+    return { moyenne: agg._avg.note ?? 0, nombre: agg._count._all };
+  },
+
+  /**
+   * Gains d'un chauffeur sur une période, en centimes entiers : prix de chaque
+   * course terminée moins la commission plateforme arrondie course par course
+   * (PlatformSettingsDrive "default", 20 % par défaut).
+   */
+  async getGainsChauffeur(
+    chauffeurId: string,
+    depuis: Date
+  ): Promise<{ gainsCentimes: number; nombreCourses: number }> {
+    const [reglages, courses] = await Promise.all([
+      db.platformSettingsDrive.findUnique({
+        where: { id: "default" },
+        select: { commissionPercentage: true },
+      }),
+      db.courseDrive.findMany({
+        where: { chauffeurId, statut: "TERMINEE", termineeLe: { gte: depuis } },
+        select: { prixCentimes: true },
+      }),
+    ]);
+    const pourcentage = reglages?.commissionPercentage ?? 20;
+
+    let gainsCentimes = 0;
+    for (const course of courses) {
+      const commission = Math.round((course.prixCentimes * pourcentage) / 100);
+      gainsCentimes += course.prixCentimes - commission;
+    }
+    return { gainsCentimes, nombreCourses: courses.length };
+  },
+
+  /**
    * Obtenir les métriques en temps réel d'un chauffeur
    */
   async getDriverMetrics(chauffeurId: string): Promise<DriverMetrics> {
+    const debutJour = new Date(new Date().setHours(0, 0, 0, 0));
+    const debutSemaine = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
     const [
       chauffeur,
       earningsToday,
@@ -223,45 +271,28 @@ export const ZupDriveMonitoringService = {
       payouts,
       documentStatus,
       complianceReport,
+      note,
     ] = await Promise.all([
       db.chauffeurDrive.findUnique({
         where: { id: chauffeurId },
         select: {
           id: true,
-          rating: true,
           statut: true,
-          courses: true,
+          courses: { select: { statut: true } },
         },
       }),
-      db.courseDrive.aggregate({
-        where: {
-          chauffeurId,
-          statut: "COMPLETED",
-          createdAt: {
-            gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          },
-        },
-        _sum: { prixTotal: true },
-      }),
-      db.courseDrive.aggregate({
-        where: {
-          chauffeurId,
-          statut: "COMPLETED",
-          createdAt: {
-            gte: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000),
-          },
-        },
-        _sum: { prixTotal: true },
-      }),
+      this.getGainsChauffeur(chauffeurId, debutJour),
+      this.getGainsChauffeur(chauffeurId, debutSemaine),
       db.driverPayoutDrive.findFirst({
         where: {
           chauffeurId,
-          statut: "PENDING",
+          status: "PENDING",
         },
         orderBy: { createdAt: "desc" },
       }),
       this.getDocumentStatus(chauffeurId),
       this.getLatestComplianceReport(chauffeurId),
+      this.getNoteMoyenne(chauffeurId),
     ]);
 
     if (!chauffeur) {
@@ -269,33 +300,33 @@ export const ZupDriveMonitoringService = {
     }
 
     // Calculer les taux
-    const completedCourses = chauffeur.courses.filter((c) => c.statut === "COMPLETED").length;
+    const completedCourses = chauffeur.courses.filter((c) => c.statut === "TERMINEE").length;
     const totalCourses = chauffeur.courses.length;
-    const cancelledCourses = chauffeur.courses.filter((c) => c.statut === "CANCELLED").length;
+    const cancelledCourses = chauffeur.courses.filter((c) => c.statut === "ANNULEE").length;
 
     const completionRate = totalCourses > 0 ? (completedCourses / totalCourses) * 100 : 0;
     const cancellationRate = totalCourses > 0 ? (cancelledCourses / totalCourses) * 100 : 0;
 
-    // Déterminer le statut
+    // Déterminer le statut (un chauffeur sans aucune note n'est pas pénalisé)
     let status: "ACTIVE" | "WARNING" | "SUSPENDED" | "INACTIVE" = "ACTIVE";
-    if (chauffeur.statut === "SUSPENDED") status = "SUSPENDED";
-    else if (chauffeur.rating < 3.0 || completionRate < 80) status = "WARNING";
+    if (chauffeur.statut === "SUSPENDU") status = "SUSPENDED";
+    else if ((note.nombre > 0 && note.moyenne < 3.0) || completionRate < 80) status = "WARNING";
 
     // Badges
     const badges = await this.getDriverBadges(chauffeurId);
 
     return {
       chauffeurId,
-      reputationScore: Math.round(chauffeur.rating * 100) / 100,
-      earningsToday: earningsToday._sum.prixTotal || 0,
-      earningsWeek: earningsWeek._sum.prixTotal || 0,
+      reputationScore: Math.round(note.moyenne * 100) / 100,
+      earningsToday: earningsToday.gainsCentimes,
+      earningsWeek: earningsWeek.gainsCentimes,
       completionRate: Math.round(completionRate),
       cancellationRate: Math.round(cancellationRate),
-      averageRating: chauffeur.rating,
+      averageRating: note.moyenne,
       coursesCompleted: completedCourses,
-      pendingPayout: payouts?.montant || 0,
+      pendingPayout: payouts?.amountCentimes || 0,
       documentStatus,
-      complianceScore: complianceReport?.overallScore || 0,
+      complianceScore: complianceReport?.complianceScore || 0,
       badges,
       status,
     };
@@ -308,7 +339,7 @@ export const ZupDriveMonitoringService = {
     chauffeurId: string
   ): Promise<"COMPLETE" | "PENDING" | "ISSUES"> {
     const documents = await db.documentChauffeurDrive.findMany({
-      where: { chauffeurId },
+      where: { chauffeurId, archiveeLe: null },
       select: { statut: true },
     });
 
@@ -331,7 +362,7 @@ export const ZupDriveMonitoringService = {
       where: { chauffeurId },
       orderBy: { createdAt: "desc" },
       select: {
-        overallScore: true,
+        complianceScore: true,
         riskLevel: true,
       },
     });
@@ -341,21 +372,22 @@ export const ZupDriveMonitoringService = {
    * Obtenir les badges du chauffeur
    */
   async getDriverBadges(chauffeurId: string): Promise<string[]> {
-    const reputation = await db.chauffeurDrive.findUnique({
-      where: { id: chauffeurId },
-      select: {
-        rating: true,
-        courses: { where: { statut: "COMPLETED" }, select: { id: true } },
-        ratings: { select: { id: true } },
-      },
-    });
+    const [chauffeur, note] = await Promise.all([
+      db.chauffeurDrive.findUnique({
+        where: { id: chauffeurId },
+        select: {
+          courses: { where: { statut: "TERMINEE" }, select: { id: true } },
+        },
+      }),
+      this.getNoteMoyenne(chauffeurId),
+    ]);
 
-    if (!reputation) return [];
+    if (!chauffeur) return [];
 
     const badges: string[] = [];
-    const avgRating = reputation.rating;
-    const coursesCount = reputation.courses.length;
-    const ratingsCount = reputation.ratings.length;
+    const avgRating = note.moyenne;
+    const coursesCount = chauffeur.courses.length;
+    const ratingsCount = note.nombre;
 
     if (avgRating >= 4.8 && ratingsCount >= 50) badges.push("TOP_RATED");
     if (coursesCount >= 500) badges.push("EXPERIENCED");
@@ -378,11 +410,12 @@ export const ZupDriveMonitoringService = {
       suspendedDrivers,
     ] = await Promise.all([
       db.chauffeurDrive.count({ where: { statut: "VALIDE" } }),
-      db.courseDrive.count({ where: { statut: "COMPLETED" } }),
+      db.courseDrive.count({ where: { statut: "TERMINEE" } }),
       db.courseDrive.aggregate({
-        _sum: { prixTotal: true },
+        where: { statut: "TERMINEE" },
+        _sum: { prixCentimes: true },
       }),
-      db.driverPayoutDrive.count({ where: { statut: "PENDING" } }),
+      db.driverPayoutDrive.count({ where: { status: "PENDING" } }),
       db.complianceReportDrive.findMany({
         where: { riskLevel: { in: ["HIGH", "CRITICAL"] } },
         take: 10,
@@ -393,14 +426,14 @@ export const ZupDriveMonitoringService = {
           createdAt: true,
         },
       }),
-      db.chauffeurDrive.count({ where: { statut: "SUSPENDED" } }),
+      db.chauffeurDrive.count({ where: { statut: "SUSPENDU" } }),
     ]);
 
     return {
       realtime: {
         activeDrivers,
         totalCourses,
-        totalEarnings: totalEarnings._sum.prixTotal || 0,
+        totalEarnings: totalEarnings._sum.prixCentimes || 0,
       },
       financials: {
         pendingPayouts,
@@ -421,12 +454,21 @@ export const ZupDriveMonitoringService = {
    */
   async checkAndAlertIssues(chauffeurId: string): Promise<void> {
     const metrics = await this.getDriverMetrics(chauffeurId);
+    const chauffeur = await db.chauffeurDrive.findUnique({
+      where: { id: chauffeurId },
+      select: { userId: true },
+    });
+    if (!chauffeur) {
+      throw new ApiError(404, "Driver not found");
+    }
+    const userId = chauffeur.userId;
+    const note = await this.getNoteMoyenne(chauffeurId);
 
-    // Alerte: Faible rating
-    if (metrics.averageRating < 3.0) {
+    // Alerte: Faible rating (sans note reçue, rien à signaler)
+    if (note.nombre > 0 && metrics.averageRating < 3.0) {
       await this.createNotification({
         type: "COMPLIANCE_WARNING",
-        userId: "", // Will be fetched from chauffeurId
+        userId,
         chauffeurId,
         title: "⚠️ Low Rating Alert",
         message: `Your rating has dropped to ${metrics.averageRating}/5. Please improve service quality.`,
@@ -439,7 +481,7 @@ export const ZupDriveMonitoringService = {
     if (metrics.cancellationRate > 15) {
       await this.createNotification({
         type: "COMPLIANCE_WARNING",
-        userId: "",
+        userId,
         chauffeurId,
         title: "⚠️ High Cancellation Rate",
         message: `Your cancellation rate is ${metrics.cancellationRate}%. Improve reliability to avoid suspension.`,
@@ -452,7 +494,7 @@ export const ZupDriveMonitoringService = {
     if (metrics.documentStatus !== "COMPLETE") {
       await this.createNotification({
         type: "DOCUMENT_EXPIRING",
-        userId: "",
+        userId,
         chauffeurId,
         title: "📋 Document Action Required",
         message: "Some of your documents need attention. Please update them.",
@@ -471,9 +513,10 @@ export const ZupDriveMonitoringService = {
     const result = await db.notificationDrive.updateMany({
       where: {
         createdAt: { lt: thirtyDaysAgo },
+        expiresAt: null,
       },
       data: {
-        archived: true,
+        expiresAt: new Date(),
       },
     });
 
@@ -486,10 +529,10 @@ export const ZupDriveMonitoringService = {
   async getNotificationStats(userId: string) {
     const [total, unread, byType] = await Promise.all([
       db.notificationDrive.count({ where: { userId } }),
-      db.notificationDrive.count({ where: { userId, lue: false } }),
+      db.notificationDrive.count({ where: { userId, read: false } }),
       db.notificationDrive.groupBy({
         by: ["type"],
-        where: { userId, lue: false },
+        where: { userId, read: false },
         _count: true,
       }),
     ]);

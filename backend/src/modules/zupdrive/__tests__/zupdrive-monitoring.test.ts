@@ -8,12 +8,19 @@ import { db } from "../../../services/db";
 jest.mock("../../../services/db", () => ({
   db: {
     notificationDrive: {
+      findUnique: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
       groupBy: jest.fn(),
+    },
+    noteCourseDrive: {
+      aggregate: jest.fn(),
+    },
+    platformSettingsDrive: {
+      findUnique: jest.fn(),
     },
     chauffeurDrive: {
       findUnique: jest.fn(),
@@ -43,10 +50,9 @@ jest.mock("../../../services/db", () => ({
 describe("ZupDriveMonitoringService", () => {
   const mockUserId = "user-123";
   const mockChauffeurId = "chauffeur-123";
-  const now = new Date();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe("createNotification", () => {
@@ -55,10 +61,10 @@ describe("ZupDriveMonitoringService", () => {
         id: "notif-1",
         userId: mockUserId,
         type: "COURSE_COMPLETED",
-        titre: "Course completed",
+        title: "Course completed",
         message: "You earned €8.25",
-        lue: false,
-      } as any);
+        read: false,
+      } as never);
 
       const notificationId = await ZupDriveMonitoringService.createNotification({
         type: "COURSE_COMPLETED",
@@ -77,9 +83,9 @@ describe("ZupDriveMonitoringService", () => {
         id: "notif-2",
         userId: mockUserId,
         type: "EARNINGS_UPDATED",
-        donnees: { amount: 825 },
-        lue: false,
-      } as any);
+        data: { amount: 825 },
+        read: false,
+      } as never);
 
       await ZupDriveMonitoringService.createNotification({
         type: "EARNINGS_UPDATED",
@@ -93,7 +99,7 @@ describe("ZupDriveMonitoringService", () => {
       expect(db.notificationDrive.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            donnees: { amount: 825 },
+            data: { amount: 825 },
           }),
         })
       );
@@ -103,16 +109,19 @@ describe("ZupDriveMonitoringService", () => {
   describe("getUnreadNotifications", () => {
     it("devrait retourner les notifications non lues", async () => {
       const notifications = [
-        { id: "notif-1", titre: "Course completed", lue: false },
-        { id: "notif-2", titre: "Payout processing", lue: false },
+        { id: "notif-1", title: "Course completed", read: false },
+        { id: "notif-2", title: "Payout processing", read: false },
       ];
 
-      jest.mocked(db.notificationDrive.findMany).mockResolvedValueOnce(notifications as any);
+      jest.mocked(db.notificationDrive.findMany).mockResolvedValueOnce(notifications as never);
 
       const result = await ZupDriveMonitoringService.getUnreadNotifications(mockUserId, 20);
 
       expect(result).toHaveLength(2);
-      expect(result[0].lue).toBe(false);
+      expect(result[0].title).toBe("Course completed");
+      expect(db.notificationDrive.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: mockUserId, read: false } })
+      );
     });
 
     it("devrait respecter la limite", async () => {
@@ -133,19 +142,19 @@ describe("ZupDriveMonitoringService", () => {
       jest.mocked(db.notificationDrive.findUnique).mockResolvedValueOnce({
         id: "notif-1",
         userId: mockUserId,
-        lue: false,
-      } as any);
+        read: false,
+      } as never);
 
       jest.mocked(db.notificationDrive.update).mockResolvedValueOnce({
         id: "notif-1",
-        lue: true,
-      } as any);
+        read: true,
+      } as never);
 
       await ZupDriveMonitoringService.markAsRead("notif-1", mockUserId);
 
       expect(db.notificationDrive.update).toHaveBeenCalledWith({
         where: { id: "notif-1" },
-        data: { lue: true },
+        data: { read: true, readAt: expect.any(Date) },
       });
     });
 
@@ -158,113 +167,163 @@ describe("ZupDriveMonitoringService", () => {
     });
   });
 
+  /** Prépare les mocks Prisma lus par getDriverMetrics. */
+  function preparerMetriques(opts: {
+    statut: string;
+    courses: { statut: string }[];
+    moyenne: number | null;
+    nombreNotes: number;
+    prixAujourdhui?: number[];
+    prixSemaine?: number[];
+    payoutCentimes?: number;
+    score?: number;
+    documents?: { statut: string }[];
+  }) {
+    jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValue({
+      id: mockChauffeurId,
+      userId: mockUserId,
+      statut: opts.statut,
+      courses: opts.courses,
+    } as never);
+    jest.mocked(db.platformSettingsDrive.findUnique).mockResolvedValue({
+      commissionPercentage: 20,
+    } as never);
+    jest
+      .mocked(db.courseDrive.findMany)
+      .mockResolvedValueOnce((opts.prixAujourdhui ?? []).map((p) => ({ prixCentimes: p })) as never)
+      .mockResolvedValueOnce((opts.prixSemaine ?? []).map((p) => ({ prixCentimes: p })) as never);
+    jest.mocked(db.noteCourseDrive.aggregate).mockResolvedValue({
+      _avg: { note: opts.moyenne },
+      _count: { _all: opts.nombreNotes },
+    } as never);
+    jest
+      .mocked(db.driverPayoutDrive.findFirst)
+      .mockResolvedValue(
+        opts.payoutCentimes ? ({ amountCentimes: opts.payoutCentimes } as never) : null
+      );
+    jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValue((opts.documents ?? []) as never);
+    jest
+      .mocked(db.complianceReportDrive.findFirst)
+      .mockResolvedValue(opts.score ? ({ complianceScore: opts.score } as never) : null);
+  }
+
   describe("getDriverMetrics", () => {
     it("devrait retourner les métriques du chauffeur", async () => {
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
-        id: mockChauffeurId,
-        rating: 4.5,
+      preparerMetriques({
         statut: "VALIDE",
-        courses: [
-          { statut: "COMPLETED" },
-          { statut: "COMPLETED" },
-          { statut: "CANCELLED" },
-        ],
-      } as any);
-
-      jest.mocked(db.courseDrive.aggregate)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 2000 } } as any)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 8000 } } as any);
-
-      jest.mocked(db.driverPayoutDrive.findFirst).mockResolvedValueOnce({
-        montant: 1500,
-      } as any);
-
-      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([
-        { statut: "APPROVED" },
-        { statut: "APPROVED" },
-      ] as any);
-
-      jest.mocked(db.complianceReportDrive.findFirst).mockResolvedValueOnce({
-        overallScore: 92,
-      } as any);
-
-      jest.mocked(db.chauffeurDrive.findUnique)
-        .mockResolvedValueOnce({
-          rating: 4.5,
-          courses: [{ id: "c1" }, { id: "c2" }],
-          ratings: [{ id: "r1" }],
-        } as any);
+        courses: [{ statut: "TERMINEE" }, { statut: "TERMINEE" }, { statut: "ANNULEE" }],
+        moyenne: 4.5,
+        nombreNotes: 1,
+        prixAujourdhui: [1000, 1000],
+        prixSemaine: [4000, 4000],
+        payoutCentimes: 1500,
+        score: 92,
+        documents: [{ statut: "APPROVED" }, { statut: "APPROVED" }],
+      });
 
       const metrics = await ZupDriveMonitoringService.getDriverMetrics(mockChauffeurId);
 
       expect(metrics.chauffeurId).toBe(mockChauffeurId);
       expect(metrics.averageRating).toBe(4.5);
-      expect(metrics.completionRate).toBe(67); // 2 completed, 1 cancelled out of 3
-      expect(metrics.status).toBe("ACTIVE");
+      expect(metrics.completionRate).toBe(67); // 2 terminées sur 3
+      expect(metrics.cancellationRate).toBe(33);
+      expect(metrics.pendingPayout).toBe(1500);
+      expect(metrics.complianceScore).toBe(92);
+      expect(metrics.documentStatus).toBe("COMPLETE");
+      expect(metrics.status).toBe("WARNING"); // taux de complétion 67 % < 80 %
+    });
+
+    it("devrait calculer les gains en centimes nets de la commission (20 %)", async () => {
+      preparerMetriques({
+        statut: "VALIDE",
+        courses: [{ statut: "TERMINEE" }],
+        moyenne: 4.5,
+        nombreNotes: 1,
+        prixAujourdhui: [1099, 1000],
+        prixSemaine: [5000],
+      });
+
+      const metrics = await ZupDriveMonitoringService.getDriverMetrics(mockChauffeurId);
+
+      // 1099 - round(219.8) = 879 ; 1000 - 200 = 800
+      expect(metrics.earningsToday).toBe(1679);
+      expect(metrics.earningsWeek).toBe(4000);
+    });
+
+    it("devrait lire la note moyenne depuis NoteCourseDrive", async () => {
+      preparerMetriques({
+        statut: "VALIDE",
+        courses: [{ statut: "TERMINEE" }],
+        moyenne: 4.5,
+        nombreNotes: 3,
+      });
+
+      await ZupDriveMonitoringService.getDriverMetrics(mockChauffeurId);
+
+      expect(db.noteCourseDrive.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { chauffeurId: mockChauffeurId, auteur: "PASSAGER" },
+        })
+      );
     });
 
     it("devrait marquer comme WARNING si rating faible", async () => {
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
-        id: mockChauffeurId,
-        rating: 2.5, // Faible rating
+      preparerMetriques({
         statut: "VALIDE",
-        courses: [{ statut: "COMPLETED" }],
-      } as any);
-
-      jest.mocked(db.courseDrive.aggregate)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 1000 } } as any)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 5000 } } as any);
-
-      jest.mocked(db.driverPayoutDrive.findFirst).mockResolvedValueOnce(null);
-      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([]);
-      jest.mocked(db.complianceReportDrive.findFirst).mockResolvedValueOnce(null);
-      jest.mocked(db.chauffeurDrive.findUnique)
-        .mockResolvedValueOnce({
-          rating: 2.5,
-          courses: [{ id: "c1" }],
-          ratings: [{ id: "r1" }],
-        } as any);
+        courses: [{ statut: "TERMINEE" }],
+        moyenne: 2.5,
+        nombreNotes: 4,
+      });
 
       const metrics = await ZupDriveMonitoringService.getDriverMetrics(mockChauffeurId);
 
       expect(metrics.status).toBe("WARNING");
     });
 
-    it("devrait marquer comme SUSPENDED si status suspendu", async () => {
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
-        id: mockChauffeurId,
-        rating: 4.0,
-        statut: "SUSPENDED", // Suspendu
+    it("ne devrait pas pénaliser un chauffeur sans aucune note", async () => {
+      preparerMetriques({
+        statut: "VALIDE",
+        courses: [{ statut: "TERMINEE" }],
+        moyenne: null,
+        nombreNotes: 0,
+      });
+
+      const metrics = await ZupDriveMonitoringService.getDriverMetrics(mockChauffeurId);
+
+      expect(metrics.averageRating).toBe(0);
+      expect(metrics.status).toBe("ACTIVE");
+    });
+
+    it("devrait marquer comme SUSPENDED si statut suspendu", async () => {
+      preparerMetriques({
+        statut: "SUSPENDU",
         courses: [],
-      } as any);
-
-      jest.mocked(db.courseDrive.aggregate)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 0 } } as any)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 0 } } as any);
-
-      jest.mocked(db.driverPayoutDrive.findFirst).mockResolvedValueOnce(null);
-      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([]);
-      jest.mocked(db.complianceReportDrive.findFirst).mockResolvedValueOnce(null);
-      jest.mocked(db.chauffeurDrive.findUnique)
-        .mockResolvedValueOnce({
-          rating: 4.0,
-          courses: [],
-          ratings: [],
-        } as any);
+        moyenne: 4.0,
+        nombreNotes: 2,
+      });
 
       const metrics = await ZupDriveMonitoringService.getDriverMetrics(mockChauffeurId);
 
       expect(metrics.status).toBe("SUSPENDED");
     });
+
+    it("devrait rejeter si le chauffeur est introuvable", async () => {
+      preparerMetriques({ statut: "VALIDE", courses: [], moyenne: null, nombreNotes: 0 });
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValue(null);
+
+      await expect(
+        ZupDriveMonitoringService.getDriverMetrics(mockChauffeurId)
+      ).rejects.toThrow("not found");
+    });
   });
 
   describe("getAdminDashboard", () => {
     it("devrait retourner le dashboard admin", async () => {
-      jest.mocked(db.chauffeurDrive.count).mockResolvedValueOnce(150);
+      jest.mocked(db.chauffeurDrive.count).mockResolvedValueOnce(150).mockResolvedValueOnce(3);
       jest.mocked(db.courseDrive.count).mockResolvedValueOnce(5000);
       jest.mocked(db.courseDrive.aggregate).mockResolvedValueOnce({
-        _sum: { prixTotal: 500000 },
-      } as any);
+        _sum: { prixCentimes: 500000 },
+      } as never);
       jest.mocked(db.driverPayoutDrive.count).mockResolvedValueOnce(45);
       jest.mocked(db.complianceReportDrive.findMany).mockResolvedValueOnce([]);
 
@@ -274,39 +333,34 @@ describe("ZupDriveMonitoringService", () => {
       expect(dashboard.realtime.totalCourses).toBe(5000);
       expect(dashboard.realtime.totalEarnings).toBe(500000);
       expect(dashboard.financials.pendingPayouts).toBe(45);
+      expect(dashboard.suspensions.count).toBe(3);
     });
   });
 
   describe("checkAndAlertIssues", () => {
     it("devrait créer une alerte si rating faible", async () => {
-      jest.mocked(db.chauffeurDrive.findUnique)
-        .mockResolvedValueOnce({
-          id: mockChauffeurId,
-          rating: 2.5,
-          statut: "VALIDE",
-          courses: [{ statut: "COMPLETED" }],
-        } as any)
-        .mockResolvedValueOnce({
-          rating: 2.5,
-          courses: [{ id: "c1" }],
-          ratings: [{ id: "r1" }],
-        } as any);
-
-      jest.mocked(db.courseDrive.aggregate)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 1000 } } as any)
-        .mockResolvedValueOnce({ _sum: { prixTotal: 5000 } } as any);
-
-      jest.mocked(db.driverPayoutDrive.findFirst).mockResolvedValueOnce(null);
-      jest.mocked(db.documentChauffeurDrive.findMany).mockResolvedValueOnce([]);
-      jest.mocked(db.complianceReportDrive.findFirst).mockResolvedValueOnce(null);
-
+      preparerMetriques({
+        statut: "VALIDE",
+        courses: [{ statut: "TERMINEE" }],
+        moyenne: 2.5,
+        nombreNotes: 4,
+        documents: [{ statut: "APPROVED" }],
+      });
       jest.mocked(db.notificationDrive.create).mockResolvedValueOnce({
         id: "alert-1",
-      } as any);
+      } as never);
 
       await ZupDriveMonitoringService.checkAndAlertIssues(mockChauffeurId);
 
-      expect(db.notificationDrive.create).toHaveBeenCalled();
+      expect(db.notificationDrive.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: mockUserId,
+            chauffeurId: mockChauffeurId,
+            type: "COMPLIANCE_WARNING",
+          }),
+        })
+      );
     });
   });
 
@@ -319,7 +373,7 @@ describe("ZupDriveMonitoringService", () => {
       jest.mocked(db.notificationDrive.groupBy).mockResolvedValueOnce([
         { type: "COURSE_COMPLETED", _count: 5 },
         { type: "PAYOUT_COMPLETED", _count: 7 },
-      ] as any);
+      ] as never);
 
       const stats = await ZupDriveMonitoringService.getNotificationStats(mockUserId);
 
@@ -333,7 +387,7 @@ describe("ZupDriveMonitoringService", () => {
     it("devrait envoyer push pour priority medium+", async () => {
       jest.mocked(db.notificationDrive.create).mockResolvedValueOnce({
         id: "notif-1",
-      } as any);
+      } as never);
 
       await ZupDriveMonitoringService.createNotification({
         type: "COURSE_COMPLETED",

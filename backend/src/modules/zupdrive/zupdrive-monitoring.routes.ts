@@ -5,30 +5,14 @@
  * Admin: Monitor platform health, alerts
  */
 
+import type { Prisma } from "@prisma/client";
 import { Router, Request, Response, NextFunction } from "express";
 import { ZupDriveMonitoringService } from "./zupdrive-monitoring.service";
 import { UnifiedRolesService } from "../auth/unified-roles.service";
+import { authMiddleware } from "../auth/auth.middleware";
 import { db } from "../../services/db";
 
 const router = Router();
-
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-    }
-  }
-}
-
-const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  req.userId = token;
-  next();
-};
 
 // ============================================================================
 // DRIVER NOTIFICATION ENDPOINTS
@@ -40,7 +24,7 @@ const authenticate = (req: Request, res: Response, next: NextFunction): void => 
  */
 router.get(
   "/notifications",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const limit = Math.min(parseInt((req.query.limit as string) || "20"), 100);
@@ -69,10 +53,10 @@ router.get(
  */
 router.post(
   "/notifications/:id/read",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const notificationId = req.params.id || "";
+      const notificationId = String(req.params.id ?? "");
 
       await ZupDriveMonitoringService.markAsRead(notificationId, req.userId!);
 
@@ -92,7 +76,7 @@ router.post(
  */
 router.post(
   "/notifications/mark-all-read",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const count = await ZupDriveMonitoringService.markAllAsRead(req.userId!);
@@ -114,7 +98,7 @@ router.post(
  */
 router.get(
   "/metrics",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Find driver by user ID
@@ -145,7 +129,7 @@ router.get(
  */
 router.get(
   "/earnings-realtime",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const chauffeur = await db.chauffeurDrive.findUnique({
@@ -161,38 +145,23 @@ router.get(
       today.setHours(0, 0, 0, 0);
 
       const [todayStats, weekStats] = await Promise.all([
-        db.courseDrive.aggregate({
-          where: {
-            chauffeurId: chauffeur.id,
-            statut: "COMPLETED",
-            createdAt: { gte: today },
-          },
-          _sum: { prixTotal: true },
-          _count: true,
-        }),
-        db.courseDrive.aggregate({
-          where: {
-            chauffeurId: chauffeur.id,
-            statut: "COMPLETED",
-            createdAt: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            },
-          },
-          _sum: { prixTotal: true },
-          _count: true,
-        }),
+        ZupDriveMonitoringService.getGainsChauffeur(chauffeur.id, today),
+        ZupDriveMonitoringService.getGainsChauffeur(
+          chauffeur.id,
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        ),
       ]);
 
       return res.json({
         success: true,
         earnings: {
           today: {
-            amount: todayStats._sum.prixTotal || 0,
-            courses: todayStats._count,
+            amount: todayStats.gainsCentimes,
+            courses: todayStats.nombreCourses,
           },
           week: {
-            amount: weekStats._sum.prixTotal || 0,
-            courses: weekStats._count,
+            amount: weekStats.gainsCentimes,
+            courses: weekStats.nombreCourses,
           },
           timestamp: new Date().toISOString(),
         },
@@ -210,7 +179,7 @@ router.get(
  */
 router.get(
   "/ws",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // WebSocket upgrade handler
@@ -235,7 +204,7 @@ router.get(
  */
 router.get(
   "/admin/dashboard",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
@@ -261,7 +230,7 @@ router.get(
  */
 router.get(
   "/admin/driver/:chauffeurId/metrics",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
@@ -269,7 +238,7 @@ router.get(
         return res.status(403).json({ error: "Admin only" });
       }
 
-      const chauffeurId = req.params.chauffeurId || "";
+      const chauffeurId = String(req.params.chauffeurId ?? "");
       const metrics = await ZupDriveMonitoringService.getDriverMetrics(chauffeurId);
 
       return res.json({
@@ -288,7 +257,7 @@ router.get(
  */
 router.get(
   "/admin/alerts",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
@@ -298,29 +267,46 @@ router.get(
 
       const alertType = (req.query.type as string) || "all";
 
-      let whereClause: any = {};
+      let whereClause: Prisma.ChauffeurDriveWhereInput = {};
       if (alertType === "compliance") {
-        whereClause = { riskLevel: { in: ["HIGH", "CRITICAL"] } };
+        whereClause = {
+          complianceReports: { some: { riskLevel: { in: ["HIGH", "CRITICAL"] } } },
+        };
       } else if (alertType === "rating") {
-        whereClause = { rating: { lt: 3.0 } };
+        const faibles = await db.noteCourseDrive.groupBy({
+          by: ["chauffeurId"],
+          where: { auteur: "PASSAGER" },
+          _avg: { note: true },
+          having: { note: { _avg: { lt: 3.0 } } },
+        });
+        whereClause = { id: { in: faibles.map((f) => f.chauffeurId) } };
       } else if (alertType === "suspension") {
-        whereClause = { statut: "SUSPENDED" };
+        whereClause = { statut: "SUSPENDU" };
       }
 
-      const alerts = await db.chauffeurDrive.findMany({
+      const chauffeurs = await db.chauffeurDrive.findMany({
         where: whereClause,
-        orderBy: { rating: "asc" },
         take: 50,
         select: {
           id: true,
           nomComplet: true,
-          rating: true,
           statut: true,
           _count: {
-            select: { courses: true, ratings: true },
+            select: { courses: true, notes: true },
           },
         },
       });
+
+      // Note moyenne des passagers (NoteCourseDrive), triée de la plus basse à la plus haute
+      const moyennes = await db.noteCourseDrive.groupBy({
+        by: ["chauffeurId"],
+        where: { auteur: "PASSAGER", chauffeurId: { in: chauffeurs.map((c) => c.id) } },
+        _avg: { note: true },
+      });
+      const moyenneParChauffeur = new Map(moyennes.map((m) => [m.chauffeurId, m._avg.note]));
+      const alerts = chauffeurs
+        .map((c) => ({ ...c, rating: moyenneParChauffeur.get(c.id) ?? null }))
+        .sort((x, y) => (x.rating ?? Infinity) - (y.rating ?? Infinity));
 
       return res.json({
         success: true,
@@ -340,7 +326,7 @@ router.get(
  */
 router.get(
   "/admin/compliance-alerts",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
@@ -357,13 +343,13 @@ router.get(
         select: {
           id: true,
           chauffeurId: true,
-          overallScore: true,
+          complianceScore: true,
           riskLevel: true,
           createdAt: true,
           chauffeur: {
             select: {
               nomComplet: true,
-              email: true,
+              user: { select: { email: true } },
             },
           },
         },
@@ -386,7 +372,7 @@ router.get(
  */
 router.get(
   "/admin/document-expiration-alerts",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
@@ -400,6 +386,7 @@ router.get(
       const expiringDocs = await db.documentChauffeurDrive.findMany({
         where: {
           statut: "APPROVED",
+          archiveeLe: null,
           dateExpiration: {
             lte: thirtyDaysFromNow,
             gte: new Date(),
@@ -415,7 +402,7 @@ router.get(
           chauffeur: {
             select: {
               nomComplet: true,
-              email: true,
+              user: { select: { email: true } },
             },
           },
         },
@@ -438,7 +425,7 @@ router.get(
  */
 router.get(
   "/admin/payout-failure-alerts",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
@@ -448,20 +435,20 @@ router.get(
 
       const failedPayouts = await db.driverPayoutDrive.findMany({
         where: {
-          statut: "FAILED",
+          status: "FAILED",
         },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: {
           id: true,
           chauffeurId: true,
-          montant: true,
-          erreurMotif: true,
+          amountCentimes: true,
+          failureReason: true,
           createdAt: true,
           chauffeur: {
             select: {
               nomComplet: true,
-              email: true,
+              user: { select: { email: true } },
             },
           },
         },
@@ -484,7 +471,7 @@ router.get(
  */
 router.get(
   "/admin/health",
-  authenticate,
+  authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
@@ -499,10 +486,11 @@ router.get(
         avgRating,
       ] = await Promise.all([
         db.chauffeurDrive.count({ where: { statut: "VALIDE" } }),
-        db.courseDrive.count({ where: { statut: { in: ["ACCEPTED", "IN_PROGRESS"] } } }),
-        db.chauffeurDrive.count({ where: { statut: "SUSPENDED" } }),
-        db.chauffeurDrive.aggregate({
-          _avg: { rating: true },
+        db.courseDrive.count({ where: { statut: { in: ["ACCEPTEE", "ARRIVEE", "EN_COURS"] } } }),
+        db.chauffeurDrive.count({ where: { statut: "SUSPENDU" } }),
+        db.noteCourseDrive.aggregate({
+          where: { auteur: "PASSAGER" },
+          _avg: { note: true },
         }),
       ]);
 
@@ -517,7 +505,7 @@ router.get(
             active: activeCourses,
           },
           quality: {
-            averageRating: Math.round((avgRating._avg.rating || 0) * 100) / 100,
+            averageRating: Math.round((avgRating._avg.note || 0) * 100) / 100,
           },
           status: "OPERATIONAL",
           timestamp: new Date().toISOString(),
