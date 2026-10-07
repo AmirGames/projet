@@ -1,1188 +1,376 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, Linking, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, SITE_URL, apiFetch, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
-import {
-  clearSession,
-  DeliveryAddress,
-  loadAddress,
-  loadSession,
-  saveAddress,
-  saveSession,
-  Session,
-} from '../lib/session';
-import { Carts, CartLine, itemCount, loadCarts, saveCarts, sortedCarts, withLines } from '../lib/carts';
-import { isActive, OrderSummary, orderStatus, RETARD_TEXTE } from '../lib/orders';
-import { useCustomerRealtime } from '../lib/useCustomerRealtime';
-import { useCartSync } from '../lib/useCartSync';
-import { onCustomerNotificationTap, PushCustomerData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
+import { API_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { clearSession, loadSession, saveSession, Session } from '../lib/session';
+import { registerForPush } from '../lib/push';
 import { COLORS } from '../components/ui';
-import { CRITERES_MOT_DE_PASSE, MESSAGE_MOT_DE_PASSE, motDePasseValide } from '../lib/motDePasse';
-import HomeScreen from '../components/screens/HomeScreen';
-import StoreScreen from '../components/screens/StoreScreen';
-import CartsScreen from '../components/screens/CartsScreen';
-import CheckoutScreen from '../components/screens/CheckoutScreen';
-import OrdersScreen from '../components/screens/OrdersScreen';
-import OrderScreen from '../components/screens/OrderScreen';
-import ReviewScreen from '../components/screens/ReviewScreen';
-import FavoritesScreen from '../components/screens/FavoritesScreen';
-import NotificationsScreen from '../components/screens/NotificationsScreen';
-import AddressScreen from '../components/screens/AddressScreen';
-import SettingsScreen from '../components/screens/SettingsScreen';
-import AccountScreen, { CustomerProfile } from '../components/screens/AccountScreen';
 
-const DRAWER_ITEMS = [
-  { tab: 'orders', label: '🧾 Mes commandes' },
-  { tab: 'favorites', label: '❤️ Favoris' },
-  { tab: 'notifications', label: '🔔 Notifications' },
-  { tab: 'settings', label: '⚙️ Paramètres' },
-  { tab: 'account', label: '👤 Mon Compte' },
-];
-
-/**
- * Les écrans plein cadre, ouverts par-dessus les onglets : une vitrine, le
- * tunnel de commande, une commande, un avis, l'adresse. « Retour » dépile.
- */
-type Page =
-  | { kind: 'store'; storeId: string }
-  | { kind: 'checkout'; storeId: string }
-  | { kind: 'order'; orderId: string }
-  | { kind: 'review'; orderId: string }
-  | { kind: 'address' };
-
-/** Un lien vers une page légale du site, dans le texte d'acceptation. */
-function lienSite(chemin: string, libelle: string) {
-  return (
-    <Text style={styles.lienSite} onPress={() => Linking.openURL(`${SITE_URL}${chemin}`).catch(() => undefined)}>
-      {libelle}
-    </Text>
-  );
+interface Course {
+  id: string;
+  chauffeurId?: string;
+  departAdresse: string;
+  arriveeAdresse: string;
+  prixCentimes: number;
+  statut: string;
+  chauffeur?: { nomComplet: string; rating: number };
 }
 
-export default function CustomerApp() {
+interface PassengerProfile {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export default function ZupDrivePassengerApp() {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
-  const [tab, setTab] = useState<string>('home');
-  const [pages, setPages] = useState<Page[]>([]);
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  // L'inscription exige l'acceptation des conditions : sans elle, le serveur
-  // refusait toute création de compte depuis l'application.
-  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
-  const [name, setName] = useState('');
+  const [tab, setTab] = useState<string>('search');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<CustomerProfile | null>(null);
-  const [address, setAddress] = useState<DeliveryAddress | null>(null);
-  const [carts, setCarts] = useState<Carts>({});
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [banner, setBanner] = useState<{ orderId: string; title: string; message: string } | null>(null);
-  const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
-  const [pendingOpen, setPendingOpen] = useState<PushCustomerData | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifRefreshKey, setNotifRefreshKey] = useState(0);
+  const [profile, setProfile] = useState<PassengerProfile | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [fromAddress, setFromAddress] = useState('');
+  const [toAddress, setToAddress] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
-  const token = session?.accessToken || '';
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
-  const pushTokenRef = useRef<string | null>(null);
-
-  const page = pages[pages.length - 1];
-  const pushPage = (p: Page) => {
-    setMenuOpen(false);
-    setPages((stack) => [...stack, p]);
-  };
-  const popPage = () => setPages((stack) => stack.slice(0, -1));
-
-  const activeOrders = useMemo(() => orders.filter(isActive), [orders]);
-  const activeOrderIds = useMemo(() => activeOrders.map((o) => o.id), [activeOrders]);
-  const cartList = useMemo(() => sortedCarts(carts), [carts]);
-  const cartItems = cartList.reduce((n, c) => n + itemCount(c.lines), 0);
-
-  const updateCarts = useCallback((update: (c: Carts) => Carts) => {
-    setCarts((current) => {
-      const next = update(current);
-      saveCarts(next);
-      return next;
-    });
-  }, []);
-
-  // Les paniers suivent le compte : ceux du site apparaissent ici, en direct.
-  useCartSync({ token, carts, setCarts });
-
-  const loadOrders = useCallback(async (accessToken: string) => {
-    if (!accessToken) return;
-    try {
-      const res = await apiFetch<{ data: OrderSummary[] }>('/api/client/me/orders', accessToken);
-      setOrders(res.data || []);
-    } catch {
-      // La liste affichée reste : elle sera relue au prochain événement.
-    }
-  }, []);
-
-  const loadUnread = useCallback(async (accessToken: string) => {
-    try {
-      const res = await apiFetch<{ unreadCount: number }>('/api/notifications?limit=1', accessToken);
-      setUnreadCount(res.unreadCount || 0);
-    } catch {
-      // Le compteur sera recalculé plus tard.
-    }
-  }, []);
-
-  const openSession = async (next: Session) => {
-    setSession(next);
-    setEmail(next.email);
-    setTab('home');
-    setPages([]);
-    apiFetch<{ data: CustomerProfile }>('/api/client/me', next.accessToken)
-      .then((res) => setProfile(res.data))
-      .catch(() => undefined);
-    await Promise.all([loadOrders(next.accessToken), loadUnread(next.accessToken)]);
-  };
-
-  const handleLogout = useCallback(() => {
-    const current = sessionRef.current;
-    if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
-    pushTokenRef.current = null;
-    setPushSetup(null);
-    setPendingOpen(null);
-    clearSession();
-    setSession(null);
-    setPassword('');
-    setProfile(null);
-    setOrders([]);
-    setPages([]);
-    setTab('home');
-    setMenuOpen(false);
-    setBanner(null);
-    setUnreadCount(0);
-  }, []);
-
-  // Le serveur ferme toutes les sessions du compte, celle-ci comprise (D8) : on
-  // revient à l'écran de connexion. Des jetons neufs, s'il en remettait, sont gardés.
-  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string } | null) => {
-    if (!tokens) {
-      handleLogout();
-      return;
-    }
-    const current = sessionRef.current;
-    if (!current) return;
-    const renewed = { ...current, ...tokens };
-    setSession(renewed);
-    saveSession(renewed);
-  }, [handleLogout]);
-
-  // Démarrage : paniers et adresse du téléphone, puis la session renouvelée.
+  // Boot: restore session
   useEffect(() => {
     (async () => {
-      const [stored, storedAddress, storedCarts] = await Promise.all([loadSession(), loadAddress(), loadCarts()]);
-      setAddress(storedAddress);
-      setCarts(storedCarts);
-      if (stored?.refreshToken) {
-        try {
-          const response = await fetch(`${API_URL}/api/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken: stored.refreshToken }),
-          });
-          const data = await response.json();
-          if (response.ok && data.accessToken) {
-            const renewed = { ...stored, accessToken: data.accessToken, refreshToken: data.refreshToken || stored.refreshToken };
-            await saveSession(renewed);
-            await openSession(renewed);
-          } else if (response.status === 401 || response.status === 403) {
-            // Jeton refusé : on se reconnecte.
-            await clearSession();
-            setEmail(stored.email);
-          } else {
-            // Serveur en erreur : on garde la session telle quelle.
-            await openSession(stored);
-          }
-        } catch {
-          await openSession(stored);
+      try {
+        const savedSession = await loadSession();
+        if (savedSession) {
+          setSession(savedSession);
+          await fetchProfile(savedSession.accessToken);
         }
+      } catch (e) {
+        console.warn('Boot failed', e);
+      } finally {
+        setBooting(false);
       }
-      setBooting(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      handleLogout();
-      Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
+    setUnauthorizedHandler(async () => {
+      await clearSession();
+      setSession(null);
     });
-    // La session renouvelée en cours d'usage : l'écran garde le jeton valable.
-    setSessionRenewedHandler((renewed) => setSession(renewed));
-    return () => {
-      setUnauthorizedHandler(null);
-      setSessionRenewedHandler(null);
-    };
-  }, [handleLogout]);
+  }, []);
 
-  // Ce téléphone suit les commandes même application fermée.
-  useEffect(() => {
-    if (!token) return;
-    let cancelled = false;
-    registerForPush(token).then((setup) => {
-      if (cancelled) return;
-      pushTokenRef.current = setup.status === 'enabled' ? setup.token : null;
-      setPushSetup(setup);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
-
-  // Toucher une notification ouvre la commande concernée.
-  useEffect(() => onCustomerNotificationTap(setPendingOpen), []);
-
-  useEffect(() => {
-    if (!pendingOpen || !session) return;
-    setPendingOpen(null);
-    if (pendingOpen.orderId) {
-      setBanner(null);
-      pushPage({ kind: 'order', orderId: pendingOpen.orderId });
-    } else {
-      setPages([]);
-      setTab('notifications');
+  const fetchProfile = useCallback(async (token: string) => {
+    try {
+      const res = await apiFetch(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProfile(res.data);
+    } catch (e) {
+      console.warn('Failed to fetch profile', e);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingOpen, session]);
+  }, []);
 
-  // Un même changement arrive souvent par plusieurs événements : un seul
-  // rechargement suffit.
-  const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scheduleReload = () => {
-    if (reloadTimer.current) clearTimeout(reloadTimer.current);
-    reloadTimer.current = setTimeout(() => loadOrders(token), 300);
-  };
-
-  const viewingOrder = (orderId: string) => page?.kind === 'order' && page.orderId === orderId;
-
-  const { connected } = useCustomerRealtime({
-    token,
-    activeOrderIds,
-    onOrderUpdate: (u) => {
-      setOrders((list) => list.map((o) => (o.id === u.orderId ? { ...o, status: u.status } : o)));
-      scheduleReload();
-      // L'écran de la commande affiche déjà la nouvelle : le bandeau servirait
-      // de doublon.
-      if (u.title && u.message && !viewingOrder(u.orderId)) {
-        setBanner({ orderId: u.orderId, title: u.title, message: u.message });
-      }
-    },
-    onDeliveryUpdate: (u) => {
-      if (u.status) scheduleReload();
-      if (u.attenteFinLe && !viewingOrder(u.orderId)) {
-        setBanner({ orderId: u.orderId, title: 'Votre livreur vous attend', message: 'Il est devant chez vous : descendez vite, il ne peut attendre que 6 minutes.' });
-      } else if (u.livreurProche && !viewingOrder(u.orderId)) {
-        setBanner({ orderId: u.orderId, title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
-      } else if (u.retard && !viewingOrder(u.orderId)) {
-        const { titre, texte } = RETARD_TEXTE[u.retard.motif];
-        setBanner({ orderId: u.orderId, title: titre, message: texte });
-      }
-    },
-    onNotification: () => {
-      loadUnread(token);
-      setNotifRefreshKey((k) => k + 1);
-    },
-    onReconnect: scheduleReload,
-  });
-
-  useEffect(() => {
-    if (!banner) return;
-    const id = setTimeout(() => setBanner(null), 8000);
-    return () => clearTimeout(id);
-  }, [banner]);
-
-  const handleAuth = async () => {
-    if (!email || !password || (mode === 'signup' && name.trim().length < 2)) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+  const searchCourses = async () => {
+    if (!fromAddress || !toAddress) {
+      Alert.alert('Erreur', 'Veuillez entrer une adresse de départ et d\'arrivée');
       return;
     }
-    if (mode === 'signup' && !motDePasseValide(password)) {
-      Alert.alert('Mot de passe', MESSAGE_MOT_DE_PASSE);
-      return;
-    }
-    if (mode === 'signup' && !conditionsAcceptees) {
-      Alert.alert('Conditions', 'Acceptez les conditions pour créer votre compte.');
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/auth/${mode === 'signup' ? 'signup' : 'login'}`, {
+      const res = await apiFetch(`${API_URL}/api/zupdrive/courses/search`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-          ...(mode === 'signup' ? { name: name.trim(), conditionsAcceptees } : {}),
-        }),
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
+        body: JSON.stringify({ fromAddress, toAddress }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        Alert.alert('Erreur', data.error || data.message || (mode === 'signup' ? 'Inscription échouée' : 'Connexion échouée'));
-        return;
-      }
-
-      // Confirmation d'adresse exigée : pas de session avant le clic sur le lien.
-      if (mode === 'signup' && data.emailVerificationRequired) {
-        Alert.alert('Vérifiez vos e-mails', data.message || 'Un e-mail de confirmation vient d’être envoyé.');
-        setPassword('');
-        setMode('login');
-        return;
-      }
-
-      // Tout compte peut commander : la fiche client naît à la première visite.
-      const next: Session = {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        email: data.user?.email || email.trim(),
-      };
-      await saveSession(next);
-      setPassword('');
-      await openSession(next);
-    } catch (error) {
-      Alert.alert('Erreur', 'Impossible de se connecter au serveur');
-      console.error(error);
+      setCourses(res.data || []);
+    } catch (e: any) {
+      Alert.alert('Erreur', e.message || 'Recherche échouée');
     } finally {
       setLoading(false);
     }
   };
 
-  const changeAddress = (next: DeliveryAddress) => {
-    setAddress(next);
-    saveAddress(next);
-    popPage();
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez entrer vos identifiants');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await apiFetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      const newSession: Session = {
+        accessToken: res.data.accessToken,
+        refreshToken: res.data.refreshToken,
+        expiresAt: res.data.expiresAt,
+        userId: res.data.userId,
+      };
+      await saveSession(newSession);
+      setSession(newSession);
+      await fetchProfile(newSession.accessToken);
+      await registerForPush(newSession.accessToken);
+    } catch (e: any) {
+      Alert.alert('Erreur', e.message || 'Connexion échouée');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const setLines = (store: { id: string; name: string; logo?: string | null }, lines: CartLine[]) =>
-    updateCarts((c) => withLines(c, store, lines));
-
-  const openFromMenu = (target: string) => {
-    setPages([]);
-    setTab(target);
-    setMenuOpen(false);
+  const acceptCourse = async (courseId: string) => {
+    try {
+      const res = await apiFetch(`${API_URL}/api/zupdrive/courses/${courseId}/accept`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
+      });
+      setSelectedCourse(res.data);
+      Alert.alert('Succès', 'Course confirmée! Votre chauffeur arrive.');
+    } catch (e: any) {
+      Alert.alert('Erreur', e.message || 'Impossible de confirmer');
+    }
   };
 
-  // Panier vidé depuis le tunnel : il n'y a plus rien à commander.
-  useEffect(() => {
-    if (page?.kind === 'checkout' && !carts[page.storeId]) popPage();
-  }, [page, carts]);
+  const handleLogout = async () => {
+    Alert.alert('Déconnexion', 'Êtes-vous sûr ?', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Oui',
+        onPress: async () => {
+          await clearSession();
+          setSession(null);
+          setProfile(null);
+        },
+      },
+    ]);
+  };
 
-  const clearUnread = useCallback((n: number) => setUnreadCount(n), []);
-  const onProfileLoaded = useCallback((p: CustomerProfile) => setProfile(p), []);
 
   if (booting) {
     return (
-      <SafeAreaView style={[styles.container, styles.splash]}>
-        <StatusBar style="light" />
-        <Text style={styles.title}>ZupEat</Text>
-        <ActivityIndicator color="#fff" style={{ marginTop: 20 }} />
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </SafeAreaView>
     );
   }
 
-  // Login Screen
   if (!session) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <StatusBar style="light" />
-        <ScrollView contentContainerStyle={styles.loginContainer} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>ZupEat</Text>
-          <Text style={styles.subtitle}>Vos commerces de quartier, livrés</Text>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <ScrollView contentContainerStyle={styles.loginContainer}>
+          <Text style={styles.title}>ZupDrive Passager</Text>
 
-          {mode === 'signup' && (
+          <View style={styles.input}>
+            <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Nom"
-              placeholderTextColor="#999"
-              value={name}
-              onChangeText={setName}
+              placeholder="votre@email.com"
+              value={email}
+              onChangeText={setEmail}
               editable={!loading}
+              style={styles.textInput}
             />
-          )}
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            editable={!loading}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          <View style={styles.input}>
+            <Text style={styles.label}>Mot de passe</Text>
+            <TextInput
+              placeholder="••••••••"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!loading}
+              style={styles.textInput}
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Mot de passe"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete={mode === 'signup' ? 'new-password' : 'password'}
-            textContentType={mode === 'signup' ? 'newPassword' : 'password'}
-            editable={!loading}
-          />
-          {mode === 'signup' && (
-            <View style={styles.criteres}>
-              {CRITERES_MOT_DE_PASSE.map(({ libelle, respecte }) => {
-                const ok = respecte(password);
-                return (
-                  <Text key={libelle} style={[styles.critere, ok && styles.critereOk]}>
-                    {ok ? '✓' : '•'} {libelle}
-                  </Text>
-                );
-              })}
-            </View>
-          )}
-
-          {mode === 'signup' && (
-            <TouchableOpacity
-              style={styles.acceptRow}
-              onPress={() => setConditionsAcceptees((a) => !a)}
-              disabled={loading}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: conditionsAcceptees }}
-            >
-              <View style={[styles.box, conditionsAcceptees && styles.boxChecked]}>
-                {conditionsAcceptees && <Text style={styles.tick}>✓</Text>}
-              </View>
-              <Text style={styles.acceptText}>
-                J’ai lu et j’accepte les {lienSite('/cgu', 'conditions générales d’utilisation')} et les{' '}
-                {lienSite('/cgv', 'conditions générales de vente')}, et je prends connaissance de la{' '}
-                {lienSite('/confidentialite', 'politique de confidentialité')}.
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-            onPress={handleAuth}
-            disabled={loading}
-          >
+          <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.loginButtonText}>{mode === 'signup' ? 'Créer mon compte' : 'Se connecter'}</Text>
+              <Text style={styles.buttonText}>Se connecter</Text>
             )}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => setMode(mode === 'signup' ? 'login' : 'signup')} disabled={loading}>
-            <Text style={styles.switchMode}>
-              {mode === 'signup' ? 'J’ai déjà un compte : me connecter' : 'Pas encore de compte ? En créer un'}
-            </Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  // Écrans plein cadre
-  if (page) {
-    let content: React.ReactNode = null;
-    if (page.kind === 'store') {
-      const cart = carts[page.storeId];
-      content = (
-        <StoreScreen
-          key={page.storeId}
-          token={token}
-          storeId={page.storeId}
-          address={address}
-          lines={cart?.lines || []}
-          onChangeLines={(lines, store) => setLines(store, lines)}
-          onBack={popPage}
-          onCheckout={() => pushPage({ kind: 'checkout', storeId: page.storeId })}
-        />
-      );
-    } else if (page.kind === 'checkout') {
-      const cart = carts[page.storeId];
-      if (cart) {
-        content = (
-          <CheckoutScreen
-            key={page.storeId}
-            token={token}
-            cart={cart}
-            address={address}
-            onChangeLines={(lines) => setLines({ id: cart.storeId, name: cart.storeName, logo: cart.storeLogo }, lines)}
-            onChangeAddress={() => pushPage({ kind: 'address' })}
-            onBack={popPage}
-            onBackToStore={() =>
-              setPages((stack) => {
-                const below = stack[stack.length - 2];
-                return below?.kind === 'store' && below.storeId === cart.storeId
-                  ? stack.slice(0, -1)
-                  : [...stack.slice(0, -1), { kind: 'store', storeId: cart.storeId }];
-              })
-            }
-            onOrdered={(orderId) => {
-              updateCarts((c) => withLines(c, { id: cart.storeId, name: cart.storeName }, []));
-              loadOrders(token);
-              setTab('current');
-              setPages([{ kind: 'order', orderId }]);
-            }}
-          />
-        );
-      }
-    } else if (page.kind === 'order') {
-      content = (
-        <OrderScreen
-          key={page.orderId}
-          token={token}
-          orderId={page.orderId}
-          onBack={popPage}
-          onReview={(orderId) => pushPage({ kind: 'review', orderId })}
-        />
-      );
-    } else if (page.kind === 'review') {
-      content = (
-        <ReviewScreen
-          key={page.orderId}
-          token={token}
-          orderId={page.orderId}
-          onBack={popPage}
-          onDone={() => {
-            popPage();
-            loadOrders(token);
-          }}
-        />
-      );
-    } else if (page.kind === 'address') {
-      content = <AddressScreen token={token} current={address} onBack={popPage} onSave={changeAddress} />;
-    }
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
 
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <StatusBar style="light" />
-        <View style={styles.dashboardContainer}>{content}</View>
-      </SafeAreaView>
-    );
-  }
-
-  const currentOrder = activeOrders[0];
-  const firstName = profile?.name?.split(' ')[0];
-  const headerSubtitle = (
-    <View style={styles.subtitleRow}>
-      <View style={[styles.liveDot, { backgroundColor: connected ? '#7CFC8A' : '#FFB3B3' }]} />
-      <Text style={styles.headerEmail}>
-        {profile?.name || email}
-        {connected ? '' : '  · hors ligne'}
-      </Text>
-    </View>
-  );
-  const back = () => setTab('home');
-  const bell = (
-    <TouchableOpacity style={styles.bell} onPress={() => setTab('notifications')} hitSlop={8}>
-      <Text style={styles.bellIcon}>🔔</Text>
-      {unreadCount > 0 && (
-        <View style={styles.bellBadge}>
-          <Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-  const header = (title: string) => (
-    <View style={styles.header}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.headerTitle}>{title}</Text>
-        {headerSubtitle}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          {tab === 'search' && '🚗 Rechercher'}
+          {tab === 'tracking' && '📍 Suivi'}
+          {tab === 'history' && '📋 Historique'}
+          {tab === 'profile' && '👤 Profil'}
+        </Text>
       </View>
-      {bell}
-    </View>
-  );
 
-  const renderTabContent = () => {
-    if (tab === 'orders') {
-      return (
-        <OrdersScreen
-          token={token}
-          onBack={back}
-          onOpenOrder={(orderId) => pushPage({ kind: 'order', orderId })}
-          onReview={(orderId) => pushPage({ kind: 'review', orderId })}
-          cartLines={(storeId) => carts[storeId]?.lines || []}
-          onReorder={(store, lines) => {
-            setLines(store, lines);
-            pushPage({ kind: 'store', storeId: store.id });
-          }}
-        />
-      );
-    }
-    if (tab === 'favorites') {
-      return <FavoritesScreen token={token} onBack={back} onOpenStore={(storeId) => pushPage({ kind: 'store', storeId })} />;
-    }
-    if (tab === 'notifications') {
-      return (
-        <NotificationsScreen
-          token={token}
-          refreshKey={notifRefreshKey}
-          onBack={back}
-          onUnreadChange={clearUnread}
-          onOpenOrder={(orderId) => pushPage({ kind: 'order', orderId })}
-        />
-      );
-    }
-    if (tab === 'settings') {
-      return (
-        <SettingsScreen
-          address={address}
-          pushEnabled={pushSetup?.status === 'enabled'}
-          pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
-          token={token || null}
-          onChangeAddress={() => pushPage({ kind: 'address' })}
-          onAccountDeleted={() => {
-            // Plus rien de ce compte sur le téléphone : paniers et adresse compris.
-            setCarts({});
-            saveCarts({});
-            setAddress(null);
-            saveAddress(null);
-            handleLogout();
-          }}
-          onBack={back}
-        />
-      );
-    }
-    if (tab === 'account') return <AccountScreen token={token} onBack={back} onProfileLoaded={onProfileLoaded} onPasswordChanged={onPasswordChanged} />;
-    if (tab === 'carts') {
-      return (
-        <CartsScreen
-          header={header('Mes paniers')}
-          carts={cartList}
-          onCheckout={(storeId) => pushPage({ kind: 'checkout', storeId })}
-          onOpenStore={(storeId) => pushPage({ kind: 'store', storeId })}
-          onClear={(storeId) => updateCarts((c) => withLines(c, { id: storeId, name: '' }, []))}
-          onBrowse={back}
-        />
-      );
-    }
-    if (tab === 'current') {
-      if (currentOrder) {
-        return (
-          <>
-            {activeOrders.length > 1 && (
-              <ScrollView horizontal style={styles.ordersStrip} contentContainerStyle={{ gap: 8, padding: 8 }}>
-                {activeOrders.map((o) => (
-                  <TouchableOpacity key={o.id} style={styles.orderChip} onPress={() => pushPage({ kind: 'order', orderId: o.id })}>
-                    <Text style={styles.orderChipText} numberOfLines={1}>
-                      {o.store?.name || 'Commande'} · {orderStatus(o.status).label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-            <OrderScreen
-              key={currentOrder.id}
-              token={token}
-              orderId={currentOrder.id}
-              onBack={back}
-              onReview={(orderId) => pushPage({ kind: 'review', orderId })}
+      {tab === 'search' && (
+        <ScrollView style={styles.content}>
+          <View style={styles.searchCard}>
+            <Text style={styles.label}>Départ</Text>
+            <TextInput
+              placeholder="Votre adresse"
+              value={fromAddress}
+              onChangeText={setFromAddress}
+              editable={!loading}
+              style={styles.textInput}
             />
-          </>
-        );
-      }
-      return (
-        <>
-          {header('Commande en cours')}
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🛵</Text>
-            <Text style={styles.emptyText}>Aucune commande en cours</Text>
-            <Text style={styles.emptyHint}>Vos commandes se suivent ici en direct, du commerce à votre porte.</Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={back}>
-              <Text style={styles.emptyButtonText}>Commander</Text>
+
+            <Text style={[styles.label, { marginTop: 12 }]}>Destination</Text>
+            <TextInput
+              placeholder="Destination"
+              value={toAddress}
+              onChangeText={setToAddress}
+              editable={!loading}
+              style={styles.textInput}
+            />
+
+            <TouchableOpacity style={styles.button} onPress={searchCourses} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Rechercher</Text>
+              )}
             </TouchableOpacity>
           </View>
-        </>
-      );
-    }
-    return (
-      <HomeScreen
-        header={header(firstName ? `Bonjour ${firstName}` : 'Accueil')}
-        address={address}
-        carts={cartList}
-        onChangeAddress={() => pushPage({ kind: 'address' })}
-        onOpenStore={(store) => pushPage({ kind: 'store', storeId: store.id })}
-        onOpenCart={(storeId) => pushPage({ kind: 'store', storeId })}
-      />
-    );
-  };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar style="light" />
-
-      <View style={styles.dashboardContainer}>
-        {renderTabContent()}
-
-        <View style={styles.bottomTabBar}>
-          <TouchableOpacity style={styles.tabButton} onPress={() => setMenuOpen(true)}>
-            <View>
-              <Text style={styles.tabIcon}>☰</Text>
-              {unreadCount > 0 && (
-                <View style={styles.tabBadge}>
-                  <Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.tabLabel}>Menu</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.tabButton, tab === 'home' && styles.tabButtonActive]} onPress={() => setTab('home')}>
-            <Text style={styles.tabIcon}>🏠</Text>
-            <Text style={[styles.tabLabel, tab === 'home' && styles.tabLabelActive]}>Accueil</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.tabButton, tab === 'carts' && styles.tabButtonActive]} onPress={() => setTab('carts')}>
-            <View>
-              <Text style={styles.tabIcon}>🛒</Text>
-              {cartItems > 0 && (
-                <View style={[styles.tabBadge, { backgroundColor: COLORS.success }]}>
-                  <Text style={styles.tabBadgeText}>{cartItems}</Text>
-                </View>
-              )}
-            </View>
-            <Text style={[styles.tabLabel, tab === 'carts' && styles.tabLabelActive]}>Paniers</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.tabButton, tab === 'current' && styles.tabButtonActive]} onPress={() => setTab('current')}>
-            <View>
-              <Text style={styles.tabIcon}>🛵</Text>
-              {activeOrders.length > 0 && (
-                <View style={styles.tabBadge}>
-                  <Text style={styles.tabBadgeText}>{activeOrders.length}</Text>
-                </View>
-              )}
-            </View>
-            <Text style={[styles.tabLabel, tab === 'current' && styles.tabLabelActive]}>Commande en cours</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {banner && (
-        <TouchableOpacity
-          style={styles.banner}
-          activeOpacity={0.9}
-          onPress={() => {
-            const orderId = banner.orderId;
-            setBanner(null);
-            pushPage({ kind: 'order', orderId });
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>🔔 {banner.title}</Text>
-            <Text style={styles.bannerText} numberOfLines={2}>
-              {banner.message}
-            </Text>
-          </View>
-          <Text style={styles.bannerAction}>Voir ›</Text>
-          <TouchableOpacity onPress={() => setBanner(null)} hitSlop={10}>
-            <Text style={styles.bannerClose}>✕</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      )}
-
-      {/* Menu Drawer */}
-      {menuOpen && (
-        <View style={styles.menuOverlay}>
-          <View style={styles.menuDrawer}>
-            <View style={styles.menuHeader}>
-              <Text style={styles.menuTitle}>Menu</Text>
-              <TouchableOpacity onPress={() => setMenuOpen(false)}>
-                <Text style={styles.closeButton}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView>
-              <View style={styles.profileBlock}>
-                <Text style={styles.profileBlockLabel}>Livrer à</Text>
-                <TouchableOpacity style={styles.profileCurrent} onPress={() => pushPage({ kind: 'address' })}>
-                  <Text style={styles.profileName} numberOfLines={2}>
-                    📍 {address?.label || 'Choisir mon adresse'}
+          <FlatList
+            data={courses}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.quoteCard}>
+                <Text style={styles.quotePrice}>€{(item.prixCentimes / 100).toFixed(2)}</Text>
+                {item.chauffeur ? (
+                  <View style={styles.driverInfo}>
+                    <Text style={styles.driverName}>{item.chauffeur.nomComplet}</Text>
+                    <Text style={styles.driverRating}>⭐ {item.chauffeur.rating.toFixed(1)}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.noDriver}>Chauffeur en cours d'assignation...</Text>
+                )}
+                <TouchableOpacity
+                  style={styles.acceptButton}
+                  onPress={() => acceptCourse(item.id)}
+                  disabled={item.statut === 'ACCEPTEE'}
+                >
+                  <Text style={styles.acceptButtonText}>
+                    {item.statut === 'ACCEPTEE' ? '✓ Acceptée' : 'Accepter'}
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              {DRAWER_ITEMS.map((item) => (
-                <TouchableOpacity
-                  key={item.tab}
-                  style={[styles.menuItem, tab === item.tab && styles.menuItemActive]}
-                  onPress={() => openFromMenu(item.tab)}
-                >
-                  <Text style={styles.menuItemText}>
-                    {item.label}
-                    {item.tab === 'notifications' && unreadCount > 0 ? `  (${unreadCount})` : ''}
-                    {item.tab === 'orders' && activeOrders.length > 0 ? `  (${activeOrders.length} en cours)` : ''}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
-                <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-          <TouchableOpacity style={styles.menuBackdrop} onPress={() => setMenuOpen(false)} />
-        </View>
+            )}
+            scrollEnabled={false}
+          />
+        </ScrollView>
       )}
+
+      {tab === 'tracking' && selectedCourse && (
+        <ScrollView style={styles.content}>
+          <View style={styles.trackingCard}>
+            <Text style={styles.trackingTitle}>Trajet en cours</Text>
+            <View style={styles.addressLine}>
+              <Text style={styles.label}>Départ</Text>
+              <Text style={styles.address}>{selectedCourse.departAdresse}</Text>
+            </View>
+            <View style={styles.addressLine}>
+              <Text style={styles.label}>Destination</Text>
+              <Text style={styles.address}>{selectedCourse.arriveeAdresse}</Text>
+            </View>
+            {selectedCourse.chauffeur && (
+              <View style={styles.driverCard}>
+                <Text style={styles.driverName}>{selectedCourse.chauffeur.nomComplet}</Text>
+                <Text style={styles.eta}>ETA: 5 minutes</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      )}
+
+      {tab === 'history' && (
+        <ScrollView style={styles.content}>
+          <Text style={styles.emptyText}>Pas de courses complétées</Text>
+        </ScrollView>
+      )}
+
+      {tab === 'profile' && profile && (
+        <ScrollView style={styles.content}>
+          <View style={styles.profileCard}>
+            <Text style={styles.profileName}>{profile.name}</Text>
+            <Text style={styles.profileEmail}>{profile.email}</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Se déconnecter</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+
+      <View style={styles.tabBar}>
+        {['search', 'tracking', 'history', 'profile'].map((t) => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.tabItem, tab === t && styles.tabItemActive]}
+            onPress={() => setTab(t)}
+          >
+            <Text style={[styles.tabLabel, tab === t && styles.tabLabelActive]}>
+              {t === 'search' && '🚗'}
+              {t === 'tracking' && '📍'}
+              {t === 'history' && '📋'}
+              {t === 'profile' && '👤'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  splash: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  tabBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -12,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#f44336',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  bell: {
-    padding: 6,
-  },
-  bellIcon: {
-    fontSize: 22,
-  },
-  bellBadge: {
-    position: 'absolute',
-    top: 0,
-    right: -2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#f44336',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  tabBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  banner: {
-    position: 'absolute',
-    top: 56,
-    left: 12,
-    right: 12,
-    backgroundColor: '#1B5E20',
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    zIndex: 500,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  bannerTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  bannerText: {
-    color: '#fff',
-    opacity: 0.9,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  bannerAction: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  bannerClose: {
-    color: '#fff',
-    fontSize: 16,
-    opacity: 0.8,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    position: 'relative',
-  },
-  menuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    zIndex: 999,
-  },
-  menuBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  menuDrawer: {
-    width: '70%',
-    backgroundColor: '#fff',
-    paddingTop: 20,
-    paddingBottom: 20,
-  },
-  menuHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  menuTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeButton: {
-    fontSize: 24,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-  menuItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  profileBlock: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  profileBlockLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#999',
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  profileCurrent: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  profileName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  menuItemActive: {
-    backgroundColor: COLORS.primarySoft,
-  },
-  menuItemLogout: {
-    marginTop: 8,
-    borderBottomWidth: 0,
-  },
-  menuItemLogoutText: {
-    fontSize: 16,
-    color: '#f44336',
-    fontWeight: '500',
-  },
-  loginContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  dashboardContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  headerEmail: {
-    fontSize: 11,
-    color: '#fff',
-    opacity: 0.8,
-    marginTop: 2,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 24,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  emptyHint: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  emptyButton: {
-    marginTop: 16,
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-  },
-  emptyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#fff',
-    marginBottom: 40,
-    textAlign: 'center',
-    opacity: 0.9,
-  },
-  criteres: { marginTop: -8, marginBottom: 15 },
-  critere: { fontSize: 13, color: '#fff', opacity: 0.75, marginBottom: 2 },
-  critereOk: { opacity: 1, fontWeight: '700' },
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#333',
-  },
-  loginButton: {
-    // Noir sur le fond orange de la marque, comme le bouton du site.
-    backgroundColor: '#111111',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  loginButtonDisabled: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  acceptRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4, marginBottom: 8 },
-  box: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  boxChecked: { backgroundColor: '#111111', borderColor: '#111111' },
-  tick: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  acceptText: { flex: 1, fontSize: 14, color: '#fff', lineHeight: 20 },
-  lienSite: { color: '#fff', textDecorationLine: 'underline', fontWeight: '700' },
-  switchMode: {
-    marginTop: 18,
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-    textDecorationLine: 'underline',
-  },
-  ordersStrip: {
-    flexGrow: 0,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  orderChip: {
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    maxWidth: 240,
-  },
-  orderChipText: {
-    color: COLORS.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  bottomTabBar: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
-    paddingBottom: 8,
-  },
-  tabButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  tabButtonActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary,
-  },
-  tabIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  tabLabel: {
-    fontSize: 11,
-    color: '#999',
-    fontWeight: '500',
-  },
-  tabLabelActive: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  loginContainer: { paddingHorizontal: 20, paddingVertical: 40, justifyContent: 'center' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: '#0369A1' },
+  input: { marginBottom: 15 },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 5, color: '#374151' },
+  textInput: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
+  button: { backgroundColor: '#0369A1', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 20 },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+  header: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#0369A1' },
+
+  content: { flex: 1, paddingHorizontal: 16, paddingVertical: 12 },
+  searchCard: { backgroundColor: '#F0F9FF', borderRadius: 12, padding: 16, marginBottom: 16 },
+  quoteCard: { backgroundColor: '#F9FAFB', borderRadius: 8, padding: 12, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: '#0369A1' },
+  quotePrice: { fontSize: 18, fontWeight: 'bold', color: '#0369A1' },
+  driverInfo: { marginTop: 8 },
+  driverName: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
+  driverRating: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  noDriver: { fontSize: 12, color: '#9CA3AF', marginTop: 8, fontStyle: 'italic' },
+  acceptButton: { backgroundColor: '#0369A1', borderRadius: 6, paddingVertical: 8, alignItems: 'center', marginTop: 10 },
+  acceptButtonText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  emptyText: { textAlign: 'center', color: '#9CA3AF', marginTop: 40 },
+
+  trackingCard: { backgroundColor: '#F0F9FF', borderRadius: 12, padding: 16, marginBottom: 16 },
+  trackingTitle: { fontSize: 16, fontWeight: 'bold', color: '#0369A1', marginBottom: 12 },
+  addressLine: { marginBottom: 12 },
+  address: { fontSize: 14, color: '#1F2937', marginTop: 4 },
+  driverCard: { backgroundColor: '#DBEAFE', borderRadius: 8, padding: 12, marginTop: 12 },
+  eta: { fontSize: 12, color: '#0369A1', marginTop: 4 },
+
+  profileCard: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, marginBottom: 16 },
+  profileName: { fontSize: 18, fontWeight: 'bold', color: '#1F2937' },
+  profileEmail: { fontSize: 14, color: '#6B7280', marginTop: 4 },
+  logoutButton: { backgroundColor: '#EF4444', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  logoutButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+  tabBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#E5E7EB', backgroundColor: '#fff' },
+  tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center' },
+  tabItemActive: { borderTopWidth: 3, borderTopColor: '#0369A1' },
+  tabLabel: { fontSize: 20 },
+  tabLabelActive: { fontSize: 22 },
 });
