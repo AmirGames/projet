@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Alert, ScrollView, FlatList } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, apiFetch, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
+import { API_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
 import { clearSession, loadSession, saveSession, Session } from '../lib/session';
 import { registerForPush, unregisterPush } from '../lib/push';
 import { COLORS } from '../components/ui';
@@ -80,33 +80,27 @@ export default function ZupDriveDriverApp() {
     });
   }, []);
 
-  const fetchProfile = useCallback(async (accessToken: string) => {
+  const fetchProfile = useCallback(async (token: string) => {
     try {
-      const res = await apiFetch(`${API_URL}/api/zupdrive/chauffeur/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await apiFetch('/api/zupdrive/chauffeur/me', token);
       setProfile(res.data);
     } catch (e) {
       logger.warn('Failed to fetch profile', e);
     }
   }, []);
 
-  const fetchCourses = useCallback(async (accessToken: string) => {
+  const fetchCourses = useCallback(async (token: string) => {
     try {
-      const res = await apiFetch(`${API_URL}/api/zupdrive/courses`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await apiFetch('/api/zupdrive/courses', token);
       setCourses(res.data || []);
     } catch (e) {
       logger.warn('Failed to fetch courses', e);
     }
   }, []);
 
-  const fetchEarnings = useCallback(async (accessToken: string) => {
+  const fetchEarnings = useCallback(async (token: string) => {
     try {
-      const res = await apiFetch(`${API_URL}/api/zupdrive/payment/earnings`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await apiFetch('/api/zupdrive/payment/earnings', token);
       setEarnings(res.data);
     } catch (e) {
       logger.warn('Failed to fetch earnings', e);
@@ -120,15 +114,13 @@ export default function ZupDriveDriverApp() {
     }
     setLoading(true);
     try {
-      const res = await apiFetch(`${API_URL}/api/zupdrive/chauffeur/auth/otp`, {
+      const res = await apiFetch('/api/zupdrive/chauffeur/auth/otp', null, {
         method: 'POST',
-        body: JSON.stringify({ phone, otp }),
+        body: { phone, otp },
       });
       const newSession: Session = {
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
-        expiresAt: res.data.expiresAt,
-        userId: res.data.userId,
       };
       await saveSession(newSession);
       setSession(newSession);
@@ -143,14 +135,16 @@ export default function ZupDriveDriverApp() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert('Déconnexion', 'Êtes-vous sûr ?', [
       { text: 'Annuler', style: 'cancel' },
       {
         text: 'Oui',
         style: 'destructive',
         onPress: async () => {
-          await unregisterPush();
+          if (session) {
+            await unregisterPush(session.accessToken);
+          }
           await clearSession();
           setSession(null);
           setProfile(null);
@@ -163,9 +157,8 @@ export default function ZupDriveDriverApp() {
 
   const acceptCourse = async (courseId: string) => {
     try {
-      await apiFetch(`${API_URL}/api/zupdrive/courses/${courseId}/accept`, {
+      await apiFetch(`/api/zupdrive/courses/${courseId}/accept`, token, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       });
       Alert.alert('Succès', 'Course acceptée');
       await fetchCourses(token);

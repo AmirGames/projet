@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -62,9 +62,7 @@ export default function ZupDrivePassengerApp() {
 
   const fetchProfile = useCallback(async (token: string) => {
     try {
-      const res = await apiFetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch('/api/auth/me', token);
       setProfile(res.data);
     } catch (e) {
       console.warn('Failed to fetch profile', e);
@@ -78,10 +76,9 @@ export default function ZupDrivePassengerApp() {
     }
     setLoading(true);
     try {
-      const res = await apiFetch(`${API_URL}/api/zupdrive/courses/search`, {
+      const res = await apiFetch('/api/zupdrive/courses/search', session?.accessToken || null, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session?.accessToken}` },
-        body: JSON.stringify({ fromAddress, toAddress }),
+        body: { fromAddress, toAddress },
       });
       setCourses(res.data || []);
     } catch (e: any) {
@@ -98,15 +95,13 @@ export default function ZupDrivePassengerApp() {
     }
     setLoading(true);
     try {
-      const res = await apiFetch(`${API_URL}/api/auth/login`, {
+      const res = await apiFetch('/api/auth/login', null, {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: { email, password },
       });
       const newSession: Session = {
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
-        expiresAt: res.data.expiresAt,
-        userId: res.data.userId,
       };
       await saveSession(newSession);
       setSession(newSession);
@@ -121,9 +116,8 @@ export default function ZupDrivePassengerApp() {
 
   const acceptCourse = async (courseId: string) => {
     try {
-      const res = await apiFetch(`${API_URL}/api/zupdrive/courses/${courseId}/accept`, {
+      const res = await apiFetch(`/api/zupdrive/courses/${courseId}/accept`, session?.accessToken || null, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session?.accessToken}` },
       });
       setSelectedCourse(res.data);
       Alert.alert('Succès', 'Course confirmée! Votre chauffeur arrive.');
@@ -132,7 +126,7 @@ export default function ZupDrivePassengerApp() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert('Déconnexion', 'Êtes-vous sûr ?', [
       { text: 'Annuler', style: 'cancel' },
       {
