@@ -38,9 +38,9 @@ const rolesDrive = [
   { code: "SUPPORT", label: "Support", permissions: {} },
 ];
 
-async function passer(routeur: any, compte: any, method: string, path: string, plateforme?: any) {
+async function passer(routeur: any, compte: any, method: string, path: string, plateforme?: any, section?: string) {
   let erreur: any;
-  await exigerPermission(routeur, plateforme)({ compte, method, path } as any, { json: jest.fn() } as any, (e?: any) => {
+  await exigerPermission(routeur, plateforme, section)({ compte, method, path } as any, { json: jest.fn() } as any, (e?: any) => {
     erreur = e;
   });
   return erreur ? erreur.statusCode ?? 403 : 200;
@@ -194,5 +194,36 @@ describe("permissions indépendantes de la casse et du codage de l'URL", () => {
     expect(await passer("superowner", membre("GESTION_ORG"), "PATCH", "/Organizations/OrgAbC")).toBe(200);
     expect(await passer("superowner", membre("SUPPORT_LIVREURS"), "POST", "/DRIVER-SUPPORT/incident")).toBe(200);
     expect(await passer("superowner", membre("ADMIN"), "HEAD", "/ORGANIZATIONS/OrgAbC")).toBe(200);
+  });
+});
+
+describe("section fixée par le routeur (routeurs ZupDrive hors de ROUTES.zupdrive)", () => {
+  beforeEach(() => {
+    oublierRoles();
+    db.platformRole.findMany.mockImplementation(async () => [
+      { code: "SUPER_ADMIN", label: "SuperAdmin", permissions: {} },
+      { code: "ADMIN", label: "Administrateur", permissions: {} },
+      { code: "SUPPORT", label: "Support", permissions: { chauffeurs: "read", "courses-drive": "write" } },
+    ]);
+  });
+  const support = membre(null, "SUPPORT");
+
+  it("un chemin qu'aucune section ne couvre reste réservé au superowner", async () => {
+    expect(await passer("zupdrive", support, "GET", "/drivers", "DRIVE")).toBe(403);
+    expect(await passer("zupdrive", { ...support, isSuperOwner: true }, "GET", "/drivers", "DRIVE")).toBe(200);
+  });
+
+  it("la section fixée ouvre la lecture, et l'écriture seulement au niveau « write »", async () => {
+    expect(await passer("zupdrive", support, "GET", "/drivers", "DRIVE", "chauffeurs")).toBe(200);
+    expect(await passer("zupdrive", support, "POST", "/drivers/c1/suspend", "DRIVE", "chauffeurs")).toBe(403);
+    expect(await passer("zupdrive", support, "POST", "/admin/send", "DRIVE", "courses-drive")).toBe(200);
+  });
+
+  it("une section que le rôle n'a pas est refusée, même en lecture", async () => {
+    expect(await passer("zupdrive", support, "GET", "/webhooks", "DRIVE", "webhooks")).toBe(403);
+  });
+
+  it("un compte qui n'est pas de l'équipe est refusé", async () => {
+    expect(await passer("zupdrive", { ...support, isSystemAdmin: false }, "GET", "/drivers", "DRIVE", "chauffeurs")).toBe(403);
   });
 });
