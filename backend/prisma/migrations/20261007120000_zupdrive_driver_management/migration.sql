@@ -5,11 +5,11 @@ CREATE TABLE "ChauffeurDocument" (
     "type" TEXT NOT NULL CHECK ("type" IN ('PERMIS', 'ASSURANCE', 'INSPECTION', 'IDENTITE')),
     "status" TEXT NOT NULL CHECK ("status" IN ('VALIDE', 'EXPIREE', 'EN_ATTENTE')) DEFAULT 'EN_ATTENTE',
     "url" TEXT NOT NULL,
-    "expiresAt" DATETIME NOT NULL,
-    "verifiedAt" DATETIME,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "verifiedAt" TIMESTAMP(3),
     "verifiedBy" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "ChauffeurDocument_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE("driverId", "type")
 );
@@ -21,14 +21,14 @@ CREATE TABLE "ChauffeurInfraction" (
     "type" TEXT NOT NULL CHECK ("type" IN ('PLAINTE_PASSAGER', 'ACCIDENT', 'INFRACTION_CODE_ROUTE', 'AUTRE')),
     "description" TEXT NOT NULL,
     "severity" TEXT NOT NULL CHECK ("severity" IN ('BASSE', 'MOYENNE', 'HAUTE')),
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "resolvedAt" DATETIME,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "resolvedAt" TIMESTAMP(3),
     "resolution" TEXT,
     CONSTRAINT "ChauffeurInfraction_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- AddColumn suspendedAt and suspensionReason to ChauffeurDrive
-ALTER TABLE "ChauffeurDrive" ADD COLUMN "suspendedAt" DATETIME;
+ALTER TABLE "ChauffeurDrive" ADD COLUMN "suspendedAt" TIMESTAMP(3);
 ALTER TABLE "ChauffeurDrive" ADD COLUMN "suspensionReason" TEXT;
 
 -- CreateIndex on ChauffeurDocument
