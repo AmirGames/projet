@@ -6,10 +6,12 @@
 # fichiers n'appartiennent pas à l'utilisateur « node ». On rend d'abord ces
 # dossiers à « node » (une seule fois : on ne parcourt que si le propriétaire
 # diffère), puis on abandonne les droits root avant de lancer la commande.
+# Un sous-dossier ou un fichier créé en root (outil lancé sans cet entrypoint)
+# est détecté aussi : sinon l'API ne peut plus le lire.
 set -e
 
 for dossier in uploads backups private-documents logs; do
-  if [ -d "$dossier" ] && [ "$(stat -c %u "$dossier")" != "$(id -u node)" ]; then
+  if [ -d "$dossier" ] && [ -n "$(find "$dossier" ! -user node -print -quit)" ]; then
     chown -R node:node "$dossier"
   fi
 done
