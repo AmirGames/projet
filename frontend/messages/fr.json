@@ -2213,7 +2213,8 @@
       "login": "Se connecter",
       "error": "Une erreur est survenue",
       "pays": "Pays",
-      "emailPlaceholder": "vous@exemple.fr"
+      "emailPlaceholder": "vous@exemple.fr",
+      "checkEmail": "Si cette adresse peut être inscrite, un e-mail de confirmation vient d'être envoyé. Ouvrez le lien qu'il contient pour vous connecter."
     }
   },
   "restaurants": {
@@ -5548,9 +5549,9 @@
     "reference": "Référence",
     "ecartes": "Écartés du fichier (à corriger avant le prochain lot)",
     "telecharger": "Télécharger le fichier SEPA",
-    "marquerVerse": "Marquer le lot versé",
+    "marquerVerse": "La banque a exécuté le lot",
     "arreter": "Arrêter la semaine maintenant",
-    "etapes": "1. Téléchargez le fichier · 2. Importez-le dans votre banque en ligne (virements groupés SEPA) et signez · 3. Revenez ici et marquez le lot versé.",
+    "etapes": "1. Préparez le lot (IBAN et montants figés) · 2. Approuvez-le avec votre mot de passe · 3. Téléchargez le fichier, importez-le dans votre banque (virements groupés SEPA) et signez · 4. Revenez ici confirmer que la banque a exécuté le lot.",
     "chargement": "Chargement…",
     "relevesCommercants": "Relevés des commerçants",
     "filtreAVerser": "À verser",
@@ -5574,7 +5575,29 @@
     "livreur": "Livreur",
     "commandes": "{n, plural, one {# commande} other {# commandes}}",
     "ibanManquant": "IBAN manquant ou invalide",
-    "lotVerse": "Lot versé : {commercants} commerçant(s), {livreurs} livreur(s)."
+    "lotVerse": "Lot versé : {commercants} commerçant(s), {livreurs} livreur(s).",
+    "actionImpossible": "Action impossible",
+    "preparerImpossible": "Impossible de préparer le lot",
+    "lotPrepare": "Lot préparé : bénéficiaires, IBAN et montants sont figés. Approuvez-le avec votre mot de passe.",
+    "lotEnCours": "Lot en cours",
+    "virementsN": "{n, plural, one {# virement} other {# virements}}",
+    "motDePasse": "Votre mot de passe",
+    "approuver": "Approuver le lot",
+    "marquerTransmis": "Marquer transmis à la banque",
+    "refuse": "La banque a refusé",
+    "refuseParBanque": "Refusé par la banque",
+    "confirmerRejet": "La banque a refusé ce lot ? Les relevés redeviendront à verser.",
+    "annulerLot": "Annuler le lot",
+    "preparer": "Préparer le lot",
+    "etatsLot": {
+      "PREPARED": "Préparé — à approuver",
+      "APPROVED": "Approuvé — fichier à télécharger",
+      "EXPORTED": "Fichier exporté — à importer dans la banque",
+      "SUBMITTED": "Transmis à la banque — en attente d'exécution",
+      "CONFIRMED": "Versé",
+      "REJECTED": "Refusé",
+      "CANCELLED": "Annulé"
+    }
   },
   "choixRole": {
     "erreurRoles": "Erreur lors du chargement des rôles",

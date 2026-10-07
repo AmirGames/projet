@@ -24,7 +24,7 @@ const PRESETS = [1, 2, 3, 5];
  * C'est un paiement à part, par carte ; il revient en entier au livreur.
  * Rien ne s'affiche quand il n'y a rien à proposer, ni à remercier.
  */
-export default function TipAfterDelivery({ orderId, refreshKey }: { orderId: string; refreshKey?: string }) {
+export default function TipAfterDelivery({ orderId, token, refreshKey }: { orderId: string; token: string; refreshKey?: string }) {
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,12 +40,12 @@ export default function TipAfterDelivery({ orderId, refreshKey }: { orderId: str
       merchantIdentifier="merchant.com.amir_games.zupeatcustomer"
       urlScheme="zupeat-customer"
     >
-      <TipCard orderId={orderId} refreshKey={refreshKey} />
+      <TipCard orderId={orderId} token={token} refreshKey={refreshKey} />
     </StripeProvider>
   );
 }
 
-function TipCard({ orderId, refreshKey }: { orderId: string; refreshKey?: string }) {
+function TipCard({ orderId, token, refreshKey }: { orderId: string; token: string; refreshKey?: string }) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [situation, setSituation] = useState<Situation | null>(null);
   const [amount, setAmount] = useState(0);
@@ -54,13 +54,13 @@ function TipCard({ orderId, refreshKey }: { orderId: string; refreshKey?: string
   const [error, setError] = useState('');
 
   const load = useCallback(() => {
-    apiFetch<{ data: Situation }>(`/api/orders/${orderId}/pourboire`, null)
+    apiFetch<{ data: Situation }>(`/api/orders/${orderId}/pourboire`, token)
       .then((res) => {
         setSituation(res.data);
         setAmount((a) => a || Math.min(res.data.maximum, Math.max(res.data.minimum, Math.round(res.data.montantArticles * 0.1))));
       })
       .catch(() => setSituation(null));
-  }, [orderId]);
+  }, [orderId, token]);
 
   useEffect(load, [load, refreshKey]);
 
@@ -86,7 +86,7 @@ function TipCard({ orderId, refreshKey }: { orderId: string; refreshKey?: string
     setError('');
     setPaying(true);
     try {
-      const intent = await apiFetch<{ clientSecret: string }>(`/api/orders/${orderId}/pourboire`, null, {
+      const intent = await apiFetch<{ clientSecret: string }>(`/api/orders/${orderId}/pourboire`, token, {
         method: 'POST',
         body: { montant: amount },
       });

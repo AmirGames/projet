@@ -119,7 +119,9 @@ export async function detailFacturation(orgId: string, periodeDemandee?: string)
   for (const releve of releves) {
     for (const ligne of (releve.lines as { code: string; montant: number; nombre?: number }[]) || []) {
       const montant = Math.abs(Number(ligne.montant || 0));
-      if (ligne.code === "200") {
+      // Commission rendue sur des remboursements clients : elle se déduit.
+      if (ligne.code === "210") retenues.commission -= montant;
+      else if (ligne.code === "200") {
         retenues.commission += montant;
         retenues.ordersCount += ligne.nombre ?? 0;
       } else if (ligne.code === "230") retenues.serviceFees += montant;

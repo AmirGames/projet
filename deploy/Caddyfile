@@ -8,6 +8,11 @@
 # L'API et le temps réel (Socket.IO : Caddy relaie les WebSockets tout seul).
 {$DOMAINE_API} {
 	encode zstd gzip
+	# Jamais en clair après la première visite ; l'API ne dit pas quel serveur elle est.
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
 	# L'assistant passe par le relais Next.js signé, jamais par l'API publique.
 	@assistant path /api/assistant /api/assistant/*
 	respond @assistant 404
@@ -33,6 +38,14 @@
 # proxy de l'application aiguille selon l'hôte demandé.
 {$DOMAINES_SITE} {
 	encode zstd gzip
+	# Le navigateur n'ouvre plus le site qu'en HTTPS après la première visite.
+	# Sans includeSubDomains ni preload : tous les sous-domaines ne sont pas
+	# forcément servis par ce Caddy. Les autres en-têtes (CSP, Referrer-Policy…)
+	# viennent de Next.js (frontend/next.config.js).
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
 
 	# www.zupeat.com, www.zupone.com… : une seule adresse par site. Servi tel
 	# quel, www n'était reconnu par aucun espace et affichait la page des

@@ -15,6 +15,7 @@ import { usePays } from "@/lib/pays-client";
 
 export default function SignupPage() {
   const t = useTranslations('auth.signup');
+  const [aConfirmer, setAConfirmer] = useState(false);
   const tMdp = useTranslations('motDePasse');
   const tConditions = useTranslations('acceptationConditions');
   const router = useRouter();
@@ -52,6 +53,13 @@ export default function SignupPage() {
         return;
       }
 
+      // Confirmation d'adresse exigée : pas de session avant le clic sur le lien.
+      if (result.emailVerificationRequired) {
+        setError("");
+        setAConfirmer(true);
+        return;
+      }
+
       // Save tokens and user role
       localStorage.setItem("accessToken", result.accessToken);
       // L'inscription ne dit pas les droits d'administration : /auth/me les
@@ -79,6 +87,12 @@ export default function SignupPage() {
         <h1 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-gray-900">
           {t("title")}
         </h1>
+
+        {aConfirmer && (
+          <div className="bg-green-50 border border-green-200 text-green-900 p-4 rounded-lg mb-4" role="status">
+            {t("checkEmail")}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-900 p-4 rounded-lg mb-4">

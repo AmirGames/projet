@@ -9,6 +9,7 @@ import { verifyToken } from '../auth/auth.middleware';
 import { AuthenticatedSocket } from '../../types/socket';
 import { db } from '../../services/db';
 import { compteSocket, accesCommande, accesSalon } from './socket-access';
+import { membreVoitBoutique } from '../auth/autorisation-boutique';
 
 // Les notifications sont adressées par e-mail : chaque connexion rejoint donc
 // un salon nominatif, ce qui permet de la pousser au bon destinataire.
@@ -317,10 +318,13 @@ export async function emitMerchantEvent(storeId: string, evenement: string, donn
 
     const membres = await db.membership.findMany({
       where: { orgId: boutique.orgId },
-      select: { user: { select: { id: true } } },
+      select: { role: true, storeIds: true, user: { select: { id: true } } },
     });
 
+    // Seuls les membres qui voient cette boutique : pas les collègues d'une
+    // autre boutique de la même organisation.
     for (const membre of membres) {
+      if (!membreVoitBoutique(membre, storeId)) continue;
       await envoyerPrive([`compte-${membre.user.id}`], evenement, donnees);
     }
   } catch (err) {

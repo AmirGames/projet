@@ -42,11 +42,20 @@ export const champEmail = (message = "Email invalide") =>
 export const REGLE_MOT_DE_PASSE =
   "8 caractères minimum, avec au moins un chiffre, une minuscule et une majuscule";
 
+/**
+ * bcrypt ne lit que les 72 premiers octets d'un mot de passe : au-delà, deux
+ * mots de passe différents donneraient la même empreinte. La limite porte sur
+ * les octets UTF-8 (un caractère accentué en compte 2), pas sur les caractères.
+ */
+export const OCTETS_MOT_DE_PASSE_MAX = 72;
+
 export const champMotDePasse = () =>
   z
     .string()
     .min(8, "8 caractères minimum")
-    .max(128, "128 caractères au plus")
+    .refine((valeur) => Buffer.byteLength(valeur, "utf8") <= OCTETS_MOT_DE_PASSE_MAX, {
+      message: `72 octets au plus (un caractère accentué ou un emoji en compte plusieurs)`,
+    })
     .regex(/[0-9]/, "au moins un chiffre")
     .regex(/[a-z]/, "au moins une lettre minuscule")
     .regex(/[A-Z]/, "au moins une lettre majuscule");

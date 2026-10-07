@@ -18,7 +18,7 @@
  * rien encaissé, même pour une commande à payer à la remise.
  */
 
-export type CodeReversement = "100" | "110" | "120" | "130" | "200" | "230" | "240" | "300";
+export type CodeReversement = "100" | "110" | "120" | "130" | "200" | "210" | "230" | "240" | "300" | "310";
 
 export const LIBELLES_REVERSEMENT: Record<CodeReversement, { libelle: string; explication: string }> = {
   "100": {
@@ -42,6 +42,10 @@ export const LIBELLES_REVERSEMENT: Record<CodeReversement, { libelle: string; ex
     libelle: "Commission de la plateforme",
     explication: "Commission selon votre formule, figée au moment de chaque commande, payée en ligne ou sur place.",
   },
+  "210": {
+    libelle: "Commission restituée sur remboursements",
+    explication: "Part de la commission que la plateforme vous rend sur les montants remboursés à vos clients.",
+  },
   "230": {
     libelle: "Frais de service encaissés sur place",
     explication: "Frais de service payés par vos clients sur place : vous les avez encaissés pour la plateforme.",
@@ -49,6 +53,11 @@ export const LIBELLES_REVERSEMENT: Record<CodeReversement, { libelle: string; ex
   "240": {
     libelle: "Livraisons plateforme encaissées sur place",
     explication: "Courses de livreurs de la plateforme que vos clients vous ont payées : elles reviennent au livreur.",
+  },
+  "310": {
+    libelle: "Remboursements à vos clients",
+    explication:
+      "Part de vos ventes rendue à vos clients (remboursement total ou partiel), au prorata du montant remboursé. Une vente déjà versée se corrige ici, jamais en la retirant du relevé qui l'a payée.",
   },
   "300": {
     libelle: "Report du relevé précédent",
@@ -80,7 +89,60 @@ export interface CommandeAReverser {
 const n = (v: unknown) => Number(v || 0);
 const arrondi = (v: number) => Math.round(v * 100) / 100;
 
-export function lignesDuReversement(commandes: CommandeAReverser[], report = 0) {
+/** Ce qu'un remboursement client change au relevé, en euros signés. */
+export interface AjustementRemboursement {
+  /** Part des ventes du commerçant rendue (négatif). */
+  partCommercant: number;
+  /** Commission rendue par la plateforme (positif). */
+  commission: number;
+  /** Le nombre de commandes concernées. */
+  nombre: number;
+}
+
+const centimes = (v: number) => Math.round(v * 100);
+
+/**
+ * La correction due pour une commande dont le client a été remboursé
+ * (D2 : au prorata du montant remboursé).
+ *
+ * Le calcul est cumulatif : on compare la part due pour tout ce qui est
+ * remboursé à la part déjà répercutée par les relevés précédents. Le total
+ * versé après plusieurs remboursements partiels ne dépend donc pas des
+ * arrondis intermédiaires, et un remboursement total rend exactement la part
+ * du commerçant et la commission. Arrondi au centime le plus proche, par
+ * montant cumulé.
+ */
+export function ajustementRemboursement(
+  commande: CommandeAReverser,
+  rembourse: number,
+  dejaRepercute: number,
+): { partCommercant: number; commission: number } {
+  const total = centimes(n(commande.totalAmount));
+  if (!commande.paymentId || commande.priseEnCharge || total <= 0) return { partCommercant: 0, commission: 0 };
+
+  const lignes = lignesDuReversement([commande]).lignes;
+  const part = centimes(
+    lignes.filter((l) => l.code === "100" || l.code === "110" || l.code === "120").reduce((s, l) => s + l.montant, 0),
+  );
+  const commission = centimes(-(lignes.find((l) => l.code === "200")?.montant ?? 0));
+
+  const cumul = (montant: number) => {
+    const m = Math.min(Math.max(centimes(montant), 0), total);
+    return { part: Math.round((part * m) / total), commission: Math.round((commission * m) / total) };
+  };
+  const maintenant = cumul(rembourse);
+  const avant = cumul(dejaRepercute);
+  return {
+    partCommercant: -(maintenant.part - avant.part) / 100 || 0,
+    commission: (maintenant.commission - avant.commission) / 100,
+  };
+}
+
+export function lignesDuReversement(
+  commandes: CommandeAReverser[],
+  report = 0,
+  ajustements: AjustementRemboursement = { partCommercant: 0, commission: 0, nombre: 0 },
+) {
   const perdues = commandes.filter((c) => c.priseEnCharge);
   const vendues = commandes.filter((c) => !c.priseEnCharge);
   const enLigne = vendues.filter((c) => c.paymentId);
@@ -138,6 +200,8 @@ export function lignesDuReversement(commandes: CommandeAReverser[], report = 0) 
       montant: -livraisonsPlateformeSurPlace.reduce((s, c) => s + n(c.feesAmount), 0),
       nombre: livraisonsPlateformeSurPlace.length,
     },
+    { code: "210", libelle: "", montant: ajustements.commission, nombre: ajustements.nombre },
+    { code: "310", libelle: "", montant: ajustements.partCommercant, nombre: ajustements.nombre },
     { code: "300", libelle: "", montant: report },
   ];
 

@@ -11,6 +11,22 @@ export interface ReportFilters {
   paymentStatus?: string;
 }
 
+/**
+ * Une cellule du CSV.
+ *
+ * Le nom d'un client est saisi par le client, y compris sans compte : un nom
+ * comme « =HYPERLINK(...) » s'exécuterait comme une formule à l'ouverture de
+ * l'export dans un tableur. Un texte qui commence par =, +, -, @, une
+ * tabulation ou un retour chariot est donc précédé d'une apostrophe. Les
+ * nombres, eux, gardent leur signe (une remise négative reste un nombre).
+ */
+function cellule(valeur: unknown): string {
+  if (valeur === null || valeur === undefined) return '""';
+  let texte = valeur instanceof Date ? valeur.toISOString() : String(valeur);
+  if (typeof valeur === "string" && /^[=+\-@\t\r]/.test(texte)) texte = `'${texte}`;
+  return `"${texte.replace(/"/g, '""')}"`;
+}
+
 export class ReportsService {
   static async getSalesReport(filters: ReportFilters) {
     try {
@@ -232,7 +248,7 @@ export class ReportsService {
     }
 
     const headers = Object.keys(data[0]);
-    const rows = data.map((item) => headers.map((header) => `"${String(item[header]).replace(/"/g, '""')}"`).join(","));
+    const rows = data.map((item) => headers.map((header) => cellule(item[header])).join(","));
 
     return [headers.join(","), ...rows].join("\n");
   }

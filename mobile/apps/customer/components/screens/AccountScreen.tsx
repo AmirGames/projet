@@ -47,7 +47,7 @@ export default function AccountScreen({
   token: string;
   onBack: () => void;
   onProfileLoaded: (profile: CustomerProfile) => void;
-  onPasswordChanged: (tokens: NewTokens) => void;
+  onPasswordChanged: (tokens: NewTokens | null) => void;
 }) {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});

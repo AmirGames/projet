@@ -5,6 +5,8 @@ import { db } from "../../services/db";
 import { stripe, STRIPE_CONFIG } from "./stripe";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
+import { Outbox } from "../jobs/outbox.service";
+import { TYPE_ANNONCE_COMMANDE } from "../notifications/outbox-handlers";
 
 /** Les états d'une intention Stripe qui attendent encore le client. */
 const INTENTION_EN_COURS = new Set([
@@ -135,29 +137,33 @@ export const paymentService = {
   },
 
   /**
-   * Le webhook Stripe.
-   *
-   * La signature est vérifiée sur le corps brut, tel que Stripe l'a envoyé :
-   * sans elle, n'importe qui pourrait déclarer une commande payée. Chaque
-   * traitement est rejouable sans effet de bord : Stripe renvoie un événement
-   * tant qu'il n'a pas reçu de 2xx, et parfois deux fois de suite.
+   * Inscrit l'événement au journal. L'identifiant Stripe est la clé : le
+   * second passage d'un même événement le retrouve. Un événement dont le
+   * traitement a échoué est repris (Stripe le renvoie) ; un événement traité
+   * ne l'est pas deux fois.
    */
-  async handleWebhook(corpsBrut: Buffer | string, signature: string | undefined) {
-    if (!STRIPE_CONFIG.webhookSecret) {
-      throw new ApiError(503, "Webhook Stripe non configuré", "STRIPE_WEBHOOK_NOT_CONFIGURED");
-    }
-    if (!signature) {
-      throw new ApiError(400, "Signature Stripe absente", "STRIPE_SIGNATURE_MISSING");
-    }
-
-    let evenement: Stripe.Event;
+  async journaliserEvenement(evenement: Stripe.Event): Promise<"nouveau" | "deja_traite" | "a_reprendre"> {
+    const objet: any = evenement.data?.object ?? {};
     try {
-      evenement = stripe.webhooks.constructEvent(corpsBrut, signature, STRIPE_CONFIG.webhookSecret);
-    } catch (err) {
-      logger.warn("Webhook Stripe : signature invalide", { error: (err as Error).message });
-      throw new ApiError(400, "Signature Stripe invalide", "STRIPE_SIGNATURE_INVALID");
+      await db.stripeEvent.create({
+        data: {
+          id: evenement.id,
+          type: evenement.type,
+          objectId: typeof objet.id === "string" ? objet.id : null,
+          orderId: typeof objet.metadata?.orderId === "string" ? objet.metadata.orderId : null,
+        },
+      });
+      return "nouveau";
+    } catch (err: any) {
+      if (err?.code !== "P2002") throw err;
     }
+    const existant = await db.stripeEvent.findUnique({ where: { id: evenement.id }, select: { processedAt: true } });
+    if (existant?.processedAt) return "deja_traite";
+    await db.stripeEvent.update({ where: { id: evenement.id }, data: { attempts: { increment: 1 } } });
+    return "a_reprendre";
+  },
 
+  async traiterEvenement(evenement: Stripe.Event) {
     switch (evenement.type) {
       // Un pourboire laissé après la livraison porte aussi l'orderId : il
       // passe à part, sans quoi il serait pris pour le paiement de la commande.
@@ -188,11 +194,100 @@ export const paymentService = {
       case "refund.updated":
         if (evenement.data.object.status === "failed") {
           await this.remboursementEchoue(evenement.data.object);
+        } else {
+          // « pending » → « succeeded » (ou « canceled ») : l'état de la
+          // commande suit ce que Stripe a réellement rendu.
+          await this.remboursementMisAJour(evenement.data.object);
         }
+        break;
+      case "charge.dispute.created":
+        await this.noterLitige(evenement.data.object, evenement.id, true);
+        break;
+      case "charge.dispute.closed":
+        await this.noterLitige(evenement.data.object, evenement.id, false);
         break;
       default:
         logger.debug("Webhook Stripe ignoré", { type: evenement.type });
     }
+
+  },
+
+  /**
+   * Un litige carte (opposition du client auprès de sa banque) : la plateforme
+   * peut être débitée du montant et des frais. Aucun effet automatique sur la
+   * commande ni sur les reversements — décision humaine — mais le litige est
+   * inscrit au journal et signalé dans les logs.
+   */
+  async noterLitige(litige: Stripe.Dispute, evenementId: string, ouvert: boolean) {
+    const intentionId = idIntention(litige.payment_intent as any);
+    const paiement = intentionId
+      ? await db.payment.findFirst({ where: { stripePaymentIntentId: intentionId }, select: { orderId: true } })
+      : null;
+    await db.stripeEvent.update({
+      where: { id: evenementId },
+      data: {
+        objectId: litige.id,
+        orderId: paiement?.orderId ?? null,
+        detail: { montant: litige.amount, devise: litige.currency, motif: litige.reason, statut: litige.status },
+      },
+    });
+    (ouvert ? logger.error : logger.info)("Litige carte Stripe", {
+      litigeId: litige.id,
+      orderId: paiement?.orderId,
+      statut: litige.status,
+      motif: litige.reason,
+    });
+  },
+
+  /**
+   * Le webhook Stripe.
+   *
+   * La signature est vérifiée sur le corps brut, tel que Stripe l'a envoyé :
+   * sans elle, n'importe qui pourrait déclarer une commande payée. Chaque
+   * traitement est rejouable sans effet de bord : Stripe renvoie un événement
+   * tant qu'il n'a pas reçu de 2xx, et parfois deux fois de suite.
+   */
+  async handleWebhook(corpsBrut: Buffer | string, signature: string | undefined) {
+    if (!STRIPE_CONFIG.webhookSecret) {
+      throw new ApiError(503, "Webhook Stripe non configuré", "STRIPE_WEBHOOK_NOT_CONFIGURED");
+    }
+    if (!signature) {
+      throw new ApiError(400, "Signature Stripe absente", "STRIPE_SIGNATURE_MISSING");
+    }
+
+    let evenement: Stripe.Event;
+    try {
+      evenement = stripe.webhooks.constructEvent(corpsBrut, signature, STRIPE_CONFIG.webhookSecret);
+    } catch (err) {
+      logger.warn("Webhook Stripe : signature invalide", { error: (err as Error).message });
+      throw new ApiError(400, "Signature Stripe invalide", "STRIPE_SIGNATURE_INVALID");
+    }
+
+    // Un événement déjà traité (rejeu, doublon de livraison) n'a aucun effet.
+    const etat = await this.journaliserEvenement(evenement);
+    if (etat === "deja_traite") {
+      logger.info("Webhook Stripe déjà traité", { id: evenement.id, type: evenement.type });
+      return evenement;
+    }
+
+    try {
+      await this.traiterEvenement(evenement);
+    } catch (err) {
+      // Le journal ne doit pas masquer l'erreur d'origine.
+      try {
+        await db.stripeEvent.update({
+          where: { id: evenement.id },
+          data: { lastError: (err as Error).message?.slice(0, 500) },
+        });
+      } catch (erreurJournal) {
+        logger.warn("Journal Stripe : erreur non inscrite", { id: evenement.id, error: (erreurJournal as Error).message });
+      }
+      throw err;
+    }
+    await db.stripeEvent.update({
+      where: { id: evenement.id },
+      data: { processedAt: new Date(), lastError: null },
+    });
 
     return evenement;
   },
@@ -290,25 +385,31 @@ export const paymentService = {
    * fois — le webhook et `/confirm` peuvent arriver tous les deux.
    */
   async transmettreAuCommercant(orderId: string) {
-    const { count } = await db.order.updateMany({
-      where: { id: orderId, submittedAt: null, status: "PENDING", deletedAt: null, paymentStatus: 'SUCCEEDED' },
-      data: { submittedAt: new Date() },
+    // La commande devient « transmise » et son annonce est écrite dans la
+    // même transaction : un arrêt entre les deux ne laisse plus une commande
+    // payée que le commerçant ne verra jamais. L'annonce part ensuite via
+    // l'outbox, rejouée jusqu'à son succès, dédoublonnée par commande.
+    const enregistre = await db.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id: orderId, submittedAt: null, status: "PENDING", deletedAt: null, paymentStatus: 'SUCCEEDED' },
+        data: { submittedAt: new Date() },
+      });
+      if (count === 0) return false;
+      await Outbox.enregistrer(
+        TYPE_ANNONCE_COMMANDE,
+        { orderId },
+        { dedupeKey: `annonce-commande-${orderId}`, tx }
+      );
+      return true;
     });
-    if (count === 0) return false;
+    if (!enregistre) return false;
 
-    const commande = await db.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: {
-          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
-        },
-      },
-    });
-    if (!commande) return false;
-
-    // Import tardif : le service des commandes dépend déjà de celui-ci.
-    const { OrderService } = await import("../orders/order.service");
-    await OrderService.annoncerAuCommercant(commande);
+    // Au plus vite ; si cela échoue, le worker de l'outbox reprend.
+    try {
+      await Outbox.traiterLesDus(5);
+    } catch (err) {
+      logger.warn("Annonce de commande reportée au worker", { orderId, error: (err as Error).message });
+    }
 
     logger.info("Commande transmise au commerçant après encaissement", { orderId });
     return true;
@@ -332,7 +433,7 @@ export const paymentService = {
         paymentStatus: { in: ["PENDING", "FAILED"] },
         createdAt: { lt: new Date(Date.now() - delaiMinutes * 60 * 1000) },
       },
-      select: { id: true, paymentId: true },
+      select: { id: true, paymentId: true, storeId: true, promoCode: true },
       take: 50,
     });
 
@@ -348,10 +449,16 @@ export const paymentService = {
           await this.annulerIntention(commande.paymentId);
         }
 
-        await db.order.updateMany({
-          where: { id: commande.id, submittedAt: null },
+        const { count } = await db.order.updateMany({
+          where: { id: commande.id, submittedAt: null, deletedAt: null },
           data: { deletedAt: new Date() },
         });
+        // L'utilisation du code promo réservée à la création est rendue,
+        // une seule fois : seul l'appel qui retire la commande la libère.
+        if (count === 1 && commande.promoCode) {
+          const { PromotionService } = await import("../marketing/promotion.service");
+          await PromotionService.libererUtilisation(commande.storeId, commande.promoCode);
+        }
         retirees += 1;
       } catch (err) {
         logger.warn("Commande non payée impossible à retirer", {
@@ -403,23 +510,47 @@ export const paymentService = {
     return this.noterRemboursement(paiement, charge);
   },
 
+  /**
+   * Ramène la commande et le paiement à ce que Stripe a réellement rendu.
+   *
+   * Seuls les remboursements « succeeded » comptent : `amount_refunded` d'une
+   * charge inclut ceux encore en attente, qui peuvent échouer ensuite. Une
+   * commande n'est « REFUNDED » que quand tout le montant est rendu.
+   */
   async noterRemboursement(paiement: { id: string; orderId: string; refundedAt: Date | null }, charge: Stripe.Charge) {
-    const total = charge.amount_refunded >= charge.amount;
+    const liste = await stripe.refunds.list({ charge: charge.id, limit: 100 });
+    const rendu = liste.data
+      .filter((r: Stripe.Refund) => r.status === "succeeded")
+      .reduce((somme: number, r: Stripe.Refund) => somme + r.amount, 0);
+    const total = rendu >= charge.amount;
     await db.$transaction(async (tx) => {
-        await tx.order.update({
-          where: { id: paiement.orderId },
-          data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
-        });
+      await tx.order.update({
+        where: { id: paiement.orderId },
+        data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
+      });
       await tx.payment.update({
-      where: { id: paiement.id },
-      data: {
-        refundedAmount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
-        refundedAt: charge.amount_refunded ? paiement.refundedAt ?? new Date() : null,
-        status: total ? "REFUNDED" : "SUCCEEDED",
-      },
-    });
+        where: { id: paiement.id },
+        data: {
+          refundedAmount: rendu ? rendu / 100 : null,
+          refundedAt: rendu ? paiement.refundedAt ?? new Date() : null,
+          status: total ? "REFUNDED" : "SUCCEEDED",
+        },
+      });
     });
     return paiement;
+  },
+
+  /** Un remboursement a changé d'état chez Stripe (en attente, réussi, annulé). */
+  async remboursementMisAJour(remboursement: Stripe.Refund) {
+    const paymentIntentId = idIntention(remboursement.payment_intent);
+    if (!paymentIntentId) return null;
+
+    const paiement = await db.payment.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (!paiement) return null;
+
+    const chargeId = typeof remboursement.charge === "string" ? remboursement.charge : remboursement.charge?.id;
+    if (!chargeId) return null;
+    return this.noterRemboursement(paiement, await stripe.charges.retrieve(chargeId));
   },
 
   /**
@@ -477,19 +608,48 @@ export const paymentService = {
       return null;
     }
 
-    const remboursement = await stripe.refunds.create(
-      {
-        payment_intent: paymentIntentId,
-        reason: "requested_by_customer",
-        metadata: { orderId, raison: raison.slice(0, 500) },
-      },
-      { idempotencyKey: `remboursement-${orderId}${paiement?.stripeRefundId ? `-${paiement.stripeRefundId}` : ''}` }
-    );
+    // Un remboursement déjà demandé (en attente ou réussi) est repris, pas
+    // doublé. Seul un remboursement échoué ou annulé autorise une nouvelle
+    // demande, avec une autre clé d'idempotence.
+    let precedent: Stripe.Refund | null = null;
+    if (paiement?.stripeRefundId) {
+      try {
+        precedent = await stripe.refunds.retrieve(paiement.stripeRefundId);
+      } catch (err) {
+        logger.warn("Remboursement précédent illisible chez Stripe", { orderId, error: (err as Error).message });
+      }
+    }
+    const reprise = precedent && ["pending", "requires_action", "succeeded"].includes(precedent.status ?? "");
+
+    const remboursement: Stripe.Refund = reprise && precedent
+      ? precedent
+      : await stripe.refunds.create(
+          {
+            payment_intent: paymentIntentId,
+            reason: "requested_by_customer",
+            metadata: { orderId, raison: raison.slice(0, 500) },
+          },
+          { idempotencyKey: `remboursement-${orderId}${paiement?.stripeRefundId ? `-${paiement.stripeRefundId}` : ''}` }
+        );
 
     if (remboursement.status === 'failed' || remboursement.status === 'canceled') {
       await db.payment.updateMany({ where: { orderId }, data: { stripeRefundId: remboursement.id } });
       throw new ApiError(502, 'Stripe n’a pas effectué le remboursement.', 'REFUND_FAILED');
     }
+
+    // Demandé mais pas encore rendu : on garde la trace du remboursement, la
+    // commande reste « payée » jusqu'à la confirmation de Stripe
+    // (refund.updated / charge.refunded).
+    if (remboursement.status !== 'succeeded') {
+      await db.payment.updateMany({ where: { orderId }, data: { stripeRefundId: remboursement.id } });
+      logger.info("Remboursement demandé, en attente de confirmation Stripe", {
+        orderId,
+        refundId: remboursement.id,
+        statut: remboursement.status,
+      });
+      return remboursement;
+    }
+
     const refundedAt = new Date();
     await db.$transaction(async (tx) => {
       await tx.order.update({

@@ -413,6 +413,16 @@ export class DriverPayoutService {
       throw new ApiError(400, "Ce relevé a été annulé", "PAYOUT_CANCELLED");
     }
 
+    // Porté par un lot bancaire actif : il se règle avec le lot (confirmation
+    // ou refus de la banque), jamais à part — le virement partirait deux fois.
+    if (releve.batchId) {
+      throw new ApiError(
+        409,
+        "Ce relevé fait partie d'un lot bancaire en cours : traitez le lot.",
+        "PAYOUT_IN_BATCH"
+      );
+    }
+
     if (!MOYENS_VERSEMENT.includes(versement.method as (typeof MOYENS_VERSEMENT)[number])) {
       throw new ApiError(
         400,
@@ -464,6 +474,14 @@ export class DriverPayoutService {
         400,
         "Un relevé déjà versé ne s'annule pas : l'argent est parti",
         "ALREADY_PAID"
+      );
+    }
+
+    if (releve.batchId) {
+      throw new ApiError(
+        409,
+        "Ce relevé fait partie d'un lot bancaire en cours : traitez le lot.",
+        "PAYOUT_IN_BATCH"
       );
     }
 

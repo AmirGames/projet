@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { StripeProvider, useStripe } from '@stripe/stripe-react-native';
+import { attemptKey, forgetAttempt } from '../../lib/attempt-key';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { Cart, CartLine, cartTotal, changeQuantity, keyOf } from '../../lib/carts';
 import type { DeliveryAddress } from '../../lib/session';
@@ -245,7 +246,16 @@ function CheckoutBody({
     try {
       const res = await apiFetch<any>(`/api/promotions/validate?storeId=${cart.storeId}`, null, {
         method: 'POST',
-        body: { code: typed, cartTotal: Number(subtotal.toFixed(2)), productIds: lines.map((l) => l.productId) },
+        body: {
+          code: typed,
+          // Le serveur tarife le panier : l'aperçu est la remise de la commande.
+          lignes: lines.map((l) => ({
+            productId: l.productId,
+            quantity: l.quantity,
+            ...(l.variantId ? { variantId: l.variantId } : {}),
+            ...(l.supplements?.length ? { supplements: l.supplements.map((s) => s.id) } : {}),
+          })),
+        },
       });
       const amount = Number(res?.discountAmount ?? res?.data?.discountAmount ?? 0);
       if (!(amount > 0)) {
@@ -319,6 +329,33 @@ function CheckoutBody({
   const submit = async () => {
     setSubmitting(true);
     try {
+      const body = {
+        conditionsAcceptees,
+        storeId: cart.storeId,
+        customerName: contact.name.trim(),
+        customerEmail: contact.email.trim(),
+        customerPhone: contact.phone.trim(),
+        deliveryType: mode,
+        deliveryAddress: mode === 'DELIVERY' ? address?.street : undefined,
+        deliveryCity: mode === 'DELIVERY' ? address?.city : undefined,
+        deliveryPostal: mode === 'DELIVERY' ? address?.postalCode || undefined : undefined,
+        deliveryLat: mode === 'DELIVERY' ? address?.latitude ?? undefined : undefined,
+        deliveryLng: mode === 'DELIVERY' ? address?.longitude ?? undefined : undefined,
+        pickupTime: mode === 'PICKUP' ? pickupTime : undefined,
+        notes: notes.trim() || undefined,
+        // Le code part tel quel : le serveur recalcule la remise.
+        promoCode: discount?.code,
+        paymentMethodId: methodId || undefined,
+        ...(tip > 0 ? { tipAmount: tip } : {}),
+        // Aucun montant envoyé : prix, frais et total sont calculés par le serveur.
+        items: lines.map((l) => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          ...(l.variantId ? { variantId: l.variantId } : {}),
+          // Le serveur relit et tarife chaque supplément désigné.
+          ...(l.supplements?.length ? { supplements: l.supplements.map((s) => s.id) } : {}),
+        })),
+      };
       const res = await apiFetch<{
         order: {
           id: string;
@@ -333,35 +370,12 @@ function CheckoutBody({
         token,
         {
           method: 'POST',
-          body: {
-            conditionsAcceptees,
-            storeId: cart.storeId,
-            customerName: contact.name.trim(),
-            customerEmail: contact.email.trim(),
-            customerPhone: contact.phone.trim(),
-            deliveryType: mode,
-            deliveryAddress: mode === 'DELIVERY' ? address?.street : undefined,
-            deliveryCity: mode === 'DELIVERY' ? address?.city : undefined,
-            deliveryPostal: mode === 'DELIVERY' ? address?.postalCode || undefined : undefined,
-            deliveryLat: mode === 'DELIVERY' ? address?.latitude ?? undefined : undefined,
-            deliveryLng: mode === 'DELIVERY' ? address?.longitude ?? undefined : undefined,
-            pickupTime: mode === 'PICKUP' ? pickupTime : undefined,
-            notes: notes.trim() || undefined,
-            // Le code part tel quel : le serveur recalcule la remise.
-            promoCode: discount?.code,
-            paymentMethodId: methodId || undefined,
-            ...(tip > 0 ? { tipAmount: tip } : {}),
-            // Aucun montant envoyé : prix, frais et total sont calculés par le serveur.
-            items: lines.map((l) => ({
-              productId: l.productId,
-              quantity: l.quantity,
-              ...(l.variantId ? { variantId: l.variantId } : {}),
-              // Le serveur relit et tarife chaque supplément désigné.
-              ...(l.supplements?.length ? { supplements: l.supplements.map((s) => s.id) } : {}),
-            })),
-          },
+          // Renvoyé tel quel, cet achat rend la même commande au lieu d'en créer une seconde.
+          headers: { 'Idempotency-Key': attemptKey(body) },
+          body,
         }
       );
+      forgetAttempt();
 
       const order = {
         id: res.order.id,

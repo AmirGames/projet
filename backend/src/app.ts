@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { join } from "path";
 import { getEnv } from "./config/env";
+import { revisionDuBuild } from "./config/revision";
 import { requestLogger } from "./config/logger";
 import { middlewareOrigine } from "./modules/auth/origine";
 import { originesAutorisees as listerOriginesAutorisees } from "./modules/auth/origines-autorisees";
@@ -14,7 +15,7 @@ import { compteDemo } from "./modules/merchants/compte-demo.middleware";
 import { cloisonnement } from "./modules/auth/cloisonnement.middleware";
 import { diffusionModifications } from "./modules/realtime/diffusion.middleware";
 import { mesurerRequetes } from "./modules/monitoring/surveillance.middleware";
-import { limiterCadence, limiterStripeWebhook, limiterApiPublique } from "./middleware/throttle";
+import { limiterCadence, limiterStripeWebhook, limiterApiPublique, limiterAdresses, limiterCartes } from "./middleware/throttle";
 import { Surveillance } from "./modules/monitoring/surveillance.service";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import authRouter from "./modules/auth/auth.routes";
@@ -126,8 +127,11 @@ export function createApp(): Express {
   // ===== Health check =====
   // Vivant : le processus répond. Ne touche à rien d'autre, pour qu'un
   // orchestrateur ne redémarre pas le serveur parce que la base est tombée.
+  // `revision` : le commit construit dans l'image (GIT_SHA, posé au build par
+  // deploy/zup.sh). Sans lui, les sondes disent que le service répond mais pas
+  // quel correctif tourne.
   app.get("/health", (_req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.json({ status: "ok", revision: revisionDuBuild(), timestamp: new Date().toISOString() });
   });
 
   // Prêt : le serveur peut réellement servir (la base répond). C'est l'adresse
@@ -137,6 +141,7 @@ export function createApp(): Express {
     const etat = await Vigie.pret();
     res.status(etat.pret ? 200 : 503).json({
       status: etat.pret ? "ok" : "unavailable",
+      revision: revisionDuBuild(),
       ...etat,
       timestamp: new Date().toISOString(),
     });
@@ -264,7 +269,7 @@ export function createApp(): Express {
   app.use("/api/superowner", superOwnerRouter);
   app.use("/api/pages-legales", pagesLegalesRouter);
   app.use("/api/client", clientRouter);
-  app.use("/api/maps", mapsRouter);
+  app.use("/api/maps", limiterCartes, mapsRouter);
   app.use("/api/drivers", driversRouter);
   app.use("/api/zupdrive/chauffeur", zupdriveChauffeurRouter);
   app.use("/api/zupdrive/admin", zupdriveAdminRouter);
@@ -277,7 +282,7 @@ export function createApp(): Express {
   app.use("/api/merchant-profile", merchantProfileRouter);
   app.use("/api/merchant-payouts", merchantPayoutRouter);
   app.use("/api/push-devices", pushDevicesRouter);
-  app.use("/api/addresses", addressRouter);
+  app.use("/api/addresses", limiterAdresses, addressRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);

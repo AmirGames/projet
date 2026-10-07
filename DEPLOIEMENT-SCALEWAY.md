@@ -245,11 +245,15 @@ puis ouvrez `https://zupeat.com`.
    `refund.updated`. Copiez le secret `whsec_…` dans `STRIPE_WEBHOOK_SECRET`,
    puis `./deploy/zup.sh up`.
 3. **Applications mobiles** : faites-les pointer vers `https://api.zupeat.com`.
-4. **Sauvegardes automatiques** (chaque nuit à 3 h) :
+4. **Sauvegardes automatiques** (chaque nuit vers 3 h 15) :
 
    ```bash
-   (crontab -l 2>/dev/null; echo "0 3 * * * $HOME/projet/deploy/zup.sh backup >> $HOME/sauvegardes.log 2>&1") | crontab -
+   ./deploy/zup.sh planifier-sauvegardes
    ```
+
+   C'est un timer systemd : une nuit où le serveur était éteint est rattrapée
+   au redémarrage, et chaque passage est dans `journalctl -u zup-sauvegarde.service`.
+   (Sans systemd, planifiez `zup.sh backup` avec cron.)
 
    Elles restent 14 jours dans `~/sauvegardes`. **Copiez-les aussi hors du
    serveur** — si le VPS disparaît, elles disparaissent avec lui. Installez
@@ -267,9 +271,11 @@ puis ouvrez `https://zupeat.com`.
    **Une sauvegarde jamais restaurée n'est qu'une hypothèse.** Chaque trimestre,
    et après tout changement de serveur : copiez la clé privée age depuis le
    coffre, lancez
-   `./deploy/zup.sh restore-test ~/sauvegardes/base-….sql.gz.age ./identite-age.txt`
-   (restauration dans une base jetable, comparaison avec la production, base
-   supprimée ensuite), puis supprimez la clé du serveur.
+   `./deploy/zup.sh restore-test ~/sauvegardes/base-….sql.gz.age ./identite-age.txt ~/sauvegardes/uploads-….tar.gz.age`
+   (restauration dans une base jetable, comparaison avec la production, lecture
+   de l'archive des fichiers, base supprimée ensuite), puis supprimez la clé du
+   serveur. La commande affiche la **durée de la restauration** : notez-la, c'est
+   votre délai de reprise réel, à comparer à ce que vous promettez aux commerçants.
 
 ## Au quotidien
 
@@ -279,12 +285,26 @@ puis ouvrez `https://zupeat.com`.
 | `./deploy/zup.sh up` | reconstruit et redémarre (après un changement de `.env.production`) |
 | `./deploy/zup.sh logs [service]` | journaux en direct (`backend`, `frontend`, `caddy`, `postgres`, `redis`) |
 | `./deploy/zup.sh ps` | état des services |
+| `./deploy/zup.sh version` | le commit qui tourne vraiment (API et site), lu sur leurs sondes de vie |
 | `./deploy/zup.sh restart backend` | redémarre un service |
 | `./deploy/zup.sh psql` | console SQL |
 | `./deploy/zup.sh vapid` | crée les clés du push navigateur dans `.env.production` (une seule fois : les changer rend muets les abonnements existants) |
 | `./deploy/zup.sh backup` | sauvegarde base + fichiers dans `~/sauvegardes` |
+| `./deploy/zup.sh planifier-sauvegardes` | installe la sauvegarde nocturne (timer systemd) |
 | `./deploy/zup.sh restore-test <base-….sql.gz.age> <identite.txt>` | exercice de restauration dans une base jetable, sans toucher à la production |
 | `./deploy/zup.sh restore` | explique la restauration de production, volontairement manuelle (voir `docs/rgpd/exploitation.md`) |
+
+> **Migrations.** Elles ne sont plus lancées au démarrage de chaque instance de
+> l'API : le service `migrate` les applique une seule fois, avant elle
+> (`docker compose … logs migrate`). S'il échoue, l'API de la version précédente
+> reste en place et `zup.sh up` s'arrête. Pour que l'API ne puisse pas modifier le
+> schéma, créez un rôle d'exécution avec `deploy/roles-sql.sql` (voir le fichier :
+> `DATABASE_URL_APP` pour l'API, `DATABASE_URL_MIGRATION` pour les migrations).
+>
+> **Utilisateur des conteneurs.** L'API et le site tournent sans droits root
+> (utilisateur `node`). Au premier démarrage de cette version, l'API rend ses
+> volumes existants (photos, documents privés, sauvegardes, journaux) à cet
+> utilisateur : cela peut prendre un moment sur de gros volumes.
 
 > Les variables `NEXT_PUBLIC_*` (domaines, clé Stripe publique, adresse de
 > l'API) sont inscrites dans le site **au moment du build** : après les avoir

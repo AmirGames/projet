@@ -25,6 +25,42 @@ const nextConfig = {
   },
 
   /**
+   * En-têtes de sécurité du site.
+   *
+   * Appliqués en dur ici (HSTS est posé par Caddy, qui termine le HTTPS) :
+   * - frame-ancestors : le site ne s'affiche dans le cadre d'aucun autre site
+   *   (clickjacking) ; base-uri et object-src ferment deux injections classiques ;
+   * - nosniff, Referrer-Policy : l'adresse complète d'une page (numéro de
+   *   commande, jeton de suivi dans l'URL) ne part pas vers un autre site ;
+   * - Permissions-Policy : ni caméra ni micro (rien ne les utilise), position
+   *   et paiement pour le site seul.
+   *
+   * Pas encore de `script-src` : Next.js injecte des scripts en ligne, et une
+   * politique stricte demande des « nonces » (rendu dynamique de toutes les
+   * pages). C'est un chantier à part, à mesurer avant de le déclarer.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(self), payment=(self)",
+          },
+        ],
+      },
+    ];
+  },
+
+  /**
    * Trois espaces d'administration coexistaient — /admin, /super-admin et
    * /superowner — avec les mêmes écrans en trois exemplaires. Tout est
    * désormais sous /superowner ; ces redirections gardent les anciennes

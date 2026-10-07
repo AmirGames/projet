@@ -8,6 +8,16 @@
 #
 # Les variables des tests viennent de backend/.env.test (chargé par Jest). Seule
 # DATABASE_URL est répétée ici, pour les commandes Prisma lancées avant Jest.
+#
+# Deux suites d'intégration (RGPD, assistant) ne s'exécutent que si on le leur
+# demande : elles écrivent beaucoup et exigent une base à elles. Elles tournent
+# ici chacune sur sa base dédiée, migrée comme les autres. Les quatre
+# applications mobiles ont leur propre job : types, lint, et les tests Node
+# de l'application livreur.
+#
+# Le lint est un cliquet : `--max-warnings` (dans le package.json de chaque
+# application) vaut le nombre actuel d'avertissements. Un avertissement de plus
+# fait échouer le passage ; quand le nombre baisse, baissez la valeur avec lui.
 
 name: CI
 
@@ -68,6 +78,23 @@ jobs:
         run: npm run lint
       - name: Tests
         run: npm test
+      # Bases dédiées : ces suites créent et suppriment leurs propres lignes.
+      - name: Bases dédiées (RGPD, assistant)
+        run: |
+          for base in privacy_test assistant_test; do
+            PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE $base"
+            DATABASE_URL="postgresql://postgres:postgres@localhost:5432/$base?schema=public" npx prisma migrate deploy
+          done
+      - name: Intégration RGPD
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/privacy_test?schema=public
+          PRIVACY_INTEGRATION: "true"
+        run: npx jest src/modules/privacy/__tests__/privacy.integration.test.ts
+      - name: Intégration assistant
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/assistant_test?schema=public
+          ASSISTANT_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/assistant_test?schema=public
+        run: npx jest src/modules/assistant/__tests__/integration.test.ts
       - name: Build
         run: npm run build
 
@@ -86,14 +113,45 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # SafetyCheck.test.jsx importe le composant de l'app mobile livreur et sa
+      # copie de React : il lui faut les dépendances de cette application.
+      - name: Dépendances de l'app livreur (pour SafetyCheck)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: mobile/apps/delivery
       - name: Types
         run: npx tsc --noEmit
       - name: Lint
         run: npm run lint
-      # SafetyCheck.test.jsx importe le composant de l'app mobile livreur et sa
-      # copie de React : il exige mobile/apps/delivery/node_modules, absent ici.
-      # À rendre autonome ou à déplacer dans les tests mobiles.
       - name: Tests
-        run: npx jest --testPathIgnorePatterns SafetyCheck
+        run: npx jest
       - name: Build
         run: npm run build
+
+  # Les quatre applications Expo : sans ce job, une erreur de type ou une
+  # régression de la session mobile passait la CI (rien ne les vérifiait).
+  mobile:
+    name: Mobile (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [customer, merchant, delivery, admin]
+    defaults:
+      run:
+        working-directory: mobile/apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Types
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Tests (application livreur)
+        if: matrix.app == 'delivery'
+        run: npm run test:alerts && npm run test:session

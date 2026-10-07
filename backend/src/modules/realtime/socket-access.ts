@@ -1,6 +1,7 @@
 import { db } from '../../services/db';
 import { SsoService } from '../auth/sso.service';
 import type { JwtPayload } from '../auth/auth.service';
+import { membreVoitBoutique } from '../auth/autorisation-boutique';
 import { nettoyerPermissions } from '../auth/permissions-plateforme.service';
 
 /** Lu sans cache : une connexion ouverte ne conserve pas des droits retirés. */
@@ -41,6 +42,7 @@ export async function accesCommande(compte: CompteSocket, orderId: string) {
     where: { id: orderId },
     select: {
       customerEmail: true,
+      storeId: true,
       store: { select: { orgId: true } },
       delivery: { select: { driver: { select: { userId: true } } } },
     },
@@ -49,9 +51,11 @@ export async function accesCommande(compte: CompteSocket, orderId: string) {
   if (await permissionEat(compte, 'billing')) return true;
   if (compte.emailVerified && commande.customerEmail?.toLowerCase() === compte.email.toLowerCase()) return true;
   if (commande.delivery?.driver?.userId === compte.id) return true;
-  return !!(await db.membership.findFirst({
-    where: { userId: compte.id, orgId: commande.store.orgId }, select: { id: true },
-  }));
+  // Même règle que le HTTP : un employé limité à la boutique A n'écoute pas B.
+  const membership = await db.membership.findFirst({
+    where: { userId: compte.id, orgId: commande.store.orgId }, select: { role: true, storeIds: true },
+  });
+  return !!membership && membreVoitBoutique(membership, commande.storeId);
 }
 
 export async function accesSalon(compte: CompteSocket, salon: string) {

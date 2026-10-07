@@ -2213,7 +2213,8 @@
       "login": "Log in",
       "error": "An error occurred",
       "pays": "Country",
-      "emailPlaceholder": "you@example.com"
+      "emailPlaceholder": "you@example.com",
+      "checkEmail": "If this address can be registered, a confirmation email has just been sent. Open the link it contains to sign in."
     }
   },
   "restaurants": {
@@ -5548,9 +5549,9 @@
     "reference": "Reference",
     "ecartes": "Left out of the file (fix before the next batch)",
     "telecharger": "Download the SEPA file",
-    "marquerVerse": "Mark the batch as paid",
+    "marquerVerse": "The bank executed the batch",
     "arreter": "Close the week now",
-    "etapes": "1. Download the file · 2. Import it into your online bank (SEPA bulk transfers) and sign · 3. Come back here and mark the batch as paid.",
+    "etapes": "1. Prepare the batch (IBANs and amounts frozen) · 2. Approve it with your password · 3. Download the file, import it in your online bank (SEPA bulk transfers) and sign · 4. Come back to confirm the bank executed the batch.",
     "chargement": "Loading…",
     "relevesCommercants": "Merchant statements",
     "filtreAVerser": "To pay",
@@ -5574,7 +5575,29 @@
     "livreur": "Courier",
     "commandes": "{n, plural, one {# order} other {# orders}}",
     "ibanManquant": "Missing or invalid IBAN",
-    "lotVerse": "Batch paid: {commercants} merchant(s), {livreurs} courier(s)."
+    "lotVerse": "Batch paid: {commercants} merchant(s), {livreurs} courier(s).",
+    "actionImpossible": "Action failed",
+    "preparerImpossible": "Could not prepare the batch",
+    "lotPrepare": "Batch prepared: beneficiaries, IBANs and amounts are frozen. Approve it with your password.",
+    "lotEnCours": "Current batch",
+    "virementsN": "{n, plural, one {# transfer} other {# transfers}}",
+    "motDePasse": "Your password",
+    "approuver": "Approve batch",
+    "marquerTransmis": "Mark as sent to the bank",
+    "refuse": "The bank rejected it",
+    "refuseParBanque": "Rejected by the bank",
+    "confirmerRejet": "Did the bank reject this batch? The statements will go back to payable.",
+    "annulerLot": "Cancel batch",
+    "preparer": "Prepare batch",
+    "etatsLot": {
+      "PREPARED": "Prepared — awaiting approval",
+      "APPROVED": "Approved — download the file",
+      "EXPORTED": "File exported — import it in your bank",
+      "SUBMITTED": "Sent to the bank — awaiting execution",
+      "CONFIRMED": "Paid",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled"
+    }
   },
   "choixRole": {
     "erreurRoles": "Error loading roles",

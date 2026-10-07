@@ -58,19 +58,43 @@ export function confirmationExigee() {
  */
 const EMPREINTE_FACTICE = "$2b$10$KyIUB44YPS.juBdZYLbXx.na0HtA3MZse8Orjd0anrbp2cTa8BVhW";
 
+/** La même réponse pour toute inscription quand la confirmation est exigée. */
+const REPONSE_INSCRIPTION_A_CONFIRMER = {
+  message: "Si cette adresse peut être inscrite, un e-mail de confirmation vient d'être envoyé. Ouvrez le lien qu'il contient pour vous connecter.",
+  emailVerificationRequired: true,
+};
+
 // POST /auth/signup
 router.post("/signup", limiterInscriptions, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = signupSchema.extend(champAcceptation).parse(req.body);
 
-    logger.info("Signup attempt", { email: body.email });
+    // Pas d'adresse dans les logs : une trace de plus qui dirait qui s'inscrit ou se connecte.
+    logger.info("Signup attempt");
 
     // Une adresse déjà prise faisait échouer la création sur la contrainte
     // d'unicité : l'inscrit lisait « Internal server error » au lieu de
     // comprendre qu'il avait déjà un compte.
     const compteExistant = await db.user.findUnique({ where: { email: body.email } });
 
-    if (compteExistant) {
+    // Quand la confirmation d'adresse est exigée (production), l'inscription
+    // répond pareil que l'adresse soit libre ou prise : un 409 permettait de
+    // savoir qui a un compte. Le parcours part vers le titulaire de l'adresse :
+    // lien de confirmation s'il n'a pas confirmé, rien de plus s'il a déjà un
+    // compte (il utilise « mot de passe oublié »).
+    if (confirmationExigee()) {
+      if (compteExistant) {
+        // Même coût qu'une vraie inscription : le temps ne dit rien non plus.
+        await AuthService.hashPassword(body.password);
+        if (!compteExistant.emailVerified && compteExistant.status === "ACTIVE") {
+          void envoyerConfirmation(compteExistant).catch((err) =>
+            logger.warn("Confirmation d'adresse non renvoyée", { error: err instanceof Error ? err.message : err })
+          );
+        }
+        res.status(202).json(REPONSE_INSCRIPTION_A_CONFIRMER);
+        return;
+      }
+    } else if (compteExistant) {
       throw new ApiError(409, "Cet email est déjà utilisé", "EMAIL_EXISTS");
     }
 
@@ -127,6 +151,13 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
       });
     }
 
+    // Confirmation exigée : aucune session avant d'avoir prouvé qu'on possède
+    // l'adresse (la connexion la refuse déjà, l'inscription ne la contourne pas).
+    if (confirmationExigee()) {
+      res.status(202).json(REPONSE_INSCRIPTION_A_CONFIRMER);
+      return;
+    }
+
     // Une session par connexion : les jetons la portent, et la fermer les
     // invalide sur tous les domaines (voir sso.service.ts).
     const { accessToken, refreshToken } = await SsoService.connecter(user.id);
@@ -160,7 +191,7 @@ router.post("/login", limiterAuthParIp, limiterConnexions, async (req: Request, 
   try {
     const body = loginSchema.parse(req.body);
 
-    logger.info("Login attempt", { email: body.email });
+    logger.info("Login attempt");
 
     // Adresse inconnue et mauvais mot de passe reçoivent la même réponse, en
     // autant de temps : ni le code ni la durée ne disent si le compte existe.

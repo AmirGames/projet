@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { OrderService } from "../orders/order.service";
 import { PromotionService } from "./promotion.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
@@ -41,11 +42,27 @@ const updatePromotionSchema = z.object({
   activeDays:     z.array(z.number().int().min(0).max(6)).optional(),
 });
 
-const validatePromotionSchema = z.object({
-  code: z.string(),
-  cartTotal: z.number().positive(),
-  productIds: z.array(z.string()).optional(),
-});
+const validatePromotionSchema = z
+  .object({
+    code: z.string().min(1).max(60),
+    /** Ancien contrat (apps déjà publiées) : le total annoncé par le client. */
+    cartTotal: z.number().positive().optional(),
+    productIds: z.array(z.string()).optional(),
+    /** Le panier : le serveur le tarife lui-même, comme à la commande. */
+    lignes: z
+      .array(
+        z.object({
+          productId: z.string().min(1),
+          variantId: z.string().min(1).optional(),
+          quantity: z.number().int().min(1).max(100),
+          supplements: z.array(z.string()).max(30).optional(),
+        })
+      )
+      .min(1)
+      .max(100)
+      .optional(),
+  })
+  .refine((b) => b.lignes || b.cartTotal, { message: "lignes ou cartTotal requis" });
 
 // POST /promotions - Create promotion (protected)
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
@@ -143,11 +160,20 @@ router.post("/validate", async (req: Request, res: Response, next: NextFunction)
       throw new ApiError(400, "Paramètre 'storeId' requis", "MISSING_PARAM");
     }
 
+    // Avec les lignes, l'aperçu part du prix du serveur : c'est le montant que
+    // la commande appliquera. Sans elles (ancien contrat), seul le total
+    // annoncé est connu — l'aperçu est alors indicatif, la commande tranche.
+    const lignes = body.lignes ? await OrderService.tarifierLesLignes(storeId, body.lignes) : undefined;
+    const total = lignes
+      ? Number(lignes.reduce((somme, l) => somme + l.price * l.quantity, 0).toFixed(2))
+      : (body.cartTotal as number);
+
     const result = await PromotionService.validateAndApply(
       storeId,
       body.code,
-      body.cartTotal,
-      body.productIds
+      total,
+      lignes ? lignes.map((l) => l.productId) : body.productIds,
+      lignes
     );
 
     res.json(result);

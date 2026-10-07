@@ -3,7 +3,8 @@ import http from 'http';
 import { loadEnv } from "./config/env";
 import { logger } from "./config/logger";
 import { createApp } from "./app";
-import { initializeSocket, brancherRedis } from "./modules/realtime/socket";
+import { initializeSocket, brancherRedis, io } from "./modules/realtime/socket";
+import { arretGracieux } from "./arret-gracieux";
 import { brancherAnnoncesCommandes } from "./modules/realtime/diffusion.middleware";
 import { db } from "./services/db";
 import { Leader } from "./modules/jobs/leader.service";
@@ -115,18 +116,27 @@ const start = async () => {
     }, 3600000);
     assistantRetention.unref();
 
-    // Graceful shutdown
+    // Arrêt propre : les requêtes en cours finissent avant la coupure (voir arret-gracieux.ts).
+    let arretEnCours = false;
     const gracefulShutdown = async () => {
+      if (arretEnCours) return;
+      arretEnCours = true;
       logger.info("Shutting down gracefully...");
       clearInterval(assistantRetention);
-      arreterLesTaches();
-      await Leader.arreter();
-      httpServer.close(() => {
-        logger.info("Server closed");
-      });
-      await db.$disconnect();
-      logger.info("Database disconnected");
-      process.exit(0);
+      try {
+        await arretGracieux({
+          serveur: httpServer,
+          fermerTempsReel: () => new Promise<void>((resolve) => (io ? io.close(() => resolve()) : resolve())),
+          arreterLesTaches,
+          arreterLeader: () => Leader.arreter(),
+          deconnecterBase: () => db.$disconnect(),
+          journal: logger,
+        });
+        process.exit(0);
+      } catch (err) {
+        logger.error("Arrêt incomplet", err instanceof Error ? { message: err.message } : err);
+        process.exit(1);
+      }
     };
 
     process.on("SIGINT", gracefulShutdown);

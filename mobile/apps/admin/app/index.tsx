@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, ApiError, setUnauthorizedHandler } from '../lib/api';
+import { API_URL, ApiError, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
 import { chargerPermissions, MesPermissions, peutLire, peutModifier } from '../lib/permissions';
 import { clearSession, loadSession, saveSession, Session } from '../lib/session';
 import { COLORS, ScreenHeader } from '../components/ui';
@@ -131,7 +131,12 @@ export default function AdminApp() {
       handleLogout();
       Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
     });
-    return () => setUnauthorizedHandler(null);
+    // La session renouvelée en cours d'usage : l'écran garde le jeton valable.
+    setSessionRenewedHandler((renewed) => setSession(renewed));
+    return () => {
+      setUnauthorizedHandler(null);
+      setSessionRenewedHandler(null);
+    };
   }, [handleLogout]);
 
   const handleLogin = async () => {

@@ -27,6 +27,51 @@ function enMinutes(hhmm: string): number {
   return h * 60 + (m || 0);
 }
 
+export interface LigneRemisable {
+  productId: string;
+  categoryId?: string | null;
+  /** Prix unitaire TTC, suppléments compris. */
+  price: number;
+  quantity: number;
+}
+
+const enCentimes = (montant: number) => Math.round(montant * 100);
+
+/** Total (en euros) des lignes que la promotion couvre : produits ou catégories choisis. */
+export function totalDesLignesEligibles(
+  promotion: { applicableToAll: boolean; productIds: string[]; categoryIds: string[] },
+  lignes: LigneRemisable[],
+): number {
+  if (promotion.applicableToAll) {
+    return lignes.reduce((somme, l) => somme + enCentimes(l.price) * l.quantity, 0) / 100;
+  }
+  const centimes = lignes
+    .filter(
+      (l) =>
+        promotion.productIds.includes(l.productId) ||
+        (!!l.categoryId && promotion.categoryIds.includes(l.categoryId)),
+    )
+    .reduce((somme, l) => somme + enCentimes(l.price) * l.quantity, 0);
+  return centimes / 100;
+}
+
+/**
+ * La remise sur une base remisable. Calcul en centimes ; le pourcentage est
+ * arrondi au centime le plus proche (0,5 vers le haut), et la remise ne
+ * dépasse jamais la base.
+ */
+export function calculerRemise(
+  promotion: { type: string; discountValue: unknown },
+  baseRemisable: number,
+): number {
+  const base = enCentimes(baseRemisable);
+  const remise =
+    promotion.type === "PERCENTAGE"
+      ? Math.round((base * Number(promotion.discountValue)) / 100)
+      : enCentimes(Number(promotion.discountValue));
+  return Math.min(remise, base) / 100;
+}
+
 export class PromotionService {
   static async create(data: PromotionData) {
     try {
@@ -114,7 +159,13 @@ export class PromotionService {
     storeId: string,
     code: string,
     cartTotal: number,
-    productIds: string[] = []
+    productIds: string[] = [],
+    /**
+     * Les lignes du panier, tarifées par le serveur. Avec elles, une remise
+     * limitée à certains produits ne porte que sur ces lignes ; sans elles
+     * (aperçu public), seul le total annoncé est connu.
+     */
+    lignes?: LigneRemisable[]
   ) {
     const promotion = await this.getByCode(storeId, code);
 
@@ -177,29 +228,41 @@ export class PromotionService {
       }
     }
 
-    if (
-      !promotion.applicableToAll &&
-      productIds.length > 0 &&
-      !productIds.some((id) => promotion.productIds.includes(id))
-    ) {
-      throw new ApiError(400, "Ce code promo ne s'applique pas à ces produits", "NOT_APPLICABLE");
+    let baseRemisable = cartTotal;
+
+    if (!promotion.applicableToAll) {
+      if (lignes) {
+        baseRemisable = totalDesLignesEligibles(promotion, lignes);
+        if (baseRemisable <= 0) {
+          throw new ApiError(400, "Ce code promo ne s'applique pas à ces produits", "NOT_APPLICABLE");
+        }
+      } else if (
+        productIds.length > 0 &&
+        !productIds.some((id) => promotion.productIds.includes(id))
+      ) {
+        throw new ApiError(400, "Ce code promo ne s'applique pas à ces produits", "NOT_APPLICABLE");
+      }
     }
 
-    let discountAmount = 0;
-
-    if (promotion.type === "PERCENTAGE") {
-      discountAmount = (cartTotal * Number(promotion.discountValue)) / 100;
-    } else {
-      discountAmount = Number(promotion.discountValue);
-    }
-
-    discountAmount = Math.min(discountAmount, cartTotal);
+    // Jamais sur les frais de livraison : `cartTotal` est le total des lignes.
+    const discountAmount = calculerRemise(promotion, baseRemisable);
 
     return {
       promotion,
       discountAmount,
-      finalTotal: cartTotal - discountAmount,
+      finalTotal: Number((cartTotal - discountAmount).toFixed(2)),
     };
+  }
+
+  /**
+   * Rend l'utilisation réservée par une commande jamais payée, retirée ensuite.
+   * Ne descend jamais sous zéro.
+   */
+  static async libererUtilisation(storeId: string, code: string) {
+    await db.promotion.updateMany({
+      where: { storeId, code, currentUses: { gt: 0 } },
+      data: { currentUses: { decrement: 1 } },
+    });
   }
 
   static async applyPromotion(id: string) {

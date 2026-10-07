@@ -1,3 +1,5 @@
+import { creerRenouvellement } from './renouvellement';
+import { loadSession, saveSession, Session } from './session';
 import Constants from 'expo-constants';
 import { reportReachable, reportUnreachable } from './network';
 
@@ -41,6 +43,35 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
+// ─── Renouvellement de la session en cours d'usage ──────────────────────────
+//
+// Le jeton d'accès vit 15 minutes. Il n'était renouvelé qu'au démarrage : après
+// un quart d'heure d'usage, le premier appel refusé déconnectait. Un 401
+// déclenche désormais un renouvellement (un seul à la fois, voir
+// renouvellement.ts), puis l'appel est rejoué une seule fois.
+
+let onSessionRenewed: ((session: Session) => void) | null = null;
+
+/** Appelé avec la session renouvelée, pour que l'écran garde le bon jeton. */
+export function setSessionRenewedHandler(handler: ((session: Session) => void) | null) {
+  onSessionRenewed = handler;
+}
+
+const renouvellement = creerRenouvellement<Session>({
+  charger: loadSession,
+  enregistrer: saveSession,
+  appeler: (refreshToken) =>
+    netFetch(`${API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    }),
+  surRenouvelee: (session) => onSessionRenewed?.(session),
+});
+
+/** `staleToken` : le jeton d'accès que l'appelant vient de se voir refuser. */
+export const renewSession = (staleToken?: string) => renouvellement.renouveler(staleToken);
+
 /**
  * fetch, avec deux ajouts : l'état du réseau suit chaque appel (voir
  * network.ts), et un appel sans réponse au bout de 20 s est abandonné. Sur
@@ -65,7 +96,9 @@ export async function netFetch(url: string, init: RequestInit = {}, timeoutMs = 
 export async function apiFetch<T = any>(
   path: string,
   token: string,
-  options: { method?: string; body?: unknown } = {}
+  options: { method?: string; body?: unknown } = {},
+  /** Vrai à la seconde tentative, après un renouvellement de session : on ne rejoue qu'une fois. */
+  dejaRenouvele = false
 ): Promise<T> {
   const response = await netFetch(`${API_URL}${path}`, {
     method: options.method || 'GET',
@@ -80,7 +113,17 @@ export async function apiFetch<T = any>(
   if (!response.ok) {
     // MISSING_ORG est un 401 du serveur pour une requête incomplète, pas une
     // session expirée : il ne doit pas déconnecter.
-    if (response.status === 401 && data?.code !== 'MISSING_ORG') onUnauthorized?.();
+    if (response.status === 401 && data?.code !== 'MISSING_ORG') {
+      // Jeton d'accès périmé : on renouvelle la session et on rejoue l'appel une fois.
+      if (!dejaRenouvele) {
+        const renouvelee = await renewSession(token);
+        if ('token' in renouvelee) return apiFetch<T>(path, renouvelee.token, options, true);
+        // Réseau coupé pendant le renouvellement : l'appel échoue, la session reste.
+        if ('expired' in renouvelee) onUnauthorized?.();
+      } else {
+        onUnauthorized?.();
+      }
+    }
     throw new ApiError(data?.error || data?.message || `Erreur ${response.status}`, response.status);
   }
   return data as T;

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { type Appelant, commandeVisible, genererJetonDeSuivi } from "./suivi-commande.service";
 import { db } from "../../services/db";
 import { EmailService } from "../notifications/email.service";
@@ -17,6 +18,16 @@ import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
 import { getEnv } from "../../config/env";
 import { TRANSMISE, payeEnLigne } from "../../utils/commande-transmise";
+
+export interface LigneTarifee {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  /** Prix unitaire TTC, suppléments compris. */
+  price: number;
+  categoryId: string | null;
+  supplements: SupplementRetenu[];
+}
 
 export interface OrderData {
   storeId: string;
@@ -49,6 +60,35 @@ export interface OrderData {
     /** Les suppléments choisis, par identifiant (voir SupplementService). */
     supplements?: string[];
   }[];
+}
+
+/** Ce que la route ajoute à la création d'une commande. */
+export interface OptionsCreation {
+  /** En-tête Idempotency-Key : l'identifiant de la tentative d'achat. */
+  cleIdempotence?: string;
+  /** Écrit dans la transaction de création (preuve d'acceptation des conditions). */
+  acceptation?: (tx: any, commande: { id: string }) => Promise<unknown>;
+}
+
+/**
+ * L'empreinte du contenu d'un achat : ce qui change l'achat (boutique, client,
+ * panier, livraison, code promo, paiement, pourboire), indépendamment de l'ordre
+ * des champs.
+ */
+export function empreinteDeLAchat(data: OrderData): string {
+  const canonique = (valeur: unknown): unknown =>
+    Array.isArray(valeur)
+      ? valeur.map(canonique)
+      : valeur && typeof valeur === "object"
+        ? Object.fromEntries(
+            Object.entries(valeur as Record<string, unknown>)
+              .filter(([, v]) => v !== undefined)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([k, v]) => [k, canonique(v)])
+          )
+        : valeur;
+  const { customerId: _c, ...contenu } = data as OrderData & { customerId?: string };
+  return createHash("sha256").update(JSON.stringify(canonique(contenu))).digest("hex");
 }
 
 export class OrderService {
@@ -186,8 +226,88 @@ export class OrderService {
     return cree.id;
   }
 
-  static async create(data: OrderData) {
+  /**
+   * Les lignes d'un panier avec leur prix recalculé par le serveur.
+   *
+   * Le prix arrivait du navigateur et n'était jamais recoupé : une pizza à
+   * 14 € pouvait être commandée à un centime, et le total avec. Le serveur
+   * le relit du catalogue — ou de la déclinaison choisie. La commande et
+   * l'aperçu d'un code promo passent par ici : même prix, même remise.
+   */
+  static async tarifierLesLignes(storeId: string, lignes: OrderData["items"]): Promise<LigneTarifee[]> {
+    const lignesTarifees: {
+      productId: string;
+      variantId?: string;
+      quantity: number;
+      /** Prix unitaire TTC, suppléments compris. */
+      price: number;
+      categoryId: string | null;
+      supplements: SupplementRetenu[];
+    }[] = [];
+
+    if (lignes.length > 0) {
+      const produits = await db.product.findMany({
+        where: { id: { in: lignes.map((l) => l.productId) } },
+        select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true, categoryId: true },
+      });
+
+      // Les prix saisis hors taxe sont facturés TTC, comme la carte les a
+      // montrés au client.
+      const tauxHT = await TaxService.tauxAAjouter(storeId, produits);
+
+      for (const ligne of lignes) {
+        const produit = produits.find((p) => p.id === ligne.productId);
+
+        if (!produit || produit.deletedAt || produit.storeId !== storeId) {
+          throw new ApiError(400, "Un article du panier n'existe plus", "PRODUCT_NOT_FOUND");
+        }
+
+        if (!produit.isAvailable) {
+          throw new ApiError(
+            400,
+            `« ${produit.name} » n'est plus disponible`,
+            "PRODUCT_UNAVAILABLE"
+          );
+        }
+
+        if (!Number.isInteger(ligne.quantity) || ligne.quantity < 1) {
+          throw new ApiError(400, "Une quantité doit être un entier positif", "INVALID_QUANTITY");
+        }
+
+        const taux = tauxHT.get(ligne.productId);
+        const base = await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId);
+        // Chaque supplément passe TTC séparément, comme la vitrine l'affiche.
+        const supplements = await SupplementService.tarifer(
+          ligne.productId,
+          produit.name,
+          ligne.supplements,
+          taux
+        );
+
+        lignesTarifees.push({
+          productId: ligne.productId,
+          variantId: ligne.variantId,
+          quantity: ligne.quantity,
+          categoryId: produit.categoryId ?? null,
+          price: Number(((taux ? TaxService.ttc(base, taux) : base) + supplements.montant).toFixed(2)),
+          supplements: supplements.retenus,
+        });
+      }
+    }
+
+    return lignesTarifees;
+  }
+
+
+  static async create(data: OrderData, options: OptionsCreation = {}) {
     try {
+      // Même achat rejoué : on rend la commande déjà créée, sans rien recréer.
+      const empreinteAchat = options.cleIdempotence ? empreinteDeLAchat(data) : null;
+      if (options.cleIdempotence && empreinteAchat) {
+        const rejouee = await this.rejouerSiConnue(data.storeId, options.cleIdempotence, empreinteAchat);
+        if (rejouee) return rejouee;
+      }
+
       /**
        * Une boutique fermée n'accepte pas de commande.
        *
@@ -202,7 +322,7 @@ export class OrderService {
           operatingHours: true,
           deletedAt: true,
           name: true,
-          org: { select: { approvedAt: true, isDemo: true } },
+          org: { select: { approvedAt: true, isDemo: true, status: true } },
         },
       });
 
@@ -226,6 +346,16 @@ export class OrderService {
           400,
           `« ${boutique.name} » n'est pas encore ouverte aux commandes.`,
           "MERCHANT_NOT_APPROVED"
+        );
+      }
+
+      // Un commerce suspendu ou fermé ne prend plus de nouvelle commande,
+      // même d'un invité : sans cela, seul le compte connecté était bloqué.
+      if (boutique.org.status === "SUSPENDED" || boutique.org.status === "CLOSED") {
+        throw new ApiError(
+          403,
+          `« ${boutique.name} » n'accepte pas de commande pour le moment.`,
+          "MERCHANT_SUSPENDED"
         );
       }
 
@@ -260,70 +390,7 @@ export class OrderService {
         throw new ApiError(400, "Le panier est vide", "EMPTY_CART");
       }
 
-      /**
-       * Les lignes, avec leur prix recalculé.
-       *
-       * Le prix arrivait du navigateur et n'était jamais recoupé : une pizza à
-       * 14 € pouvait être commandée à un centime, et le total avec. Le serveur
-       * le relit du catalogue — ou de la déclinaison choisie.
-       */
-      const lignesTarifees: {
-        productId: string;
-        variantId?: string;
-        quantity: number;
-        /** Prix unitaire TTC, suppléments compris. */
-        price: number;
-        supplements: SupplementRetenu[];
-      }[] = [];
-
-      if (lignes.length > 0) {
-        const produits = await db.product.findMany({
-          where: { id: { in: lignes.map((l) => l.productId) } },
-          select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true, categoryId: true },
-        });
-
-        // Les prix saisis hors taxe sont facturés TTC, comme la carte les a
-        // montrés au client.
-        const tauxHT = await TaxService.tauxAAjouter(data.storeId, produits);
-
-        for (const ligne of lignes) {
-          const produit = produits.find((p) => p.id === ligne.productId);
-
-          if (!produit || produit.deletedAt || produit.storeId !== data.storeId) {
-            throw new ApiError(400, "Un article du panier n'existe plus", "PRODUCT_NOT_FOUND");
-          }
-
-          if (!produit.isAvailable) {
-            throw new ApiError(
-              400,
-              `« ${produit.name} » n'est plus disponible`,
-              "PRODUCT_UNAVAILABLE"
-            );
-          }
-
-          if (!Number.isInteger(ligne.quantity) || ligne.quantity < 1) {
-            throw new ApiError(400, "Une quantité doit être un entier positif", "INVALID_QUANTITY");
-          }
-
-          const taux = tauxHT.get(ligne.productId);
-          const base = await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId);
-          // Chaque supplément passe TTC séparément, comme la vitrine l'affiche.
-          const supplements = await SupplementService.tarifer(
-            ligne.productId,
-            produit.name,
-            ligne.supplements,
-            taux
-          );
-
-          lignesTarifees.push({
-            productId: ligne.productId,
-            variantId: ligne.variantId,
-            quantity: ligne.quantity,
-            price: Number(((taux ? TaxService.ttc(base, taux) : base) + supplements.montant).toFixed(2)),
-            supplements: supplements.retenus,
-          });
-        }
-      }
+      const lignesTarifees = await this.tarifierLesLignes(data.storeId, lignes);
 
       // Le total suit les lignes, et non ce que le navigateur annonce.
       const totalDesLignes = lignesTarifees.reduce(
@@ -371,21 +438,24 @@ export class OrderService {
        */
       let remise = 0;
       let codePromo: string | null = null;
+      let reservationPromo: { id: string; maxUses: number | null } | null = null;
 
       if (data.promoCode) {
         const validation = await PromotionService.validateAndApply(
           data.storeId,
           data.promoCode,
           Number(totalDesLignes.toFixed(2)),
-          lignesTarifees.map((ligne) => ligne.productId)
+          lignesTarifees.map((ligne) => ligne.productId),
+          lignesTarifees
         );
 
         remise = Number(validation.discountAmount.toFixed(2));
         codePromo = validation.promotion.code;
 
-        // Le compteur d'utilisations n'avançait jamais : une limite de dix
-        // usages n'en limitait aucun.
-        await PromotionService.applyPromotion(validation.promotion.id);
+        // Réservée avec la création de la commande, dans la même transaction
+        // (voir plus bas) : un échec rend l'utilisation, et deux commandes
+        // simultanées ne dépassent pas le plafond.
+        reservationPromo = { id: validation.promotion.id, maxUses: validation.promotion.maxUses ?? null };
       }
 
       /** Le moyen de paiement doit être celui de cette boutique, et actif. */
@@ -540,10 +610,26 @@ export class OrderService {
       // est gardée.
       const suivi = genererJetonDeSuivi();
 
-      const order = await db.order.create({
+      const order = await db.$transaction(async (tx) => {
+      // Une utilisation de la promotion, réservée sous condition du plafond.
+      if (reservationPromo) {
+        const { count } = await tx.promotion.updateMany({
+          where: {
+            id: reservationPromo.id,
+            ...(reservationPromo.maxUses != null ? { currentUses: { lt: reservationPromo.maxUses } } : {}),
+          },
+          data: { currentUses: { increment: 1 } },
+        });
+        if (count !== 1) {
+          throw new ApiError(400, "Ce code promo a atteint sa limite d'utilisation", "MAX_USES_REACHED");
+        }
+      }
+
+      const creee = await tx.order.create({
         data: {
           storeId: data.storeId,
           trackingTokenHash: suivi.empreinte,
+          ...(options.cleIdempotence ? { idempotencyKey: options.cleIdempotence, idempotencyHash: empreinteAchat } : {}),
           ...(enLigne ? { submittedAt: null } : {}),
           customerName: data.customerName,
           customerEmail: data.customerEmail,
@@ -599,6 +685,11 @@ export class OrderService {
         },
       });
 
+      // La preuve d'acceptation naît avec la commande, ou pas du tout.
+      if (options.acceptation) await options.acceptation(tx, creee);
+      return creee;
+      });
+
       if (!enLigne) {
         await this.annoncerAuCommercant(order);
       }
@@ -608,8 +699,53 @@ export class OrderService {
 
       return { ...commande, paiementEnLigne: enLigne, trackingToken: suivi.jeton };
     } catch (error: any) {
+      // Deux envois simultanés de la même tentative : le second heurte
+      // l'unicité de la clé et reprend la commande du premier.
+      if (error?.code === "P2002" && options.cleIdempotence) {
+        const rejouee = await this.rejouerSiConnue(data.storeId, options.cleIdempotence, empreinteDeLAchat(data));
+        if (rejouee) return rejouee;
+      }
       throw error;
     }
+  }
+
+  /**
+   * La commande déjà créée pour cette clé de tentative.
+   *
+   * Même clé et même contenu : la même commande, avec un nouveau jeton de suivi
+   * (le premier n'est gardé qu'en empreinte, il ne peut pas être redonné).
+   * Même clé et contenu différent : refus, jamais une autre commande servie
+   * sous une clé déjà prise.
+   */
+  static async rejouerSiConnue(storeId: string, cle: string, empreinte: string) {
+    const existante = await db.order.findUnique({
+      where: { storeId_idempotencyKey: { storeId, idempotencyKey: cle } },
+      include: {
+        items: {
+          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
+        },
+      },
+    });
+    if (!existante) return null;
+
+    if (existante.idempotencyHash !== empreinte) {
+      throw new ApiError(
+        409,
+        "Cette clé de tentative a déjà servi pour un autre panier.",
+        "IDEMPOTENCY_KEY_REUSED"
+      );
+    }
+
+    const moyen = existante.paymentMethodId
+      ? await db.paymentMethod.findUnique({ where: { id: existante.paymentMethodId }, select: { type: true } })
+      : null;
+    const enLigne = payeEnLigne(moyen?.type, getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY));
+
+    const suivi = genererJetonDeSuivi();
+    await db.orderTrackingToken.create({ data: { orderId: existante.id, tokenHash: suivi.empreinte } });
+
+    const { trackingTokenHash: _empreinte, idempotencyKey: _cle, idempotencyHash: _hash, ...commande } = existante;
+    return { ...commande, paiementEnLigne: enLigne, trackingToken: suivi.jeton, rejouee: true };
   }
 
   /**
@@ -722,13 +858,13 @@ export class OrderService {
       // L'ancien état est lu avant la mise à jour : un abonné qui reçoit « la
       // commande est prête » sans savoir d'où elle vient ne peut pas distinguer
       // une préparation qui avance d'un renvoi du même état.
-      const avant = await db.order.findUnique({ where: { id }, select: { status: true } });
+      const avant = await db.order.findUnique({ where: { id }, select: { status: true, deliveryType: true, deliveryMode: true } });
 
       if (!avant) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
-      verifierTransition(avant.status, status);
+      verifierTransition(avant.status, status, avant);
 
       // Écriture conditionnelle sur l'état lu : un changement concurrent
       // invalide la vérification de transition.

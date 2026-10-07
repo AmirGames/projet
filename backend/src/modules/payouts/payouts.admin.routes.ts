@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { MerchantPayoutService } from "./merchant-payout.service";
+import { PayoutBatchService } from "./payout-batch.service";
 import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
@@ -65,65 +66,129 @@ router.post("/versements/arreter", authMiddleware, isSuperOwner, async (req: Req
   }
 });
 
-// GET /superowner/versements/sepa - Le lot à verser : total, inclus, écartés
+// GET /superowner/versements/sepa - Aperçu de ce qu'un lot figerait maintenant
 router.get("/versements/sepa", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const { xml, ...lot } = await MerchantPayoutService.fichierDesVersements();
-    res.json({ success: true, data: { ...lot, pret: Boolean(xml) } });
+    res.json({ success: true, data: await MerchantPayoutService.fichierDesVersements() });
   } catch (err) {
     next(err);
   }
 });
 
-// GET /superowner/versements/sepa.xml - Le fichier à importer dans la banque
-router.get("/versements/sepa.xml", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+// ─── Lots bancaires ─────────────────────────────────────────────────────────
+//
+// Préparer (fige IBAN et montants) → approuver (mot de passe redemandé) →
+// exporter le fichier → transmettre à la banque → confirmer (ou rejeter).
+// Chaque étape est journalisée ; un relevé n'est que dans un seul lot actif.
+
+const journaliserLot = (req: Request, action: string, cible: string, changes: object = {}) =>
+  db.systemAuditLog.create({
+    data: { adminId: req.userId as string, action, target: cible, changes: changes as any },
+  });
+
+// GET /superowner/versements/lots - Les derniers lots
+router.get("/versements/lots", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const lot = await MerchantPayoutService.fichierDesVersements();
-    if (!lot.xml) throw new ApiError(400, "Aucun versement en attente", "NOTHING_TO_PAY");
+    res.json({ success: true, data: { actif: await PayoutBatchService.actif(), lots: await PayoutBatchService.lister() } });
+  } catch (err) {
+    next(err);
+  }
+});
 
-    await db.systemAuditLog.create({
-      data: {
-        adminId: req.userId as string,
-        action: "EXPORT_SEPA_FILE",
-        target: lot.reference,
-        changes: { total: lot.total, nombre: lot.nombre, ecartes: lot.ecartes.length } as any,
-      },
-    });
+// POST /superowner/versements/lots - Préparer un lot
+router.post("/versements/lots", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { lot, ecartes } = await PayoutBatchService.preparer(req.userId as string);
+    await journaliserLot(req, "PAYOUT_BATCH_PREPARED", lot.reference, { id: lot.id, total: lot.total, nombre: lot.itemCount, ecartes: ecartes.length });
+    res.status(201).json({ success: true, data: { lot, ecartes } });
+  } catch (err) {
+    next(err);
+  }
+});
 
+// GET /superowner/versements/lots/:id - Le détail d'un lot
+router.get("/versements/lots/:id", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await PayoutBatchService.detail(req.params.id as string) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const approbationSchema = z.object({ motDePasse: z.string().min(1).max(200) });
+
+// POST /superowner/versements/lots/:id/approuver - Approuver (réauthentification)
+router.post("/versements/lots/:id/approuver", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { motDePasse } = approbationSchema.parse(req.body);
+    const lot = await PayoutBatchService.approuver(req.params.id as string, req.userId as string, motDePasse);
+    await journaliserLot(req, "PAYOUT_BATCH_APPROVED", lot.reference, { id: lot.id });
+    res.json({ success: true, data: { id: lot.id, status: lot.status } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/versements/lots/:id/sepa.xml - Le fichier à importer dans la banque
+router.get("/versements/lots/:id/sepa.xml", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reference, xml } = await PayoutBatchService.exporter(req.params.id as string, req.userId as string);
+    await journaliserLot(req, "PAYOUT_BATCH_EXPORTED", reference, { id: req.params.id });
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="${lot.reference}.xml"`);
-    res.send(lot.xml);
+    res.setHeader("Content-Disposition", `attachment; filename="${reference}.xml"`);
+    res.setHeader("Cache-Control", "no-store");
+    res.send(xml);
   } catch (err) {
     next(err);
   }
 });
 
-const lotSchema = z.object({
-  commercants: z.array(z.string()).default([]),
-  livreurs: z.array(z.string()).default([]),
-  reference: z.string().max(100).optional(),
+// POST /superowner/versements/lots/:id/transmettre - Importé et signé à la banque
+router.post("/versements/lots/:id/transmettre", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const lot = await PayoutBatchService.transmettre(req.params.id as string, req.userId as string);
+    await journaliserLot(req, "PAYOUT_BATCH_SUBMITTED", lot.reference, { id: lot.id });
+    res.json({ success: true, data: { id: lot.id, status: lot.status } });
+  } catch (err) {
+    next(err);
+  }
 });
 
-// POST /superowner/versements/payer - Marquer le lot importé comme versé
-router.post("/versements/payer", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+const confirmationSchema = z.object({ reference: z.string().max(100).optional() });
+
+// POST /superowner/versements/lots/:id/confirmer - La banque a exécuté le lot
+router.post("/versements/lots/:id/confirmer", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const corps = lotSchema.parse(req.body);
-    const bilan = await MerchantPayoutService.payerLeLot(
-      { commercants: corps.commercants, livreurs: corps.livreurs },
-      { method: "BANK_TRANSFER", reference: corps.reference },
-      req.userId as string
-    );
-
-    await db.systemAuditLog.create({
-      data: {
-        adminId: req.userId as string,
-        action: "PAY_SEPA_BATCH",
-        target: corps.reference || "sepa",
-        changes: bilan as any,
-      },
-    });
-
+    const { reference } = confirmationSchema.parse(req.body);
+    const bilan = await PayoutBatchService.confirmer(req.params.id as string, req.userId as string, reference);
+    await journaliserLot(req, "PAYOUT_BATCH_CONFIRMED", req.params.id as string, bilan);
     res.json({ success: true, data: bilan });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const raisonSchema = z.object({ raison: z.string().max(500).optional() });
+
+// POST /superowner/versements/lots/:id/rejeter - Refusé par la banque
+router.post("/versements/lots/:id/rejeter", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { raison } = raisonSchema.parse(req.body);
+    await PayoutBatchService.rejeter(req.params.id as string, req.userId as string, raison || "Refusé par la banque");
+    await journaliserLot(req, "PAYOUT_BATCH_REJECTED", req.params.id as string, { raison });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/versements/lots/:id/annuler - Abandon avant export
+router.post("/versements/lots/:id/annuler", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { raison } = raisonSchema.parse(req.body);
+    await PayoutBatchService.annuler(req.params.id as string, req.userId as string, raison);
+    await journaliserLot(req, "PAYOUT_BATCH_CANCELLED", req.params.id as string, { raison });
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

@@ -1,5 +1,5 @@
-import { API_URL, netFetch } from './api';
-import { loadSession, saveSession } from './session';
+import { API_URL, netFetch, renewSession } from './api';
+import { loadSession } from './session';
 
 /**
  * Un appel au serveur hors de l'écran : notification, tâche en arrière-plan,
@@ -17,17 +17,10 @@ export async function withSession<R extends { status: number }>(call: (token: st
 
   let response = await call(session.accessToken);
   if (response.status === 401 && session.refreshToken) {
-    const refresh = await netFetch(`${API_URL}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: session.refreshToken }),
-    });
-    const renewed = await refresh.json().catch(() => null);
-    if (refresh.ok && renewed?.accessToken) {
-      // Le jeton de renouvellement tourne : l'ancien ne vaut plus.
-      await saveSession({ ...session, accessToken: renewed.accessToken, refreshToken: renewed.refreshToken || session.refreshToken });
-      response = await call(renewed.accessToken);
-    }
+    // Le renouvellement est partagé avec l'écran : un seul à la fois, le jeton
+    // de renouvellement tournant ne doit pas être présenté deux fois.
+    const renouvelee = await renewSession(session.accessToken);
+    if ('token' in renouvelee) response = await call(renouvelee.token);
   }
   return response;
 }

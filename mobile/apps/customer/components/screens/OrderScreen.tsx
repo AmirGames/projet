@@ -332,7 +332,7 @@ export default function OrderScreen({
           </TouchableOpacity>
         ) : null}
 
-        {order.status === 'COMPLETED' && delivery ? <TipAfterDelivery orderId={order.id} refreshKey={String(order.tipAmount ?? '')} /> : null}
+        {order.status === 'COMPLETED' && delivery ? <TipAfterDelivery orderId={order.id} token={token} refreshKey={String(order.tipAmount ?? '')} /> : null}
 
         <Card title={delivery ? 'Livrée à' : 'Retrait'}>
           <Text style={styles.address}>

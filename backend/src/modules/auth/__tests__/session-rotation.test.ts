@@ -34,7 +34,11 @@ const db: any = {
     create: jest.fn(async ({ data }: any) => {
       jetons.push({ id: `jt-${++n}`, usedAt: null, ...data });
     }),
-    findUnique: jest.fn(async ({ where }: any) => jetons.find((j) => j.jtiHash === where.jtiHash) ?? null),
+    // Un instantané, comme la base : une lecture ne voit pas les écritures qui suivent.
+    findUnique: jest.fn(async ({ where }: any) => {
+      const trouve = jetons.find((j) => j.jtiHash === where.jtiHash);
+      return trouve ? { ...trouve } : null;
+    }),
     updateMany: jest.fn(async ({ where, data }: any) => {
       const l = jetons.filter((j) => j.id === where.id && !j.usedAt);
       l.forEach((j) => Object.assign(j, data));
@@ -121,6 +125,31 @@ describe("rotation des jetons de renouvellement", () => {
 
     expect(await code(SsoService.renouveler(r1))).toBe("REFRESH_CONCURRENT");
     expect(sessions.find((s) => s.id === sid)!.revokedAt).toBeNull();
+  });
+
+  it("deux renouvellements réellement simultanés : un seul passe, la session reste ouverte (C-22)", async () => {
+    const { refreshToken: r1, sid } = await SsoService.connecter("u1");
+
+    const [a, b] = await Promise.allSettled([SsoService.renouveler(r1), SsoService.renouveler(r1)]);
+    const reussis = [a, b].filter((r) => r.status === "fulfilled");
+    const refuses = [a, b].filter((r): r is PromiseRejectedResult => r.status === "rejected");
+
+    expect(reussis).toHaveLength(1);
+    expect(refuses).toHaveLength(1);
+    expect(refuses[0].reason.code).toBe("REFRESH_CONCURRENT");
+    expect(sessions.find((s) => s.id === sid)!.revokedAt).toBeNull();
+
+    // Le jeton gagnant reste utilisable : la session n'a pas été fermée.
+    const { refreshToken: r2 } = (reussis[0] as PromiseFulfilledResult<{ refreshToken: string }>).value;
+    expect((await SsoService.renouveler(r2)).refreshToken).toBeTruthy();
+  });
+
+  it("un jeton consommé depuis longtemps puis rejoué ferme toujours la session (vol)", async () => {
+    const { refreshToken: r1, sid } = await SsoService.connecter("u1");
+    await SsoService.renouveler(r1);
+    jetons.forEach((j) => j.usedAt && (j.usedAt = new Date(Date.now() - 60_000)));
+    expect(await code(SsoService.renouveler(r1))).toBe("SESSION_INVALIDE");
+    expect(sessions.find((s) => s.id === sid)!.revokedAt).not.toBeNull();
   });
 
   it("déconnexion : l'access token et le refresh cessent de valoir", async () => {

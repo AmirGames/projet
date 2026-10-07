@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, Linking, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, SITE_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { API_URL, SITE_URL, apiFetch, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
 import {
   clearSession,
   DeliveryAddress,
@@ -160,6 +160,20 @@ export default function CustomerApp() {
     setUnreadCount(0);
   }, []);
 
+  // Le serveur ferme toutes les sessions du compte, celle-ci comprise (D8) : on
+  // revient à l'écran de connexion. Des jetons neufs, s'il en remettait, sont gardés.
+  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string } | null) => {
+    if (!tokens) {
+      handleLogout();
+      return;
+    }
+    const current = sessionRef.current;
+    if (!current) return;
+    const renewed = { ...current, ...tokens };
+    setSession(renewed);
+    saveSession(renewed);
+  }, [handleLogout]);
+
   // Démarrage : paniers et adresse du téléphone, puis la session renouvelée.
   useEffect(() => {
     (async () => {
@@ -200,7 +214,12 @@ export default function CustomerApp() {
       handleLogout();
       Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
     });
-    return () => setUnauthorizedHandler(null);
+    // La session renouvelée en cours d'usage : l'écran garde le jeton valable.
+    setSessionRenewedHandler((renewed) => setSession(renewed));
+    return () => {
+      setUnauthorizedHandler(null);
+      setSessionRenewedHandler(null);
+    };
   }, [handleLogout]);
 
   // Ce téléphone suit les commandes même application fermée.
@@ -312,6 +331,14 @@ export default function CustomerApp() {
         return;
       }
 
+      // Confirmation d'adresse exigée : pas de session avant le clic sur le lien.
+      if (mode === 'signup' && data.emailVerificationRequired) {
+        Alert.alert('Vérifiez vos e-mails', data.message || 'Un e-mail de confirmation vient d’être envoyé.');
+        setPassword('');
+        setMode('login');
+        return;
+      }
+
       // Tout compte peut commander : la fiche client naît à la première visite.
       const next: Session = {
         accessToken: data.accessToken,
@@ -350,14 +377,6 @@ export default function CustomerApp() {
   }, [page, carts]);
 
   const clearUnread = useCallback((n: number) => setUnreadCount(n), []);
-  // Le serveur ferme les autres sessions et remet des jetons neufs à celle-ci.
-  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string }) => {
-    const current = sessionRef.current;
-    if (!current) return;
-    const renewed = { ...current, ...tokens };
-    setSession(renewed);
-    saveSession(renewed);
-  }, []);
   const onProfileLoaded = useCallback((p: CustomerProfile) => setProfile(p), []);
 
   if (booting) {

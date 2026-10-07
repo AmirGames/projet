@@ -28,6 +28,14 @@ interface Lot {
   ecartes: { type: string; id: string; nom: string; montant: number; raison: string }[];
 }
 
+interface LotBancaire {
+  id: string;
+  reference: string;
+  status: 'PREPARED' | 'APPROVED' | 'EXPORTED' | 'SUBMITTED' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED';
+  total: number;
+  itemCount: number;
+}
+
 interface Ligne {
   id: string;
   organization: string;
@@ -54,6 +62,8 @@ export default function VersementsSepaPage() {
     });
   };
   const [lot, setLot] = useState<Lot | null>(null);
+  const [actif, setActif] = useState<LotBancaire | null>(null);
+  const [motDePasse, setMotDePasse] = useState('');
   const [lotErreur, setLotErreur] = useState('');
   const [releves, setReleves] = useState<Ligne[]>([]);
   const [filtre, setFiltre] = useState('PENDING');
@@ -67,12 +77,14 @@ export default function VersementsSepaPage() {
   const charger = useCallback(async () => {
     setLotErreur('');
     try {
-      const [lotRep, listeRep] = await Promise.all([
+      const [lotRep, listeRep, lotsRep] = await Promise.all([
         fetch(`${API_URL}/api/superowner/versements/sepa`, { headers: entetes() }),
         fetch(`${API_URL}/api/superowner/merchant-payouts${filtre ? `?status=${filtre}` : ''}`, {
           headers: entetes(),
         }),
+        fetch(`${API_URL}/api/superowner/versements/lots`, { headers: entetes() }),
       ]);
+      if (lotsRep.ok) setActif((await lotsRep.json()).data?.actif ?? null);
       const lotLu = await lotRep.json().catch(() => ({}));
       if (lotRep.ok) setLot(lotLu.data);
       else {
@@ -110,9 +122,50 @@ export default function VersementsSepaPage() {
     }
   };
 
-  const telecharger = async () => {
+  /** Un geste sur le lot actif : l'état est celui du serveur, jamais déduit ici. */
+  const agirSurLeLot = async (chemin: string, corps?: object) => {
+    if (!actif) return;
+    setOccupe(true);
     setErreur('');
-    const rep = await fetch(`${API_URL}/api/superowner/versements/sepa.xml`, { headers: entetes() });
+    setMessage('');
+    try {
+      const rep = await fetch(`${API_URL}/api/superowner/versements/lots/${actif.id}/${chemin}`, {
+        method: 'POST',
+        headers: { ...entetes(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(corps ?? {}),
+      });
+      const lu = await rep.json().catch(() => ({}));
+      if (!rep.ok) throw new Error(lu?.error || lu?.message || t('actionImpossible'));
+      setMotDePasse('');
+      await charger();
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : t('erreur'));
+    } finally {
+      setOccupe(false);
+    }
+  };
+
+  const preparer = async () => {
+    setOccupe(true);
+    setErreur('');
+    setMessage('');
+    try {
+      const rep = await fetch(`${API_URL}/api/superowner/versements/lots`, { method: 'POST', headers: entetes() });
+      const lu = await rep.json().catch(() => ({}));
+      if (!rep.ok) throw new Error(lu?.error || lu?.message || t('preparerImpossible'));
+      setMessage(t('lotPrepare'));
+      await charger();
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : t('erreur'));
+    } finally {
+      setOccupe(false);
+    }
+  };
+
+  const telecharger = async () => {
+    if (!actif) return;
+    setErreur('');
+    const rep = await fetch(`${API_URL}/api/superowner/versements/lots/${actif.id}/sepa.xml`, { headers: entetes() });
     if (!rep.ok) {
       const lu = await rep.json().catch(() => ({}));
       setErreur(lu?.error || t('telechargementImpossible'));
@@ -120,31 +173,16 @@ export default function VersementsSepaPage() {
     }
     const lien = document.createElement('a');
     lien.href = URL.createObjectURL(await rep.blob());
-    lien.download = `${lot?.reference || 'versements'}.xml`;
+    lien.download = `${actif.reference}.xml`;
     lien.click();
     URL.revokeObjectURL(lien.href);
+    await charger();
   };
 
-  const marquerVerse = async () => {
-    if (!lot) return;
-    if (!confirm(t('confirmerVerse', { n: lot.nombre, total: euro(lot.total) }))) return;
-    setOccupe(true);
-    setErreur('');
-    try {
-      const rep = await fetch(`${API_URL}/api/superowner/versements/payer`, {
-        method: 'POST',
-        headers: { ...entetes(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...lot.inclus, reference: lot.reference }),
-      });
-      const lu = await rep.json();
-      if (!rep.ok) throw new Error(lu?.error || t('marquerImpossible'));
-      setMessage(t('lotVerse', { commercants: lu.data.commercants, livreurs: lu.data.livreurs }));
-      await charger();
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : t('erreur'));
-    } finally {
-      setOccupe(false);
-    }
+  const confirmerVerse = async () => {
+    if (!actif) return;
+    if (!confirm(t('confirmerVerse', { n: actif.itemCount, total: euro(actif.total) }))) return;
+    await agirSurLeLot('confirmer', { reference: actif.reference });
   };
 
   const ouvrir = async (id: string) => {
@@ -208,29 +246,98 @@ export default function VersementsSepaPage() {
               </div>
             )}
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={telecharger}
-                disabled={!lot.pret}
-                className="bg-gray-900 hover:bg-black disabled:opacity-40 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
-              >
-                <Download size={18} /> {t('telecharger')}
-              </button>
-              <button
-                onClick={marquerVerse}
-                disabled={!lot.pret || occupe}
-                className="bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
-              >
-                <Check size={18} /> {t('marquerVerse')}
-              </button>
-              <button
-                onClick={arreter}
-                disabled={occupe}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded flex items-center gap-2"
-              >
-                <RefreshCw size={18} /> {t('arreter')}
-              </button>
-            </div>
+            {actif ? (
+              <div className="border border-gray-200 rounded p-4 space-y-3" data-testid="lot-actif">
+                <p className="text-sm text-gray-500">
+                  {t('lotEnCours')} <span className="font-mono text-gray-900">{actif.reference}</span> ·{' '}
+                  {euro(actif.total)} · {t('virementsN', { n: actif.itemCount })}
+                </p>
+                <p className="font-semibold text-gray-900">{t(`etatsLot.${actif.status}`)}</p>
+                <div className="flex flex-wrap items-end gap-3">
+                  {actif.status === 'PREPARED' && (
+                    <>
+                      <input
+                        type="password"
+                        value={motDePasse}
+                        onChange={(e) => setMotDePasse(e.target.value)}
+                        placeholder={t('motDePasse')}
+                        autoComplete="current-password"
+                        className="border border-gray-300 rounded px-3 py-2 text-gray-900"
+                      />
+                      <button
+                        onClick={() => agirSurLeLot('approuver', { motDePasse })}
+                        disabled={!motDePasse || occupe}
+                        className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                      >
+                        <Check size={18} /> {t('approuver')}
+                      </button>
+                    </>
+                  )}
+                  {['APPROVED', 'EXPORTED'].includes(actif.status) && (
+                    <button
+                      onClick={telecharger}
+                      disabled={occupe}
+                      className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                    >
+                      <Download size={18} /> {t('telecharger')}
+                    </button>
+                  )}
+                  {actif.status === 'EXPORTED' && (
+                    <button
+                      onClick={() => agirSurLeLot('transmettre')}
+                      disabled={occupe}
+                      className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded"
+                    >
+                      {t('marquerTransmis')}
+                    </button>
+                  )}
+                  {['EXPORTED', 'SUBMITTED'].includes(actif.status) && (
+                    <>
+                      <button
+                        onClick={confirmerVerse}
+                        disabled={occupe}
+                        className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                      >
+                        <Check size={18} /> {t('marquerVerse')}
+                      </button>
+                      <button
+                        onClick={() => confirm(t('confirmerRejet')) && agirSurLeLot('rejeter', { raison: t('refuseParBanque') })}
+                        disabled={occupe}
+                        className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded"
+                      >
+                        {t('refuse')}
+                      </button>
+                    </>
+                  )}
+                  {['PREPARED', 'APPROVED'].includes(actif.status) && (
+                    <button
+                      onClick={() => agirSurLeLot('annuler')}
+                      disabled={occupe}
+                      className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded"
+                    >
+                      {t('annulerLot')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={preparer}
+                  disabled={!lot.pret || occupe}
+                  className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                >
+                  <Download size={18} /> {t('preparer')}
+                </button>
+                <button
+                  onClick={arreter}
+                  disabled={occupe}
+                  className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded flex items-center gap-2"
+                >
+                  <RefreshCw size={18} /> {t('arreter')}
+                </button>
+              </div>
+            )}
             <p className="text-xs text-gray-500">
               {t('etapes')}
             </p>

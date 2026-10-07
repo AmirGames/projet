@@ -27,6 +27,9 @@ const utilisateur = (id: string) => ({
 });
 let users: Record<string, ReturnType<typeof utilisateur>>;
 let membres: string[];
+/** Employés limités à certaines boutiques ; les autres membres sont ADMIN. */
+let limites: Record<string, string[]>;
+const membership = (id: string) => limites[id] ? { id: 'membership', role: 'STORE_STAFF', storeIds: limites[id] } : { id: 'membership', role: 'ADMIN', storeIds: [] as string[] };
 let driverId: string | null;
 let sessions: boolean;
 let permissions: Record<string, string>;
@@ -37,16 +40,16 @@ const jeton = (id: string) => ({ userId: id, sid: `session-${id}`, iat: 100, exp
 
 beforeEach(async () => {
   users = { alice: utilisateur('alice'), bob: utilisateur('bob'), admin: utilisateur('admin') };
-  membres = []; driverId = null; sessions = true; permissions = {}; clients = [];
+  membres = []; limites = {}; driverId = null; sessions = true; permissions = {}; clients = [];
   (db.user.findUnique as jest.Mock).mockImplementation(async ({ where }) => users[where.id] ?? null);
   (db.order.findUnique as jest.Mock).mockImplementation(async ({ where, select }) => {
     if (where.id !== 'commande-alice') return null;
-    if (select.storeId) return { storeId: 'boutique' };
-    return { customerEmail: users.alice.email, store: { orgId: 'org-alice' }, delivery: { driver: driverId ? { userId: driverId } : null } };
+    if (select.storeId && !select.customerEmail) return { storeId: 'boutique' };
+    return { customerEmail: users.alice.email, storeId: 'boutique', store: { orgId: 'org-alice' }, delivery: { driver: driverId ? { userId: driverId } : null } };
   });
   (db.membership.findFirst as jest.Mock).mockImplementation(async ({ where }) =>
-    where.orgId === 'org-alice' && membres.includes(where.userId) ? { id: 'membership' } : null);
-  (db.membership.findMany as jest.Mock).mockImplementation(async () => membres.map((id) => ({ user: { id } })));
+    where.orgId === 'org-alice' && membres.includes(where.userId) ? membership(where.userId) : null);
+  (db.membership.findMany as jest.Mock).mockImplementation(async () => membres.map((id) => ({ ...membership(id), user: { id } })));
   (db.store.findUnique as jest.Mock).mockResolvedValue({ orgId: 'org-alice' });
   (db.platformRole.findUnique as jest.Mock).mockImplementation(async () => ({ permissions }));
   (SsoService.sessionActive as jest.Mock).mockImplementation(async () => sessions);
@@ -140,7 +143,7 @@ test('membre non vérifié : reçoit uniquement son organisation, même suspendu
 test.each(['membership', 'livreur'])('droits %s retirés : aucune donnée dans le salon déjà rejoint', async (type) => {
   if (type === 'membership') membres = ['bob']; else driverId = 'bob';
   const bob = await connecter('bob'); expect(await rejoindre(bob)).toEqual({ ok: true });
-  membres = []; driverId = null;
+  membres = []; limites = {}; driverId = null;
   const recu = jest.fn(); bob.on('order-update', recu);
   await emitOrderUpdate('commande-alice', 'DELIVERED');
   await barriere(bob); expect(recu).not.toHaveBeenCalled();
@@ -274,4 +277,21 @@ test('erreur en base : aucune diffusion privée', async () => {
   (db.user.findUnique as jest.Mock).mockRejectedValueOnce(new Error('DB indisponible'));
   await emitNotification(users.alice.email, { secret: true });
   await barriere(alice); expect(recu).not.toHaveBeenCalled();
+});
+
+test('employé limité à la boutique A : refusé sur le salon et sans notification de la boutique B', async () => {
+  membres = ['bob']; limites = { bob: ['autre-boutique'] };
+  const bob = await connecter('bob');
+  const recu = jest.fn(); bob.on('commande-maj', recu);
+  await emitMerchantEvent('boutique', 'commande-maj', { secret: true });
+  await barriere(bob); expect(recu).not.toHaveBeenCalled();
+  expect(await accesCommande(users.bob as any, 'commande-alice')).toBe(false);
+});
+
+test('employé attribué à la boutique : salon et notifications accordés', async () => {
+  membres = ['bob']; limites = { bob: ['boutique'] };
+  const bob = await connecter('bob');
+  const positif = evenement(bob, 'commande-maj');
+  await emitMerchantEvent('boutique', 'commande-maj', { id: 'commande' }); await positif;
+  expect(await accesCommande(users.bob as any, 'commande-alice')).toBe(true);
 });

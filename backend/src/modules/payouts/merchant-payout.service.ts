@@ -3,10 +3,16 @@ import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { getEnv } from "../../config/env";
 import { emitNotification } from "../realtime/socket";
-import { LIBELLES_REVERSEMENT, LigneReversement, lignesDuReversement } from "../../utils/reversement";
-import { dateBruxelles, fichierSepa, ibanNormalise, ibanValide, VirementSepa } from "../../utils/sepa";
+import {
+  AjustementRemboursement,
+  LIBELLES_REVERSEMENT,
+  LigneReversement,
+  ajustementRemboursement,
+  lignesDuReversement,
+} from "../../utils/reversement";
+import { dateBruxelles, ibanNormalise, ibanValide, VirementSepa } from "../../utils/sepa";
 import { debutDeSemaine, semaineEcoulee } from "../../utils/semaine-bruxelles";
-import { DriverPayoutService, MOYENS_VERSEMENT } from "./driver-payout.service";
+import { DriverPayoutService } from "./driver-payout.service";
 import { MOTIF_LIVRAISON_ECHOUEE } from "../orders/order-acceptance.service";
 
 /**
@@ -82,9 +88,9 @@ export function horsReversements() {
 export const reversementsDepuis = () => debutDesReversements();
 
 /** Les commandes d'une organisation qui attendent d'être reversées. */
-function commandesAReverser(orgId: string, fin: Date) {
+function commandesAReverser(orgId: string, fin: Date, client: Pick<typeof db, "order"> = db) {
   const debut = debutDesReversements();
-  return db.order.findMany({
+  return client.order.findMany({
     where: {
       store: { orgId, org: { isDemo: false } },
       ...DUES_AU_COMMERCANT,
@@ -94,6 +100,50 @@ function commandesAReverser(orgId: string, fin: Date) {
     },
     select: SELECTION_COMMANDE,
   }).then((commandes) => commandes.map((c) => ({ ...c, priseEnCharge: c.status === "REJECTED" })));
+}
+
+/**
+ * Les remboursements clients pas encore répercutés : sur des commandes déjà
+ * versées (relevé passé) ou sur celles de ce relevé. Une commande remboursée
+ * avant d'être reversée n'entre pas dans les commandes dues : rien à corriger.
+ */
+async function remboursementsARepercuter(
+  orgId: string,
+  commandes: { id: string }[],
+  client: Pick<typeof db, "order">,
+) {
+  const debut = debutDesReversements();
+  const candidates = await client.order.findMany({
+    where: {
+      store: { orgId, org: { isDemo: false } },
+      status: "COMPLETED",
+      deletedAt: null,
+      ...(debut ? { createdAt: { gte: debut } } : {}),
+      payments: { some: { refundedAmount: { gt: 0 } } },
+      OR: [{ merchantPayoutId: { not: null } }, { id: { in: commandes.map((c) => c.id) } }],
+    },
+    select: {
+      ...SELECTION_COMMANDE,
+      payments: { select: { id: true, refundedAmount: true, refundAccountedAmount: true } },
+    },
+  });
+
+  const ajustement: AjustementRemboursement = { partCommercant: 0, commission: 0, nombre: 0 };
+  const paiements: { id: string; ancien: number; nouveau: number }[] = [];
+  for (const commande of candidates) {
+    const paiement = commande.payments[0];
+    if (!paiement) continue;
+    const rembourse = Number(paiement.refundedAmount ?? 0);
+    const ancien = Number(paiement.refundAccountedAmount ?? 0);
+    if (rembourse <= ancien) continue;
+    const { partCommercant, commission } = ajustementRemboursement(commande, rembourse, ancien);
+    paiements.push({ id: paiement.id, ancien, nouveau: rembourse });
+    if (partCommercant === 0 && commission === 0) continue;
+    ajustement.partCommercant += partCommercant;
+    ajustement.commission += commission;
+    ajustement.nombre += 1;
+  }
+  return { ajustement, paiements };
 }
 
 /** La légende du relevé : chaque code présent, expliqué. */
@@ -111,20 +161,28 @@ export class MerchantPayoutService {
       throw new ApiError(400, "La fin de période précède son début", "INVALID_PERIOD");
     }
 
-    const [commandes, reportes] = await Promise.all([
-      commandesAReverser(orgId, periodEnd),
-      db.merchantPayout.findMany({ where: { orgId, status: "CARRIED", carriedToId: null } }),
-    ]);
-
-    if (commandes.length === 0 && reportes.length === 0) return null;
-
-    const report = reportes.reduce((s, r) => s + Number(r.amount), 0);
-    const { lignes, net } = lignesDuReversement(commandes, report);
-
-    // Plus de retenues que de ventes : le solde se reporte, il ne se vire pas.
-    const status = net > 0 ? "PENDING" : net < 0 ? "CARRIED" : "PAID";
-
     const releve = await db.$transaction(async (tx) => {
+      // Un seul arrêté à la fois par commerçant : deux passages simultanés
+      // (deux instances, un clic double) lisaient les mêmes commandes et
+      // créaient chacun un relevé. Le verrou tient jusqu'à la fin de la
+      // transaction ; le second passage relit alors des commandes déjà rattachées.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`releve-commercant:${orgId}`}))`;
+
+      const [commandes, reportes] = await Promise.all([
+        commandesAReverser(orgId, periodEnd, tx),
+        tx.merchantPayout.findMany({ where: { orgId, status: "CARRIED", carriedToId: null } }),
+      ]);
+
+      const { ajustement, paiements } = await remboursementsARepercuter(orgId, commandes, tx);
+
+      if (commandes.length === 0 && reportes.length === 0 && ajustement.nombre === 0) return null;
+
+      const report = reportes.reduce((s, r) => s + Number(r.amount), 0);
+      const { lignes, net } = lignesDuReversement(commandes, report, ajustement);
+
+      // Plus de retenues que de ventes : le solde se reporte, il ne se vire pas.
+      const status = net > 0 ? "PENDING" : net < 0 ? "CARRIED" : "PAID";
+
       const cree = await tx.merchantPayout.create({
         data: {
           orgId,
@@ -138,30 +196,53 @@ export class MerchantPayoutService {
         },
       });
 
+      // Rattachement conditionnel : « encore non rattachée ». Si le nombre de
+      // lignes touchées diffère, quelqu'un d'autre est passé : la transaction
+      // est annulée plutôt que d'écraser son relevé.
       if (commandes.length > 0) {
-        await tx.order.updateMany({
-          where: { id: { in: commandes.map((c) => c.id) } },
+        const { count } = await tx.order.updateMany({
+          where: { id: { in: commandes.map((c) => c.id) }, merchantPayoutId: null },
           data: { merchantPayoutId: cree.id },
         });
+        if (count !== commandes.length) {
+          throw new ApiError(409, "Des commandes ont été rattachées à un autre relevé.", "PAYOUT_CONFLICT");
+        }
       }
 
       if (reportes.length > 0) {
-        await tx.merchantPayout.updateMany({
-          where: { id: { in: reportes.map((r) => r.id) } },
+        const { count } = await tx.merchantPayout.updateMany({
+          where: { id: { in: reportes.map((r) => r.id) }, carriedToId: null },
           data: { carriedToId: cree.id },
         });
+        if (count !== reportes.length) {
+          throw new ApiError(409, "Un solde reporté a été repris par un autre relevé.", "PAYOUT_CONFLICT");
+        }
+      }
+
+      // Ces remboursements sont désormais comptés : le même ne l'est pas deux
+      // fois. Conditionnel sur l'ancienne valeur, comme le rattachement.
+      for (const paiement of paiements) {
+        const { count } = await tx.payment.updateMany({
+          where: { id: paiement.id, refundAccountedAmount: paiement.ancien },
+          data: { refundAccountedAmount: paiement.nouveau },
+        });
+        if (count !== 1) {
+          throw new ApiError(409, "Un remboursement a été répercuté par un autre relevé.", "PAYOUT_CONFLICT");
+        }
       }
 
       return cree;
     });
 
-    logger.info("Merchant payout drawn up", { orgId, payoutId: releve.id, net, status });
+    if (!releve) return null;
+
+    logger.info("Merchant payout drawn up", { orgId, payoutId: releve.id, net: Number(releve.amount), status: releve.status });
     return releve;
   }
 
   /** Arrête les relevés de tous les commerçants qui ont quelque chose à reverser. */
   static async arreterTous(periodStart: Date, periodEnd: Date) {
-    const [avecCommandes, avecReport] = await Promise.all([
+    const [avecCommandes, avecReport, avecRemboursement] = await Promise.all([
       db.order.findMany({
         where: {
           store: { org: { isDemo: false } },
@@ -177,6 +258,21 @@ export class MerchantPayoutService {
         where: { status: "CARRIED", carriedToId: null },
         select: { orgId: true },
       }),
+      // Un remboursement sur une commande déjà versée se corrige au relevé
+      // suivant, même sans nouvelle vente. `arreter` ne crée rien si tout
+      // est déjà répercuté.
+      db.order.findMany({
+        where: {
+          store: { org: { isDemo: false } },
+          status: "COMPLETED",
+          deletedAt: null,
+          merchantPayoutId: { not: null },
+          ...(debutDesReversements() ? { createdAt: { gte: debutDesReversements() as Date } } : {}),
+          payments: { some: { refundedAmount: { gt: 0 } } },
+        },
+        select: { store: { select: { orgId: true } } },
+        distinct: ["storeId"],
+      }),
     ]);
 
     // Reprise après échec partiel : un commerçant qui a déjà son relevé pour
@@ -185,7 +281,11 @@ export class MerchantPayoutService {
       (await db.merchantPayout.findMany({ where: { periodEnd }, select: { orgId: true } })).map((r) => r.orgId)
     );
     const orgIds = [
-      ...new Set([...avecCommandes.map((c) => c.store.orgId), ...avecReport.map((r) => r.orgId)]),
+      ...new Set([
+        ...avecCommandes.map((c) => c.store.orgId),
+        ...avecReport.map((r) => r.orgId),
+        ...avecRemboursement.map((c) => c.store.orgId),
+      ]),
     ].filter((orgId) => !dejaArretes.has(orgId));
 
     const releves = [];
@@ -272,73 +372,18 @@ export class MerchantPayoutService {
   }
 
   /**
-   * Marque des relevés versés, commerçants et livreurs ensemble : c'est un lot
-   * SEPA qui part en une fois.
-   */
-  static async payerLeLot(
-    ids: { commercants: string[]; livreurs: string[] },
-    versement: { method: string; reference?: string },
-    adminId: string
-  ) {
-    if (!MOYENS_VERSEMENT.includes(versement.method as (typeof MOYENS_VERSEMENT)[number])) {
-      throw new ApiError(400, "Moyen de versement inconnu", "INVALID_METHOD");
-    }
-
-    const payes = await db.merchantPayout.updateMany({
-      where: { id: { in: ids.commercants }, status: "PENDING" },
-      data: {
-        status: "PAID",
-        method: versement.method,
-        reference: versement.reference?.trim() || null,
-        paidAt: new Date(),
-        paidBy: adminId,
-      },
-    });
-
-    const releves = await db.merchantPayout.findMany({
-      where: { id: { in: ids.commercants }, status: "PAID", paidBy: adminId },
-      select: { orgId: true, amount: true },
-    });
-    for (const r of releves) {
-      await this.prevenir(r.orgId, "Versement effectué", `${Number(r.amount).toFixed(2)} € sont en route vers votre compte.`);
-    }
-
-    let livreurs = 0;
-    for (const id of ids.livreurs) {
-      try {
-        await DriverPayoutService.payer(id, versement, adminId);
-        livreurs += 1;
-      } catch (err) {
-        // Déjà versé ou annulé entre-temps : on n'arrête pas le lot pour ça.
-        logger.warn("Relevé livreur non marqué versé", { id, error: err instanceof Error ? err.message : err });
-      }
-    }
-
-    return { commercants: payes.count, livreurs };
-  }
-
-  /**
-   * Le fichier SEPA de tous les versements en attente, commerçants et
+   * Les virements en attente qu'aucun lot ne porte encore : commerçants et
    * livreurs. Un bénéficiaire sans IBAN valide est écarté et signalé : le
    * fichier entier serait rejeté par la banque.
    */
-  static async fichierDesVersements(maintenant = new Date()) {
-    const env = getEnv();
-    if (!env.SEPA_DEBTOR_IBAN || !env.SEPA_DEBTOR_NAME || !ibanValide(env.SEPA_DEBTOR_IBAN)) {
-      throw new ApiError(
-        400,
-        "Le compte de la plateforme n'est pas réglé : renseignez SEPA_DEBTOR_NAME et SEPA_DEBTOR_IBAN.",
-        "SEPA_DEBTOR_MISSING"
-      );
-    }
-
+  static async virementsEnAttente(client: Pick<typeof db, "merchantPayout" | "courierPayout"> = db) {
     const [commercants, livreurs] = await Promise.all([
-      db.merchantPayout.findMany({
-        where: { status: "PENDING" },
+      client.merchantPayout.findMany({
+        where: { status: "PENDING", batchId: null },
         include: { org: { select: { name: true, legalName: true, iban: true, bic: true, accountHolder: true } } },
       }),
-      db.courierPayout.findMany({
-        where: { status: "PENDING" },
+      client.courierPayout.findMany({
+        where: { status: "PENDING", batchId: null },
         include: { driver: { select: { name: true, iban: true, bic: true, accountHolder: true } } },
       }),
     ]);
@@ -346,7 +391,7 @@ export class MerchantPayoutService {
     const periode = (debut: Date, fin: Date) =>
       `${dateBruxelles(debut)} au ${dateBruxelles(new Date(fin.getTime() - 1))}`;
 
-    const virements: VirementSepa[] = [];
+    const virements: (VirementSepa & { kind: "commercant" | "livreur"; payoutId: string })[] = [];
     const ecartes: { type: string; id: string; nom: string; montant: number; raison: string }[] = [];
     const inclus = { commercants: [] as string[], livreurs: [] as string[] };
 
@@ -357,6 +402,8 @@ export class MerchantPayoutService {
         continue;
       }
       virements.push({
+        kind: "commercant",
+        payoutId: r.id,
         id: `MP-${r.id}`,
         nom,
         iban: r.org.iban as string,
@@ -374,6 +421,8 @@ export class MerchantPayoutService {
         continue;
       }
       virements.push({
+        kind: "livreur",
+        payoutId: r.id,
         id: `DP-${r.id}`,
         nom,
         iban: r.driver.iban as string,
@@ -384,6 +433,26 @@ export class MerchantPayoutService {
       inclus.livreurs.push(r.id);
     }
 
+    return { virements, ecartes, inclus };
+  }
+
+  /**
+   * Aperçu du lot à verser : ce que `PayoutBatchService.preparer` figerait
+   * maintenant. Aucun effet de bord, aucun fichier : l'export se fait sur un
+   * lot préparé et approuvé.
+   */
+  static async fichierDesVersements(maintenant = new Date()) {
+    const env = getEnv();
+    if (!env.SEPA_DEBTOR_IBAN || !env.SEPA_DEBTOR_NAME || !ibanValide(env.SEPA_DEBTOR_IBAN)) {
+      throw new ApiError(
+        400,
+        "Le compte de la plateforme n'est pas réglé : renseignez SEPA_DEBTOR_NAME et SEPA_DEBTOR_IBAN.",
+        "SEPA_DEBTOR_MISSING"
+      );
+    }
+
+    const { virements, ecartes, inclus } = await this.virementsEnAttente();
+
     const aPayer = virements.filter((v) => v.montant > 0);
     const reference = `VERSEMENTS-${maintenant.toISOString().slice(0, 16).replace(/[-:T]/g, "")}`;
 
@@ -393,19 +462,12 @@ export class MerchantPayoutService {
       nombre: aPayer.length,
       inclus,
       ecartes,
-      xml:
-        aPayer.length > 0
-          ? fichierSepa(
-              { nom: env.SEPA_DEBTOR_NAME, iban: env.SEPA_DEBTOR_IBAN, bic: env.SEPA_DEBTOR_BIC },
-              aPayer,
-              { reference, dateExecution: maintenant, maintenant }
-            )
-          : null,
+      pret: aPayer.length > 0,
     };
   }
 
   /** Prévient les membres du commerçant. */
-  private static async prevenir(orgId: string, titre: string, corps: string) {
+  static async prevenir(orgId: string, titre: string, corps: string) {
     try {
       const membres = await db.membership.findMany({
         where: { orgId },

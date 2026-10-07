@@ -7,9 +7,20 @@ import { ChoixPourboire, montantDuPourcentage } from '@/components/ChoixPourboir
 import { StripePayment } from '@/components/stripe-payment';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { cheminCommande, jetonDeSuivi } from '@/lib/suivi-commande';
 import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+/** La session du client, quand il est connecté : avec le jeton de suivi, elle ouvre la commande. */
+function entetesSession(): Record<string, string> {
+  try {
+    const session = localStorage.getItem('accessToken');
+    return session ? { Authorization: `Bearer ${session}` } : {};
+  } catch {
+    return {};
+  }
+}
 
 interface Situation {
   possible: boolean;
@@ -50,7 +61,7 @@ export function PourboireApresLivraison({
 
   useEffectChargement(() => {
     if (!orderId) return;
-    fetch(`${API_URL}/api/orders/${orderId}/pourboire`)
+    fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId), '/pourboire')}`, { headers: entetesSession() })
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         const lue: Situation | null = donnees?.data || null;
@@ -120,9 +131,9 @@ export function PourboireApresLivraison({
             customerEmail={customerEmail || ''}
             customerName={customerName || ''}
             creerIntention={async () => {
-              const reponse = await fetch(`${API_URL}/api/orders/${orderId}/pourboire`, {
+              const reponse = await fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId), '/pourboire')}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...entetesSession() },
                 body: JSON.stringify({ montant }),
               });
               const corps = await reponse.json().catch(() => null);

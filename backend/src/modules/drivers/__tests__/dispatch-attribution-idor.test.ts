@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const tx: any = {
+  $executeRaw: jest.fn(),
   courier: { findUnique: jest.fn(), update: jest.fn() },
-  orderDelivery: { updateMany: jest.fn() },
+  orderDelivery: { updateMany: jest.fn(), count: jest.fn() },
   deliveryOffer: { updateMany: jest.fn() },
 };
 const db: any = {
@@ -22,6 +23,8 @@ beforeEach(() => {
   db.orderDelivery.findUniqueOrThrow.mockResolvedValue({ id: "course-alice" });
   jest.spyOn(DispatchService, "reglages").mockResolvedValue({ tournee: { maxCourses: 2 } } as any);
   tx.courier.findUnique.mockResolvedValue({ status: "ACTIVE", currentOrderId: null });
+  tx.orderDelivery.count.mockResolvedValue(0);
+  tx.$executeRaw.mockReset();
   tx.orderDelivery.updateMany.mockResolvedValue({ count: 1 });
   tx.deliveryOffer.updateMany.mockResolvedValue({ count: 1 });
   db.$transaction.mockImplementation(async (callback: any) => callback(tx));
@@ -57,4 +60,24 @@ describe("attribution transactionnelle d'une course", () => {
     expect(tx.orderDelivery.updateMany).not.toHaveBeenCalled();
     expect(tx.deliveryOffer.updateMany).not.toHaveBeenCalled();
   });
+
+  it("la capacité est recomptée sous verrou : deux offres pour une place, une seule acceptée (C-16)", async () => {
+    // La lecture hors transaction voyait une place libre ; sous le verrou, une
+    // autre acceptation vient de la prendre.
+    db.orderDelivery.count.mockResolvedValue(0);
+    tx.orderDelivery.count.mockResolvedValue(2);
+    await expect(DispatchService.accepter("offre-alice", "alice")).rejects.toMatchObject({ statusCode: 409, code: "TOO_MANY_DELIVERIES" });
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(tx.orderDelivery.updateMany).not.toHaveBeenCalled();
+    expect(tx.courier.update).not.toHaveBeenCalled();
+  });
+
+  it("le verrou précède le comptage de la capacité", async () => {
+    const ordre: string[] = [];
+    tx.$executeRaw.mockImplementation(async () => { ordre.push("verrou"); });
+    tx.orderDelivery.count.mockImplementation(async () => { ordre.push("comptage"); return 0; });
+    await DispatchService.accepter("offre-alice", "alice");
+    expect(ordre).toEqual(["verrou", "comptage"]);
+  });
 });
+

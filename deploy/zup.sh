@@ -5,11 +5,15 @@
 #   ./deploy/zup.sh update    git pull + up
 #   ./deploy/zup.sh logs [service]
 #   ./deploy/zup.sh ps
+#   ./deploy/zup.sh version   le commit qui tourne (API et site), lu sur /health
 #   ./deploy/zup.sh down
 #   ./deploy/zup.sh backup    sauvegarde base + fichiers dans ~/sauvegardes
 #                             (BACKUP_REMOTE : copie hors serveur avec rclone)
-#   ./deploy/zup.sh restore-test <base-….sql.gz.age> <identite-age.txt>
-#                             exercice : restaure dans une base jetable et vérifie
+#   ./deploy/zup.sh planifier-sauvegardes
+#                             installe la sauvegarde nocturne (timer systemd, 03 h 15)
+#   ./deploy/zup.sh restore-test <base-….sql.gz.age> <identite-age.txt> [uploads-….tar.gz.age]
+#                             exercice : restaure dans une base jetable, vérifie
+#                             les fichiers, et chronomètre la restauration
 #   ./deploy/zup.sh restore   explique la restauration de production (manuelle)
 #   ./deploy/zup.sh psql
 #   ./deploy/zup.sh vapid     crée les clés des notifications push navigateur
@@ -36,6 +40,12 @@ SAUVEGARDES="${SAUVEGARDES:-$HOME/sauvegardes}"
 
 case "${1:-}" in
   up)
+    # Le commit construit dans les images : /health et /api/health le rendent,
+    # pour savoir quel correctif tourne réellement.
+    export GIT_SHA="$(git rev-parse HEAD 2>/dev/null || echo inconnue)"
+    echo "Révision : ${GIT_SHA:0:12}"
+    # Le service « migrate » applique les migrations avant l'API : s'il échoue,
+    # l'API de la version précédente reste en place et la commande s'arrête ici.
     dc up -d --build --remove-orphans
     # Caddy ne relit pas son Caddyfile de lui-même : sans cela, une mise à
     # jour de deploy/Caddyfile restait sans effet. Le rechargement ne coupe
@@ -50,6 +60,13 @@ case "${1:-}" in
     ;;
   logs)  shift; dc logs -f --tail=200 "$@" ;;
   ps)    dc ps ;;
+  version)
+    # Ce qui tourne vraiment, pas ce qui est dans le dépôt : l'API et le site
+    # annoncent le commit construit dans leur image.
+    echo "dépôt : $(git rev-parse --short=12 HEAD)"
+    echo -n "API   : "; dc exec -T backend wget -qO- http://127.0.0.1:3001/health; echo
+    echo -n "Site  : "; dc exec -T frontend wget -qO- http://127.0.0.1:3000/api/health; echo
+    ;;
   down)  dc down ;;
   restart) shift; dc restart "$@" ;;
   psql)  dc exec postgres psql -U "$PGU" -d "$PGD" ;;
@@ -86,14 +103,53 @@ case "${1:-}" in
     fi
     echo "✅ Sauvegarde : $SAUVEGARDES/*-$horodatage.*"
     ;;
+  planifier-sauvegardes)
+    # Une sauvegarde qui n'est pas planifiée n'existe pas : la santé de la
+    # plateforme passe à l'orange après deux jours sans sauvegarde complète.
+    # Un timer systemd (et non cron) : « Persistent » rattrape une nuit où le
+    # serveur était éteint, et le journal garde la trace de chaque passage.
+    command -v systemctl >/dev/null || { echo "systemd requis (sinon, planifiez '$RACINE/deploy/zup.sh backup' avec cron)"; exit 1; }
+    utilisateur="${SUDO_USER:-$(id -un)}"
+    service="[Unit]
+Description=Sauvegarde chiffrée ZupOne (base + fichiers)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=$utilisateur
+WorkingDirectory=$RACINE
+ExecStart=$RACINE/deploy/zup.sh backup
+# Un passage ne doit jamais bloquer le suivant.
+TimeoutStartSec=2h"
+    minuteur="[Unit]
+Description=Sauvegarde nocturne ZupOne
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target"
+    echo "$service" | sudo tee /etc/systemd/system/zup-sauvegarde.service >/dev/null
+    echo "$minuteur" | sudo tee /etc/systemd/system/zup-sauvegarde.timer >/dev/null
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now zup-sauvegarde.timer
+    systemctl list-timers zup-sauvegarde.timer --no-pager
+    echo "✅ Sauvegarde nocturne planifiée. Suivi : journalctl -u zup-sauvegarde.service"
+    echo "   Prochaines étapes : définir BACKUP_REMOTE (copie hors serveur), garder la clé age privée"
+    echo "   hors du serveur, puis faire un exercice : $0 restore-test <base-….age> <identite-age.txt> <uploads-….age>"
+    ;;
   restore-test)
     # Exercice de restauration : ne touche JAMAIS à la base de production. La
     # sauvegarde est déchiffrée en flux avec l'identité age (clé privée gardée
     # hors du VPS : copiez-la ici pour l'exercice, puis supprimez-la), restaurée
     # dans une base jetable, comparée à la base réelle, puis la base jetable est
     # supprimée. Une sauvegarde jamais restaurée n'est qu'une hypothèse.
-    fichier="${2:-}"; identite="${3:-}"
-    [ -f "$fichier" ] && [ -f "$identite" ] || { echo "Usage : $0 restore-test <base-….sql.gz.age> <identite-age.txt>"; exit 1; }
+    fichier="${2:-}"; identite="${3:-}"; fichiers="${4:-}"
+    [ -f "$fichier" ] && [ -f "$identite" ] || { echo "Usage : $0 restore-test <base-….sql.gz.age> <identite-age.txt> [uploads-….tar.gz.age]"; exit 1; }
+    debut_exercice=$SECONDS
     command -v age >/dev/null || { echo "age requis"; exit 1; }
     TEST_DB="zup_restore_test"
     sql() { dc exec -T postgres psql -U "$PGU" -v ON_ERROR_STOP=1 -q -t -A "$@"; }
@@ -113,6 +169,16 @@ case "${1:-}" in
     migrations="$(sql -d "$TEST_DB" -c 'SELECT count(*) FROM "_prisma_migrations"' 2>/dev/null || echo 0)"
     echo "Migrations Prisma restaurées : $migrations"
     [ "${migrations:-0}" -gt 0 ] || echec=1
+    # Les documents privés et les photos : l'archive doit se déchiffrer et se lire.
+    if [ -n "$fichiers" ]; then
+      [ -f "$fichiers" ] || { echo "❌ Archive de fichiers introuvable : $fichiers"; exit 1; }
+      nombre="$(age -d -i "$identite" "$fichiers" | tar tzf - 2>/dev/null | wc -l)"
+      echo "Fichiers dans l'archive : $nombre"
+      [ "${nombre:-0}" -gt 0 ] || echec=1
+    else
+      echo "ℹ️  Archive de fichiers non vérifiée (4e argument : uploads-….tar.gz.age)"
+    fi
+    echo "Durée de la restauration : $((SECONDS - debut_exercice)) s (à noter : c'est votre délai de reprise réel)"
     if [ "$echec" -ne 0 ]; then echo "❌ Restauration incomplète : cette sauvegarde n'est pas exploitable"; exit 1; fi
     echo "✅ La sauvegarde se restaure. Écarts de comptage normaux si la production a avancé depuis."
     echo "   Pensez à supprimer l'identité age copiée sur ce serveur."

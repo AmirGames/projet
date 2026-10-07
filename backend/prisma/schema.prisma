@@ -1127,6 +1127,13 @@ model Order {
   merchantPayoutId String?
   merchantPayout   MerchantPayout? @relation(fields: [merchantPayoutId], references: [id], onDelete: SetNull)
 
+  /// Clé de tentative d'achat fournie par le client (en-tête Idempotency-Key) :
+  /// le même achat envoyé deux fois (double clic, nouvel essai après un délai)
+  /// rend la même commande. L'empreinte du contenu refuse la même clé pour un
+  /// panier différent.
+  idempotencyKey   String?
+  idempotencyHash  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1137,6 +1144,7 @@ model Order {
   @@index([deletedAt])
   @@index([submittedAt])
   @@index([merchantPayoutId])
+  @@unique([storeId, idempotencyKey])
 }
 
 /// Un jeton de suivi porté par un lien envoyé au client (e-mail, SMS).
@@ -1207,6 +1215,10 @@ model Payment {
   refundedAt      DateTime?
   refundedAmount  Decimal?     @db.Decimal(10, 2)
   stripeRefundId  String?
+  /// La part du remboursement déjà répercutée sur un relevé de reversement
+  /// commerçant. La différence avec refundedAmount reste à corriger au
+  /// prochain relevé (ligne 310), jamais en retouchant un relevé passé.
+  refundAccountedAmount Decimal @default(0) @db.Decimal(10, 2)
 
   // Relations
   order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -1216,6 +1228,28 @@ model Payment {
 
   @@unique([orderId])
   @@index([stripePaymentIntentId])
+}
+
+/// Journal des événements Stripe reçus : un identifiant d'événement n'est
+/// traité qu'une fois, et chaque litige reste visible. Jamais supprimé pour
+/// « corriger » l'historique.
+model StripeEvent {
+  /// L'identifiant Stripe de l'événement (evt_…).
+  id          String    @id
+  type        String
+  /// L'objet concerné (intention, remboursement, litige…).
+  objectId    String?
+  orderId     String?
+  receivedAt  DateTime  @default(now())
+  /// Renseigné quand le traitement a abouti ; vide, Stripe peut renvoyer l'événement.
+  processedAt DateTime?
+  attempts    Int       @default(1)
+  lastError   String?
+  /// Données non personnelles utiles au suivi (montant, motif, statut d'un litige).
+  detail      Json?
+
+  @@index([type, receivedAt])
+  @@index([orderId])
 }
 
 // ============================================================================
@@ -1581,6 +1615,11 @@ model MerchantPayout {
   paidBy          String?
   note            String?
 
+  /// Le lot bancaire actif qui porte ce relevé : un relevé n'est que dans un
+  /// seul lot à la fois. Vide : pas encore (ou plus) dans un lot.
+  batchId         String?
+  batch           PayoutBatch? @relation("MerchantPayoutBatch", fields: [batchId], references: [id], onDelete: SetNull)
+
   org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   orders          Order[]
 
@@ -1590,6 +1629,45 @@ model MerchantPayout {
   @@index([orgId])
   @@index([status])
   @@index([periodStart])
+  @@index([batchId])
+}
+
+/// Un lot de virements SEPA. États : PREPARED (figé, en attente d'approbation),
+/// APPROVED (approuvé après réauthentification), EXPORTED (fichier téléchargé),
+/// SUBMITTED (importé et signé à la banque), CONFIRMED (versé), REJECTED
+/// (refusé par la banque : les relevés repartent en attente), CANCELLED
+/// (abandonné avant export). Les bénéficiaires, IBAN et montants sont figés à
+/// la préparation : un changement d'IBAN ou de montant plus tard ne modifie
+/// pas un lot déjà préparé.
+model PayoutBatch {
+  id            String    @id @default(cuid())
+  reference     String    @unique
+  status        String    @default("PREPARED")
+  total         Decimal   @default(0) @db.Decimal(12, 2)
+  itemCount     Int       @default(0)
+  /// [{ kind, payoutId, nom, iban, bic, montant, communication }] — chiffré.
+  itemsJson     Json      @default("[]")
+  /// Empreinte du fichier exporté : le même lot redonne le même fichier.
+  xmlSha256     String?
+  bankReference String?
+  note          String?
+
+  createdBy     String
+  approvedBy    String?
+  approvedAt    DateTime?
+  exportedBy    String?
+  exportedAt    DateTime?
+  submittedAt   DateTime?
+  closedBy      String?
+  closedAt      DateTime?
+
+  merchantPayouts MerchantPayout[] @relation("MerchantPayoutBatch")
+  courierPayouts  CourierPayout[]  @relation("CourierPayoutBatch")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
 }
 
 model CourierPayout {
@@ -1619,6 +1697,10 @@ model CourierPayout {
   note            String?
 
   // Relations
+  /// Le lot bancaire actif qui porte ce relevé (voir MerchantPayout.batchId).
+  batchId         String?
+  batch           PayoutBatch? @relation("CourierPayoutBatch", fields: [batchId], references: [id], onDelete: SetNull)
+
   driver          Courier    @relation(fields: [driverId], references: [id], onDelete: Cascade)
   deliveries      OrderDelivery[]
   /// Les pourboires laissés après la livraison, payés avec ce relevé.
@@ -1630,6 +1712,7 @@ model CourierPayout {
   @@index([driverId])
   @@index([status])
   @@index([periodStart])
+  @@index([batchId])
 
   /// Table au nom historique (renommage Driver → Courier, code seulement).
   @@map("DriverPayout")

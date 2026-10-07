@@ -63,3 +63,41 @@ describe("carnet de clients par boutique", () => {
     expect(where.deletedAt).toBeNull();
   });
 });
+
+describe("client ajouté à la main (C-27)", () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    db.customer.findMany.mockResolvedValue([]);
+    db.customer.count.mockResolvedValue(0);
+    db.customer.findFirst.mockResolvedValue({ id: "cli-1", storeEntries: [] });
+  });
+
+  it("la liste accepte un rattachement explicite en plus des commandes", async () => {
+    await CustomerService.getCustomers("store-A");
+    const { where } = db.customer.findMany.mock.calls[0][0];
+    expect(where.OR).toEqual([
+      { orders: { some: { storeId: "store-A", deletedAt: null } } },
+      { storeEntries: { some: { storeId: "store-A", hiddenAt: null } } },
+    ]);
+    // Retiré du carnet : toujours exclu, même s'il a commandé.
+    expect(where.storeEntries).toEqual({ none: { storeId: "store-A", hiddenAt: { not: null } } });
+  });
+
+  it("la recherche s'ajoute au rattachement sans l'écraser", async () => {
+    await CustomerService.getCustomers("store-A", { search: "ali" });
+    const { where } = db.customer.findMany.mock.calls[0][0];
+    expect(where.OR).toHaveLength(2);
+    expect(where.AND[0].OR).toEqual([
+      { name: { contains: "ali", mode: "insensitive" } },
+      { email: { contains: "ali", mode: "insensitive" } },
+    ]);
+  });
+
+  it("la fiche est lisible avec le même critère que la liste", async () => {
+    await CustomerService.getCustomer("store-A", "cli-1");
+    const { where } = db.customer.findFirst.mock.calls[0][0];
+    expect(where).toMatchObject({ id: "cli-1", deletedAt: null });
+    expect(where.OR).toHaveLength(2);
+  });
+});
+

@@ -25,6 +25,7 @@ export const ENCRYPTED_FIELDS: Record<string, string[]> = {
   SystemAuditLog: ["changes", "ipAddress", "userAgent"],
   SecurityEvent: ["actor", "target", "details", "ipAddress", "userAgent"],
   CourierPayout: ["beneficiaryJson"],
+  PayoutBatch: ["itemsJson"],
   Store: ["vatNumber", "registrationNumber"],
 };
 
@@ -35,6 +36,7 @@ const ENCRYPTED_DEFAULTS: Record<string, Record<string, unknown>> = {
   Customer: { savedAddresses: [] },
   Invoice: { emetteurJson: {}, destinataireJson: {} },
   CourierPayout: { beneficiaryJson: {} },
+  PayoutBatch: { itemsJson: [] },
   SecurityEvent: { target: "", details: "" },
 };
 

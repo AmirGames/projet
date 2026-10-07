@@ -151,3 +151,15 @@ export const limiterApiPublique = limiterCadence({
   nom: "public-api", max: 120, fenetreMs: 60_000,
   cle: (req) => req.ip || "inconnue",
 });
+
+/** Recherche d'adresses : relais vers un fournisseur externe, rythme borné par IP. */
+export const limiterAdresses = limiterCadence({
+  nom: "adresses", max: 90, fenetreMs: 60_000,
+  cle: (req) => req.ip || "inconnue",
+});
+
+/** Cartes et boutiques proches : une requête charge des boutiques, budget plus serré. */
+export const limiterCartes = limiterCadence({
+  nom: "cartes", max: 30, fenetreMs: 60_000,
+  cle: (req) => req.ip || "inconnue",
+});

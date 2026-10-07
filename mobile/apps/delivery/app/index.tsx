@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, AppState, ScrollView, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, ApiError, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { API_URL, ApiError, apiFetch, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
 import { Delivery, Driver, Offer } from '../lib/deliveries';
 import { useDriverAlerts } from '../lib/useDriverAlerts';
@@ -166,14 +166,6 @@ export default function DeliveryApp() {
     await loadAll(next.accessToken);
   };
 
-  // Le serveur ferme les autres sessions et remet des jetons neufs à celle-ci.
-  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string }) => {
-    const current = sessionRef.current;
-    if (!current) return;
-    const renewed = { ...current, ...tokens };
-    setSession(renewed);
-    saveSession(renewed);
-  }, []);
 
   /**
    * forget : déconnexion voulue, les données du livreur quittent le
@@ -203,6 +195,20 @@ export default function DeliveryApp() {
     setUnreadCount(0);
     setSupportUnread(0);
   }, []);
+
+  // Le serveur ferme toutes les sessions du compte, celle-ci comprise (D8) : on
+  // revient à l'écran de connexion. Des jetons neufs, s'il en remettait, sont gardés.
+  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string } | null) => {
+    if (!tokens) {
+      handleLogout();
+      return;
+    }
+    const current = sessionRef.current;
+    if (!current) return;
+    const renewed = { ...current, ...tokens };
+    setSession(renewed);
+    saveSession(renewed);
+  }, [handleLogout]);
 
   // Démarrage : on reprend la session enregistrée et on renouvelle le jeton.
   useEffect(() => {
@@ -243,7 +249,12 @@ export default function DeliveryApp() {
       handleLogout(false);
       Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
     });
-    return () => setUnauthorizedHandler(null);
+    // La session renouvelée en cours d'usage : l'écran garde le jeton valable.
+    setSessionRenewedHandler((renewed) => setSession(renewed));
+    return () => {
+      setUnauthorizedHandler(null);
+      setSessionRenewedHandler(null);
+    };
   }, [handleLogout]);
 
   // Ce téléphone reçoit les courses même application fermée.
