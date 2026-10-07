@@ -5,7 +5,7 @@
  * Real-time earnings, notifications, metrics, payouts
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { EarningsCard } from './EarningsCard';
 import { MetricsCard } from './MetricsCard';
@@ -46,7 +46,7 @@ export function DriverDashboardClient() {
   const [earnings, setEarnings] = useState({ today: 0, week: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const nextPayoutDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const nextPayoutDate = useMemo(() => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), []);
 
   useEffect(() => {
     const fetchData = async () => {
