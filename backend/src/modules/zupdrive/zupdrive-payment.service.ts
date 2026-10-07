@@ -2,6 +2,8 @@ import { db } from "../../services/db";
 import { stripe, STRIPE_CONFIG } from "../payments/stripe";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
+import { lireCommissionPourcentage, repartirPrixCourse } from "./commission-drive";
+import { debutSemaineVersement, finSemaineVersement } from "./semaine-versement";
 
 /**
  * Les paiements ZupDrive : le passager paie Stripe, le chauffeur reçoit un
@@ -15,8 +17,9 @@ import { logger } from "../../config/logger";
  * 5. Lundi: Batch SEPA hebdomadaire regroupe tous les payouts
  * 6. Virement versé au chauffeur
  *
- * La commission plateforme = prixCentimes × 20%
- * Le revenu chauffeur = prixCentimes × 80% (après surge pricing)
+ * La commission plateforme suit PlatformSettingsDrive (20 % par défaut), voir commission-drive.ts :
+ * commission = arrondi(prixCentimes × pourcentage / 100), revenu chauffeur = prix - commission
+ * (surge pricing inclus dans le prix).
  * Surge pricing s'applique à TOUT: passager paie + cher, chauffeur gagne + cher
  */
 
@@ -42,10 +45,11 @@ export class ZupDrivePaymentService {
       throw new ApiError(409, "Ce trajet a déjà un paiement en cours", "PAYMENT_ALREADY_EXISTS");
     }
 
-    // Calculer la commission plateforme (20%) et le revenu chauffeur (80%)
+    // Répartition figée à la création du paiement avec le pourcentage en vigueur
+    // (PlatformSettingsDrive) : un changement ultérieur ne touche pas ce paiement.
     // Note: Le surge pricing est déjà inclus dans amountCentimes
-    const platformCommissionCentimes = Math.round(amountCentimes * 0.2);
-    const driverEarningsCentimes = amountCentimes - platformCommissionCentimes;
+    const { commissionCentimes: platformCommissionCentimes, chauffeurCentimes: driverEarningsCentimes } =
+      repartirPrixCourse(amountCentimes, await lireCommissionPourcentage());
 
     // Créer le PaymentIntent Stripe
     const paymentIntent = await stripe.paymentIntents.create({
@@ -108,31 +112,35 @@ export class ZupDrivePaymentService {
       throw new ApiError(409, "Cette course n'a pas de chauffeur", "NO_DRIVER");
     }
 
-    // Mettre à jour le paiement
-    await db.paymentIntentDrive.update({
-      where: { id: payment.id },
-      data: {
-        status: "SUCCEEDED",
-        confirmedAt: new Date(),
-      },
-    });
+    // Rejouable : Stripe renvoie un même événement (retries, doublons). Le paiement passe à
+    // SUCCEEDED et son versement est créé dans la même transaction ; paymentId est unique,
+    // l'upsert ne crée donc jamais un second versement pour le même paiement.
+    const periodStart = debutSemaineVersement();
+    const periodEnd = finSemaineVersement(periodStart);
+    const ibanSnapshot = payment.course.chauffeur ? await this.getChauffeurIban() : null;
+    const chauffeurId = payment.course.chauffeurId;
 
-    // Créer le payout pour le chauffeur (période courante)
-    const now = new Date();
-    const periodStart = this.getCurrentWeekStart(now);
-    const periodEnd = new Date(periodStart.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    const payout = await db.driverPayoutDrive.create({
-      data: {
-        paymentId: payment.id,
-        chauffeurId: payment.course.chauffeurId,
-        amountCentimes: payment.driverEarningsCentimes,
-        currency: "EUR",
-        status: "PENDING",
-        periodStart,
-        periodEnd,
-        ibanSnapshot: payment.course.chauffeur ? await this.getChauffeurIban() : null,
-      },
+    const payout = await db.$transaction(async (tx) => {
+      if (payment.status !== "SUCCEEDED") {
+        await tx.paymentIntentDrive.update({
+          where: { id: payment.id },
+          data: { status: "SUCCEEDED", confirmedAt: new Date() },
+        });
+      }
+      return tx.driverPayoutDrive.upsert({
+        where: { paymentId: payment.id },
+        update: {},
+        create: {
+          paymentId: payment.id,
+          chauffeurId,
+          amountCentimes: payment.driverEarningsCentimes,
+          currency: "EUR",
+          status: "PENDING",
+          periodStart,
+          periodEnd,
+          ibanSnapshot,
+        },
+      });
     });
 
     logger.info("ZupDrive payout created", {
@@ -150,15 +158,16 @@ export class ZupDrivePaymentService {
    * Appelé une fois par semaine (lundi 9h00) pour regrouper tous les payouts.
    */
   static async createWeeklyBatch(periodStart?: Date) {
-    const batchStart = periodStart || this.getCurrentWeekStart();
-    const batchEnd = new Date(batchStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // Toujours le lundi 00:00 UTC de la semaine demandée, même si l'appelant passe un instant quelconque.
+    const batchStart = debutSemaineVersement(periodStart);
+    const batchEnd = finSemaineVersement(batchStart);
 
-    // Trouver tous les payouts PENDING de cette période
+    // Les payouts PENDING de cette semaine pas encore rattachés à un lot (rejouer l'appel n'en reprend aucun).
     const payouts = await db.driverPayoutDrive.findMany({
       where: {
         status: "PENDING",
-        periodStart: batchStart,
-        periodEnd: batchEnd,
+        batchId: null,
+        periodStart: { gte: batchStart, lt: batchEnd },
       },
     });
 
@@ -174,6 +183,11 @@ export class ZupDrivePaymentService {
         periodEnd: batchEnd,
       },
     });
+
+    // Un lot déjà soumis à Stripe ne reçoit plus de versement.
+    if (batch && batch.status !== "PENDING") {
+      throw new ApiError(409, "Le lot de cette période a déjà été soumis", "BATCH_ALREADY_SUBMITTED");
+    }
 
     const totalAmount = payouts.reduce((sum, p) => sum + p.amountCentimes, 0);
 
@@ -191,8 +205,19 @@ export class ZupDrivePaymentService {
 
     // Associer les payouts au batch
     await db.driverPayoutDrive.updateMany({
-      where: { id: { in: payouts.map((p) => p.id) } },
+      where: { id: { in: payouts.map((p) => p.id) }, batchId: null },
       data: { batchId: batch.id },
+    });
+
+    // Lot déjà existant : le total et le nombre suivent les versements réellement rattachés.
+    const rattaches = await db.driverPayoutDrive.aggregate({
+      where: { batchId: batch.id },
+      _sum: { amountCentimes: true },
+      _count: true,
+    });
+    batch = await db.driverPayoutBatchDrive.update({
+      where: { id: batch.id },
+      data: { totalAmountCentimes: rattaches._sum.amountCentimes ?? 0, payoutCount: rattaches._count },
     });
 
     logger.info("ZupDrive batch created", {
@@ -340,13 +365,6 @@ export class ZupDrivePaymentService {
   }
 
   // Utilitaires
-
-  private static getCurrentWeekStart(date: Date = new Date()): Date {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-    return new Date(d.setDate(diff));
-  }
 
   private static async getChauffeurIban(): Promise<string | null> {
     // TODO: Récupérer l'IBAN depuis le User ou une table de bankAccounts

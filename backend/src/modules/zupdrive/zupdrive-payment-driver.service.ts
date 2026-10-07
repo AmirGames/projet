@@ -19,6 +19,13 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
+import { debutSemaineVersement, finSemaineVersement } from "./semaine-versement";
+import {
+  COMMISSION_PAR_DEFAUT_POURCENT,
+  lireCommissionPourcentage,
+  repartirPrixCourse,
+  type RepartitionPrixCourse,
+} from "./commission-drive";
 
 export type PaymentStatus =
   | "PENDING"       // En attente de paiement passager
@@ -29,32 +36,10 @@ export type PaymentStatus =
 /** Statuts réels de DriverPayoutDrive (voir prisma/schema.prisma). */
 export type PayoutStatus = "PENDING" | "PROCESSED" | "FAILED" | "CANCELLED";
 
-/** Commission par défaut si la ligne PlatformSettingsDrive « default » n'existe pas encore. */
-export const COMMISSION_PAR_DEFAUT_POURCENT = 20;
-
-export interface RepartitionPrixCourse {
-  commissionCentimes: number;
-  chauffeurCentimes: number;
-}
-
-/**
- * Répartition unique du prix d'une course (entiers, en centimes).
- * commission = arrondi(prix × pourcentage / 100) ; chauffeur = prix - commission,
- * donc commission + chauffeur = prix exactement. Toute la plateforme doit passer par ici.
- */
-export function repartirPrixCourse(prixCentimes: number, commissionPourcent: number): RepartitionPrixCourse {
-  const commissionCentimes = Math.round((prixCentimes * commissionPourcent) / 100);
-  return { commissionCentimes, chauffeurCentimes: prixCentimes - commissionCentimes };
-}
-
-/** Pourcentage de commission global (PlatformSettingsDrive, ligne « default »). */
-export async function lireCommissionPourcentage(): Promise<number> {
-  const reglages = await db.platformSettingsDrive.findUnique({
-    where: { id: "default" },
-    select: { commissionPercentage: true },
-  });
-  return reglages?.commissionPercentage ?? COMMISSION_PAR_DEFAUT_POURCENT;
-}
+// La règle de commission vit dans commission-drive.ts (partagée avec le paiement) ;
+// ré-exportée ici pour les appelants existants.
+export { COMMISSION_PAR_DEFAUT_POURCENT, repartirPrixCourse, lireCommissionPourcentage };
+export type { RepartitionPrixCourse };
 
 export interface CourseEarnings {
   courseId: string;
@@ -108,9 +93,7 @@ export interface PayoutPreparation {
   };
 }
 
-const SEMAINE_MS = 7 * 24 * 60 * 60 * 1000;
-
-/** Lundi 00:00 (heure locale) de la semaine de `date`. */
+/** Lundi 00:00 (heure locale) de la semaine de `date` : période d'affichage des revenus, pas des lots de versement. */
 function debutSemaine(date: Date): Date {
   const decalage = (date.getDay() + 6) % 7;
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() - decalage);
@@ -250,8 +233,9 @@ export const ZupDrivePaymentDriverService = {
    * figé sur le PaymentIntentDrive (driverEarningsCentimes), comme le webhook Stripe.
    */
   async preparePayout(chauffeurId: string): Promise<PayoutPreparation> {
-    const periodStart = debutSemaine(new Date());
-    const periodEnd = new Date(periodStart.getTime() + SEMAINE_MS);
+    // Même semaine que celle du webhook de paiement : c'est ce qui range les versements dans le même lot.
+    const periodStart = debutSemaineVersement(new Date());
+    const periodEnd = finSemaineVersement(periodStart);
 
     const paiements = await db.paymentIntentDrive.findMany({
       where: {
