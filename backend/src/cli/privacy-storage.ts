@@ -73,7 +73,9 @@ try {
       }
     }
   }
-  const backups = await client.backup.findMany({ where: { status: "COMPLETED", filePath: { not: null } } });
+  // Les sauvegardes « base-… » de deploy/zup.sh vivent sur l'hôte, déjà chiffrées par age :
+  // elles ne sont ni lisibles depuis ce conteneur ni à réécrire.
+  const backups = await client.backup.findMany({ where: { status: "COMPLETED", filePath: { not: null }, NOT: { name: { startsWith: "base-" } } } });
   counts.legacyBackups = 0;
   for (const backup of backups) {
     const content = await fs.readFile(backup.filePath!, "utf8");
@@ -93,7 +95,9 @@ try {
   }
   console.log(JSON.stringify({ mode, counters: counts, storageVerified: !mutate && problems === 0, next: mutate ? "Exécuter --check avant démarrage" : problems ? "Corriger les problèmes ; ne pas ouvrir au public" : "Stockage applicatif vérifié ; preuves infrastructure et juridiques encore requises" }, null, 2));
   if (!mutate && problems > 0) process.exitCode = 2;
-} catch {
-  console.error("Vérification/migration RGPD en échec (clé, base, antivirus ou fichier) ; aucune ouverture publique autorisée");
+} catch (error: any) {
+  // Jamais le message : il peut contenir des valeurs. Seulement la nature de l'erreur.
+  const nature = [error?.name, error?.code].filter((v) => typeof v === "string" && /^[A-Za-z0-9_]{1,40}$/.test(v)).join(" ");
+  console.error(`Vérification/migration RGPD en échec (clé, base, antivirus ou fichier)${nature ? ` : ${nature}` : ""} ; aucune ouverture publique autorisée`);
   process.exitCode = 1;
 } finally { await client.$disconnect(); }
