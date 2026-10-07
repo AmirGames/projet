@@ -2852,6 +2852,8 @@ model ChauffeurDrive {
   payouts      DriverPayoutDrive[]
   complianceReports ComplianceReportDrive[]
   ratings      RatingCourseDrive[]
+  complianceChecks ComplianceCheck[]
+  documentWorkflows DocumentVerificationWorkflow[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3456,4 +3458,129 @@ model NotificationDrive {
   @@index([read])
   @@index([createdAt])
   @@index([userId, read])
+}
+
+/// Audit des actions d'administration
+model AuditLog {
+  id            String   @id @default(cuid())
+  /// Action effectuée
+  action        String
+  /// ID de l'acteur
+  actorId       String
+  /// Type d'acteur (ADMIN, SYSTEM, DRIVER, PASSAGER)
+  actorType     String
+  /// ID de la ressource affectée
+  resourceId    String
+  /// Type de ressource
+  resourceType  String
+  /// Ancienne valeur (si applicable)
+  oldValue      String?
+  /// Nouvelle valeur (si applicable)
+  newValue      String?
+  /// Raison de l'action
+  reason        String?
+  /// Adresse IP
+  ipAddress     String?
+  /// User agent
+  userAgent     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([resourceId])
+  @@index([resourceType])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+/// Contrôles de conformité pour chauffeurs ZupDrive
+model ComplianceCheck {
+  id           String    @id @default(cuid())
+  /// ID du chauffeur
+  chauffeurId  String
+  /// Type de contrôle
+  type         String
+  /// Statut du contrôle
+  status       String    @default("PENDING")
+  /// Résultats du contrôle
+  findings     Json      @default("[]")
+  /// Date d'expiration du contrôle
+  expiresAt    DateTime
+  /// Date de complétude
+  completedAt  DateTime?
+  /// ID de la personne qui a complété
+  completedBy  String?
+  /// Notes
+  notes        String?
+
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chauffeurId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+/// Workflow de vérification des documents
+model DocumentVerificationWorkflow {
+  id              String   @id @default(cuid())
+  /// ID du chauffeur
+  chauffeurId     String
+  /// Type de document
+  documentType    String
+  /// Statut du document
+  status          String   @default("PENDING_UPLOAD")
+  /// Date d'upload
+  uploadedAt      DateTime?
+  /// Date de révision
+  reviewedAt      DateTime?
+  /// ID de la personne qui a révisé
+  reviewedBy      String?
+  /// Raison du rejet
+  rejectionReason String?
+  /// Date de prochaine révision
+  nextReviewDate  DateTime?
+
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chauffeurId, documentType])
+  @@index([chauffeurId])
+  @@index([status])
+  @@index([nextReviewDate])
+}
+
+/// Rapport de conformité globale
+model ComplianceReport {
+  id                          String   @id @default(cuid())
+  /// Type de rapport
+  reportType                  String
+  /// Date de génération
+  generatedAt                 DateTime @default(now())
+  /// ID de la personne qui a généré
+  generatedBy                 String
+  /// Total de chauffeurs
+  totalDrivers                Int
+  /// Chauffeurs avec documents valides
+  driversWithValidDocuments   Int
+  /// Chauffeurs avec documents expirant
+  driversWithExpiringDocuments Int
+  /// Chauffeurs avec infractions
+  driversWithInfractions      Int
+  /// Chauffeurs avec notes basses
+  driversWithLowRating        Int
+  /// Taux de conformité
+  complianceRate              Float
+  /// Score de risque
+  riskScore                   Float
+  /// Recommandations
+  recommendations             Json    @default("[]")
+
+  @@index([reportType])
+  @@index([generatedAt])
 }
