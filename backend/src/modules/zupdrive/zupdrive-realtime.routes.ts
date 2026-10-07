@@ -4,6 +4,7 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { ZupDriveRealtimeService } from "./zupdrive-realtime.service";
 import { CourseDriveService } from "./course-drive.service";
 import { ApiError } from "../../middleware/errorHandler";
+import { adminAuthSection } from "./zupdrive-garde";
 
 /**
  * /api/zupdrive/realtime — Événements temps réel ZupDrive.
@@ -22,7 +23,7 @@ router.use(authMiddleware);
 router.post("/join/:courseId", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params);
-    const userId = (req as any).user?.id;
+    const userId = req.userId as string;
     const socketId = (req as any).socketId;
 
     if (!socketId) {
@@ -74,7 +75,8 @@ router.post("/leave/:courseId", async (req: Request, res: Response, next: NextFu
 
 // GET /api/zupdrive/realtime/stats
 // Stats du système temps réel
-router.get("/stats", async (_req: Request, res: Response, next: NextFunction) => {
+// Compteurs de connexions de la plateforme : réservés à l'équipe (section « courses-drive »), pas à tout compte connecté.
+router.get("/stats", ...adminAuthSection("courses-drive"), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const stats = ZupDriveRealtimeService.getStats();
 

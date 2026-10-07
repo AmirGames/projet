@@ -70,8 +70,7 @@ describe("montage des routeurs ZupDrive", () => {
         if (masque && a.some((seg, k) => seg.startsWith(":") && !b[k].startsWith(":"))) masquees.push(`${r.methode} ${r.chemin} masquée par ${avant.chemin}`);
       }
     });
-    // Défaut connu et documenté, hors du périmètre de cette PR : GET /payment/earnings (voir la PR).
-    expect(masquees).toEqual(["GET /api/zupdrive/payment/earnings masquée par /api/zupdrive/payment/:courseId"]);
+    expect(masquees).toEqual([]);
   });
 
   it("chaque route exige un jeton (authMiddleware avant le handler)", () => {

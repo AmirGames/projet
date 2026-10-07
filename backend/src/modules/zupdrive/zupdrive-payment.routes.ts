@@ -4,6 +4,8 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { CourseDriveService } from "./course-drive.service";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
 import { ApiError } from "../../middleware/errorHandler";
+import { db } from "../../services/db";
+import { limiterCadence } from "../../middleware/throttle";
 
 /**
  * /api/zupdrive/payment — Paiements des trajets ZupDrive.
@@ -17,20 +19,26 @@ import { ApiError } from "../../middleware/errorHandler";
 
 const router = Router();
 
-// GET /api/zupdrive/payment/:courseId
-// Récupère l'état du paiement d'une course
-router.get("/:courseId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { courseId } = z.object({ courseId: z.string() }).parse(req.params);
-    const userId = (req as any).user?.id;
+// Création d'un paiement : par compte, pour qu'un compte ne multiplie pas les intentions Stripe.
+const limiterPaiements = limiterCadence({
+  nom: "zupdrive-payment-intent",
+  max: 10,
+  fenetreMs: 600_000,
+  cle: (req) => `${req.userId}`,
+});
 
-    await CourseDriveService.maCourse(userId, courseId);
+// GET /api/zupdrive/payment/earnings
+// Revenus du chauffeur connecté
+router.get("/earnings", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId as string;
+    const chauffeur = await CourseDriveService.chauffeurDuCompte(userId);
+
+    const earnings = await ZupDrivePaymentService.getDriverEarnings(chauffeur.id);
 
     res.json({
       success: true,
-      data: {
-        courseId,
-      },
+      data: earnings,
     });
   } catch (err) {
     next(err);
@@ -39,10 +47,10 @@ router.get("/:courseId", authMiddleware, async (req: Request, res: Response, nex
 
 // POST /api/zupdrive/payment/intent
 // Crée un PaymentIntent Stripe pour un trajet
-router.post("/intent", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/intent", authMiddleware, limiterPaiements, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.body);
-    const userId = (req as any).user?.id;
+    const userId = req.userId as string;
 
     const course = await CourseDriveService.maCourse(userId, courseId);
     if (!course) {
@@ -68,18 +76,27 @@ router.post("/intent", authMiddleware, async (req: Request, res: Response, next:
   }
 });
 
-// GET /api/zupdrive/payment/earnings
-// Revenus du chauffeur connecté
-router.get("/earnings", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+// GET /api/zupdrive/payment/:courseId
+// L'état du paiement de la course du passager connecté, relu en base (le webhook Stripe en est la source).
+// Déclarée après /earnings : sans cela « earnings » serait pris pour un identifiant de course.
+router.get("/:courseId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user?.id;
-    const chauffeur = await CourseDriveService.chauffeurDuCompte(userId);
+    const { courseId } = z.object({ courseId: z.string().min(1).max(64) }).parse(req.params);
 
-    const earnings = await ZupDrivePaymentService.getDriverEarnings(chauffeur.id);
+    // 404 si la course n'est pas celle de ce passager.
+    await CourseDriveService.maCourse(req.userId as string, courseId);
+
+    const paiement = await db.paymentIntentDrive.findUnique({
+      where: { courseId },
+      select: { id: true, status: true, amountCentimes: true, currency: true, confirmedAt: true },
+    });
 
     res.json({
       success: true,
-      data: earnings,
+      data: {
+        courseId,
+        payment: paiement,
+      },
     });
   } catch (err) {
     next(err);
