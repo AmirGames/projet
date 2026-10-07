@@ -13,6 +13,7 @@ import zupdriveWebhooksRouter from "./zupdrive-webhooks.routes";
 import zupdriveComplianceRouter from "./zupdrive-compliance.routes";
 import zupdriveComplianceChecksRouter from "./zupdrive-compliance-checks.routes";
 import zupdriveAnalyticsRouter from "./zupdrive-analytics.routes";
+import zupdriveReportingRouter from "./zupdrive-reporting.routes";
 import zupdriveMonitoringRouter from "./zupdrive-monitoring.routes";
 import zupdrivePaymentDriverRouter from "./zupdrive-payment-driver.routes";
 
@@ -57,6 +58,8 @@ export const MONTAGE_ZUPDRIVE: MontageRouteur[] = [
   // Revenus et versements du chauffeur (/earnings, /payouts/*) et administration financière (/admin/*).
   // Hors de /payment : GET /payment/:courseId y masquerait /earnings.
   { prefixe: "/api/zupdrive/finance", routeur: zupdrivePaymentDriverRouter },
+  // Rapports de performance, financiers et de conformité, rapports programmés (/admin/*, section « courses-drive »).
+  { prefixe: "/api/zupdrive/reporting", routeur: zupdriveReportingRouter },
   // Préfixe générique : toujours en dernier. Côté chauffeur : /notifications, /metrics, /earnings-realtime.
   // Côté équipe : /admin/dashboard, /admin/alerts… ; ces chemins passent d'abord par le garde de
   // chauffeur.admin (/api/zupdrive/admin), qui ne les attribue à aucune section : superowner seul.
