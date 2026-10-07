@@ -1,26 +1,48 @@
 import { Router } from "express";
 import { z } from "zod";
-import { adminAuth, validateRequest } from "./zupdrive-garde";
+import { adminAuthSection, validateRequest } from "./zupdrive-garde";
 import { ZupDriveAnalyticsService } from "./zupdrive-analytics.service";
 
 const router = Router();
 
-const periodeSchema = z.object({
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
-});
+/** Statistiques : section « courses-drive » de la plateforme DRIVE (lecture seule). */
+const adminAuth = adminAuthSection("courses-drive");
+
+/** Une période ne dépasse pas un an : les agrégats parcourent les courses de la période. */
+const UN_AN_MS = 366 * 24 * 60 * 60 * 1000;
+const periodeValide = (debut: string, fin: string) => {
+  const ecart = new Date(fin).getTime() - new Date(debut).getTime();
+  return ecart >= 0 && ecart <= UN_AN_MS;
+};
+const MESSAGE_PERIODE = { message: "La période doit finir après son début et durer au plus un an", path: ["endDate"] };
+
+const periodeSchema = z
+  .object({
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+  })
+  .refine((p) => periodeValide(p.startDate, p.endDate), MESSAGE_PERIODE);
 type Periode = z.infer<typeof periodeSchema>;
 
-const performanceSchema = periodeSchema.extend({
-  limit: z.coerce.number().min(1).max(100).default(50),
-});
+const performanceSchema = z
+  .object({
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+    limit: z.coerce.number().min(1).max(100).default(50),
+  })
+  .refine((p) => periodeValide(p.startDate, p.endDate), MESSAGE_PERIODE);
 
-const comparaisonSchema = z.object({
-  period1Start: z.string().datetime(),
-  period1End: z.string().datetime(),
-  period2Start: z.string().datetime(),
-  period2End: z.string().datetime(),
-});
+const comparaisonSchema = z
+  .object({
+    period1Start: z.string().datetime(),
+    period1End: z.string().datetime(),
+    period2Start: z.string().datetime(),
+    period2End: z.string().datetime(),
+  })
+  .refine((p) => periodeValide(p.period1Start, p.period1End) && periodeValide(p.period2Start, p.period2End), {
+    message: "Chaque période doit finir après son début et durer au plus un an",
+    path: ["period1End"],
+  });
 
 /**
  * GET /api/zupdrive/analytics/period
