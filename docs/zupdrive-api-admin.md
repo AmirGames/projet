@@ -207,6 +207,8 @@ Passager (jeton ; l'identité est `req.userId`, la course doit être la sienne, 
 
 `GET /realtime/stats` est réservé à l'équipe (`courses-drive`).
 
+**Paiement obligatoire** (`ZUPDRIVE_PAIEMENT_OBLIGATOIRE`, faux par défaut) : vrai, `proposerAuSuivant` ne sollicite aucun chauffeur tant que le `PaymentIntentDrive` de la course n'est pas `SUCCEEDED` (le webhook en est la seule source) ; la course reste `RECHERCHE` et expire au bout de `RECHERCHE_MAX_MS` (5 min) en `SANS_CHAUFFEUR`, sans rien à rembourser puisque rien n'a été payé. Aucun nouvel état de course. La réponse de `GET /api/zupdrive/courses/:id` porte `paiement: { obligatoire, statut }`. Après le paiement, le balayage (toutes les 5 s) lance la recherche.
+
 **La confirmation vient uniquement du webhook Stripe** (`POST /api/payments/webhook`, déjà en place pour ZupEat : signature sur le corps brut, journal `StripeEvent` idempotent). `payment.service.traiterEvenement` aiguille les intentions qui portent `metadata.courseId` et pas `orderId` vers `ZupDrivePaymentService` :
 
 | Événement Stripe | Effet sur `PaymentIntentDrive` |

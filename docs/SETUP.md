@@ -76,7 +76,7 @@ Puis ajuste les valeurs selon tes besoins (tokens Stripe, URLs, etc.).
 
 **Attention** : ne commit jamais `.env` ni `.env.local`.
 
-**ZupDrive** : `ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET` (≥ 32 caractères, vide par défaut) signe les accusés de notification du fournisseur d'envoi ; vide, le webhook `POST /api/zupdrive/notifications/webhooks/status` répond 503. Le paiement des courses utilise le webhook Stripe existant (`STRIPE_WEBHOOK_SECRET`).
+**ZupDrive** : `ZUPDRIVE_PAIEMENT_OBLIGATOIRE` (`false` par défaut ; `true` = une course n'est proposée aux chauffeurs qu'une fois payée en ligne, à activer avec le formulaire de paiement de `/trajet/[id]`, qui demande `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` côté frontend). `ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET` (≥ 32 caractères, vide par défaut) signe les accusés de notification du fournisseur d'envoi ; vide, le webhook `POST /api/zupdrive/notifications/webhooks/status` répond 503. Le paiement des courses utilise le webhook Stripe existant (`STRIPE_WEBHOOK_SECRET`).
 
 ---
 
