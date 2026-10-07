@@ -98,6 +98,8 @@ model User {
   coursesDrive  CourseDrive[]
   /// Les notes reçues comme passager ZupDrive, de ses chauffeurs.
   notesRecuesDrive NoteCourseDrive[]
+  /// Les paiements Stripe pour trajets ZupDrive.
+  paymentsIntentDrive PaymentIntentDrive[]
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
   pushDevices   PushDevice[]
@@ -2843,6 +2845,7 @@ model ChauffeurDrive {
   courses      CourseDrive[]
   propositions PropositionCourseDrive[]
   notes        NoteCourseDrive[]
+  payouts      DriverPayoutDrive[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3064,8 +3067,9 @@ model CourseDrive {
   chauffeur ChauffeurDrive? @relation(fields: [chauffeurId], references: [id], onDelete: SetNull)
   societe   SocieteDrive?   @relation(fields: [societeId], references: [id], onDelete: SetNull)
   vehicule  VehiculeDrive?  @relation(fields: [vehiculeId], references: [id], onDelete: SetNull)
-  propositions PropositionCourseDrive[]
-  notes        NoteCourseDrive[]
+  propositions   PropositionCourseDrive[]
+  notes          NoteCourseDrive[]
+  paymentIntent  PaymentIntentDrive?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3128,6 +3132,126 @@ model NoteCourseDrive {
   @@unique([courseId, auteur])
   @@index([chauffeurId, auteur])
   @@index([passagerId, auteur])
+}
+
+// ============================================================================
+// ZUPDRIVE — PAIEMENTS ET REVERSEMENTS
+// ============================================================================
+
+/// Un paiement de passager pour une course ZupDrive.
+/// La course est figée à la commande avec un prix. Stripe charge le passager.
+/// Le webhook Stripe confirme le paiement et déverrouille les revenus (fees pour
+/// la plateforme, remainingAmount pour le chauffeur).
+model PaymentIntentDrive {
+  id             String   @id @default(cuid())
+  courseId       String   @unique
+  passagerId     String?
+  /// L'identifiant Stripe du PaymentIntent (pi_...).
+  stripeId       String   @unique
+  /// Montant en centimes d'euros.
+  amountCentimes Int
+  /// EUR
+  currency       String   @default("EUR")
+  /// REQUIRES_PAYMENT_METHOD, REQUIRES_CONFIRMATION, REQUIRES_ACTION, PROCESSING, SUCCEEDED, CANCELED
+  status         String   @default("REQUIRES_PAYMENT_METHOD")
+  /// Le motif d'annulation, le cas échéant.
+  cancellationReason String?
+
+  // Revenus figés à l'acceptation (avant charge Stripe, mais connus)
+  /// Commission plateforme en centimes.
+  platformCommissionCentimes Int
+  /// Revenu net du chauffeur en centimes.
+  driverEarningsCentimes     Int
+
+  /// Confirmation Stripe arrivée.
+  confirmedAt DateTime?
+
+  course  CourseDrive   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  passager User?        @relation(fields: [passagerId], references: [id], onDelete: SetNull)
+  payout  DriverPayoutDrive?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([passagerId])
+  @@index([status])
+  @@index([confirmedAt])
+}
+
+/// Un versement à un chauffeur ZupDrive, lié à une course payée.
+/// Le paiement est figé à l'acceptation ; le versement regroupe plusieurs
+/// courses et est traité en lot SEPA hebdomadaire (lundi).
+model DriverPayoutDrive {
+  id              String   @id @default(cuid())
+  paymentId       String   @unique
+  chauffeurId     String
+  /// Le lot auquel ce versement appartient.
+  batchId         String?
+
+  /// Montant net du chauffeur en centimes (après commission plateforme).
+  amountCentimes  Int
+  /// EUR
+  currency        String   @default("EUR")
+  /// PENDING, PROCESSED, FAILED, CANCELLED
+  status          String   @default("PENDING")
+
+  /// La période comptable (semaine) : lundi au lundi.
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  /// L'IBAN du chauffeur au moment du versement (copie pour historique).
+  ibanSnapshot    String?
+
+  /// Confirmation Stripe (Payout object id).
+  stripePayoutId  String?
+  /// Timing de traitement réel.
+  processedAt     DateTime?
+  failureReason   String?
+
+  payment   PaymentIntentDrive     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  chauffeur ChauffeurDrive         @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  batch     DriverPayoutBatchDrive? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chauffeurId, status])
+  @@index([batchId])
+  @@index([periodStart, periodEnd])
+  @@index([status])
+}
+
+/// Un lot SEPA hebdomadaire de versements aux chauffeurs ZupDrive.
+/// Groupé par défaut le lundi 9h00 (heure Bruxelles). Émis une fois par semaine.
+model DriverPayoutBatchDrive {
+  id                String   @id @default(cuid())
+  /// Semaine : lundi 00:00 → lundi 00:00.
+  periodStart       DateTime
+  periodEnd         DateTime
+
+  /// Montant total du lot en centimes.
+  totalAmountCentimes Int
+  /// EUR
+  currency          String   @default("EUR")
+  /// PENDING, SUBMITTED, SUCCEEDED, FAILED
+  status            String   @default("PENDING")
+
+  /// Nombre de versements dans ce lot.
+  payoutCount       Int      @default(0)
+
+  /// Stripe Connect: le transfer object ID.
+  stripeTransferId  String?
+
+  /// Timing
+  createdAt         DateTime @default(now())
+  submittedAt       DateTime?
+  processedAt       DateTime?
+  failureReason     String?
+
+  payouts DriverPayoutDrive[]
+
+  @@index([status])
+  @@index([periodStart, periodEnd])
 }
 
 /// Carnet de clients d'une boutique : ce que CE commerçant sait de CE client.
