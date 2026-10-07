@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
-import { adminAuth, validateRequest } from "./zupdrive-garde";
+import { journaliser } from "../superowner/shared";
+import { adminAuthSection, validateRequest } from "./zupdrive-garde";
 import { ZupDriveDriverManagementService } from "./zupdrive-driver-management.service";
 
 const router = Router();
+
+/** Dossiers chauffeurs : section « chauffeurs » de la plateforme DRIVE. */
+const adminAuth = adminAuthSection("chauffeurs");
 
 const idSchema = z.string().min(1).max(64);
 
@@ -59,6 +63,7 @@ router.post(
       const { reason } = req.body;
 
       await ZupDriveDriverManagementService.suspendDriver(id, reason);
+      await journaliser(req, "ZUPDRIVE_SUSPEND_CHAUFFEUR", id, { apres: "SUSPENDU", motif: reason });
       res.json({ success: true, message: "Chauffeur suspendu" });
     } catch (error) {
       next(error);
@@ -75,6 +80,7 @@ router.post("/drivers/:id/reactivate", ...adminAuth, async (req, res, next) => {
     const id = idSchema.parse(req.params.id);
 
     await ZupDriveDriverManagementService.reactivateDriver(id);
+    await journaliser(req, "ZUPDRIVE_REACTIVATE_CHAUFFEUR", id, { avant: "SUSPENDU", apres: "VALIDE" });
     res.json({ success: true, message: "Chauffeur réactivé" });
   } catch (error) {
     next(error);
@@ -104,6 +110,7 @@ router.post(
         type,
         new Date(expiresAt)
       );
+      await journaliser(req, "ZUPDRIVE_VALIDATE_CHAUFFEUR_DOCUMENT", id, { type, expiresAt });
 
       res.json({ success: true, message: "Document validé" });
     } catch (error) {
@@ -152,6 +159,7 @@ router.post(
         description,
         severity
       );
+      await journaliser(req, "ZUPDRIVE_REPORT_INFRACTION", id, { infractionId, type, severity, suspensionAutomatique: severity === "HAUTE" });
 
       res.json({
         success: true,
@@ -182,6 +190,7 @@ router.post(
       const { resolution } = req.body;
 
       await ZupDriveDriverManagementService.resolveInfraction(id, resolution);
+      await journaliser(req, "ZUPDRIVE_RESOLVE_INFRACTION", id, { resolution });
       res.json({ success: true, message: "Infraction résolue" });
     } catch (error) {
       next(error);
