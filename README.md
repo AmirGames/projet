@@ -218,31 +218,55 @@ Les deux écosystèmes partagent la même infra backend/tech mais ont des modèl
 
 ---
 
-## 🎯 Objectifs à Court Terme
+## 🚀 Timeline et Roadmap
 
+### **Début 2027 - Lancement Zupeat** 📅
+**Objectifs**
+- 🎯 Onboarder **10 restaurants partenaires** 
+- 🎯 Recruter **quelques livreurs** (5-10 initialement)
+- 🎯 Stabiliser plateforme zupeat.com + manager.zupeat.com + delivery.zupeat.com
+- 🎯 Validater modèle économique et satisfactions clients/restaurants/livreurs
+
+**Focus**
+- Intégration restaurants (menus, paiements)
+- Formation livreurs et support
+- Bug fixes et optimisations
+- Analytics et feedback utilisateurs
+
+---
+
+### **Fin 2027 - Lancement ZupDrive** 📅
+**Objectifs**
+- 🎯 Lancer app transport passagers (client + chauffeur)
+- 🎯 MVP stable et opérationnel
+- 🎯 Recrutement chauffeurs (50+ minimum)
+- 🎯 Vérification documents (licence, assurance, BCE)
+
+**Focus**
+- Intégration paiements et géolocalisation
+- Vérifications et compliance chauffeurs
+- Formation chauffeurs
+- Support et notifications
+
+---
+
+### **2028+ - Consolidation et Expansion** 📈
 **Zupeat**
-- ✅ Lancer Zupeat Driver App en version stable
-- ✅ Atteindre 500+ livreurs actifs
-- ✅ Optimiser le temps moyen de livraison à <35 minutes
-- 🔄 Expansion à 3 nouvelles villes
+- Expansion à 5-10 villes belges
+- 100+ restaurants partenaires
+- 200+ livreurs actifs
+- Partenariats stratégiques (chaînes restaurants, hôtels)
 
 **ZupDrive**
-- 🔄 Lancer MVP (app client + chauffeur)
-- 🔄 Commencer recrutement chauffeurs (50+ minimum)
-- 🔄 Vérification documents chauffeurs (licence, BCE)
+- Expansion régionale (Wallonie)
+- 500+ chauffeurs actifs
+- Rentabilité opérationnelle
+- Intégration avec services complémentaires
 
-## 🚀 Roadmap Long Terme
-
-**Q4 2026 - Q1 2027**
-- ZupDrive : MVP lancé et stable
-- 500+ chauffeurs actifs ZupDrive
-- Expansion Zupeat à 5 villes
-
-**2027**
-- Consolidation multi-villes (Zupeat + ZupDrive)
-- Expansion régionale (Wallonie complète)
-- Partenariats stratégiques restaurants/hôtels
-- Rentabilité opérationnelle des deux services
+**Groupe**
+- Plateforme consolidée multi-services
+- Analytics et optimisations cross-platform
+- Expansion nationale (Flandre, Bruxelles)
 
 ---
 
@@ -261,12 +285,25 @@ Les deux écosystèmes partagent la même infra backend/tech mais ont des modèl
 
 ---
 
+## 🌐 Domaines Web
+
+| Service | Domaine | Purpose |
+|---------|---------|---------|
+| **Groupe** | zupone.com | Présentation groupe, blog, infos générales |
+| **Zupeat** | zupeat.com | App client (commande repas) |
+| **Zupeat** | manager.zupeat.com | Dashboard commerçant (gestion restaurant) |
+| **Zupeat** | delivery.zupeat.com | App livreur (gestion livraisons) |
+| **ZupDrive** | zupdrive.com | Présentation et app client transport |
+| **ZupDrive** | driver.zupdrive.com | App chauffeur (gestion trajets) |
+
+---
+
 ## 📞 Contact & Support
 
 - **Email** : [À définir]
-- **Site Web** : [À définir]
-- **Support Drivers** : In-app support
-- **Support Restaurants** : [À définir]
+- **Support Clients** : In-app chat + email
+- **Support Restaurants/Chauffeurs** : In-app support + email
+- **Signalements Bugs** : GitHub Issues (ce repo)
 
 ---
 
