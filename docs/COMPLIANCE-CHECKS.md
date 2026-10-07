@@ -1,5 +1,7 @@
 # Automated Compliance Checks
 
+> **Document de phase, partiellement dépassé.** Les routes sont sous **`/api/zupdrive/compliance-checks/admin/compliance/...`** (section d'équipe `chauffeurs`, plus le rôle `ADMIN_ZUPDRIVE`). Lancer les contrôles est journalisé. `autoDecision` (par ex. `REJECT` au niveau `CRITICAL`) n'est **qu'une recommandation** du rapport : elle ne modifie pas le dossier du chauffeur. Trois contrôles sont neutralisés faute de données au schéma (cohérence du nom, doublons par numéro de pièce, modification suspecte). La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **Phase 12**: Real-time, automated compliance verification for chauffeur applications.
 
 ## Overview

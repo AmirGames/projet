@@ -8,7 +8,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ZupDrivePaymentDriverService } from "./zupdrive-payment-driver.service";
-import { adminAuth } from "./zupdrive-garde";
+import { adminAuth, adminAuthSection } from "./zupdrive-garde";
+import { limiterCadence } from "../../middleware/throttle";
 import { authMiddleware } from "../auth/auth.middleware";
 import { journaliser } from "../superowner/shared";
 import { db } from "../../services/db";
@@ -17,6 +18,19 @@ const router = Router();
 
 /** Identité vérifiée par le jeton (authMiddleware renseigne req.userId). */
 const authenticate = authMiddleware;
+
+/** Lectures financières de l'équipe : section « courses-drive ». Les écritures qui engagent l'argent
+ * (traiter un versement, changer la commission) restent au superowner : adminAuth sans section. */
+const adminLecture = adminAuthSection("courses-drive");
+const idSchema = z.string().min(1).max(64);
+
+// Demande de versement : par compte, elle écrit des versements.
+const limiterDemandeVersement = limiterCadence({
+  nom: "zupdrive-payout-request",
+  max: 10,
+  fenetreMs: 3_600_000,
+  cle: (req) => `${req.userId}`,
+});
 
 // ============================================================================
 // DRIVER ENDPOINTS
@@ -133,6 +147,7 @@ router.get(
 router.post(
   "/payouts/request",
   authenticate,
+  limiterDemandeVersement,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const chauffeur = await db.chauffeurDrive.findUnique({
@@ -166,7 +181,7 @@ router.get(
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const payoutId = String(req.params.payoutId);
+      const payoutId = idSchema.parse(req.params.payoutId);
 
       const chauffeur = await db.chauffeurDrive.findUnique({
         where: { userId: req.userId! },
@@ -239,9 +254,14 @@ router.post(
   ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const payoutId = String(req.params.payoutId);
+      const payoutId = idSchema.parse(req.params.payoutId);
 
       const payout = await ZupDrivePaymentDriverService.processPayout(payoutId);
+      await journaliser(req, "ZUPDRIVE_PROCESS_PAYOUT", payoutId, {
+        chauffeurId: payout.chauffeurId,
+        amountCentimes: payout.amount,
+        batchId: payout.batchId,
+      });
 
       return res.json({
         success: true,
@@ -260,7 +280,7 @@ router.post(
  */
 router.get(
   "/admin/payouts/pending",
-  ...adminAuth,
+  ...adminLecture,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const limit = Math.min(z.coerce.number().int().min(1).default(50).parse(req.query.limit), 500);
@@ -302,10 +322,10 @@ router.get(
  */
 router.get(
   "/admin/driver/:chauffeurId/payouts",
-  ...adminAuth,
+  ...adminLecture,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const chauffeurId = String(req.params.chauffeurId);
+      const chauffeurId = idSchema.parse(req.params.chauffeurId);
       const limit = Math.min(z.coerce.number().int().min(1).default(20).parse(req.query.limit), 100);
 
       const history = await ZupDrivePaymentDriverService.getPayoutHistory(chauffeurId, limit);
@@ -326,7 +346,7 @@ router.get(
  */
 router.get(
   "/admin/financial-dashboard",
-  ...adminAuth,
+  ...adminLecture,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
       // Get platform-wide statistics

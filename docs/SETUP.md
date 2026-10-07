@@ -76,6 +76,8 @@ Puis ajuste les valeurs selon tes besoins (tokens Stripe, URLs, etc.).
 
 **Attention** : ne commit jamais `.env` ni `.env.local`.
 
+**ZupDrive** : `ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET` (≥ 32 caractères, vide par défaut) signe les accusés de notification du fournisseur d'envoi ; vide, le webhook `POST /api/zupdrive/notifications/webhooks/status` répond 503. Le paiement des courses utilise le webhook Stripe existant (`STRIPE_WEBHOOK_SECRET`).
+
 ---
 
 ## Services Locaux

@@ -13,7 +13,7 @@ export default function ReportsPage() {
   const loadReports = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/zupdrive/admin/reports/scheduled`, {
+      const response = await fetch(`${API_URL}/api/zupdrive/reporting/admin/scheduled`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       if (!response.ok) throw new Error('Erreur');

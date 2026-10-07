@@ -1,5 +1,7 @@
 # Phase 14: Payment Integration & Driver Payouts 💰
 
+> **Document de phase, partiellement dépassé.** Les routes décrites ici sont montées sous **`/api/zupdrive/finance`** (ex. `/api/zupdrive/finance/earnings`, `/payouts/request`, `/admin/payouts/:id/process`) ; le paiement d'une course est sous `/api/zupdrive/payment`. La commission n'est pas « 20-30 % » : c'est `PlatformSettingsDrive` (20 par défaut), `round(prix × pct / 100)`, **figée sur le paiement à sa création**. Le paiement est confirmé par le webhook Stripe, et le versement du chauffeur n'est créé qu'une fois la course terminée et payée. La semaine des lots va du lundi 00:00 UTC au lundi suivant. Traiter un versement et changer la commission sont réservés au superowner et journalisés. Le remboursement d'une course payée puis annulée n'est pas couvert. La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **Status**: Payments from passengers + Automatic weekly payouts to drivers via SEPA
 
 ## Overview

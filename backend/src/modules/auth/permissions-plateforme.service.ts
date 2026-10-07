@@ -359,13 +359,14 @@ export async function voitLesFinances(
  * Les routeurs superowner et admin sont ceux de ZupEat ; le routeur zupdrive
  * (administration des chauffeurs) se garde avec la plateforme DRIVE.
  */
-export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT") {
+export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT", sectionFixe?: string) {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
       const compte = req.compte;
       if (compte?.isSuperOwner) return next();
 
-      const section = sectionDeLaRoute(routeur, req.path, req.method);
+      // Un routeur dont les chemins n'entrent pas dans ROUTES nomme sa section.
+      const section = sectionFixe ?? sectionDeLaRoute(routeur, req.path, req.method);
       const permissions = await PermissionsPlateforme.permissionsDu(compte?.acces[plateforme], plateforme);
       const niveau = section ? permissions[section] : undefined;
       const lecture = req.method === "GET" || req.method === "HEAD";

@@ -74,6 +74,7 @@ d'importeurs) : aucun domaine n'en est propriétaire.
 | `legal` | pages légales et acceptation des conditions |
 | `webhooks` | webhooks sortants et leur relance |
 | `maps` | géocodage et cartes |
+| `zupdrive` | chauffeurs, sociétés, courses, paiement et versements ZupDrive, administration, support, conformité, supervision. **Les routeurs se montent dans `zupdrive-montage.ts`** (ordre et préfixes), pas dans `app.ts` ; un test vérifie l'absence de route doublée ou masquée et l'authentification de chaque route. Garde d'équipe : `adminAuthSection("chauffeurs" \| "courses-drive")` de `zupdrive-garde.ts`. Référence : [docs/zupdrive-api-admin.md](../docs/zupdrive-api-admin.md) |
 | `admin` | espace `/api/admin` (voir ci-dessous) |
 | `superowner` | espace `/api/superowner` (voir ci-dessous) |
 

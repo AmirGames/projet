@@ -37,9 +37,10 @@ Plusieurs commerçants cohabitent sur la même installation, chacun chez lui
 
 ZupEat est la première plateforme du groupe **ZupOne**. **ZupDrive** (courses
 de taxi / VTC) possède déjà ses dossiers chauffeurs et sociétés, ses tarifs,
-ses devis et ses courses V1, sur le même compte. Le paiement en ligne des
-courses est reporté à la V2 et la présentation publique annonce encore
-« Bientôt disponible ». Voir [docs/zupdrive.md](docs/zupdrive.md).
+ses devis et ses courses V1, sur le même compte. Côté API, le paiement en
+ligne des courses est branché (webhook Stripe, versement du chauffeur) ; les
+écrans de paiement et la facturation sont reportés à la V2 et la présentation
+publique annonce encore « Bientôt disponible ». Voir [docs/zupdrive.md](docs/zupdrive.md).
 
 | Domaine | Rôle |
 |---|---|
@@ -1147,7 +1148,9 @@ reversements/SEPA, pages légales, cartes et publication mobile.
   perte du signal, notifications et statistiques. Des suites de support et
   permissions existent déjà ; leur présence ne vaut pas validation de tous
   les parcours sur le VPS.
-- **ZupDrive V2** : paiement en ligne et règles de facturation des courses.
+- **ZupDrive V2** : écrans de paiement (le serveur est prêt : voir
+  [docs/zupdrive-api-admin.md](docs/zupdrive-api-admin.md)), règles de
+  facturation et remboursement d'une course payée puis annulée.
   La vitrine ZupOne et les dossiers/courses ZupDrive V1 sont déjà écrits.
 - **Publier les applications** : icônes définitives, comptes des stores, et un
   service de cartes et d'itinéraires hébergé à la place des serveurs publics

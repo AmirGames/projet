@@ -18,6 +18,7 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
+import { lireCommissionPourcentage, repartirPrixCourse } from "./commission-drive";
 
 export type NotificationType =
   | "COURSE_COMPLETED"        // Course terminée, revenus ajoutes
@@ -237,23 +238,19 @@ export const ZupDriveMonitoringService = {
     chauffeurId: string,
     depuis: Date
   ): Promise<{ gainsCentimes: number; nombreCourses: number }> {
-    const [reglages, courses] = await Promise.all([
-      db.platformSettingsDrive.findUnique({
-        where: { id: "default" },
-        select: { commissionPercentage: true },
-      }),
+    const [pourcentage, courses] = await Promise.all([
+      lireCommissionPourcentage(),
       db.courseDrive.findMany({
         where: { chauffeurId, statut: "TERMINEE", termineeLe: { gte: depuis } },
         select: { prixCentimes: true },
       }),
     ]);
-    const pourcentage = reglages?.commissionPercentage ?? 20;
 
-    let gainsCentimes = 0;
-    for (const course of courses) {
-      const commission = Math.round((course.prixCentimes * pourcentage) / 100);
-      gainsCentimes += course.prixCentimes - commission;
-    }
+    // Même règle d'arrondi que le paiement et les rapports (repartirPrixCourse).
+    const gainsCentimes = courses.reduce(
+      (somme, course) => somme + repartirPrixCourse(course.prixCentimes, pourcentage).chauffeurCentimes,
+      0
+    );
     return { gainsCentimes, nombreCourses: courses.length };
   },
 

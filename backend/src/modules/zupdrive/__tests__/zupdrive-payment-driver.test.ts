@@ -202,14 +202,14 @@ describe("ZupDrivePaymentDriverService", () => {
       );
     });
 
-    it("ne cherche que les paiements confirmés sans versement, de ce chauffeur", async () => {
+    it("ne cherche que les paiements confirmés, de courses terminées, sans versement, de ce chauffeur", async () => {
       jest.mocked(db.paymentIntentDrive.findMany).mockResolvedValueOnce([]);
 
       await expect(ZupDrivePaymentDriverService.preparePayout(mockChauffeurId)).rejects.toThrow("Aucun revenu");
 
       expect(db.paymentIntentDrive.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { status: "SUCCEEDED", payout: null, course: { chauffeurId: mockChauffeurId } },
+          where: { status: "SUCCEEDED", payout: null, course: { chauffeurId: mockChauffeurId, statut: "TERMINEE" } },
         })
       );
       expect(db.driverPayoutDrive.createMany).not.toHaveBeenCalled();

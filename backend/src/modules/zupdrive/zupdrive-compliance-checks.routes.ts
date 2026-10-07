@@ -6,13 +6,19 @@
 
 import { Router, Request, Response, NextFunction } from "express";
 import { ZupDriveComplianceChecksService } from "./zupdrive-compliance-checks.service";
-import { UnifiedRolesService } from "../auth/unified-roles.service";
+import { z } from "zod";
 import { db } from "../../services/db";
-import { authMiddleware } from "../auth/auth.middleware";
+import { journaliser } from "../superowner/shared";
+import { adminAuthSection } from "./zupdrive-garde";
 
 const router = Router();
 
-const authenticate = authMiddleware;
+/** Contrôles de conformité : section « chauffeurs » de la plateforme DRIVE (permission, pas un rôle codé en dur). */
+const adminAuth = adminAuthSection("chauffeurs");
+
+const idSchema = z.string().min(1).max(64);
+const historiqueQuery = z.object({ limit: z.coerce.number().int().min(1).max(50).default(10) });
+const exportQuery = z.object({ format: z.enum(["json", "pdf"]).default("json") });
 
 // ============================================================================
 // ADMIN ENDPOINTS
@@ -24,20 +30,22 @@ const authenticate = authMiddleware;
  */
 router.post(
   "/admin/compliance/:chauffeurId/run-checks",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const chauffeurId = (req.params.chauffeurId as string) || "";
-
-      // Vérifier que c'est admin
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
+      const chauffeurId = idSchema.parse(req.params.chauffeurId);
 
       const report = await ZupDriveComplianceChecksService.runFullCompliance(
         chauffeurId
       );
+
+      // Le rapport est enregistré : trace de qui l'a demandé. La décision automatique
+      // du rapport est une recommandation, elle ne modifie pas le dossier du chauffeur.
+      await journaliser(req, "ZUPDRIVE_RUN_COMPLIANCE_CHECKS", chauffeurId, {
+        riskLevel: report.overallRiskLevel,
+        riskScore: report.overallRiskScore,
+        autoDecision: report.autoDecision,
+      });
 
       return res.json({
         success: true,
@@ -56,16 +64,10 @@ router.post(
  */
 router.get(
   "/admin/compliance/:chauffeurId/latest",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const chauffeurId = (req.params.chauffeurId as string) || "";
-
-      // Vérifier que c'est admin
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
+      const chauffeurId = idSchema.parse(req.params.chauffeurId);
 
       const report = await db.complianceReportDrive.findFirst({
         where: { chauffeurId },
@@ -92,17 +94,11 @@ router.get(
  */
 router.get(
   "/admin/compliance/:chauffeurId/history",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const chauffeurId = (req.params.chauffeurId as string) || "";
-      const limit = Math.min(parseInt((req.query.limit as string) || "10"), 50);
-
-      // Vérifier que c'est admin
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
+      const chauffeurId = idSchema.parse(req.params.chauffeurId);
+      const { limit } = historiqueQuery.parse(req.query);
 
       const reports = await ZupDriveComplianceChecksService.getPreviousReports(
         chauffeurId,
@@ -126,15 +122,9 @@ router.get(
  */
 router.get(
   "/admin/compliance/flagged-for-review",
-  authenticate,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminAuth,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      // Vérifier que c'est admin
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       const flagged = await db.complianceReportDrive.findMany({
         where: { riskLevel: { in: ["HIGH", "CRITICAL"] } },
         // Score de conformité le plus bas d'abord : le risque le plus élevé en tête.
@@ -172,15 +162,9 @@ router.get(
  */
 router.get(
   "/admin/compliance/dashboard",
-  authenticate,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminAuth,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      // Vérifier que c'est admin
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       const [total, critical, high, medium, low, flagged, recent] = await Promise.all([
         db.complianceReportDrive.count(),
         db.complianceReportDrive.count({ where: { riskLevel: "CRITICAL" } }),
@@ -232,17 +216,11 @@ router.get(
  */
 router.get(
   "/admin/compliance/:reportId/export",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const reportId = (req.params.reportId as string) || "";
-      const format = (req.query.format as string) || "json";
-
-      // Vérifier que c'est admin
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
+      const reportId = idSchema.parse(req.params.reportId);
+      const { format } = exportQuery.parse(req.query);
 
       const report = await db.complianceReportDrive.findUnique({
         where: { id: reportId },
@@ -268,12 +246,8 @@ router.get(
         });
       }
 
-      if (format === "pdf") {
-        // TODO: Generate PDF report
-        return res.status(501).json({ error: "PDF export not yet implemented" });
-      }
-
-      return res.status(400).json({ error: "Invalid format" });
+      // format === "pdf" (le seul autre format accepté par exportQuery)
+      return res.status(501).json({ error: "PDF export not yet implemented" });
     } catch (error) {
       return next(error);
     }

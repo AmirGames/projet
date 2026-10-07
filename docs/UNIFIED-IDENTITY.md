@@ -1,5 +1,7 @@
 # Unified Multi-Role Identity System
 
+> **Document de phase, partiellement dépassé.** Le routeur `zupdrive-chauffeur-onboarding` (`/chauffeur/candidacy/*`, `/admin/candidates/*`) **n'est pas monté** : son approbation ne contrôlait pas les pièces exigées. L'inscription passe par `/api/zupdrive/chauffeur/me*` et la décision par `/api/zupdrive/admin/chauffeurs/:id/(approve|reject|suspend|reactivate)`. `POST /api/zupdrive/admin/drivers/:id/(suspend|reactivate)` existe (section `chauffeurs`, journalisé). Le rôle `ADMIN_ZUPDRIVE` n'est plus un garde des routes montées : ce sont les sections de permission de l'équipe. La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **ZupOne Ecosystem**: Single account, multiple roles across platforms.
 
 ## Overview

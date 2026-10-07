@@ -31,10 +31,10 @@ export default function NotificationsPage() {
     setLoading(true);
     try {
       const [templatesRes, webhooksRes] = await Promise.all([
-        fetch(`${API_URL}/api/zupdrive/admin/notifications/templates`, {
+        fetch(`${API_URL}/api/zupdrive/notifications/admin/templates`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         }),
-        fetch(`${API_URL}/api/zupdrive/admin/webhooks/endpoints`, {
+        fetch(`${API_URL}/api/zupdrive/webhooks/admin/endpoints`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         }),
       ]);
