@@ -82,7 +82,7 @@ class WebSocketService {
       this.sendToUser(ws.userId, {
         type: 'CONNECTED',
         data: { userId: ws.userId },
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       });
     });
   }

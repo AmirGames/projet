@@ -47,7 +47,7 @@ export class EventBroadcaster {
     const message = {
       type: payload.type,
       data: payload.data,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
     // Envoyer à utilisateur spécifique
