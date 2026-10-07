@@ -3497,7 +3497,7 @@ model AuditLog {
 model ComplianceCheck {
   id           String    @id @default(cuid())
   /// ID du chauffeur
-  chauffeurId  String
+  driverId     String
   /// Type de contrôle
   type         String
   /// Statut du contrôle
@@ -3513,12 +3513,12 @@ model ComplianceCheck {
   /// Notes
   notes        String?
 
-  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  chauffeur ChauffeurDrive @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([chauffeurId])
+  @@index([driverId])
   @@index([type])
   @@index([status])
   @@index([expiresAt])
@@ -3528,7 +3528,7 @@ model ComplianceCheck {
 model DocumentVerificationWorkflow {
   id              String   @id @default(cuid())
   /// ID du chauffeur
-  chauffeurId     String
+  driverId        String
   /// Type de document
   documentType    String
   /// Statut du document
@@ -3544,13 +3544,13 @@ model DocumentVerificationWorkflow {
   /// Date de prochaine révision
   nextReviewDate  DateTime?
 
-  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  chauffeur ChauffeurDrive @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([chauffeurId, documentType])
-  @@index([chauffeurId])
+  @@unique([driverId, documentType])
+  @@index([driverId])
   @@index([status])
   @@index([nextReviewDate])
 }

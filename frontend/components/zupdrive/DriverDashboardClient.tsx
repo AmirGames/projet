@@ -46,6 +46,7 @@ export function DriverDashboardClient() {
   const [earnings, setEarnings] = useState({ today: 0, week: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const nextPayoutDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -174,7 +175,7 @@ export function DriverDashboardClient() {
           <PayoutCard
             amount={metrics.pendingPayout}
             status="pending"
-            nextPayoutDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+            nextPayoutDate={nextPayoutDate}
           />
           <ReputationCard
             score={metrics.reputationScore}

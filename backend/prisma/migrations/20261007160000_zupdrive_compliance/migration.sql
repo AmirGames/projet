@@ -58,8 +58,8 @@ CREATE TABLE "ComplianceReport" (
     "driversWithExpiringDocuments" INTEGER NOT NULL,
     "driversWithInfractions" INTEGER NOT NULL,
     "driversWithLowRating" INTEGER NOT NULL,
-    "complianceRate" REAL NOT NULL,
-    "riskScore" REAL NOT NULL,
+    "complianceRate" DOUBLE PRECISION NOT NULL,
+    "riskScore" DOUBLE PRECISION NOT NULL,
     "recommendations" JSONB NOT NULL DEFAULT '[]'
 );
 
