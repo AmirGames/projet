@@ -149,6 +149,10 @@ router.post("/tickets/:ticketId/messages", authMiddleware, isSystemAdmin, async 
       body: body.body,
     });
 
+    await db.systemAuditLog.create({
+      data: { adminId: req.userId as string, action: "REPLY_TICKET", target: ticketId, changes: {} },
+    });
+
     res.status(201).json({ message: "Réponse envoyée", data: message });
   } catch (err) {
     next(err);
@@ -183,6 +187,10 @@ router.post("/tickets/:ticketId/unarchive", authMiddleware, isSystemAdmin, async
   try {
     const ticketId = req.params.ticketId as string;
     const ticket = await TicketMessageService.unarchive(ticketId);
+
+    await db.systemAuditLog.create({
+      data: { adminId: req.userId as string, action: "UNARCHIVE_TICKET", target: ticketId, changes: {} },
+    });
 
     res.json({ message: "Ticket désarchivé", data: ticket });
   } catch (err) {

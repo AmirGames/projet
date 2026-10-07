@@ -69,6 +69,17 @@ router.post("/notifications", authMiddleware, isSystemAdmin, async (req: Request
       auteur,
     });
 
+    // Une annonce atteint les boîtes de tous les destinataires : qui l'a envoyée,
+    // et à quel public, doit rester traçable.
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "BROADCAST_ANNOUNCEMENT",
+        target: annonce.id,
+        changes: { title: body.title, targetAudience: body.targetAudience ?? null, destinataires },
+      },
+    });
+
     res.status(201).json({
       message: destinataires
         ? `Annonce diffusée à ${destinataires} destinataire${destinataires > 1 ? "s" : ""}`

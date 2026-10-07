@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { authMiddleware } from "../auth/auth.middleware";
-import { isSuperOwner } from "./shared";
+import { isSuperOwner, journaliser } from "./shared";
 import { PlatformInvoiceService, moisPrecedent } from "../invoicing/platform-invoice.service";
 
 const router = Router();
@@ -26,7 +26,10 @@ router.get("/platform-invoices/overview", authMiddleware, isSuperOwner, async (r
 // POST /superowner/platform-invoices/issue-month { period } - Émet tout ce qui est facturable
 router.post("/platform-invoices/issue-month", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json(await PlatformInvoiceService.emettreLeMois(String(req.body?.period || moisPrecedent())));
+    const period = String(req.body?.period || moisPrecedent());
+    const resultat = await PlatformInvoiceService.emettreLeMois(period);
+    await journaliser(req, "ISSUE_PLATFORM_INVOICES_MONTH", period, { period });
+    res.json(resultat);
   } catch (err) {
     next(err);
   }
@@ -37,6 +40,11 @@ router.post("/billing/:orgId/invoice", authMiddleware, isSuperOwner, async (req:
   try {
     const facture = await PlatformInvoiceService.emettre(req.params.orgId as string, String(req.body?.period || ""));
     const { ublXml: _xml, ...sansXml } = facture;
+    await journaliser(req, "ISSUE_PLATFORM_INVOICE", facture.id, {
+      orgId: req.params.orgId,
+      period: String(req.body?.period || ""),
+      number: facture.number,
+    });
     res.status(201).json(sansXml);
   } catch (err) {
     next(err);
@@ -61,6 +69,7 @@ router.post("/platform-invoices/:id/send", authMiddleware, isSuperOwner, async (
   try {
     const facture = await PlatformInvoiceService.envoyer(req.params.id as string);
     const { ublXml: _xml, ...sansXml } = facture;
+    await journaliser(req, "SEND_PLATFORM_INVOICE", req.params.id as string, { number: facture.number });
     res.json(sansXml);
   } catch (err) {
     next(err);

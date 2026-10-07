@@ -3,7 +3,7 @@ import { z } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../webhooks/webhook.service";
 import { SecurityEventService } from "../auth/security-event.service";
-import { isSuperOwner } from "./shared";
+import { isSuperOwner, journaliser } from "./shared";
 import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
@@ -49,6 +49,8 @@ router.post("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res:
       severity: "MEDIUM",
       details: `Webhook vers ${body.url}`,
     });
+    // Le secret n'est jamais écrit au journal : seulement la cible et les événements.
+    await journaliser(req, "CREATE_WEBHOOK", abonnement.id, { url: body.url, events: body.events });
 
     res.status(201).json({
       success: true,
@@ -81,6 +83,7 @@ router.delete("/webhooks/:webhookId", authMiddleware, isSuperOwner, async (req: 
       target: webhookId,
       severity: "MEDIUM",
     });
+    await journaliser(req, "DELETE_WEBHOOK", webhookId);
 
     res.json({ success: true, message: "Webhook supprimé" });
   } catch (err) {
@@ -98,6 +101,7 @@ router.patch("/webhooks/:webhookId", authMiddleware, isSuperOwner, async (req: R
     const webhookId = req.params.webhookId as string;
 
     const abonnement = await WebhookService.setStatus(webhookId, body.status);
+    await journaliser(req, "SET_WEBHOOK_STATUS", webhookId, { status: body.status });
 
     res.json({
       success: true,
@@ -116,6 +120,7 @@ router.post("/webhooks/:webhookId/essai", authMiddleware, isSuperOwner, async (r
   try {
     const webhookId = req.params.webhookId as string;
     const envoi = await WebhookService.essayer(webhookId);
+    await journaliser(req, "TEST_WEBHOOK", webhookId, { success: envoi.success });
 
     res.json({
       success: true,
