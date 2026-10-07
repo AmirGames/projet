@@ -219,7 +219,7 @@ export async function notifyAccountSuspended(data: {
     chauffeurId: data.chauffeurId,
     eventType: 'ACCOUNT_SUSPENDED',
     title: '🚫 Account suspended',
-    message: reason || 'Your account has been suspended. Please contact support.',
+    message: data.reason || 'Your account has been suspended. Please contact support.',
     priority: 'critical',
     data: {
       chauffeurId: data.chauffeurId,

@@ -77,7 +77,7 @@ describe("ZupDriveComplianceChecksService", () => {
       };
 
       vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReport.create).mockResolvedValueOnce({
+      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 0,
         riskLevel: "LOW",
@@ -146,7 +146,7 @@ describe("ZupDriveComplianceChecksService", () => {
       };
 
       vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReport.create).mockResolvedValueOnce({
+      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 55,
         riskLevel: "HIGH",
@@ -185,7 +185,7 @@ describe("ZupDriveComplianceChecksService", () => {
       };
 
       vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReport.create).mockResolvedValueOnce({
+      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 85,
         riskLevel: "CRITICAL",
@@ -230,7 +230,7 @@ describe("ZupDriveComplianceChecksService", () => {
         { id: "chauffeur-999", nomComplet: "Another Jean Dupont" },
       ]);
 
-      vi.mocked(db.complianceReport.create).mockResolvedValueOnce({
+      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 80,
         riskLevel: "CRITICAL",
@@ -265,7 +265,7 @@ describe("ZupDriveComplianceChecksService", () => {
       };
 
       vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReport.create).mockResolvedValueOnce({
+      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 40,
         riskLevel: "MEDIUM",
@@ -307,7 +307,7 @@ describe("ZupDriveComplianceChecksService", () => {
       };
 
       vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReport.create).mockResolvedValueOnce({
+      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 50,
         riskLevel: "HIGH",
@@ -360,7 +360,7 @@ describe("ZupDriveComplianceChecksService", () => {
       };
 
       vi.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      vi.mocked(db.complianceReport.create).mockResolvedValueOnce({
+      vi.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
         riskScore: 30,
         riskLevel: "MEDIUM",
@@ -382,7 +382,7 @@ describe("ZupDriveComplianceChecksService", () => {
         { id: "report-3", riskScore: 55, riskLevel: "HIGH", createdAt: new Date() },
       ];
 
-      vi.mocked(db.complianceReport.findMany).mockResolvedValueOnce(mockReports as any);
+      vi.mocked(db.complianceReportDrive.findMany).mockResolvedValueOnce(mockReports as any);
 
       const reports = await ZupDriveComplianceChecksService.getPreviousReports(
         mockChauffeurId,
