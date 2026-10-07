@@ -16,6 +16,7 @@
  * - Patterns comportementaux
  */
 
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
 
@@ -38,7 +39,7 @@ interface ComplianceCheckResult {
   severity: RiskLevel;
   message: string;
   recommendations?: string[];
-  evidence?: Record<string, any>;
+  evidence?: Record<string, unknown>;
 }
 
 interface ComplianceReport {
@@ -57,6 +58,21 @@ interface ComplianceReport {
   recommendations: string[];
 }
 
+/** Ce que les contrôles lisent d'un chauffeur : pièces, infractions et statut des courses. */
+const SELECTION_CONTROLE = {
+  id: true,
+  userId: true,
+  nomComplet: true,
+  region: true,
+  statut: true,
+  createdAt: true,
+  documents: { select: { type: true, statut: true, dateExpiration: true } },
+  infractions: { select: { severity: true } },
+  courses: { select: { statut: true } },
+} satisfies Prisma.ChauffeurDriveSelect;
+
+type ChauffeurControle = Prisma.ChauffeurDriveGetPayload<{ select: typeof SELECTION_CONTROLE }>;
+
 export const ZupDriveComplianceChecksService = {
   /**
    * Lancer toutes les vérifications de conformité pour un chauffeur
@@ -64,17 +80,7 @@ export const ZupDriveComplianceChecksService = {
   async runFullCompliance(chauffeurId: string): Promise<ComplianceReport> {
     const chauffeur = await db.chauffeurDrive.findUnique({
       where: { id: chauffeurId },
-      select: {
-        id: true,
-        userId: true,
-        nomComplet: true,
-        region: true,
-        statut: true,
-        createdAt: true,
-        documents: true,
-        infractions: true,
-        courses: true,
-      },
+      select: SELECTION_CONTROLE,
     });
 
     if (!chauffeur) {
@@ -85,30 +91,30 @@ export const ZupDriveComplianceChecksService = {
     const checks: ComplianceCheckResult[] = [];
 
     // 1. Vérification intégrité des documents
-    checks.push(await this.checkDocumentIntegrity(chauffeur as any));
+    checks.push(await this.checkDocumentIntegrity(chauffeur));
 
     // 2. Cohérence entre documents
-    checks.push(await this.checkDocumentConsistency(chauffeur as any));
+    checks.push(await this.checkDocumentConsistency(chauffeur));
 
     // 3. Vérification identité
-    checks.push(await this.checkIdentityVerification(chauffeur as any));
+    checks.push(await this.checkIdentityVerification(chauffeur));
 
     // 4. Historique infractions
-    checks.push(await this.checkInfractionHistory(chauffeur as any));
+    checks.push(await this.checkInfractionHistory(chauffeur));
 
     // 5. Patterns comportementaux
-    checks.push(await this.checkBehavioralPatterns(chauffeur as any));
+    checks.push(await this.checkBehavioralPatterns(chauffeur));
 
     // 6. Anomalies géographiques
     checks.push(
-      await this.checkGeographicAnomalies(chauffeur as any, chauffeur.region)
+      await this.checkGeographicAnomalies(chauffeur.region ?? undefined)
     );
 
     // 7. Détection doublons
-    checks.push(await this.checkDuplicateDetection(chauffeur as any));
+    checks.push(await this.checkDuplicateDetection());
 
     // 8. Indicateurs fraude
-    checks.push(await this.checkFraudIndicators(chauffeur as any));
+    checks.push(await this.checkFraudIndicators(chauffeur));
 
     // Calculer les scores
     const overallRiskScore = Math.round(
@@ -120,20 +126,15 @@ export const ZupDriveComplianceChecksService = {
       overallRiskLevel === "HIGH" || overallRiskLevel === "CRITICAL";
 
     // Documents expirés prochainement (30 jours)
-    const expiringDocuments = (chauffeur.documents || [])
-      .filter((doc: any) => {
-        if (!doc.dateExpiration) return false;
-        const daysUntil = Math.floor(
-          (doc.dateExpiration.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return daysUntil <= 30 && daysUntil > 0;
-      })
-      .map((doc: any) => ({
-        type: doc.type,
-        expiresIn: Math.floor(
-          (doc.dateExpiration.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        ),
-      }));
+    const expiringDocuments = chauffeur.documents.flatMap((doc) => {
+      if (!doc.dateExpiration) return [];
+      const daysUntil = Math.floor(
+        (doc.dateExpiration.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return daysUntil <= 30 && daysUntil > 0
+        ? [{ type: doc.type, expiresIn: daysUntil }]
+        : [];
+    });
 
     // Auto-décision
     let autoDecision: "APPROVE" | "REJECT" | "MANUAL_REVIEW" | undefined;
@@ -163,15 +164,17 @@ export const ZupDriveComplianceChecksService = {
     };
 
     // Sauvegarder le rapport
-    await db.complianceReport.create({
+    // Le schéma ne conserve ni la décision automatique ni l'indicateur « à revoir » :
+    // ils se déduisent du niveau de risque (voir flaggedForReview / autoDecision plus haut).
+    const fraude = checks.find((c) => c.type === "FRAUD_INDICATORS");
+    await db.complianceReportDrive.create({
       data: {
         chauffeurId,
-        riskScore: overallRiskScore,
         riskLevel: overallRiskLevel,
-        checks: checks as any,
-        autoDecision: autoDecision || "MANUAL_REVIEW",
-        recommendations,
-        flaggedForReview,
+        complianceScore: 100 - overallRiskScore,
+        fraudIndicators: JSON.parse(JSON.stringify(fraude?.evidence?.indicators ?? [])) as Prisma.InputJsonValue,
+        verificationPoints: JSON.parse(JSON.stringify(checks)) as Prisma.InputJsonValue,
+        autoRecommendations: recommendations,
       },
     });
 
@@ -182,12 +185,12 @@ export const ZupDriveComplianceChecksService = {
    * Vérification intégrité des documents
    */
   async checkDocumentIntegrity(
-    chauffeur: any
+    chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
     const required = ["PERMIS", "ASSURANCE", "INSPECTION", "IDENTITE"];
     const approved = (chauffeur.documents || [])
-      .filter((d: any) => d.statut === "APPROVED")
-      .map((d: any) => d.type);
+      .filter((d) => d.statut === "APPROVED")
+      .map((d) => d.type);
 
     const missing = required.filter((r) => !approved.includes(r));
     const passed = missing.length === 0;
@@ -208,34 +211,18 @@ export const ZupDriveComplianceChecksService = {
    * Cohérence entre documents
    */
   async checkDocumentConsistency(
-    chauffeur: any
+    chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
     const docs = chauffeur.documents || [];
-    const nameFromIdentite = docs.find(
-      (d: any) => d.type === "IDENTITE"
-    )?.metadata?.name;
-
     const issues: string[] = [];
 
-    // Vérifier cohérence du nom
-    if (nameFromIdentite && chauffeur.nomComplet) {
-      const normalized1 = nameFromIdentite.toLowerCase().trim();
-      const normalized2 = chauffeur.nomComplet.toLowerCase().trim();
-
-      if (normalized1 !== normalized2) {
-        const similarity = this.stringSimilarity(normalized1, normalized2);
-        if (similarity < 0.8) {
-          issues.push(
-            `Name mismatch: IDENTITE="${nameFromIdentite}" vs Profile="${chauffeur.nomComplet}"`
-          );
-        }
-      }
-    }
+    // Le nom lu sur la pièce d'identité n'est pas conservé dans DocumentChauffeurDrive :
+    // la cohérence du nom ne peut pas être contrôlée.
 
     // Vérifier dates cohérentes
-    const permisExpiry = docs.find((d: any) => d.type === "PERMIS")
+    const permisExpiry = docs.find((d) => d.type === "PERMIS")
       ?.dateExpiration;
-    const inspectionExpiry = docs.find((d: any) => d.type === "INSPECTION")
+    const inspectionExpiry = docs.find((d) => d.type === "INSPECTION")
       ?.dateExpiration;
 
     if (
@@ -263,9 +250,9 @@ export const ZupDriveComplianceChecksService = {
    * Vérification identité
    */
   async checkIdentityVerification(
-    chauffeur: any
+    chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
-    const identiteDoc = chauffeur.documents?.find((d: any) => d.type === "IDENTITE");
+    const identiteDoc = chauffeur.documents?.find((d) => d.type === "IDENTITE");
 
     const issues: string[] = [];
 
@@ -302,14 +289,14 @@ export const ZupDriveComplianceChecksService = {
    * Historique infractions
    */
   async checkInfractionHistory(
-    chauffeur: any
+    chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
     const infractions = chauffeur.infractions || [];
     const highSeverity = infractions.filter(
-      (i: any) => i.severite === "HAUTE"
+      (i) => i.severity === "HAUTE"
     ).length;
     const mediumSeverity = infractions.filter(
-      (i: any) => i.severite === "MOYENNE"
+      (i) => i.severity === "MOYENNE"
     ).length;
 
     // Scoring: High severity = 20 points, Medium = 5 points each
@@ -343,7 +330,7 @@ export const ZupDriveComplianceChecksService = {
    * Patterns comportementaux
    */
   async checkBehavioralPatterns(
-    chauffeur: any
+    chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
     const courses = chauffeur.courses || [];
     const issues: string[] = [];
@@ -361,7 +348,7 @@ export const ZupDriveComplianceChecksService = {
     }
 
     // Analyser les patterns
-    const completionRate = courses.filter((c: any) => c.status === "COMPLETED")
+    const completionRate = courses.filter((c) => c.statut === "TERMINEE")
       .length / courses.length;
 
     if (completionRate < 0.7) {
@@ -369,7 +356,7 @@ export const ZupDriveComplianceChecksService = {
     }
 
     // Taux d'annulation élevé
-    const cancellationRate = courses.filter((c: any) => c.status === "CANCELLED")
+    const cancellationRate = courses.filter((c) => c.statut === "ANNULEE")
       .length / courses.length;
 
     if (cancellationRate > 0.2) {
@@ -399,7 +386,6 @@ export const ZupDriveComplianceChecksService = {
    * Anomalies géographiques
    */
   async checkGeographicAnomalies(
-    chauffeur: any,
     region?: string
   ): Promise<ComplianceCheckResult> {
     // Vérifier que le région correspond
@@ -410,11 +396,8 @@ export const ZupDriveComplianceChecksService = {
     }
 
     // Vérifier qu'il n'y a pas de courses dans des régions très éloignées
-    const courses = chauffeur.courses || [];
-    const farCourses = courses.filter((c: any) => {
-      // Distance estimation - simplifiée pour l'exemple
-      return false; // TODO: Implémenter vérification distance
-    });
+    // TODO: Implémenter la vérification de distance (aucune donnée de distance aux régions pour l'instant)
+    const farCourses: unknown[] = [];
 
     const passed = issues.length === 0 && farCourses.length === 0;
     return {
@@ -432,38 +415,10 @@ export const ZupDriveComplianceChecksService = {
   /**
    * Détection doublons
    */
-  async checkDuplicateDetection(
-    chauffeur: any
-  ): Promise<ComplianceCheckResult> {
-    // Vérifier s'il y a d'autres comptes avec les mêmes documents
-    const identiteDoc = chauffeur.documents?.find((d: any) => d.type === "IDENTITE");
-
-    if (!identiteDoc?.metadata?.documentNumber) {
-      return {
-        type: "DUPLICATE_DETECTION",
-        passed: true,
-        riskScore: 0,
-        severity: "LOW",
-        message: "No document number for comparison",
-        evidence: {},
-      };
-    }
-
-    // Rechercher d'autres chauffeurs avec le même numéro de document
-    const duplicates = await db.chauffeurDrive.findMany({
-      where: {
-        id: { not: chauffeur.id },
-        documents: {
-          some: {
-            type: "IDENTITE",
-            metadata: {
-              path: "documentNumber",
-              equals: identiteDoc.metadata.documentNumber,
-            },
-          },
-        },
-      },
-    });
+  async checkDuplicateDetection(): Promise<ComplianceCheckResult> {
+    // DocumentChauffeurDrive ne conserve pas le numéro de la pièce d'identité :
+    // aucune comparaison entre comptes n'est possible pour l'instant.
+    const duplicates: unknown[] = [];
 
     const passed = duplicates.length === 0;
     return {
@@ -482,7 +437,7 @@ export const ZupDriveComplianceChecksService = {
    * Indicateurs fraude
    */
   async checkFraudIndicators(
-    chauffeur: any
+    chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
     const indicators: string[] = [];
 
@@ -498,15 +453,8 @@ export const ZupDriveComplianceChecksService = {
     // Nombreuses tentatives de soumission
     // (nécessiterait tracking des soumissions précédentes)
 
-    // Documents avec des métadonnées suspectes
-    const docs = chauffeur.documents || [];
-    const modifiedDocs = docs.filter(
-      (d: any) => d.metadata?.suspiciousModification
-    );
-
-    if (modifiedDocs.length > 0) {
-      indicators.push(`${modifiedDocs.length} document(s) with suspicious modifications`);
-    }
+    // Les métadonnées de modification suspecte ne sont pas conservées sur les pièces :
+    // ce signal n'est plus contrôlé.
 
     const passed = indicators.length === 0;
     return {
@@ -612,7 +560,7 @@ export const ZupDriveComplianceChecksService = {
    * Obtenir les rapports de conformité précédents
    */
   async getPreviousReports(chauffeurId: string, limit: number = 5) {
-    return db.complianceReport.findMany({
+    return db.complianceReportDrive.findMany({
       where: { chauffeurId },
       orderBy: { createdAt: "desc" },
       take: limit,

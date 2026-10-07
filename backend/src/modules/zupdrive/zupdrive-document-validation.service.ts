@@ -13,6 +13,7 @@
  * FLANDRE: PERMIS, ASSURANCE, INSPECTION, IDENTITE
  */
 
+import type { DocumentChauffeurDrive } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
 
@@ -91,28 +92,32 @@ export const ZupDriveDocumentValidationService = {
       );
     }
 
-    // Créer ou remplacer le document
-    const document = await db.documentChauffeurDrive.upsert({
-      where: {
-        chauffeurId_type: {
-          chauffeurId: data.chauffeurId,
-          type: data.type,
-        },
-      },
-      update: {
-        url: data.url,
-        dateExpiration: data.expiresAt || null,
-        statut: "PENDING", // Reset to pending on re-upload
-        noteExamen: null,
-      },
-      create: {
-        chauffeurId: data.chauffeurId,
-        type: data.type,
-        url: data.url,
-        dateExpiration: data.expiresAt || null,
-        statut: "PENDING",
-      },
+    // Créer ou remplacer le document en vigueur (version non archivée) de ce type
+    const existant = await db.documentChauffeurDrive.findFirst({
+      where: { chauffeurId: data.chauffeurId, type: data.type, archiveeLe: null },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
     });
+
+    const document = existant
+      ? await db.documentChauffeurDrive.update({
+          where: { id: existant.id },
+          data: {
+            url: data.url,
+            dateExpiration: data.expiresAt || null,
+            statut: "PENDING", // Reset to pending on re-upload
+            noteExamen: null,
+          },
+        })
+      : await db.documentChauffeurDrive.create({
+          data: {
+            chauffeurId: data.chauffeurId,
+            type: data.type,
+            url: data.url,
+            dateExpiration: data.expiresAt || null,
+            statut: "PENDING",
+          },
+        });
 
     return this.mapDocumentResult(document);
   },
@@ -172,7 +177,7 @@ export const ZupDriveDocumentValidationService = {
     }
 
     const documents = await db.documentChauffeurDrive.findMany({
-      where: { chauffeurId },
+      where: { chauffeurId, archiveeLe: null },
       orderBy: { type: "asc" },
     });
 
@@ -218,10 +223,10 @@ export const ZupDriveDocumentValidationService = {
     if (!summary.allValidated) {
       if (summary.rejected > 0) {
         summary.nextActionRequired = `${summary.rejected} document(s) rejected. Chauffeur must resubmit.`;
-      } else if (missingTypes.length > 0) {
-        summary.nextActionRequired = `Missing documents: ${missingTypes.join(", ")}`;
       } else if (summary.expired > 0) {
         summary.nextActionRequired = `${summary.expired} document(s) expired. Chauffeur must renew.`;
+      } else if (missingTypes.length > 0) {
+        summary.nextActionRequired = `Missing documents: ${missingTypes.join(", ")}`;
       }
     }
 
@@ -269,6 +274,7 @@ export const ZupDriveDocumentValidationService = {
     const documentsToExpire = await db.documentChauffeurDrive.findMany({
       where: {
         ...(chauffeurId ? { chauffeurId } : {}),
+        archiveeLe: null,
         dateExpiration: {
           lt: now,
         },
@@ -310,6 +316,7 @@ export const ZupDriveDocumentValidationService = {
           gte: now,
         },
         statut: "APPROVED",
+        archiveeLe: null,
       },
       select: {
         id: true,
@@ -317,6 +324,7 @@ export const ZupDriveDocumentValidationService = {
         type: true,
         dateExpiration: true,
         rappel30JoursLe: true,
+        rappel10JoursLe: true,
       },
     });
 
@@ -357,7 +365,7 @@ export const ZupDriveDocumentValidationService = {
    * Helper: Mapper les données Prisma
    */
   mapDocumentResult(
-    doc: any
+    doc: DocumentChauffeurDrive
   ): DocumentValidationResult {
     return {
       id: doc.id,
@@ -366,7 +374,6 @@ export const ZupDriveDocumentValidationService = {
       url: doc.url,
       expiresAt: doc.dateExpiration || undefined,
       verifiedAt: doc.examineLe || undefined,
-      verifiedBy: doc.verifiedBy || undefined,
       rejectionReason: doc.noteExamen || undefined,
     };
   },

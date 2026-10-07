@@ -13,7 +13,7 @@ jest.mock("../../../services/db", () => ({
       findUnique: jest.fn(),
       findMany: jest.fn(),
     },
-    complianceReport: {
+    complianceReportDrive: {
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -46,8 +46,7 @@ describe("ZupDriveComplianceChecksService", () => {
             type: "PERMIS",
             statut: "APPROVED",
             dateExpiration: inFuture,
-            metadata: { name: "Jean Dupont" },
-          },
+                      },
           {
             id: "doc-2",
             type: "ASSURANCE",
@@ -69,18 +68,18 @@ describe("ZupDriveComplianceChecksService", () => {
         ],
         infractions: [],
         courses: [
-          { status: "COMPLETED" },
-          { status: "COMPLETED" },
-          { status: "COMPLETED" },
+          { statut: "TERMINEE" },
+          { statut: "TERMINEE" },
+          { statut: "TERMINEE" },
         ],
       };
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as never);
       jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
-        riskScore: 0,
+        complianceScore: 0,
         riskLevel: "LOW",
-      } as any);
+      } as never);
 
       const report = await ZupDriveComplianceChecksService.runFullCompliance(mockChauffeurId);
 
@@ -130,26 +129,26 @@ describe("ZupDriveComplianceChecksService", () => {
           {
             id: "inf-1",
             type: "SPEEDING",
-            severite: "HAUTE", // High severity!
+            severity: "HAUTE", // High severity!
           },
           {
             id: "inf-2",
             type: "PARKING_VIOLATION",
-            severite: "BASSE",
+            severity: "BASSE",
           },
         ],
         courses: [
-          { status: "COMPLETED" },
-          { status: "COMPLETED" },
+          { statut: "TERMINEE" },
+          { statut: "TERMINEE" },
         ],
       };
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as never);
       jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
-        riskScore: 55,
+        complianceScore: 55,
         riskLevel: "HIGH",
-      } as any);
+      } as never);
 
       const report = await ZupDriveComplianceChecksService.runFullCompliance(mockChauffeurId);
 
@@ -183,12 +182,12 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as never);
       jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
-        riskScore: 85,
+        complianceScore: 85,
         riskLevel: "CRITICAL",
-      } as any);
+      } as never);
 
       const report = await ZupDriveComplianceChecksService.runFullCompliance(mockChauffeurId);
 
@@ -199,7 +198,7 @@ describe("ZupDriveComplianceChecksService", () => {
       expect(integrityCheck?.passed).toBe(false);
     });
 
-    it("devrait détecter les doublons (CRITICAL risk)", async () => {
+    it("ne signale pas de doublon tant que le numéro de pièce n'est pas conservé", async () => {
       const inFuture = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
       const mockChauffeur = {
@@ -210,65 +209,48 @@ describe("ZupDriveComplianceChecksService", () => {
         statut: "SOUMIS",
         createdAt: new Date(),
         documents: [
-          {
-            id: "doc-1",
-            type: "IDENTITE",
-            statut: "APPROVED",
-            dateExpiration: inFuture,
-            metadata: { documentNumber: "ID123456" },
-          },
+          { type: "IDENTITE", statut: "APPROVED", dateExpiration: inFuture },
         ],
         infractions: [],
         courses: [],
       };
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as never);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({ id: "report-1" } as never);
 
-      // Simulate finding a duplicate
-      jest.mocked(db.chauffeurDrive.findMany).mockResolvedValueOnce([
-        { id: "chauffeur-999", nomComplet: "Another Jean Dupont" },
-      ]);
+      const report = await ZupDriveComplianceChecksService.runFullCompliance(mockChauffeurId);
 
-      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
-        id: "report-1",
-        riskScore: 80,
-        riskLevel: "CRITICAL",
-      } as any);
-
-      // Note: The actual duplicate check in the service would require
-      // more sophisticated metadata querying, but this demonstrates the concept
-      expect(mockChauffeur.documents[0].metadata.documentNumber).toBe("ID123456");
+      const duplicateCheck = report.checks.find((c) => c.type === "DUPLICATE_DETECTION");
+      expect(duplicateCheck?.passed).toBe(true);
     });
 
-    it("devrait détecter l'incohérence entre documents", async () => {
-      const inFuture = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-
+    it("devrait détecter l'incohérence entre les dates des documents", async () => {
       const mockChauffeur = {
         id: mockChauffeurId,
         userId: mockUserId,
-        nomComplet: "Jean Dupont", // Different from document
+        nomComplet: "Jean Dupont",
         region: "BRUXELLES",
         statut: "SOUMIS",
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         documents: [
           {
-            id: "doc-4",
-            type: "IDENTITE",
+            type: "PERMIS",
             statut: "APPROVED",
-            dateExpiration: inFuture,
-            metadata: { name: "JOHN DUPONT" }, // Name mismatch!
+            dateExpiration: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          },
+          {
+            type: "INSPECTION",
+            statut: "APPROVED",
+            // Plus de 30 jours après l'échéance du permis
+            dateExpiration: new Date(Date.now() + 200 * 24 * 60 * 60 * 1000),
           },
         ],
         infractions: [],
         courses: [],
       };
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
-      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
-        id: "report-1",
-        riskScore: 40,
-        riskLevel: "MEDIUM",
-      } as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as never);
+      jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({ id: "report-1" } as never);
 
       const report = await ZupDriveComplianceChecksService.runFullCompliance(mockChauffeurId);
 
@@ -305,12 +287,12 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as never);
       jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
-        riskScore: 50,
+        complianceScore: 50,
         riskLevel: "HIGH",
-      } as any);
+      } as never);
 
       const report = await ZupDriveComplianceChecksService.runFullCompliance(mockChauffeurId);
 
@@ -358,12 +340,12 @@ describe("ZupDriveComplianceChecksService", () => {
         courses: [],
       };
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as any);
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(mockChauffeur as never);
       jest.mocked(db.complianceReportDrive.create).mockResolvedValueOnce({
         id: "report-1",
-        riskScore: 30,
+        complianceScore: 30,
         riskLevel: "MEDIUM",
-      } as any);
+      } as never);
 
       const report = await ZupDriveComplianceChecksService.runFullCompliance(mockChauffeurId);
 
@@ -376,12 +358,12 @@ describe("ZupDriveComplianceChecksService", () => {
   describe("getPreviousReports", () => {
     it("devrait retourner l'historique des rapports", async () => {
       const mockReports = [
-        { id: "report-1", riskScore: 20, riskLevel: "LOW", createdAt: new Date() },
-        { id: "report-2", riskScore: 35, riskLevel: "MEDIUM", createdAt: new Date() },
-        { id: "report-3", riskScore: 55, riskLevel: "HIGH", createdAt: new Date() },
+        { id: "report-1", complianceScore: 80, riskLevel: "LOW", createdAt: new Date() },
+        { id: "report-2", complianceScore: 65, riskLevel: "MEDIUM", createdAt: new Date() },
+        { id: "report-3", complianceScore: 45, riskLevel: "HIGH", createdAt: new Date() },
       ];
 
-      jest.mocked(db.complianceReportDrive.findMany).mockResolvedValueOnce(mockReports as any);
+      jest.mocked(db.complianceReportDrive.findMany).mockResolvedValueOnce(mockReports as never);
 
       const reports = await ZupDriveComplianceChecksService.getPreviousReports(
         mockChauffeurId,
@@ -389,7 +371,7 @@ describe("ZupDriveComplianceChecksService", () => {
       );
 
       expect(reports).toHaveLength(3);
-      expect(reports[0].riskScore).toBeGreaterThan(reports[1].riskScore); // Descending
+      expect(reports[0].complianceScore).toBeGreaterThan(reports[1].complianceScore);
     });
   });
 

@@ -1,3 +1,10 @@
+import type {
+  Prisma,
+  ProviderIntegration as ProviderIntegrationRow,
+  WebhookDeliveryDrive as WebhookDeliveryRow,
+  WebhookEndpoint as WebhookEndpointRow,
+  WebhookEvent as WebhookEventRow,
+} from "@prisma/client";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
@@ -27,7 +34,7 @@ export interface WebhookEvent {
   eventType: string;
   resourceType: "DRIVER" | "DOCUMENT" | "INFRACTION" | "PAYMENT" | "ALERT";
   resourceId: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   timestamp: Date;
   delivered: boolean;
   deliveredAt?: Date;
@@ -58,7 +65,7 @@ export interface ProviderIntegration {
   apiKey: string; // encrypted
   webhookSigningKey?: string; // encrypted
   active: boolean;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,7 +131,7 @@ export class ZupDriveWebhooksService {
       active: boolean;
     }>
   ): Promise<void> {
-    const updateData: any = {};
+    const updateData: Prisma.WebhookEndpointUpdateInput = {};
     if (data.url) updateData.url = data.url;
     if (data.events) updateData.events = JSON.stringify(data.events);
     if (data.active !== undefined) updateData.active = data.active;
@@ -155,7 +162,7 @@ export class ZupDriveWebhooksService {
     eventType: string;
     resourceType: "DRIVER" | "DOCUMENT" | "INFRACTION" | "PAYMENT" | "ALERT";
     resourceId: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
   }): Promise<WebhookEvent> {
     const event = await db.webhookEvent.create({
       data: {
@@ -217,7 +224,7 @@ export class ZupDriveWebhooksService {
     const limit = Math.min(filters.limit || 50, 100);
     const offset = filters.offset || 0;
 
-    const where: any = {};
+    const where: Prisma.WebhookDeliveryDriveWhereInput = {};
     if (filters.webhookId) where.webhookId = filters.webhookId;
     if (filters.status) where.status = filters.status;
 
@@ -245,7 +252,7 @@ export class ZupDriveWebhooksService {
     type: "EMAIL" | "SMS" | "PAYMENT" | "CUSTOM";
     apiKey: string;
     webhookSigningKey?: string;
-    config?: Record<string, any>;
+    config?: Record<string, unknown>;
   }): Promise<ProviderIntegration> {
     // TODO: Encrypter les clés sensibles
     const integration = await db.providerIntegration.create({
@@ -284,10 +291,10 @@ export class ZupDriveWebhooksService {
       apiKey: string;
       webhookSigningKey: string;
       active: boolean;
-      config: Record<string, any>;
+      config: Record<string, unknown>;
     }>
   ): Promise<void> {
-    const updateData: any = {};
+    const updateData: Prisma.ProviderIntegrationUpdateInput = {};
     if (data.apiKey) updateData.apiKey = data.apiKey;
     if (data.webhookSigningKey) updateData.webhookSigningKey = data.webhookSigningKey;
     if (data.active !== undefined) updateData.active = data.active;
@@ -339,7 +346,7 @@ export class ZupDriveWebhooksService {
 
   // Formatters
 
-  private static formatWebhookEndpoint(endpoint: any): WebhookEndpoint {
+  private static formatWebhookEndpoint(endpoint: WebhookEndpointRow): WebhookEndpoint {
     return {
       id: endpoint.id,
       url: endpoint.url,
@@ -352,11 +359,11 @@ export class ZupDriveWebhooksService {
     };
   }
 
-  private static formatWebhookEvent(event: any): WebhookEvent {
+  private static formatWebhookEvent(event: WebhookEventRow): WebhookEvent {
     return {
       id: event.id,
       eventType: event.eventType,
-      resourceType: event.resourceType,
+      resourceType: event.resourceType as WebhookEvent["resourceType"],
       resourceId: event.resourceId,
       data: JSON.parse(event.data || "{}"),
       timestamp: event.timestamp,
@@ -369,12 +376,12 @@ export class ZupDriveWebhooksService {
     };
   }
 
-  private static formatWebhookDelivery(delivery: any): WebhookDelivery {
+  private static formatWebhookDelivery(delivery: WebhookDeliveryRow): WebhookDelivery {
     return {
       id: delivery.id,
       webhookId: delivery.webhookId,
       eventId: delivery.eventId,
-      status: delivery.status,
+      status: delivery.status as WebhookDelivery["status"],
       statusCode: delivery.statusCode || undefined,
       responseBody: delivery.responseBody || undefined,
       errorMessage: delivery.errorMessage || undefined,
@@ -385,11 +392,11 @@ export class ZupDriveWebhooksService {
     };
   }
 
-  private static formatProviderIntegration(integration: any): ProviderIntegration {
+  private static formatProviderIntegration(integration: ProviderIntegrationRow): ProviderIntegration {
     return {
       id: integration.id,
-      provider: integration.provider,
-      type: integration.type,
+      provider: integration.provider as ProviderIntegration["provider"],
+      type: integration.type as ProviderIntegration["type"],
       apiKey: integration.apiKey, // TODO: masquer la clé réelle
       webhookSigningKey: integration.webhookSigningKey || undefined,
       active: integration.active,

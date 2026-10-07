@@ -24,7 +24,7 @@ export async function notifyUserEvent(data: {
   title: string;
   message: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   actionUrl?: string;
 }): Promise<void> {
   try {
