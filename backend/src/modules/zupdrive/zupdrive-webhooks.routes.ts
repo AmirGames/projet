@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
+import { journaliser } from "../superowner/shared";
 import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDriveWebhooksService } from "./zupdrive-webhooks.service";
 
 const router = Router();
+
+// Webhooks et fournisseurs : réservés au superowner. Ces chemins ne sont dans aucune
+// section de permission de l'équipe ZupDrive (voir ROUTES.zupdrive), donc adminAuth les ferme.
 
 const idSchema = z.string().min(1);
 
@@ -43,6 +47,8 @@ router.post(
   async (req, res, next) => {
     try {
       const endpoint = await ZupDriveWebhooksService.createWebhookEndpoint(req.body);
+      // Jamais le secret dans le journal.
+      await journaliser(req, "ZUPDRIVE_CREATE_WEBHOOK_ENDPOINT", endpoint.id, { url: endpoint.url, events: endpoint.events });
       res.status(201).json(endpoint);
     } catch (error) {
       next(error);
@@ -91,6 +97,7 @@ router.patch(
     try {
       const endpointId = idSchema.parse(req.params.endpointId);
       await ZupDriveWebhooksService.updateWebhookEndpoint(endpointId, req.body);
+      await journaliser(req, "ZUPDRIVE_UPDATE_WEBHOOK_ENDPOINT", endpointId, req.body);
       res.json({ success: true, message: "Endpoint mis à jour" });
     } catch (error) {
       next(error);
@@ -106,6 +113,7 @@ router.delete("/admin/endpoints/:endpointId", ...adminAuth, async (req, res, nex
   try {
     const endpointId = idSchema.parse(req.params.endpointId);
     await ZupDriveWebhooksService.deleteWebhookEndpoint(endpointId);
+    await journaliser(req, "ZUPDRIVE_DELETE_WEBHOOK_ENDPOINT", endpointId);
     res.json({ success: true, message: "Endpoint supprimé" });
   } catch (error) {
     next(error);
@@ -134,6 +142,11 @@ router.post(
   async (req, res, next) => {
     try {
       const event = await ZupDriveWebhooksService.triggerWebhookEvent(req.body);
+      await journaliser(req, "ZUPDRIVE_TRIGGER_WEBHOOK_EVENT", event.id, {
+        eventType: req.body.eventType,
+        resourceType: req.body.resourceType,
+        resourceId: req.body.resourceId,
+      });
       res.status(201).json(event);
     } catch (error) {
       next(error);
@@ -188,6 +201,8 @@ router.post(
   async (req, res, next) => {
     try {
       const integration = await ZupDriveWebhooksService.createProviderIntegration(req.body);
+      // Ni clé d'API ni clé de signature dans le journal.
+      await journaliser(req, "ZUPDRIVE_CREATE_PROVIDER_INTEGRATION", integration.id, { provider: integration.provider, type: integration.type });
       res.status(201).json(integration);
     } catch (error) {
       next(error);
@@ -237,6 +252,12 @@ router.patch(
     try {
       const integrationId = idSchema.parse(req.params.integrationId);
       await ZupDriveWebhooksService.updateProviderIntegration(integrationId, req.body);
+      await journaliser(req, "ZUPDRIVE_UPDATE_PROVIDER_INTEGRATION", integrationId, {
+        apiKeyChangee: !!req.body.apiKey,
+        webhookSigningKeyChangee: !!req.body.webhookSigningKey,
+        active: req.body.active,
+        configChangee: !!req.body.config,
+      });
       res.json({ success: true, message: "Intégration mise à jour" });
     } catch (error) {
       next(error);

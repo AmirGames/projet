@@ -55,6 +55,7 @@ export const ROUTES_PUBLIQUES: Record<string, string> = {
   "GET /api/drivers/^\\/documents\\/file\\/(.+)$/": "ancienne adresse des pièces : même contrôle que /api/files",
 
   // ── Webhooks
+  "POST /api/zupdrive/notifications/webhooks/status": "accusé du fournisseur d'envoi : HMAC-SHA256 du corps brut avec horodatage (5 min), 503 sans secret, statut qui ne fait qu'avancer",
   "POST /api/payments/webhook": "signature Stripe vérifiée sur le corps brut, événements dédupliqués",
 
   // ── Vitrine, catalogue et recherche

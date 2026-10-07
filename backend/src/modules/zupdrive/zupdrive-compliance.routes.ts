@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
-import { adminAuth, validateRequest } from "./zupdrive-garde";
+import { journaliser } from "../superowner/shared";
+import { adminAuthSection, validateRequest } from "./zupdrive-garde";
 import { ZupDriveComplianceService } from "./zupdrive-compliance.service";
 
 const router = Router();
+
+/** Conformité des dossiers chauffeurs : section « chauffeurs » de la plateforme DRIVE. */
+const adminAuth = adminAuthSection("chauffeurs");
 
 const historiqueAuditQuery = z.object({
   resourceId: z.string().optional(),
@@ -29,36 +33,11 @@ const rapportsQuery = z.object({
  * Audit Logs
  */
 
-/**
- * POST /api/zupdrive/admin/compliance/audit-logs
- * Créer une entrée d'audit (utilisé automatiquement par les services)
+/*
+ * Pas de POST /admin/audit-logs : l'acteur venait du corps, n'importe quel membre de
+ * l'équipe pouvait donc écrire une entrée au nom d'un autre. Les actions d'administration
+ * s'écrivent par journaliser() (SystemAuditLog), avec l'identité du jeton.
  */
-router.post(
-  "/admin/audit-logs",
-  ...adminAuth,
-  validateRequest({
-    body: z.object({
-      action: z.string().min(3).max(200),
-      actorId: z.string(),
-      actorType: z.enum(["ADMIN", "SYSTEM", "DRIVER", "PASSAGER"]),
-      resourceId: z.string(),
-      resourceType: z.enum(["DRIVER", "DOCUMENT", "INFRACTION", "ALERT", "SETTING", "PAYMENT"]),
-      oldValue: z.record(z.string(), z.unknown()).optional(),
-      newValue: z.record(z.string(), z.unknown()).optional(),
-      reason: z.string().optional(),
-      ipAddress: z.string().optional(),
-      userAgent: z.string().optional(),
-    }),
-  }),
-  async (req, res, next) => {
-    try {
-      const log = await ZupDriveComplianceService.logAction(req.body);
-      res.status(201).json(log);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
 
 /**
  * GET /api/zupdrive/admin/compliance/audit-logs
@@ -110,6 +89,7 @@ router.post(
         ...data,
         expiresAt: new Date(expiresAt),
       });
+      await journaliser(req, "ZUPDRIVE_CREATE_COMPLIANCE_CHECK", check.id, { chauffeurId: data.chauffeurId, type: data.type });
       res.status(201).json(check);
     } catch (error) {
       next(error);
@@ -142,15 +122,16 @@ router.patch(
     body: z.object({
       status: z.enum(["IN_PROGRESS", "PASSED", "FAILED", "MANUAL_REVIEW_NEEDED"]),
       findings: z.array(z.string()).optional(),
-      completedBy: z.string().optional(),
       notes: z.string().optional(),
     }),
   }),
   async (req, res, next) => {
     try {
       const checkId = String(req.params.checkId);
-      const { status, findings, completedBy, notes } = req.body;
-      await ZupDriveComplianceService.updateComplianceCheckStatus(checkId, status, findings, completedBy, notes);
+      const { status, findings, notes } = req.body;
+      // Qui a clos le contrôle : le compte du jeton, jamais une valeur du corps.
+      await ZupDriveComplianceService.updateComplianceCheckStatus(checkId, status, findings, req.userId, notes);
+      await journaliser(req, "ZUPDRIVE_UPDATE_COMPLIANCE_CHECK", checkId, { apres: status, findings });
       res.json({ success: true, message: "Compliance check mis à jour" });
     } catch (error) {
       next(error);
@@ -158,63 +139,12 @@ router.patch(
   }
 );
 
-/**
- * Document Verification Workflows
+/*
+ * Pas de routes « document-verification » : le workflow vit dans DocumentVerificationWorkflow,
+ * une table en doublon de DocumentChauffeurDrive (la référence des pièces). Approuver un
+ * workflow n'approuvait aucune pièce réelle. La validation des pièces passe par
+ * zupdrive-document-validation et chauffeur.admin.routes.
  */
-
-/**
- * POST /api/zupdrive/admin/compliance/document-verification
- * Initier un workflow de vérification de document
- */
-router.post(
-  "/admin/document-verification",
-  ...adminAuth,
-  validateRequest({
-    body: z.object({
-      chauffeurId: z.string(),
-      documentType: z.enum(["PERMIS", "ASSURANCE", "INSPECTION", "IDENTITE"]),
-    }),
-  }),
-  async (req, res, next) => {
-    try {
-      const workflow = await ZupDriveComplianceService.initiateDocumentVerification(req.body);
-      res.status(201).json(workflow);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-/**
- * PATCH /api/zupdrive/admin/compliance/document-verification/:workflowId
- * Mettre à jour le statut d'un workflow de vérification
- */
-router.patch(
-  "/admin/document-verification/:workflowId",
-  ...adminAuth,
-  validateRequest({
-    body: z.object({
-      status: z.enum(["UPLOADED", "UNDER_REVIEW", "APPROVED", "REJECTED", "EXPIRED"]),
-      reviewedBy: z.string().optional(),
-      rejectionReason: z.string().optional(),
-    }),
-  }),
-  async (req, res, next) => {
-    try {
-      const workflowId = String(req.params.workflowId);
-      const { status, reviewedBy, rejectionReason } = req.body;
-      await ZupDriveComplianceService.updateDocumentVerificationStatus(
-        workflowId,
-        status,
-        reviewedBy,
-        rejectionReason
-      );
-      res.json({ success: true, message: "Document verification mis à jour" });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
 
 /**
  * GET /api/zupdrive/admin/compliance/expiring-documents
@@ -249,12 +179,15 @@ router.post(
   validateRequest({
     body: z.object({
       reportType: z.enum(["MONTHLY", "QUARTERLY", "ANNUAL", "AD_HOC"]),
-      generatedBy: z.string(),
     }),
   }),
   async (req, res, next) => {
     try {
-      const report = await ZupDriveComplianceService.generateComplianceReport(req.body);
+      const report = await ZupDriveComplianceService.generateComplianceReport({
+        reportType: req.body.reportType,
+        generatedBy: req.userId as string,
+      });
+      await journaliser(req, "ZUPDRIVE_GENERATE_COMPLIANCE_REPORT", report.id, { reportType: req.body.reportType });
       res.status(201).json(report);
     } catch (error) {
       next(error);

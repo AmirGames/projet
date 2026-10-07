@@ -8,11 +8,20 @@
 import type { Prisma } from "@prisma/client";
 import { Router, Request, Response, NextFunction } from "express";
 import { ZupDriveMonitoringService } from "./zupdrive-monitoring.service";
-import { UnifiedRolesService } from "../auth/unified-roles.service";
+import { z } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
 import { db } from "../../services/db";
+import { adminAuthSection } from "./zupdrive-garde";
 
 const router = Router();
+
+/** Administration : la permission de l'équipe (section de la plateforme DRIVE), pas un rôle codé en dur. */
+const adminCourses = adminAuthSection("courses-drive");
+const adminChauffeurs = adminAuthSection("chauffeurs");
+
+const limiteQuery = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) });
+const alertesQuery = z.object({ type: z.enum(["all", "compliance", "rating", "suspension"]).default("all") });
+const idSchema = z.string().min(1).max(64);
 
 // ============================================================================
 // DRIVER NOTIFICATION ENDPOINTS
@@ -27,7 +36,7 @@ router.get(
   authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const limit = Math.min(parseInt((req.query.limit as string) || "20"), 100);
+      const { limit } = limiteQuery.parse(req.query);
 
       const notifications = await ZupDriveMonitoringService.getUnreadNotifications(
         req.userId!,
@@ -56,7 +65,7 @@ router.post(
   authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const notificationId = String(req.params.id ?? "");
+      const notificationId = idSchema.parse(req.params.id);
 
       await ZupDriveMonitoringService.markAsRead(notificationId, req.userId!);
 
@@ -173,45 +182,14 @@ router.get(
 );
 
 /**
- * Subscribe to real-time updates (WebSocket upgrade)
- * GET /api/zupdrive/ws
- * Headers: Authorization: Bearer {token}
- */
-router.get(
-  "/ws",
-  authMiddleware,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // WebSocket upgrade handler
-      res.json({
-        success: true,
-        message: "WebSocket endpoint - upgrade connection",
-        wsUrl: `wss://${req.hostname}/api/zupdrive/ws?token=${req.headers.authorization?.split(" ")[1]}`,
-      });
-    } catch (error) {
-      return next(error);
-    }
-  }
-);
-
-// ============================================================================
-// ADMIN MONITORING ENDPOINTS
-// ============================================================================
-
-/**
  * Admin: Get real-time dashboard
  * GET /api/zupdrive/admin/dashboard
  */
 router.get(
   "/admin/dashboard",
-  authMiddleware,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminCourses,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       const dashboard = await ZupDriveMonitoringService.getAdminDashboard();
 
       return res.json({
@@ -230,15 +208,10 @@ router.get(
  */
 router.get(
   "/admin/driver/:chauffeurId/metrics",
-  authMiddleware,
+  ...adminCourses,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
-      const chauffeurId = String(req.params.chauffeurId ?? "");
+      const chauffeurId = idSchema.parse(req.params.chauffeurId);
       const metrics = await ZupDriveMonitoringService.getDriverMetrics(chauffeurId);
 
       return res.json({
@@ -257,15 +230,10 @@ router.get(
  */
 router.get(
   "/admin/alerts",
-  authMiddleware,
+  ...adminChauffeurs,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
-      const alertType = (req.query.type as string) || "all";
+      const { type: alertType } = alertesQuery.parse(req.query);
 
       let whereClause: Prisma.ChauffeurDriveWhereInput = {};
       if (alertType === "compliance") {
@@ -326,14 +294,9 @@ router.get(
  */
 router.get(
   "/admin/compliance-alerts",
-  authMiddleware,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminChauffeurs,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       const criticalAlerts = await db.complianceReportDrive.findMany({
         where: {
           riskLevel: "CRITICAL",
@@ -372,14 +335,9 @@ router.get(
  */
 router.get(
   "/admin/document-expiration-alerts",
-  authMiddleware,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminChauffeurs,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       // Find documents expiring within 30 days
       const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
@@ -425,14 +383,9 @@ router.get(
  */
 router.get(
   "/admin/payout-failure-alerts",
-  authMiddleware,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminCourses,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       const failedPayouts = await db.driverPayoutDrive.findMany({
         where: {
           status: "FAILED",
@@ -471,14 +424,9 @@ router.get(
  */
 router.get(
   "/admin/health",
-  authMiddleware,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminCourses,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       const [
         driverCount,
         activeCourses,

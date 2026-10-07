@@ -135,6 +135,50 @@ export class ZupDriveSupportService {
   }
 
   /**
+   * Les tickets d'un compte, les plus récents d'abord. Le compte vient du jeton :
+   * on ne lit jamais que ce qu'il a lui-même ouvert.
+   */
+  static async listMyTickets(userId: string, limit = 50, offset = 0) {
+    const where = { reporterId: userId };
+    const [tickets, total] = await Promise.all([
+      db.supportTicket.findMany({ where, orderBy: { createdAt: "desc" }, take: limit, skip: offset }),
+      db.supportTicket.count({ where }),
+    ]);
+    return { tickets: tickets.map((t) => this.formatTicket(t)), total };
+  }
+
+  /** Un ticket du compte avec ses messages ; celui d'un autre compte est introuvable. */
+  static async getMyTicket(userId: string, ticketId: string) {
+    const ticket = await db.supportTicket.findFirst({ where: { id: ticketId, reporterId: userId } });
+    if (!ticket) throw new ApiError(404, "Ticket non trouvé");
+
+    const messages = await db.supportMessage.findMany({ where: { ticketId }, orderBy: { createdAt: "asc" } });
+    return { ...this.formatTicket(ticket), messages: messages.map((m) => this.formatMessage(m)) };
+  }
+
+  /**
+   * Ajouter un message à son propre ticket. Le ticket d'un autre compte est
+   * introuvable ; l'auteur est le compte du jeton, avec le type du ticket.
+   */
+  static async addReporterMessage(data: {
+    userId: string;
+    ticketId: string;
+    message: string;
+    attachmentUrl?: string;
+  }): Promise<SupportMessage> {
+    const ticket = await db.supportTicket.findFirst({ where: { id: data.ticketId, reporterId: data.userId } });
+    if (!ticket) throw new ApiError(404, "Ticket non trouvé");
+
+    return this.addMessage({
+      ticketId: ticket.id,
+      authorId: data.userId,
+      authorType: ticket.reporterType as SupportMessage["authorType"],
+      message: data.message,
+      attachmentUrl: data.attachmentUrl,
+    });
+  }
+
+  /**
    * Assigner un ticket à un agent de support.
    */
   static async assignTicket(ticketId: string, agentId: string): Promise<void> {

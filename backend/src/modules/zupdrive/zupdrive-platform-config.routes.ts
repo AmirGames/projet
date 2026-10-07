@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { journaliser } from "../superowner/shared";
 import { adminAuth, validateRequest } from "./zupdrive-garde";
 import { ZupDrivePlatformConfigService } from "./zupdrive-platform-config.service";
 
@@ -29,6 +30,7 @@ router.post(
   async (req, res, next) => {
     try {
       const config = await ZupDrivePlatformConfigService.upsertCommissionConfig(req.body);
+      await journaliser(req, "ZUPDRIVE_UPSERT_COMMISSION_CONFIG", config.id, req.body);
       res.status(201).json(config);
     } catch (error) {
       next(error);
@@ -84,6 +86,7 @@ router.post(
   async (req, res, next) => {
     try {
       const config = await ZupDrivePlatformConfigService.upsertRegionalConfig(req.body);
+      await journaliser(req, "ZUPDRIVE_UPSERT_REGIONAL_CONFIG", config.id, req.body);
       res.status(201).json(config);
     } catch (error) {
       next(error);
@@ -153,6 +156,7 @@ router.post(
   async (req, res, next) => {
     try {
       const rule = await ZupDrivePlatformConfigService.upsertPricingRule(req.body);
+      await journaliser(req, "ZUPDRIVE_UPSERT_PRICING_RULE", rule.id, req.body);
       res.status(201).json(rule);
     } catch (error) {
       next(error);
@@ -206,6 +210,8 @@ router.post(
     try {
       const { key, value, type, description } = req.body;
       const setting = await ZupDrivePlatformConfigService.setSetting(key, value, type, description);
+      // La valeur n'est pas journalisée : un paramètre peut être sensible.
+      await journaliser(req, "ZUPDRIVE_SET_PLATFORM_SETTING", setting.id, { key, type, description });
       res.status(201).json(setting);
     } catch (error) {
       next(error);

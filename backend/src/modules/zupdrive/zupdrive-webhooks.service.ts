@@ -5,21 +5,29 @@ import type {
   WebhookEndpoint as WebhookEndpointRow,
   WebhookEvent as WebhookEventRow,
 } from "@prisma/client";
+import { randomBytes } from "node:crypto";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
+import { encrypt } from "../privacy/crypto";
+import { destinationWebhook } from "../webhooks/webhook-destination";
 
 /**
  * Webhooks & Integrations pour ZupDrive.
  * Webhooks outbound, retry logic, provider integrations.
  */
 
+/** Contextes de chiffrement (AAD) : une valeur chiffrée pour un usage ne se déchiffre pas pour un autre. */
+const CONTEXTE_SECRET_ENDPOINT = "zupdrive:webhook-endpoint:secret";
+const CONTEXTE_CLE_FOURNISSEUR = "zupdrive:provider-integration:key";
+
 export interface WebhookEndpoint {
   id: string;
   url: string;
   events: string[]; // DRIVER_SUSPENDED, INFRACTION_REPORTED, DOCUMENT_EXPIRED, etc
   active: boolean;
-  secret: string; // Pour signature HMAC
+  /** Secret HMAC : renvoyé une seule fois, à la création ; stocké chiffré, jamais relisible par l'API. */
+  secret?: string;
   retryPolicy: {
     maxRetries: number;
     initialDelayMs: number;
@@ -62,8 +70,9 @@ export interface ProviderIntegration {
   id: string;
   provider: "SENDGRID" | "TWILIO" | "MAILGUN" | "AWS_SES" | "STRIPE" | "CUSTOM";
   type: "EMAIL" | "SMS" | "PAYMENT" | "CUSTOM";
-  apiKey: string; // encrypted
-  webhookSigningKey?: string; // encrypted
+  /** Les clés sont stockées chiffrées et ne ressortent jamais ; l'API dit seulement si elles existent. */
+  apiKeyConfigured: boolean;
+  webhookSigningKeyConfigured: boolean;
   active: boolean;
   config: Record<string, unknown>;
   createdAt: Date;
@@ -81,12 +90,8 @@ export class ZupDriveWebhooksService {
     initialDelayMs?: number;
     backoffMultiplier?: number;
   }): Promise<WebhookEndpoint> {
-    // Valider l'URL
-    try {
-      new URL(data.url);
-    } catch {
-      throw new ApiError(400, "URL invalide");
-    }
+    // HTTPS public uniquement (refuse adresses privées, boucle locale, métadonnées cloud).
+    await destinationWebhook(data.url);
 
     const secret = this.generateWebhookSecret();
 
@@ -94,7 +99,7 @@ export class ZupDriveWebhooksService {
       data: {
         url: data.url,
         events: JSON.stringify(data.events),
-        secret,
+        secret: encrypt(secret, CONTEXTE_SECRET_ENDPOINT),
         active: true,
         retryPolicy: JSON.stringify({
           maxRetries: data.maxRetries || 5,
@@ -104,8 +109,9 @@ export class ZupDriveWebhooksService {
       },
     });
 
-    logger.info(`Webhook endpoint created: ${data.url}`);
-    return this.formatWebhookEndpoint(endpoint);
+    logger.info(`Webhook endpoint created: ${endpoint.id}`);
+    // Seule occasion de lire le secret : à noter par l'équipe, il n'est plus relisible ensuite.
+    return { ...this.formatWebhookEndpoint(endpoint), secret };
   }
 
   /**
@@ -131,6 +137,10 @@ export class ZupDriveWebhooksService {
       active: boolean;
     }>
   ): Promise<void> {
+    const existant = await db.webhookEndpoint.findUnique({ where: { id: endpointId }, select: { id: true } });
+    if (!existant) throw new ApiError(404, "Endpoint introuvable", "WEBHOOK_ENDPOINT_NOT_FOUND");
+    if (data.url) await destinationWebhook(data.url);
+
     const updateData: Prisma.WebhookEndpointUpdateInput = {};
     if (data.url) updateData.url = data.url;
     if (data.events) updateData.events = JSON.stringify(data.events);
@@ -148,6 +158,8 @@ export class ZupDriveWebhooksService {
    * Supprimer un endpoint de webhook.
    */
   static async deleteWebhookEndpoint(endpointId: string): Promise<void> {
+    const existant = await db.webhookEndpoint.findUnique({ where: { id: endpointId }, select: { id: true } });
+    if (!existant) throw new ApiError(404, "Endpoint introuvable", "WEBHOOK_ENDPOINT_NOT_FOUND");
     await db.webhookEndpoint.delete({
       where: { id: endpointId },
     });
@@ -254,13 +266,12 @@ export class ZupDriveWebhooksService {
     webhookSigningKey?: string;
     config?: Record<string, unknown>;
   }): Promise<ProviderIntegration> {
-    // TODO: Encrypter les clés sensibles
     const integration = await db.providerIntegration.create({
       data: {
         provider: data.provider,
         type: data.type,
-        apiKey: data.apiKey,
-        webhookSigningKey: data.webhookSigningKey,
+        apiKey: encrypt(data.apiKey, CONTEXTE_CLE_FOURNISSEUR),
+        webhookSigningKey: data.webhookSigningKey ? encrypt(data.webhookSigningKey, CONTEXTE_CLE_FOURNISSEUR) : undefined,
         active: true,
         config: JSON.stringify(data.config || {}),
       },
@@ -294,9 +305,12 @@ export class ZupDriveWebhooksService {
       config: Record<string, unknown>;
     }>
   ): Promise<void> {
+    const existante = await db.providerIntegration.findUnique({ where: { id: integrationId }, select: { id: true } });
+    if (!existante) throw new ApiError(404, "Intégration introuvable", "PROVIDER_NOT_FOUND");
+
     const updateData: Prisma.ProviderIntegrationUpdateInput = {};
-    if (data.apiKey) updateData.apiKey = data.apiKey;
-    if (data.webhookSigningKey) updateData.webhookSigningKey = data.webhookSigningKey;
+    if (data.apiKey) updateData.apiKey = encrypt(data.apiKey, CONTEXTE_CLE_FOURNISSEUR);
+    if (data.webhookSigningKey) updateData.webhookSigningKey = encrypt(data.webhookSigningKey, CONTEXTE_CLE_FOURNISSEUR);
     if (data.active !== undefined) updateData.active = data.active;
     if (data.config) updateData.config = JSON.stringify(data.config);
 
@@ -341,7 +355,7 @@ export class ZupDriveWebhooksService {
    * Générer un secret de webhook.
    */
   private static generateWebhookSecret(): string {
-    return Array.from({ length: 32 }, () => Math.random().toString(36).charAt(2)).join("");
+    return randomBytes(32).toString("hex");
   }
 
   // Formatters
@@ -352,7 +366,6 @@ export class ZupDriveWebhooksService {
       url: endpoint.url,
       events: JSON.parse(endpoint.events || "[]"),
       active: endpoint.active,
-      secret: endpoint.secret,
       retryPolicy: JSON.parse(endpoint.retryPolicy || "{}"),
       createdAt: endpoint.createdAt,
       updatedAt: endpoint.updatedAt,
@@ -397,8 +410,8 @@ export class ZupDriveWebhooksService {
       id: integration.id,
       provider: integration.provider as ProviderIntegration["provider"],
       type: integration.type as ProviderIntegration["type"],
-      apiKey: integration.apiKey, // TODO: masquer la clé réelle
-      webhookSigningKey: integration.webhookSigningKey || undefined,
+      apiKeyConfigured: !!integration.apiKey,
+      webhookSigningKeyConfigured: !!integration.webhookSigningKey,
       active: integration.active,
       config: JSON.parse(integration.config || "{}"),
       createdAt: integration.createdAt,

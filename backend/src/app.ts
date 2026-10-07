@@ -15,7 +15,7 @@ import { compteDemo } from "./modules/merchants/compte-demo.middleware";
 import { cloisonnement } from "./modules/auth/cloisonnement.middleware";
 import { diffusionModifications } from "./modules/realtime/diffusion.middleware";
 import { mesurerRequetes } from "./modules/monitoring/surveillance.middleware";
-import { limiterCadence, limiterStripeWebhook, limiterApiPublique, limiterAdresses, limiterCartes } from "./middleware/throttle";
+import { limiterCadence, limiterStripeWebhook, limiterApiPublique, limiterAdresses, limiterCartes, limiterWebhookNotificationsDrive } from "./middleware/throttle";
 import { Surveillance } from "./modules/monitoring/surveillance.service";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import authRouter from "./modules/auth/auth.routes";
@@ -50,13 +50,8 @@ import pagesLegalesRouter from "./modules/legal/pages-legales.routes";
 import clientRouter from "./modules/customers/client.routes";
 import mapsRouter from "./modules/maps/maps.routes";
 import driversRouter from "./modules/drivers/drivers.routes";
-import zupdriveChauffeurRouter from "./modules/zupdrive/chauffeur.routes";
-import zupdriveAdminRouter from "./modules/zupdrive/chauffeur.admin.routes";
-import zupdriveCoursesRouter from "./modules/zupdrive/course-drive.routes";
-import zupdriveSocieteRouter from "./modules/zupdrive/societe.routes";
-import zupdrivePaymentRouter from "./modules/zupdrive/zupdrive-payment.routes";
-import zupdriveRealtimeRouter from "./modules/zupdrive/zupdrive-realtime.routes";
-import zupdriveAdminDashboardRouter from "./modules/zupdrive/zupdrive-admin-dashboard.routes";
+import { monterZupDrive } from "./modules/zupdrive/zupdrive-montage";
+import { webhookStatutNotification as webhookNotificationsDrive } from "./modules/zupdrive/zupdrive-notifications-webhook";
 import notificationsApiRouter from "./modules/notifications/notifications-api.routes";
 import paymentMethodsApiRouter from "./modules/payments/payment-methods-api.routes";
 import supportRouter from "./modules/support/support.routes";
@@ -116,6 +111,15 @@ export function createApp(): Express {
   // objet il ne se vérifie plus. Avant aussi la maintenance et les verrous de
   // compte : un encaissement doit être noté quoi qu'il arrive au site.
   app.post("/api/payments/webhook", limiterStripeWebhook, express.raw({ type: "application/json" }), stripeWebhookHandler);
+
+  // ===== Webhook d'accusés de notification ZupDrive =====
+  // Même raison que Stripe : la signature HMAC porte sur le corps brut.
+  app.post(
+    "/api/zupdrive/notifications/webhooks/status",
+    limiterWebhookNotificationsDrive,
+    express.raw({ type: "application/json" }),
+    webhookNotificationsDrive
+  );
 
   // ===== Body parsing =====
   app.use(lecteursDeCorps);
@@ -274,13 +278,7 @@ export function createApp(): Express {
   app.use("/api/client", clientRouter);
   app.use("/api/maps", limiterCartes, mapsRouter);
   app.use("/api/drivers", driversRouter);
-  app.use("/api/zupdrive/chauffeur", zupdriveChauffeurRouter);
-  app.use("/api/zupdrive/admin", zupdriveAdminRouter);
-  app.use("/api/zupdrive/courses", zupdriveCoursesRouter);
-  app.use("/api/zupdrive/societe", zupdriveSocieteRouter);
-  app.use("/api/zupdrive/payment", zupdrivePaymentRouter);
-  app.use("/api/zupdrive/realtime", zupdriveRealtimeRouter);
-  app.use("/api/zupdrive/admin/dashboard", zupdriveAdminDashboardRouter);
+  monterZupDrive(app);
   app.use("/api/notifications", notificationsApiRouter);
   app.use("/api/support", supportRouter);
   app.use("/api/assistant", assistantRouter);

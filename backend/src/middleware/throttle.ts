@@ -146,6 +146,12 @@ export const limiterStripeWebhook = limiterCadence({
   cle: (req) => req.ip || "inconnue",
 });
 
+/** Accusés de notification ZupDrive : budget propre, pour ne pas entamer celui du webhook Stripe. */
+export const limiterWebhookNotificationsDrive = limiterCadence({
+  nom: "zupdrive-notifications-webhook", max: 300, fenetreMs: 60_000,
+  cle: (req) => req.ip || "inconnue",
+});
+
 /** Budget commun aux appels publics coûteux, y compris les variantes d'URL. */
 export const limiterApiPublique = limiterCadence({
   nom: "public-api", max: 120, fenetreMs: 60_000,

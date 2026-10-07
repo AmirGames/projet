@@ -3,8 +3,20 @@ import { ZodTypeAny } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
 import { exigerPermission } from "../auth/permissions-plateforme.service";
 
-/** Accès équipe ZupDrive : identité vérifiée, puis permission de la plateforme DRIVE. */
+/**
+ * Accès équipe ZupDrive : identité vérifiée, puis permission de la plateforme DRIVE.
+ * Sans section, seuls les chemins listés dans ROUTES.zupdrive sont ouverts à l'équipe :
+ * tout autre chemin reste réservé au superowner (voir exigerPermission).
+ */
 export const adminAuth: RequestHandler[] = [authMiddleware, exigerPermission("zupdrive", "DRIVE")];
+
+/** Sections de l'équipe ZupDrive (SECTIONS de permissions-plateforme.service). */
+export type SectionDrive = "chauffeurs" | "courses-drive";
+
+/** Comme adminAuth, mais le droit demandé est celui d'une section nommée (lecture sur GET, écriture sinon). */
+export function adminAuthSection(section: SectionDrive): RequestHandler[] {
+  return [authMiddleware, exigerPermission("zupdrive", "DRIVE", section)];
+}
 
 interface Schemas {
   body?: ZodTypeAny;

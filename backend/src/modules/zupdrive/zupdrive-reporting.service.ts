@@ -241,9 +241,13 @@ export class ZupDriveReportingService {
 
     const commissionsAmount = commissions._sum.platformCommissionCentimes ?? 0;
     const payoutsAmount = payouts._sum.amountCentimes ?? 0;
-    const platformFees = Math.round(totalRevenue * 0.05); // 5% fee
+    // Frais de paiement : non enregistrés dans le schéma (frais Stripe réels), donc 0 plutôt qu'un taux inventé.
+    const platformFees = 0;
 
-    const netProfit = totalRevenue - commissionsAmount - payoutsAmount - refundsAmount - platformFees;
+    // Marge de la plateforme = ses commissions, moins les frais et les remboursements. Les versements aux
+    // chauffeurs ne sont pas une charge : ils sont la part du prix qui n'est pas la commission (revenu =
+    // commission + part chauffeur). L'ancienne formule revenu − commissions − versements retirait cette part deux fois.
+    const netProfit = commissionsAmount - refundsAmount - platformFees;
     const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
     // Payment methods (placeholder)
@@ -441,6 +445,9 @@ export class ZupDriveReportingService {
       active: boolean;
     }>
   ): Promise<void> {
+    const existant = await db.scheduledReport.findUnique({ where: { id: reportId }, select: { id: true } });
+    if (!existant) throw new ApiError(404, "Rapport programmé introuvable", "SCHEDULED_REPORT_NOT_FOUND");
+
     const { recipients, ...autres } = data;
     const updateData: Prisma.ScheduledReportUpdateInput = { ...autres };
     if (recipients) {

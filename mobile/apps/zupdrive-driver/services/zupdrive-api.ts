@@ -119,10 +119,9 @@ class ZupDriveAPI {
   /**
    * Récupérer les tickets du chauffeur
    */
-  async getDriverTickets(driverId: string): Promise<SupportTicket[]> {
-    const response = await this.api.get('/api/zupdrive/admin/support/tickets', {
-      params: { reporterId: driverId },
-    });
+  async getDriverTickets(_driverId?: string): Promise<SupportTicket[]> {
+    // Le serveur ne renvoie que les tickets du compte du jeton.
+    const response = await this.api.get('/api/zupdrive/support/tickets');
     return response.data.tickets || [];
   }
 
@@ -141,7 +140,7 @@ class ZupDriveAPI {
    * Récupérer les détails complets du ticket (avec messages)
    */
   async getTicketDetail(ticketId: string): Promise<any> {
-    const response = await this.api.get(`/api/zupdrive/admin/support/tickets/${ticketId}`);
+    const response = await this.api.get(`/api/zupdrive/support/tickets/${ticketId}`);
     return response.data;
   }
 
