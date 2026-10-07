@@ -13,6 +13,7 @@ export default [
       ...Object.fromEntries(
         Object.entries(tsPlugin.configs["recommended"].rules ?? {}).map(([k, v]) => [k, v === "error" || v === 2 ? "warn" : v])
       ),
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
   // Les tests simulent la base, Express et Stripe : leurs doublures sont

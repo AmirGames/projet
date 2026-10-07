@@ -411,7 +411,7 @@ router.get("/courses", async (req: Request, res: Response, next: NextFunction) =
     ]);
     res.json({
       success: true,
-      data: courses.map(({ cleIdempotence: _cle, ...course }) => course),
+      data: courses.map(c => Object.fromEntries(Object.entries(c).filter(([k]) => k !== 'cleIdempotence'))),
       pagination: { total, limit: query.limit, offset: query.offset },
     });
   } catch (err) {

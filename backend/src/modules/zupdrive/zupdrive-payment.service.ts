@@ -131,7 +131,7 @@ export class ZupDrivePaymentService {
         status: "PENDING",
         periodStart,
         periodEnd,
-        ibanSnapshot: payment.course.chauffeur ? await this.getChauffeurIban(payment.course.chauffeur.id) : null,
+        ibanSnapshot: payment.course.chauffeur ? await this.getChauffeurIban() : null,
       },
     });
 
@@ -348,7 +348,7 @@ export class ZupDrivePaymentService {
     return new Date(d.setDate(diff));
   }
 
-  private static async getChauffeurIban(_driverId: string): Promise<string | null> {
+  private static async getChauffeurIban(): Promise<string | null> {
     // TODO: Récupérer l'IBAN depuis le User ou une table de bankAccounts
     return null;
   }
