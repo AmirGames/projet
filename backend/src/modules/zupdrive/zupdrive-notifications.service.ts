@@ -3,6 +3,9 @@ import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
 
+/** Ordre des statuts d'une notification : un accusé ne peut que faire avancer. */
+const RANG_STATUT: Record<string, number> = { PENDING: 0, SENT: 1, FAILED: 2, BOUNCED: 3 };
+
 /**
  * Système de notifications pour ZupDrive.
  * Email, SMS, push notifications avec templates configurables et historique.
@@ -261,16 +264,18 @@ export class ZupDriveNotificationsService {
   }
 
   /**
-   * Marquer une alerte comme lue.
+   * Marquer une alerte comme lue — uniquement si elle appartient à ce chauffeur.
+   * Une alerte d'un autre chauffeur est traitée comme inexistante.
    */
-  static async markAlertAsRead(alertId: string): Promise<void> {
-    await db.notificationAlert.update({
-      where: { id: alertId },
+  static async markAlertAsRead(alertId: string, chauffeurId: string): Promise<void> {
+    const { count } = await db.notificationAlert.updateMany({
+      where: { id: alertId, chauffeurId },
       data: {
         read: true,
         readAt: new Date(),
       },
     });
+    if (count === 0) throw new ApiError(404, "Alerte introuvable", "ALERT_NOT_FOUND");
 
     logger.info(`Alert ${alertId} marked as read`);
   }
@@ -362,13 +367,28 @@ export class ZupDriveNotificationsService {
 
   /**
    * Mettre à jour le statut d'une notification (pour webhooks de providers).
+   *
+   * Idempotent et résistant au désordre : un statut ne peut qu'avancer
+   * (PENDING < SENT < FAILED < BOUNCED). Un doublon ou un accusé arrivé en
+   * retard (SENT après un BOUNCED) est ignoré, sans erreur, pour que le
+   * fournisseur cesse de rejouer.
    */
   static async updateNotificationStatus(
     notificationLogId: string,
     status: "SENT" | "FAILED" | "BOUNCED",
     errorMessage?: string
-  ): Promise<void> {
-    const data: Prisma.NotificationLogUpdateInput = { status };
+  ): Promise<{ applied: boolean }> {
+    const courant = await db.notificationLog.findUnique({
+      where: { id: notificationLogId },
+      select: { status: true },
+    });
+    if (!courant) throw new ApiError(404, "Notification introuvable", "NOTIFICATION_NOT_FOUND");
+    if ((RANG_STATUT[status] ?? 0) <= (RANG_STATUT[courant.status] ?? 0)) {
+      logger.info(`Notification ${notificationLogId} : accusé ${status} ignoré (déjà ${courant.status})`);
+      return { applied: false };
+    }
+
+    const data: Prisma.NotificationLogUpdateManyMutationInput = { status };
     if (status === "FAILED" || status === "BOUNCED") {
       data.failedAt = new Date();
       data.errorMessage = errorMessage;
@@ -376,12 +396,14 @@ export class ZupDriveNotificationsService {
       data.sentAt = new Date();
     }
 
-    await db.notificationLog.update({
-      where: { id: notificationLogId },
+    // Garde contre un accusé concurrent : la mise à jour ne passe que si le statut n'a pas bougé.
+    const { count } = await db.notificationLog.updateMany({
+      where: { id: notificationLogId, status: courant.status },
       data,
     });
 
     logger.info(`Notification ${notificationLogId} status updated to ${status}`);
+    return { applied: count === 1 };
   }
 
   // Formatters

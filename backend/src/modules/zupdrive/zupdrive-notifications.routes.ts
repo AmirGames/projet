@@ -1,9 +1,23 @@
 import { Router } from "express";
 import { z } from "zod";
-import { adminAuth, validateRequest } from "./zupdrive-garde";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/api-error";
+import { authMiddleware } from "../auth/auth.middleware";
+import { journaliser } from "../superowner/shared";
+import { adminAuthSection, validateRequest } from "./zupdrive-garde";
 import { ZupDriveNotificationsService } from "./zupdrive-notifications.service";
 
 const router = Router();
+
+/** Notifications et alertes : section « courses-drive » de la plateforme DRIVE. */
+const adminAuth = adminAuthSection("courses-drive");
+
+/** Le dossier chauffeur du compte connecté : l'identité vient du jeton, jamais de la requête. */
+async function chauffeurDuJeton(userId: string | undefined): Promise<string> {
+  const chauffeur = userId ? await db.chauffeurDrive.findUnique({ where: { userId }, select: { id: true } }) : null;
+  if (!chauffeur) throw new ApiError(403, "Réservé aux chauffeurs ZupDrive", "NOT_A_CHAUFFEUR");
+  return chauffeur.id;
+}
 
 const idSchema = z.string().min(1);
 
@@ -46,6 +60,10 @@ router.post(
   async (req, res, next) => {
     try {
       const template = await ZupDriveNotificationsService.upsertTemplate(req.body);
+      await journaliser(req, "ZUPDRIVE_UPSERT_NOTIFICATION_TEMPLATE", template.key, {
+        type: template.type,
+        active: template.active,
+      });
       res.status(201).json(template);
     } catch (error) {
       next(error);
@@ -114,6 +132,12 @@ router.post(
   async (req, res, next) => {
     try {
       const log = await ZupDriveNotificationsService.sendNotification(req.body);
+      await journaliser(req, "ZUPDRIVE_SEND_NOTIFICATION", log.id, {
+        recipientId: req.body.recipientId,
+        recipientType: req.body.recipientType,
+        templateKey: req.body.templateKey,
+        type: req.body.type,
+      });
       res.status(201).json(log);
     } catch (error) {
       next(error);
@@ -139,6 +163,7 @@ router.post(
     try {
       const { driverId, ...reste } = req.body;
       await ZupDriveNotificationsService.triggerEventNotification({ ...reste, chauffeurId: driverId });
+      await journaliser(req, "ZUPDRIVE_TRIGGER_NOTIFICATION_EVENT", driverId, { type: reste.type });
       res.json({ success: true, message: "Notification déclenché" });
     } catch (error) {
       next(error);
@@ -171,6 +196,11 @@ router.post(
     try {
       const { driverId, ...reste } = req.body;
       const alert = await ZupDriveNotificationsService.createAlert({ ...reste, chauffeurId: driverId });
+      await journaliser(req, "ZUPDRIVE_CREATE_ALERT", alert.id, {
+        chauffeurId: driverId,
+        type: reste.type,
+        severity: reste.severity,
+      });
       res.status(201).json(alert);
     } catch (error) {
       next(error);
@@ -180,27 +210,13 @@ router.post(
 
 /**
  * GET /api/zupdrive/notifications/alerts/unread
- * Récupérer les alertes non lues (pour drivers)
+ * Alertes non lues du chauffeur connecté (le chauffeur vient du jeton ; un
+ * éventuel ?driverId= envoyé par d'anciennes apps est ignoré).
  */
-router.get("/alerts/unread", validateRequest({ query: z.object({ driverId: z.string() }) }), async (req, res, next) => {
+router.get("/alerts/unread", authMiddleware, async (req, res, next) => {
   try {
-    const { driverId } = req.query as { driverId: string };
-    const alerts = await ZupDriveNotificationsService.getUnreadAlerts(driverId);
-    res.json(alerts);
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * PATCH /api/zupdrive/notifications/alerts/:id/read
- * Marquer une alerte comme lue
- */
-router.patch("/alerts/:id/read", async (req, res, next) => {
-  try {
-    const id = idSchema.parse(req.params.id);
-    await ZupDriveNotificationsService.markAlertAsRead(id);
-    res.json({ success: true, message: "Alerte marquée comme lue" });
+    const chauffeurId = await chauffeurDuJeton(req.userId);
+    res.json(await ZupDriveNotificationsService.getUnreadAlerts(chauffeurId));
   } catch (error) {
     next(error);
   }
@@ -208,25 +224,33 @@ router.patch("/alerts/:id/read", async (req, res, next) => {
 
 /**
  * PATCH /api/zupdrive/notifications/alerts/read-all
- * Marquer toutes les alertes comme lues
+ * Marquer toutes les alertes du chauffeur connecté comme lues.
+ * Déclarée avant « /alerts/:id/read » : « read-all » ne doit pas être pris pour un id.
  */
-router.patch(
-  "/alerts/read-all",
-  validateRequest({
-    body: z.object({
-      driverId: z.string(),
-    }),
-  }),
-  async (req, res, next) => {
-    try {
-      const { driverId } = req.body;
-      await ZupDriveNotificationsService.markAllAlertsAsRead(driverId);
-      res.json({ success: true, message: "Toutes les alertes marquées comme lues" });
-    } catch (error) {
-      next(error);
-    }
+router.patch("/alerts/read-all", authMiddleware, async (req, res, next) => {
+  try {
+    const chauffeurId = await chauffeurDuJeton(req.userId);
+    await ZupDriveNotificationsService.markAllAlertsAsRead(chauffeurId);
+    res.json({ success: true, message: "Toutes les alertes marquées comme lues" });
+  } catch (error) {
+    next(error);
   }
-);
+});
+
+/**
+ * PATCH /api/zupdrive/notifications/alerts/:id/read
+ * Marquer une de ses alertes comme lue (404 si elle appartient à un autre chauffeur).
+ */
+router.patch("/alerts/:id/read", authMiddleware, async (req, res, next) => {
+  try {
+    const chauffeurId = await chauffeurDuJeton(req.userId);
+    const id = idSchema.parse(req.params.id);
+    await ZupDriveNotificationsService.markAlertAsRead(id, chauffeurId);
+    res.json({ success: true, message: "Alerte marquée comme lue" });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * Notification History & Statistics
@@ -263,32 +287,10 @@ router.get("/admin/stats", ...adminAuth, async (_req, res, next) => {
   }
 });
 
-/**
- * Webhook for Provider Status Updates
+/*
+ * Le webhook d'accusés du fournisseur (POST /webhooks/status) n'est pas ici : il
+ * lit le corps brut pour vérifier la signature et se monte avant le lecteur JSON
+ * (voir zupdrive-notifications-webhook.ts et app.ts).
  */
-
-/**
- * POST /api/zupdrive/webhooks/notifications/status
- * Webhook pour mettre à jour le statut des notifications (depuis providers)
- */
-router.post(
-  "/webhooks/status",
-  validateRequest({
-    body: z.object({
-      notificationLogId: z.string(),
-      status: z.enum(["SENT", "FAILED", "BOUNCED"]),
-      errorMessage: z.string().optional(),
-    }),
-  }),
-  async (req, res, next) => {
-    try {
-      const { notificationLogId, status, errorMessage } = req.body;
-      await ZupDriveNotificationsService.updateNotificationStatus(notificationLogId, status, errorMessage);
-      res.json({ success: true });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
 
 export default router;

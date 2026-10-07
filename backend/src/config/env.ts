@@ -61,6 +61,8 @@ const envSchema = z.object({
   // une instance OSRM, idéalement hébergée par vous). Voir itineraire.service.ts.
   ROUTING_PROVIDER: z.enum(["estimation", "osrm"]).default("estimation"),
   OSRM_API_URL: z.string().url().optional(),
+  // Secret partagé avec le fournisseur d'envoi : signe les accusés de notification ZupDrive (HMAC-SHA256).
+  ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET: z.string().min(32, 'Secret du webhook de notifications ZupDrive : au moins 32 caractères').optional(),
   ENABLE_STRIPE: z.string().default("true").transform((v) => v === "true"),
   ENABLE_EMAIL_VERIFICATION: z.string().default("true").transform((v) => v === "true"),
   ASSISTANT_MODE: z.enum(['auto', 'real', 'degraded', 'simulation']).default('auto'),
