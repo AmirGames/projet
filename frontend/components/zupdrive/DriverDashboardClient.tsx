@@ -46,11 +46,11 @@ export function DriverDashboardClient() {
   const [earnings, setEarnings] = useState({ today: 0, week: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [nextPayoutDate, setNextPayoutDate] = useState<Date>(() => {
+  const nextPayoutDate = useState<Date>(() => {
     const date = new Date();
     date.setDate(date.getDate() + 7);
     return date;
-  });
+  })[0];
 
   useEffect(() => {
     const fetchData = async () => {
