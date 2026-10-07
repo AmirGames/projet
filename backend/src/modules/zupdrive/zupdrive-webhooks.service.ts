@@ -191,7 +191,7 @@ export class ZupDriveWebhooksService {
    * Planifier une livraison de webhook.
    */
   private static async scheduleWebhookDelivery(webhookId: string, eventId: string): Promise<void> {
-    const delivery = await db.webhookDelivery.create({
+    const delivery = await db.webhookDeliveryDrive.create({
       data: {
         webhookId,
         eventId,
@@ -222,13 +222,13 @@ export class ZupDriveWebhooksService {
     if (filters.status) where.status = filters.status;
 
     const [deliveries, total] = await Promise.all([
-      db.webhookDelivery.findMany({
+      db.webhookDeliveryDrive.findMany({
         where,
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      db.webhookDelivery.count({ where }),
+      db.webhookDeliveryDrive.count({ where }),
     ]);
 
     return {
@@ -314,7 +314,7 @@ export class ZupDriveWebhooksService {
   }> {
     const endpoints = await db.webhookEndpoint.findMany();
     const events = await db.webhookEvent.findMany();
-    const deliveries = await db.webhookDelivery.findMany();
+    const deliveries = await db.webhookDeliveryDrive.findMany();
 
     const activeEndpoints = endpoints.filter((e) => e.active).length;
     const deliveredEvents = events.filter((e) => e.delivered).length;
