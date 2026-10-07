@@ -13,45 +13,82 @@ Notre mission : **Créer des solutions de mobilité et de livraison innovantes, 
 
 ## 🏢 Structure du Groupe
 
-Le groupe Zupone est composé de trois produits interconnectés :
+Le groupe Zupone est composé de **deux écosystèmes** distincts :
 
-### 1️⃣ **Zupeat** - Plateforme de Livraison de Food
-### 2️⃣ **Zupeat Driver App** - Application pour Livreurs de Repas
-### 3️⃣ **ZupDrive** - Application de Transport de Passagers (VTC)
+### 1️⃣ **Zupeat** - Plateforme de Livraison de Repas
+Composée de 3 applications :
+- **zupeat.com** : App client (commande repas)
+- **manager.zupeat.com** : App commerçant (gère restaurant)
+- **delivery.zupeat.com** : App livreur (livraison repas)
+
+### 2️⃣ **ZupDrive** - Application de Transport de Passagers (VTC)
+Composée de 2 applications :
+- **Client app** : Demande trajet (point A → point B)
+- **Chauffeur app** : Accepte trajets et conduit passagers
 
 ---
 
-## 🍽️ Zupeat - Plateforme Principale
+## 🍽️ Zupeat - Plateforme de Livraison de Repas
 
 ### Description
-**Zupeat** est la plateforme centrale de livraison de repas qui connecte les restaurants, les livreurs et les clients. C'est le cœur de l'écosystème Zupone.
+**Zupeat** est la plateforme centrale de livraison de repas qui connecte les **restaurants**, les **livreurs** et les **clients**. Elle comprend 3 applications distinctes :
 
-### Fonctionnalités Principales
-- 🏪 **Gestion Restaurants** : Interface pour les restaurants partenaires pour gérer leurs menus, commandes et livraisons
-- 👥 **Plateforme Client** : Application web et mobile permettant aux clients de commander des repas
+### 3 Applications Zupeat
+
+#### 1️⃣ **zupeat.com** - App Client
+- 👥 Les clients découvrent restaurants, consultent menus, passent commandes
+- 🔍 Recherche/filtrage restaurants par cuisine, localisation, note
+- 🛒 Panier, gestion commandes, suivi livraison en temps réel
+- 💳 Paiement sécurisé (carte, PayPal, etc.)
+- ⭐ Notation restaurant/livreur, historique commandes
+
+#### 2️⃣ **manager.zupeat.com** - App Commerçant
+- 🏪 Commerçants gèrent leur établissement et catalogue
+- 📋 Gestion menus (catégories, articles, prix, photos)
+- 📊 Tableau de bord (commandes en temps réel, chiffre d'affaires, statistiques)
+- ✅ Acceptation/refus commandes, notification livreur
+- 💰 Gestion paiements, reversements, analytics détaillées
+- 🚚 Gestion livraisons associées, suivi livreurs
+
+#### 3️⃣ **delivery.zupeat.com** - App Livreur
+- 📱 Application mobile native Android (voir section Zupeat Driver App)
+- 📦 Réception commandes à livrer, acceptation/refus
+- 🗺️ Navigation GPS intégrée (Google Maps)
+- 📍 Suivi temps réel pour client et restaurant
+- 💬 Chat avec client et restaurant
+- 💵 Gestion revenus et paiements
+
+### Infrastructure Commune
 - 📊 **Tableau de Bord** : Monitoring en temps réel des commandes, livreurs et métriques de performance
-- 💰 **Gestion des Paiements** : Intégration de multiples moyens de paiement sécurisés
+- 💰 **Gestion des Paiements** : Intégration Stripe, multiples moyens de paiement sécurisés
 - 📈 **Analytics & Reporting** : Données détaillées sur les commandes, revenus et comportement utilisateur
+- 🔔 **Notifications** : Email, SMS, push pour tous les acteurs
+- 📱 **Support Multi-plateforme** : Web responsive + apps mobiles
 
-### Stack Technologique
-- **Backend** : API RESTful (détails selon architecture spécifique)
-- **Frontend** : Web responsive + applications mobiles (iOS/Android)
-- **Données** : Bases de données optimisées pour les transactions en temps réel
-- **Infrastructure** : Cloud scalable pour gérer les pics de demande
+### Stack Technologique Zupeat
+- **Backend API** : Node.js/Express, TypeScript, PostgreSQL, Redis (Prisma ORM)
+- **Frontend Client** : Next.js 16, React 19, Tailwind CSS, next-intl
+- **App Commerçant** : Next.js 16 (dashboard responsive)
+- **App Livreur** : Android Native (Kotlin), Google Maps SDK (voir section Zupeat Driver App)
+- **Paiements** : Stripe API, webhooks pour confirmation
+- **Infrastructure** : Docker, Kubernetes, Scaleway (deployment)
+- **Temps réel** : WebSockets/Redis pour notifications et suivi GPS
+- **Emails** : Mailpit (local), service externe (production)
 
-### Objectifs
-- Offrir une expérience fluide du début à la fin de la commande
-- Optimiser les délais de livraison
-- Maximiser la satisfaction clients et restaurants
+### Objectifs Zupeat
+- ✅ Offrir expérience fluide pour les 3 acteurs (client, commerçant, livreur)
+- ✅ Optimiser délais de livraison (<35 min)
+- ✅ Sécuriser paiements et données
+- ✅ Maximiser satisfaction clients et restaurants
 
 ---
 
-## 🚚 Zupeat Driver App - Application Livreurs
+## 🚚 Zupeat Driver App - Application Livreurs (delivery.zupeat.com)
 
 ### Description
-L'**application Zupeat Driver** est une application native Android conçue spécifiquement pour les livreurs (livreurs) de la plateforme Zupone. Elle leur permet de gérer leurs livraisons directement depuis leur téléphone avec un maximum de confort et d'efficacité.
+L'**application Zupeat Driver** est l'application native Android accessible à **delivery.zupeat.com** pour les livreurs de repas Zupeat. Elle leur permet de gérer leurs livraisons directement depuis leur téléphone avec un maximum de confort et d'efficacité.
 
-### Fonctionnalités Clés
+### Fonctionnalités Clés (Complément à delivery.zupeat.com)
 
 #### 📦 Gestion des Commandes
 - Affichage en temps réel des livraisons disponibles
