@@ -12,7 +12,7 @@ DROP INDEX IF EXISTS "WebhookDelivery_nextAttemptAt_idx";
 
 -- Add new columns if they don't already exist
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "errorMessage" TEXT;
-ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "eventId" TEXT;
+ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "eventId" TEXT NOT NULL DEFAULT 'pending-event-id';
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "failedAt" TIMESTAMP(3);
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "responseBody" TEXT;
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "sentAt" TIMESTAMP(3);
