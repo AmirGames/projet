@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { BarChart3, TrendingUp, AlertCircle, Loader2, Download } from 'lucide-react';
+import { BarChart3, AlertCircle, Loader2, Download } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 

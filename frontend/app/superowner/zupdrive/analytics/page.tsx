@@ -34,7 +34,6 @@ interface RegionalMetrics {
 }
 
 export default function AnalyticsPage() {
-  const t = useTranslations('zupdrive.analytics');
   const [metrics, setMetrics] = useState<AnalyticsPeriod | null>(null);
   const [regional, setRegional] = useState<RegionalMetrics[]>([]);
   const [loading, setLoading] = useState(false);

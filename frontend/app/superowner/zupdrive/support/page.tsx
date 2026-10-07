@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { MessageSquare, AlertCircle, Loader2, CheckCircle, Clock } from 'lucide-react';
+import { MessageSquare, AlertCircle, Loader2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 

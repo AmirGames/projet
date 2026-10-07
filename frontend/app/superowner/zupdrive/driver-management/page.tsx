@@ -6,8 +6,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Shield, AlertCircle, FileCheck, Ban, RotateCcw, Loader2 } from 'lucide-react';
+import { Shield, AlertCircle, Ban, RotateCcw, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -28,7 +27,6 @@ interface Driver {
 }
 
 export default function DriverManagementPage() {
-  const t = useTranslations('zupdrive.driverManagement');
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
