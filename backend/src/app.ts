@@ -66,6 +66,12 @@ import privacyRouter from "./modules/privacy/privacy.routes";
 import { privacyAuditMiddleware } from "./modules/privacy/audit.middleware";
 import assistantRouter from "./modules/assistant/routes";
 
+/** Le commit de l'image (12 caractères), ou « inconnue » hors déploiement. */
+export function revisionDuBuild(): string {
+  const sha = (process.env.GIT_SHA || "").trim();
+  return /^[0-9a-f]{7,40}$/i.test(sha) ? sha.slice(0, 12) : "inconnue";
+}
+
 export function createApp(): Express {
   const app = express();
   // Valide la configuration avant de monter quoi que ce soit.
@@ -126,8 +132,11 @@ export function createApp(): Express {
   // ===== Health check =====
   // Vivant : le processus répond. Ne touche à rien d'autre, pour qu'un
   // orchestrateur ne redémarre pas le serveur parce que la base est tombée.
+  // `revision` : le commit construit dans l'image (GIT_SHA, posé au build par
+  // deploy/zup.sh). Sans lui, les sondes disent que le service répond mais pas
+  // quel correctif tourne.
   app.get("/health", (_req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.json({ status: "ok", revision: revisionDuBuild(), timestamp: new Date().toISOString() });
   });
 
   // Prêt : le serveur peut réellement servir (la base répond). C'est l'adresse
@@ -137,6 +146,7 @@ export function createApp(): Express {
     const etat = await Vigie.pret();
     res.status(etat.pret ? 200 : 503).json({
       status: etat.pret ? "ok" : "unavailable",
+      revision: revisionDuBuild(),
       ...etat,
       timestamp: new Date().toISOString(),
     });

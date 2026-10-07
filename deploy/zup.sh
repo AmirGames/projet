@@ -5,6 +5,7 @@
 #   ./deploy/zup.sh update    git pull + up
 #   ./deploy/zup.sh logs [service]
 #   ./deploy/zup.sh ps
+#   ./deploy/zup.sh version   le commit qui tourne (API et site), lu sur /health
 #   ./deploy/zup.sh down
 #   ./deploy/zup.sh backup    sauvegarde base + fichiers dans ~/sauvegardes
 #                             (BACKUP_REMOTE : copie hors serveur avec rclone)
@@ -36,6 +37,12 @@ SAUVEGARDES="${SAUVEGARDES:-$HOME/sauvegardes}"
 
 case "${1:-}" in
   up)
+    # Le commit construit dans les images : /health et /api/health le rendent,
+    # pour savoir quel correctif tourne réellement.
+    export GIT_SHA="$(git rev-parse HEAD 2>/dev/null || echo inconnue)"
+    echo "Révision : ${GIT_SHA:0:12}"
+    # Le service « migrate » applique les migrations avant l'API : s'il échoue,
+    # l'API de la version précédente reste en place et la commande s'arrête ici.
     dc up -d --build --remove-orphans
     # Caddy ne relit pas son Caddyfile de lui-même : sans cela, une mise à
     # jour de deploy/Caddyfile restait sans effet. Le rechargement ne coupe
@@ -50,6 +57,13 @@ case "${1:-}" in
     ;;
   logs)  shift; dc logs -f --tail=200 "$@" ;;
   ps)    dc ps ;;
+  version)
+    # Ce qui tourne vraiment, pas ce qui est dans le dépôt : l'API et le site
+    # annoncent le commit construit dans leur image.
+    echo "dépôt : $(git rev-parse --short=12 HEAD)"
+    echo -n "API   : "; dc exec -T backend wget -qO- http://127.0.0.1:3001/health; echo
+    echo -n "Site  : "; dc exec -T frontend wget -qO- http://127.0.0.1:3000/api/health; echo
+    ;;
   down)  dc down ;;
   restart) shift; dc restart "$@" ;;
   psql)  dc exec postgres psql -U "$PGU" -d "$PGD" ;;

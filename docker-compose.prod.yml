@@ -14,6 +14,29 @@
 
 name: zupone
 
+# Variables communes à l'API et au service de migration.
+x-api-environment: &api-environment
+  NODE_ENV: production
+  PORT: 3001
+  DATABASE_URL: ${DATABASE_URL_APP:-postgresql://${POSTGRES_USER:-zupone}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zupone}?schema=public}
+  REDIS_URL: redis://redis:6379
+  CLAMAV_HOST: clamav
+  CLAMAV_PORT: 3310
+  PRIVATE_DOCUMENTS_DIR: /app/private-documents
+  API_URL: https://${DOMAINE_API:?DOMAINE_API manquant dans .env.production}
+  # Un seul proxy devant l'API : Caddy.
+  TRUST_PROXY: 1
+  # Si renseigné, remplace le compte de sauts par les IP/CIDR réels des proxys.
+  TRUST_PROXY_CIDRS: ${TRUST_PROXY_CIDRS:-}
+  # Gratuit local par défaut ; le profil assistant-local reste optionnel.
+  ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-ollama}
+  ASSISTANT_OLLAMA_URL: ${ASSISTANT_OLLAMA_URL:-http://ollama:11434}
+  ASSISTANT_OLLAMA_MODEL: ${ASSISTANT_OLLAMA_MODEL:-}
+  # Horaires d'ouverture, créneaux de retrait, arrêtés hebdomadaires : le
+  # code compte en heure locale. Sans ce réglage le conteneur compte en
+  # UTC, et une boutique ouverte « 11:00 » l'était à 13:00 à Paris.
+  TZ: ${TZ:-Europe/Paris}
+
 services:
   clamav:
     image: clamav/clamav:stable
@@ -54,14 +77,42 @@ services:
       timeout: 5s
       retries: 10
 
+  # Applique les migrations (et crée le superowner si SUPEROWNER_* est réglé),
+  # une seule fois, avant les instances de l'API. Elles étaient lancées dans
+  # le CMD de chaque instance : `--scale backend=N` lançait N migrations
+  # concurrentes, avec le rôle SQL de l'exécution.
+  #
+  # DATABASE_URL_MIGRATION permet d'y employer un rôle propriétaire du schéma,
+  # distinct du rôle d'exécution de l'API (voir deploy/roles-sql.sql). Vide :
+  # le même rôle que l'API, comme avant.
+  migrate:
+    image: zupone-backend
+    pull_policy: never
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env.production
+    environment:
+      <<: *api-environment
+      DATABASE_URL: ${DATABASE_URL_MIGRATION:-postgresql://${POSTGRES_USER:-zupone}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zupone}?schema=public}
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/create-superowner.js --si-configure"]
+    healthcheck:
+      disable: true
+
   backend:
+    image: zupone-backend
     build:
       context: ./backend
+      args:
+        GIT_SHA: ${GIT_SHA:-inconnue}
     restart: unless-stopped
     # L'arrêt propre laisse finir les requêtes en cours (25 s au plus, voir
     # backend/src/arret-gracieux.ts) : Docker ne doit pas tuer avant.
     stop_grace_period: 40s
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -69,27 +120,7 @@ services:
       clamav:
         condition: service_healthy
     env_file: .env.production
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-zupone}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zupone}?schema=public
-      REDIS_URL: redis://redis:6379
-      CLAMAV_HOST: clamav
-      CLAMAV_PORT: 3310
-      PRIVATE_DOCUMENTS_DIR: /app/private-documents
-      API_URL: https://${DOMAINE_API:?DOMAINE_API manquant dans .env.production}
-      # Un seul proxy devant l'API : Caddy.
-      TRUST_PROXY: 1
-      # Si renseigné, remplace le compte de sauts par les IP/CIDR réels des proxys.
-      TRUST_PROXY_CIDRS: ${TRUST_PROXY_CIDRS:-}
-      # Gratuit local par défaut ; le profil assistant-local reste optionnel.
-      ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-ollama}
-      ASSISTANT_OLLAMA_URL: ${ASSISTANT_OLLAMA_URL:-http://ollama:11434}
-      ASSISTANT_OLLAMA_MODEL: ${ASSISTANT_OLLAMA_MODEL:-}
-      # Horaires d'ouverture, créneaux de retrait, arrêtés hebdomadaires : le
-      # code compte en heure locale. Sans ce réglage le conteneur compte en
-      # UTC, et une boutique ouverte « 11:00 » l'était à 13:00 à Paris.
-      TZ: ${TZ:-Europe/Paris}
+    environment: *api-environment
     volumes:
       - uploads:/app/uploads
       - backups:/app/backups
@@ -130,6 +161,7 @@ services:
         NEXT_PUBLIC_DOMAINE_VITRINE: ${NEXT_PUBLIC_DOMAINE_VITRINE:-}
         NEXT_PUBLIC_DOMAINE_DRIVE: ${NEXT_PUBLIC_DOMAINE_DRIVE:-}
         NEXT_PUBLIC_DOMAINE_CHAUFFEUR: ${NEXT_PUBLIC_DOMAINE_CHAUFFEUR:-}
+        GIT_SHA: ${GIT_SHA:-inconnue}
     restart: unless-stopped
     environment:
       # Même heure que l'API pour les pages rendues côté serveur.

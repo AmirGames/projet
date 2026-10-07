@@ -37,10 +37,17 @@ RUN npm prune --omit=dev
 
 FROM node:22-alpine
 WORKDIR /app
+# Le commit construit : exposé par /api/health, pour savoir quel correctif tourne.
+ARG GIT_SHA=inconnue
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    GIT_SHA=$GIT_SHA
 # Tout le dossier et non le seul .next : `next start` relit next.config.js,
 # qui exige la configuration next-intl (i18n/) et les traductions (messages/).
-COPY --from=builder /app ./
+# Propriété de « node » : Next écrit son cache d'images dans .next/cache.
+COPY --from=builder --chown=node:node /app ./
+USER node
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1
 CMD ["npx", "next", "start", "-H", "0.0.0.0", "-p", "3000"]
