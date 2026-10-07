@@ -15,4 +15,14 @@ export default [
       ),
     },
   },
+  // Les tests simulent la base, Express et Stripe : leurs doublures sont
+  // typées « any » à dessein. Le cliquet d'avertissements (--max-warnings) doit
+  // mesurer le code livré, pas ses doublures de test.
+  {
+    files: ["src/**/__tests__/**/*.ts", "src/**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+    },
+  },
 ];
