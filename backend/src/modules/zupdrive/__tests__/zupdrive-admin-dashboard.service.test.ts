@@ -1,7 +1,33 @@
 import { ZupDriveAdminDashboardService } from "../zupdrive-admin-dashboard.service";
 import { db } from "../../../services/db";
 
-jest.mock("../../../services/db");
+jest.mock("../../../services/db", () => ({
+  db: {
+    courseDrive: {
+      count: jest.fn(),
+      groupBy: jest.fn(),
+      aggregate: jest.fn(),
+      findMany: jest.fn(),
+    },
+    chauffeurDrive: {
+      count: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+      findMany: jest.fn(),
+    },
+    driverPayoutDrive: {
+      count: jest.fn(),
+      aggregate: jest.fn(),
+      findMany: jest.fn(),
+    },
+    driverPayoutBatchDrive: {
+      count: jest.fn(),
+      findMany: jest.fn(),
+    },
+    noteCourseDrive: {
+      aggregate: jest.fn(),
+    },
+  },
+}));
 
 describe("ZupDriveAdminDashboardService", () => {
   beforeEach(() => {
@@ -11,10 +37,14 @@ describe("ZupDriveAdminDashboardService", () => {
   describe("getDashboardMetrics", () => {
     it("should return dashboard metrics", async () => {
       (db.courseDrive.count as jest.Mock).mockResolvedValue(2);
-      (db.courseDrive.groupBy as jest.Mock).mockResolvedValue([
-        { statut: "TERMINEE", _count: 1 },
-        { statut: "RECHERCHE", _count: 1 },
-      ]);
+      (db.courseDrive.groupBy as jest.Mock)
+        .mockResolvedValueOnce([
+          { statut: "TERMINEE", _count: 1 },
+          { statut: "RECHERCHE", _count: 1 },
+        ])
+        .mockResolvedValueOnce([
+          { region: "BRUXELLES", _count: 2 },
+        ]);
       (db.courseDrive.aggregate as jest.Mock).mockResolvedValue({
         _avg: { prixCentimes: 1750 },
         _sum: { prixCentimes: 3500 },
@@ -36,9 +66,6 @@ describe("ZupDriveAdminDashboardService", () => {
       (db.noteCourseDrive.aggregate as jest.Mock).mockResolvedValue({
         _avg: { note: 4.5 },
       });
-      (db.courseDrive.groupBy as jest.Mock).mockResolvedValue([
-        { region: "BRUXELLES", _count: 2 },
-      ]);
 
       const metrics = await ZupDriveAdminDashboardService.getDashboardMetrics();
 
@@ -51,16 +78,20 @@ describe("ZupDriveAdminDashboardService", () => {
 
     it("should filter by region if provided", async () => {
       (db.courseDrive.count as jest.Mock).mockResolvedValue(1);
-      (db.courseDrive.groupBy as jest.Mock).mockResolvedValue([]);
+      (db.courseDrive.groupBy as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
       (db.courseDrive.aggregate as jest.Mock).mockResolvedValue({
         _avg: { prixCentimes: null },
         _sum: { prixCentimes: null },
       });
       (db.chauffeurDrive.count as jest.Mock).mockResolvedValue(0);
-      (db.driverPayoutDrive.aggregate as jest.Mock).mockResolvedValue({
-        _sum: { amountCentimes: null },
-      });
-      (db.driverPayoutDrive.count as jest.Mock).mockResolvedValue(0);
+      (db.driverPayoutDrive.aggregate as jest.Mock)
+        .mockResolvedValueOnce({ _sum: { amountCentimes: null } })
+        .mockResolvedValueOnce({ _avg: { amountCentimes: null }, _count: 0 });
+      (db.driverPayoutDrive.count as jest.Mock)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0);
       (db.noteCourseDrive.aggregate as jest.Mock).mockResolvedValue({
         _avg: { note: null },
       });
