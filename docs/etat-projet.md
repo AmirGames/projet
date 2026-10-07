@@ -29,8 +29,11 @@ signés restent ouvertes. Aucune nouvelle fonctionnalité métier ni ouverture
 - **ZupDrive V1** : dossiers chauffeurs et sociétés, véhicules et invitations,
   validation des pièces, tarifs régionaux, devis signés, attribution et suivi
   des courses, annulation et notes. Voir [le périmètre ZupDrive](zupdrive.md).
-  La présentation publique l'annonce encore « Bientôt disponible » ; le
-  paiement en ligne des courses n'est pas inclus dans cette V1.
+  La présentation publique l'annonce encore « Bientôt disponible ». Côté API,
+  le paiement en ligne des courses est branché (webhook Stripe, versement du
+  chauffeur) et les routes d'administration, de support, de conformité et de
+  supervision sont montées : voir [`zupdrive-api-admin.md`](zupdrive-api-admin.md).
+  Aucun écran client ne l'appelle encore.
 - **Applications mobiles** : client, commerçant et livreur écrits dans
   `mobile/apps/`. Leur publication dans les stores reste à réaliser. Une
   application d'administration existe aussi dans `mobile/apps/admin/`.
@@ -100,8 +103,10 @@ confirmations ultérieures et ce document donnent le suivi actuel.
   Le commerce de démonstration existant refuse les commandes ; il ne remplace
   pas ce mode d'entraînement. Un paiement Stripe TEST ne constitue pas non plus
   ce mode métier.
-- **ZupDrive V2** : paiement en ligne et règles de facturation des courses,
-  une fois définis l'émetteur de la facture, la TVA et la commission.
+- **ZupDrive V2** : écrans de paiement (frontend et mobiles), règles de
+  facturation (émetteur de la facture, TVA), remboursement d'une course payée
+  puis annulée ou sans chauffeur, et routeurs non montés (`platform-config`,
+  `chauffeur-onboarding`, `document-validation`) à supprimer ou rebrancher.
 - **Notifications fiables après interruption** : compléter les effets après
   paiement par une outbox transactionnelle ou un mécanisme persistant.
   Les webhooks sortants disposent déjà de relances en base ; cela ne garantit

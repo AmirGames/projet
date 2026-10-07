@@ -1,5 +1,7 @@
 # Frontend ZupDrive - Driver & Admin Dashboard 🎨
 
+> **Document de phase, partiellement dépassé.** Pages et URL d'API : `/notifications`, `/metrics`, `/earnings-realtime` sous `/api/zupdrive` ; support sous `/api/zupdrive/support/admin/...`, notifications `/api/zupdrive/notifications/admin/...`, webhooks `/api/zupdrive/webhooks/admin/...`, conformité `/api/zupdrive/compliance/admin/...`. Rapports programmés : `/api/zupdrive/reporting/admin/scheduled`. La page `configuration` appelle encore `/api/zupdrive/admin/config/*`, dont le routeur (`platform-config`) n'est pas monté. L'exemple WebSocket `/api/zupdrive/ws` ne fonctionne plus. La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **Status**: Complete driver and admin dashboards with real-time monitoring
 
 ## Project Structure

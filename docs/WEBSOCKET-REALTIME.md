@@ -1,5 +1,7 @@
 # WebSocket Real-time Updates 🔌
 
+> **Document de phase, partiellement dépassé.** `GET /api/zupdrive/ws` a été retiré : il renvoyait le jeton d'accès dans l'URL de connexion. Les exemples `wss://…/api/zupdrive/ws?token=…` ne fonctionnent pas ; le temps réel ZupDrive passe par Socket.IO. `GET /api/zupdrive/realtime/stats` est réservé à l'équipe (`courses-drive`). La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **Status**: Bidirectional real-time communication for dashboards and live notifications
 
 ## Overview

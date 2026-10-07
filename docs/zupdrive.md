@@ -162,7 +162,7 @@ Une pièce peut exister en plusieurs versions (`DocumentChauffeurDrive`, sans co
 
 ## Sociétés de taxi / VTC et leurs chauffeurs
 
-Un chauffeur ZupDrive roule **soit en indépendant** (avec sa propre licence, son entreprise et son véhicule : tout ce qui précède), **soit pour une société**, et pour une seule à la fois. La société détient les licences et les véhicules, et ses chauffeurs roulent pour elle. Leurs courses lui sont attribuées ; le reversement viendra avec le paiement en ligne (V2).
+Un chauffeur ZupDrive roule **soit en indépendant** (avec sa propre licence, son entreprise et son véhicule : tout ce qui précède), **soit pour une société**, et pour une seule à la fois. La société détient les licences et les véhicules, et ses chauffeurs roulent pour elle. Leurs courses lui sont attribuées ; le reversement à la société reste à définir (le versement actuel est celui du chauffeur, voir [`zupdrive-api-admin.md`](./zupdrive-api-admin.md)).
 
 Code : `backend/src/modules/zupdrive/societe-drive.service.ts` (métier), `societe.routes.ts` (gérant), `chauffeur.admin.routes.ts` (équipe) et `pieces-drive.ts` (versions de pièces, communes aux chauffeurs, sociétés et véhicules). Modèles : `SocieteDrive`, `VehiculeDrive`, `InvitationSocieteDrive`, et `societeId` / `vehiculeId` sur `ChauffeurDrive` et `CourseDrive`. Migration `0038_zupdrive_societes`, purement additive.
 
@@ -242,7 +242,7 @@ les versements et la supervision sont décrits dans [`zupdrive-api-admin.md`](./
 
 ## Courses (V1)
 
-Le passager commande un trajet à **prix fixe** sur `zupdrive.com/trajet`, avec son compte ZupOne. La course est proposée au chauffeur le plus proche, qui l'accepte depuis `driver.zupdrive.com/chauffeur/courses` et la mène à terme. La V1 ne comporte **pas de paiement en ligne** : il viendra en V2, une fois la facturation tranchée (qui facture le passager, TVA, commission).
+Le passager commande un trajet à **prix fixe** sur `zupdrive.com/trajet`, avec son compte ZupOne. La course est proposée au chauffeur le plus proche, qui l'accepte depuis `driver.zupdrive.com/chauffeur/courses` et la mène à terme. Côté serveur, le paiement en ligne est branché : intention Stripe par course, confirmation par le webhook Stripe (jamais par le client), versement du chauffeur une fois la course terminée et payée ; voir [`zupdrive-api-admin.md`](./zupdrive-api-admin.md#paiement-dune-course--apizupdrivepayment-et-webhook-stripe). Ni le frontend ni les apps mobiles ne l'appellent encore, et la facturation reste à trancher (qui facture le passager, TVA) ; le remboursement d'une course payée puis annulée n'est pas automatisé.
 
 Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course-drive.service.ts`, `course-drive.jobs.ts`, `course-drive.routes.ts`). Modèles : `TarifDrive`, `CourseDrive`, `PropositionCourseDrive`, et `enLigne` / position sur `ChauffeurDrive`. Migration `0031_zupdrive_courses`.
 

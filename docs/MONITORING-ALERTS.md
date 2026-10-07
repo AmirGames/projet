@@ -1,5 +1,7 @@
 # Phase 15: Real-time Monitoring & Alerts 📊🔔
 
+> **Document de phase, partiellement dépassé.** Les routes chauffeur (`/notifications`, `/metrics`, `/earnings-realtime`) sont bien sous `/api/zupdrive`. **`GET /ws` n'existe plus** (il renvoyait le jeton dans une URL) : le temps réel passe par Socket.IO. Les routes `/admin/*` demandent la permission d'équipe (sections `courses-drive` ou `chauffeurs`), pas le rôle `ADMIN_ZUPDRIVE`, et passent d'abord par le garde de `/api/zupdrive/admin` : superowner seul en pratique. Les gains sont calculés avec la règle de commission commune (`repartirPrixCourse`). La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **Status**: Real-time notifications, driver metrics, admin alerts, platform health monitoring
 
 ## Overview

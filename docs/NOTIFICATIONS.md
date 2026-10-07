@@ -1,5 +1,7 @@
 # Notifications Service - Multi-channel Delivery 📧📱
 
+> **Document de phase, partiellement dépassé.** Les routes sont sous **`/api/zupdrive/notifications`** : `/alerts/*` pour le chauffeur connecté (identité tirée du jeton, `driverId` ignoré), `/admin/*` pour l'équipe (section `courses-drive`, écritures journalisées). Le webhook d'accusés `POST /api/zupdrive/notifications/webhooks/status` exige une signature HMAC-SHA256 du corps brut avec horodatage (`ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET`) et ne fait qu'avancer le statut. La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **Status**: Complete notification system with Email, Push, SMS, and In-app
 
 ## Overview

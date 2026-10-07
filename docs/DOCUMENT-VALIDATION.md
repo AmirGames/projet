@@ -1,5 +1,7 @@
 # Document Validation Workflow
 
+> **Document de phase, partiellement dépassé.** Le routeur `zupdrive-document-validation` **n'est pas monté** (doublon du dépôt `/api/zupdrive/chauffeur/me/documents` et de l'examen `PATCH /api/zupdrive/admin/chauffeurs/:id/documents/:documentId`, il accepte une URL de fichier fournie par le client et des types en majuscules alors que la référence `DocumentChauffeurDrive` est en minuscules). Les routes ci-dessous ne sont pas servies ; la validation des pièces passe par `chauffeur.admin` et `drivers/:id/validate-document`. La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
+
 **Phase 11**: Chauffeur document verification system for ZupDrive.
 
 ## Overview
