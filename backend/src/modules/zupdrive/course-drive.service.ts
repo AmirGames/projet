@@ -7,6 +7,7 @@ import { emitNotification } from "../realtime/socket";
 import { TarificationDriveService, type Point } from "./tarification-drive.service";
 import { lireDevis, signerDevis, VALIDITE_DEVIS_MS } from "./devis-signe";
 import { NoteCourseDriveService } from "./note-course-drive.service";
+import { MatchingAlgorithmService } from "./matching-algorithm.service";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -572,9 +573,10 @@ export class CourseDriveService {
   // -------------------------------------------------------------------------
 
   /**
-   * Propose la course au chauffeur disponible le plus proche : validé, en
-   * ligne, de la même région, avec une position récente, sans course ni
-   * proposition en cours, et pas déjà sollicité pour cette course.
+   * Propose la course au meilleur chauffeur selon l'algorithme de matching :
+   * distance, rating, ETA, acceptance rate. Validé, en ligne, de la même région,
+   * avec une position récente, sans course ni proposition en cours, et pas déjà
+   * sollicité pour cette course.
    *
    * Sans candidat, rien ne se passe : le balayage réessaie, un chauffeur peut
    * se connecter entre-temps. Au-delà de RECHERCHE_MAX_MS, la course passe
@@ -624,30 +626,49 @@ export class CourseDriveService {
     });
 
     const depart = { latitude: course.departLatitude, longitude: course.departLongitude };
-    const classes = candidats
+
+    // Filtre par rayon et classe par scoring intelligent
+    const candidateIds = candidats
       .map((c) => ({ id: c.id, km: distanceKm(depart, { latitude: c.latitude!, longitude: c.longitude! }) }))
       .filter((c) => c.km <= RAYON_KM)
-      .sort((a, b) => a.km - b.km);
+      .map((c) => c.id);
 
-    for (const candidat of classes) {
+    if (candidateIds.length === 0) {
+      logger.info("No candidates available for ZupDrive ride", { courseId, region: course.region });
+      return null;
+    }
+
+    // Score les candidats avec l'algorithme multi-critères
+    const scored = await MatchingAlgorithmService.rankCandidates(candidateIds, depart, 5);
+
+    // Sollicite les meilleurs dans l'ordre
+    for (const matchScore of scored) {
       try {
         const proposition = await db.propositionCourseDrive.create({
           data: {
             courseId,
-            chauffeurId: candidat.id,
-            distanceMetres: Math.round(candidat.km * 1000),
+            chauffeurId: matchScore.driverId,
+            distanceMetres: Math.round(matchScore.distanceKm * 1000),
             expireA: new Date(maintenant.getTime() + DELAI_REPONSE_MS),
           },
         });
         await this.prevenirChauffeur(
-          candidat.id,
+          matchScore.driverId,
           "Nouvelle course",
-          `Départ : ${course.departAdresse}. Vous avez ${DELAI_REPONSE_MS / 1000} secondes pour accepter.`
+          `Départ : ${course.departAdresse}. Vous avez ${DELAI_REPONSE_MS / 1000} secondes pour accepter. ETA: ${Math.round(matchScore.eta / 60)} min.`
         );
+        logger.info("Offering ZupDrive ride to driver", {
+          courseId,
+          driverId: matchScore.driverId,
+          matchScore: matchScore.score,
+        });
         return proposition;
       } catch (err: any) {
         // Déjà sollicité entre-temps (autre serveur) : au suivant.
-        if (err?.code !== "P2002") throw err;
+        if (err?.code !== "P2002") {
+          logger.error("Error creating proposition", { err });
+          throw err;
+        }
       }
     }
     return null;
