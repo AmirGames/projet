@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
@@ -105,7 +105,10 @@ export class PayoutBatchService {
         throw new ApiError(400, "Aucun versement en attente", "NOTHING_TO_PAY");
       }
 
-      const reference = `VERSEMENTS-${maintenant.toISOString().slice(0, 16).replace(/[-:T]/g, "")}`;
+      // La minute ne suffit pas à identifier un lot : annuler puis re-préparer
+      // dans la même minute heurtait l'unicité de la référence. Le suffixe aléatoire
+      // la rend unique ; l'identifiant SEPA reste sous les 35 caractères.
+      const reference = `VERSEMENTS-${maintenant.toISOString().slice(0, 16).replace(/[-:T]/g, "")}-${randomBytes(2).toString("hex")}`;
       const total = Math.round(aPayer.reduce((s, v) => s + v.montant * 100, 0)) / 100;
       const lot = await tx.payoutBatch.create({
         data: {

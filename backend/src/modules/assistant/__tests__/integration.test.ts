@@ -103,7 +103,8 @@ suite(
           data: {
             id: userId,
             email: `${userId}@example.invalid`,
-            passwordHash: "dummy-test-hash",
+            // La base refuse tout hash qui n'a pas la forme bcrypt (contrainte User_passwordHash_bcrypt).
+            passwordHash: "$2b$10$KyIUB44YPS.juBdZYLbXx.na0HtA3MZse8Orjd0anrbp2cTa8BVhW",
             name: userId,
           },
         });
