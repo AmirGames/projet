@@ -6,7 +6,6 @@
  */
 
 import { useCallback, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { BarChart3, TrendingUp, Users, DollarSign, AlertCircle, Loader2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
