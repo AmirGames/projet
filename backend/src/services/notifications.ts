@@ -14,8 +14,6 @@
  * - CRITICAL: SMS + Email + Push + In-app
  */
 
-import nodemailer from 'nodemailer';
-
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'critical';
 export type NotificationChannel = 'email' | 'push' | 'sms' | 'inapp';
 
@@ -27,10 +25,10 @@ export interface NotificationPayload {
   message: string;
   priority: NotificationPriority;
   channels?: NotificationChannel[];
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   actionUrl?: string;
   templateId?: string;
-  templateData?: Record<string, any>;
+  templateData?: Record<string, unknown>;
 }
 
 interface EmailTemplate {
@@ -39,10 +37,6 @@ interface EmailTemplate {
 }
 
 class NotificationsService {
-  private emailTransporter: any;
-  private firebaseAdmin: any;
-  private twilioClient: any;
-
   constructor() {
     this.initializeEmailTransporter();
     this.initializeFirebase();
@@ -164,14 +158,17 @@ class NotificationsService {
   private async sendInAppNotification(payload: NotificationPayload): Promise<void> {
     // TODO: Sauvegarder en base de données
     // await db.notificationDrive.create({
-    //   userId: payload.userId,
-    //   type: payload.type,
-    //   titre: payload.title,
-    //   message: payload.message,
-    //   priorite: payload.priority,
-    //   donnees: payload.data,
-    //   urlAction: payload.actionUrl,
-    //   lue: false,
+    //   data: {
+    //     userId: payload.userId,
+    //     chauffeurId: payload.chauffeurId,
+    //     type: payload.type,
+    //     title: payload.title,
+    //     message: payload.message,
+    //     priority: payload.priority,
+    //     data: payload.data,
+    //     actionUrl: payload.actionUrl,
+    //     read: false,
+    //   },
     // });
 
     console.log(`[In-app] ${payload.title}: ${payload.message}`);
@@ -289,7 +286,7 @@ class NotificationsService {
         subject: '🎉 Course completed - You earned €' + (p.data?.amount || 'X'),
         html: this.emailTemplate(
           'Course Completed',
-          `You completed a course and earned €${(p.data?.amount / 100).toFixed(2)}`,
+          `You completed a course and earned €${(Number(p.data?.amount) / 100).toFixed(2)}`,
           'View Earnings',
           `${baseURL}/driver/dashboard`
         ),
@@ -298,7 +295,7 @@ class NotificationsService {
         subject: '💰 Payout received - €' + (p.data?.amount || 'X'),
         html: this.emailTemplate(
           'Payout Completed',
-          `€${(p.data?.amount / 100).toFixed(2)} has been transferred to your bank account`,
+          `€${(Number(p.data?.amount) / 100).toFixed(2)} has been transferred to your bank account`,
           'View Payouts',
           `${baseURL}/driver/payouts`
         ),
@@ -389,36 +386,6 @@ class NotificationsService {
         </body>
       </html>
     `;
-  }
-
-  /**
-   * Supprimer les balises HTML
-   */
-  private stripHTML(html: string): string {
-    return html.replace(/<[^>]*>/g, '').trim();
-  }
-
-  /**
-   * Obtenir la priorité pour Android
-   */
-  private getPushPriority(priority: NotificationPriority): string {
-    switch (priority) {
-      case 'critical':
-        return 'high';
-      case 'high':
-        return 'high';
-      case 'medium':
-        return 'normal';
-      default:
-        return 'low';
-    }
-  }
-
-  /**
-   * Obtenir la priorité pour iOS (APNS)
-   */
-  private getAPNSPriority(priority: NotificationPriority): string {
-    return priority === 'critical' ? '10' : '10'; // 10 = immediate
   }
 
   /**

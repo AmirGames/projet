@@ -2,7 +2,6 @@
  * Tests: Notifications Service
  */
 
-import NotificationsService from '../services/notifications';
 import { notificationsService } from '../services/notifications';
 
 // Mock dependencies
@@ -147,8 +146,12 @@ describe('Notifications Service', () => {
         { ...mockPayload, userId: 'user-2' },
         { ...mockPayload, userId: 'user-3' },
       ];
+      const spy = jest.spyOn(notificationsService, 'send').mockResolvedValue(undefined);
 
-      expect(true).toBe(true);
+      await notificationsService.sendBatch(payloads);
+
+      expect(spy).toHaveBeenCalledTimes(3);
+      spy.mockRestore();
     });
 
     it('should handle errors gracefully in batch', async () => {

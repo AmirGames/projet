@@ -1,6 +1,12 @@
+import type {
+  AuditLog as AuditLogRow,
+  ComplianceCheck as ComplianceCheckRow,
+  ComplianceReport as ComplianceReportRow,
+  DocumentVerificationWorkflow as DocumentVerificationWorkflowRow,
+  Prisma,
+} from "@prisma/client";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
-import { ApiError } from "../../middleware/api-error";
 
 /**
  * Compliance et Audit pour ZupDrive.
@@ -14,8 +20,8 @@ export interface AuditLog {
   actorType: "ADMIN" | "SYSTEM" | "DRIVER" | "PASSAGER";
   resourceId: string;
   resourceType: "DRIVER" | "DOCUMENT" | "INFRACTION" | "ALERT" | "SETTING" | "PAYMENT";
-  oldValue?: Record<string, any>;
-  newValue?: Record<string, any>;
+  oldValue?: Record<string, unknown>;
+  newValue?: Record<string, unknown>;
   reason?: string;
   ipAddress?: string;
   userAgent?: string;
@@ -24,7 +30,7 @@ export interface AuditLog {
 
 export interface ComplianceCheck {
   id: string;
-  driverId: string;
+  chauffeurId: string;
   type: "DOCUMENT_VALIDATION" | "BACKGROUND_CHECK" | "FINANCIAL_VERIFICATION" | "PERIODIC_REVIEW";
   status: "PENDING" | "IN_PROGRESS" | "PASSED" | "FAILED" | "MANUAL_REVIEW_NEEDED";
   findings: string[]; // problèmes identifiés
@@ -38,7 +44,7 @@ export interface ComplianceCheck {
 
 export interface DocumentVerificationWorkflow {
   id: string;
-  driverId: string;
+  chauffeurId: string;
   documentType: "PERMIS" | "ASSURANCE" | "INSPECTION" | "IDENTITE";
   status: "PENDING_UPLOAD" | "UPLOADED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "EXPIRED";
   uploadedAt?: Date;
@@ -48,6 +54,15 @@ export interface DocumentVerificationWorkflow {
   nextReviewDate?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Une pièce du chauffeur (DocumentChauffeurDrive) dont l'échéance approche ou est dépassée. */
+export interface ExpiringDocument {
+  id: string;
+  chauffeurId: string | null;
+  type: string;
+  statut: string;
+  dateExpiration: Date;
 }
 
 export interface ComplianceReport {
@@ -75,8 +90,8 @@ export class ZupDriveComplianceService {
     actorType: "ADMIN" | "SYSTEM" | "DRIVER" | "PASSAGER";
     resourceId: string;
     resourceType: "DRIVER" | "DOCUMENT" | "INFRACTION" | "ALERT" | "SETTING" | "PAYMENT";
-    oldValue?: Record<string, any>;
-    newValue?: Record<string, any>;
+    oldValue?: Record<string, unknown>;
+    newValue?: Record<string, unknown>;
     reason?: string;
     ipAddress?: string;
     userAgent?: string;
@@ -116,15 +131,16 @@ export class ZupDriveComplianceService {
     const limit = Math.min(filters.limit || 100, 500);
     const offset = filters.offset || 0;
 
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (filters.resourceId) where.resourceId = filters.resourceId;
     if (filters.resourceType) where.resourceType = filters.resourceType;
     if (filters.actorId) where.actorId = filters.actorId;
     if (filters.action) where.action = { contains: filters.action };
     if (filters.startDate || filters.endDate) {
-      where.createdAt = {};
-      if (filters.startDate) where.createdAt.gte = filters.startDate;
-      if (filters.endDate) where.createdAt.lte = filters.endDate;
+      where.createdAt = {
+        ...(filters.startDate ? { gte: filters.startDate } : {}),
+        ...(filters.endDate ? { lte: filters.endDate } : {}),
+      };
     }
 
     const [logs, total] = await Promise.all([
@@ -147,32 +163,32 @@ export class ZupDriveComplianceService {
    * Créer un compliance check.
    */
   static async createComplianceCheck(data: {
-    driverId: string;
+    chauffeurId: string;
     type: "DOCUMENT_VALIDATION" | "BACKGROUND_CHECK" | "FINANCIAL_VERIFICATION" | "PERIODIC_REVIEW";
     expiresAt: Date;
     notes?: string;
   }): Promise<ComplianceCheck> {
     const check = await db.complianceCheck.create({
       data: {
-        driverId: data.driverId,
+        chauffeurId: data.chauffeurId,
         type: data.type,
         status: "PENDING",
-        findings: JSON.stringify([]),
+        findings: [],
         expiresAt: data.expiresAt,
         notes: data.notes,
       },
     });
 
-    logger.info(`Compliance check created for driver ${data.driverId}: ${data.type}`);
+    logger.info(`Compliance check created for chauffeur ${data.chauffeurId}: ${data.type}`);
     return this.formatComplianceCheck(check);
   }
 
   /**
-   * Lister les compliance checks d'un driver.
+   * Lister les compliance checks d'un chauffeur.
    */
-  static async getDriverComplianceChecks(driverId: string): Promise<ComplianceCheck[]> {
+  static async getDriverComplianceChecks(chauffeurId: string): Promise<ComplianceCheck[]> {
     const checks = await db.complianceCheck.findMany({
-      where: { driverId },
+      where: { chauffeurId },
       orderBy: { createdAt: "desc" },
     });
 
@@ -193,7 +209,7 @@ export class ZupDriveComplianceService {
       where: { id: checkId },
       data: {
         status,
-        findings: findings ? JSON.stringify(findings) : undefined,
+        findings,
         completedAt: ["PASSED", "FAILED", "MANUAL_REVIEW_NEEDED"].includes(status) ? new Date() : undefined,
         completedBy,
         notes,
@@ -207,13 +223,13 @@ export class ZupDriveComplianceService {
    * Créer un workflow de vérification de document.
    */
   static async initiateDocumentVerification(data: {
-    driverId: string;
+    chauffeurId: string;
     documentType: "PERMIS" | "ASSURANCE" | "INSPECTION" | "IDENTITE";
   }): Promise<DocumentVerificationWorkflow> {
     const workflow = await db.documentVerificationWorkflow.upsert({
       where: {
-        driverId_documentType: {
-          driverId: data.driverId,
+        chauffeurId_documentType: {
+          chauffeurId: data.chauffeurId,
           documentType: data.documentType,
         },
       },
@@ -221,7 +237,7 @@ export class ZupDriveComplianceService {
         status: "PENDING_UPLOAD",
       },
       create: {
-        driverId: data.driverId,
+        chauffeurId: data.chauffeurId,
         documentType: data.documentType,
         status: "PENDING_UPLOAD",
       },
@@ -239,7 +255,7 @@ export class ZupDriveComplianceService {
     reviewedBy?: string,
     rejectionReason?: string
   ): Promise<void> {
-    const updateData: any = {
+    const updateData: Prisma.DocumentVerificationWorkflowUpdateInput = {
       status,
     };
 
@@ -269,22 +285,25 @@ export class ZupDriveComplianceService {
   }
 
   /**
-   * Récupérer les documents expirés ou bientôt expirés.
+   * Récupérer les pièces approuvées expirées ou bientôt expirées.
+   * La référence est DocumentChauffeurDrive (versions non archivées).
    */
-  static async getExpiringDocuments(daysThreshold = 30): Promise<DocumentVerificationWorkflow[]> {
+  static async getExpiringDocuments(daysThreshold = 30): Promise<ExpiringDocument[]> {
     const threshold = new Date(Date.now() + daysThreshold * 24 * 60 * 60 * 1000);
 
-    const workflows = await db.documentVerificationWorkflow.findMany({
+    const documents = await db.documentChauffeurDrive.findMany({
       where: {
-        status: "APPROVED",
-        nextReviewDate: {
-          lte: threshold,
-        },
+        statut: "APPROVED",
+        archiveeLe: null,
+        dateExpiration: { not: null, lte: threshold },
       },
-      orderBy: { nextReviewDate: "asc" },
+      orderBy: { dateExpiration: "asc" },
+      select: { id: true, chauffeurId: true, type: true, statut: true, dateExpiration: true },
     });
 
-    return workflows.map((w) => this.formatDocumentVerificationWorkflow(w));
+    return documents.flatMap((d) =>
+      d.dateExpiration ? [{ ...d, dateExpiration: d.dateExpiration }] : []
+    );
   }
 
   /**
@@ -297,27 +316,33 @@ export class ZupDriveComplianceService {
     const drivers = await db.chauffeurDrive.findMany({
       select: {
         id: true,
-        rating: true,
         statut: true,
-        documents: { select: { status: true, nextReviewDate: true } },
+        documents: {
+          where: { archiveeLe: null },
+          select: { statut: true, dateExpiration: true },
+        },
         infractions: { select: { severity: true } },
+        // Notes reçues : celles que les passagers donnent au chauffeur.
+        notes: { where: { auteur: "PASSAGER" }, select: { note: true } },
       },
     });
 
     // Calculer les métriques
+    const now = new Date();
     const totalDrivers = drivers.length;
     const driversWithValidDocuments = drivers.filter((d) =>
-      d.documents.every((doc) => doc.status === "VALIDE" && (!doc.nextReviewDate || doc.nextReviewDate > new Date()))
+      d.documents.every((doc) => doc.statut === "APPROVED" && (!doc.dateExpiration || doc.dateExpiration > now))
     ).length;
 
-    const now = new Date();
     const thirtyDaysAhead = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const driversWithExpiringDocuments = drivers.filter((d) =>
-      d.documents.some((doc) => doc.nextReviewDate && doc.nextReviewDate > now && doc.nextReviewDate < thirtyDaysAhead)
+      d.documents.some((doc) => doc.dateExpiration && doc.dateExpiration > now && doc.dateExpiration < thirtyDaysAhead)
     ).length;
 
     const driversWithInfractions = drivers.filter((d) => d.infractions.length > 0).length;
-    const driversWithLowRating = drivers.filter((d) => d.rating && d.rating < 4).length;
+    const driversWithLowRating = drivers.filter(
+      (d) => d.notes.length > 0 && d.notes.reduce((somme, n) => somme + n.note, 0) / d.notes.length < 4
+    ).length;
 
     const complianceRate = totalDrivers > 0 ? (driversWithValidDocuments / totalDrivers) * 100 : 0;
 
@@ -347,7 +372,7 @@ export class ZupDriveComplianceService {
         driversWithLowRating,
         complianceRate,
         riskScore,
-        recommendations: JSON.stringify(recommendations),
+        recommendations,
       },
     });
 
@@ -376,16 +401,21 @@ export class ZupDriveComplianceService {
 
   // Formatters
 
-  private static formatAuditLog(log: any): AuditLog {
+  /** Les colonnes Json « findings » et « recommendations » sont des listes de textes. */
+  private static listeDeTextes(valeur: Prisma.JsonValue): string[] {
+    return Array.isArray(valeur) ? valeur.filter((v): v is string => typeof v === "string") : [];
+  }
+
+  private static formatAuditLog(log: AuditLogRow): AuditLog {
     return {
       id: log.id,
       action: log.action,
       actorId: log.actorId,
-      actorType: log.actorType,
+      actorType: log.actorType as AuditLog["actorType"],
       resourceId: log.resourceId,
-      resourceType: log.resourceType,
-      oldValue: log.oldValue ? JSON.parse(log.oldValue) : undefined,
-      newValue: log.newValue ? JSON.parse(log.newValue) : undefined,
+      resourceType: log.resourceType as AuditLog["resourceType"],
+      oldValue: log.oldValue ? (JSON.parse(log.oldValue) as Record<string, unknown>) : undefined,
+      newValue: log.newValue ? (JSON.parse(log.newValue) as Record<string, unknown>) : undefined,
       reason: log.reason || undefined,
       ipAddress: log.ipAddress || undefined,
       userAgent: log.userAgent || undefined,
@@ -393,13 +423,13 @@ export class ZupDriveComplianceService {
     };
   }
 
-  private static formatComplianceCheck(check: any): ComplianceCheck {
+  private static formatComplianceCheck(check: ComplianceCheckRow): ComplianceCheck {
     return {
       id: check.id,
-      driverId: check.driverId,
-      type: check.type,
-      status: check.status,
-      findings: JSON.parse(check.findings || "[]"),
+      chauffeurId: check.chauffeurId,
+      type: check.type as ComplianceCheck["type"],
+      status: check.status as ComplianceCheck["status"],
+      findings: ZupDriveComplianceService.listeDeTextes(check.findings),
       expiresAt: check.expiresAt,
       completedAt: check.completedAt || undefined,
       completedBy: check.completedBy || undefined,
@@ -409,12 +439,12 @@ export class ZupDriveComplianceService {
     };
   }
 
-  private static formatDocumentVerificationWorkflow(workflow: any): DocumentVerificationWorkflow {
+  private static formatDocumentVerificationWorkflow(workflow: DocumentVerificationWorkflowRow): DocumentVerificationWorkflow {
     return {
       id: workflow.id,
-      driverId: workflow.driverId,
-      documentType: workflow.documentType,
-      status: workflow.status,
+      chauffeurId: workflow.chauffeurId,
+      documentType: workflow.documentType as DocumentVerificationWorkflow["documentType"],
+      status: workflow.status as DocumentVerificationWorkflow["status"],
       uploadedAt: workflow.uploadedAt || undefined,
       reviewedAt: workflow.reviewedAt || undefined,
       reviewedBy: workflow.reviewedBy || undefined,
@@ -425,10 +455,10 @@ export class ZupDriveComplianceService {
     };
   }
 
-  private static formatComplianceReport(report: any): ComplianceReport {
+  private static formatComplianceReport(report: ComplianceReportRow): ComplianceReport {
     return {
       id: report.id,
-      reportType: report.reportType,
+      reportType: report.reportType as ComplianceReport["reportType"],
       generatedAt: report.generatedAt,
       generatedBy: report.generatedBy,
       totalDrivers: report.totalDrivers,
@@ -438,7 +468,7 @@ export class ZupDriveComplianceService {
       driversWithLowRating: report.driversWithLowRating,
       complianceRate: report.complianceRate,
       riskScore: report.riskScore,
-      recommendations: JSON.parse(report.recommendations || "[]"),
+      recommendations: ZupDriveComplianceService.listeDeTextes(report.recommendations),
     };
   }
 }

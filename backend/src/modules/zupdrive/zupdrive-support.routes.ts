@@ -5,6 +5,18 @@ import { ZupDriveSupportService } from "./zupdrive-support.service";
 
 const router = Router();
 
+const idSchema = z.string().min(1);
+
+const filtresTicketsSchema = z.object({
+  status: z.enum(["OUVERT", "EN_COURS", "EN_ATTENTE_CLIENT", "RESOLU", "FERME"]).optional(),
+  priority: z.enum(["BASSE", "MOYENNE", "HAUTE", "CRITIQUE"]).optional(),
+  category: z.enum(["TECHNIQUE", "PAIEMENT", "INFRACTION", "DOCUMENT", "AUTRE"]).optional(),
+  assignedTo: z.string().optional(),
+  reporterId: z.string().optional(),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+});
+
 /**
  * POST /api/zupdrive/support/tickets
  * Créer un nouveau ticket de support
@@ -38,20 +50,10 @@ router.post(
 router.get(
   "/admin/tickets",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      status: z.enum(["OUVERT", "EN_COURS", "EN_ATTENTE_CLIENT", "RESOLU", "FERME"]).optional(),
-      priority: z.enum(["BASSE", "MOYENNE", "HAUTE", "CRITIQUE"]).optional(),
-      category: z.enum(["TECHNIQUE", "PAIEMENT", "INFRACTION", "DOCUMENT", "AUTRE"]).optional(),
-      assignedTo: z.string().optional(),
-      reporterId: z.string().optional(),
-      limit: z.coerce.number().min(1).max(100).optional().default("50"),
-      offset: z.coerce.number().min(0).optional().default("0"),
-    }),
-  }),
+  validateRequest({ query: filtresTicketsSchema }),
   async (req, res, next) => {
     try {
-      const result = await ZupDriveSupportService.listTickets(req.query as any);
+      const result = await ZupDriveSupportService.listTickets(req.query as unknown as z.infer<typeof filtresTicketsSchema>);
       res.json(result);
     } catch (error) {
       next(error);
@@ -63,9 +65,9 @@ router.get(
  * GET /api/zupdrive/admin/support/tickets/:id
  * Récupérer un ticket avec ses messages
  */
-router.get("/admin/tickets/:id", adminAuth, async (req, res, next) => {
+router.get("/admin/tickets/:id", ...adminAuth, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const id = idSchema.parse(req.params.id);
     const ticket = await ZupDriveSupportService.getTicketWithMessages(id);
     res.json(ticket);
   } catch (error) {
@@ -87,7 +89,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { agentId } = req.body;
       await ZupDriveSupportService.assignTicket(id, agentId);
       res.json({ success: true, message: "Ticket assigné" });
@@ -113,7 +115,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { authorId, authorType, message, attachmentUrl } = req.body;
 
       const supportMessage = await ZupDriveSupportService.addMessage({
@@ -146,7 +148,7 @@ router.patch(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { status, resolution } = req.body;
       await ZupDriveSupportService.updateTicketStatus(id, status, resolution);
       res.json({ success: true, message: "Statut mis à jour" });
@@ -170,7 +172,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { newPriority } = req.body;
       await ZupDriveSupportService.escalateTicket(id, newPriority);
       res.json({ success: true, message: "Ticket escaladé" });
@@ -194,7 +196,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = idSchema.parse(req.params.id);
       const { resolution } = req.body;
       await ZupDriveSupportService.closeTicket(id, resolution);
       res.json({ success: true, message: "Ticket fermé" });
@@ -208,7 +210,7 @@ router.post(
  * GET /api/zupdrive/admin/support/metrics
  * Récupérer les métriques de support (derniers 30 jours)
  */
-router.get("/admin/metrics", adminAuth, async (req, res, next) => {
+router.get("/admin/metrics", ...adminAuth, async (_req, res, next) => {
   try {
     const metrics = await ZupDriveSupportService.getSupportMetrics();
     res.json(metrics);

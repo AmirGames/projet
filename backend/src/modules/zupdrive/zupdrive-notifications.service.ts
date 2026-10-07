@@ -1,3 +1,4 @@
+import type { NotificationAlert as AlerteDb, NotificationLog as JournalDb, NotificationTemplate as GabaritDb, Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
@@ -39,7 +40,7 @@ export interface NotificationLog {
 
 export interface NotificationAlert {
   id: string;
-  driverId: string;
+  chauffeurId: string;
   type: "DOCUMENT_EXPIRY" | "INFRACTION_REPORTED" | "SUSPENSION" | "PAYMENT_ISSUE" | "RATING_LOW" | "CUSTOM";
   severity: "INFO" | "WARNING" | "CRITICAL";
   title: string;
@@ -117,7 +118,7 @@ export class ZupDriveNotificationsService {
   }
 
   /**
-   * Envoyer une notification à un driver.
+   * Envoyer une notification à un chauffeur.
    */
   static async sendNotification(data: {
     recipientId: string;
@@ -180,15 +181,16 @@ export class ZupDriveNotificationsService {
    */
   static async triggerEventNotification(event: {
     type: "DOCUMENT_EXPIRY" | "INFRACTION_REPORTED" | "SUSPENSION" | "PAYMENT_ISSUE";
-    driverId: string;
+    chauffeurId: string;
     variables: Record<string, string>;
   }): Promise<void> {
-    const driver = await db.chauffeurDrive.findUnique({
-      where: { id: event.driverId },
-      select: { email: true, phone: true },
+    // L'email est porté par le compte utilisateur, pas par la fiche chauffeur.
+    const chauffeur = await db.chauffeurDrive.findUnique({
+      where: { id: event.chauffeurId },
+      select: { telephone: true, user: { select: { email: true } } },
     });
 
-    if (!driver) throw new ApiError(404, "Chauffeur non trouvé");
+    if (!chauffeur) throw new ApiError(404, "Chauffeur non trouvé");
 
     // Mapper l'événement à un template
     const templateMap: Record<string, string> = {
@@ -202,13 +204,13 @@ export class ZupDriveNotificationsService {
     if (!templateKey) return;
 
     // Envoyer email
-    if (driver.email) {
+    if (chauffeur.user.email) {
       await this.sendNotification({
-        recipientId: event.driverId,
+        recipientId: event.chauffeurId,
         recipientType: "CHAUFFEUR",
         templateKey,
         type: "EMAIL",
-        recipient: driver.email,
+        recipient: chauffeur.user.email,
         variables: event.variables,
       });
     }
@@ -217,10 +219,10 @@ export class ZupDriveNotificationsService {
   }
 
   /**
-   * Créer une alerte pour un driver.
+   * Créer une alerte pour un chauffeur.
    */
   static async createAlert(data: {
-    driverId: string;
+    chauffeurId: string;
     type: "DOCUMENT_EXPIRY" | "INFRACTION_REPORTED" | "SUSPENSION" | "PAYMENT_ISSUE" | "RATING_LOW" | "CUSTOM";
     severity: "INFO" | "WARNING" | "CRITICAL";
     title: string;
@@ -229,7 +231,7 @@ export class ZupDriveNotificationsService {
   }): Promise<NotificationAlert> {
     const alert = await db.notificationAlert.create({
       data: {
-        driverId: data.driverId,
+        chauffeurId: data.chauffeurId,
         type: data.type,
         severity: data.severity,
         title: data.title,
@@ -239,17 +241,17 @@ export class ZupDriveNotificationsService {
       },
     });
 
-    logger.info(`Alert created for driver ${data.driverId}: ${data.type}`);
+    logger.info(`Alert created for chauffeur ${data.chauffeurId}: ${data.type}`);
     return this.formatAlert(alert);
   }
 
   /**
-   * Récupérer les alertes non lues d'un driver.
+   * Récupérer les alertes non lues d'un chauffeur.
    */
-  static async getUnreadAlerts(driverId: string): Promise<NotificationAlert[]> {
+  static async getUnreadAlerts(chauffeurId: string): Promise<NotificationAlert[]> {
     const alerts = await db.notificationAlert.findMany({
       where: {
-        driverId,
+        chauffeurId,
         read: false,
       },
       orderBy: { createdAt: "desc" },
@@ -274,12 +276,12 @@ export class ZupDriveNotificationsService {
   }
 
   /**
-   * Marquer toutes les alertes d'un driver comme lues.
+   * Marquer toutes les alertes d'un chauffeur comme lues.
    */
-  static async markAllAlertsAsRead(driverId: string): Promise<void> {
+  static async markAllAlertsAsRead(chauffeurId: string): Promise<void> {
     await db.notificationAlert.updateMany({
       where: {
-        driverId,
+        chauffeurId,
         read: false,
       },
       data: {
@@ -288,7 +290,7 @@ export class ZupDriveNotificationsService {
       },
     });
 
-    logger.info(`All alerts for driver ${driverId} marked as read`);
+    logger.info(`All alerts for chauffeur ${chauffeurId} marked as read`);
   }
 
   /**
@@ -304,7 +306,7 @@ export class ZupDriveNotificationsService {
     const limit = Math.min(filters.limit || 50, 100);
     const offset = filters.offset || 0;
 
-    const where: any = {};
+    const where: Prisma.NotificationLogWhereInput = {};
     if (filters.recipientId) where.recipientId = filters.recipientId;
     if (filters.type) where.type = filters.type;
     if (filters.status) where.status = filters.status;
@@ -366,7 +368,7 @@ export class ZupDriveNotificationsService {
     status: "SENT" | "FAILED" | "BOUNCED",
     errorMessage?: string
   ): Promise<void> {
-    const data: any = { status };
+    const data: Prisma.NotificationLogUpdateInput = { status };
     if (status === "FAILED" || status === "BOUNCED") {
       data.failedAt = new Date();
       data.errorMessage = errorMessage;
@@ -384,12 +386,12 @@ export class ZupDriveNotificationsService {
 
   // Formatters
 
-  private static formatTemplate(template: any): NotificationTemplate {
+  private static formatTemplate(template: GabaritDb): NotificationTemplate {
     return {
       id: template.id,
       key: template.key,
       name: template.name,
-      type: template.type,
+      type: template.type as NotificationTemplate["type"],
       subject: template.subject || undefined,
       body: template.body,
       variables: JSON.parse(template.variables || "[]"),
@@ -399,14 +401,14 @@ export class ZupDriveNotificationsService {
     };
   }
 
-  private static formatNotificationLog(log: any): NotificationLog {
+  private static formatNotificationLog(log: JournalDb): NotificationLog {
     return {
       id: log.id,
       recipientId: log.recipientId,
-      recipientType: log.recipientType,
-      type: log.type,
+      recipientType: log.recipientType as NotificationLog["recipientType"],
+      type: log.type as NotificationLog["type"],
       templateKey: log.templateKey,
-      status: log.status,
+      status: log.status as NotificationLog["status"],
       recipient: log.recipient,
       subject: log.subject || undefined,
       body: log.body,
@@ -418,12 +420,12 @@ export class ZupDriveNotificationsService {
     };
   }
 
-  private static formatAlert(alert: any): NotificationAlert {
+  private static formatAlert(alert: AlerteDb): NotificationAlert {
     return {
       id: alert.id,
-      driverId: alert.driverId,
-      type: alert.type,
-      severity: alert.severity,
+      chauffeurId: alert.chauffeurId,
+      type: alert.type as NotificationAlert["type"],
+      severity: alert.severity as NotificationAlert["severity"],
       title: alert.title,
       message: alert.message,
       triggerAction: alert.triggerAction || undefined,

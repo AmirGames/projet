@@ -5,6 +5,21 @@ import { ZupDriveWebhooksService } from "./zupdrive-webhooks.service";
 
 const router = Router();
 
+const idSchema = z.string().min(1);
+
+/** Un booléen de query-string : « false » reste faux (z.coerce.boolean() le lirait vrai). */
+const booleenQuery = z
+  .enum(["true", "false"])
+  .default("true")
+  .transform((valeur) => valeur === "true");
+
+const filtresLivraisonsSchema = z.object({
+  webhookId: z.string().optional(),
+  status: z.string().optional(),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+});
+
 /**
  * Webhook Endpoints Management
  */
@@ -44,13 +59,13 @@ router.get(
   ...adminAuth,
   validateRequest({
     query: z.object({
-      activeOnly: z.coerce.boolean().optional().default("true"),
+      activeOnly: booleenQuery,
     }),
   }),
   async (req, res, next) => {
     try {
-      const { activeOnly } = req.query as any;
-      const endpoints = await ZupDriveWebhooksService.listWebhookEndpoints(activeOnly === "true");
+      const { activeOnly } = req.query as unknown as { activeOnly: boolean };
+      const endpoints = await ZupDriveWebhooksService.listWebhookEndpoints(activeOnly);
       res.json(endpoints);
     } catch (error) {
       next(error);
@@ -74,7 +89,7 @@ router.patch(
   }),
   async (req, res, next) => {
     try {
-      const { endpointId } = req.params;
+      const endpointId = idSchema.parse(req.params.endpointId);
       await ZupDriveWebhooksService.updateWebhookEndpoint(endpointId, req.body);
       res.json({ success: true, message: "Endpoint mis à jour" });
     } catch (error) {
@@ -87,9 +102,9 @@ router.patch(
  * DELETE /api/zupdrive/admin/webhooks/endpoints/:endpointId
  * Supprimer un endpoint de webhook
  */
-router.delete("/admin/endpoints/:endpointId", adminAuth, async (req, res, next) => {
+router.delete("/admin/endpoints/:endpointId", ...adminAuth, async (req, res, next) => {
   try {
-    const { endpointId } = req.params;
+    const endpointId = idSchema.parse(req.params.endpointId);
     await ZupDriveWebhooksService.deleteWebhookEndpoint(endpointId);
     res.json({ success: true, message: "Endpoint supprimé" });
   } catch (error) {
@@ -113,7 +128,7 @@ router.post(
       eventType: z.string(),
       resourceType: z.enum(["DRIVER", "DOCUMENT", "INFRACTION", "PAYMENT", "ALERT"]),
       resourceId: z.string(),
-      data: z.record(z.any()),
+      data: z.record(z.string(), z.unknown()),
     }),
   }),
   async (req, res, next) => {
@@ -137,17 +152,12 @@ router.post(
 router.get(
   "/admin/deliveries",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      webhookId: z.string().optional(),
-      status: z.string().optional(),
-      limit: z.coerce.number().min(1).max(100).optional().default("50"),
-      offset: z.coerce.number().min(0).optional().default("0"),
-    }),
-  }),
+  validateRequest({ query: filtresLivraisonsSchema }),
   async (req, res, next) => {
     try {
-      const result = await ZupDriveWebhooksService.getWebhookDeliveryHistory(req.query as any);
+      const result = await ZupDriveWebhooksService.getWebhookDeliveryHistory(
+        req.query as unknown as z.infer<typeof filtresLivraisonsSchema>
+      );
       res.json(result);
     } catch (error) {
       next(error);
@@ -172,7 +182,7 @@ router.post(
       type: z.enum(["EMAIL", "SMS", "PAYMENT", "CUSTOM"]),
       apiKey: z.string().min(5),
       webhookSigningKey: z.string().optional(),
-      config: z.record(z.any()).optional(),
+      config: z.record(z.string(), z.unknown()).optional(),
     }),
   }),
   async (req, res, next) => {
@@ -194,13 +204,13 @@ router.get(
   ...adminAuth,
   validateRequest({
     query: z.object({
-      activeOnly: z.coerce.boolean().optional().default("true"),
+      activeOnly: booleenQuery,
     }),
   }),
   async (req, res, next) => {
     try {
-      const { activeOnly } = req.query as any;
-      const integrations = await ZupDriveWebhooksService.listProviderIntegrations(activeOnly === "true");
+      const { activeOnly } = req.query as unknown as { activeOnly: boolean };
+      const integrations = await ZupDriveWebhooksService.listProviderIntegrations(activeOnly);
       res.json(integrations);
     } catch (error) {
       next(error);
@@ -220,12 +230,12 @@ router.patch(
       apiKey: z.string().optional(),
       webhookSigningKey: z.string().optional(),
       active: z.boolean().optional(),
-      config: z.record(z.any()).optional(),
+      config: z.record(z.string(), z.unknown()).optional(),
     }),
   }),
   async (req, res, next) => {
     try {
-      const { integrationId } = req.params;
+      const integrationId = idSchema.parse(req.params.integrationId);
       await ZupDriveWebhooksService.updateProviderIntegration(integrationId, req.body);
       res.json({ success: true, message: "Intégration mise à jour" });
     } catch (error) {
@@ -242,7 +252,7 @@ router.patch(
  * GET /api/zupdrive/admin/webhooks/stats
  * Récupérer les statistiques des webhooks
  */
-router.get("/admin/stats", adminAuth, async (req, res, next) => {
+router.get("/admin/stats", ...adminAuth, async (_req, res, next) => {
   try {
     const stats = await ZupDriveWebhooksService.getWebhookStats();
     res.json(stats);

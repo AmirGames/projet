@@ -2,9 +2,7 @@
  * Tests: WebSocket Service & Event Broadcasting
  */
 
-import { WebSocketService } from '../services/websocket';
 import { EventBroadcaster } from '../services/event-broadcaster';
-import { WebSocket, WebSocketServer } from 'ws';
 
 // Mock WebSocketServer
 jest.mock('ws', () => ({
@@ -16,14 +14,6 @@ jest.mock('ws', () => ({
 }));
 
 describe('WebSocket Service', () => {
-  let wsService: WebSocketService;
-  let mockServer: any;
-
-  beforeEach(() => {
-    mockServer = {};
-    // wsService = new WebSocketService(mockServer);
-  });
-
   describe('Connection Management', () => {
     it('should accept authenticated connections', () => {
       // Test connection with valid token

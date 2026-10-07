@@ -5,8 +5,6 @@
  * Vérifie les transitions d'état et les permissions
  */
 
-import request from "supertest";
-import { Express } from "express";
 import { db } from "../../../services/db";
 
 // Mock Prisma
@@ -29,10 +27,12 @@ jest.mock("../../../services/db", () => ({
   },
 }));
 
-describe("Chauffeur Onboarding Routes", () => {
-  const clientToken = "client-token-123";
-  const adminToken = "admin-token-456";
+/** Résultat Prisma partiel : seuls les champs lus par le scénario sont fournis. */
+function partiel<T>(valeur: object): T {
+  return valeur as unknown as T;
+}
 
+describe("Chauffeur Onboarding Routes", () => {
   const mockUser = {
     id: "user-123",
     email: "client@example.com",
@@ -49,32 +49,25 @@ describe("Chauffeur Onboarding Routes", () => {
 
   describe("POST /chauffeur/candidacy/create", () => {
     it("devrait créer un dossier BROUILLON pour un client", async () => {
-      jest.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.customer.findUnique).mockResolvedValueOnce(partiel({
         status: "ACTIVE",
-      } as any);
+      }));
 
       jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(null);
 
-      jest.mocked(db.chauffeurDrive.create).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.create).mockResolvedValueOnce(partiel({
         id: "chauffeur-123",
         statut: "BROUILLON",
-      } as any);
+      }));
 
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockUser.id,
         email: mockUser.email,
         customer: { id: "customer-123", status: "ACTIVE" },
         chauffeurDrive: { id: "chauffeur-123", statut: "BROUILLON" },
         accesEquipe: [],
         driver: null,
-      } as any);
-
-      // Simulation requête
-      const payload = {
-        nomComplet: "Jean Dupont",
-        telephone: "0612345678",
-        region: "BRUXELLES",
-      };
+      }));
 
       // POST request
       const response = {
@@ -104,14 +97,14 @@ describe("Chauffeur Onboarding Routes", () => {
     });
 
     it("devrait rejeter si dossier existe déjà", async () => {
-      jest.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.customer.findUnique).mockResolvedValueOnce(partiel({
         status: "ACTIVE",
-      } as any);
+      }));
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(partiel({
         id: "chauffeur-123",
         statut: "SOUMIS",
-      } as any);
+      }));
 
       const response = {
         status: 400,
@@ -126,23 +119,23 @@ describe("Chauffeur Onboarding Routes", () => {
 
   describe("POST /chauffeur/candidacy/submit", () => {
     it("devrait passer le dossier de BROUILLON à SOUMIS", async () => {
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(partiel({
         statut: "BROUILLON",
-      } as any);
+      }));
 
-      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce(partiel({
         statut: "SOUMIS",
         soumisLe: new Date(),
-      } as any);
+      }));
 
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockUser.id,
         email: mockUser.email,
         customer: { id: "customer-123", status: "ACTIVE" },
         chauffeurDrive: { id: "chauffeur-123", statut: "SOUMIS" },
         accesEquipe: [],
         driver: null,
-      } as any);
+      }));
 
       const response = {
         status: 200,
@@ -170,17 +163,17 @@ describe("Chauffeur Onboarding Routes", () => {
         motifStatut: null,
       };
 
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockUser.id,
         email: mockUser.email,
         customer: { id: "customer-123", status: "ACTIVE" },
         chauffeurDrive: { id: "chauffeur-123", statut: "SOUMIS" },
         accesEquipe: [],
         driver: null,
-      } as any);
+      }));
 
       jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(
-        chauffeurData as any
+        partiel(chauffeurData)
       );
 
       const response = {
@@ -197,14 +190,14 @@ describe("Chauffeur Onboarding Routes", () => {
     });
 
     it("devrait retourner 404 si pas de dossier", async () => {
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockUser.id,
         email: mockUser.email,
         customer: { id: "customer-123", status: "ACTIVE" },
         chauffeurDrive: null,
         accesEquipe: [],
         driver: null,
-      } as any);
+      }));
 
       const response = {
         status: 404,
@@ -221,33 +214,33 @@ describe("Chauffeur Onboarding Routes", () => {
     it("admin ZupDrive devrait approuver un dossier SOUMIS", async () => {
       // Vérifier que c'est admin
       jest.mocked(db.user.findUnique)
-        .mockResolvedValueOnce({
+        .mockResolvedValueOnce(partiel({
           id: mockAdmin.id,
           email: mockAdmin.email,
           customer: null,
           driver: null,
           chauffeurDrive: null,
           accesEquipe: [{ plateforme: "DRIVE", role: "ADMIN" }],
-        } as any)
-        .mockResolvedValueOnce({
+        }))
+        .mockResolvedValueOnce(partiel({
           id: mockUser.id,
           email: mockUser.email,
           customer: { id: "customer-123", status: "ACTIVE" },
           chauffeurDrive: { id: "chauffeur-123", statut: "VALIDE" },
           accesEquipe: [],
           driver: null,
-        } as any);
+        }));
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(partiel({
         userId: mockUser.id,
         statut: "SOUMIS",
-      } as any);
+      }));
 
-      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce(partiel({
         statut: "VALIDE",
         valideLe: new Date(),
         validePar: mockAdmin.id,
-      } as any);
+      }));
 
       const response = {
         status: 200,
@@ -268,14 +261,14 @@ describe("Chauffeur Onboarding Routes", () => {
     });
 
     it("non-admin ne devrait pas pouvoir approuver", async () => {
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockUser.id,
         email: mockUser.email,
         customer: { id: "customer-123", status: "ACTIVE" },
         driver: null,
         chauffeurDrive: null,
         accesEquipe: [], // Pas admin!
-      } as any);
+      }));
 
       const response = {
         status: 403,
@@ -290,23 +283,23 @@ describe("Chauffeur Onboarding Routes", () => {
 
   describe("POST /admin/candidates/:id/reject", () => {
     it("admin ZupDrive devrait refuser un dossier SOUMIS", async () => {
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockAdmin.id,
         email: mockAdmin.email,
         customer: null,
         driver: null,
         chauffeurDrive: null,
         accesEquipe: [{ plateforme: "DRIVE", role: "ADMIN" }],
-      } as any);
+      }));
 
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(partiel({
         statut: "SOUMIS",
-      } as any);
+      }));
 
-      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce({
+      jest.mocked(db.chauffeurDrive.update).mockResolvedValueOnce(partiel({
         statut: "REFUSE",
         motifStatut: "Documents insuffisants",
-      } as any);
+      }));
 
       const response = {
         status: 200,
@@ -322,14 +315,14 @@ describe("Chauffeur Onboarding Routes", () => {
 
   describe("GET /admin/candidates/pending", () => {
     it("admin ZupDrive devrait voir les dossiers SOUMIS", async () => {
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockAdmin.id,
         email: mockAdmin.email,
         customer: null,
         driver: null,
         chauffeurDrive: null,
         accesEquipe: [{ plateforme: "DRIVE", role: "ADMIN" }],
-      } as any);
+      }));
 
       const pending = [
         {
@@ -349,7 +342,7 @@ describe("Chauffeur Onboarding Routes", () => {
       ];
 
       jest.mocked(db.chauffeurDrive.findMany).mockResolvedValueOnce(
-        pending as any
+        partiel(pending)
       );
 
       const response = {
@@ -368,14 +361,14 @@ describe("Chauffeur Onboarding Routes", () => {
 
   describe("GET /admin/candidates/:id/details", () => {
     it("admin ZupDrive devrait voir les détails complets + documents", async () => {
-      jest.mocked(db.user.findUnique).mockResolvedValueOnce({
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel({
         id: mockAdmin.id,
         email: mockAdmin.email,
         customer: null,
         driver: null,
         chauffeurDrive: null,
         accesEquipe: [{ plateforme: "DRIVE", role: "ADMIN" }],
-      } as any);
+      }));
 
       const chauffeurDetails = {
         id: "chauffeur-123",
@@ -419,7 +412,7 @@ describe("Chauffeur Onboarding Routes", () => {
       };
 
       jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce(
-        chauffeurDetails as any
+        partiel(chauffeurDetails)
       );
 
       const response = {

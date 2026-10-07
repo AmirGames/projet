@@ -4,7 +4,7 @@
  * Intégrer le service de notifications avec le système d'événements
  */
 
-import { notificationsService, NotificationPayload } from '../services/notifications';
+import { notificationsService } from '../services/notifications';
 import { EventBroadcaster } from '../services/event-broadcaster';
 
 /**

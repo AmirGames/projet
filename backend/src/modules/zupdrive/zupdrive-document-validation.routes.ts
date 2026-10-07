@@ -9,7 +9,6 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ZupDriveDocumentValidationService } from "./zupdrive-document-validation.service";
 import { UnifiedRolesService } from "../auth/unified-roles.service";
-import { ApiError } from "../../middleware/api-error";
 import { db } from "../../services/db";
 
 const router = Router();
@@ -66,7 +65,7 @@ router.post(
 
       const result = await ZupDriveDocumentValidationService.uploadDocument({
         chauffeurId: validated.chauffeurId,
-        type: validated.type as any,
+        type: validated.type,
         url: validated.url,
         expiresAt: validated.expiresAt ? new Date(validated.expiresAt) : undefined,
       });

@@ -82,7 +82,7 @@ router.get(
         return res.status(403).json({ error: "Admin only" });
       }
 
-      const report = await db.complianceReport.findFirst({
+      const report = await db.complianceReportDrive.findFirst({
         where: { chauffeurId },
         orderBy: { createdAt: "desc" },
       });
@@ -150,19 +150,16 @@ router.get(
         return res.status(403).json({ error: "Admin only" });
       }
 
-      const flagged = await db.complianceReport.findMany({
-        where: {
-          flaggedForReview: true,
-          riskLevel: { in: ["HIGH", "CRITICAL"] },
-        },
-        orderBy: { riskScore: "desc" },
+      const flagged = await db.complianceReportDrive.findMany({
+        where: { riskLevel: { in: ["HIGH", "CRITICAL"] } },
+        // Score de conformité le plus bas d'abord : le risque le plus élevé en tête.
+        orderBy: { complianceScore: "asc" },
         take: 50,
         select: {
           id: true,
           chauffeurId: true,
-          riskScore: true,
+          complianceScore: true,
           riskLevel: true,
-          autoDecision: true,
           createdAt: true,
           chauffeur: {
             select: {
@@ -200,27 +197,27 @@ router.get(
       }
 
       const [total, critical, high, medium, low, flagged, recent] = await Promise.all([
-        db.complianceReport.count(),
-        db.complianceReport.count({ where: { riskLevel: "CRITICAL" } }),
-        db.complianceReport.count({ where: { riskLevel: "HIGH" } }),
-        db.complianceReport.count({ where: { riskLevel: "MEDIUM" } }),
-        db.complianceReport.count({ where: { riskLevel: "LOW" } }),
-        db.complianceReport.count({ where: { flaggedForReview: true } }),
-        db.complianceReport.findMany({
+        db.complianceReportDrive.count(),
+        db.complianceReportDrive.count({ where: { riskLevel: "CRITICAL" } }),
+        db.complianceReportDrive.count({ where: { riskLevel: "HIGH" } }),
+        db.complianceReportDrive.count({ where: { riskLevel: "MEDIUM" } }),
+        db.complianceReportDrive.count({ where: { riskLevel: "LOW" } }),
+        db.complianceReportDrive.count({ where: { riskLevel: { in: ["HIGH", "CRITICAL"] } } }),
+        db.complianceReportDrive.findMany({
           orderBy: { createdAt: "desc" },
           take: 5,
           select: {
             id: true,
             chauffeurId: true,
-            riskScore: true,
+            complianceScore: true,
             riskLevel: true,
             createdAt: true,
           },
         }),
       ]);
 
-      const avgRiskScore = await db.complianceReport.aggregate({
-        _avg: { riskScore: true },
+      const avgRiskScore = await db.complianceReportDrive.aggregate({
+        _avg: { complianceScore: true },
       });
 
       return res.json({
@@ -234,7 +231,7 @@ router.get(
             low,
           },
           flaggedForReview: flagged,
-          averageRiskScore: Math.round(avgRiskScore._avg.riskScore || 0),
+          averageRiskScore: avgRiskScore._avg.complianceScore === null ? 0 : 100 - Math.round(avgRiskScore._avg.complianceScore),
           recentReports: recent,
         },
       });
@@ -262,7 +259,7 @@ router.get(
         return res.status(403).json({ error: "Admin only" });
       }
 
-      const report = await db.complianceReport.findUnique({
+      const report = await db.complianceReportDrive.findUnique({
         where: { id: reportId },
         include: {
           chauffeur: {

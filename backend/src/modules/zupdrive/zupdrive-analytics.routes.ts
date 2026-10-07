@@ -5,6 +5,23 @@ import { ZupDriveAnalyticsService } from "./zupdrive-analytics.service";
 
 const router = Router();
 
+const periodeSchema = z.object({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+});
+type Periode = z.infer<typeof periodeSchema>;
+
+const performanceSchema = periodeSchema.extend({
+  limit: z.coerce.number().min(1).max(100).default(50),
+});
+
+const comparaisonSchema = z.object({
+  period1Start: z.string().datetime(),
+  period1End: z.string().datetime(),
+  period2Start: z.string().datetime(),
+  period2End: z.string().datetime(),
+});
+
 /**
  * GET /api/zupdrive/analytics/period
  * Rapport analytique pour une période donnée
@@ -12,15 +29,10 @@ const router = Router();
 router.get(
   "/period",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      startDate: z.string().datetime(),
-      endDate: z.string().datetime(),
-    }),
-  }),
+  validateRequest({ query: periodeSchema }),
   async (req, res, next) => {
     try {
-      const { startDate, endDate } = req.query as any;
+      const { startDate, endDate } = req.query as unknown as Periode;
 
       const analytics = await ZupDriveAnalyticsService.getPeriodAnalytics(
         new Date(startDate),
@@ -41,21 +53,15 @@ router.get(
 router.get(
   "/drivers",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      startDate: z.string().datetime(),
-      endDate: z.string().datetime(),
-      limit: z.coerce.number().min(1).max(100).optional().default("50"),
-    }),
-  }),
+  validateRequest({ query: performanceSchema }),
   async (req, res, next) => {
     try {
-      const { startDate, endDate, limit } = req.query as any;
+      const { startDate, endDate, limit } = req.query as unknown as z.infer<typeof performanceSchema>;
 
       const performance = await ZupDriveAnalyticsService.getDriverPerformance(
         new Date(startDate),
         new Date(endDate),
-        parseInt(limit)
+        limit
       );
 
       res.json(performance);
@@ -72,15 +78,10 @@ router.get(
 router.get(
   "/regions",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      startDate: z.string().datetime(),
-      endDate: z.string().datetime(),
-    }),
-  }),
+  validateRequest({ query: periodeSchema }),
   async (req, res, next) => {
     try {
-      const { startDate, endDate } = req.query as any;
+      const { startDate, endDate } = req.query as unknown as Periode;
 
       const regionalAnalytics = await ZupDriveAnalyticsService.getRegionalAnalytics(
         new Date(startDate),
@@ -101,15 +102,10 @@ router.get(
 router.get(
   "/payments",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      startDate: z.string().datetime(),
-      endDate: z.string().datetime(),
-    }),
-  }),
+  validateRequest({ query: periodeSchema }),
   async (req, res, next) => {
     try {
-      const { startDate, endDate } = req.query as any;
+      const { startDate, endDate } = req.query as unknown as Periode;
 
       const paymentAnalytics = await ZupDriveAnalyticsService.getPaymentAnalytics(
         new Date(startDate),
@@ -130,17 +126,10 @@ router.get(
 router.get(
   "/compare",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      period1Start: z.string().datetime(),
-      period1End: z.string().datetime(),
-      period2Start: z.string().datetime(),
-      period2End: z.string().datetime(),
-    }),
-  }),
+  validateRequest({ query: comparaisonSchema }),
   async (req, res, next) => {
     try {
-      const { period1Start, period1End, period2Start, period2End } = req.query as any;
+      const { period1Start, period1End, period2Start, period2End } = req.query as unknown as z.infer<typeof comparaisonSchema>;
 
       const comparison = await ZupDriveAnalyticsService.comparePeriods(
         new Date(period1Start),
@@ -160,7 +149,7 @@ router.get(
  * GET /api/zupdrive/analytics/dashboard
  * Summary dashboard pour admins
  */
-router.get("/dashboard", adminAuth, async (req, res, next) => {
+router.get("/dashboard", ...adminAuth, async (_req, res, next) => {
   try {
     const summary = await ZupDriveAnalyticsService.getDashboardSummary();
     res.json(summary);

@@ -5,6 +5,26 @@ import { ZupDriveComplianceService } from "./zupdrive-compliance.service";
 
 const router = Router();
 
+const historiqueAuditQuery = z.object({
+  resourceId: z.string().optional(),
+  resourceType: z.string().optional(),
+  actorId: z.string().optional(),
+  action: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+  limit: z.coerce.number().min(1).max(500).optional().default(100),
+  offset: z.coerce.number().min(0).optional().default(0),
+});
+
+const documentsExpirantQuery = z.object({
+  daysThreshold: z.coerce.number().min(1).optional().default(30),
+});
+
+const rapportsQuery = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().min(0).optional().default(0),
+});
+
 /**
  * Audit Logs
  */
@@ -23,8 +43,8 @@ router.post(
       actorType: z.enum(["ADMIN", "SYSTEM", "DRIVER", "PASSAGER"]),
       resourceId: z.string(),
       resourceType: z.enum(["DRIVER", "DOCUMENT", "INFRACTION", "ALERT", "SETTING", "PAYMENT"]),
-      oldValue: z.record(z.any()).optional(),
-      newValue: z.record(z.any()).optional(),
+      oldValue: z.record(z.string(), z.unknown()).optional(),
+      newValue: z.record(z.string(), z.unknown()).optional(),
       reason: z.string().optional(),
       ipAddress: z.string().optional(),
       userAgent: z.string().optional(),
@@ -47,26 +67,16 @@ router.post(
 router.get(
   "/admin/audit-logs",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      resourceId: z.string().optional(),
-      resourceType: z.string().optional(),
-      actorId: z.string().optional(),
-      action: z.string().optional(),
-      startDate: z.string().datetime().optional(),
-      endDate: z.string().datetime().optional(),
-      limit: z.coerce.number().min(1).max(500).optional().default("100"),
-      offset: z.coerce.number().min(0).optional().default("0"),
-    }),
-  }),
+  validateRequest({ query: historiqueAuditQuery }),
   async (req, res, next) => {
     try {
+      const query = historiqueAuditQuery.parse(req.query);
       const filters = {
-        ...req.query,
-        startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
-        endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
+        ...query,
+        startDate: query.startDate ? new Date(query.startDate) : undefined,
+        endDate: query.endDate ? new Date(query.endDate) : undefined,
       };
-      const result = await ZupDriveComplianceService.getAuditHistory(filters as any);
+      const result = await ZupDriveComplianceService.getAuditHistory(filters);
       res.json(result);
     } catch (error) {
       next(error);
@@ -87,7 +97,7 @@ router.post(
   ...adminAuth,
   validateRequest({
     body: z.object({
-      driverId: z.string(),
+      chauffeurId: z.string(),
       type: z.enum(["DOCUMENT_VALIDATION", "BACKGROUND_CHECK", "FINANCIAL_VERIFICATION", "PERIODIC_REVIEW"]),
       expiresAt: z.string().datetime(),
       notes: z.string().optional(),
@@ -95,7 +105,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { expiresAt, ...data } = req.body as any;
+      const { expiresAt, ...data } = req.body;
       const check = await ZupDriveComplianceService.createComplianceCheck({
         ...data,
         expiresAt: new Date(expiresAt),
@@ -108,13 +118,13 @@ router.post(
 );
 
 /**
- * GET /api/zupdrive/admin/compliance/checks/:driverId
- * Récupérer les compliance checks d'un driver
+ * GET /api/zupdrive/admin/compliance/checks/:chauffeurId
+ * Récupérer les compliance checks d'un chauffeur
  */
-router.get("/admin/checks/:driverId", adminAuth, async (req, res, next) => {
+router.get("/admin/checks/:chauffeurId", ...adminAuth, async (req, res, next) => {
   try {
-    const { driverId } = req.params;
-    const checks = await ZupDriveComplianceService.getDriverComplianceChecks(driverId);
+    const chauffeurId = String(req.params.chauffeurId);
+    const checks = await ZupDriveComplianceService.getDriverComplianceChecks(chauffeurId);
     res.json(checks);
   } catch (error) {
     next(error);
@@ -138,7 +148,7 @@ router.patch(
   }),
   async (req, res, next) => {
     try {
-      const { checkId } = req.params;
+      const checkId = String(req.params.checkId);
       const { status, findings, completedBy, notes } = req.body;
       await ZupDriveComplianceService.updateComplianceCheckStatus(checkId, status, findings, completedBy, notes);
       res.json({ success: true, message: "Compliance check mis à jour" });
@@ -161,7 +171,7 @@ router.post(
   ...adminAuth,
   validateRequest({
     body: z.object({
-      driverId: z.string(),
+      chauffeurId: z.string(),
       documentType: z.enum(["PERMIS", "ASSURANCE", "INSPECTION", "IDENTITE"]),
     }),
   }),
@@ -191,7 +201,7 @@ router.patch(
   }),
   async (req, res, next) => {
     try {
-      const { workflowId } = req.params;
+      const workflowId = String(req.params.workflowId);
       const { status, reviewedBy, rejectionReason } = req.body;
       await ZupDriveComplianceService.updateDocumentVerificationStatus(
         workflowId,
@@ -213,15 +223,11 @@ router.patch(
 router.get(
   "/admin/expiring-documents",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      daysThreshold: z.coerce.number().min(1).optional().default("30"),
-    }),
-  }),
+  validateRequest({ query: documentsExpirantQuery }),
   async (req, res, next) => {
     try {
-      const { daysThreshold } = req.query as any;
-      const documents = await ZupDriveComplianceService.getExpiringDocuments(parseInt(daysThreshold));
+      const { daysThreshold } = documentsExpirantQuery.parse(req.query);
+      const documents = await ZupDriveComplianceService.getExpiringDocuments(daysThreshold);
       res.json(documents);
     } catch (error) {
       next(error);
@@ -263,16 +269,11 @@ router.post(
 router.get(
   "/admin/reports",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      limit: z.coerce.number().min(1).max(100).optional().default("50"),
-      offset: z.coerce.number().min(0).optional().default("0"),
-    }),
-  }),
+  validateRequest({ query: rapportsQuery }),
   async (req, res, next) => {
     try {
-      const { limit, offset } = req.query as any;
-      const result = await ZupDriveComplianceService.getComplianceReports(parseInt(limit), parseInt(offset));
+      const { limit, offset } = rapportsQuery.parse(req.query);
+      const result = await ZupDriveComplianceService.getComplianceReports(limit, offset);
       res.json(result);
     } catch (error) {
       next(error);

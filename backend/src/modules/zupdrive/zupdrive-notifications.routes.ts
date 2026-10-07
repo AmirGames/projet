@@ -5,6 +5,22 @@ import { ZupDriveNotificationsService } from "./zupdrive-notifications.service";
 
 const router = Router();
 
+const idSchema = z.string().min(1);
+
+/** Un booléen de query-string : « false » reste faux (z.coerce.boolean() le lirait vrai). */
+const booleenQuery = z
+  .enum(["true", "false"])
+  .default("true")
+  .transform((valeur) => valeur === "true");
+
+const historiqueSchema = z.object({
+  recipientId: z.string().optional(),
+  type: z.enum(["EMAIL", "SMS", "PUSH"]).optional(),
+  status: z.enum(["PENDING", "SENT", "FAILED", "BOUNCED"]).optional(),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+});
+
 /**
  * Notification Templates
  */
@@ -46,13 +62,13 @@ router.get(
   ...adminAuth,
   validateRequest({
     query: z.object({
-      activeOnly: z.coerce.boolean().optional().default("true"),
+      activeOnly: booleenQuery,
     }),
   }),
   async (req, res, next) => {
     try {
-      const { activeOnly } = req.query as any;
-      const templates = await ZupDriveNotificationsService.listTemplates(activeOnly === "true");
+      const { activeOnly } = req.query as unknown as { activeOnly: boolean };
+      const templates = await ZupDriveNotificationsService.listTemplates(activeOnly);
       res.json(templates);
     } catch (error) {
       next(error);
@@ -64,9 +80,9 @@ router.get(
  * GET /api/zupdrive/admin/notifications/templates/:key
  * Récupérer un template spécifique
  */
-router.get("/admin/templates/:key", adminAuth, async (req, res, next) => {
+router.get("/admin/templates/:key", ...adminAuth, async (req, res, next) => {
   try {
-    const { key } = req.params;
+    const key = idSchema.parse(req.params.key);
     const template = await ZupDriveNotificationsService.getTemplate(key);
     res.json(template);
   } catch (error) {
@@ -92,7 +108,7 @@ router.post(
       templateKey: z.string(),
       type: z.enum(["EMAIL", "SMS", "PUSH"]),
       recipient: z.string(),
-      variables: z.record(z.string()).optional(),
+      variables: z.record(z.string(), z.string()).optional(),
     }),
   }),
   async (req, res, next) => {
@@ -116,12 +132,13 @@ router.post(
     body: z.object({
       type: z.enum(["DOCUMENT_EXPIRY", "INFRACTION_REPORTED", "SUSPENSION", "PAYMENT_ISSUE"]),
       driverId: z.string(),
-      variables: z.record(z.string()),
+      variables: z.record(z.string(), z.string()),
     }),
   }),
   async (req, res, next) => {
     try {
-      await ZupDriveNotificationsService.triggerEventNotification(req.body);
+      const { driverId, ...reste } = req.body;
+      await ZupDriveNotificationsService.triggerEventNotification({ ...reste, chauffeurId: driverId });
       res.json({ success: true, message: "Notification déclenché" });
     } catch (error) {
       next(error);
@@ -152,7 +169,8 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const alert = await ZupDriveNotificationsService.createAlert(req.body);
+      const { driverId, ...reste } = req.body;
+      const alert = await ZupDriveNotificationsService.createAlert({ ...reste, chauffeurId: driverId });
       res.status(201).json(alert);
     } catch (error) {
       next(error);
@@ -166,7 +184,7 @@ router.post(
  */
 router.get("/alerts/unread", validateRequest({ query: z.object({ driverId: z.string() }) }), async (req, res, next) => {
   try {
-    const { driverId } = req.query as any;
+    const { driverId } = req.query as { driverId: string };
     const alerts = await ZupDriveNotificationsService.getUnreadAlerts(driverId);
     res.json(alerts);
   } catch (error) {
@@ -180,7 +198,7 @@ router.get("/alerts/unread", validateRequest({ query: z.object({ driverId: z.str
  */
 router.patch("/alerts/:id/read", async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const id = idSchema.parse(req.params.id);
     await ZupDriveNotificationsService.markAlertAsRead(id);
     res.json({ success: true, message: "Alerte marquée comme lue" });
   } catch (error) {
@@ -221,18 +239,10 @@ router.patch(
 router.get(
   "/admin/history",
   ...adminAuth,
-  validateRequest({
-    query: z.object({
-      recipientId: z.string().optional(),
-      type: z.enum(["EMAIL", "SMS", "PUSH"]).optional(),
-      status: z.enum(["PENDING", "SENT", "FAILED", "BOUNCED"]).optional(),
-      limit: z.coerce.number().min(1).max(100).optional().default("50"),
-      offset: z.coerce.number().min(0).optional().default("0"),
-    }),
-  }),
+  validateRequest({ query: historiqueSchema }),
   async (req, res, next) => {
     try {
-      const result = await ZupDriveNotificationsService.getNotificationHistory(req.query as any);
+      const result = await ZupDriveNotificationsService.getNotificationHistory(req.query as unknown as z.infer<typeof historiqueSchema>);
       res.json(result);
     } catch (error) {
       next(error);
@@ -244,7 +254,7 @@ router.get(
  * GET /api/zupdrive/admin/notifications/stats
  * Récupérer les statistiques de notifications (derniers 30 jours)
  */
-router.get("/admin/stats", adminAuth, async (req, res, next) => {
+router.get("/admin/stats", ...adminAuth, async (_req, res, next) => {
   try {
     const stats = await ZupDriveNotificationsService.getNotificationStats();
     res.json(stats);

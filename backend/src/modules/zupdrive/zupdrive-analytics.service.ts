@@ -1,5 +1,4 @@
 import { db } from "../../services/db";
-import { logger } from "../../config/logger";
 
 /**
  * Analytics et reports pour ZupDrive.
@@ -19,8 +18,8 @@ export interface AnalyticsPeriod {
 }
 
 export interface DriverPerformance {
-  driverId: string;
-  driverName: string;
+  chauffeurId: string;
+  chauffeurName: string;
   rating: number;
   totalCourses: number;
   completedCourses: number;
@@ -79,7 +78,8 @@ export class ZupDriveAnalyticsService {
       },
       select: {
         id: true,
-        notes: { select: { note: true } },
+        // Seules les notes des passagers comptent pour la moyenne du chauffeur.
+        notes: { where: { auteur: "PASSAGER" }, select: { note: true } },
         statut: true,
       },
     });
@@ -116,7 +116,6 @@ export class ZupDriveAnalyticsService {
       select: {
         id: true,
         nomComplet: true,
-        rating: true,
         courses: {
           where: {
             createdAt: { gte: startDate, lte: endDate },
@@ -126,27 +125,34 @@ export class ZupDriveAnalyticsService {
             statut: true,
             prixCentimes: true,
             createdAt: true,
+            // Gain net du chauffeur (centimes), figé avec le paiement de la course.
+            paymentIntent: { select: { status: true, driverEarningsCentimes: true } },
           },
-        },
-        earnings: {
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-          },
-          select: { amountCentimes: true },
         },
       },
       take: limit,
     });
 
+    // Note moyenne du chauffeur : moyenne des notes données par les passagers (NoteCourseDrive).
+    const moyennes = await db.noteCourseDrive.groupBy({
+      by: ["chauffeurId"],
+      where: { auteur: "PASSAGER", chauffeurId: { in: drivers.map((d) => d.id) } },
+      _avg: { note: true },
+    });
+    const noteParChauffeur = new Map(moyennes.map((m) => [m.chauffeurId, m._avg.note ?? 0]));
+
     return drivers.map((d) => {
       const completedCourses = d.courses.filter((c) => c.statut === "TERMINEE").length;
       const cancelledCourses = d.courses.filter((c) => c.statut === "ANNULEE").length;
-      const totalEarnings = d.earnings.reduce((sum, e) => sum + e.amountCentimes, 0);
+      const totalEarnings = d.courses.reduce(
+        (sum, c) => (c.paymentIntent?.status === "SUCCEEDED" ? sum + c.paymentIntent.driverEarningsCentimes : sum),
+        0
+      );
 
       return {
-        driverId: d.id,
-        driverName: d.nomComplet,
-        rating: d.rating || 0,
+        chauffeurId: d.id,
+        chauffeurName: d.nomComplet,
+        rating: noteParChauffeur.get(d.id) ?? 0,
         totalCourses: d.courses.length,
         completedCourses,
         completionRate: d.courses.length > 0 ? (completedCourses / d.courses.length) * 100 : 0,
