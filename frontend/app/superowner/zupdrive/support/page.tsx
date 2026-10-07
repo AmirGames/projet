@@ -37,7 +37,7 @@ export default function SupportPage() {
       if (priorityFilter) params.append('priority', priorityFilter);
       params.append('limit', '100');
 
-      const response = await fetch(`${API_URL}/api/zupdrive/admin/support/tickets?${params}`, {
+      const response = await fetch(`${API_URL}/api/zupdrive/support/admin/tickets?${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
