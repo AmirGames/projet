@@ -39,6 +39,7 @@ Erreurs communes : `400` entrée invalide (Zod), `401` jeton absent/invalide, `4
 | `/api/zupdrive/compliance` | `zupdrive-compliance` | Équipe `chauffeurs` |
 | `/api/zupdrive/compliance-checks` | `zupdrive-compliance-checks` | Équipe `chauffeurs` |
 | `/api/zupdrive/analytics` | `zupdrive-analytics` | Équipe `courses-drive` |
+| `/api/zupdrive/reporting` | `zupdrive-reporting` | Équipe `courses-drive` |
 | `/api/zupdrive/finance` | `zupdrive-payment-driver` | Chauffeur ; Équipe `courses-drive` (lectures) ; Superowner (traiter un versement, commission) |
 | `/api/zupdrive` (en dernier) | `zupdrive-monitoring` | Chauffeur (`/notifications`, `/metrics`, `/earnings-realtime`) ; `/admin/*` : Équipe, mais superowner seul en pratique (garde de `chauffeur.admin`) |
 
