@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useCallback } from 'react';
-import { FileCheck, AlertCircle, Loader2, BarChart3, Ban, RotateCcw } from 'lucide-react';
+import { AlertCircle, Loader2, BarChart3, Ban, RotateCcw } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -11,7 +11,6 @@ export default function DriverDetailPage() {
   const driverId = params.id as string;
 
   const [stats, setStats] = useState<any>(null);
-  const [documents, setDocuments] = useState<any[]>([]);
   const [infractions, setInfractions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
