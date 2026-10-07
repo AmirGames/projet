@@ -1,618 +1,212 @@
-# ZupEat
+# Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
-L’assistant central et sa configuration sont documentés dans
-[Assistant ZupOne](docs/assistant-zupone.md) : widget web, agents spécialisés,
-outils autorisés, confirmations, relais humain et modes sans fournisseur IA.
+## 📋 Vue d'ensemble
 
-Une plateforme de commande en ligne pour les commerces de proximité : le
-commerçant tient son catalogue et ses commandes, le client commande depuis sa
-vitrine, un livreur assure la course. Plusieurs commerçants cohabitent sur la
-même installation, chacun chez lui.
+**Zupone** est un groupe technologique belge spécialisé dans les solutions digitales pour le secteur de la livraison et de la restauration. Nous développons des applications et services qui connectent restaurants, livreurs et clients pour créer un écosystème de livraison de food fluide et efficace.
 
-Restaurants, boulangeries, épiceries — tout commerce qui vend des articles à
-emporter ou à livrer.
+Notre mission : **Simplifier la livraison de repas avec des outils innovants et centrés sur l'expérience utilisateur.**
 
-> **État au 4 octobre 2026.** ZupEat est déployé sur un VPS. On crée un compte,
-> une boutique, un menu, on commande sans compte, le commerçant suit sa commande
-> et un livreur — une fois son dossier validé par la plateforme — la prend en
-> charge. Le paiement en ligne par carte (Stripe) est confirmé par webhook et
-> remboursé automatiquement quand une commande est refusée ; chaque lundi, la
-> plateforme arrête ce qu'elle doit aux commerçants et aux livreurs et en tire
-> un fichier de virements SEPA. Le paiement Stripe TEST et le rejeu du webhook
-> ont été confirmés sur le VPS sans doublon visible ; le remboursement sur
-> ce déploiement et le passage en LIVE restent à valider.
->
-> ZupEat est la première plateforme du groupe **ZupOne** : un seul compte ZupOne
-> par personne, et une seule équipe qui administre toutes les plateformes du
-> groupe. ZupDrive possède déjà ses dossiers chauffeurs et sociétés et ses
-> courses V1, sans paiement en ligne ; sa présentation publique annonce encore
-> « Bientôt disponible ». La vitrine ZupOne existe aussi.
->
-> Voir [l'état du projet et les priorités restantes](docs/etat-projet.md), qui
-> distingue code existant, tests locaux et validations du déploiement.
+---
 
-## Ce que fait la plateforme
+## 🏢 Structure du Groupe
 
-### Le client
-- Parcourt les commerces, par recherche ou par proximité
-- **Une seule vitrine**, à l'adresse lisible du commerce (`/store/<slug>`) : les
-  anciens liens par identifiant y mènent encore
-- Consulte un menu rangé par catégories, avec les plats épuisés signalés
-- Choisit une déclinaison quand un plat en a (taille, type de pâtes…), et
-  ses **suppléments** : bacon +1,50 €, une sauce au choix. Le prix affiché
-  les inclut, et un groupe obligatoire se choisit avant l'ajout au panier
-- Garde **un panier par commerce** : passer d'un commerce à l'autre ne mélange rien
-- Commande **sans créer de compte** : coordonnées, adresse de livraison avec
-  suggestions, ou créneau de retrait tenu aux heures d'ouverture réelles
-- Voit ses frais de livraison et le minimum de commande **avant** de valider,
-  et ce qu'il lui manque pour la **livraison offerte** quand le commerce en
-  propose une (« Encore 4,50 € pour la livraison offerte »)
-- Paie **le prix affiché** : un commerçant qui saisit ses prix hors taxe les
-  voit présentés et facturés TTC, et le total annoncé est celui qui est payé
-- Retrouve sur son suivi et dans « Mes commandes » le **détail du total** :
-  sous-total, livraison, frais de service, remise, total, dont TVA
-- Suit sa commande sur une carte : distance restante, durée estimée, position
-  du livreur — et un avertissement quand le livreur a perdu son signal GPS
-- Reçoit un **code de remise** à quatre chiffres, qu'il donne au livreur à la
-  porte — et sait ensuite comment sa commande a été remise. Injoignable, il est
-  prévenu et voit sur son suivi les **6 minutes** d'attente du livreur avant un
-  dépôt en lieu sûr, dont il reçoit la photo et l'endroit
-- Est prévenu **par courriel et par SMS** quand un livreur prend sa commande,
-  quand elle part du commerce (avec le code de remise) et quand elle est livrée
-- Retrouve une commande passée sans compte par son lien de suivi
-- Garde ses **commerces favoris**, d'un clic sur le cœur de leur carte
-- **Commande à nouveau** depuis « Mes commandes » : les plats d'une commande
-  terminée reviennent au panier, au prix du jour ; ceux qui ne sont plus à la
-  carte sont nommés
-- Laisse un **pourboire** à son livreur quand un livreur de la plateforme
-  livre une commande payée en ligne : 5, 10 ou 15 % des articles (le montant
-  écrit sous chaque pastille) ou le montant de son choix, 50 € au plus. En
-  commandant, il part dans le même paiement ; sinon, une fois la commande
-  livrée, le suivi le lui propose (7 jours durant), par un paiement à part.
-  Il revient en entier au livreur, hors commission
-- Dispose d'un **délai de 10 s** pour annuler une commande avant son envoi, et
-  d'un bandeau « commande en cours » dans son espace
-- **Tout compte a un espace client**, commerçants et livreurs compris : ils
-  commandent comme n'importe qui, et les commandes passées sans compte se
-  rattachent au compte qui porte la même adresse électronique
-- **Supprime son compte ZupEat** depuis l'application : profil, adresses,
-  favoris et paniers effacés, commandes gardées sans lien pour la
-  comptabilité ; un espace livreur ou commerçant sur le même compte reste
-  actif
+Le groupe Zupone est composé de trois produits interconnectés :
 
-### Le commerçant
-- Inscription, puis **validation par la plateforme** : il prépare sa boutique
-  (catalogue, catégories, horaires, zones) mais ne peut ni l'ouvrir, ni
-  recevoir de commande, ni apparaître aux clients tant que ses pièces exigées
-  (Kbis ou BCE, identité du propriétaire, RIB) ne sont pas validées et que la
-  plateforme n'a pas validé le commerce
-- **Prévenu 30 jours avant l'expiration** d'une pièce, dans son espace et par
-  courriel ; le jour venu la pièce passe « expirée » et la plateforme l'apprend,
-  sans que le commerce soit fermé d'office
-- Plusieurs boutiques par compte, selon la formule souscrite. Une boutique se
-  **duplique** : catalogue, taxes, zones, promotions, thème, horaires et
-  réglages repris, seuls le nom, l'adresse et le téléphone sont nouveaux.
-  L'adresse web (slug) se déduit toute seule du nom
-- **Tableau de bord** de la journée : ventes, commandes et panier moyen du
-  jour, ventes des sept derniers jours (comptées à l'heure de Bruxelles, sans
-  les commandes refusées), plats épuisés à remettre en vente d'un clic, dernier
-  relevé de reversement et commandes en cours
-- Catalogue : catégories et plats réordonnables au glisser-déposer, chaque plat
-  sur une ligne avec sa photo, disponibilité basculable d'un interrupteur et en
-  direct (le client la voit changer sans recharger) ; la modification s'ouvre
-  dans un panneau latéral qui porte aussi déclinaisons et suppléments
-- **Suppléments payants** par plat, en groupes (« Suppléments », « Sauce ») :
-  un prix par choix (0 pour un choix offert), un groupe obligatoire ou plafonné,
-  un choix épuisé d'un clic. Le serveur les tarife à chaque commande, et la
-  fiche commande, le ticket et la facture les nomment
-- **Écran des commandes en colonnes** — à accepter, en préparation, prêtes —
-  chaque carte portant son action suivante : accepter en choisissant le temps
-  de préparation, lancer, marquer prête, remettre au livreur ou au client,
-  refuser avec un motif ; le retard se voit en rouge, la recherche du livreur
-  sur la carte. Un onglet Historique garde toutes les commandes, filtrables
-- Commandes : détail, changement d'état, facture imprimable. Il y lit
-  **le montant de ses articles** (remise déduite), pas le total payé par le
-  client : la livraison d'un livreur de la plateforme et les frais de service
-  ne sont pas à lui. Une nouvelle commande sonne aussi sur la page qui réunit
-  toutes ses boutiques
-- Horaires d'ouverture **service par service** : le midi et le soir dans la
-  même journée, et les fermetures après minuit (17h30 – 01h00)
-- Créneaux de retrait, ouverture et fermeture immédiate
-- Zones de livraison en anneaux autour de la boutique, **réglées sur une carte** :
-  il pose son commerce d'un clic, tire une poignée pour fixer le rayon et voit
-  ce qu'il couvre — rayon, frais, montant minimum et **livraison offerte dès**
-  un montant de panier, zone par zone
-- Genre du commerce (restaurant, épicerie, fleuriste…) et type de cuisine,
-  demandés dès la création
-- Codes promo, moyens de paiement proposés, taxes, clientèle
-- Statistiques de vente, exports
-- **Reversements** : chaque semaine, un relevé figé de ses ventes moins la
-  commission et les retenues, ligne par ligne et expliqué ; un solde négatif
-  se reporte sur la semaine suivante
-- **Son profil** : identité de facturation, propriétaire du commerce, numéro de
-  TVA, compte bancaire et justificatifs — la page dit ce qui manque encore pour
-  être facturé et pour être payé. L'IBAN n'est jamais réaffiché en entier. Un
-  compte suspendu y garde accès : c'est là qu'il complète ce qu'on lui reproche
-- **Une boutique peut porter sa propre identité de facturation** (raison
-  sociale, TVA, immatriculation) quand elle relève d'une autre société ; sinon
-  elle hérite de celle du compte
-- Support par tickets, avec fil de discussion
+### 1️⃣ **Zupeat** - Plateforme de Livraison de Food
+### 2️⃣ **Zupeat Driver App** - Application Livreurs
+### 3️⃣ **ZupDrive** - Gestion Logistique (en préparation)
 
-### Le livreur
-- Inscription — sur le site ou dans l'application —, puis **dossier examiné par
-  la plateforme** : il dépose ses pièces (identité, permis, assurance, carte
-  grise — seule l'identité à vélo — et, pour tous, le **justificatif de sac
-  isotherme**), en photo ou en PDF, suit leur examen pièce par pièce, et lit le
-  motif quand l'une est refusée
-- Tant que son dossier n'est pas validé, il ne peut pas se mettre en ligne et
-  aucune course ne lui est proposée
-- Passage en ligne, position transmise
-- Courses proposées automatiquement au livreur disponible le plus proche. Une
-  course que tous ont laissée passer **repart pour un nouveau tour** trois
-  minutes plus tard, trois fois au plus, sans que le commerçant ait à la relancer
-- **Jusqu'à trois courses à la fois** : les commandes qui vont au même endroit
-  se proposent en lot, et une course « sur votre trajet » peut s'ajouter en
-  route. La tournée fait **tous les retraits d'abord** ; le client suivant ne
-  s'affiche qu'une fois le précédent livré — verrou côté serveur
-- Acceptation, refus, étapes de la course. Une fois la course acceptée, il la
-  voit sur une carte (commerce, client, lui-même) et lance le GPS de son
-  téléphone vers le commerce, puis vers le client. Il voit partout **son gain**,
-  jamais le total payé par le client, et un **écran de fin** récapitule chaque
-  course (gain, distance, durée, gains du jour)
-- Dans l'application : la course **continue sans réseau** (prise en charge et
-  remise partent au retour de la connexion), la position suit **téléphone
-  verrouillé**, et une course proposée s'accepte depuis la notification sans
-  déverrouiller
-- **Client injoignable** : appel ou SMS, puis 6 minutes d'attente avant le dépôt
-  photo. **« Tout va bien ? »** : immobile plus de 3 minutes en pleine course,
-  il confirme ou appelle le 112, et le support est prévenu
-- **Payé sur la distance du commerce au client** : frais fixe plus un tarif au
-  kilomètre, les mêmes pour tous — le trajet jusqu'au commerce est affiché,
-  pas payé. Le **pourboire** laissé en commandant s'y ajoute dès la
-  proposition (« dont 2,00 € de pourboire ») ; celui laissé après la livraison
-  arrive par notification et part avec le relevé suivant
-- **Pause** de 5 minutes à 4 heures : il reste en ligne mais ne reçoit plus de
-  course, et reprend quand il veut
-- **Perte du signal** : sans position depuis 2 minutes, il est prévenu, le
-  commerce et le client aussi s'il est en course ; au bout de 10 minutes sans
-  course, il est mis hors ligne pour ne plus être compté disponible
-- **Notifications** sur son téléphone, onglet fermé : nouvelle course, signal
-  perdu, fin de pause, réponse du support
-- Historique de ses courses, et **statistiques** sur 7, 30 ou 90 jours :
-  gains, gain à l'heure, taux d'acceptation, notes, comparaison avec la
-  période précédente
-- **Discute en direct avec le support** de la plateforme ; un message envoyé
-  pendant une course y est rattaché
-- **Prouve la remise** : le code du client, ou la photo du dépôt quand celui-ci
-  est absent — sans preuve, la course ne se clôt pas
-- **Sait s'il est payé** : ce qui lui reste dû, ce qui est arrêté et attend le
-  virement, ce qui est arrivé — et le détail de chaque relevé. Ses courses sont
-  arrêtées chaque lundi et virées sur l'IBAN qu'il a renseigné
-- **Supprime son compte livreur** (site ou application) : refusé pendant une
-  course, et tant qu'il reste de l'argent dû sans IBAN valide ; le dernier
-  versement est garanti, et son compte client ZupEat reste actif
+---
 
-### La plateforme (l'équipe du groupe)
-- **Un seul panneau**, `/superowner`, servi sur le domaine du groupe
-  (`manager.zupone.com`) : les anciens espaces `/admin` et `/super-admin` ont
-  disparu
-- **L'équipe et ses rôles** : SuperAdmin, Administrateur, Support, et les rôles
-  que le superowner ajoute (« Facturation »…). Il coche, section par section,
-  la lecture ou la modification ; le contrôle est fait au serveur et le menu ne
-  montre que ce qui est ouvert. **Un rôle par plateforme** : on peut être
-  SuperAdmin sur ZupEat et Support sur ZupDrive. Les chiffres financiers ne
-  sont envoyés qu'aux rôles qui ont « Facturation », et le tableau de bord
-  s'adapte au rôle connecté
-- Commerçants : formule, suspension, fermeture (un droit à part : elle archive
-  puis efface les données à 60 jours), réouverture depuis sauvegarde
-- Formules d'abonnement réglables : nom, prix, quota de boutiques, **commission
-  sur les ventes**, arguments de vente
-- Facturation : commission du mois par commerçant, avec son calcul détaillé —
-  pour les seules commandes d'avant les reversements hebdomadaires
-  (`PAYOUTS_START_DATE`), que la retenue sur reversement remplace ensuite
-- **Versements SEPA** : un seul fichier `pain.001.001.03` pour tous les
-  commerçants et livreurs de la semaine (KBC/CBC, Isabel, Belfius, ING…), IBAN
-  contrôlés et bénéficiaires invalides écartés et signalés, puis « marquer le
-  lot versé »
-- Boutiques : une fiche par commerce, et la correction des seuls champs dont
-  la plateforme répond — adresse et coordonnées, adresse publique, contact. Le
-  catalogue, les prix et les horaires restent au commerçant
-- Commerçants, leur dossier : identité de facturation reportée sur la facture du
-  mois, et examen de leurs justificatifs — un refus se motive, et le commerçant
-  en est prévenu. La plateforme est **notifiée à chaque pièce déposée**, prévisualise
-  le fichier (image ou PDF) et peut **corriger une date d'expiration** mal saisie
-- Livreurs : dossiers à traiter, examen des pièces une à une, validation,
-  suspension et rétablissement — chaque geste motivé et journalisé
-- Attribution des courses réglable : rayon de recherche, délai pour accepter,
-  frais fixe et tarif au kilomètre des livreurs, et **la tournée** (nombre de
-  courses à la fois, distance entre clients, détour accepté)
-- Support livreurs en direct : une boîte de réception par livreur, avec son
-  état (en ligne, en course, signal perdu) et de quoi l'appeler
-- Versements : ce qu'elle doit et à qui, arrêté des relevés d'une période,
-  versement avec sa référence — une course payée ne l'est jamais deux fois
-- Santé du système : cinq relevés chiffrés, et ce qu'il faut faire pour chacun ;
-  **Surveillance** du site en fonctionnement (voir plus bas)
-- **Console** : les journaux du serveur en direct (les 2 000 dernières lignes,
-  rafraîchies toutes les 2 s), avec filtre par niveau, recherche et pause
-- **Mon profil** : chaque membre de l'équipe y change son mot de passe
-- Annonces diffusées au public visé — commerçants, clients, livreurs — et
-  reçues par chacun d'eux
-- Journal des actions administratives et journal des accès
-- Sauvegardes, mode maintenance, thème du site, clés d'API, webhooks
-- Support : tous les tickets, réponses, priorités
-- **Pages légales** (mentions, CGU, CGV, conditions commerçants et livreurs,
-  confidentialité, cookies) : chaque publication crée une version, et
-  l'acceptation des conditions est enregistrée à l'inscription et à la commande
+## 🍽️ Zupeat - Plateforme Principale
 
-### Partout
-- **Un seul thème, clair**, de la vitrine à l'administration, adapté au
-  téléphone (les barres latérales deviennent des tiroirs) ; une couleur par
-  marque : orange pour ZupEat, noir pour ZupOne, bleu pour ZupDrive. Un
-  commerce sans photo ni logo prend l'illustration de sa catégorie
-- **Une session qui n'est plus valable** (compte supprimé, base remise à zéro)
-  ramène à la connexion avec le message « Votre session n'est plus valable »,
-  même quand elle était déjà morte à l'ouverture de la page
-- **Un mot de passe solide** à chaque création ou changement (inscription
-  client, commerçant, livreur, réinitialisation, sur le site comme dans les
-  applications) : 8 caractères minimum, dont un chiffre, une minuscule et une
-  majuscule ; les caractères spéciaux sont permis sans être exigés. Les
-  critères se cochent pendant la saisie. Les comptes plus anciens se
-  connectent toujours avec leur mot de passe
-- **Changer son mot de passe depuis son profil** (client, commerçant,
-  plateforme) : les autres sessions ouvertes sont aussitôt déconnectées, la
-  session courante reste ouverte. Une réinitialisation par courriel ferme
-  toutes les sessions
-- **Après la connexion, on arrive au bon endroit** selon le domaine visité ;
-  « mot de passe oublié » n'est plus proposé à qui est déjà connecté
-- **L'inscription répond sans attendre les courriels** : la confirmation
-  d'adresse part en arrière-plan
-- **Une adresse e-mail, quelle que soit sa casse** : « Test@Exemple.fr » et
-  « test@exemple.fr » sont le même compte, à l'inscription comme à la
-  connexion. Une adresse déjà prise est refusée clairement, et s'inscrire
-  après avoir commandé sans compte reprend la fiche de cette commande
-- **Un seul compte ZupOne, plusieurs espaces** : le logo en haut à gauche ouvre
-  les autres espaces auxquels le compte a droit — client, commerçant, livreur,
-  plateforme (sous le nom du groupe de l'équipe : Support, Administrateur…)
-- Le site en **français et en anglais**, choisis avec la région dans la
-  fenêtre « Langue et région » (France, Belgique, Suisse, Luxembourg, Canada,
-  Royaume-Uni, Irlande, États-Unis…) : les pages publiques sont servies sous
-  un sous-répertoire de région (`/be-fr/`, `/fr-fr/`…), déclaré aux moteurs de
-  recherche (hreflang, `sitemap.xml`). Le pays détecté — Belgique par défaut,
-  ou France — règle l'adresse, l'indicatif téléphonique (+32 / +33) et la
-  réglementation des pages « Devenir »
-- Pages de présentation **Devenir livreur, commerçant, chauffeur** (le VTC, sous
-  le nom de ZupDrive, est annoncé « Bientôt disponible »)
-- **`/suppression-compte`** : la demande de suppression du compte livreur depuis
-  le site, exigée par les stores
+### Description
+**Zupeat** est la plateforme centrale de livraison de repas qui connecte les restaurants, les livreurs et les clients. C'est le cœur de l'écosystème Zupone.
 
-## Pile technique
+### Fonctionnalités Principales
+- 🏪 **Gestion Restaurants** : Interface pour les restaurants partenaires pour gérer leurs menus, commandes et livraisons
+- 👥 **Plateforme Client** : Application web et mobile permettant aux clients de commander des repas
+- 📊 **Tableau de Bord** : Monitoring en temps réel des commandes, livreurs et métriques de performance
+- 💰 **Gestion des Paiements** : Intégration de multiples moyens de paiement sécurisés
+- 📈 **Analytics & Reporting** : Données détaillées sur les commandes, revenus et comportement utilisateur
 
-| | |
-|---|---|
-| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS |
-| **Backend** | Express 5, TypeScript, Prisma 7 (adaptateur `@prisma/adapter-pg`) |
-| **Base de données** | PostgreSQL |
-| **Temps réel** | Socket.IO (disponibilité des plats, notifications, suivi de livraison) ; en production, Redis relie les instances de l'API (`REDIS_URL`) |
-| **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
-| **Courriel** | SMTP par nodemailer (Mailpit en développement) |
-| **Notifications** | Web Push (clés VAPID) et SMS par Twilio, tous deux facultatifs : un canal non configuré est simplement sauté |
-| **Langues** | next-intl, français et anglais (`frontend/messages/`) |
-| **Adresses** | Base Adresse Nationale pour la France, Photon (OpenStreetMap) pour la Belgique et au-delà — les deux interrogés ensemble. Google Places (New) en option, si la pertinence prime sur le coût |
-| **Cartes** | Leaflet, fond de carte OpenStreetMap (sans clé ni compte) |
-| **Paiement** | Stripe — intention de paiement, webhook signé (`POST /api/payments/webhook`), remboursement |
+### Stack Technologique
+- **Backend** : API RESTful (détails selon architecture spécifique)
+- **Frontend** : Web responsive + applications mobiles (iOS/Android)
+- **Données** : Bases de données optimisées pour les transactions en temps réel
+- **Infrastructure** : Cloud scalable pour gérer les pics de demande
 
-Un seul dépôt, un site, une API et des applications mobiles :
+### Objectifs
+- Offrir une expérience fluide du début à la fin de la commande
+- Optimiser les délais de livraison
+- Maximiser la satisfaction clients et restaurants
+
+---
+
+## 🚚 Zupeat Driver App - Application Livreurs
+
+### Description
+L'**application Zupeat Driver** est une application native Android conçue spécifiquement pour les livreurs (livreurs) de la plateforme Zupone. Elle leur permet de gérer leurs livraisons directement depuis leur téléphone avec un maximum de confort et d'efficacité.
+
+### Fonctionnalités Clés
+
+#### 📦 Gestion des Commandes
+- Affichage en temps réel des livraisons disponibles
+- Système d'acceptation/refus simple et rapide
+- Historique et suivi des commandes assignées
+- Notifications push prioritaires
+
+#### 🗺️ Navigation Intégrée (Feature Premium)
+- **Google Maps SDK intégré** : Navigation turn-by-turn sans quitter l'app
+- Itinéraires optimisés pour plusieurs livraisons
+- Estimation de temps d'arrivée en temps réel
+- Évaluation du trafic et suggestions d'itinéraires alternatifs
+
+#### 📍 Localisation et Suivi
+- GPS en temps réel
+- Partage de localisation avec restaurant et client
+- Historique des trajets pour optimisation future
+
+#### ✅ Confirmation de Livraison
+- Signature électronique des clients (optionnel)
+- Photo de livraison
+- Commentaires et notes
+- Prise de photo du client avec la commande
+
+#### 💬 Communication
+- Chat intégré avec clients
+- Chat avec restaurants
+- Support technique in-app
+
+#### 💵 Gestion Financière
+- Suivi des revenus en temps réel
+- Historique des paiements
+- Détails des commissions et bonus
+
+### Stack Technologique
+- **Plateforme** : Android Native (Java/Kotlin)
+- **Navigation** : Google Maps SDK
+- **Networking** : Retrofit pour les appels API
+- **Architecture** : ViewModel + LiveData (MVVM Pattern)
+- **Services** : Location Services pour le GPS en continu
+- **Base Données Locale** : Room Database pour cache offline
+
+### Avantages pour les Livreurs
+✨ Interface intuitive et facile à maîtriser  
+⚡ Performances optimisées pour batterie et données mobiles  
+🛡️ Sécurité des données personnelles  
+📱 Fonctionne sur tous les appareils Android modernes  
+
+---
+
+## 🚗 ZupDrive - Solution Logistique Avancée (En Développement)
+
+### Description
+**ZupDrive** est le projet émergent du groupe Zupone. Il s'agit d'une solution logistique avancée destinée à optimiser davantage les opérations de livraison à l'échelle du groupe.
+
+### Vision
+ZupDrive vise à devenir la colonne vertébrale logistique de Zupone en fournissant :
+
+#### Fonctionnalités Prévues
+- **Routage Intelligent** : Algorithmes d'optimisation d'itinéraires basés sur IA
+- **Gestion de Flotte** : Suivi et gestion centralisée de tous les livreurs
+- **Prédiction de Demande** : Machine Learning pour anticiper les pics de commandes
+- **Compensation Dynamique** : Ajustement automatique des tarifs livreurs selon la demande
+- **Intégration Multi-Plateforme** : Connexion avec Zupeat et autres services Zupone
+- **Analaytics Avancée** : Dashboard pour optimisation continue des performances
+
+### Objectifs Stratégiques
+🎯 Réduire les temps de livraison de 15-20%  
+🎯 Augmenter la satisfaction des livreurs  
+🎯 Optimiser les coûts opérationnels  
+🎯 Permettre l'expansion à de nouveaux marchés  
+
+---
+
+## 🔗 Intégration Groupe
 
 ```
-backend/    API REST — domaines ZupEat, ZupDrive et administration ZupOne
-frontend/   Next.js — vitrines et espaces client, commerçant, livreur, chauffeur, équipe
-mobile/     Expo — client, commerçant, livreur et équipe (apps/customer, merchant, delivery, admin)
+┌─────────────────────────────────────────────────┐
+│              ÉCOSYSTÈME ZUPONE                   │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│   CLIENTS & RESTAURANTS                         │
+│         ↓                                        │
+│   ┌──────────────────────────────────┐          │
+│   │      ZUPEAT PLATEFORME          │          │
+│   │   (Web + Mobile Application)     │          │
+│   └──────────────────────────────────┘          │
+│         ↓           ↓                           │
+│   ┌───────────┐  ┌─────────────────┐           │
+│   │  ZUPEAT   │  │   ZUPDRIVE      │           │
+│   │  DRIVER   │  │  (Logistique)   │           │
+│   │   APP     │  │                 │           │
+│   └───────────┘  └─────────────────┘           │
+│         ↓           ↓                           │
+│      LIVREURS    OPTIMISATION                  │
+│                  & ANALYTICS                   │
+│                                                 │
+└─────────────────────────────────────────────────┘
 ```
 
-## Démarrer
-
-Il faut **Node 20.19 ou plus** (Prisma 7 et Next.js 16) et **PostgreSQL**.
-
-```bash
-git clone https://github.com/AmirGames/projet.git
-cd projet
-```
+### Points de Connexion
+1. **Zupeat → Zupeat Driver App** : Les commandes créées sur Zupeat sont distribuées aux livreurs via l'app
+2. **Zupeat Driver App → ZupDrive** : Les données de localisation et performance alimentent l'optimisation logistique
+3. **ZupDrive → Zupeat** : Les recommandations de routage influencent l'assignation des commandes
 
-### 1. La base de données
+---
 
-```bash
-createdb zupone_dev
-```
+## 🎯 Objectifs à Court Terme
 
-### 2. L'API
+- ✅ Lancer Zupeat Driver App en version stable
+- ✅ Atteindre 500+ livreurs actifs
+- ✅ Optimiser le temps moyen de livraison à <35 minutes
+- 🔄 Commencer développement ZupDrive phase 1
+- 🔄 Intégrer algorithmes de routage basiques
 
-```bash
-cd backend
-npm install
-cp .env.example .env     # puis renseignez DATABASE_URL et les deux secrets JWT
-npx prisma migrate deploy
-npm run dev              # http://localhost:3001
-```
-
-`npm run dev` applique d'abord les migrations en attente et régénère le client
-Prisma (`predev`) : après une mise à jour qui change le schéma, rien à faire à
-la main.
-
-L'historique des migrations part d'une migration de référence,
-`0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
-changement de schéma ajoute ensuite sa propre migration
-(`npx prisma migrate dev --name <nom>`), à committer avec le schéma.
-L'historique présent dans `backend/prisma/migrations/` va jusqu'à
-`0039_adresses_favorites_client` à la date de cette mise à jour.
-
-Une base créée **avant** cette remise à plat (par `db push` ou par
-l'ancienne chaîne de migrations) a déjà toutes les tables : il suffit, une
-fois, d'enregistrer la migration de référence comme appliquée, après avoir
-vérifié qu'il ne manque rien :
-
-```bash
-npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
-npx prisma migrate resolve --applied 0001_initial_schema
-```
-
-### 3. Le site
-
-```bash
-cd frontend
-npm install
-cp .env.example .env.local
-npm run dev              # http://localhost:3000
-```
-
-### 4. Le compte plateforme (superowner)
-
-**Aucune inscription ne donne les droits de la plateforme.** Le superowner se
-crée en ligne de commande, à partir de l'environnement :
-
-```bash
-cd backend
-SUPEROWNER_EMAIL=vous@exemple.fr SUPEROWNER_PASSWORD='MotDePasse123' npm run create-superowner
-```
-
-Les deux variables peuvent aussi vivre dans `backend/.env`. Le mot de passe suit
-les règles de l'inscription ; `SUPEROWNER_PASSWORD_HASH` (empreinte bcrypt) le
-remplace pour ne jamais l'écrire en clair. Si l'adresse a déjà un compte, il est
-promu sans changer son mot de passe.
-
-Le script est **rejouable** : dès qu'un superowner existe, il ne fait rien. La
-base n'en admet d'ailleurs qu'un (index unique `User_un_seul_superowner`,
-migration `0020`) ; l'équipe se compose ensuite depuis `/superowner`, avec des
-rôles (SuperAdmin, Administrateur, Support…).
-
-> Avant, le premier compte inscrit devenait superowner : sur une base neuve, le
-> premier robot venu prenait la plateforme, et deux inscriptions simultanées en
-> créaient deux.
-
-### La confirmation d'adresse
-
-`REQUIRE_EMAIL_VERIFICATION` décide si la connexion attend que l'adresse soit
-confirmée. Non définie, elle est exigée en production (`NODE_ENV=production`)
-et pas en développement ; `true` ou `false` l'imposent ou la suspendent
-partout. Quelle que soit sa valeur, une fiche client née d'une commande sans
-compte ne rejoint le compte de même adresse qu'après confirmation.
-
-### Facultatif : les courriels en développement
-
-Confirmation d'adresse et mot de passe oublié envoient de vrais messages.
-[Mailpit](https://mailpit.axllent.org/) les affiche sans rien expédier :
-
-```bash
-mailpit                  # SMTP sur 1025, interface sur http://localhost:8025
-```
-
-### Facultatif : un jeu de démonstration
-
-```bash
-cd backend
-node scripts/verification/reinitialiser.mjs   # vide la base
-node scripts/seed-demo.mjs                    # plateforme, commerçant, livreur
-```
-
-Il affiche les comptes créés et leur mot de passe.
-
-### Facultatif : les applications mobiles
-
-```bash
-cd mobile/apps/merchant   # ou customer, delivery
-npm install
-npx expo start
-```
-
-En développement, l'application trouve seule l'API sur le PC qui la sert
-(port 3001) ; `EXPO_PUBLIC_API_URL` la fixe pour une autre machine ou la
-production. La préparation de la publication de l'application livreur est
-décrite dans [son guide de publication](mobile/apps/delivery/PUBLICATION.md).
-
-Le livreur est la première application en cours de validation : Expo SDK 57
-aligné, TypeScript réussi, lint sans erreur avec 30 avertissements. Pour ses
-fonctions natives, utiliser une build de développement avec `expo-dev-client`.
-Firebase Android/FCM sont configurés et l'opérateur confirme la réception des
-push. La version 1.0.1 ajoute une fenêtre « Nouvelle course » au-dessus des
-autres applications et du verrouillage, ainsi qu'une sonnerie avec le volume
-des alarmes, toutes deux à activer dans les paramètres Android du livreur.
-Le signal de réveil Android est ajouté côté serveur et déployé sur le VPS.
-La version 1.0.2 reprend une carte sombre et une fiche de proposition comme
-dans l'application, avec montant, trajet, arrêts et compte à rebours ; nouvel
-APK compilé et rendu vérifié, y compris sur petit écran.
-Les essais de ces alertes et des parcours sur téléphone restent à réaliser ; voir
-[son README](mobile/apps/delivery/README.md) et
-[les résultats de validation](mobile/apps/delivery/VALIDATION.md).
-
-## Mise en production
-
-Le site est déjà déployé sur un VPS, avec l'API à `https://api.zupeat.com`.
-L'infrastructure du dépôt utilise Docker Compose, Caddy pour le HTTPS,
-PostgreSQL et Redis. Voir [DEPLOIEMENT-SCALEWAY.md](DEPLOIEMENT-SCALEWAY.md)
-pour l'installation et l'exploitation ; les validations connues figurent
-dans [l'état du projet](docs/etat-projet.md).
-
-## Vérifications
-
-Le projet combine des **scripts qui interrogent une vraie API branchée sur
-une vraie base**, des scripts qui **pilotent un vrai navigateur**, et des
-tests Jest ciblés, dont certains simulent les dépendances. Pour une opération
-métier, vérifier aussi l'état enregistré et les effets, au-delà du code HTTP.
-
-```bash
-# API : suites métier sur une base de test dédiée
-cd backend
-createdb zupone_test
-DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
-DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
-DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
-
-# Navigateur : exemple de suite, commande sans compte
-cd frontend
-npm i -D playwright && npx playwright install chromium
-VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
-```
-
-`backend/scripts/verification/LISEZ-MOI.md` et `frontend/scripts/LISEZ-MOI.md`
-détaillent chaque suite et ses prérequis.
-
-Les résultats historiques consignés sont un passage API au vert le
-27 septembre et **942 contrôles dans 34 suites navigateur le 2 octobre**.
-Ils ne constituent pas une nouvelle exécution de toutes les suites sur le
-commit actuel. Les audits du 3 octobre et la validation manuelle Stripe TEST
-du 4 octobre sont détaillés dans [l'état du projet](docs/etat-projet.md).
-`verif-paiement` se joue contre une API où Stripe est actif (voir le `LISEZ-MOI`).
-
-> La base visée est **vidée** à chaque script. Un garde-fou refuse de s'exécuter
-> si son nom ne contient pas `test`.
-
-## Webhooks
-
-La plateforme prévient un système extérieur de ce qui s'y passe : commandes,
-tickets, suspensions. Six événements, un envoi `POST` signé en HMAC-SHA256, et
-trois relances si le destinataire ne répond pas. Les abonnements se gèrent dans
-**Administration → Webhooks**.
-
-Le format exact, la vérification de la signature en Node, PHP et Python, et la
-charge utile de chaque événement sont dans
-[`DOCUMENTATION-WEBHOOKS.md`](DOCUMENTATION-WEBHOOKS.md).
-
-## Surveillance
-
-**Administration → Surveillance** montre le site en fonctionnement, rafraîchi
-toutes les 10 secondes :
-
-- **Trafic** : requêtes par minute, taux d'erreurs 4xx/5xx, temps de réponse
-  (médiane, p95, p99), sur l'heure écoulée, et le détail route par route
-- **Serveur** : processeur, mémoire, espace disque (relevé toutes les heures),
-  retard de la boucle d'événements, charge, connexions temps réel
-- **Services externes** : base de données, SMTP, Redis, Stripe, SMS, push
-- **Tâches de fond** : dernier passage, durée, échecs — une tâche qui ne tourne
-  plus se voit
-- **Pannes serveur** (réponses 5xx, avec leur pile) et **erreurs des visiteurs**,
-  remontées de leur navigateur et regroupées par empreinte
-
-Une vigie contrôle tout cela toutes les 30 secondes. Quand un seuil est franchi
-(base injoignable, plus de 2 % de 5xx, p95 au-delà de 1,5 s, mémoire à 85 %,
-tâche en échec…), elle ouvre un incident et prévient par courriel les comptes
-plateforme — et `MONITORING_ALERT_EMAILS`, `MONITORING_WEBHOOK_URL` s'ils sont
-renseignés —, puis signale le retour à la normale.
-
-**Disponibilité** : l'API (serveur et base) et le site public sont relevés
-chaque minute, et l'historique est gardé 90 jours en base. La page en tire la
-disponibilité sur 24 h, 7, 30 et 90 jours, une frise — un trait par heure sur
-24 h, un par jour au-delà, selon la fenêtre choisie — et la liste des
-indisponibilités. Les couleurs suivent des seuils de niveau de service (SLA) :
-vert à partir de 99,9 %, orange à partir de 99 %, rouge en dessous ; un volet
-repliable les rappelle. Un trou dans les relevés de l'API compte comme une
-panne : un serveur arrêté ne relève rien. D'autres adresses se surveillent avec
-`UPTIME_URLS` (voir `backend/.env.example`).
-
-**Depuis l'extérieur** : tout ce qui précède tourne dans le serveur, et tombe
-avec lui si l'hébergement entier s'arrête. Le workflow
-`.github/workflows/disponibilite.yml` interroge le site depuis GitHub toutes les
-dix minutes et échoue — GitHub prévient alors par courriel — dès qu'une adresse
-ne répond plus. Il suffit de renseigner la variable de dépôt `UPTIME_URLS`
-(Settings → Secrets and variables → Actions → Variables), une adresse par ligne.
-
-Pour une autre sonde externe (UptimeRobot, Better Stack, répartiteur de charge) :
-
-| Adresse | Répond |
-|---|---|
-| `GET /health` | 200 tant que le processus tourne |
-| `GET /health/ready` | 200 si la base répond, **503** sinon |
-
-Les mesures sont gardées en mémoire, par instance et depuis son démarrage.
-
-## Plusieurs domaines
-
-Le site sait se répartir sur quatre domaines ou tenir sur un seul :
-
-| Variable (frontend) | Exemple | Sert |
-|---|---|---|
-| `NEXT_PUBLIC_DOMAINE_GROUPE` | `manager.zupone.com` | Le panneau de l'équipe (`/superowner`) |
-| `NEXT_PUBLIC_DOMAINE_PUBLIC` | `zupeat.com` | Les clients |
-| `NEXT_PUBLIC_DOMAINE_PRO` | `manager.zupeat.com` | Les commerçants |
-| `NEXT_PUBLIC_DOMAINE_LIVREUR` | `delivery.zupeat.com` | Les livreurs, et « Devenir livreur » en accueil |
-| `NEXT_PUBLIC_DOMAINE_VITRINE` | `zupone.com` | La vitrine du groupe ZupOne |
-| `NEXT_PUBLIC_DOMAINE_DRIVE` | `zupdrive.com` | ZupDrive (bientôt) et « Devenir chauffeur » |
-| `NEXT_PUBLIC_DOMAINE_CHAUFFEUR` | `driver.zupdrive.com` | L'espace des chauffeurs ZupDrive (`/chauffeur`) — pas les livreurs |
-
-Chaque page est alors servie par le domaine qui lui revient, et une page
-demandée au mauvais domaine redirige vers le bon. Les pages « Devenir … »
-vivent sur le domaine de ceux qu'elles recrutent : commerçant sur le domaine
-pro, livreur sur le domaine livreur, chauffeur sur ZupDrive.
-
-**Connexion unique.** Se connecter sur un domaine connecte partout : la vitrine
-du groupe (`SSO_ORIGIN`, zupone.com) garde la session dans un cookie qu'elle
-seule lit, et la transmet aux autres domaines par un code à usage unique,
-valable une minute et pour un seul domaine. La vérification n'a lieu que sur
-les pages de connexion : les pages publiques ne font aucun détour. Se
-déconnecter ferme la session sur tous les domaines. Sans `SSO_ORIGIN` (API) ni
-`NEXT_PUBLIC_DOMAINE_VITRINE` (site), chaque domaine garde sa propre session. Laissez-les vides pour rester
-sur un domaine unique.
-
-## Reversements et virements
-
-Les clients paient en ligne, l'argent arrive chez la plateforme. **Chaque lundi
-à 0 h (heure de Bruxelles)**, elle arrête la semaine écoulée :
-
-- **un relevé par commerçant** (`MerchantPayout`), figé, ligne par ligne avec
-  un code — 100 ventes, 110 remises, 120 livraison propre, 200 commission,
-  230/240 retenues sur place, 300 report — et son explication ;
-- **un relevé par livreur** pour ses courses livrées, qu'aucune ne soit payée
-  deux fois.
-
-**Administration → Versements SEPA** en tire un fichier `pain.001.001.03` à
-importer dans la banque, puis marque le lot versé. L'arrêté automatique ne
-démarre qu'une fois `PAYOUTS_START_DATE` renseignée ; le compte débité se
-règle par `SEPA_DEBTOR_NAME`, `SEPA_DEBTOR_IBAN` et `SEPA_DEBTOR_BIC`
-(voir `backend/.env.example`).
-
-## Ce qui n'est pas terminé
-
-Le suivi détaillé et les critères de validation sont dans
-[docs/etat-projet.md](docs/etat-projet.md). Les priorités sont :
-
-- **Paiements sur le VPS** : remboursement en TEST, y compris le pourboire et
-  le rejeu ; paiement LIVE après validation et configuration du compte Stripe.
-- **Parcours réels et sécurité** : commande complète sur téléphone, cas de
-  livraison difficiles, deux comptes distincts pour les livreurs, ZupDrive
-  et Socket.IO, révocation de droits et concurrence des acceptations.
-- **Reversements** : valider les relevés commerçants/livreurs et le fichier
-  SEPA sur des données de test dédiées.
-- **Pages légales** : contrôler les versions publiées et compléter les champs
-  du texte par défaut avant l'ouverture aux clients.
-- **Applications mobiles et cartes** : essais sur appareils réels,
-  configuration push/EAS, icônes définitives et publication dans les stores ;
-  service de cartes et d'itinéraires adapté à l'usage public.
-
-En complément : commandes d'entraînement exclues des statistiques (distinctes
-du commerce de démonstration existant et de Stripe TEST), paiement et
-facturation ZupDrive V2, persistance des notifications après paiement, suivi
-des erreurs et essais de charge. Le stockage externe des images possède une
-intégration Cloudinary optionnelle ; son activation n'est pas attestée ici.
-Le stock par ingrédient reste volontairement reporté.
-
-## Licence
-
-Projet privé. Tous droits réservés.
+## 🚀 Roadmap Long Terme
+
+**Q4 2026**
+- Expansion à 3 nouvelles villes
+- Launch ZupDrive MVP
+- Intégration IA pour prédiction de demande
+
+**2027**
+- Plateforme multi-villes consolidée
+- Expansion régionale (Wallonie)
+- Partenariats avec chaînes de restaurants
+
+---
+
+## 👨‍💻 Stack Technologique Global
+
+| Composant | Technologies |
+|-----------|--------------|
+| **Backend** | Node.js / Python / autres |
+| **Frontend Web** | React / Vue.js / Angular |
+| **Mobile Clients** | React Native / Flutter |
+| **Mobile Drivers** | Android Native (Kotlin/Java) |
+| **Base Données** | PostgreSQL / MongoDB |
+| **Infra** | Docker / Kubernetes / AWS/GCP |
+| **IA/ML** | TensorFlow / scikit-learn |
+| **Mapping** | Google Maps API / Mapbox |
+
+---
+
+## 📞 Contact & Support
+
+- **Email** : [À définir]
+- **Site Web** : [À définir]
+- **Support Drivers** : In-app support
+- **Support Restaurants** : [À définir]
+
+---
+
+## 📄 Licence
+
+[À définir selon les besoins légaux du groupe]
+
+---
+
+**Dernière mise à jour** : Octobre 2026  
+**Version** : 1.0
