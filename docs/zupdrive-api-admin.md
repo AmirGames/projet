@@ -49,7 +49,7 @@ Aucune route n'est servie deux fois ni masquée par une route à paramètre (tes
 exige un jeton). Points d'attention :
 
 - `admin/dashboard` : `zupdrive-admin-dashboard` est monté sur `/api/zupdrive/admin/dashboard`, `zupdrive-monitoring` sert `GET /api/zupdrive/admin/dashboard` (chemin exact) ; ils ne se recouvrent pas.
-- `payment` : `GET /api/zupdrive/payment/earnings` est **masquée** par `GET /payment/:courseId` (défaut préexistant, voir la PR). `zupdrive-payment-driver` a donc son préfixe `/finance`.
+- `payment` : `GET /payment/earnings` était masquée par `GET /payment/:courseId` ; `/earnings` est maintenant déclarée avant. `zupdrive-payment-driver` garde son préfixe `/finance`, distinct de `/payment`.
 - `suspend` / `reactivate` existent deux fois : `POST /admin/chauffeurs/:id/suspend` (dossier, `chauffeur.admin`) et `POST /admin/drivers/:id/suspend` (`driver-management`, utilisé par les pages superowner). Les deux écrivent `statut = SUSPENDU` et sont journalisées.
 
 ## `driver-management` — `/api/zupdrive/admin` (Équipe `chauffeurs`)
@@ -193,6 +193,32 @@ Superowner (journalisés) :
 - La répartition est **figée à la création du paiement** (`PaymentIntentDrive.platformCommissionCentimes` / `driverEarningsCentimes`) : changer le pourcentage n'affecte que les paiements créés ensuite ; un paiement existant et son versement gardent leur montant. Une correction se fait par une opération corrective, jamais en réécrivant l'historique.
 - Semaine d'un lot : lundi 00:00 **UTC** → lundi suivant (`semaine-versement.ts`), identique pour le webhook de paiement et `preparePayout`. Le lot regroupe les versements `PENDING` non rattachés dont `periodStart` tombe dans la semaine ; un lot déjà soumis à Stripe refuse tout nouveau versement (409).
 - `handlePaymentSucceeded` est rejouable : paiement `SUCCEEDED` et versement créés dans une transaction, `upsert` sur `paymentId` unique.
+
+## Paiement d'une course — `/api/zupdrive/payment` et webhook Stripe
+
+Passager (jeton ; l'identité est `req.userId`, la course doit être la sienne, sinon `404`) :
+
+| Méthode | Route | Notes |
+|---|---|---|
+| POST | `/payment/intent` | `{ courseId }` ; le montant est celui de la course en base, jamais celui du client. Course `RECHERCHE` seulement (409 sinon). Rejouer la demande rend le même paiement non réglé (même `clientSecret`) ; course déjà payée ou intention annulée : `409 PAYMENT_ALREADY_EXISTS`. Limite 10 / 10 min / compte. |
+| GET | `/payment/:courseId` | `{ courseId, payment: { id, status, amountCentimes, currency, confirmedAt } \| null }`, relu en base |
+| GET | `/payment/earnings` | revenus du chauffeur du jeton |
+
+`GET /realtime/stats` est réservé à l'équipe (`courses-drive`).
+
+**La confirmation vient uniquement du webhook Stripe** (`POST /api/payments/webhook`, déjà en place pour ZupEat : signature sur le corps brut, journal `StripeEvent` idempotent). `payment.service.traiterEvenement` aiguille les intentions qui portent `metadata.courseId` et pas `orderId` vers `ZupDrivePaymentService` :
+
+| Événement Stripe | Effet sur `PaymentIntentDrive` |
+|---|---|
+| `payment_intent.succeeded` | contrôle de l'état, de la devise et du montant reçu (= `amountCentimes` en base, sinon `409 PAYMENT_AMOUNT_MISMATCH`, journalisé et rejoué par Stripe) et de `metadata.courseId` ; puis `SUCCEEDED` + `confirmedAt` (une seule fois) |
+| `payment_intent.payment_failed` | statut de l'intention en majuscules, sans jamais défaire un `SUCCEEDED` |
+| `payment_intent.canceled` | `CANCELED` + motif, même règle |
+
+Une intention inconnue de la base est ignorée sans erreur. Le paiement peut être confirmé avant qu'un chauffeur accepte (paiement d'avance) : le webhook ne dépend pas de la course.
+
+**Versement du chauffeur** (`creerVersementSiDu`) : créé quand le paiement est `SUCCEEDED` **et** la course `TERMINEE` avec un chauffeur, quel que soit l'ordre d'arrivée (webhook après la fin de course, ou fin de course — `CourseDriveService.avancer(terminer)` — après un paiement d'avance). Un seul versement par paiement (`paymentId` unique, `upsert`), montant = revenu chauffeur figé sur le paiement, semaine UTC des lots. `preparePayout` (« demander mes versements ») rattrape les cas où l'un des deux appels a échoué, et ne prend que les courses terminées.
+
+**Non couvert** : le remboursement d'un passager qui a payé une course ensuite annulée ou restée sans chauffeur (`ANNULEE`, `SANS_CHAUFFEUR`). Aucun versement n'est créé pour ces courses, mais l'argent n'est pas rendu automatiquement : à décider (remboursement Stripe automatique ou manuel, et dans quel délai).
 
 ## `monitoring` — `/api/zupdrive`
 
