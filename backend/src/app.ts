@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { join } from "path";
 import { getEnv } from "./config/env";
+import { revisionDuBuild } from "./config/revision";
 import { requestLogger } from "./config/logger";
 import { middlewareOrigine } from "./modules/auth/origine";
 import { originesAutorisees as listerOriginesAutorisees } from "./modules/auth/origines-autorisees";
@@ -65,12 +66,6 @@ import addressRouter from "./modules/customers/address.routes";
 import privacyRouter from "./modules/privacy/privacy.routes";
 import { privacyAuditMiddleware } from "./modules/privacy/audit.middleware";
 import assistantRouter from "./modules/assistant/routes";
-
-/** Le commit de l'image (12 caractères), ou « inconnue » hors déploiement. */
-export function revisionDuBuild(): string {
-  const sha = (process.env.GIT_SHA || "").trim();
-  return /^[0-9a-f]{7,40}$/i.test(sha) ? sha.slice(0, 12) : "inconnue";
-}
 
 export function createApp(): Express {
   const app = express();

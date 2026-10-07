@@ -1,3 +1,4 @@
+import { controlesMetier } from "./supervision-metier.service";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { emailTransporter } from "../notifications/email.config";
@@ -421,7 +422,18 @@ async function passer() {
     const [base, smtp] = await Promise.all([verifierBase(), verifierSmtp()]);
     dependances = [base, smtp, ...verifierConfigurations()];
 
-    const constats = evaluer();
+    // Les contrôles métier lisent la base : une panne de lecture ne doit pas
+    // masquer les autres constats (la base en panne est déjà signalée plus haut).
+    let metier: Constat[] = [];
+    try {
+      metier = await controlesMetier();
+    } catch (err) {
+      logger.warn("Surveillance : contrôles métier impossibles", {
+        error: err instanceof Error ? err.message : err,
+      });
+    }
+
+    const constats = [...evaluer(), ...metier];
     const vus = new Set(constats.map((c) => c.cle));
 
     for (const constat of constats) {

@@ -5,7 +5,7 @@
  * l'espace superowner (Pages légales). Les valeurs entre crochets sont à
  * remplacer avant l'ouverture au public.
  */
-export const VERSION_INITIALE = "2026-09-25";
+export const VERSION_INITIALE = "2026-10-07";
 
 export const SLUGS_LEGAUX = [
   "mentions-legales",
@@ -51,7 +51,7 @@ Tout contenu manifestement illicite peut être signalé à [contact@zupeat.com](
 
 ## Médiation de la consommation
 
-En cas de litige non résolu avec notre service client, le consommateur peut recourir gratuitement au médiateur : [Nom du médiateur de la consommation] ([Site du médiateur]), ou à la plateforme européenne de règlement en ligne des litiges.`,
+En cas de litige non résolu avec notre service client, le consommateur peut recourir gratuitement au médiateur : [Nom du médiateur de la consommation] ([Site du médiateur]).`,
   },
 
   cgu: {
