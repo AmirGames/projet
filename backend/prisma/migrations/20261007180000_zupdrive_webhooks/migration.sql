@@ -26,23 +26,6 @@ CREATE TABLE "WebhookEvent" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- CreateTable WebhookDelivery
-CREATE TABLE "WebhookDelivery" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "webhookId" TEXT NOT NULL,
-    "eventId" TEXT NOT NULL,
-    "status" TEXT NOT NULL CHECK ("status" IN ('PENDING', 'SENT', 'FAILED', 'DELIVERY_FAILED')) DEFAULT 'PENDING',
-    "statusCode" INTEGER,
-    "responseBody" TEXT,
-    "errorMessage" TEXT,
-    "attempt" INTEGER NOT NULL DEFAULT 1,
-    "sentAt" TIMESTAMP(3),
-    "failedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "WebhookDelivery_webhookId_fkey" FOREIGN KEY ("webhookId") REFERENCES "WebhookEndpoint" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "WebhookDelivery_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "WebhookEvent" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
 -- CreateTable ProviderIntegration
 CREATE TABLE "ProviderIntegration" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -65,12 +48,6 @@ CREATE INDEX "WebhookEvent_eventType_idx" ON "WebhookEvent"("eventType");
 CREATE INDEX "WebhookEvent_resourceId_idx" ON "WebhookEvent"("resourceId");
 CREATE INDEX "WebhookEvent_delivered_idx" ON "WebhookEvent"("delivered");
 CREATE INDEX "WebhookEvent_timestamp_idx" ON "WebhookEvent"("timestamp");
-
--- CreateIndex on WebhookDelivery
-CREATE INDEX "WebhookDelivery_webhookId_idx" ON "WebhookDelivery"("webhookId");
-CREATE INDEX "WebhookDelivery_eventId_idx" ON "WebhookDelivery"("eventId");
-CREATE INDEX "WebhookDelivery_status_idx" ON "WebhookDelivery"("status");
-CREATE INDEX "WebhookDelivery_createdAt_idx" ON "WebhookDelivery"("createdAt");
 
 -- CreateIndex on ProviderIntegration
 CREATE INDEX "ProviderIntegration_provider_idx" ON "ProviderIntegration"("provider");
