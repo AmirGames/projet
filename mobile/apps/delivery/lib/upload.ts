@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { API_URL } from './api';
+import { API_URL, renewSession } from './api';
 import { reportReachable, reportUnreachable } from './network';
 
 type FileSystemLegacy = typeof import('expo-file-system/legacy');
@@ -31,7 +31,7 @@ export interface UploadResult {
  * fetch ne sert plus qu'en secours. Une vraie panne renvoie sa cause exacte,
  * et non « vérifiez votre connexion ».
  */
-export async function uploadFile(
+async function envoyerUneFois(
   path: string,
   token: string,
   file: { uri: string; type: string; name: string },
@@ -78,4 +78,25 @@ export async function uploadFile(
     const cause = (nativeError as any)?.message || e?.message || 'erreur inconnue';
     throw new Error(`Envoi impossible vers ${API_URL} : ${cause}`);
   }
+}
+
+/**
+ * L'envoi d'un fichier, avec le renouvellement de session des autres appels :
+ * une photo de livraison prise après l'expiration du jeton d'accès ne doit pas
+ * être perdue. Sur un 401, la session est renouvelée et l'envoi rejoué une fois.
+ */
+export async function uploadFile(
+  path: string,
+  token: string,
+  file: { uri: string; type: string; name: string },
+  fieldName: string,
+  fields: Record<string, string> = {}
+): Promise<UploadResult> {
+  const premier = await envoyerUneFois(path, token, file, fieldName, fields);
+  // MISSING_ORG est un 401 pour une requête incomplète, pas une session expirée.
+  if (premier.status !== 401 || premier.data?.code === 'MISSING_ORG') return premier;
+
+  const renouvelee = await renewSession(token);
+  if (!('token' in renouvelee)) return premier;
+  return envoyerUneFois(path, renouvelee.token, file, fieldName, fields);
 }
