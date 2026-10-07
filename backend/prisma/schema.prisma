@@ -2845,6 +2845,8 @@ model ChauffeurDrive {
   /// est posé, le chauffeur peut déposer la pièce à jour ; il est rétabli dès
   /// que l'équipe la valide. Une suspension décidée par l'équipe ne le pose pas.
   suspenduPourExpirationLe DateTime?
+  suspendedAt      DateTime?
+  suspensionReason String?
 
   /// Disponibilité pour les courses : seul un chauffeur VALIDE peut être en
   /// ligne ; une suspension le met hors ligne. La position sert à proposer
@@ -2883,6 +2885,8 @@ model ChauffeurDrive {
   updatedAt DateTime @updatedAt
 
   @@index([statut])
+  alertesNotification NotificationAlert[]
+
   @@index([societeId])
 }
 
@@ -3421,6 +3425,18 @@ model RatingCourseDrive {
 
 /// Paramètres globaux de la plateforme ZupDrive.
 /// Configuration centralisée pour la commission, les payouts, etc.
+model PlatformSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  type        String   @default("STRING")
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  @@index([key])
+}
+
 model PlatformSettingsDrive {
   id                   String   @id @default("default")
   /// Commission plateforme (0-100 %)
@@ -3631,6 +3647,8 @@ model ChauffeurDocument {
   @@unique([chauffeurId, type])
   @@index([chauffeurId])
   @@index([type])
+  @@index([expiresAt])
+  @@index([status])
 }
 
 model ChauffeurInfraction {
@@ -3647,6 +3665,8 @@ model ChauffeurInfraction {
 
   @@index([chauffeurId])
   @@index([type])
+  @@index([resolvedAt])
+  @@index([severity])
 }
 
 // ============================================================================
@@ -3654,41 +3674,44 @@ model ChauffeurInfraction {
 // ============================================================================
 
 model SupportTicket {
-  id          String   @id @default(cuid())
-  ticketNumber String  @unique
-  category    String   // TECHNIQUE, PAIEMENT, INFRACTION, DOCUMENT, AUTRE
-  priority    String   @default("MOYENNE") // BASSE, MOYENNE, HAUTE, CRITIQUE
-  subject     String
-  description String
-  status      String   @default("OUVERT") // OUVERT, EN_COURS, EN_ATTENTE_CLIENT, RESOLU, FERME
-  reporterId  String
-  reporterType String  // CHAUFFEUR, PASSAGER, ADMIN
-  assignedTo  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  resolvedAt  DateTime?
-  resolution  String?
-
-  messages SupportMessage[]
+  id           String           @id @default(cuid())
+  ticketNumber String           @unique
+  category     String
+  priority     String           @default("MOYENNE")
+  subject      String
+  description  String
+  status       String           @default("OUVERT")
+  reporterId   String
+  reporterType String
+  assignedTo   String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @default(now()) @updatedAt
+  resolvedAt   DateTime?
+  resolution   String?
+  messages     SupportMessage[]
 
   @@index([reporterId])
   @@index([status])
   @@index([priority])
+  @@index([assignedTo])
+  @@index([category])
+  @@index([createdAt])
+  @@index([ticketNumber])
 }
 
 model SupportMessage {
-  id          String   @id @default(cuid())
-  ticketId    String
-  authorId    String
-  authorType  String   // CHAUFFEUR, PASSAGER, AGENT, ADMIN
-  message     String
+  id            String        @id @default(cuid())
+  ticketId      String
+  authorId      String
+  authorType    String
+  message       String
   attachmentUrl String?
-  createdAt   DateTime @default(now())
-
-  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
   @@index([authorId])
+  @@index([createdAt])
 }
 
 // ============================================================================
@@ -3698,38 +3721,48 @@ model SupportMessage {
 model CommissionConfig {
   id          String   @id @default(cuid())
   name        String   @unique
-  type        String   // PERCENTAGE, FIXED
-  value       Float
-  appliesTo   String   // CHAUFFEUR, PLATEFORME
+  type        String
+  value       Float    @db.Real
+  appliesTo   String
   description String
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([active])
+  @@index([appliesTo])
 }
 
 model RegionalConfig {
   id                  String   @id @default(cuid())
-  region              String   @unique // BRUXELLES, WALLONIE, FLANDRE
+  region              String   @unique
   minPrice            Int
-  baseSurgeMultiplier Float    @default(1.0)
-  maxSurgeMultiplier  Float    @default(2.5)
+  baseSurgeMultiplier Float    @default(1.0) @db.Real
+  maxSurgeMultiplier  Float    @default(2.5) @db.Real
   peakHours           String
-  peakSurgeMultiplier Float    @default(1.5)
+  peakSurgeMultiplier Float    @default(1.5) @db.Real
   active              Boolean  @default(true)
   createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  updatedAt           DateTime @default(now()) @updatedAt
+
+  @@index([active])
 }
 
 model PricingRule {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String
-  condition   String   // JSON describing the condition
-  basePrice   Float
-  surgeMultiplier Float
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String   @unique
+  type            String
+  basePricePerKm  Int
+  basePricePerMin Int
+  minPrice        Int
+  maxPrice        Int?
+  description     String
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@index([active])
+  @@index([type])
 }
 
 // ============================================================================
@@ -3740,55 +3773,73 @@ model NotificationTemplate {
   id        String   @id @default(cuid())
   key       String   @unique
   name      String
-  type      String   // EMAIL, SMS, PUSH
+  type      String
   subject   String?
   body      String
-  variables Json     @default("[]")
+  variables String   @default("[]")
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([active])
+  @@index([type])
 }
 
 model NotificationLog {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   recipientId   String
-  recipientType String   // CHAUFFEUR, PASSAGER, ADMIN
-  type          String   // EMAIL, SMS, PUSH
+  recipientType String
+  type          String
   templateKey   String
-  status        String   @default("PENDING") // PENDING, SENT, FAILED, BOUNCED
+  status        String    @default("PENDING")
   recipient     String
   subject       String?
   body          String
-  variables     Json     @default("{}")
+  variables     String    @default("{}")
   errorMessage  String?
   sentAt        DateTime?
   failedAt      DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   @@index([recipientId])
   @@index([status])
+  @@index([createdAt])
+  @@index([templateKey])
+  @@index([type])
 }
 
 model NotificationAlert {
-  id        String   @id @default(cuid())
-  type      String
-  message   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String         @id @default(cuid())
+  chauffeurId    String
+  type           String
+  severity       String         @default("INFO")
+  title          String
+  message        String
+  triggerAction  String?
+  read           Boolean        @default(false)
+  readAt         DateTime?
+  createdAt      DateTime       @default(now())
+  chauffeur      ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([chauffeurId])
+  @@index([read])
+  @@index([severity])
+  @@index([type])
 }
 
 model ScheduledReport {
-  id              String   @id @default(cuid())
-  name            String
-  reportType      String   // DRIVER_PERFORMANCE, FINANCIAL, COMPLIANCE, CUSTOM
-  frequency       String   // DAILY, WEEKLY, MONTHLY, QUARTERLY
-  recipients      Json     @default("[]")
-  format          String   @default("PDF") // PDF, EXCEL, JSON
-  lastGeneratedAt DateTime?
+  id               String    @id @default(cuid())
+  name             String
+  reportType       String
+  frequency        String
+  recipients       String    @default("[]")
+  format           String    @default("PDF")
+  lastGeneratedAt  DateTime?
   nextGenerationAt DateTime
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
 
   @@index([reportType])
   @@index([frequency])
@@ -3801,47 +3852,53 @@ model ScheduledReport {
 // ============================================================================
 
 model WebhookEndpoint {
-  id        String   @id @default(cuid())
-  url       String
-  events    Json     @default("[]")
-  active    Boolean  @default(true)
-  secret    String   @unique
+  id          String   @id @default(cuid())
+  url         String
+  events      String   @default("[]")
+  active      Boolean  @default(true)
+  secret      String   @unique
   retryPolicy String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
-  deliveries WebhookDeliveryDrive[]
+  deliveries  WebhookDeliveryDrive[]
+
+  @@index([active])
+  @@index([url])
 }
 
 model WebhookEvent {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   eventType    String
-  resourceType String   // DRIVER, DOCUMENT, INFRACTION, PAYMENT, ALERT
+  resourceType String
   resourceId   String
-  data         Json     @default("{}")
+  data         String    @default("{}")
   timestamp    DateTime
-  delivered    Boolean  @default(false)
+  delivered    Boolean   @default(false)
   deliveredAt  DateTime?
   nextRetryAt  DateTime?
-  retryCount   Int      @default(0)
+  retryCount   Int       @default(0)
   lastError    String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
   @@index([eventType])
   @@index([resourceId])
   @@index([timestamp])
+  @@index([delivered])
 }
 
 model ProviderIntegration {
-  id                 String   @id @default(cuid())
-  provider           String   // SENDGRID, TWILIO, MAILGUN, AWS_SES, STRIPE, CUSTOM
-  type               String   // EMAIL, SMS, PAYMENT, CUSTOM
-  apiKey             String
-  webhookSigningKey  String?
-  active             Boolean  @default(true)
-  config             Json     @default("{}")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                String   @id @default(cuid())
+  provider          String
+  type              String
+  apiKey            String
+  webhookSigningKey String?
+  active            Boolean  @default(true)
+  config            String   @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
 
   @@index([provider])
+  @@index([active])
+  @@index([type])
 }
