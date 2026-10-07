@@ -47,7 +47,7 @@ export default function CompliancePage() {
       if (resourceTypeFilter) params.append('resourceType', resourceTypeFilter);
       params.append('limit', '100');
 
-      const response = await fetch(`${API_URL}/api/zupdrive/admin/compliance/audit-logs?${params}`, {
+      const response = await fetch(`${API_URL}/api/zupdrive/compliance/admin/audit-logs?${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
@@ -65,7 +65,7 @@ export default function CompliancePage() {
   const loadReports = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/zupdrive/admin/compliance/reports?limit=20`, {
+      const response = await fetch(`${API_URL}/api/zupdrive/compliance/admin/reports?limit=20`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
@@ -83,7 +83,7 @@ export default function CompliancePage() {
   const handleGenerateReport = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/zupdrive/admin/compliance/reports`, {
+      const response = await fetch(`${API_URL}/api/zupdrive/compliance/admin/reports`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
