@@ -7,6 +7,7 @@ import zupdrivePaymentRouter from "./zupdrive-payment.routes";
 import zupdriveRealtimeRouter from "./zupdrive-realtime.routes";
 import zupdriveAdminDashboardRouter from "./zupdrive-admin-dashboard.routes";
 import zupdriveDriverManagementRouter from "./zupdrive-driver-management.routes";
+import zupdriveNotificationsRouter from "./zupdrive-notifications.routes";
 
 export interface MontageRouteur {
   prefixe: string;
@@ -34,6 +35,8 @@ export const MONTAGE_ZUPDRIVE: MontageRouteur[] = [
   { prefixe: "/api/zupdrive/payment", routeur: zupdrivePaymentRouter },
   { prefixe: "/api/zupdrive/realtime", routeur: zupdriveRealtimeRouter },
   { prefixe: "/api/zupdrive/admin/dashboard", routeur: zupdriveAdminDashboardRouter },
+  // Alertes du chauffeur (/alerts/*) et administration (/admin/*). L'accusé du fournisseur est dans app.ts.
+  { prefixe: "/api/zupdrive/notifications", routeur: zupdriveNotificationsRouter },
 ];
 
 export function monterZupDrive(app: Application): void {
