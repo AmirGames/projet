@@ -177,7 +177,31 @@ describe("MatchingAlgorithmService", () => {
   });
 
   describe("scoring weights", () => {
-    it("should verify component weights sum to 100%", () => {
+    it("should verify component weights sum to 100% with ideal metrics", () => {
+      // Ideal metrics: perfect chauffeur with max scores
+      const metrics = {
+        id: "driver-1",
+        totalTrips: 100,
+        acceptedTrips: 100, // 100% acceptance rate
+        acceptanceRate: 1.0, // Perfect
+        avgRating: 5.0, // Perfect rating
+        latitude: 50.8505,
+        longitude: 4.3488,
+        distanceKm: 0.0, // Very close (0km)
+      };
+
+      const score = MatchingAlgorithmService.scoreDriver(metrics);
+      const { distanceScore, ratingScore, etaScore, acceptanceScore } = score.breakdown;
+
+      // With ideal metrics, total should be 100
+      // Weights: distance 40%, rating 30%, ETA 20%, acceptance 10%
+      const total = distanceScore + ratingScore + etaScore + acceptanceScore;
+
+      // Should approximate 100 (with small floating-point tolerance)
+      expect(total).toBeCloseTo(100, 0);
+    });
+
+    it("should score within bounds with typical metrics", () => {
       const metrics = {
         id: "driver-1",
         totalTrips: 100,
@@ -190,13 +214,16 @@ describe("MatchingAlgorithmService", () => {
       };
 
       const score = MatchingAlgorithmService.scoreDriver(metrics);
-      const { distanceScore, ratingScore, etaScore, acceptanceScore } = score.breakdown;
 
-      // Weights: distance 40%, rating 30%, ETA 20%, acceptance 10%
-      const total = distanceScore + ratingScore + etaScore + acceptanceScore;
+      // Score should always be between 0 and 100
+      expect(score.score).toBeGreaterThanOrEqual(0);
+      expect(score.score).toBeLessThanOrEqual(100);
 
-      // Should approximate 100 (with small floating-point tolerance)
-      expect(total).toBeCloseTo(100, 0);
+      // Breakdown components should be non-negative
+      expect(score.breakdown.distanceScore).toBeGreaterThanOrEqual(0);
+      expect(score.breakdown.ratingScore).toBeGreaterThanOrEqual(0);
+      expect(score.breakdown.etaScore).toBeGreaterThanOrEqual(0);
+      expect(score.breakdown.acceptanceScore).toBeGreaterThanOrEqual(0);
     });
   });
 });
