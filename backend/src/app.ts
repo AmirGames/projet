@@ -56,6 +56,7 @@ import zupdriveCoursesRouter from "./modules/zupdrive/course-drive.routes";
 import zupdriveSocieteRouter from "./modules/zupdrive/societe.routes";
 import zupdrivePaymentRouter from "./modules/zupdrive/zupdrive-payment.routes";
 import zupdriveRealtimeRouter from "./modules/zupdrive/zupdrive-realtime.routes";
+import zupdriveAdminDashboardRouter from "./modules/zupdrive/zupdrive-admin-dashboard.routes";
 import notificationsApiRouter from "./modules/notifications/notifications-api.routes";
 import paymentMethodsApiRouter from "./modules/payments/payment-methods-api.routes";
 import supportRouter from "./modules/support/support.routes";
@@ -279,6 +280,7 @@ export function createApp(): Express {
   app.use("/api/zupdrive/societe", zupdriveSocieteRouter);
   app.use("/api/zupdrive/payment", zupdrivePaymentRouter);
   app.use("/api/zupdrive/realtime", zupdriveRealtimeRouter);
+  app.use("/api/zupdrive/admin/dashboard", zupdriveAdminDashboardRouter);
   app.use("/api/notifications", notificationsApiRouter);
   app.use("/api/support", supportRouter);
   app.use("/api/assistant", assistantRouter);
