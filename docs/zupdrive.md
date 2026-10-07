@@ -231,6 +231,9 @@ Toutes les routes exigent une session. L'espace du gérant (pages) est la phase 
 
 Pas de nouvelle permission à cocher : les sociétés relèvent de la section « Chauffeurs ».
 
+La gestion des chauffeurs (suspension, infractions, pièces), les notifications, le support, les webhooks, la conformité, les statistiques,
+les versements et la supervision sont décrits dans [`zupdrive-api-admin.md`](./zupdrive-api-admin.md) (routes, droits, journal, règles financières).
+
 ### Frontend
 - **`/superowner/zupdrive/societes`** (menu « ZupDrive › Sociétés ») : la file de validation. Chaque pièce de la société et de chaque véhicule s'examine dans la page, la conformité de chaque véhicule s'affiche, et les chauffeurs rattachés et les invitations en attente sont listés. `/superowner/zupdrive/societes/:id` ouvre un dossier directement (lien des notifications).
 - **Tableau de bord ZupDrive** : sociétés à examiner et sociétés validées.
