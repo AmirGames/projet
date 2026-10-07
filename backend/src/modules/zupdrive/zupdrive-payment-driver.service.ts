@@ -241,7 +241,8 @@ export const ZupDrivePaymentDriverService = {
       where: {
         status: "SUCCEEDED",
         payout: null,
-        course: { chauffeurId },
+        // Une course annulée après paiement ne donne pas lieu à versement.
+        course: { chauffeurId, statut: "TERMINEE" },
       },
       select: { id: true, driverEarningsCentimes: true, currency: true },
     });

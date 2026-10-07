@@ -8,6 +8,7 @@ import { TarificationDriveService, type Point } from "./tarification-drive.servi
 import { lireDevis, signerDevis, VALIDITE_DEVIS_MS } from "./devis-signe";
 import { NoteCourseDriveService } from "./note-course-drive.service";
 import { MatchingAlgorithmService } from "./matching-algorithm.service";
+import { ZupDrivePaymentService } from "./zupdrive-payment.service";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -548,6 +549,13 @@ export class CourseDriveService {
       demarrer: ["Bon trajet !", "Votre course a commencé."],
       terminer: ["Course terminée", "Merci d'avoir voyagé avec ZupDrive."],
     };
+    // Course payée d'avance : son versement devient dû. Un échec ne défait pas la fin de course ;
+    // le webhook ou « demander mes versements » (preparePayout) le rattrapent.
+    if (etape === "terminer") {
+      await ZupDrivePaymentService.courseTerminee(courseId).catch((err) =>
+        logger.warn("ZupDrive payout after ride failed", { courseId, err })
+      );
+    }
     await this.prevenirPassager(courseId, ...messages[etape]);
     return this.tableauDeBord(userId);
   }

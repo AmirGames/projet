@@ -1,3 +1,4 @@
+import type Stripe from "stripe";
 import { db } from "../../services/db";
 import { stripe, STRIPE_CONFIG } from "../payments/stripe";
 import { ApiError } from "../../middleware/errorHandler";
@@ -11,11 +12,15 @@ import { debutSemaineVersement, finSemaineVersement } from "./semaine-versement"
  *
  * Flux:
  * 1. Commande créée (CourseDrive RECHERCHE)
- * 2. Paiement créé (PaymentIntentDrive)
- * 3. Chauffeur accepte (CourseDrive ACCEPTEE) → Revenus figés
- * 4. Course terminée (CourseDrive TERMINEE) → Webhook Stripe confirme paiement
+ * 2. Paiement créé (PaymentIntentDrive) : répartition commission / chauffeur figée
+ * 3. Le webhook Stripe confirme le paiement (jamais le client) → PaymentIntentDrive SUCCEEDED
+ * 4. Course terminée (CourseDrive TERMINEE) ET paiement confirmé → versement chauffeur créé,
+ *    dans l'ordre où les deux événements arrivent (creerVersementSiDu, idempotent)
  * 5. Lundi: Batch SEPA hebdomadaire regroupe tous les payouts
  * 6. Virement versé au chauffeur
+ *
+ * Le webhook est celui de ZupEat (payments/payment.service.ts : signature sur le corps brut,
+ * journal StripeEvent idempotent) ; il aiguille ici les intentions qui portent metadata.courseId.
  *
  * La commission plateforme suit PlatformSettingsDrive (20 % par défaut), voir commission-drive.ts :
  * commission = arrondi(prixCentimes × pourcentage / 100), revenu chauffeur = prix - commission
@@ -37,13 +42,10 @@ export class ZupDrivePaymentService {
       where: { id: courseId },
     });
 
-    // Vérifier qu'une course n'a pas déjà un paiement
-    const existing = await db.paymentIntentDrive.findUnique({
-      where: { courseId },
-    });
-    if (existing) {
-      throw new ApiError(409, "Ce trajet a déjà un paiement en cours", "PAYMENT_ALREADY_EXISTS");
-    }
+    // Une course n'a qu'un paiement. Rejouer la demande (app relancée, double clic) rend le même
+    // paiement non réglé au lieu d'une erreur : le client retrouve son clientSecret.
+    const existing = await db.paymentIntentDrive.findUnique({ where: { courseId } });
+    if (existing) return this.paiementExistant(existing, amountCentimes);
 
     // Répartition figée à la création du paiement avec le pourcentage en vigueur
     // (PlatformSettingsDrive) : un changement ultérieur ne touche pas ce paiement.
@@ -52,29 +54,41 @@ export class ZupDrivePaymentService {
       repartirPrixCourse(amountCentimes, await lireCommissionPourcentage());
 
     // Créer le PaymentIntent Stripe
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountCentimes,
-      currency: STRIPE_CONFIG.currency,
-      description: `Course ZupDrive: ${course.departAdresse} → ${course.arriveeAdresse}`,
-      metadata: {
-        courseId,
-        passagerId: passagerId || "anonymous",
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: amountCentimes,
+        currency: STRIPE_CONFIG.currency,
+        description: `Course ZupDrive: ${course.departAdresse} → ${course.arriveeAdresse}`,
+        metadata: {
+          courseId,
+          passagerId: passagerId || "anonymous",
+        },
       },
-    });
+      // Deux demandes simultanées pour la même course obtiennent la même intention Stripe.
+      { idempotencyKey: `zupdrive-course-${courseId}` }
+    );
 
-    // Enregistrer en base
-    const payment = await db.paymentIntentDrive.create({
-      data: {
-        courseId,
-        passagerId,
-        stripeId: paymentIntent.id,
-        amountCentimes,
-        currency: "EUR",
-        status: paymentIntent.status,
-        platformCommissionCentimes,
-        driverEarningsCentimes,
-      },
-    });
+    // Enregistrer en base (statuts en majuscules, comme le schéma les documente)
+    let payment;
+    try {
+      payment = await db.paymentIntentDrive.create({
+        data: {
+          courseId,
+          passagerId,
+          stripeId: paymentIntent.id,
+          amountCentimes,
+          currency: "EUR",
+          status: paymentIntent.status.toUpperCase(),
+          platformCommissionCentimes,
+          driverEarningsCentimes,
+        },
+      });
+    } catch (err) {
+      // Une demande simultanée l'a enregistré entre-temps : courseId est unique.
+      if ((err as { code?: string }).code !== "P2002") throw err;
+      const concurrent = await db.paymentIntentDrive.findUniqueOrThrow({ where: { courseId } });
+      return this.paiementExistant(concurrent, amountCentimes);
+    }
 
     logger.info("ZupDrive payment intent created", {
       courseId,
@@ -91,66 +105,142 @@ export class ZupDrivePaymentService {
     };
   }
 
-  /**
-   * Webhook Stripe: Payment succeeded.
-   * Appelé par Stripe quand le paiement est confirmé → crée le payout au chauffeur.
-   */
-  static async handlePaymentSucceeded(stripePaymentIntentId: string) {
-    const payment = await db.paymentIntentDrive.findUnique({
-      where: { stripeId: stripePaymentIntentId },
-      include: { course: { include: { chauffeur: true } } },
-    });
+  /** Le paiement déjà créé de cette course, à rendre au client tant qu'il n'est pas réglé ni annulé. */
+  private static async paiementExistant(
+    existing: { id: string; stripeId: string; status: string; amountCentimes: number },
+    amountCentimes: number
+  ) {
+    if (existing.status !== "SUCCEEDED" && existing.amountCentimes === amountCentimes) {
+      const ouverte = await stripe.paymentIntents.retrieve(existing.stripeId);
+      if (ouverte.status !== "canceled" && ouverte.amount === amountCentimes) {
+        return {
+          paymentId: existing.id,
+          clientSecret: ouverte.client_secret,
+          amount: amountCentimes,
+          currency: STRIPE_CONFIG.currency,
+        };
+      }
+    }
+    throw new ApiError(409, "Ce trajet a déjà un paiement en cours", "PAYMENT_ALREADY_EXISTS");
+  }
 
+  /** Cette intention Stripe est-elle celle d'une course ZupDrive (et non d'une commande ZupEat ou d'un pourboire) ? */
+  static estUnPaiementDrive(intention: Stripe.PaymentIntent): boolean {
+    return typeof intention.metadata?.courseId === "string" && !intention.metadata?.orderId;
+  }
+
+  /** Le paiement ZupDrive enregistré pour cette intention, en vérifiant que la métadonnée dit la même chose que la base. */
+  private static async paiementDeLIntention(intention: Stripe.PaymentIntent) {
+    const payment = await db.paymentIntentDrive.findUnique({ where: { stripeId: intention.id } });
     if (!payment) {
-      logger.warn("ZupDrive payment intent not found in DB", { stripeId: stripePaymentIntentId });
+      logger.warn("ZupDrive payment intent not found in DB", { stripeId: intention.id });
       return null;
     }
+    if (intention.metadata?.courseId !== payment.courseId) {
+      throw new ApiError(409, "Paiement associé à une autre course.", "PAYMENT_COURSE_MISMATCH");
+    }
+    return payment;
+  }
 
-    // Vérifier que la course a un chauffeur (acceptée)
-    if (!payment.course.chauffeurId) {
-      logger.warn("ZupDrive course has no driver", { courseId: payment.courseId });
-      throw new ApiError(409, "Cette course n'a pas de chauffeur", "NO_DRIVER");
+  /**
+   * Webhook Stripe : payment_intent.succeeded d'une course ZupDrive.
+   *
+   * Rejouable (Stripe renvoie les événements) et sans condition sur la course : un passager peut
+   * payer avant qu'un chauffeur accepte. Le paiement passe à SUCCEEDED après contrôle de l'état,
+   * de la devise et du montant (celui de la base, jamais celui du client) ; le versement du
+   * chauffeur n'est créé que si la course est terminée (creerVersementSiDu).
+   */
+  static async marquerPaye(intention: Stripe.PaymentIntent) {
+    const payment = await this.paiementDeLIntention(intention);
+    if (!payment) return null;
+
+    const recu = intention.amount_received ?? intention.amount;
+    if (intention.status !== "succeeded" || intention.currency !== STRIPE_CONFIG.currency) {
+      throw new ApiError(409, "État ou devise du paiement incorrect.", "PAYMENT_INVALID");
+    }
+    if (recu !== payment.amountCentimes) {
+      logger.error("ZupDrive amount received differs from the ride payment", {
+        courseId: payment.courseId,
+        paymentIntentId: intention.id,
+        recu,
+        attendu: payment.amountCentimes,
+      });
+      throw new ApiError(409, "Montant encaissé incorrect.", "PAYMENT_AMOUNT_MISMATCH");
     }
 
-    // Rejouable : Stripe renvoie un même événement (retries, doublons). Le paiement passe à
-    // SUCCEEDED et son versement est créé dans la même transaction ; paymentId est unique,
-    // l'upsert ne crée donc jamais un second versement pour le même paiement.
-    const periodStart = debutSemaineVersement();
-    const periodEnd = finSemaineVersement(periodStart);
-    const ibanSnapshot = payment.course.chauffeur ? await this.getChauffeurIban() : null;
-    const chauffeurId = payment.course.chauffeurId;
-
-    const payout = await db.$transaction(async (tx) => {
-      if (payment.status !== "SUCCEEDED") {
-        await tx.paymentIntentDrive.update({
-          where: { id: payment.id },
-          data: { status: "SUCCEEDED", confirmedAt: new Date() },
-        });
-      }
-      return tx.driverPayoutDrive.upsert({
-        where: { paymentId: payment.id },
-        update: {},
-        create: {
-          paymentId: payment.id,
-          chauffeurId,
-          amountCentimes: payment.driverEarningsCentimes,
-          currency: "EUR",
-          status: "PENDING",
-          periodStart,
-          periodEnd,
-          ibanSnapshot,
-        },
-      });
+    // Un second événement ne réécrit pas la date de confirmation.
+    await db.paymentIntentDrive.updateMany({
+      where: { id: payment.id, status: { not: "SUCCEEDED" } },
+      data: { status: "SUCCEEDED", confirmedAt: new Date() },
     });
 
-    logger.info("ZupDrive payout created", {
+    return this.creerVersementSiDu(payment.id);
+  }
+
+  /** payment_intent.payment_failed : l'échec ne défait jamais un paiement déjà réglé (événement en retard). */
+  static async marquerEchec(intention: Stripe.PaymentIntent) {
+    const payment = await this.paiementDeLIntention(intention);
+    if (!payment) return;
+    await db.paymentIntentDrive.updateMany({
+      where: { id: payment.id, status: { not: "SUCCEEDED" } },
+      data: { status: intention.status.toUpperCase() },
+    });
+  }
+
+  /** payment_intent.canceled : même règle, un paiement réglé ne repasse pas à annulé. */
+  static async marquerAnnule(intention: Stripe.PaymentIntent) {
+    const payment = await this.paiementDeLIntention(intention);
+    if (!payment) return;
+    await db.paymentIntentDrive.updateMany({
+      where: { id: payment.id, status: { not: "SUCCEEDED" } },
+      data: { status: "CANCELED", cancellationReason: intention.cancellation_reason ?? null },
+    });
+  }
+
+  /**
+   * Crée le versement du chauffeur quand les deux conditions sont réunies : paiement confirmé par
+   * Stripe ET course terminée avec un chauffeur. Appelé par le webhook (paiement après la course)
+   * et à la fin de la course (paiement d'avance) : dans les deux ordres, un seul versement, car
+   * paymentId est unique et l'upsert ne réécrit rien. Montant = revenu chauffeur figé sur le paiement.
+   */
+  static async creerVersementSiDu(paymentId: string) {
+    const payment = await db.paymentIntentDrive.findUnique({
+      where: { id: paymentId },
+      include: { course: { select: { chauffeurId: true, statut: true } } },
+    });
+    if (!payment || payment.status !== "SUCCEEDED") return null;
+    if (payment.course.statut !== "TERMINEE" || !payment.course.chauffeurId) return null;
+
+    const periodStart = debutSemaineVersement();
+    const periodEnd = finSemaineVersement(periodStart);
+    const payout = await db.driverPayoutDrive.upsert({
+      where: { paymentId: payment.id },
+      update: {},
+      create: {
+        paymentId: payment.id,
+        chauffeurId: payment.course.chauffeurId,
+        amountCentimes: payment.driverEarningsCentimes,
+        currency: "EUR",
+        status: "PENDING",
+        periodStart,
+        periodEnd,
+        ibanSnapshot: await this.getChauffeurIban(),
+      },
+    });
+
+    logger.info("ZupDrive payout ensured", {
       paymentId: payment.id,
       payoutId: payout.id,
       chauffeurId: payment.course.chauffeurId,
       amount: payment.driverEarningsCentimes,
     });
-
     return payout;
+  }
+
+  /** La course vient de se terminer : si elle est déjà payée, le versement du chauffeur devient dû. */
+  static async courseTerminee(courseId: string) {
+    const payment = await db.paymentIntentDrive.findUnique({ where: { courseId }, select: { id: true } });
+    return payment ? this.creerVersementSiDu(payment.id) : null;
   }
 
   /**

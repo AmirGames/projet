@@ -7,6 +7,7 @@ import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
 import { Outbox } from "../jobs/outbox.service";
 import { TYPE_ANNONCE_COMMANDE } from "../notifications/outbox-handlers";
+import { ZupDrivePaymentService } from "../zupdrive/zupdrive-payment.service";
 
 /** Les états d'une intention Stripe qui attendent encore le client. */
 const INTENTION_EN_COURS = new Set([
@@ -164,6 +165,19 @@ export const paymentService = {
   },
 
   async traiterEvenement(evenement: Stripe.Event) {
+    // Les paiements de courses ZupDrive (metadata.courseId, sans orderId) ont leur propre suite :
+    // sans cet aiguillage ils seraient pris pour une commande ZupEat sans commande, et ignorés.
+    const objet: any = evenement.data?.object;
+    if (
+      ["payment_intent.succeeded", "payment_intent.payment_failed", "payment_intent.canceled"].includes(evenement.type) &&
+      ZupDrivePaymentService.estUnPaiementDrive(objet)
+    ) {
+      if (evenement.type === "payment_intent.succeeded") await ZupDrivePaymentService.marquerPaye(objet);
+      else if (evenement.type === "payment_intent.payment_failed") await ZupDrivePaymentService.marquerEchec(objet);
+      else await ZupDrivePaymentService.marquerAnnule(objet);
+      return;
+    }
+
     switch (evenement.type) {
       // Un pourboire laissé après la livraison porte aussi l'orderId : il
       // passe à part, sans quoi il serait pris pour le paiement de la commande.
