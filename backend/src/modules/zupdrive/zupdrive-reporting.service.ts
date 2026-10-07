@@ -441,6 +441,9 @@ export class ZupDriveReportingService {
       active: boolean;
     }>
   ): Promise<void> {
+    const existant = await db.scheduledReport.findUnique({ where: { id: reportId }, select: { id: true } });
+    if (!existant) throw new ApiError(404, "Rapport programmé introuvable", "SCHEDULED_REPORT_NOT_FOUND");
+
     const { recipients, ...autres } = data;
     const updateData: Prisma.ScheduledReportUpdateInput = { ...autres };
     if (recipients) {

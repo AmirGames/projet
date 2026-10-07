@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
-import { adminAuth, validateRequest } from "./zupdrive-garde";
+import { journaliser } from "../superowner/shared";
+import { adminAuthSection, validateRequest } from "./zupdrive-garde";
 import { ZupDriveReportingService } from "./zupdrive-reporting.service";
 
 const router = Router();
+
+/** Rapports : section « courses-drive » de la plateforme DRIVE. */
+const adminAuth = adminAuthSection("courses-drive");
 
 /**
  * Driver Performance Reports
@@ -118,6 +122,14 @@ router.post(
   async (req, res, next) => {
     try {
       const report = await ZupDriveReportingService.createScheduledReport(req.body);
+      // Les destinataires reçoivent des données ZupDrive : on garde leurs adresses au journal.
+      await journaliser(req, "ZUPDRIVE_CREATE_SCHEDULED_REPORT", report.id, {
+        name: req.body.name,
+        reportType: req.body.reportType,
+        frequency: req.body.frequency,
+        recipients: req.body.recipients,
+        format: req.body.format,
+      });
       res.status(201).json(report);
     } catch (error) {
       next(error);
@@ -167,6 +179,7 @@ router.patch(
     try {
       const reportId = String(req.params.reportId);
       await ZupDriveReportingService.updateScheduledReport(reportId, req.body);
+      await journaliser(req, "ZUPDRIVE_UPDATE_SCHEDULED_REPORT", reportId, req.body);
       res.json({ success: true, message: "Rapport mis à jour" });
     } catch (error) {
       next(error);
