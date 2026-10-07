@@ -13,7 +13,7 @@
  */
 
 import { db } from "../../services/db";
-import { ApiError } from "../../utils/errors";
+import { ApiError } from "../../middleware/api-error";
 
 export type UserRole =
   | "CLIENT_ZUPEAT"            // Via customer relation
@@ -103,9 +103,9 @@ export const UnifiedRolesService = {
       roles.push("ADMIN_ZUPEAT");
     }
 
-    if (platformAdmin.some((ae) => ae.plateforme === "ZUPDRIVE")) {
+    if (platformAdmin.some((ae) => ae.plateforme === "DRIVE")) {
       if (
-        platformAdmin.find((ae) => ae.plateforme === "ZUPDRIVE")?.role ===
+        platformAdmin.find((ae) => ae.plateforme === "DRIVE")?.role ===
         "SUPPORT"
       ) {
         roles.push("SUPPORT");
