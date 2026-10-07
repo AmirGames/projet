@@ -45,13 +45,13 @@ router.get(
   ...adminAuth,
   validateRequest({
     query: z.object({
-      activeOnly: z.coerce.boolean().optional().default("true"),
+      activeOnly: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
     }),
   }),
   async (req, res, next) => {
     try {
-      const { activeOnly } = req.query as any;
-      const configs = await ZupDrivePlatformConfigService.listCommissionConfigs(activeOnly === "true");
+      const { activeOnly } = req.query as unknown as { activeOnly: boolean };
+      const configs = await ZupDrivePlatformConfigService.listCommissionConfigs(activeOnly);
       res.json(configs);
     } catch (error) {
       next(error);
@@ -95,7 +95,7 @@ router.post(
  * GET /api/zupdrive/admin/config/regions
  * Lister les configurations régionales
  */
-router.get("/regions", adminAuth, async (req, res, next) => {
+router.get("/regions", ...adminAuth, async (_req, res, next) => {
   try {
     const configs = await ZupDrivePlatformConfigService.listRegionalConfigs();
     res.json(configs);
@@ -118,7 +118,7 @@ router.get(
   }),
   async (req, res, next) => {
     try {
-      const { region } = req.params as any;
+      const { region } = req.params as { region: "BRUXELLES" | "WALLONIE" | "FLANDRE" };
       const config = await ZupDrivePlatformConfigService.getRegionalConfig(region);
       res.json(config);
     } catch (error) {
@@ -169,13 +169,13 @@ router.get(
   ...adminAuth,
   validateRequest({
     query: z.object({
-      activeOnly: z.coerce.boolean().optional().default("true"),
+      activeOnly: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
     }),
   }),
   async (req, res, next) => {
     try {
-      const { activeOnly } = req.query as any;
-      const rules = await ZupDrivePlatformConfigService.listPricingRules(activeOnly === "true");
+      const { activeOnly } = req.query as unknown as { activeOnly: boolean };
+      const rules = await ZupDrivePlatformConfigService.listPricingRules(activeOnly);
       res.json(rules);
     } catch (error) {
       next(error);
@@ -217,7 +217,7 @@ router.post(
  * GET /api/zupdrive/admin/config/settings
  * Lister tous les paramètres
  */
-router.get("/settings", adminAuth, async (req, res, next) => {
+router.get("/settings", ...adminAuth, async (_req, res, next) => {
   try {
     const settings = await ZupDrivePlatformConfigService.getAllSettings();
     res.json(settings);
@@ -235,7 +235,7 @@ router.get(
   ...adminAuth,
   async (req, res, next) => {
     try {
-      const { key } = req.params;
+      const key = String(req.params.key);
       const setting = await ZupDrivePlatformConfigService.getSetting(key);
       res.json(setting);
     } catch (error) {
@@ -280,7 +280,7 @@ router.post(
  * GET /api/zupdrive/admin/config
  * Récupérer toute la configuration de la plateforme
  */
-router.get("/", adminAuth, async (req, res, next) => {
+router.get("/", ...adminAuth, async (_req, res, next) => {
   try {
     const config = await ZupDrivePlatformConfigService.getPlatformConfiguration();
     res.json(config);

@@ -1,6 +1,8 @@
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
+import type { Prisma, ScheduledReport as ScheduledReportRow } from "@prisma/client";
+import { lireCommissionPourcentage, repartirPrixCourse } from "./zupdrive-payment-driver.service";
 
 /**
  * Advanced Reporting pour ZupDrive.
@@ -104,7 +106,6 @@ export class ZupDriveReportingService {
       select: {
         id: true,
         nomComplet: true,
-        rating: true,
         courses: {
           where: {
             createdAt: { gte: data.startDate, lte: data.endDate },
@@ -113,17 +114,13 @@ export class ZupDriveReportingService {
             id: true,
             statut: true,
             prixCentimes: true,
-            notes: { select: { note: true } },
+            // Notes données par les passagers au chauffeur
+            notes: { where: { auteur: "PASSAGER" }, select: { note: true } },
           },
-        },
-        earnings: {
-          where: {
-            createdAt: { gte: data.startDate, lte: data.endDate },
-          },
-          select: { amountCentimes: true },
         },
         documents: {
-          select: { type: true, status: true },
+          where: { archiveeLe: null },
+          select: { type: true, statut: true },
         },
         infractions: {
           where: {
@@ -137,40 +134,44 @@ export class ZupDriveReportingService {
 
     if (!driver) throw new ApiError(404, "Driver non trouvé");
 
-    const completedCourses = driver.courses.filter((c) => c.statut === "TERMINEE").length;
+    const commissionPourcent = await lireCommissionPourcentage();
+    const gainsChauffeur = (prix: { prixCentimes: number }[]) =>
+      prix.reduce((somme, c) => somme + repartirPrixCourse(c.prixCentimes, commissionPourcent).chauffeurCentimes, 0);
+
+    const terminees = driver.courses.filter((c) => c.statut === "TERMINEE");
+    const completedCourses = terminees.length;
     const cancelledCourses = driver.courses.filter((c) => c.statut === "ANNULEE").length;
-    const totalEarnings = driver.earnings.reduce((sum, e) => sum + e.amountCentimes, 0);
+    const totalEarnings = gainsChauffeur(terminees);
     const allRatings = driver.courses.flatMap((c) => c.notes.map((n) => n.note));
     const avgRating = allRatings.length > 0 ? allRatings.reduce((a, b) => a + b, 0) / allRatings.length : 0;
+    const noteGlobale = await db.noteCourseDrive.aggregate({
+      where: { chauffeurId: data.driverId, auteur: "PASSAGER" },
+      _avg: { note: true },
+    });
+    const overallRating = noteGlobale._avg.note ?? 0;
 
     // Calculer les trends (comparaison avec période précédente)
     const previousStartDate = new Date(data.startDate.getTime() - (data.endDate.getTime() - data.startDate.getTime()));
     const previousEndDate = data.startDate;
 
-    const previousCourses = await db.courseDrive.count({
+    const previousCoursesRows = await db.courseDrive.findMany({
       where: {
         chauffeurId: data.driverId,
         createdAt: { gte: previousStartDate, lte: previousEndDate },
         statut: "TERMINEE",
       },
+      select: { prixCentimes: true },
     });
-
-    const previousEarnings = await db.earningSummary.aggregate({
-      where: {
-        driverId: data.driverId,
-        createdAt: { gte: previousStartDate, lte: previousEndDate },
-      },
-      _sum: { amountCentimes: true },
-    });
+    const previousCourses = previousCoursesRows.length;
+    const previousEarningsAmount = gainsChauffeur(previousCoursesRows);
 
     const coursesGrowth = previousCourses > 0 ? ((completedCourses - previousCourses) / previousCourses) * 100 : 0;
-    const previousEarningsAmount = previousEarnings._sum?.amountCentimes || 0;
     const earningsGrowth = previousEarningsAmount > 0 ? ((totalEarnings - previousEarningsAmount) / previousEarningsAmount) * 100 : 0;
 
     // Document status
     const documentStatus: Record<string, string> = {};
     driver.documents.forEach((doc) => {
-      documentStatus[doc.type] = doc.status;
+      documentStatus[doc.type] = doc.statut;
     });
 
     return {
@@ -188,7 +189,7 @@ export class ZupDriveReportingService {
       },
       trends: {
         coursesGrowth,
-        ratingTrend: driver.rating ? driver.rating - avgRating : 0,
+        ratingTrend: overallRating ? overallRating - avgRating : 0,
         earningsGrowth,
       },
       infractions: driver.infractions.length,
@@ -211,41 +212,35 @@ export class ZupDriveReportingService {
       },
       select: {
         prixCentimes: true,
-        surgeMultiplier: true,
       },
     });
 
     const totalRevenue = courses.reduce((sum, c) => sum + c.prixCentimes, 0);
-    const baseRevenue = courses.reduce((sum, c) => sum + Math.round(c.prixCentimes / (c.surgeMultiplier || 1)), 0);
-    const surgeRevenue = totalRevenue - baseRevenue;
+    // Le multiplicateur de surge n'est pas conservé sur CourseDrive : pas de ventilation possible.
+    const baseRevenue = totalRevenue;
+    const surgeRevenue = 0;
 
-    // Récupérer les commissions et dépenses
+    // Récupérer les commissions et dépenses (paiements confirmés)
     const commissions = await db.paymentIntentDrive.aggregate({
       where: {
         createdAt: { gte: data.startDate, lte: data.endDate },
-        type: "COMMISSION",
+        status: "SUCCEEDED",
       },
-      _sum: { amountCentimes: true },
+      _sum: { platformCommissionCentimes: true },
     });
 
-    const payouts = await db.payoutDrive.aggregate({
+    const payouts = await db.driverPayoutDrive.aggregate({
       where: {
         createdAt: { gte: data.startDate, lte: data.endDate },
       },
       _sum: { amountCentimes: true },
     });
 
-    const refunds = await db.paymentIntentDrive.aggregate({
-      where: {
-        createdAt: { gte: data.startDate, lte: data.endDate },
-        type: "REFUND",
-      },
-      _sum: { amountCentimes: true },
-    });
+    // Aucun remboursement n'est modélisé sur PaymentIntentDrive.
+    const refundsAmount = 0;
 
-    const commissionsAmount = commissions._sum?.amountCentimes || 0;
-    const payoutsAmount = payouts._sum?.amountCentimes || 0;
-    const refundsAmount = refunds._sum?.amountCentimes || 0;
+    const commissionsAmount = commissions._sum.platformCommissionCentimes ?? 0;
+    const payoutsAmount = payouts._sum.amountCentimes ?? 0;
     const platformFees = Math.round(totalRevenue * 0.05); // 5% fee
 
     const netProfit = totalRevenue - commissionsAmount - payoutsAmount - refundsAmount - platformFees;
@@ -257,24 +252,18 @@ export class ZupDriveReportingService {
     };
 
     // Top drivers by revenue
-    const topDrivers = await db.chauffeurDrive.findMany({
-      select: {
-        id: true,
-        nomComplet: true,
-        earnings: {
-          where: {
-            createdAt: { gte: data.startDate, lte: data.endDate },
-          },
-          select: { amountCentimes: true },
-        },
-      },
-      orderBy: {
-        earnings: {
-          _sum: "desc",
-        },
-      },
+    const topPayouts = await db.driverPayoutDrive.groupBy({
+      by: ["chauffeurId"],
+      where: { createdAt: { gte: data.startDate, lte: data.endDate } },
+      _sum: { amountCentimes: true },
+      orderBy: { _sum: { amountCentimes: "desc" } },
       take: 10,
     });
+    const topChauffeurs = await db.chauffeurDrive.findMany({
+      where: { id: { in: topPayouts.map((p) => p.chauffeurId) } },
+      select: { id: true, nomComplet: true },
+    });
+    const nomParChauffeur = new Map(topChauffeurs.map((c) => [c.id, c.nomComplet]));
 
     return {
       reportId: `RPT-${Date.now()}-FINANCIAL`,
@@ -294,10 +283,10 @@ export class ZupDriveReportingService {
       netProfit,
       profitMargin,
       paymentMethods,
-      topDriversByRevenue: topDrivers.map((d) => ({
-        driverId: d.id,
-        driverName: d.nomComplet,
-        amount: d.earnings.reduce((sum, e) => sum + e.amountCentimes, 0),
+      topDriversByRevenue: topPayouts.map((p) => ({
+        driverId: p.chauffeurId,
+        driverName: nomParChauffeur.get(p.chauffeurId) ?? "",
+        amount: p._sum.amountCentimes ?? 0,
       })),
     };
   }
@@ -311,26 +300,32 @@ export class ZupDriveReportingService {
     const drivers = await db.chauffeurDrive.findMany({
       select: {
         id: true,
-        documents: { select: { status: true, nextReviewDate: true } },
+        documents: { where: { archiveeLe: null }, select: { statut: true, dateExpiration: true } },
         infractions: { select: { type: true, severity: true } },
         statut: true,
-        rating: true,
       },
+    });
+
+    // Note moyenne par chauffeur, depuis les notes des passagers
+    const moyennes = await db.noteCourseDrive.groupBy({
+      by: ["chauffeurId"],
+      where: { auteur: "PASSAGER" },
+      _avg: { note: true },
     });
 
     const now = new Date();
     const thirtyDaysAhead = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const fullyCompliant = drivers.filter((d) =>
-      d.documents.every((doc) => doc.status === "VALIDE" && (!doc.nextReviewDate || doc.nextReviewDate > now))
+      d.documents.every((doc) => doc.statut === "APPROVED" && (!doc.dateExpiration || doc.dateExpiration > now))
     ).length;
 
     const expiringWithin30Days = drivers.filter((d) =>
-      d.documents.some((doc) => doc.nextReviewDate && doc.nextReviewDate > now && doc.nextReviewDate < thirtyDaysAhead)
+      d.documents.some((doc) => doc.dateExpiration && doc.dateExpiration > now && doc.dateExpiration < thirtyDaysAhead)
     ).length;
 
     const expired = drivers.filter((d) =>
-      d.documents.some((doc) => doc.nextReviewDate && doc.nextReviewDate < now)
+      d.documents.some((doc) => doc.dateExpiration && doc.dateExpiration < now)
     ).length;
 
     const incomplete = drivers.filter((d) => d.documents.length === 0).length;
@@ -347,7 +342,7 @@ export class ZupDriveReportingService {
 
     // Suspensions
     const suspended = drivers.filter((d) => d.statut === "SUSPENDU").length;
-    const lowRating = drivers.filter((d) => d.rating && d.rating < 4).length;
+    const lowRating = moyennes.filter((m) => m._avg.note !== null && m._avg.note < 4).length;
 
     // Risk score
     const riskScore = Math.min(
@@ -446,9 +441,10 @@ export class ZupDriveReportingService {
       active: boolean;
     }>
   ): Promise<void> {
-    const updateData: any = { ...data };
-    if (data.recipients) {
-      updateData.recipients = JSON.stringify(data.recipients);
+    const { recipients, ...autres } = data;
+    const updateData: Prisma.ScheduledReportUpdateInput = { ...autres };
+    if (recipients) {
+      updateData.recipients = JSON.stringify(recipients);
     }
 
     await db.scheduledReport.update({
@@ -491,14 +487,14 @@ export class ZupDriveReportingService {
 
   // Formatters
 
-  private static formatScheduledReport(report: any): ScheduledReport {
+  private static formatScheduledReport(report: ScheduledReportRow): ScheduledReport {
     return {
       id: report.id,
       name: report.name,
-      reportType: report.reportType,
-      frequency: report.frequency,
-      recipients: JSON.parse(report.recipients || "[]"),
-      format: report.format,
+      reportType: report.reportType as ScheduledReport["reportType"],
+      frequency: report.frequency as ScheduledReport["frequency"],
+      recipients: JSON.parse(report.recipients || "[]") as string[],
+      format: report.format as ScheduledReport["format"],
       lastGeneratedAt: report.lastGeneratedAt || undefined,
       nextGenerationAt: report.nextGenerationAt,
       active: report.active,

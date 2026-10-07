@@ -18,6 +18,7 @@
 
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
+import { ZupDrivePaymentService } from "./zupdrive-payment.service";
 
 export type PaymentStatus =
   | "PENDING"       // En attente de paiement passager
@@ -25,12 +26,35 @@ export type PaymentStatus =
   | "DISPUTED"      // Litige en cours
   | "REFUNDED";     // Remboursé
 
-export type PayoutStatus =
-  | "PENDING"       // En attente du cycle de paiement
-  | "SCHEDULED"     // Programmé pour virement
-  | "PROCESSING"    // En cours de virement
-  | "COMPLETED"     // Viré avec succès
-  | "FAILED";       // Erreur de virement
+/** Statuts réels de DriverPayoutDrive (voir prisma/schema.prisma). */
+export type PayoutStatus = "PENDING" | "PROCESSED" | "FAILED" | "CANCELLED";
+
+/** Commission par défaut si la ligne PlatformSettingsDrive « default » n'existe pas encore. */
+export const COMMISSION_PAR_DEFAUT_POURCENT = 20;
+
+export interface RepartitionPrixCourse {
+  commissionCentimes: number;
+  chauffeurCentimes: number;
+}
+
+/**
+ * Répartition unique du prix d'une course (entiers, en centimes).
+ * commission = arrondi(prix × pourcentage / 100) ; chauffeur = prix - commission,
+ * donc commission + chauffeur = prix exactement. Toute la plateforme doit passer par ici.
+ */
+export function repartirPrixCourse(prixCentimes: number, commissionPourcent: number): RepartitionPrixCourse {
+  const commissionCentimes = Math.round((prixCentimes * commissionPourcent) / 100);
+  return { commissionCentimes, chauffeurCentimes: prixCentimes - commissionCentimes };
+}
+
+/** Pourcentage de commission global (PlatformSettingsDrive, ligne « default »). */
+export async function lireCommissionPourcentage(): Promise<number> {
+  const reglages = await db.platformSettingsDrive.findUnique({
+    where: { id: "default" },
+    select: { commissionPercentage: true },
+  });
+  return reglages?.commissionPercentage ?? COMMISSION_PAR_DEFAUT_POURCENT;
+}
 
 export interface CourseEarnings {
   courseId: string;
@@ -40,9 +64,7 @@ export interface CourseEarnings {
   chauffeurEarnings: number; // Revenu net chauffeur (centimes)
   distance: number; // km
   duration: number; // minutes
-  baseRate: number; // Tarif de base (centimes/km)
-  surgeMultiplier: number; // 1.0 = normal, 1.5 = surge
-  tips: number; // Pourboire du passager (centimes)
+  tips: number; // Pourboire (centimes) : non géré par le schéma, toujours 0
   status: PaymentStatus;
 }
 
@@ -72,81 +94,70 @@ export interface DriverPayout {
     startDate: Date;
     endDate: Date;
   };
-  bankDetails?: {
-    accountHolder: string;
-    iban: string;
-    bic?: string;
+  batchId?: string | null;
+}
+
+export interface PayoutPreparation {
+  chauffeurId: string;
+  payoutsCreated: number; // Un versement par paiement de course (paymentId unique)
+  amount: number; // Total des versements créés (centimes)
+  status: PayoutStatus;
+  period: {
+    startDate: Date;
+    endDate: Date;
   };
-  metadata?: {
-    coursesIncluded: number;
-    periodEarnings: number;
-    platformCommission: number;
-    taxes?: number; // À retenir
-  };
-  scheduledAt?: Date;
-  completedAt?: Date;
-  failureReason?: string;
+}
+
+const SEMAINE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Lundi 00:00 (heure locale) de la semaine de `date`. */
+function debutSemaine(date: Date): Date {
+  const decalage = (date.getDay() + 6) % 7;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - decalage);
 }
 
 /**
  * Pricing Model:
- * Price = (Base Rate × Distance) × Surge Multiplier + Time Fee + Minimum
- * Commission = Price × Commission Rate (typically 20-30%)
- * Driver Earnings = Price - Commission + Tips
+ * Commission = round(Prix × commissionPercentage / 100)
+ * Driver Earnings = Prix - Commission
  */
 
 export const ZupDrivePaymentDriverService = {
   /**
-   * Calculer les revenus d'une course
+   * Calculer les revenus d'une course (prix lu en base, jamais fourni par le client)
    */
   async calculateCourseEarnings(data: {
     courseId: string;
     chauffeurId: string;
-    distance: number; // km
-    duration: number; // minutes
-    baseRate: number; // centimes/km
-    surgeMultiplier: number; // 1.0 = normal
-    passengerPrice: number; // Total payé par passager
-    tips: number; // Pourboire
   }): Promise<CourseEarnings> {
-    // Vérifier la course existe
     const course = await db.courseDrive.findUnique({
       where: { id: data.courseId },
-      select: { statut: true },
+      select: { statut: true, chauffeurId: true, prixCentimes: true, distanceMetres: true, dureeSecondes: true },
     });
 
-    if (!course) {
+    // Chacun chez soi : une course d'un autre chauffeur est indiscernable d'une course absente.
+    if (!course || course.chauffeurId !== data.chauffeurId) {
       throw new ApiError(404, "Course non trouvée");
     }
 
-    if (course.statut !== "COMPLETED") {
+    if (course.statut !== "TERMINEE") {
       throw new ApiError(400, "Seules les courses complétées génèrent des revenus");
     }
 
-    // Récupérer les paramètres de commission
-    const platformConfig = await db.platformSettingsDrive.findFirst({
-      select: {
-        commissionPercentage: true,
-      },
-    });
-
-    const commissionRate = (platformConfig?.commissionPercentage || 25) / 100;
-
-    // Calculer les revenus
-    const platformCommission = Math.round(data.passengerPrice * commissionRate);
-    const chauffeurEarnings = data.passengerPrice - platformCommission + data.tips;
+    const { commissionCentimes, chauffeurCentimes } = repartirPrixCourse(
+      course.prixCentimes,
+      await lireCommissionPourcentage()
+    );
 
     return {
       courseId: data.courseId,
       chauffeurId: data.chauffeurId,
-      passengerPrice: data.passengerPrice,
-      platformCommission,
-      chauffeurEarnings,
-      distance: data.distance,
-      duration: data.duration,
-      baseRate: data.baseRate,
-      surgeMultiplier: data.surgeMultiplier,
-      tips: data.tips,
+      passengerPrice: course.prixCentimes,
+      platformCommission: commissionCentimes,
+      chauffeurEarnings: chauffeurCentimes,
+      distance: course.distanceMetres / 1000,
+      duration: course.dureeSecondes / 60,
+      tips: 0,
       status: "COMPLETED",
     };
   },
@@ -164,28 +175,21 @@ export const ZupDrivePaymentDriverService = {
     if (period === "today") {
       startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     } else if (period === "week") {
-      // Lundi de cette semaine
-      const dayOfWeek = now.getDay();
-      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-      startDate = new Date(now.getFullYear(), now.getMonth(), diff);
+      startDate = debutSemaine(now);
     } else {
       // Premier jour du mois
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     }
 
-    // Récupérer les courses du chauffeur
     const courses = await db.courseDrive.findMany({
       where: {
         chauffeurId,
-        statut: "COMPLETED",
-        createdAt: { gte: startDate, lte: now },
+        statut: "TERMINEE",
+        termineeLe: { gte: startDate, lte: now },
       },
       select: {
         id: true,
-        prixTotal: true,
-        pourboire: true,
-        distanceKm: true,
-        dureeMinutes: true,
+        prixCentimes: true,
       },
     });
 
@@ -208,27 +212,18 @@ export const ZupDrivePaymentDriverService = {
       };
     }
 
-    // Récupérer la commission
-    const platformConfig = await db.platformSettingsDrive.findFirst({
-      select: { commissionPercentage: true },
-    });
+    const commissionPourcent = await lireCommissionPourcentage();
 
-    const commissionRate = (platformConfig?.commissionPercentage || 25) / 100;
-
-    // Calculer les totaux
     let totalPassengerSpent = 0;
-    let totalTips = 0;
+    let totalCommission = 0;
     let totalEarnings = 0;
 
     for (const course of courses) {
-      totalPassengerSpent += course.prixTotal;
-      totalTips += course.pourboire || 0;
-
-      const commission = Math.round(course.prixTotal * commissionRate);
-      totalEarnings += course.prixTotal - commission + (course.pourboire || 0);
+      const { commissionCentimes, chauffeurCentimes } = repartirPrixCourse(course.prixCentimes, commissionPourcent);
+      totalPassengerSpent += course.prixCentimes;
+      totalCommission += commissionCentimes;
+      totalEarnings += chauffeurCentimes;
     }
-
-    const totalCommission = totalPassengerSpent - (totalEarnings - totalTips);
 
     return {
       chauffeurId,
@@ -238,81 +233,65 @@ export const ZupDrivePaymentDriverService = {
       totalPassengerSpent,
       coursesCompleted: courses.length,
       averagePerCourse: Math.round(totalEarnings / courses.length),
-      tips: totalTips,
+      tips: 0,
       breakdown: {
-        baseFares: totalPassengerSpent - totalTips,
-        surgeBonus: 0, // TODO: Calculate from surge multipliers
-        tips: totalTips,
+        baseFares: totalPassengerSpent,
+        surgeBonus: 0, // Le multiplicateur de surge n'est pas conservé sur CourseDrive
+        tips: 0,
         bonuses: 0, // Incentive programs
       },
     };
   },
 
   /**
-   * Préparer un paiement hebdomadaire pour les chauffeurs
+   * Préparer les versements d'un chauffeur : un DriverPayoutDrive par paiement de course
+   * confirmé (SUCCEEDED) qui n'en a pas encore. Idempotent : paymentId est unique et la
+   * création ignore les doublons, un second appel ne crée rien. Montant = revenu chauffeur
+   * figé sur le PaymentIntentDrive (driverEarningsCentimes), comme le webhook Stripe.
    */
-  async preparePayout(chauffeurId: string): Promise<DriverPayout> {
-    // Récupérer les revenus de cette semaine
-    const earnings = await this.getDriverEarnings(chauffeurId, "week");
+  async preparePayout(chauffeurId: string): Promise<PayoutPreparation> {
+    const periodStart = debutSemaine(new Date());
+    const periodEnd = new Date(periodStart.getTime() + SEMAINE_MS);
 
-    if (earnings.totalEarnings === 0) {
-      throw new ApiError(400, "Aucun revenu à verser cette semaine");
-    }
-
-    // Vérifier que le chauffeur a des détails bancaires
-    const chauffeur = await db.chauffeurDrive.findUnique({
-      where: { id: chauffeurId },
-      select: {
-        id: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        bankDetails: true,
+    const paiements = await db.paymentIntentDrive.findMany({
+      where: {
+        status: "SUCCEEDED",
+        payout: null,
+        course: { chauffeurId },
       },
+      select: { id: true, driverEarningsCentimes: true, currency: true },
     });
 
-    if (!chauffeur?.bankDetails) {
-      throw new ApiError(400, "Détails bancaires manquants");
+    if (paiements.length === 0) {
+      throw new ApiError(400, "Aucun revenu à verser");
     }
 
-    // Créer le payout
-    const payout = await db.driverPayoutDrive.create({
-      data: {
+    const { count } = await db.driverPayoutDrive.createMany({
+      data: paiements.map((p) => ({
+        paymentId: p.id,
         chauffeurId,
-        montant: earnings.totalEarnings,
-        statut: "PENDING",
-        periodeDebut: new Date(new Date().setDate(new Date().getDate() - 7)),
-        periodeFinale: new Date(),
-        metadata: {
-          coursesIncluded: earnings.coursesCompleted,
-          periodEarnings: earnings.totalEarnings,
-          platformCommission: earnings.totalCommission,
-        },
-      },
+        amountCentimes: p.driverEarningsCentimes,
+        currency: p.currency,
+        status: "PENDING",
+        periodStart,
+        periodEnd,
+      })),
+      skipDuplicates: true,
     });
 
     return {
-      id: payout.id,
       chauffeurId,
-      amount: earnings.totalEarnings,
-      status: "PENDING" as PayoutStatus,
-      period: {
-        startDate: new Date(new Date().setDate(new Date().getDate() - 7)),
-        endDate: new Date(),
-      },
-      metadata: {
-        coursesIncluded: earnings.coursesCompleted,
-        periodEarnings: earnings.totalEarnings,
-        platformCommission: earnings.totalCommission,
-      },
+      payoutsCreated: count,
+      amount: paiements.reduce((somme, p) => somme + p.driverEarningsCentimes, 0),
+      status: "PENDING",
+      period: { startDate: periodStart, endDate: periodEnd },
     };
   },
 
   /**
-   * Traiter un payout (virement bancaire)
+   * Traiter un payout : le rattacher au lot SEPA hebdomadaire de sa période.
+   * Le virement lui-même part avec le lot (ZupDrivePaymentService.submitBatchToStripe) ;
+   * aucune simulation de virement.
    */
   async processPayout(payoutId: string): Promise<DriverPayout> {
     const payout = await db.driverPayoutDrive.findUnique({
@@ -320,10 +299,11 @@ export const ZupDrivePaymentDriverService = {
       select: {
         id: true,
         chauffeurId: true,
-        montant: true,
-        statut: true,
-        periodeDebut: true,
-        periodeFinale: true,
+        amountCentimes: true,
+        status: true,
+        batchId: true,
+        periodStart: true,
+        periodEnd: true,
       },
     });
 
@@ -331,47 +311,32 @@ export const ZupDrivePaymentDriverService = {
       throw new ApiError(404, "Payout non trouvé");
     }
 
-    if (payout.statut !== "PENDING") {
-      throw new ApiError(400, `Payout déjà ${payout.statut}`);
+    if (payout.status !== "PENDING") {
+      throw new ApiError(400, `Payout déjà ${payout.status}`);
     }
 
-    // TODO: Intégration Stripe pour virement SEPA
-    // await stripe.transfers.create({
-    //   amount: payout.montant,
-    //   currency: "eur",
-    //   destination: chauffeur.stripeConnectId,
-    // });
+    if (payout.batchId) {
+      throw new ApiError(409, "Payout déjà rattaché à un lot");
+    }
 
-    // Mettre à jour le statut
-    const updated = await db.driverPayoutDrive.update({
-      where: { id: payoutId },
-      data: {
-        statut: "PROCESSING",
-        programmeLe: new Date(),
-      },
+    // Un lot déjà soumis à Stripe ne reçoit plus de versement.
+    const lotFerme = await db.driverPayoutBatchDrive.findFirst({
+      where: { periodStart: payout.periodStart, periodEnd: payout.periodEnd, status: { not: "PENDING" } },
+      select: { id: true },
     });
+    if (lotFerme) {
+      throw new ApiError(409, "Le lot de cette période a déjà été soumis");
+    }
 
-    // Simuler le virement (en production: vrai virement Stripe)
-    setTimeout(async () => {
-      await db.driverPayoutDrive.update({
-        where: { id: payoutId },
-        data: {
-          statut: "COMPLETED",
-          completeLe: new Date(),
-        },
-      });
-    }, 5000); // Simulé après 5 secondes
+    const lot = await ZupDrivePaymentService.createWeeklyBatch(payout.periodStart);
 
     return {
-      id: updated.id,
-      chauffeurId: updated.chauffeurId,
-      amount: updated.montant,
-      status: "PROCESSING" as PayoutStatus,
-      period: {
-        startDate: updated.periodeDebut,
-        endDate: updated.periodeFinale,
-      },
-      scheduledAt: new Date(),
+      id: payout.id,
+      chauffeurId: payout.chauffeurId,
+      amount: payout.amountCentimes,
+      status: "PENDING",
+      period: { startDate: payout.periodStart, endDate: payout.periodEnd },
+      batchId: lot?.id ?? null,
     };
   },
 
@@ -385,12 +350,11 @@ export const ZupDrivePaymentDriverService = {
       take: limit,
       select: {
         id: true,
-        montant: true,
-        statut: true,
-        periodeDebut: true,
-        periodeFinale: true,
-        programmeLe: true,
-        completeLe: true,
+        amountCentimes: true,
+        status: true,
+        periodStart: true,
+        periodEnd: true,
+        processedAt: true,
       },
     });
   },
@@ -406,17 +370,17 @@ export const ZupDrivePaymentDriverService = {
   },
 
   /**
-   * Statut de payout personnalisé
+   * Statut d'un payout du chauffeur (jamais celui d'un autre).
    */
-  async getPayoutStatus(payoutId: string) {
-    const payout = await db.driverPayoutDrive.findUnique({
-      where: { id: payoutId },
+  async getPayoutStatus(payoutId: string, chauffeurId: string) {
+    const payout = await db.driverPayoutDrive.findFirst({
+      where: { id: payoutId, chauffeurId },
       select: {
         id: true,
-        montant: true,
-        statut: true,
-        completeLe: true,
-        erreurMotif: true,
+        amountCentimes: true,
+        status: true,
+        processedAt: true,
+        failureReason: true,
       },
     });
 
@@ -426,10 +390,10 @@ export const ZupDrivePaymentDriverService = {
 
     return {
       id: payout.id,
-      amount: payout.montant,
-      status: payout.statut,
-      completedAt: payout.completeLe,
-      failureReason: payout.erreurMotif,
+      amount: payout.amountCentimes,
+      status: payout.status,
+      completedAt: payout.processedAt,
+      failureReason: payout.failureReason,
     };
   },
 
@@ -486,17 +450,10 @@ export const ZupDrivePaymentDriverService = {
  *
  * PRICING MODEL:
  *
- * Course Cost = (Distance × Base Rate) × Surge + Time Fee + Minimum
+ * Commission = round(prixCentimes × commissionPercentage / 100)  (20 % par défaut)
+ * Revenu chauffeur = prixCentimes - commission
  *
- * Example:
- * - Distance: 5 km @ €0.25/km = €1.25
- * - Time: 10 min @ €0.10/min = €1.00
- * - Surge: 1.5x = (€1.25 + €1.00) × 1.5 = €3.375
- * - Minimum: €4.00 → Final: €4.00
- * - Tips: €1.00
- * ─────────────────────────────
- * Total: €5.00
- *
- * Platform Commission: €5.00 × 25% = €1.25
- * Driver Earnings: €5.00 - €1.25 + €1.00 = €4.75
+ * Exemple : course à 15,00 € (1500 centimes), commission 20 %
+ * - Commission plateforme : 300 centimes
+ * - Revenu chauffeur : 1200 centimes
  */

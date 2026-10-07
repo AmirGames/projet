@@ -8,28 +8,15 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ZupDrivePaymentDriverService } from "./zupdrive-payment-driver.service";
-import { UnifiedRolesService } from "../auth/unified-roles.service";
+import { adminAuth } from "./zupdrive-garde";
+import { authMiddleware } from "../auth/auth.middleware";
+import { journaliser } from "../superowner/shared";
 import { db } from "../../services/db";
 
 const router = Router();
 
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-    }
-  }
-}
-
-const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  req.userId = token;
-  next();
-};
+/** Identité vérifiée par le jeton (authMiddleware renseigne req.userId). */
+const authenticate = authMiddleware;
 
 // ============================================================================
 // DRIVER ENDPOINTS
@@ -55,7 +42,7 @@ router.get(
         return res.status(404).json({ error: "Driver profile not found" });
       }
 
-      const period = (req.query.period as string || "week") as "today" | "week" | "month";
+      const period = z.enum(["today", "week", "month"]).default("week").parse(req.query.period);
 
       const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(
         chauffeur.id,
@@ -122,7 +109,7 @@ router.get(
         return res.status(404).json({ error: "Driver profile not found" });
       }
 
-      const limit = Math.min(parseInt((req.query.limit as string) || "10"), 50);
+      const limit = Math.min(z.coerce.number().int().min(1).default(10).parse(req.query.limit), 50);
 
       const history = await ZupDrivePaymentDriverService.getPayoutHistory(
         chauffeur.id,
@@ -179,9 +166,18 @@ router.get(
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const payoutId = req.params.payoutId || "";
+      const payoutId = String(req.params.payoutId);
 
-      const status = await ZupDrivePaymentDriverService.getPayoutStatus(payoutId);
+      const chauffeur = await db.chauffeurDrive.findUnique({
+        where: { userId: req.userId! },
+        select: { id: true },
+      });
+
+      if (!chauffeur) {
+        return res.status(404).json({ error: "Driver profile not found" });
+      }
+
+      const status = await ZupDrivePaymentDriverService.getPayoutStatus(payoutId, chauffeur.id);
 
       return res.json({
         success: true,
@@ -202,20 +198,23 @@ router.post(
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const schema = z.object({
-        courseId: z.string(),
-        chauffeurId: z.string(),
-        distance: z.number().positive(),
-        duration: z.number().positive(),
-        baseRate: z.number().positive(),
-        surgeMultiplier: z.number().min(1),
-        passengerPrice: z.number().nonnegative(),
-        tips: z.number().nonnegative().default(0),
+      const { courseId } = z.object({ courseId: z.string() }).parse(req.body);
+
+      // Le chauffeur est celui du jeton, jamais celui du corps de requête ;
+      // le prix vient de la course en base.
+      const chauffeur = await db.chauffeurDrive.findUnique({
+        where: { userId: req.userId! },
+        select: { id: true },
       });
 
-      const validated = schema.parse(req.body);
+      if (!chauffeur) {
+        return res.status(404).json({ error: "Driver profile not found" });
+      }
 
-      const earnings = await ZupDrivePaymentDriverService.calculateCourseEarnings(validated);
+      const earnings = await ZupDrivePaymentDriverService.calculateCourseEarnings({
+        courseId,
+        chauffeurId: chauffeur.id,
+      });
 
       return res.json({
         success: true,
@@ -237,15 +236,10 @@ router.post(
  */
 router.post(
   "/admin/payouts/:payoutId/process",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
-      const payoutId = req.params.payoutId || "";
+      const payoutId = String(req.params.payoutId);
 
       const payout = await ZupDrivePaymentDriverService.processPayout(payoutId);
 
@@ -266,31 +260,26 @@ router.post(
  */
 router.get(
   "/admin/payouts/pending",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
-      const limit = Math.min(parseInt((req.query.limit as string) || "50"), 500);
+      const limit = Math.min(z.coerce.number().int().min(1).default(50).parse(req.query.limit), 500);
 
       const payouts = await db.driverPayoutDrive.findMany({
-        where: { statut: "PENDING" },
+        where: { status: "PENDING" },
         orderBy: { createdAt: "asc" },
         take: limit,
         select: {
           id: true,
           chauffeurId: true,
-          montant: true,
-          statut: true,
-          periodeDebut: true,
-          periodeFinale: true,
+          amountCentimes: true,
+          status: true,
+          periodStart: true,
+          periodEnd: true,
           chauffeur: {
             select: {
               nomComplet: true,
-              email: true,
+              user: { select: { email: true } },
             },
           },
         },
@@ -313,16 +302,11 @@ router.get(
  */
 router.get(
   "/admin/driver/:chauffeurId/payouts",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
-      const chauffeurId = req.params.chauffeurId || "";
-      const limit = Math.min(parseInt((req.query.limit as string) || "20"), 100);
+      const chauffeurId = String(req.params.chauffeurId);
+      const limit = Math.min(z.coerce.number().int().min(1).default(20).parse(req.query.limit), 100);
 
       const history = await ZupDrivePaymentDriverService.getPayoutHistory(chauffeurId, limit);
 
@@ -342,21 +326,16 @@ router.get(
  */
 router.get(
   "/admin/financial-dashboard",
-  authenticate,
-  async (req: Request, res: Response, next: NextFunction) => {
+  ...adminAuth,
+  async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       // Get platform-wide statistics
       const [totalPayouts, pendingPayouts, completedPayouts, totalPayout] = await Promise.all([
         db.driverPayoutDrive.count(),
-        db.driverPayoutDrive.count({ where: { statut: "PENDING" } }),
-        db.driverPayoutDrive.count({ where: { statut: "COMPLETED" } }),
+        db.driverPayoutDrive.count({ where: { status: "PENDING" } }),
+        db.driverPayoutDrive.count({ where: { status: "PROCESSED" } }),
         db.driverPayoutDrive.aggregate({
-          _sum: { montant: true },
+          _sum: { amountCentimes: true },
         }),
       ]);
 
@@ -365,7 +344,7 @@ router.get(
         by: ["statut"],
         _count: true,
         _sum: {
-          prixTotal: true,
+          prixCentimes: true,
         },
       });
 
@@ -376,7 +355,7 @@ router.get(
             total: totalPayouts,
             pending: pendingPayouts,
             completed: completedPayouts,
-            totalAmount: totalPayout._sum.montant || 0,
+            totalAmount: totalPayout._sum?.amountCentimes ?? 0,
           },
           courses: coursesStats,
         },
@@ -393,19 +372,19 @@ router.get(
  */
 router.post(
   "/admin/settings/commission",
-  authenticate,
+  ...adminAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminContext = await UnifiedRolesService.loadUserRoleContext(req.userId!);
-      if (!adminContext.roles.includes("ADMIN_ZUPDRIVE")) {
-        return res.status(403).json({ error: "Admin only" });
-      }
-
       const schema = z.object({
-        commissionPercentage: z.number().min(0).max(100),
+        commissionPercentage: z.number().int().min(0).max(100),
       });
 
       const validated = schema.parse(req.body);
+
+      const avant = await db.platformSettingsDrive.findUnique({
+        where: { id: "default" },
+        select: { commissionPercentage: true },
+      });
 
       const settings = await db.platformSettingsDrive.upsert({
         where: { id: "default" },
@@ -416,6 +395,11 @@ router.post(
         update: {
           commissionPercentage: validated.commissionPercentage,
         },
+      });
+
+      await journaliser(req, "ZUPDRIVE_UPDATE_COMMISSION", "default", {
+        avant: avant?.commissionPercentage ?? null,
+        apres: validated.commissionPercentage,
       });
 
       return res.json({

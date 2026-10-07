@@ -1,8 +1,13 @@
 /**
  * Tests: Driver Payment & Payout System
+ * Montants en centimes entiers ; commission = round(prix × pct / 100).
  */
 
-import { ZupDrivePaymentDriverService } from "../zupdrive-payment-driver.service";
+import {
+  ZupDrivePaymentDriverService,
+  repartirPrixCourse,
+} from "../zupdrive-payment-driver.service";
+import { ZupDrivePaymentService } from "../zupdrive-payment.service";
 import { db } from "../../../services/db";
 
 jest.mock("../../../services/db", () => ({
@@ -10,359 +15,291 @@ jest.mock("../../../services/db", () => ({
     courseDrive: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
-      groupBy: jest.fn(),
-    },
-    chauffeurDrive: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-      aggregate: jest.fn(),
     },
     platformSettingsDrive: {
-      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    paymentIntentDrive: {
+      findMany: jest.fn(),
     },
     driverPayoutDrive: {
-      create: jest.fn(),
+      createMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
-      update: jest.fn(),
+    },
+    driverPayoutBatchDrive: {
+      findFirst: jest.fn(),
     },
   },
 }));
+
+jest.mock("../zupdrive-payment.service", () => ({
+  ZupDrivePaymentService: {
+    createWeeklyBatch: jest.fn(),
+  },
+}));
+
+/** Les mocks Prisma renvoient des objets partiels : un seul point de conversion. */
+const reponse = (valeur: unknown) => valeur as never;
 
 describe("ZupDrivePaymentDriverService", () => {
   const mockChauffeurId = "chauffeur-123";
   const mockCourseId = "course-789";
   const now = new Date();
 
+  const commission = (pourcent: number) =>
+    jest.mocked(db.platformSettingsDrive.findUnique).mockResolvedValue(reponse({ commissionPercentage: pourcent }));
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+  });
+
+  describe("repartirPrixCourse", () => {
+    it("garantit commission + part chauffeur = prix, avec arrondi explicite", () => {
+      const { commissionCentimes, chauffeurCentimes } = repartirPrixCourse(1001, 20);
+      expect(commissionCentimes).toBe(200); // 200,2 arrondi
+      expect(chauffeurCentimes).toBe(801);
+      expect(commissionCentimes + chauffeurCentimes).toBe(1001);
+    });
+
+    it("arrondit la demi-unité vers le haut", () => {
+      expect(repartirPrixCourse(1050, 25).commissionCentimes).toBe(263); // 262,5
+    });
   });
 
   describe("calculateCourseEarnings", () => {
-    it("devrait calculer les revenus pour une course complétée", async () => {
-      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
-        id: mockCourseId,
-        statut: "COMPLETED",
-      } as any);
+    const course = (extra: Record<string, unknown> = {}) =>
+      reponse({
+        statut: "TERMINEE",
+        chauffeurId: mockChauffeurId,
+        prixCentimes: 1500,
+        distanceMetres: 5000,
+        dureeSecondes: 600,
+        ...extra,
+      });
 
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 25,
-      } as any);
+    it("calcule les revenus d'une course terminée depuis le prix en base", async () => {
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(course());
+      commission(25);
 
       const earnings = await ZupDrivePaymentDriverService.calculateCourseEarnings({
         courseId: mockCourseId,
         chauffeurId: mockChauffeurId,
-        distance: 5,
-        duration: 10,
-        baseRate: 100, // €1.00/km
-        surgeMultiplier: 1.0,
-        passengerPrice: 1500, // €15.00
-        tips: 200, // €2.00
       });
 
       expect(earnings.passengerPrice).toBe(1500);
-      expect(earnings.platformCommission).toBe(375); // 25% of €15.00
-      expect(earnings.chauffeurEarnings).toBe(1325); // 1500 - 375 + 200
+      expect(earnings.platformCommission).toBe(375);
+      expect(earnings.chauffeurEarnings).toBe(1125);
+      expect(earnings.distance).toBe(5);
+      expect(earnings.duration).toBe(10);
       expect(earnings.status).toBe("COMPLETED");
     });
 
-    it("devrait rejeter si la course n'existe pas", async () => {
-      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(null);
-
-      await expect(
-        ZupDrivePaymentDriverService.calculateCourseEarnings({
-          courseId: "invalid",
-          chauffeurId: mockChauffeurId,
-          distance: 5,
-          duration: 10,
-          baseRate: 100,
-          surgeMultiplier: 1.0,
-          passengerPrice: 1500,
-          tips: 0,
-        })
-      ).rejects.toThrow("Course non trouvée");
-    });
-
-    it("devrait rejeter si la course n'est pas complétée", async () => {
-      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
-        id: mockCourseId,
-        statut: "IN_PROGRESS",
-      } as any);
-
-      await expect(
-        ZupDrivePaymentDriverService.calculateCourseEarnings({
-          courseId: mockCourseId,
-          chauffeurId: mockChauffeurId,
-          distance: 5,
-          duration: 10,
-          baseRate: 100,
-          surgeMultiplier: 1.0,
-          passengerPrice: 1500,
-          tips: 0,
-        })
-      ).rejects.toThrow("Seules les courses complétées");
-    });
-
-    it("devrait appliquer la commission variable", async () => {
-      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
-        id: mockCourseId,
-        statut: "COMPLETED",
-      } as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 30, // Taux plus élevé
-      } as any);
+    it("utilise 20 % si aucun réglage n'existe", async () => {
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(course({ prixCentimes: 1000 }));
+      jest.mocked(db.platformSettingsDrive.findUnique).mockResolvedValueOnce(null);
 
       const earnings = await ZupDrivePaymentDriverService.calculateCourseEarnings({
         courseId: mockCourseId,
         chauffeurId: mockChauffeurId,
-        distance: 5,
-        duration: 10,
-        baseRate: 100,
-        surgeMultiplier: 1.0,
-        passengerPrice: 1000, // €10.00
-        tips: 0,
       });
 
-      expect(earnings.platformCommission).toBe(300); // 30% of €10.00
-      expect(earnings.chauffeurEarnings).toBe(700); // 1000 - 300
+      expect(earnings.platformCommission).toBe(200);
+      expect(earnings.chauffeurEarnings).toBe(800);
+    });
+
+    it("rejette si la course n'existe pas", async () => {
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(null);
+
+      await expect(
+        ZupDrivePaymentDriverService.calculateCourseEarnings({ courseId: "invalid", chauffeurId: mockChauffeurId })
+      ).rejects.toThrow("Course non trouvée");
+    });
+
+    it("rejette la course d'un autre chauffeur", async () => {
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(course({ chauffeurId: "autre" }));
+
+      await expect(
+        ZupDrivePaymentDriverService.calculateCourseEarnings({ courseId: mockCourseId, chauffeurId: mockChauffeurId })
+      ).rejects.toThrow("Course non trouvée");
+    });
+
+    it("rejette si la course n'est pas terminée", async () => {
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(course({ statut: "EN_COURS" }));
+
+      await expect(
+        ZupDrivePaymentDriverService.calculateCourseEarnings({ courseId: mockCourseId, chauffeurId: mockChauffeurId })
+      ).rejects.toThrow("Seules les courses complétées");
     });
   });
 
   describe("getDriverEarnings", () => {
-    it("devrait calculer les revenus d'une journée", async () => {
-      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
-        {
-          id: "course-1",
-          prixTotal: 1000,
-          pourboire: 100,
-          distanceKm: 5,
-          dureeMinutes: 10,
-        },
-        {
-          id: "course-2",
-          prixTotal: 1500,
-          pourboire: 200,
-          distanceKm: 7,
-          dureeMinutes: 15,
-        },
-      ] as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 25,
-      } as any);
-
-      const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(
-        mockChauffeurId,
-        "today"
+    it("calcule les revenus d'une journée", async () => {
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce(
+        reponse([
+          { id: "course-1", prixCentimes: 1000 },
+          { id: "course-2", prixCentimes: 1500 },
+        ])
       );
+      commission(25);
+
+      const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(mockChauffeurId, "today");
 
       expect(earnings.coursesCompleted).toBe(2);
-      expect(earnings.totalPassengerSpent).toBe(2500); // 1000 + 1500
-      expect(earnings.tips).toBe(300); // 100 + 200
-      expect(earnings.totalCommission).toBe(625); // 25% of 2500
-      expect(earnings.totalEarnings).toBe(2175); // 2500 - 625 + 300
+      expect(earnings.totalPassengerSpent).toBe(2500);
+      expect(earnings.totalCommission).toBe(250 + 375);
+      expect(earnings.totalEarnings).toBe(1875);
+      expect(earnings.totalCommission + earnings.totalEarnings).toBe(earnings.totalPassengerSpent);
     });
 
-    it("devrait retourner 0 si aucune course", async () => {
+    it("retourne 0 si aucune course", async () => {
       jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([]);
 
-      const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(
-        mockChauffeurId,
-        "week"
-      );
+      const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(mockChauffeurId, "week");
 
       expect(earnings.coursesCompleted).toBe(0);
       expect(earnings.totalEarnings).toBe(0);
       expect(earnings.totalCommission).toBe(0);
     });
 
-    it("devrait calculer les revenus mensuels", async () => {
-      const courses = Array(30)
-        .fill(null)
-        .map((_, i) => ({
-          id: `course-${i}`,
-          prixTotal: 1000,
-          pourboire: 100,
-          distanceKm: 5,
-          dureeMinutes: 10,
-        }));
+    it("calcule les revenus mensuels", async () => {
+      const courses = Array.from({ length: 30 }, (_, i) => ({ id: `course-${i}`, prixCentimes: 1000 }));
+      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce(reponse(courses));
+      commission(25);
 
-      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce(courses as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 25,
-      } as any);
-
-      const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(
-        mockChauffeurId,
-        "month"
-      );
+      const earnings = await ZupDrivePaymentDriverService.getDriverEarnings(mockChauffeurId, "month");
 
       expect(earnings.coursesCompleted).toBe(30);
       expect(earnings.totalPassengerSpent).toBe(30000);
-      expect(earnings.averagePerCourse).toBe(2250); // (30000 - 7500 + 3000) / 30
+      expect(earnings.averagePerCourse).toBe(750);
     });
   });
 
   describe("preparePayout", () => {
-    it("devrait préparer un payout avec revenus", async () => {
-      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
-        {
-          id: "course-1",
-          prixTotal: 2000,
-          pourboire: 200,
-          distanceKm: 8,
-          dureeMinutes: 15,
-        },
-      ] as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 25,
-      } as any);
-
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
-        id: mockChauffeurId,
-        user: { id: "user-123", name: "Jean Dupont" },
-        bankDetails: { iban: "BE68539007547034" },
-      } as any);
-
-      jest.mocked(db.driverPayoutDrive.create).mockResolvedValueOnce({
-        id: "payout-123",
-        chauffeurId: mockChauffeurId,
-        montant: 1700,
-        statut: "PENDING",
-        periodeDebut: new Date(),
-        periodeFinale: new Date(),
-      } as any);
+    it("crée un versement par paiement confirmé, sans doublon possible", async () => {
+      jest.mocked(db.paymentIntentDrive.findMany).mockResolvedValueOnce(
+        reponse([
+          { id: "pay-1", driverEarningsCentimes: 1600, currency: "EUR" },
+          { id: "pay-2", driverEarningsCentimes: 800, currency: "EUR" },
+        ])
+      );
+      jest.mocked(db.driverPayoutDrive.createMany).mockResolvedValueOnce({ count: 2 });
 
       const payout = await ZupDrivePaymentDriverService.preparePayout(mockChauffeurId);
 
-      expect(payout.id).toBe("payout-123");
+      expect(payout.payoutsCreated).toBe(2);
+      expect(payout.amount).toBe(2400);
       expect(payout.status).toBe("PENDING");
-      expect(payout.amount).toBe(1700); // 2000 - 500 + 200
-      expect(db.driverPayoutDrive.create).toHaveBeenCalled();
+      expect(db.driverPayoutDrive.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skipDuplicates: true,
+          data: [
+            expect.objectContaining({ paymentId: "pay-1", chauffeurId: mockChauffeurId, amountCentimes: 1600 }),
+            expect.objectContaining({ paymentId: "pay-2", chauffeurId: mockChauffeurId, amountCentimes: 800 }),
+          ],
+        })
+      );
     });
 
-    it("devrait rejeter si pas de revenu", async () => {
-      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([] as any);
+    it("ne cherche que les paiements confirmés sans versement, de ce chauffeur", async () => {
+      jest.mocked(db.paymentIntentDrive.findMany).mockResolvedValueOnce([]);
 
-      await expect(
-        ZupDrivePaymentDriverService.preparePayout(mockChauffeurId)
-      ).rejects.toThrow("Aucun revenu");
-    });
+      await expect(ZupDrivePaymentDriverService.preparePayout(mockChauffeurId)).rejects.toThrow("Aucun revenu");
 
-    it("devrait rejeter si pas de détails bancaires", async () => {
-      jest.mocked(db.courseDrive.findMany).mockResolvedValueOnce([
-        {
-          id: "course-1",
-          prixTotal: 1000,
-          pourboire: 100,
-          distanceKm: 5,
-          dureeMinutes: 10,
-        },
-      ] as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 25,
-      } as any);
-
-      jest.mocked(db.chauffeurDrive.findUnique).mockResolvedValueOnce({
-        id: mockChauffeurId,
-        user: { id: "user-123", name: "Jean Dupont" },
-        bankDetails: null,
-      } as any);
-
-      await expect(
-        ZupDrivePaymentDriverService.preparePayout(mockChauffeurId)
-      ).rejects.toThrow("Détails bancaires");
+      expect(db.paymentIntentDrive.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { status: "SUCCEEDED", payout: null, course: { chauffeurId: mockChauffeurId } },
+        })
+      );
+      expect(db.driverPayoutDrive.createMany).not.toHaveBeenCalled();
     });
   });
 
   describe("processPayout", () => {
-    it("devrait changer le statut à PROCESSING", async () => {
-      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
+    const payout = (extra: Record<string, unknown> = {}) =>
+      reponse({
         id: "payout-123",
         chauffeurId: mockChauffeurId,
-        montant: 1700,
-        statut: "PENDING",
-        periodeDebut: now,
-        periodeFinale: now,
-      } as any);
-
-      jest.mocked(db.driverPayoutDrive.update).mockResolvedValueOnce({
-        id: "payout-123",
-        chauffeurId: mockChauffeurId,
-        montant: 1700,
-        statut: "PROCESSING",
-        periodeDebut: now,
-        periodeFinale: now,
-      } as any);
-
-      const payout = await ZupDrivePaymentDriverService.processPayout("payout-123");
-
-      expect(payout.status).toBe("PROCESSING");
-      expect(db.driverPayoutDrive.update).toHaveBeenCalledWith({
-        where: { id: "payout-123" },
-        data: {
-          statut: "PROCESSING",
-          programmeLe: expect.any(Date),
-        },
+        amountCentimes: 1700,
+        status: "PENDING",
+        batchId: null,
+        periodStart: now,
+        periodEnd: now,
+        ...extra,
       });
+
+    it("rattache le versement au lot hebdomadaire sans simuler de virement", async () => {
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce(payout());
+      jest.mocked(db.driverPayoutBatchDrive.findFirst).mockResolvedValueOnce(null);
+      jest.mocked(ZupDrivePaymentService.createWeeklyBatch).mockResolvedValueOnce(reponse({ id: "batch-1" }));
+
+      const result = await ZupDrivePaymentDriverService.processPayout("payout-123");
+
+      expect(result.status).toBe("PENDING");
+      expect(result.batchId).toBe("batch-1");
+      expect(result.amount).toBe(1700);
+      expect(ZupDrivePaymentService.createWeeklyBatch).toHaveBeenCalledWith(now);
     });
 
-    it("devrait rejeter si payout n'existe pas", async () => {
+    it("rejette si le payout n'existe pas", async () => {
       jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce(null);
 
-      await expect(
-        ZupDrivePaymentDriverService.processPayout("invalid")
-      ).rejects.toThrow("Payout non trouvé");
+      await expect(ZupDrivePaymentDriverService.processPayout("invalid")).rejects.toThrow("Payout non trouvé");
     });
 
-    it("devrait rejeter si déjà traité", async () => {
-      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
-        id: "payout-123",
-        chauffeurId: mockChauffeurId,
-        montant: 1700,
-        statut: "COMPLETED",
-        periodeDebut: now,
-        periodeFinale: now,
-      } as any);
+    it("rejette si déjà traité", async () => {
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce(payout({ status: "PROCESSED" }));
 
-      await expect(
-        ZupDrivePaymentDriverService.processPayout("payout-123")
-      ).rejects.toThrow("Payout déjà");
+      await expect(ZupDrivePaymentDriverService.processPayout("payout-123")).rejects.toThrow("Payout déjà");
+    });
+
+    it("rejette si déjà rattaché à un lot", async () => {
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce(payout({ batchId: "batch-1" }));
+
+      await expect(ZupDrivePaymentDriverService.processPayout("payout-123")).rejects.toThrow("déjà rattaché");
+      expect(ZupDrivePaymentService.createWeeklyBatch).not.toHaveBeenCalled();
+    });
+
+    it("rejette si le lot de la période est déjà soumis", async () => {
+      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce(payout());
+      jest.mocked(db.driverPayoutBatchDrive.findFirst).mockResolvedValueOnce(reponse({ id: "batch-1" }));
+
+      await expect(ZupDrivePaymentDriverService.processPayout("payout-123")).rejects.toThrow("déjà été soumis");
+      expect(ZupDrivePaymentService.createWeeklyBatch).not.toHaveBeenCalled();
     });
   });
 
   describe("getPayoutStatus", () => {
-    it("devrait retourner le statut d'un payout", async () => {
-      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
-        id: "payout-123",
-        montant: 1700,
-        statut: "PROCESSING",
-        completeLe: null,
-        erreurMotif: null,
-      } as any);
+    it("retourne le statut d'un payout du chauffeur", async () => {
+      jest.mocked(db.driverPayoutDrive.findFirst).mockResolvedValueOnce(
+        reponse({ id: "payout-123", amountCentimes: 1700, status: "PENDING", processedAt: null, failureReason: null })
+      );
 
-      const status = await ZupDrivePaymentDriverService.getPayoutStatus("payout-123");
+      const status = await ZupDrivePaymentDriverService.getPayoutStatus("payout-123", mockChauffeurId);
 
       expect(status.id).toBe("payout-123");
-      expect(status.status).toBe("PROCESSING");
+      expect(status.status).toBe("PENDING");
       expect(status.amount).toBe(1700);
+      expect(db.driverPayoutDrive.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "payout-123", chauffeurId: mockChauffeurId } })
+      );
     });
 
-    it("devrait inclure la raison d'échec si applicable", async () => {
-      jest.mocked(db.driverPayoutDrive.findUnique).mockResolvedValueOnce({
-        id: "payout-123",
-        montant: 1700,
-        statut: "FAILED",
-        completeLe: null,
-        erreurMotif: "Invalid IBAN",
-      } as any);
+    it("refuse le payout d'un autre chauffeur", async () => {
+      jest.mocked(db.driverPayoutDrive.findFirst).mockResolvedValueOnce(null);
 
-      const status = await ZupDrivePaymentDriverService.getPayoutStatus("payout-123");
+      await expect(ZupDrivePaymentDriverService.getPayoutStatus("payout-123", "autre")).rejects.toThrow(
+        "Payout non trouvé"
+      );
+    });
+
+    it("inclut la raison d'échec", async () => {
+      jest.mocked(db.driverPayoutDrive.findFirst).mockResolvedValueOnce(
+        reponse({ id: "payout-123", amountCentimes: 1700, status: "FAILED", processedAt: null, failureReason: "Invalid IBAN" })
+      );
+
+      const status = await ZupDrivePaymentDriverService.getPayoutStatus("payout-123", mockChauffeurId);
 
       expect(status.status).toBe("FAILED");
       expect(status.failureReason).toBe("Invalid IBAN");
@@ -370,33 +307,20 @@ describe("ZupDrivePaymentDriverService", () => {
   });
 
   describe("getFinancialDashboard", () => {
-    it("devrait agréger les données financières", async () => {
-      // Mock getDriverEarnings responses for today/week/month
+    it("agrège les données financières", async () => {
       jest.mocked(db.courseDrive.findMany)
-        .mockResolvedValueOnce([
-          { id: "course-1", prixTotal: 1000, pourboire: 100, distanceKm: 5, dureeMinutes: 10 },
-        ] as any)
-        .mockResolvedValueOnce([
-          { id: "course-1", prixTotal: 5000, pourboire: 500, distanceKm: 25, dureeMinutes: 50 },
-          { id: "course-2", prixTotal: 3000, pourboire: 300, distanceKm: 15, dureeMinutes: 30 },
-        ] as any)
-        .mockResolvedValueOnce([
-          { id: "course-1", prixTotal: 15000, pourboire: 1500, distanceKm: 75, dureeMinutes: 150 },
-        ] as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValue({
-        commissionPercentage: 25,
-      } as any);
-
-      jest.mocked(db.driverPayoutDrive.findMany).mockResolvedValueOnce([
-        {
-          id: "payout-1",
-          montant: 5000,
-          statut: "COMPLETED",
-          periodeDebut: now,
-          periodeFinale: now,
-        },
-      ] as any);
+        .mockResolvedValueOnce(reponse([{ id: "course-1", prixCentimes: 1000 }]))
+        .mockResolvedValueOnce(
+          reponse([
+            { id: "course-1", prixCentimes: 5000 },
+            { id: "course-2", prixCentimes: 3000 },
+          ])
+        )
+        .mockResolvedValueOnce(reponse([{ id: "course-1", prixCentimes: 15000 }]));
+      commission(25);
+      jest.mocked(db.driverPayoutDrive.findMany).mockResolvedValueOnce(
+        reponse([{ id: "payout-1", amountCentimes: 5000, status: "PROCESSED", periodStart: now, periodEnd: now }])
+      );
 
       const dashboard = await ZupDrivePaymentDriverService.getFinancialDashboard(mockChauffeurId);
 
@@ -409,54 +333,28 @@ describe("ZupDrivePaymentDriverService", () => {
   });
 
   describe("Commission calculations", () => {
-    it("devrait calculer correctement avec commission 20%", async () => {
-      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
-        id: mockCourseId,
-        statut: "COMPLETED",
-      } as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 20,
-      } as any);
-
-      const earnings = await ZupDrivePaymentDriverService.calculateCourseEarnings({
-        courseId: mockCourseId,
-        chauffeurId: mockChauffeurId,
-        distance: 10,
-        duration: 20,
-        baseRate: 100,
-        surgeMultiplier: 1.0,
-        passengerPrice: 5000, // €50.00
-        tips: 500, // €5.00
-      });
-
-      expect(earnings.platformCommission).toBe(1000); // 20%
-      expect(earnings.chauffeurEarnings).toBe(4500); // 5000 - 1000 + 500
-    });
-
-    it("devrait calculer correctement avec commission 30%", async () => {
-      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce({
-        id: mockCourseId,
-        statut: "COMPLETED",
-      } as any);
-
-      jest.mocked(db.platformSettingsDrive.findFirst).mockResolvedValueOnce({
-        commissionPercentage: 30,
-      } as any);
+    it.each([
+      [20, 5000, 1000, 4000],
+      [30, 5000, 1500, 3500],
+    ])("commission %i %% sur %i centimes", async (pourcent, prix, attendueCommission, attenduChauffeur) => {
+      jest.mocked(db.courseDrive.findUnique).mockResolvedValueOnce(
+        reponse({
+          statut: "TERMINEE",
+          chauffeurId: mockChauffeurId,
+          prixCentimes: prix,
+          distanceMetres: 10000,
+          dureeSecondes: 1200,
+        })
+      );
+      commission(pourcent);
 
       const earnings = await ZupDrivePaymentDriverService.calculateCourseEarnings({
         courseId: mockCourseId,
         chauffeurId: mockChauffeurId,
-        distance: 10,
-        duration: 20,
-        baseRate: 100,
-        surgeMultiplier: 1.0,
-        passengerPrice: 5000,
-        tips: 500,
       });
 
-      expect(earnings.platformCommission).toBe(1500); // 30%
-      expect(earnings.chauffeurEarnings).toBe(4000); // 5000 - 1500 + 500
+      expect(earnings.platformCommission).toBe(attendueCommission);
+      expect(earnings.chauffeurEarnings).toBe(attenduChauffeur);
     });
   });
 });

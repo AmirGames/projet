@@ -25,9 +25,9 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { startDate, endDate, ...data } = req.body as any;
+      const { startDate, endDate, driverId } = req.body as { driverId: string; startDate: string; endDate: string };
       const report = await ZupDriveReportingService.generateDriverPerformanceReport({
-        ...data,
+        driverId,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
       });
@@ -57,7 +57,7 @@ router.post(
   }),
   async (req, res, next) => {
     try {
-      const { startDate, endDate } = req.body as any;
+      const { startDate, endDate } = req.body as { startDate: string; endDate: string };
       const report = await ZupDriveReportingService.generateFinancialReport({
         startDate: new Date(startDate),
         endDate: new Date(endDate),
@@ -134,13 +134,13 @@ router.get(
   ...adminAuth,
   validateRequest({
     query: z.object({
-      activeOnly: z.coerce.boolean().optional().default("true"),
+      activeOnly: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
     }),
   }),
   async (req, res, next) => {
     try {
-      const { activeOnly } = req.query as any;
-      const reports = await ZupDriveReportingService.listScheduledReports(activeOnly === "true");
+      const { activeOnly } = req.query as unknown as { activeOnly: boolean };
+      const reports = await ZupDriveReportingService.listScheduledReports(activeOnly);
       res.json(reports);
     } catch (error) {
       next(error);
@@ -165,7 +165,7 @@ router.patch(
   }),
   async (req, res, next) => {
     try {
-      const { reportId } = req.params;
+      const reportId = String(req.params.reportId);
       await ZupDriveReportingService.updateScheduledReport(reportId, req.body);
       res.json({ success: true, message: "Rapport mis à jour" });
     } catch (error) {
