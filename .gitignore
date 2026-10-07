@@ -58,3 +58,6 @@ mobile/apps/delivery.expo/credentials/
 *.p8
 *.mobileprovision
 frontend/next-env.d.ts
+
+# Visuels de réseaux sociaux : hors du dépôt (les icônes des apps, dans output/mobile-icons, restent suivies).
+output/instagram/
