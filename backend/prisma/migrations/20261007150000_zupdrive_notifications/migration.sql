@@ -8,8 +8,8 @@ CREATE TABLE "NotificationTemplate" (
     "body" TEXT NOT NULL,
     "variables" TEXT NOT NULL DEFAULT '[]',
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable NotificationLog
@@ -25,9 +25,9 @@ CREATE TABLE "NotificationLog" (
     "body" TEXT NOT NULL,
     "variables" TEXT NOT NULL DEFAULT '{}',
     "errorMessage" TEXT,
-    "sentAt" DATETIME,
-    "failedAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "sentAt" TIMESTAMP(3),
+    "failedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable NotificationAlert
@@ -40,8 +40,8 @@ CREATE TABLE "NotificationAlert" (
     "message" TEXT NOT NULL,
     "triggerAction" TEXT,
     "read" BOOLEAN NOT NULL DEFAULT false,
-    "readAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "readAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "NotificationAlert_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 

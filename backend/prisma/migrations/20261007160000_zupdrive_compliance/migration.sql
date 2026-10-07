@@ -11,7 +11,7 @@ CREATE TABLE "AuditLog" (
     "reason" TEXT,
     "ipAddress" TEXT,
     "userAgent" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable ComplianceCheck
@@ -21,12 +21,12 @@ CREATE TABLE "ComplianceCheck" (
     "type" TEXT NOT NULL CHECK ("type" IN ('DOCUMENT_VALIDATION', 'BACKGROUND_CHECK', 'FINANCIAL_VERIFICATION', 'PERIODIC_REVIEW')),
     "status" TEXT NOT NULL CHECK ("status" IN ('PENDING', 'IN_PROGRESS', 'PASSED', 'FAILED', 'MANUAL_REVIEW_NEEDED')) DEFAULT 'PENDING',
     "findings" TEXT NOT NULL DEFAULT '[]',
-    "expiresAt" DATETIME NOT NULL,
-    "completedAt" DATETIME,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "completedAt" TIMESTAMP(3),
     "completedBy" TEXT,
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "ComplianceCheck_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -36,13 +36,13 @@ CREATE TABLE "DocumentVerificationWorkflow" (
     "driverId" TEXT NOT NULL,
     "documentType" TEXT NOT NULL CHECK ("documentType" IN ('PERMIS', 'ASSURANCE', 'INSPECTION', 'IDENTITE')),
     "status" TEXT NOT NULL CHECK ("status" IN ('PENDING_UPLOAD', 'UPLOADED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'EXPIRED')) DEFAULT 'PENDING_UPLOAD',
-    "uploadedAt" DATETIME,
-    "reviewedAt" DATETIME,
+    "uploadedAt" TIMESTAMP(3),
+    "reviewedAt" TIMESTAMP(3),
     "reviewedBy" TEXT,
     "rejectionReason" TEXT,
-    "nextReviewDate" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "nextReviewDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "DocumentVerificationWorkflow_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "ChauffeurDrive" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE("driverId", "documentType")
 );
@@ -51,7 +51,7 @@ CREATE TABLE "DocumentVerificationWorkflow" (
 CREATE TABLE "ComplianceReport" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "reportType" TEXT NOT NULL CHECK ("reportType" IN ('MONTHLY', 'QUARTERLY', 'ANNUAL', 'AD_HOC')),
-    "generatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "generatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "generatedBy" TEXT NOT NULL,
     "totalDrivers" INTEGER NOT NULL,
     "driversWithValidDocuments" INTEGER NOT NULL,

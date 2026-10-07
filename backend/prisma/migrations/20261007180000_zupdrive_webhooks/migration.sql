@@ -6,8 +6,8 @@ CREATE TABLE "WebhookEndpoint" (
     "active" BOOLEAN NOT NULL DEFAULT true,
     "secret" TEXT NOT NULL UNIQUE,
     "retryPolicy" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable WebhookEvent
@@ -17,13 +17,13 @@ CREATE TABLE "WebhookEvent" (
     "resourceType" TEXT NOT NULL CHECK ("resourceType" IN ('DRIVER', 'DOCUMENT', 'INFRACTION', 'PAYMENT', 'ALERT')),
     "resourceId" TEXT NOT NULL,
     "data" TEXT NOT NULL DEFAULT '{}',
-    "timestamp" DATETIME NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
     "delivered" BOOLEAN NOT NULL DEFAULT false,
-    "deliveredAt" DATETIME,
-    "nextRetryAt" DATETIME,
+    "deliveredAt" TIMESTAMP(3),
+    "nextRetryAt" TIMESTAMP(3),
     "retryCount" INTEGER NOT NULL DEFAULT 0,
     "lastError" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable WebhookDelivery
@@ -36,9 +36,9 @@ CREATE TABLE "WebhookDelivery" (
     "responseBody" TEXT,
     "errorMessage" TEXT,
     "attempt" INTEGER NOT NULL DEFAULT 1,
-    "sentAt" DATETIME,
-    "failedAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "sentAt" TIMESTAMP(3),
+    "failedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "WebhookDelivery_webhookId_fkey" FOREIGN KEY ("webhookId") REFERENCES "WebhookEndpoint" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "WebhookDelivery_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "WebhookEvent" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -52,8 +52,8 @@ CREATE TABLE "ProviderIntegration" (
     "webhookSigningKey" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "config" TEXT NOT NULL DEFAULT '{}',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateIndex on WebhookEndpoint

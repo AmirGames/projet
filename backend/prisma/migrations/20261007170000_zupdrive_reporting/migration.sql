@@ -6,11 +6,11 @@ CREATE TABLE "ScheduledReport" (
     "frequency" TEXT NOT NULL CHECK ("frequency" IN ('DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY')),
     "recipients" TEXT NOT NULL DEFAULT '[]',
     "format" TEXT NOT NULL CHECK ("format" IN ('PDF', 'EXCEL', 'JSON')) DEFAULT 'PDF',
-    "lastGeneratedAt" DATETIME,
-    "nextGenerationAt" DATETIME NOT NULL,
+    "lastGeneratedAt" TIMESTAMP(3),
+    "nextGenerationAt" TIMESTAMP(3) NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateIndex on ScheduledReport

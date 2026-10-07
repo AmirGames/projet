@@ -10,9 +10,9 @@ CREATE TABLE "SupportTicket" (
     "reporterId" TEXT NOT NULL,
     "reporterType" TEXT NOT NULL CHECK ("reporterType" IN ('CHAUFFEUR', 'PASSAGER', 'ADMIN')),
     "assignedTo" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "resolvedAt" DATETIME,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "resolvedAt" TIMESTAMP(3),
     "resolution" TEXT
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE "SupportMessage" (
     "authorType" TEXT NOT NULL CHECK ("authorType" IN ('CHAUFFEUR', 'PASSAGER', 'AGENT', 'ADMIN')),
     "message" TEXT NOT NULL,
     "attachmentUrl" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "SupportMessage_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "SupportTicket" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
