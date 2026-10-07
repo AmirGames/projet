@@ -12,7 +12,20 @@ DROP INDEX IF EXISTS "WebhookDelivery_nextAttemptAt_idx";
 
 -- Add new columns if they don't already exist
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "errorMessage" TEXT;
-ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "eventId" TEXT NOT NULL DEFAULT 'pending-event-id';
+-- eventId is added as nullable first to handle existing rows, then altered to NOT NULL
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='WebhookDelivery' AND column_name='eventId'
+  ) THEN
+    ALTER TABLE "WebhookDelivery" ADD COLUMN "eventId" TEXT;
+    -- Set a default value for existing rows
+    UPDATE "WebhookDelivery" SET "eventId" = 'webhook-event-' || id WHERE "eventId" IS NULL;
+    -- Make it NOT NULL
+    ALTER TABLE "WebhookDelivery" ALTER COLUMN "eventId" SET NOT NULL;
+  END IF;
+END $$;
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "failedAt" TIMESTAMP(3);
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "responseBody" TEXT;
 ALTER TABLE "WebhookDelivery" ADD COLUMN IF NOT EXISTS "sentAt" TIMESTAMP(3);
