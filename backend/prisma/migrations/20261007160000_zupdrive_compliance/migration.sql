@@ -20,7 +20,7 @@ CREATE TABLE "ComplianceCheck" (
     "driverId" TEXT NOT NULL,
     "type" TEXT NOT NULL CHECK ("type" IN ('DOCUMENT_VALIDATION', 'BACKGROUND_CHECK', 'FINANCIAL_VERIFICATION', 'PERIODIC_REVIEW')),
     "status" TEXT NOT NULL CHECK ("status" IN ('PENDING', 'IN_PROGRESS', 'PASSED', 'FAILED', 'MANUAL_REVIEW_NEEDED')) DEFAULT 'PENDING',
-    "findings" TEXT NOT NULL DEFAULT '[]',
+    "findings" JSONB NOT NULL DEFAULT '[]',
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "completedAt" TIMESTAMP(3),
     "completedBy" TEXT,
@@ -60,7 +60,7 @@ CREATE TABLE "ComplianceReport" (
     "driversWithLowRating" INTEGER NOT NULL,
     "complianceRate" REAL NOT NULL,
     "riskScore" REAL NOT NULL,
-    "recommendations" TEXT NOT NULL DEFAULT '[]'
+    "recommendations" JSONB NOT NULL DEFAULT '[]'
 );
 
 -- CreateIndex on AuditLog
