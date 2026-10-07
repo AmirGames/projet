@@ -18,31 +18,14 @@ import { z } from "zod";
 import { UnifiedRolesService } from "../auth/unified-roles.service";
 import { ApiError } from "../../middleware/api-error";
 import { db } from "../../services/db";
+import { authMiddleware } from "../auth/auth.middleware";
 
 // Middleware d'authentification simple (à utiliser avec un vrai JWT en production)
-const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  // En production, valider le JWT et extraire userId
-  // Pour dev: suppose que le token EST l'userId
-  req.userId = token;
-  next();
-};
+const authenticate = authMiddleware;
 
 const router = Router();
 
 // Déclaration des types pour que TypeScript accepte userId
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-    }
-  }
-}
-
 // ============================================================================
 // CLIENT ENDPOINTS
 // ============================================================================

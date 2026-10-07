@@ -10,26 +10,11 @@ import { z } from "zod";
 import { ZupDriveDocumentValidationService } from "./zupdrive-document-validation.service";
 import { UnifiedRolesService } from "../auth/unified-roles.service";
 import { db } from "../../services/db";
+import { authMiddleware } from "../auth/auth.middleware";
 
 const router = Router();
 
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-    }
-  }
-}
-
-const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  req.userId = token;
-  next();
-};
+const authenticate = authMiddleware;
 
 // ============================================================================
 // CHAUFFEUR ENDPOINTS
