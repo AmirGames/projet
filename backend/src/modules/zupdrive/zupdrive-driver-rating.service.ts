@@ -365,7 +365,7 @@ export const ZupDriveDriverRatingService = {
 
     // Recommandations basées sur le rating
     if (stats.averageRating < 3.5) {
-      recommendations.push("Améliez votre service - plusieurs clients insatisfaits");
+      recommendations.push("Améliorez votre service - plusieurs clients insatisfaits");
       recommendations.push("Demandez du feedback détaillé aux passagers");
     } else if (stats.averageRating < 4.0) {
       recommendations.push("Vous approchez d'une bonne évaluation! Continuez l'effort");

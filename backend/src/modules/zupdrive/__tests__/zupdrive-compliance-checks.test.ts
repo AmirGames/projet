@@ -6,6 +6,7 @@
 
 import { ZupDriveComplianceChecksService } from "../zupdrive-compliance-checks.service";
 import { db } from "../../../services/db";
+import { piecesExigees } from "../chauffeur-onboarding.service";
 
 jest.mock("../../../services/db", () => ({
   db: {
@@ -20,6 +21,16 @@ jest.mock("../../../services/db", () => ({
     },
   },
 }));
+
+/** Ajoute aux pièces données les autres pièces obligatoires (Bruxelles, indépendant), validées et valables. */
+function completerPieces<T extends { type: string }>(docs: T[]) {
+  const valable = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+  const presentes = docs.map((d) => d.type);
+  const manquantes = piecesExigees("BRUXELLES")
+    .filter((type) => !presentes.includes(type))
+    .map((type) => ({ id: `doc-${type}`, type, statut: "APPROVED", dateExpiration: valable }));
+  return [...docs, ...manquantes];
+}
 
 describe("ZupDriveComplianceChecksService", () => {
   const mockChauffeurId = "chauffeur-123";
@@ -40,32 +51,32 @@ describe("ZupDriveComplianceChecksService", () => {
         region: "BRUXELLES",
         statut: "SOUMIS",
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        documents: [
+        documents: completerPieces([
           {
             id: "doc-1",
-            type: "PERMIS",
+            type: "permis",
             statut: "APPROVED",
             dateExpiration: inFuture,
                       },
           {
             id: "doc-2",
-            type: "ASSURANCE",
+            type: "assurance",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-3",
-            type: "INSPECTION",
+            type: "controle_technique",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-4",
-            type: "IDENTITE",
+            type: "identite",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
-        ],
+        ]),
         infractions: [],
         courses: [
           { statut: "TERMINEE" },
@@ -99,32 +110,32 @@ describe("ZupDriveComplianceChecksService", () => {
         region: "BRUXELLES",
         statut: "SOUMIS",
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        documents: [
+        documents: completerPieces([
           {
             id: "doc-1",
-            type: "PERMIS",
+            type: "permis",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-2",
-            type: "ASSURANCE",
+            type: "assurance",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-3",
-            type: "INSPECTION",
+            type: "controle_technique",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-4",
-            type: "IDENTITE",
+            type: "identite",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
-        ],
+        ]),
         infractions: [
           {
             id: "inf-1",
@@ -172,11 +183,11 @@ describe("ZupDriveComplianceChecksService", () => {
         documents: [
           {
             id: "doc-1",
-            type: "PERMIS",
+            type: "permis",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
-          // Missing ASSURANCE, INSPECTION, IDENTITE
+          // Toutes les autres pièces obligatoires manquent
         ],
         infractions: [],
         courses: [],
@@ -209,7 +220,7 @@ describe("ZupDriveComplianceChecksService", () => {
         statut: "SOUMIS",
         createdAt: new Date(),
         documents: [
-          { type: "IDENTITE", statut: "APPROVED", dateExpiration: inFuture },
+          { type: "identite", statut: "APPROVED", dateExpiration: inFuture },
         ],
         infractions: [],
         courses: [],
@@ -234,12 +245,12 @@ describe("ZupDriveComplianceChecksService", () => {
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         documents: [
           {
-            type: "PERMIS",
+            type: "permis",
             statut: "APPROVED",
             dateExpiration: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
           },
           {
-            type: "INSPECTION",
+            type: "controle_technique",
             statut: "APPROVED",
             // Plus de 30 jours après l'échéance du permis
             dateExpiration: new Date(Date.now() + 200 * 24 * 60 * 60 * 1000),
@@ -269,20 +280,20 @@ describe("ZupDriveComplianceChecksService", () => {
         region: "BRUXELLES",
         statut: "SOUMIS",
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        documents: [
+        documents: completerPieces([
           {
             id: "doc-1",
-            type: "PERMIS",
+            type: "permis",
             statut: "APPROVED",
             dateExpiration: inPast, // EXPIRED!
           },
           {
             id: "doc-4",
-            type: "IDENTITE",
+            type: "identite",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
-        ],
+        ]),
         infractions: [],
         courses: [],
       };
@@ -313,25 +324,25 @@ describe("ZupDriveComplianceChecksService", () => {
         documents: [
           {
             id: "doc-1",
-            type: "PERMIS",
+            type: "permis",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-2",
-            type: "ASSURANCE",
+            type: "assurance",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-3",
-            type: "INSPECTION",
+            type: "controle_technique",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },
           {
             id: "doc-4",
-            type: "IDENTITE",
+            type: "identite",
             statut: "APPROVED",
             dateExpiration: inFuture,
           },

@@ -295,9 +295,7 @@ describe("UnifiedRolesService", () => {
         accesEquipe: [],
       };
 
-      jest.mocked(db.user.findUnique)
-        .mockResolvedValueOnce(partiel(validDriver))
-        .mockResolvedValueOnce(partiel(validDriver));
+      jest.mocked(db.user.findUnique).mockResolvedValueOnce(partiel(validDriver));
 
       // Before suspension
       const beforeContext =

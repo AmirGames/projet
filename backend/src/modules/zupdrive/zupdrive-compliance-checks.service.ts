@@ -19,6 +19,7 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
+import { piecesExigees } from "./chauffeur-onboarding.service";
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -64,9 +65,10 @@ const SELECTION_CONTROLE = {
   userId: true,
   nomComplet: true,
   region: true,
+  societeId: true,
   statut: true,
   createdAt: true,
-  documents: { select: { type: true, statut: true, dateExpiration: true } },
+  documents: { where: { archiveeLe: null }, select: { type: true, statut: true, dateExpiration: true } },
   infractions: { select: { severity: true } },
   courses: { select: { statut: true } },
 } satisfies Prisma.ChauffeurDriveSelect;
@@ -117,9 +119,14 @@ export const ZupDriveComplianceChecksService = {
     checks.push(await this.checkFraudIndicators(chauffeur));
 
     // Calculer les scores
-    const overallRiskScore = Math.round(
+    // Le pire contrôle compte : une moyenne diluerait un document expiré ou des
+    // infractions graves parmi des contrôles sans problème.
+    const moyenne = Math.round(
       checks.reduce((sum, c) => sum + c.riskScore, 0) / checks.length
     );
+    const SEUIL_DU_NIVEAU: Record<RiskLevel, number> = { LOW: 0, MEDIUM: 25, HIGH: 50, CRITICAL: 75 };
+    const pireSeuil = Math.max(...checks.map((c) => SEUIL_DU_NIVEAU[c.severity]));
+    const overallRiskScore = Math.max(moyenne, ...checks.map((c) => c.riskScore), pireSeuil);
 
     const overallRiskLevel = this.scoreToLevel(overallRiskScore);
     const flaggedForReview =
@@ -187,23 +194,32 @@ export const ZupDriveComplianceChecksService = {
   async checkDocumentIntegrity(
     chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
-    const required = ["PERMIS", "ASSURANCE", "INSPECTION", "IDENTITE"];
-    const approved = (chauffeur.documents || [])
-      .filter((d) => d.statut === "APPROVED")
+    const required: string[] = piecesExigees(chauffeur.region, { enSociete: Boolean(chauffeur.societeId) });
+    const maintenant = new Date();
+    const approuvees = (chauffeur.documents || []).filter((d) => d.statut === "APPROVED");
+    // Approuvée ne suffit pas : une pièce dont la date est dépassée n'est plus valable.
+    const expirees = approuvees
+      .filter((d) => d.dateExpiration && d.dateExpiration < maintenant)
       .map((d) => d.type);
+    const valables = approuvees.map((d) => d.type).filter((type) => !expirees.includes(type));
 
-    const missing = required.filter((r) => !approved.includes(r));
-    const passed = missing.length === 0;
+    const missing = required.filter((r) => !valables.includes(r) && !expirees.includes(r));
+    const aRemplacer = required.filter((r) => expirees.includes(r));
+    const invalides = missing.length + aRemplacer.length;
+    const passed = invalides === 0;
+
+    const details = [
+      missing.length > 0 ? `Missing documents: ${missing.join(", ")}` : "",
+      aRemplacer.length > 0 ? `Expired documents: ${aRemplacer.join(", ")}` : "",
+    ].filter(Boolean);
 
     return {
       type: "DOCUMENT_INTEGRITY",
       passed,
-      riskScore: passed ? 0 : 50 + missing.length * 5,
-      severity: passed ? "LOW" : missing.length > 2 ? "HIGH" : "MEDIUM",
-      message: passed
-        ? "All required documents approved"
-        : `Missing documents: ${missing.join(", ")}`,
-      evidence: { missing, approved },
+      riskScore: passed ? 0 : 50 + invalides * 5,
+      severity: passed ? "LOW" : aRemplacer.length > 0 || missing.length > 2 ? "HIGH" : "MEDIUM",
+      message: passed ? "All required documents approved" : details.join("; "),
+      evidence: { missing, expired: aRemplacer, approved: valables },
     };
   },
 
@@ -220,9 +236,9 @@ export const ZupDriveComplianceChecksService = {
     // la cohérence du nom ne peut pas être contrôlée.
 
     // Vérifier dates cohérentes
-    const permisExpiry = docs.find((d) => d.type === "PERMIS")
+    const permisExpiry = docs.find((d) => d.type === "permis")
       ?.dateExpiration;
-    const inspectionExpiry = docs.find((d) => d.type === "INSPECTION")
+    const inspectionExpiry = docs.find((d) => d.type === "controle_technique")
       ?.dateExpiration;
 
     if (
@@ -252,7 +268,7 @@ export const ZupDriveComplianceChecksService = {
   async checkIdentityVerification(
     chauffeur: ChauffeurControle
   ): Promise<ComplianceCheckResult> {
-    const identiteDoc = chauffeur.documents?.find((d) => d.type === "IDENTITE");
+    const identiteDoc = chauffeur.documents?.find((d) => d.type === "identite");
 
     const issues: string[] = [];
 
