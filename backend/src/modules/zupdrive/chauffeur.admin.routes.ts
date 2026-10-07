@@ -11,6 +11,7 @@ import { presenterSociete } from "./societe.routes";
 import { TarificationDriveService } from "./tarification-drive.service";
 import { NoteCourseDriveService } from "./note-course-drive.service";
 import { REGIONS } from "./chauffeur-onboarding.service";
+import { MatchingAlgorithmService } from "./matching-algorithm.service";
 
 /**
  * /api/zupdrive/admin — l'équipe ZupDrive examine les dossiers chauffeurs.
@@ -410,9 +411,61 @@ router.get("/courses", async (req: Request, res: Response, next: NextFunction) =
     ]);
     res.json({
       success: true,
-      data: courses.map(({ cleIdempotence: _cle, ...course }) => course),
+      data: courses.map(c => Object.fromEntries(Object.entries(c).filter(([k]) => k !== 'cleIdempotence'))),
       pagination: { total, limit: query.limit, offset: query.offset },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/zupdrive/admin/metrics/:region?hoursBack=24
+// Métriques de matching et d'utilisation d'une région
+router.get("/metrics/:region", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { region } = z
+      .object({ region: z.enum(REGIONS) })
+      .parse(req.params);
+    const { hoursBack } = z
+      .object({ hoursBack: z.coerce.number().int().min(1).max(720).default(24) })
+      .parse(req.query);
+
+    const metrics = await MatchingAlgorithmService.getRegionMetrics(region, hoursBack);
+    const surgeFactor = await MatchingAlgorithmService.calculateSurgePricing(region);
+
+    res.json({
+      success: true,
+      data: {
+        ...metrics,
+        currentSurgeFactor: surgeFactor,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/zupdrive/admin/driver/:driverId/report
+// Rapport détaillé d'un chauffeur (performance, ratings, earnings)
+router.get("/driver/:driverId/report", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { driverId } = z
+      .object({ driverId: z.string().min(1).max(64) })
+      .parse(req.params);
+
+    const report = await MatchingAlgorithmService.getDriverReport(driverId);
+    if (!report) {
+      res.status(404).json({
+        success: false,
+        error: "DRIVER_NOT_FOUND",
+        message: "Chauffeur introuvable",
+      });
+    } else {
+      res.json({
+        success: true,
+        data: report,
+      });
+    }
   } catch (err) {
     next(err);
   }

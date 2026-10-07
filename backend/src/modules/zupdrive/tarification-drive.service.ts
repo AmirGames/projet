@@ -2,6 +2,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { calculerItineraire, type Point } from "./itineraire.service";
 import { REGIONS, type Region } from "./chauffeur-onboarding.service";
+import { MatchingAlgorithmService } from "./matching-algorithm.service";
 
 /**
  * Le prix d'une course ZupDrive, fixé à la commande.
@@ -42,6 +43,22 @@ export function calculerPrix(tarif: Tarif, distanceMetres: number, dureeSecondes
   return Math.max(tarif.minimumCentimes, Math.round(brut));
 }
 
+/** Le prix avec surge multiplier optionnel (ex: 1.5 pour 50% de supplément). */
+export function calculerPrixAvecSurge(
+  tarif: Tarif,
+  distanceMetres: number,
+  dureeSecondes: number,
+  surgeFactor: number = 1.0
+): { prixBaseCentimes: number; surgeFactor: number; prixFinalCentimes: number } {
+  const prixBase = calculerPrix(tarif, distanceMetres, dureeSecondes);
+  const prixFinal = Math.round(prixBase * surgeFactor);
+  return {
+    prixBaseCentimes: prixBase,
+    surgeFactor,
+    prixFinalCentimes: prixFinal,
+  };
+}
+
 /**
  * La région d'une adresse belge, d'après son code postal : c'est elle qui
  * fixe le tarif et les chauffeurs autorisés (une licence ne vaut que dans sa
@@ -71,11 +88,16 @@ export class TarificationDriveService {
    * Refusé hors de Belgique, dans une région où le service n'est pas ouvert,
    * ou quand départ et destination ne sont pas dans la même région (la
    * licence du chauffeur ne vaut que dans la sienne).
+   *
+   * Inclut optionnellement le surge pricing basé sur la demande/offre actuelle.
    */
-  static async devis(trajet: {
-    depart: Point & { codePostal: string };
-    arrivee: Point & { codePostal: string };
-  }) {
+  static async devis(
+    trajet: {
+      depart: Point & { codePostal: string };
+      arrivee: Point & { codePostal: string };
+    },
+    includeSurgePricing: boolean = true
+  ) {
     const region = regionDuCodePostal(trajet.depart.codePostal);
     if (!region) {
       throw new ApiError(400, "ZupDrive n'est disponible qu'en Belgique pour le moment", "REGION_NOT_SERVED");
@@ -102,11 +124,18 @@ export class TarificationDriveService {
     }
 
     const tarif = tarifDe(ligne);
+
+    // Calcule le surge pricing basé sur demande/offre
+    const surgeFactor = includeSurgePricing ? await MatchingAlgorithmService.calculateSurgePricing(region) : 1.0;
+    const prixData = calculerPrixAvecSurge(tarif, distanceMetres, dureeSecondes, surgeFactor);
+
     return {
       region,
       distanceMetres,
       dureeSecondes,
-      prixCentimes: calculerPrix(tarif, distanceMetres, dureeSecondes),
+      prixCentimes: prixData.prixFinalCentimes,
+      prixBaseCentimes: prixData.prixBaseCentimes,
+      surgeFactor: prixData.surgeFactor,
       devise: "EUR" as const,
       tarif,
       trace,
