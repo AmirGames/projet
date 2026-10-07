@@ -2854,6 +2854,8 @@ model ChauffeurDrive {
   ratings      RatingCourseDrive[]
   complianceChecks ComplianceCheck[]
   documentWorkflows DocumentVerificationWorkflow[]
+  chauffeurDocuments ChauffeurDocument[]
+  infractions ChauffeurInfraction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3583,4 +3585,372 @@ model ComplianceReport {
 
   @@index([reportType])
   @@index([generatedAt])
+}
+
+// ============================================================================
+// ZUPDRIVE: DRIVER MANAGEMENT & DOCUMENTS
+// ============================================================================
+
+model ChauffeurDocument {
+  id         String    @id @default(cuid())
+  chauffeurId String
+  type       String    // PERMIS, ASSURANCE, INSPECTION, IDENTITE
+  status     String    @default("EN_ATTENTE") // VALIDE, EXPIREE, EN_ATTENTE
+  url        String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  verifiedBy String?
+
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chauffeurId, type])
+  @@index([chauffeurId])
+  @@index([type])
+}
+
+model ChauffeurInfraction {
+  id          String   @id @default(cuid())
+  chauffeurId String
+  type        String   // PLAINTE_PASSAGER, ACCIDENT, INFRACTION_CODE_ROUTE, AUTRE
+  description String
+  severity    String   // BASSE, MOYENNE, HAUTE
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  resolution  String?
+
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  @@index([chauffeurId])
+  @@index([type])
+}
+
+// ============================================================================
+// ZUPDRIVE: SUPPORT SYSTEM
+// ============================================================================
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  ticketNumber String  @unique
+  category    String   // TECHNIQUE, PAIEMENT, INFRACTION, DOCUMENT, AUTRE
+  priority    String   @default("MOYENNE") // BASSE, MOYENNE, HAUTE, CRITIQUE
+  subject     String
+  description String
+  status      String   @default("OUVERT") // OUVERT, EN_COURS, EN_ATTENTE_CLIENT, RESOLU, FERME
+  reporterId  String
+  reporterType String  // CHAUFFEUR, PASSAGER, ADMIN
+  assignedTo  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resolvedAt  DateTime?
+  resolution  String?
+
+  messages SupportMessage[]
+
+  @@index([reporterId])
+  @@index([status])
+  @@index([priority])
+}
+
+model SupportMessage {
+  id          String   @id @default(cuid())
+  ticketId    String
+  authorId    String
+  authorType  String   // CHAUFFEUR, PASSAGER, AGENT, ADMIN
+  message     String
+  attachmentUrl String?
+  createdAt   DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([authorId])
+}
+
+// ============================================================================
+// ZUPDRIVE: PLATFORM CONFIGURATION
+// ============================================================================
+
+model CommissionConfig {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        String   // PERCENTAGE, FIXED
+  value       Float
+  appliesTo   String   // CHAUFFEUR, PLATEFORME
+  description String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RegionalConfig {
+  id                  String   @id @default(cuid())
+  region              String   @unique // BRUXELLES, WALLONIE, FLANDRE
+  minPrice            Int
+  baseSurgeMultiplier Float    @default(1.0)
+  maxSurgeMultiplier  Float    @default(2.5)
+  peakHours           String
+  peakSurgeMultiplier Float    @default(1.5)
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model PricingRule {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  condition   String   // JSON describing the condition
+  basePrice   Float
+  surgeMultiplier Float
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ============================================================================
+// ZUPDRIVE: NOTIFICATIONS
+// ============================================================================
+
+model NotificationTemplate {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  type      String   // EMAIL, SMS, PUSH
+  subject   String?
+  body      String
+  variables Json     @default("[]")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationLog {
+  id            String   @id @default(cuid())
+  recipientId   String
+  recipientType String   // CHAUFFEUR, PASSAGER, ADMIN
+  type          String   // EMAIL, SMS, PUSH
+  templateKey   String
+  status        String   @default("PENDING") // PENDING, SENT, FAILED, BOUNCED
+  recipient     String
+  subject       String?
+  body          String
+  variables     Json     @default("{}")
+  errorMessage  String?
+  sentAt        DateTime?
+  failedAt      DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([recipientId])
+  @@index([status])
+}
+
+model NotificationAlert {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// ZUPDRIVE: PAYMENTS & PAYOUTS
+// ============================================================================
+
+model PaymentIntentDrive {
+  id                         String   @id @default(cuid())
+  courseId                   String
+  passagerId                 String?
+  stripeId                   String
+  amountCentimes             Int
+  currency                   String   @default("EUR")
+  status                     String   @default("REQUIRES_PAYMENT_METHOD")
+  cancellationReason         String?
+  platformCommissionCentimes Int
+  driverEarningsCentimes     Int
+  confirmedAt                DateTime?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([status])
+}
+
+model DriverPayoutDrive {
+  id           String   @id @default(cuid())
+  paymentId    String
+  chauffeurId  String
+  batchId      String?
+  amountCentimes Int
+  currency     String   @default("EUR")
+  status       String   @default("PENDING")
+  periodStart  DateTime
+  periodEnd    DateTime
+  paidAt       DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([chauffeurId])
+  @@index([status])
+  @@index([periodStart])
+}
+
+// ============================================================================
+// ZUPDRIVE: COMPLIANCE & REPORTING
+// ============================================================================
+
+model ComplianceReportDrive {
+  id                    String   @id @default(cuid())
+  chauffeurId           String
+  riskLevel             String   @default("LOW")
+  complianceScore       Int      @default(0)
+  documentIntegrity     Int      @default(0)
+  completionRate        Int      @default(0)
+  stabilityRate         Int      @default(0)
+  fraudIndicators       Json     @default("[]")
+  verificationPoints    Json     @default("[]")
+  autoRecommendations   Json     @default("[]")
+  checkedAt             DateTime @default(now())
+  expiresAt             DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  @@index([chauffeurId])
+  @@index([riskLevel])
+  @@index([checkedAt])
+}
+
+model RatingCourseDrive {
+  id          String   @id @default(cuid())
+  courseId    String
+  chauffeurId String
+  passengerId String
+  rating      Int
+  comment     String?
+  cleanliness Int?
+  driving     Int?
+  communication Int?
+  comfort     Int?
+  tags        Json     @default("[]")
+  anonymous   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course    CourseDrive    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  passenger User           @relation(fields: [passengerId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([chauffeurId])
+  @@index([passengerId])
+  @@index([createdAt])
+}
+
+model PlatformSettingsDrive {
+  id                   String   @id @default("default")
+  commissionPercentage Int      @default(20)
+  minPayoutAmount      Int      @default(1000)
+  payoutDay            Int      @default(1)
+  payoutCycle          String   @default("WEEKLY")
+  currency             String   @default("EUR")
+  platformName         String   @default("ZupDrive")
+  supportEmail         String?
+  supportPhone         String?
+  timezone             String   @default("Europe/Brussels")
+  maintenanceMode      Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model NotificationDrive {
+  id        String   @id @default(cuid())
+  userId    String
+  chauffeurId String?
+  type      String
+  title     String
+  message   String
+  priority  String   @default("low")
+  data      Json?
+  actionUrl String?
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@index([userId, read])
+}
+
+model ScheduledReport {
+  id              String   @id @default(cuid())
+  name            String
+  reportType      String   // DRIVER_PERFORMANCE, FINANCIAL, COMPLIANCE, CUSTOM
+  frequency       String   // DAILY, WEEKLY, MONTHLY, QUARTERLY
+  recipients      Json     @default("[]")
+  format          String   @default("PDF") // PDF, EXCEL, JSON
+  lastGeneratedAt DateTime?
+  nextGenerationAt DateTime
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([reportType])
+  @@index([frequency])
+  @@index([active])
+  @@index([nextGenerationAt])
+}
+
+// ============================================================================
+// ZUPDRIVE: WEBHOOKS
+// ============================================================================
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  url       String
+  events    Json     @default("[]")
+  active    Boolean  @default(true)
+  secret    String   @unique
+  retryPolicy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WebhookEvent {
+  id           String   @id @default(cuid())
+  eventType    String
+  resourceType String   // DRIVER, DOCUMENT, INFRACTION, PAYMENT, ALERT
+  resourceId   String
+  data         Json     @default("{}")
+  timestamp    DateTime
+  delivered    Boolean  @default(false)
+  deliveredAt  DateTime?
+  nextRetryAt  DateTime?
+  retryCount   Int      @default(0)
+  lastError    String?
+  createdAt    DateTime @default(now())
+
+  @@index([eventType])
+  @@index([resourceId])
+  @@index([timestamp])
+}
+
+model ProviderIntegration {
+  id           String   @id @default(cuid())
+  provider     String   // Stripe, Twilio, etc.
+  apiKey       String
+  status       String   @default("ACTIVE")
+  lastTestAt   DateTime?
+  lastErrorAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([provider])
 }
