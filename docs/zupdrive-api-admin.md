@@ -200,12 +200,18 @@ Chauffeur : `GET /notifications?limit` (1-100), `POST /notifications/:id/read` (
 `/admin/payout-failure-alerts` (`courses-drive`), `/admin/alerts?type=all|compliance|rating|suspension`, `/admin/compliance-alerts`, `/admin/document-expiration-alerts` (`chauffeurs`).
 `GET /ws` a été retiré : il renvoyait le jeton d'accès dans une URL.
 
+## `reporting` — `/api/zupdrive/reporting` (Équipe `courses-drive`)
+
+`POST /admin/driver-performance` (`{ driverId, startDate, endDate }`), `POST /admin/financial` (`{ startDate, endDate }`), `POST /admin/compliance` (`{ includeRecommendations? }`) génèrent un rapport à la volée.
+Rapports programmés : `POST /admin/scheduled` (`{ name, reportType, frequency, recipients[], format }` → 201, `ZUPDRIVE_CREATE_SCHEDULED_REPORT`), `GET /admin/scheduled`, `PATCH /admin/scheduled/:reportId` (404 inconnu, `ZUPDRIVE_UPDATE_SCHEDULED_REPORT`).
+Règle du rapport financier : `netProfit` = commissions des paiements confirmés − remboursements − frais (frais de paiement non enregistrés : 0). Les versements aux chauffeurs ne sont pas retirés (ils sont la part du prix hors commission).
+La génération et l'envoi automatiques des rapports programmés n'existent pas encore.
+
 ## Routeurs non montés
 
 | Routeur | Raison |
 |---|---|
 | `zupdrive-platform-config` | Écrit `CommissionConfig`, `RegionalConfig`, `PricingRule` et `PlatformSettings`, qu'aucun code de tarification ou de paiement ne lit : la commission réelle est `PlatformSettingsDrive` et les tarifs `TarificationDriveService` (`/admin/tarifs`). Le monter laisserait changer une commission « sans effet ». Journalisation ajoutée ; `POST /calculate-price` accepte un `surgeMultiplier` du client. |
-| `zupdrive-reporting` | `netProfit` du rapport financier compte des sommes en double : règle comptable à fournir. Journalisation ajoutée. |
 | `zupdrive-chauffeur-onboarding` | Doublon de `/api/zupdrive/chauffeur` + `/admin/chauffeurs/:id/approve` via `UnifiedRolesService` : `approveChauffeur` ne vérifie pas les pièces exigées (`piecesExigees`), `submit` ne vérifie pas la complétude. Le monter contournerait les règles d'inscription. |
 | `zupdrive-document-validation` | Doublon du dépôt de pièces (`/chauffeur/me/documents`) et de leur examen (`PATCH /admin/chauffeurs/:id/documents/:id`) : accepte une URL de fichier fournie par le client, types en majuscules (`PERMIS`) alors que la référence est en minuscules (`permis`), approbation sans contrôle d'appartenance. |
-| `zupdrive-driver-rating` | `submitRating` écrit `RatingCourseDrive` mais la moyenne vient de `NoteCourseDrive` (notes non comptées) ; `POST /courses/:id/note` existe déjà ; réputation et avis de n'importe quel chauffeur lisibles par tout compte. |
+| `zupdrive-driver-rating` | **Supprimé** : `submitRating` écrivait `RatingCourseDrive` alors que la moyenne vient de `NoteCourseDrive` (notes non comptées), `POST /courses/:id/note` existe déjà, et la réputation et les avis de n'importe quel chauffeur étaient lisibles par tout compte. Le modèle `RatingCourseDrive` reste au schéma (aucun écrivain) ; une contrainte unique `(courseId, passengerId)` n'a donc pas lieu d'être tant qu'on n'y écrit pas. |
