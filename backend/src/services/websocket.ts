@@ -81,7 +81,8 @@ class WebSocketService {
       // Envoyer un message de bienvenue
       this.sendToUser(ws.userId, {
         type: 'CONNECTED',
-        data: { userId: ws.userId, timestamp: new Date().toISOString() },
+        data: { userId: ws.userId },
+        timestamp: new Date(),
       });
     });
   }

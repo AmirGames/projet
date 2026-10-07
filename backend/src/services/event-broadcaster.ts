@@ -14,6 +14,7 @@ export type EventType =
   | 'REPUTATION_CHANGED'
   | 'BADGE_EARNED'
   | 'PAYOUT_REQUESTED'
+  | 'PAYOUT_PENDING'
   | 'PAYOUT_PROCESSING'
   | 'PAYOUT_COMPLETED'
   | 'PAYOUT_FAILED'
@@ -46,6 +47,7 @@ export class EventBroadcaster {
     const message = {
       type: payload.type,
       data: payload.data,
+      timestamp: new Date(),
     };
 
     // Envoyer à utilisateur spécifique

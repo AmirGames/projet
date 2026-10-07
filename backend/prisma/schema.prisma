@@ -2515,31 +2515,23 @@ model Webhook {
 }
 
 model WebhookDelivery {
-  id         String   @id @default(cuid())
-  webhookId  String
-  event      String
-  payload    Json
-  statusCode Int?
-  success    Boolean  @default(false)
-  error      String?
+  id              String   @id @default(cuid())
+  webhookId       String
+  eventId         String
+  status          String   @default("PENDING") // PENDING, SENT, FAILED, DELIVERY_FAILED
+  statusCode      Int?
+  responseBody    String?
+  errorMessage    String?
+  attempt         Int      @default(1)
+  sentAt          DateTime?
+  failedAt        DateTime?
+  createdAt       DateTime @default(now())
 
-  // Une ligne par événement, pas par tentative : elle porte le compte des
-  // essais et la date du prochain. Un envoi raté se retentait nulle part —
-  // un destinataire redémarré perdait la commande pour de bon.
-  attempt       Int       @default(1)
-  // Rempli tant qu'une relance est due ; vidé dès que l'envoi aboutit ou que
-  // les relances sont épuisées. C'est la file d'attente, et elle est en base :
-  // un `setTimeout` n'aurait pas survécu au redémarrage du serveur.
-  nextAttemptAt DateTime?
-  abandonedAt   DateTime?
-
-  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
-
-  createdAt  DateTime @default(now())
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
 
   @@index([webhookId])
+  @@index([status])
   @@index([createdAt])
-  @@index([nextAttemptAt])
 }
 
 model Backup {
@@ -3809,14 +3801,15 @@ model WebhookEvent {
 }
 
 model ProviderIntegration {
-  id           String   @id @default(cuid())
-  provider     String   // Stripe, Twilio, etc.
-  apiKey       String
-  status       String   @default("ACTIVE")
-  lastTestAt   DateTime?
-  lastErrorAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  provider           String   // SENDGRID, TWILIO, MAILGUN, AWS_SES, STRIPE, CUSTOM
+  type               String   // EMAIL, SMS, PAYMENT, CUSTOM
+  apiKey             String
+  webhookSigningKey  String?
+  active             Boolean  @default(true)
+  config             Json     @default("{}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([provider])
 }
