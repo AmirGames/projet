@@ -3960,7 +3960,15 @@
     },
     "pasEncoreNote": "New driver",
     "noterChauffeur": "How was your ride with {prenom}?",
-    "votreNote": "Your rating:"
+    "votreNote": "Your rating:",
+    "paiement": {
+      "titre": "Pay for your ride",
+      "aide": "You pay {prix} online by card; the search for a driver starts as soon as the payment is confirmed.",
+      "confirmation": "Payment sent, confirming…",
+      "paye": "Ride paid online.",
+      "remboursement": "This ride did not take place: your payment is being refunded.",
+      "rembourse": "This ride did not take place: your payment has been refunded."
+    }
   },
   "chauffeurCourses": {
     "titre": "My rides",

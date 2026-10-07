@@ -48,6 +48,37 @@ export function cleAleatoire(): string {
 
 export const STATUTS_ACTIFS = ['RECHERCHE', 'ACCEPTEE', 'ARRIVEE', 'EN_COURS'];
 
+/** Ce que l'API dit du paiement d'une course : celui que le webhook Stripe a enregistré, jamais celui du navigateur. */
+export interface PaiementTrajet {
+  obligatoire: boolean;
+  /** Statut de PaymentIntentDrive (SUCCEEDED, REFUND_REQUESTED, REFUNDED…), nul tant qu'aucun paiement n'existe. */
+  statut: string | null;
+}
+
+export type EtatPaiement =
+  /** Rien à montrer : le paiement en ligne n'est pas exigé et aucun n'a eu lieu. */
+  | 'aucun'
+  /** La course attend son paiement : le formulaire carte s'affiche. */
+  | 'a_payer'
+  /** Payée : la recherche de chauffeur suit son cours. */
+  | 'paye'
+  /** Payée mais la course n'a pas abouti : l'argent revient (ou va revenir). */
+  | 'remboursement'
+  | 'rembourse';
+
+const COURSES_NON_ABOUTIES = ['ANNULEE', 'SANS_CHAUFFEUR'];
+
+/** Quel bloc de paiement montrer, d'après le statut de la course et celui de son paiement. */
+export function etatPaiementTrajet(statutCourse: string, paiement: PaiementTrajet | null | undefined): EtatPaiement {
+  const statut = paiement?.statut ?? null;
+  if (statut === 'REFUNDED') return 'rembourse';
+  if (statut === 'REFUND_REQUESTED' || statut === 'REFUND_FAILED') return 'remboursement';
+  if (statut === 'SUCCEEDED') return COURSES_NON_ABOUTIES.includes(statutCourse) ? 'remboursement' : 'paye';
+  // Seule une course en recherche se paie (l'API refuse les autres) ; une annulée ou terminée non payée ne montre rien.
+  if (paiement?.obligatoire && statutCourse === 'RECHERCHE') return 'a_payer';
+  return 'aucun';
+}
+
 export interface AdresseTrajet {
   adresse: string;
   latitude: number;

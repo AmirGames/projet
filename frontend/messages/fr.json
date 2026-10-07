@@ -3960,7 +3960,15 @@
     },
     "pasEncoreNote": "Nouveau chauffeur",
     "noterChauffeur": "Comment s'est passé votre trajet avec {prenom} ?",
-    "votreNote": "Votre note :"
+    "votreNote": "Votre note :",
+    "paiement": {
+      "titre": "Payer votre trajet",
+      "aide": "Le paiement de {prix} se fait en ligne par carte ; la recherche d'un chauffeur commence dès qu'il est confirmé.",
+      "confirmation": "Paiement envoyé, confirmation en cours…",
+      "paye": "Trajet payé en ligne.",
+      "remboursement": "Ce trajet n'a pas eu lieu : votre paiement est en cours de remboursement.",
+      "rembourse": "Ce trajet n'a pas eu lieu : votre paiement vous a été remboursé."
+    }
   },
   "chauffeurCourses": {
     "titre": "Mes courses",
