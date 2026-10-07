@@ -1150,7 +1150,8 @@ reversements/SEPA, pages légales, cartes et publication mobile.
   les parcours sur le VPS.
 - **ZupDrive V2** : écrans de paiement (le serveur est prêt : voir
   [docs/zupdrive-api-admin.md](docs/zupdrive-api-admin.md)), règles de
-  facturation et remboursement d'une course payée puis annulée.
+  facturation et frais d'annulation éventuels (une course payée qui n'aboutit
+  pas est déjà remboursée en totalité, automatiquement).
   La vitrine ZupOne et les dossiers/courses ZupDrive V1 sont déjà écrits.
 - **Publier les applications** : icônes définitives, comptes des stores, et un
   service de cartes et d'itinéraires hébergé à la place des serveurs publics
