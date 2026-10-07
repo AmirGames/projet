@@ -9,6 +9,7 @@ import zupdriveAdminDashboardRouter from "./zupdrive-admin-dashboard.routes";
 import zupdriveDriverManagementRouter from "./zupdrive-driver-management.routes";
 import zupdriveNotificationsRouter from "./zupdrive-notifications.routes";
 import zupdriveSupportRouter from "./zupdrive-support.routes";
+import zupdriveWebhooksRouter from "./zupdrive-webhooks.routes";
 
 export interface MontageRouteur {
   prefixe: string;
@@ -40,6 +41,8 @@ export const MONTAGE_ZUPDRIVE: MontageRouteur[] = [
   { prefixe: "/api/zupdrive/notifications", routeur: zupdriveNotificationsRouter },
   // Tickets du compte connecté (/tickets) et administration (/admin/*, section « courses-drive »).
   { prefixe: "/api/zupdrive/support", routeur: zupdriveSupportRouter },
+  // Endpoints sortants et fournisseurs : superowner uniquement (aucune section d'équipe ne les couvre).
+  { prefixe: "/api/zupdrive/webhooks", routeur: zupdriveWebhooksRouter },
 ];
 
 export function monterZupDrive(app: Application): void {
