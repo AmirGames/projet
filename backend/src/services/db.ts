@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { encryptionExtension } from "../modules/privacy/encrypted-fields";
+import { encrypt } from "../modules/privacy/crypto";
 
 import { dureeDeLaRequete, origineActuelle } from "../modules/auth/origine";
 
@@ -60,10 +61,20 @@ function garderLOrigine(client: PrismaClientBrut) {
 
             const completer = (ligne: any) => {
               if (!ligne || typeof ligne !== "object") return ligne;
+              // Ces champs sont chiffrés au repos : ajoutés en clair ici, ils
+              // seraient écrits tels quels et leur relecture échouerait en
+              // production (« Migration requise »). Le chiffrement ignore ce
+              // qui l'est déjà.
               if (ligne.ipAddress === undefined && origine.ipAddress)
-                ligne.ipAddress = origine.ipAddress;
+                ligne.ipAddress = encrypt(
+                  JSON.stringify(origine.ipAddress),
+                  `${model}.ipAddress`,
+                );
               if (ligne.userAgent === undefined && origine.userAgent)
-                ligne.userAgent = origine.userAgent;
+                ligne.userAgent = encrypt(
+                  JSON.stringify(origine.userAgent),
+                  `${model}.userAgent`,
+                );
 
               // Seuls les événements de sécurité portent une durée.
               if (
