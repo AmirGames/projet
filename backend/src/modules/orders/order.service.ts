@@ -19,6 +19,16 @@ import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from ".
 import { getEnv } from "../../config/env";
 import { TRANSMISE, payeEnLigne } from "../../utils/commande-transmise";
 
+export interface LigneTarifee {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  /** Prix unitaire TTC, suppléments compris. */
+  price: number;
+  categoryId: string | null;
+  supplements: SupplementRetenu[];
+}
+
 export interface OrderData {
   storeId: string;
   customerName: string;
@@ -216,6 +226,79 @@ export class OrderService {
     return cree.id;
   }
 
+  /**
+   * Les lignes d'un panier avec leur prix recalculé par le serveur.
+   *
+   * Le prix arrivait du navigateur et n'était jamais recoupé : une pizza à
+   * 14 € pouvait être commandée à un centime, et le total avec. Le serveur
+   * le relit du catalogue — ou de la déclinaison choisie. La commande et
+   * l'aperçu d'un code promo passent par ici : même prix, même remise.
+   */
+  static async tarifierLesLignes(storeId: string, lignes: OrderData["items"]): Promise<LigneTarifee[]> {
+    const lignesTarifees: {
+      productId: string;
+      variantId?: string;
+      quantity: number;
+      /** Prix unitaire TTC, suppléments compris. */
+      price: number;
+      categoryId: string | null;
+      supplements: SupplementRetenu[];
+    }[] = [];
+
+    if (lignes.length > 0) {
+      const produits = await db.product.findMany({
+        where: { id: { in: lignes.map((l) => l.productId) } },
+        select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true, categoryId: true },
+      });
+
+      // Les prix saisis hors taxe sont facturés TTC, comme la carte les a
+      // montrés au client.
+      const tauxHT = await TaxService.tauxAAjouter(storeId, produits);
+
+      for (const ligne of lignes) {
+        const produit = produits.find((p) => p.id === ligne.productId);
+
+        if (!produit || produit.deletedAt || produit.storeId !== storeId) {
+          throw new ApiError(400, "Un article du panier n'existe plus", "PRODUCT_NOT_FOUND");
+        }
+
+        if (!produit.isAvailable) {
+          throw new ApiError(
+            400,
+            `« ${produit.name} » n'est plus disponible`,
+            "PRODUCT_UNAVAILABLE"
+          );
+        }
+
+        if (!Number.isInteger(ligne.quantity) || ligne.quantity < 1) {
+          throw new ApiError(400, "Une quantité doit être un entier positif", "INVALID_QUANTITY");
+        }
+
+        const taux = tauxHT.get(ligne.productId);
+        const base = await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId);
+        // Chaque supplément passe TTC séparément, comme la vitrine l'affiche.
+        const supplements = await SupplementService.tarifer(
+          ligne.productId,
+          produit.name,
+          ligne.supplements,
+          taux
+        );
+
+        lignesTarifees.push({
+          productId: ligne.productId,
+          variantId: ligne.variantId,
+          quantity: ligne.quantity,
+          categoryId: produit.categoryId ?? null,
+          price: Number(((taux ? TaxService.ttc(base, taux) : base) + supplements.montant).toFixed(2)),
+          supplements: supplements.retenus,
+        });
+      }
+    }
+
+    return lignesTarifees;
+  }
+
+
   static async create(data: OrderData, options: OptionsCreation = {}) {
     try {
       // Même achat rejoué : on rend la commande déjà créée, sans rien recréer.
@@ -307,72 +390,7 @@ export class OrderService {
         throw new ApiError(400, "Le panier est vide", "EMPTY_CART");
       }
 
-      /**
-       * Les lignes, avec leur prix recalculé.
-       *
-       * Le prix arrivait du navigateur et n'était jamais recoupé : une pizza à
-       * 14 € pouvait être commandée à un centime, et le total avec. Le serveur
-       * le relit du catalogue — ou de la déclinaison choisie.
-       */
-      const lignesTarifees: {
-        productId: string;
-        variantId?: string;
-        quantity: number;
-        /** Prix unitaire TTC, suppléments compris. */
-        price: number;
-        categoryId: string | null;
-        supplements: SupplementRetenu[];
-      }[] = [];
-
-      if (lignes.length > 0) {
-        const produits = await db.product.findMany({
-          where: { id: { in: lignes.map((l) => l.productId) } },
-          select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true, categoryId: true },
-        });
-
-        // Les prix saisis hors taxe sont facturés TTC, comme la carte les a
-        // montrés au client.
-        const tauxHT = await TaxService.tauxAAjouter(data.storeId, produits);
-
-        for (const ligne of lignes) {
-          const produit = produits.find((p) => p.id === ligne.productId);
-
-          if (!produit || produit.deletedAt || produit.storeId !== data.storeId) {
-            throw new ApiError(400, "Un article du panier n'existe plus", "PRODUCT_NOT_FOUND");
-          }
-
-          if (!produit.isAvailable) {
-            throw new ApiError(
-              400,
-              `« ${produit.name} » n'est plus disponible`,
-              "PRODUCT_UNAVAILABLE"
-            );
-          }
-
-          if (!Number.isInteger(ligne.quantity) || ligne.quantity < 1) {
-            throw new ApiError(400, "Une quantité doit être un entier positif", "INVALID_QUANTITY");
-          }
-
-          const taux = tauxHT.get(ligne.productId);
-          const base = await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId);
-          // Chaque supplément passe TTC séparément, comme la vitrine l'affiche.
-          const supplements = await SupplementService.tarifer(
-            ligne.productId,
-            produit.name,
-            ligne.supplements,
-            taux
-          );
-
-          lignesTarifees.push({
-            productId: ligne.productId,
-            variantId: ligne.variantId,
-            quantity: ligne.quantity,
-            categoryId: produit.categoryId ?? null,
-            price: Number(((taux ? TaxService.ttc(base, taux) : base) + supplements.montant).toFixed(2)),
-            supplements: supplements.retenus,
-          });
-        }
-      }
+      const lignesTarifees = await this.tarifierLesLignes(data.storeId, lignes);
 
       // Le total suit les lignes, et non ce que le navigateur annonce.
       const totalDesLignes = lignesTarifees.reduce(

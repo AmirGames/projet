@@ -427,8 +427,14 @@ export function TunnelCommande({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             code: saisi,
-            cartTotal: Number(sousTotal.toFixed(2)),
-            productIds: lignes.map((ligne) => ligne.productId),
+            // Le serveur tarife le panier lui-même : l'aperçu montre la remise
+            // que la commande appliquera, pas celle d'un total annoncé.
+            lignes: lignes.map((ligne) => ({
+              productId: ligne.productId,
+              quantity: ligne.quantity,
+              ...(ligne.variantId ? { variantId: ligne.variantId } : {}),
+              ...(ligne.supplements?.length ? { supplements: ligne.supplements.map((s) => s.id) } : {}),
+            })),
           }),
         }
       );

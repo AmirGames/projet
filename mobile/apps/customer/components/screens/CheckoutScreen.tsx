@@ -246,7 +246,16 @@ function CheckoutBody({
     try {
       const res = await apiFetch<any>(`/api/promotions/validate?storeId=${cart.storeId}`, null, {
         method: 'POST',
-        body: { code: typed, cartTotal: Number(subtotal.toFixed(2)), productIds: lines.map((l) => l.productId) },
+        body: {
+          code: typed,
+          // Le serveur tarife le panier : l'aperçu est la remise de la commande.
+          lignes: lines.map((l) => ({
+            productId: l.productId,
+            quantity: l.quantity,
+            ...(l.variantId ? { variantId: l.variantId } : {}),
+            ...(l.supplements?.length ? { supplements: l.supplements.map((s) => s.id) } : {}),
+          })),
+        },
       });
       const amount = Number(res?.discountAmount ?? res?.data?.discountAmount ?? 0);
       if (!(amount > 0)) {
