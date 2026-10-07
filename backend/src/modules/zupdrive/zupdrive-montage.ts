@@ -11,6 +11,7 @@ import zupdriveNotificationsRouter from "./zupdrive-notifications.routes";
 import zupdriveSupportRouter from "./zupdrive-support.routes";
 import zupdriveWebhooksRouter from "./zupdrive-webhooks.routes";
 import zupdriveComplianceRouter from "./zupdrive-compliance.routes";
+import zupdriveComplianceChecksRouter from "./zupdrive-compliance-checks.routes";
 
 export interface MontageRouteur {
   prefixe: string;
@@ -46,6 +47,8 @@ export const MONTAGE_ZUPDRIVE: MontageRouteur[] = [
   { prefixe: "/api/zupdrive/webhooks", routeur: zupdriveWebhooksRouter },
   // Contrôles et rapports de conformité (/admin/*, section « chauffeurs »).
   { prefixe: "/api/zupdrive/compliance", routeur: zupdriveComplianceRouter },
+  // Contrôles automatiques de conformité d'un chauffeur (/admin/compliance/…, section « chauffeurs »).
+  { prefixe: "/api/zupdrive/compliance-checks", routeur: zupdriveComplianceChecksRouter },
 ];
 
 export function monterZupDrive(app: Application): void {
