@@ -57,7 +57,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint app components lib modules/course-alerts/src",
+    "lint": "eslint app components lib modules/course-alerts/src --max-warnings 30",
     "typecheck": "tsc --noEmit",
     "test:alerts": "node --experimental-strip-types --test tests/course-alerts.test.cjs",
     "test:session": "node --experimental-strip-types --test tests/renouvellement.test.cjs"

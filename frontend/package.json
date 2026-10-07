@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "test:checkout": "jest app/checkout/__tests__/page.test.jsx --runInBand",
     "format": "prettier --write .",
     "verif:domaines": "node scripts/verif-domaines.mjs",

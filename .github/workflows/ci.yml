@@ -14,6 +14,10 @@
 # ici chacune sur sa base dédiée, migrée comme les autres. Les quatre
 # applications mobiles ont leur propre job : types, lint, et les tests Node
 # de l'application livreur.
+#
+# Le lint est un cliquet : `--max-warnings` (dans le package.json de chaque
+# application) vaut le nombre actuel d'avertissements. Un avertissement de plus
+# fait échouer le passage ; quand le nombre baisse, baissez la valeur avec lui.
 
 name: CI
 
