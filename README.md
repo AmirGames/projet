@@ -2,9 +2,12 @@
 
 ## 📋 Vue d'ensemble
 
-**Zupone** est un groupe technologique belge spécialisé dans les solutions digitales pour le secteur de la livraison et de la restauration. Nous développons des applications et services qui connectent restaurants, livreurs et clients pour créer un écosystème de livraison de food fluide et efficace.
+**Zupone** est un groupe technologique belge spécialisé dans les solutions digitales pour la mobilité urbaine et la livraison de repas. Nous développons deux écosystèmes distincts :
 
-Notre mission : **Simplifier la livraison de repas avec des outils innovants et centrés sur l'expérience utilisateur.**
+1. **Zupeat** : Livraison de repas (restaurants → clients via livreurs)
+2. **ZupDrive** : Transport de passagers (type Uber/Bolt)
+
+Notre mission : **Créer des solutions de mobilité et de livraison innovantes, sécurisées et centrées sur l'expérience utilisateur.**
 
 ---
 
@@ -13,8 +16,8 @@ Notre mission : **Simplifier la livraison de repas avec des outils innovants et 
 Le groupe Zupone est composé de trois produits interconnectés :
 
 ### 1️⃣ **Zupeat** - Plateforme de Livraison de Food
-### 2️⃣ **Zupeat Driver App** - Application Livreurs
-### 3️⃣ **ZupDrive** - Gestion Logistique (en préparation)
+### 2️⃣ **Zupeat Driver App** - Application pour Livreurs de Repas
+### 3️⃣ **ZupDrive** - Application de Transport de Passagers (VTC)
 
 ---
 
@@ -99,82 +102,110 @@ L'**application Zupeat Driver** est une application native Android conçue spéc
 
 ---
 
-## 🚗 ZupDrive - Solution Logistique Avancée (En Développement)
+## 🚗 ZupDrive - Application de Transport de Passagers (En Développement)
 
 ### Description
-**ZupDrive** est le projet émergent du groupe Zupone. Il s'agit d'une solution logistique avancée destinée à optimiser davantage les opérations de livraison à l'échelle du groupe.
+**ZupDrive** est le projet émergent du groupe Zupone. Il s'agit d'une **plateforme de transport urbain de passagers** (VTC - Véhicules de Transport avec Chauffeur), similaire à Uber ou Bolt. Les clients demandent un trajet, les chauffeurs acceptent et les conduisent d'un point A à un point B.
 
-### Vision
-ZupDrive vise à devenir la colonne vertébrale logistique de Zupone en fournissant :
+### Modèle de Fonctionnement
+- 👤 **Clients** : Téléchargent l'app, demandent un trajet (point A → point B)
+- 🚕 **Chauffeurs** : Reçoivent les demandes de trajet et acceptent les courses
+- 📍 **Géolocalisation** : Suivi en temps réel du trajet et localisation du chauffeur
+- 💰 **Paiements** : Tarification dynamique selon la distance, demande et trafic
+- ⭐ **Notation** : Système de notation client ↔ chauffeur pour la qualité
 
-#### Fonctionnalités Prévues
-- **Routage Intelligent** : Algorithmes d'optimisation d'itinéraires basés sur IA
-- **Gestion de Flotte** : Suivi et gestion centralisée de tous les livreurs
-- **Prédiction de Demande** : Machine Learning pour anticiper les pics de commandes
-- **Compensation Dynamique** : Ajustement automatique des tarifs livreurs selon la demande
-- **Intégration Multi-Plateforme** : Connexion avec Zupeat et autres services Zupone
-- **Analaytics Avancée** : Dashboard pour optimisation continue des performances
+### Fonctionnalités Principales
+- **App Client** : Demander un trajet, tracker le chauffeur, payer
+- **App Chauffeur** : Recevoir demandes de trajet, navigation intégrée, historique des courses
+- **Gestion Administrativa** : Vérification des documents (licence, assurance, BCE)
+- **Système de Paiement** : Paiement sécurisé, payout chauffeurs
+- **Support & Feedback** : Chat support, signalement de problèmes, notation
+- **Analytics** : Dashboard chauffeur (revenus, trajets) et admin (métriques)
+
+### Stack Technologique
+- **Backend** : API Node.js/Express, PostgreSQL, Redis pour temps réel
+- **Frontend Web** : Dashboard admin (Next.js)
+- **App Client** : iOS/Android (React Native ou Expo)
+- **App Chauffeur** : iOS/Android (React Native ou Expo)
+- **Localisation** : Google Maps API, tracking temps réel
+- **Paiements** : Stripe, gestion des payouts
 
 ### Objectifs Stratégiques
-🎯 Réduire les temps de livraison de 15-20%  
-🎯 Augmenter la satisfaction des livreurs  
-🎯 Optimiser les coûts opérationnels  
-🎯 Permettre l'expansion à de nouveaux marchés  
+🎯 Lancer MVP en Belgique (Namur, Bruxelles, Liège)  
+🎯 Atteindre 500+ chauffeurs actifs en Q1 2027  
+🎯 Générer stabilité opérationnelle et rentabilité  
+🎯 Expansion régionale en Wallonie/Flandre  
 
 ---
 
-## 🔗 Intégration Groupe
+## 🔗 Écosystème Zupone
+
+Deux écosystèmes **indépendants** mais appartenant au même groupe :
 
 ```
-┌─────────────────────────────────────────────────┐
-│              ÉCOSYSTÈME ZUPONE                   │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│   CLIENTS & RESTAURANTS                         │
-│         ↓                                        │
-│   ┌──────────────────────────────────┐          │
-│   │      ZUPEAT PLATEFORME          │          │
-│   │   (Web + Mobile Application)     │          │
-│   └──────────────────────────────────┘          │
-│         ↓           ↓                           │
-│   ┌───────────┐  ┌─────────────────┐           │
-│   │  ZUPEAT   │  │   ZUPDRIVE      │           │
-│   │  DRIVER   │  │  (Logistique)   │           │
-│   │   APP     │  │                 │           │
-│   └───────────┘  └─────────────────┘           │
-│         ↓           ↓                           │
-│      LIVREURS    OPTIMISATION                  │
-│                  & ANALYTICS                   │
-│                                                 │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│            GROUPE ZUPONE                         │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│  ┌─────────────────────────┐                    │
+│  │    ZUPEAT (Food)        │                    │
+│  ├─────────────────────────┤                    │
+│  │ Restaurants → Livreurs  │                    │
+│  │ → Clients de repas      │                    │
+│  │                         │                    │
+│  │ Platform + Driver App   │                    │
+│  └─────────────────────────┘                    │
+│                                                  │
+│  ┌─────────────────────────┐                    │
+│  │  ZUPDRIVE (Mobility)    │                    │
+│  ├─────────────────────────┤                    │
+│  │ Chauffeurs → Passagers  │                    │
+│  │ (Point A → Point B)     │                    │
+│  │                         │                    │
+│  │ Client App + Driver App │                    │
+│  └─────────────────────────┘                    │
+│                                                  │
+└──────────────────────────────────────────────────┘
 ```
 
-### Points de Connexion
-1. **Zupeat → Zupeat Driver App** : Les commandes créées sur Zupeat sont distribuées aux livreurs via l'app
-2. **Zupeat Driver App → ZupDrive** : Les données de localisation et performance alimentent l'optimisation logistique
-3. **ZupDrive → Zupeat** : Les recommandations de routage influencent l'assignation des commandes
+### Structure
+- **Zupeat** : Plateforme de livraison de repas (restaurants partenaires)
+  - App Client (web/mobile) : clients commandent repas
+  - App Livreur (Android) : livreurs livrent les commandes
+  
+- **ZupDrive** : App de transport urbain (type Uber/Bolt)
+  - App Client (mobile) : clients demandent trajets
+  - App Chauffeur (mobile) : chauffeurs prennent les trajets
+
+Les deux écosystèmes partagent la même infra backend/tech mais ont des modèles métier distincts.
 
 ---
 
 ## 🎯 Objectifs à Court Terme
 
+**Zupeat**
 - ✅ Lancer Zupeat Driver App en version stable
 - ✅ Atteindre 500+ livreurs actifs
 - ✅ Optimiser le temps moyen de livraison à <35 minutes
-- 🔄 Commencer développement ZupDrive phase 1
-- 🔄 Intégrer algorithmes de routage basiques
+- 🔄 Expansion à 3 nouvelles villes
+
+**ZupDrive**
+- 🔄 Lancer MVP (app client + chauffeur)
+- 🔄 Commencer recrutement chauffeurs (50+ minimum)
+- 🔄 Vérification documents chauffeurs (licence, BCE)
 
 ## 🚀 Roadmap Long Terme
 
-**Q4 2026**
-- Expansion à 3 nouvelles villes
-- Launch ZupDrive MVP
-- Intégration IA pour prédiction de demande
+**Q4 2026 - Q1 2027**
+- ZupDrive : MVP lancé et stable
+- 500+ chauffeurs actifs ZupDrive
+- Expansion Zupeat à 5 villes
 
 **2027**
-- Plateforme multi-villes consolidée
-- Expansion régionale (Wallonie)
-- Partenariats avec chaînes de restaurants
+- Consolidation multi-villes (Zupeat + ZupDrive)
+- Expansion régionale (Wallonie complète)
+- Partenariats stratégiques restaurants/hôtels
+- Rentabilité opérationnelle des deux services
 
 ---
 
