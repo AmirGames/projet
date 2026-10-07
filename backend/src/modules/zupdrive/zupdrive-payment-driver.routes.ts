@@ -8,6 +8,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ZupDrivePaymentDriverService } from "./zupdrive-payment-driver.service";
+import { ZupDrivePaymentService } from "./zupdrive-payment.service";
+import { ApiError } from "../../middleware/api-error";
 import { adminAuth, adminAuthSection } from "./zupdrive-garde";
 import { limiterCadence } from "../../middleware/throttle";
 import { authMiddleware } from "../auth/auth.middleware";
@@ -380,6 +382,33 @@ router.get(
           courses: coursesStats,
         },
       });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/zupdrive/finance/admin/courses/:courseId/refund
+ * Rembourser (reprendre) le paiement d'une course annulée ou sans chauffeur. Le balayage le fait déjà
+ * automatiquement ; cette route sert à reprendre un remboursement en échec sans attendre.
+ * Superowner, journalisé. 404 sans paiement ; 409 si la course est terminée ou déjà versée au chauffeur.
+ */
+router.post(
+  "/admin/courses/:courseId/refund",
+  ...adminAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = idSchema.parse(req.params.courseId);
+      const { motif } = z.object({ motif: z.string().min(5).max(500) }).parse(req.body);
+
+      const etat = await ZupDrivePaymentService.rembourserCourse(courseId, motif);
+      if (etat === null) {
+        throw new ApiError(404, "Aucun paiement à rembourser pour cette course", "NOTHING_TO_REFUND");
+      }
+      await journaliser(req, "ZUPDRIVE_REFUND_COURSE", courseId, { motif, etat });
+
+      return res.json({ success: true, status: etat });
     } catch (error) {
       return next(error);
     }

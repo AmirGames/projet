@@ -33,7 +33,7 @@ import { paymentService } from "../payment.service";
 let numero = 0;
 /** Un événement Stripe signé comme Stripe le ferait, avec son corps brut. */
 function evenement(type: string, objet: Record<string, unknown>) {
-  const corps = JSON.stringify({ id: `evt_${++numero}`, object: "event", type, data: { object: { object: "payment_intent", ...objet } } });
+  const corps = JSON.stringify({ id: `evt_${++numero}`, object: "event", type, data: { object: { object: type.split(".")[0], ...objet } } });
   const signature = vraiStripe.webhooks.generateTestHeaderString({ payload: corps, secret: SECRET });
   return { corps, signature };
 }
@@ -109,6 +109,37 @@ describe("webhook Stripe : les paiements de courses ZupDrive", () => {
     db.paymentIntentDrive.findUnique.mockResolvedValue(null);
     const { corps, signature } = evenement("payment_intent.succeeded", intention());
     await expect(paymentService.handleWebhook(corps, signature)).resolves.toBeDefined();
+    expect(db.paymentIntentDrive.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("webhook Stripe : les remboursements d'une course ZupDrive", () => {
+  it("charge.refunded d'une intention de course : le paiement ZupDrive suit Stripe, la commande ZupEat n'est pas touchée", async () => {
+    db.paymentIntentDrive.findUnique.mockResolvedValue(paiementDrive({ status: "REFUND_REQUESTED" }));
+    stripe.refunds.list.mockResolvedValue({ data: [{ id: "re_1", status: "succeeded", amount: 1500 }] });
+    const { corps, signature } = evenement("charge.refunded", { id: "ch_1", payment_intent: "pi_drive" });
+    await paymentService.handleWebhook(corps, signature);
+    expect(db.paymentIntentDrive.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "REFUNDED" } }));
+    expect(db.order.update).not.toHaveBeenCalled();
+    expect(db.payment.update).not.toHaveBeenCalled();
+    expect(stripe.charges.retrieve).not.toHaveBeenCalled();
+  });
+
+  it("refund.updated « failed » : REFUND_FAILED, repris ensuite par le balayage", async () => {
+    db.paymentIntentDrive.findUnique.mockResolvedValue(paiementDrive({ status: "REFUND_REQUESTED", stripeId: "pi_drive" }));
+    stripe.refunds.list.mockResolvedValue({ data: [{ id: "re_1", status: "failed", amount: 1500 }] });
+    const { corps, signature } = evenement("refund.updated", { id: "re_1", status: "failed", payment_intent: "pi_drive" });
+    await paymentService.handleWebhook(corps, signature);
+    expect(db.paymentIntentDrive.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "REFUND_FAILED" } }));
+  });
+
+  it("un remboursement d'une commande ZupEat suit son chemin habituel", async () => {
+    db.paymentIntentDrive.findUnique.mockResolvedValue(null);
+    stripe.charges.retrieve.mockResolvedValue({ id: "ch_2", payment_intent: "pi_commande", amount: 1000 });
+    db.payment.findFirst.mockResolvedValue(null);
+    const { corps, signature } = evenement("charge.refunded", { id: "ch_2", payment_intent: "pi_commande" });
+    await paymentService.handleWebhook(corps, signature);
+    expect(stripe.charges.retrieve).toHaveBeenCalledWith("ch_2");
     expect(db.paymentIntentDrive.updateMany).not.toHaveBeenCalled();
   });
 });

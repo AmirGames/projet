@@ -184,6 +184,7 @@ Superowner (journalisés) :
 
 | Méthode | Route | Journal |
 |---|---|---|
+| POST | `/admin/courses/:courseId/refund` : voir « Remboursement » ci-dessus | `ZUPDRIVE_REFUND_COURSE` |
 | POST | `/admin/payouts/:payoutId/process` : rattache le versement `PENDING` au lot de sa semaine ; 404 / 400 / 409 (déjà rattaché, lot soumis) | `ZUPDRIVE_PROCESS_PAYOUT` |
 | POST | `/admin/settings/commission` : `{ commissionPercentage }` entier 0-100 | `ZUPDRIVE_UPDATE_COMMISSION` (`avant`, `apres`) |
 
@@ -218,7 +219,18 @@ Une intention inconnue de la base est ignorée sans erreur. Le paiement peut êt
 
 **Versement du chauffeur** (`creerVersementSiDu`) : créé quand le paiement est `SUCCEEDED` **et** la course `TERMINEE` avec un chauffeur, quel que soit l'ordre d'arrivée (webhook après la fin de course, ou fin de course — `CourseDriveService.avancer(terminer)` — après un paiement d'avance). Un seul versement par paiement (`paymentId` unique, `upsert`), montant = revenu chauffeur figé sur le paiement, semaine UTC des lots. `preparePayout` (« demander mes versements ») rattrape les cas où l'un des deux appels a échoué, et ne prend que les courses terminées.
 
-**Non couvert** : le remboursement d'un passager qui a payé une course ensuite annulée ou restée sans chauffeur (`ANNULEE`, `SANS_CHAUFFEUR`). Aucun versement n'est créé pour ces courses, mais l'argent n'est pas rendu automatiquement : à décider (remboursement Stripe automatique ou manuel, et dans quel délai).
+**Remboursement** : une course payée qui n'aboutit pas (`ANNULEE` par le passager ou le chauffeur, `SANS_CHAUFFEUR`) rend la totalité au passager. Aucun frais d'annulation n'existe aujourd'hui ; s'il en existe un jour, ce sera une règle à part. `ZupDrivePaymentService.rembourserCourse` est appelé à l'annulation et à la fin de la recherche (best-effort : un échec ne défait pas l'annulation), à la réception d'un paiement arrivé après l'annulation, et par le balayage des courses (toutes les 5 s, 20 paiements au plus) qui reprend ce qui n'est pas parti. Il est rejouable : les remboursements existants sont relus chez Stripe, un remboursement réussi ou en attente est repris, une nouvelle demande n'a lieu qu'après un échec (autre clé d'idempotence). L'état en base suit ce que Stripe a réellement rendu (`charge.refunded`, `refund.updated`, `refund.failed` aiguillés vers ZupDrive) :
+
+| Statut `PaymentIntentDrive` | Sens |
+|---|---|
+| `SUCCEEDED` | encaissé |
+| `REFUND_REQUESTED` | remboursement demandé, pas encore rendu |
+| `REFUNDED` | tout le montant est rendu |
+| `REFUND_FAILED` | Stripe n'a pas pu rembourser ; repris par le balayage ou par l'équipe |
+
+Aucun de ces statuts n'est remplacé par un événement en retard (échec, annulation, second `succeeded`). Refus (`409 COURSE_NOT_REFUNDABLE`) pour une course terminée ou dont le chauffeur a déjà un versement : cela demande une opération corrective, pas un remboursement. Un remboursement partiel fait depuis le tableau de bord Stripe ne change pas le statut.
+
+Reprise manuelle (superowner, journalisée `ZUPDRIVE_REFUND_COURSE`) : `POST /api/zupdrive/finance/admin/courses/:courseId/refund` `{ motif }` (5-500) → `{ success, status }` ; `404 NOTHING_TO_REFUND` si le paiement n'existe pas, n'a jamais été réglé ou est déjà remboursé ; `502 REFUND_FAILED` si Stripe échoue encore.
 
 ## `monitoring` — `/api/zupdrive`
 

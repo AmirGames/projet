@@ -28,6 +28,18 @@ import { debutSemaineVersement, finSemaineVersement } from "./semaine-versement"
  * Surge pricing s'applique à TOUT: passager paie + cher, chauffeur gagne + cher
  */
 
+/**
+ * Statuts de PaymentIntentDrive une fois l'argent encaissé : un événement Stripe en retard
+ * (échec, annulation, second « succeeded ») ne les remplace jamais.
+ *   SUCCEEDED → REFUND_REQUESTED (remboursement demandé, pas encore rendu) → REFUNDED
+ *   REFUND_FAILED : Stripe n'a pas pu rembourser ; reprise par le balayage ou par l'équipe.
+ */
+const STATUTS_ENCAISSES = ["SUCCEEDED", "REFUND_REQUESTED", "REFUNDED", "REFUND_FAILED"];
+/** Statuts d'où un remboursement peut encore partir. */
+const STATUTS_A_REMBOURSER = ["SUCCEEDED", "REFUND_REQUESTED", "REFUND_FAILED"];
+/** Une course qui n'aboutit pas : le passager qui a payé est remboursé en totalité (aucun frais d'annulation n'existe). */
+const COURSES_NON_ABOUTIES = ["ANNULEE", "SANS_CHAUFFEUR"];
+
 export class ZupDrivePaymentService {
   /**
    * Crée un PaymentIntent Stripe et enregistre la transaction ZupDrive.
@@ -131,7 +143,10 @@ export class ZupDrivePaymentService {
 
   /** Le paiement ZupDrive enregistré pour cette intention, en vérifiant que la métadonnée dit la même chose que la base. */
   private static async paiementDeLIntention(intention: Stripe.PaymentIntent) {
-    const payment = await db.paymentIntentDrive.findUnique({ where: { stripeId: intention.id } });
+    const payment = await db.paymentIntentDrive.findUnique({
+      where: { stripeId: intention.id },
+      include: { course: { select: { statut: true } } },
+    });
     if (!payment) {
       logger.warn("ZupDrive payment intent not found in DB", { stripeId: intention.id });
       return null;
@@ -170,9 +185,17 @@ export class ZupDrivePaymentService {
 
     // Un second événement ne réécrit pas la date de confirmation.
     await db.paymentIntentDrive.updateMany({
-      where: { id: payment.id, status: { not: "SUCCEEDED" } },
+      where: { id: payment.id, status: { notIn: STATUTS_ENCAISSES } },
       data: { status: "SUCCEEDED", confirmedAt: new Date() },
     });
+
+    // Payé après l'annulation de la course (ou après la fin de la recherche) : l'argent repart aussitôt.
+    if (COURSES_NON_ABOUTIES.includes(payment.course.statut)) {
+      await this.rembourserCourse(payment.courseId, "Paiement reçu après l'annulation de la course").catch((err) =>
+        logger.warn("ZupDrive refund after late payment failed", { courseId: payment.courseId, err })
+      );
+      return null;
+    }
 
     return this.creerVersementSiDu(payment.id);
   }
@@ -182,7 +205,7 @@ export class ZupDrivePaymentService {
     const payment = await this.paiementDeLIntention(intention);
     if (!payment) return;
     await db.paymentIntentDrive.updateMany({
-      where: { id: payment.id, status: { not: "SUCCEEDED" } },
+      where: { id: payment.id, status: { notIn: STATUTS_ENCAISSES } },
       data: { status: intention.status.toUpperCase() },
     });
   }
@@ -192,9 +215,112 @@ export class ZupDrivePaymentService {
     const payment = await this.paiementDeLIntention(intention);
     if (!payment) return;
     await db.paymentIntentDrive.updateMany({
-      where: { id: payment.id, status: { not: "SUCCEEDED" } },
+      where: { id: payment.id, status: { notIn: STATUTS_ENCAISSES } },
       data: { status: "CANCELED", cancellationReason: intention.cancellation_reason ?? null },
     });
+  }
+
+  /**
+   * Rembourse en totalité le passager d'une course payée qui n'a pas abouti (annulée, sans chauffeur).
+   *
+   * Rejouable : les remboursements existants sont relus chez Stripe et un remboursement déjà demandé ou
+   * réussi est repris, pas doublé ; une nouvelle demande n'a lieu qu'après un échec, avec une autre clé
+   * d'idempotence. L'état en base suit ce que Stripe a réellement rendu (synchroniserRemboursement) ;
+   * le webhook (charge.refunded, refund.updated) le confirme. Refuse (409) une course terminée ou dont le
+   * chauffeur a déjà un versement : la corriger demande une opération corrective, pas un remboursement.
+   * Renvoie null s'il n'y a rien à rendre (course non payée, ou déjà remboursée).
+   */
+  static async rembourserCourse(courseId: string, raison: string) {
+    const payment = await db.paymentIntentDrive.findUnique({
+      where: { courseId },
+      include: { course: { select: { statut: true } }, payout: { select: { id: true } } },
+    });
+    if (!payment || !STATUTS_A_REMBOURSER.includes(payment.status)) return null;
+
+    if (!COURSES_NON_ABOUTIES.includes(payment.course.statut) || payment.payout) {
+      throw new ApiError(409, "Cette course n'est pas remboursable", "COURSE_NOT_REFUNDABLE");
+    }
+
+    const existants = (await stripe.refunds.list({ payment_intent: payment.stripeId, limit: 10 })).data;
+    const actif = existants.find((r: Stripe.Refund) => ["pending", "requires_action", "succeeded"].includes(r.status ?? ""));
+    if (!actif) {
+      await stripe.refunds.create(
+        {
+          payment_intent: payment.stripeId,
+          reason: "requested_by_customer",
+          metadata: { courseId, raison: raison.slice(0, 500) },
+        },
+        { idempotencyKey: `zupdrive-refund-${payment.id}-${existants.length}` }
+      );
+    }
+
+    const etat = await this.synchroniserRemboursement(payment.id);
+    if (etat === "REFUND_FAILED") {
+      throw new ApiError(502, "Stripe n'a pas effectué le remboursement.", "REFUND_FAILED");
+    }
+    logger.info("ZupDrive ride refunded", { courseId, paymentId: payment.id, etat });
+    return etat;
+  }
+
+  /**
+   * Ramène PaymentIntentDrive à ce que Stripe a réellement rendu : REFUNDED quand tout le montant est
+   * rendu, REFUND_REQUESTED tant qu'un remboursement est en attente, REFUND_FAILED après un échec sans
+   * autre demande en cours. Un remboursement partiel fait depuis le tableau de bord ne change rien.
+   */
+  static async synchroniserRemboursement(paymentId: string): Promise<string | null> {
+    const payment = await db.paymentIntentDrive.findUnique({ where: { id: paymentId } });
+    if (!payment) return null;
+
+    const remboursements = (await stripe.refunds.list({ payment_intent: payment.stripeId, limit: 100 })).data;
+    const rendu = remboursements
+      .filter((r: Stripe.Refund) => r.status === "succeeded")
+      .reduce((somme: number, r: Stripe.Refund) => somme + r.amount, 0);
+    const enAttente = remboursements.some((r: Stripe.Refund) => ["pending", "requires_action"].includes(r.status ?? ""));
+    const echoue = remboursements.some((r: Stripe.Refund) => ["failed", "canceled"].includes(r.status ?? ""));
+
+    let status: string | null = null;
+    if (rendu >= payment.amountCentimes) status = "REFUNDED";
+    else if (enAttente) status = "REFUND_REQUESTED";
+    else if (echoue) status = "REFUND_FAILED";
+    if (!status) return payment.status;
+
+    await db.paymentIntentDrive.updateMany({
+      where: { id: payment.id, status: { in: STATUTS_A_REMBOURSER } },
+      data: { status },
+    });
+    return status;
+  }
+
+  /**
+   * Webhook Stripe : un remboursement a changé d'état (charge.refunded, refund.updated, refund.failed).
+   * Renvoie false si l'intention n'est pas celle d'une course ZupDrive (le webhook ZupEat s'en charge).
+   */
+  static async surRemboursement(paymentIntentId: string): Promise<boolean> {
+    const payment = await db.paymentIntentDrive.findUnique({ where: { stripeId: paymentIntentId }, select: { id: true } });
+    if (!payment) return false;
+    await this.synchroniserRemboursement(payment.id);
+    return true;
+  }
+
+  /**
+   * Filet de sécurité du balayage : les courses payées qui n'ont pas abouti et dont le remboursement n'est
+   * pas parti (arrêt entre l'annulation et l'appel à Stripe, échec de Stripe, paiement arrivé après coup).
+   */
+  static async rembourserLesCoursesNonAboutiesPayees(limite = 20): Promise<number> {
+    const paiements = await db.paymentIntentDrive.findMany({
+      where: { status: { in: ["SUCCEEDED", "REFUND_FAILED"] }, course: { statut: { in: COURSES_NON_ABOUTIES } }, payout: null },
+      select: { courseId: true },
+      take: limite,
+    });
+    let rembourses = 0;
+    for (const { courseId } of paiements) {
+      try {
+        if (await this.rembourserCourse(courseId, "Course non aboutie")) rembourses++;
+      } catch (err) {
+        logger.warn("ZupDrive refund retry failed", { courseId, err });
+      }
+    }
+    return rembourses;
   }
 
   /**

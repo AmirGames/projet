@@ -25,7 +25,7 @@ export class CourseDriveJobs {
       enCours = true;
       try {
         const bilan = await Surveillance.executerTache("courses-drive", () => CourseDriveService.balayer());
-        if (bilan.expirees > 0 || bilan.proposees > 0) logger.info("Courses ZupDrive balayées", bilan);
+        if (bilan.expirees > 0 || bilan.proposees > 0 || bilan.remboursees > 0) logger.info("Courses ZupDrive balayées", bilan);
       } catch (err) {
         logger.error("Attribution des courses ZupDrive impossible", {
           error: err instanceof Error ? err.message : err,

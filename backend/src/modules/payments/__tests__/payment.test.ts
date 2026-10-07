@@ -12,6 +12,8 @@ const db: any = {
   order: { findUnique: fn(), findMany: fn(), update: fn(), updateMany: fn() },
   payment: { findFirst: fn(), upsert: fn(), update: fn(), updateMany: fn() },
   stripeEvent: { create: fn(), findUnique: fn(), update: fn() },
+  // Les remboursements sont d'abord cherchés côté ZupDrive : ici l'intention n'en est pas une.
+  paymentIntentDrive: { findUnique: fn() },
 };
 
 const stripe: any = {

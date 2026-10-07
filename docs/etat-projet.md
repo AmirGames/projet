@@ -104,8 +104,8 @@ confirmations ultérieures et ce document donnent le suivi actuel.
   pas ce mode d'entraînement. Un paiement Stripe TEST ne constitue pas non plus
   ce mode métier.
 - **ZupDrive V2** : écrans de paiement (frontend et mobiles), règles de
-  facturation (émetteur de la facture, TVA), remboursement d'une course payée
-  puis annulée ou sans chauffeur, et routeurs non montés (`platform-config`,
+  facturation (émetteur de la facture, TVA), frais d'annulation éventuels
+  (le remboursement d'une course non aboutie est total et automatique), et routeurs non montés (`platform-config`,
   `chauffeur-onboarding`, `document-validation`) à supprimer ou rebrancher.
 - **Notifications fiables après interruption** : compléter les effets après
   paiement par une outbox transactionnelle ou un mécanisme persistant.

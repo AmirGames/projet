@@ -18,11 +18,13 @@ const service: any = {
   processPayout: jest.fn(async () => ({ id: "po1", chauffeurId: "c1", amount: 1200, batchId: "lot-1" })),
 };
 const journaliser: any = jest.fn(async () => undefined);
+const paiementService: any = { rembourserCourse: jest.fn(async () => "REFUNDED") };
 const sections: Array<string | undefined> = [];
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 jest.mock("../../superowner/shared", () => ({ journaliser }));
 jest.mock("../zupdrive-payment-driver.service", () => ({ ZupDrivePaymentDriverService: service }));
+jest.mock("../zupdrive-payment.service", () => ({ ZupDrivePaymentService: paiementService }));
 jest.mock("../../auth/auth.middleware", () => ({
   authMiddleware: (req: any, res: any, next: any) => {
     if (!req.header("x-user")) return res.status(401).json({ code: "UNAUTHORIZED" });
@@ -115,5 +117,24 @@ describe("administration financière : droits et journal", () => {
   it("une commission hors de 0-100 est refusée", async () => {
     expect((await request(app).post("/api/zupdrive/finance/admin/settings/commission").set(owner).send({ commissionPercentage: 120 })).status).toBe(400);
     expect(db.platformSettingsDrive.upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("remboursement manuel d'une course", () => {
+  it("réservé au superowner, journalisé avec le motif et l'état", async () => {
+    expect((await request(app).post("/api/zupdrive/finance/admin/courses/c1/refund").set(equipe).send({ motif: "Reprise après échec" })).status).toBe(403);
+    expect(paiementService.rembourserCourse).not.toHaveBeenCalled();
+
+    const res = await request(app).post("/api/zupdrive/finance/admin/courses/c1/refund").set(owner).send({ motif: "Reprise après échec" });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("REFUNDED");
+    expect(journaliser).toHaveBeenCalledWith(expect.anything(), "ZUPDRIVE_REFUND_COURSE", "c1", { motif: "Reprise après échec", etat: "REFUNDED" });
+  });
+
+  it("motif obligatoire ; rien à rembourser : 404", async () => {
+    expect((await request(app).post("/api/zupdrive/finance/admin/courses/c1/refund").set(owner).send({})).status).toBe(400);
+    paiementService.rembourserCourse.mockResolvedValueOnce(null);
+    expect((await request(app).post("/api/zupdrive/finance/admin/courses/c1/refund").set(owner).send({ motif: "Pas de paiement" })).status).toBe(404);
+    expect(journaliser).not.toHaveBeenCalled();
   });
 });
