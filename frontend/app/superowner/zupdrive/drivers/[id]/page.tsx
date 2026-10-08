@@ -2,11 +2,19 @@
 
 import { useParams } from 'next/navigation';
 import { useState, useCallback } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { AlertCircle, Loader2, BarChart3, Ban, RotateCcw } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+type Onglet = 'stats' | 'documents' | 'infractions';
+const ONGLETS: Onglet[] = ['stats', 'documents', 'infractions'];
+
 export default function DriverDetailPage() {
+  const t = useTranslations('superownerZupdriveDriverDetail');
+  const locale = useLocale() === 'en' ? 'en-US' : 'fr-FR';
+  const libelle = (prefixe: 'status' | 'severity', valeur: string) =>
+    t.has(`${prefixe}_${valeur}`) ? t(`${prefixe}_${valeur}`) : valeur;
   const params = useParams();
   const driverId = params.id as string;
 
@@ -14,7 +22,7 @@ export default function DriverDetailPage() {
   const [infractions, setInfractions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'stats' | 'documents' | 'infractions'>('stats');
+  const [activeTab, setActiveTab] = useState<Onglet>('stats');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -28,7 +36,7 @@ export default function DriverDetailPage() {
         }),
       ]);
 
-      if (!statsRes.ok || !infsRes.ok) throw new Error('Erreur');
+      if (!statsRes.ok || !infsRes.ok) throw new Error(t('error'));
 
       const statsData = await statsRes.json();
       const infsData = await infsRes.json();
@@ -37,14 +45,14 @@ export default function DriverDetailPage() {
       setInfractions(infsData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur');
+      setError(err instanceof Error ? err.message : t('error'));
     } finally {
       setLoading(false);
     }
-  }, [driverId]);
+  }, [driverId, t]);
 
   const handleSuspend = async () => {
-    const reason = prompt('Raison de la suspension:');
+    const reason = prompt(t('suspendReason'));
     if (!reason) return;
 
     try {
@@ -57,16 +65,16 @@ export default function DriverDetailPage() {
         body: JSON.stringify({ reason }),
       });
 
-      if (!response.ok) throw new Error('Erreur');
-      alert('Chauffeur suspendu');
+      if (!response.ok) throw new Error(t('error'));
+      alert(t('suspended'));
       await loadData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erreur');
+      alert(err instanceof Error ? err.message : t('error'));
     }
   };
 
   const handleReactivate = async () => {
-    if (!confirm('Réactiver ce chauffeur?')) return;
+    if (!confirm(t('reactivateConfirm'))) return;
 
     try {
       const response = await fetch(`${API_URL}/api/zupdrive/admin/drivers/${driverId}/reactivate`, {
@@ -76,11 +84,11 @@ export default function DriverDetailPage() {
         },
       });
 
-      if (!response.ok) throw new Error('Erreur');
-      alert('Chauffeur réactivé');
+      if (!response.ok) throw new Error(t('error'));
+      alert(t('reactivated'));
       await loadData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erreur');
+      alert(err instanceof Error ? err.message : t('error'));
     }
   };
 
@@ -88,12 +96,12 @@ export default function DriverDetailPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Détails du Chauffeur</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-gray-600 mt-1">{driverId}</p>
         </div>
         <button onClick={loadData} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
           {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : <BarChart3 className="w-4 h-4 inline" />}
-          Actualiser
+          {t('refresh')}
         </button>
       </div>
 
@@ -113,19 +121,19 @@ export default function DriverDetailPage() {
           {/* Infos principales */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg border p-4">
-              <p className="text-sm text-gray-600">Courses</p>
+              <p className="text-sm text-gray-600">{t('courses')}</p>
               <p className="text-2xl font-bold mt-1">{stats.stats.totalCourses}</p>
             </div>
             <div className="bg-white rounded-lg border p-4">
-              <p className="text-sm text-gray-600">Taux complé</p>
+              <p className="text-sm text-gray-600">{t('completionRate')}</p>
               <p className="text-2xl font-bold mt-1">{stats.stats.completionRate.toFixed(1)}%</p>
             </div>
             <div className="bg-white rounded-lg border p-4">
-              <p className="text-sm text-gray-600">Revenus</p>
+              <p className="text-sm text-gray-600">{t('earnings')}</p>
               <p className="text-2xl font-bold mt-1">€{(stats.stats.totalEarnings / 100).toFixed(0)}</p>
             </div>
             <div className="bg-white rounded-lg border p-4">
-              <p className="text-sm text-gray-600">Status</p>
+              <p className="text-sm text-gray-600">{t('status')}</p>
               <p
                 className={`text-2xl font-bold mt-1 ${
                   stats.status === 'VALIDE'
@@ -135,24 +143,24 @@ export default function DriverDetailPage() {
                     : 'text-yellow-600'
                 }`}
               >
-                {stats.status}
+                {libelle('status', stats.status)}
               </p>
             </div>
           </div>
 
           {/* Tabs */}
           <div className="flex border-b border-gray-200">
-            {['stats', 'documents', 'infractions'].map((tab) => (
+            {ONGLETS.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as any)}
+                onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 font-medium ${
                   activeTab === tab
                     ? 'border-b-2 border-blue-600 text-blue-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                {tab === 'stats' ? 'Statistiques' : tab === 'documents' ? 'Documents' : 'Infractions'}
+                {tab === 'stats' ? t('tabStats') : tab === 'documents' ? t('tabDocuments') : t('tabInfractions')}
               </button>
             ))}
           </div>
@@ -161,15 +169,15 @@ export default function DriverDetailPage() {
           {activeTab === 'stats' && (
             <div className="bg-white rounded-lg border p-4 space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Courses annulées</span>
+                <span className="text-gray-600">{t('cancelledCourses')}</span>
                 <span className="font-medium">{stats.stats.cancelledCourses}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Prix moyen</span>
+                <span className="text-gray-600">{t('avgPrice')}</span>
                 <span className="font-medium">€{(stats.stats.avgPrice / 100).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Infractions graves</span>
+                <span className="text-gray-600">{t('seriousInfractions')}</span>
                 <span className={`font-medium ${stats.stats.highSeverityInfractions > 0 ? 'text-red-600' : 'text-green-600'}`}>
                   {stats.stats.highSeverityInfractions}
                 </span>
@@ -183,7 +191,7 @@ export default function DriverDetailPage() {
                     className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
                   >
                     <Ban className="w-4 h-4" />
-                    Suspendre
+                    {t('suspend')}
                   </button>
                 ) : stats.status === 'SUSPENDU' ? (
                   <button
@@ -191,7 +199,7 @@ export default function DriverDetailPage() {
                     className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    Réactiver
+                    {t('reactivate')}
                   </button>
                 ) : null}
               </div>
@@ -202,7 +210,7 @@ export default function DriverDetailPage() {
             <div className="space-y-3">
               {infractions.length === 0 ? (
                 <div className="bg-white rounded-lg border p-8 text-center">
-                  <p className="text-gray-500">Aucune infraction</p>
+                  <p className="text-gray-500">{t('noInfraction')}</p>
                 </div>
               ) : (
                 infractions.map((inf) => (
@@ -218,12 +226,12 @@ export default function DriverDetailPage() {
                             : 'bg-green-100 text-green-700'
                         }`}
                       >
-                        {inf.severity}
+                        {libelle('severity', inf.severity)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{inf.description}</p>
                     <p className="text-xs text-gray-400">
-                      {new Date(inf.createdAt).toLocaleDateString('fr-FR')}
+                      {new Date(inf.createdAt).toLocaleDateString(locale)}
                     </p>
                   </div>
                 ))

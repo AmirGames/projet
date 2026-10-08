@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Shield, AlertCircle, Ban, RotateCcw, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,6 +28,7 @@ interface Driver {
 }
 
 export default function DriverManagementPage() {
+  const t = useTranslations('superownerZupdriveDriverManagement');
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,16 +53,16 @@ export default function DriverManagementPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
-      if (!response.ok) throw new Error('Erreur lors du chargement des chauffeurs');
+      if (!response.ok) throw new Error(t('loadError'));
       const { drivers: data } = await response.json();
       setDrivers(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setError(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, minRating, limit, offset]);
+  }, [statusFilter, minRating, limit, offset, t]);
 
   // Charger les drivers au montage
   useState(() => {
@@ -70,7 +72,7 @@ export default function DriverManagementPage() {
   // Suspendre un chauffeur
   const handleSuspend = async (driverId: string, reason: string) => {
     if (!reason.trim()) {
-      alert('Raison requise');
+      alert(t('reasonRequired'));
       return;
     }
 
@@ -84,17 +86,17 @@ export default function DriverManagementPage() {
         body: JSON.stringify({ reason }),
       });
 
-      if (!response.ok) throw new Error('Erreur lors de la suspension');
+      if (!response.ok) throw new Error(t('suspendError'));
       await loadDrivers();
-      alert('Chauffeur suspendu');
+      alert(t('suspended'));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erreur inconnue');
+      alert(err instanceof Error ? err.message : t('unknownError'));
     }
   };
 
   // Réactiver un chauffeur
   const handleReactivate = async (driverId: string) => {
-    if (!confirm('Réactiver ce chauffeur ?')) return;
+    if (!confirm(t('reactivateConfirm'))) return;
 
     try {
       const response = await fetch(`${API_URL}/api/zupdrive/admin/drivers/${driverId}/reactivate`, {
@@ -104,11 +106,11 @@ export default function DriverManagementPage() {
         },
       });
 
-      if (!response.ok) throw new Error('Erreur lors de la réactivation');
+      if (!response.ok) throw new Error(t('reactivateError'));
       await loadDrivers();
-      alert('Chauffeur réactivé');
+      alert(t('reactivated'));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erreur inconnue');
+      alert(err instanceof Error ? err.message : t('unknownError'));
     }
   };
 
@@ -125,32 +127,22 @@ export default function DriverManagementPage() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'VALIDE':
-        return 'Valide';
-      case 'SUSPENDU':
-        return 'Suspendu';
-      case 'EN_ATTENTE_VALIDATION':
-        return 'En attente';
-      default:
-        return status;
-    }
-  };
+  // Un statut inconnu de l'interface s'affiche tel que le serveur l'envoie.
+  const getStatusLabel = (status: string) => (t.has(`status_${status}`) ? t(`status_${status}`) : status);
 
   return (
     <div className="space-y-6">
       {/* En-tête */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Gestion des Chauffeurs</h1>
-        <p className="text-gray-600 mt-2">Gérez les statuts, documents et infractions des chauffeurs</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-600 mt-2">{t('subtitle')}</p>
       </div>
 
       {/* Filtres */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('filterStatus')}</label>
             <select
               value={statusFilter}
               onChange={(e) => {
@@ -159,14 +151,14 @@ export default function DriverManagementPage() {
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Tous les statuts</option>
-              <option value="VALIDE">Valide</option>
-              <option value="SUSPENDU">Suspendu</option>
-              <option value="EN_ATTENTE_VALIDATION">En attente</option>
+              <option value="">{t('allStatuses')}</option>
+              <option value="VALIDE">{t('status_VALIDE')}</option>
+              <option value="SUSPENDU">{t('status_SUSPENDU')}</option>
+              <option value="EN_ATTENTE_VALIDATION">{t('status_EN_ATTENTE_VALIDATION')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Note minimum</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('minRating')}</label>
             <input
               type="number"
               min="0"
@@ -186,7 +178,7 @@ export default function DriverManagementPage() {
               className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-              Actualiser
+              {t('refresh')}
             </button>
           </div>
         </div>
@@ -197,7 +189,7 @@ export default function DriverManagementPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-red-900">Erreur</h3>
+            <h3 className="font-medium text-red-900">{t('errorTitle')}</h3>
             <p className="text-sm text-red-700">{error}</p>
           </div>
         </div>
@@ -210,19 +202,19 @@ export default function DriverManagementPage() {
         </div>
       ) : drivers.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          <p className="text-gray-500">Aucun chauffeur trouvé</p>
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Chauffeur</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Statut</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Note</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Courses</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Revenus</th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('colDriver')}</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('colStatus')}</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('colRating')}</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('colCourses')}</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('colEarnings')}</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -241,7 +233,7 @@ export default function DriverManagementPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{driver.rating?.toFixed(1) || 'N/A'}</span>
+                      <span className="font-medium">{driver.rating?.toFixed(1) || t('notAvailable')}</span>
                       <span className="text-yellow-500">★</span>
                     </div>
                   </td>
@@ -257,7 +249,7 @@ export default function DriverManagementPage() {
                         href={`/superowner/zupdrive/driver-management/${driver.id}`}
                         className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                       >
-                        Détails
+                        {t('details')}
                       </Link>
                       {driver.status === 'SUSPENDU' ? (
                         <button
@@ -265,18 +257,18 @@ export default function DriverManagementPage() {
                           className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center gap-1"
                         >
                           <RotateCcw className="w-4 h-4" />
-                          Réactiver
+                          {t('reactivate')}
                         </button>
                       ) : driver.status === 'VALIDE' ? (
                         <button
                           onClick={() => {
-                            const reason = prompt('Raison de la suspension:');
+                            const reason = prompt(t('suspendReason'));
                             if (reason) handleSuspend(driver.id, reason);
                           }}
                           className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
                         >
                           <Ban className="w-4 h-4" />
-                          Suspendre
+                          {t('suspend')}
                         </button>
                       ) : null}
                     </div>
@@ -296,17 +288,17 @@ export default function DriverManagementPage() {
             disabled={offset === 0}
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
-            Précédent
+            {t('previous')}
           </button>
           <span className="text-sm text-gray-600">
-            Affichage {offset + 1} à {Math.min(offset + limit, offset + drivers.length)}
+            {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, offset + drivers.length) })}
           </span>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={drivers.length < limit}
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       )}
