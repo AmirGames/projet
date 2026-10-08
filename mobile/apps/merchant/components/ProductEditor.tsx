@@ -17,6 +17,14 @@ import { apiFetch } from '../lib/api';
 import SupplementsEditor from './SupplementsEditor';
 import { COLORS } from './ui';
 
+/** Les 14 allergènes à déclaration obligatoire (règlement (UE) 1169/2011, annexe II). */
+const ALLERGENES: [string, string][] = [
+  ['GLUTEN', 'Gluten'], ['CRUSTACEANS', 'Crustacés'], ['EGGS', 'Œufs'], ['FISH', 'Poissons'],
+  ['PEANUTS', 'Arachides'], ['SOYBEANS', 'Soja'], ['MILK', 'Lait'], ['NUTS', 'Fruits à coque'],
+  ['CELERY', 'Céleri'], ['MUSTARD', 'Moutarde'], ['SESAME', 'Sésame'], ['SULPHITES', 'Sulfites'],
+  ['LUPIN', 'Lupin'], ['MOLLUSCS', 'Mollusques'],
+];
+
 export interface EditableProduct {
   id: string;
   name: string;
@@ -24,6 +32,9 @@ export interface EditableProduct {
   price: number | string;
   isAvailable: boolean;
   status?: string;
+  allergens?: string[];
+  allergensDeclared?: boolean;
+  containsAlcohol?: boolean;
   category?: { id: string; name: string; displayOrder?: number } | null;
 }
 
@@ -59,12 +70,25 @@ export default function ProductEditor({
   const [categoryId, setCategoryId] = useState(product.category?.id || '');
   const [published, setPublished] = useState(product.status !== 'DRAFT' && product.status !== 'ARCHIVED');
   const [available, setAvailable] = useState(product.isAvailable);
+  const [allergens, setAllergens] = useState<string[]>(product.allergens ?? []);
+  // « Aucun allergène » doit être confirmé : un produit non renseigné reste distinct.
+  const [declared, setDeclared] = useState(!!product.allergensDeclared);
+  const [alcohol, setAlcohol] = useState(!!product.containsAlcohol);
   const [saving, setSaving] = useState(false);
+
+  const toggleAllergen = (code: string) => {
+    setDeclared(true);
+    setAllergens((list) => (list.includes(code) ? list.filter((a) => a !== code) : [...list, code]));
+  };
 
   const save = async () => {
     const value = parsePrice(price);
     if (name.trim().length < 2) return Alert.alert('Nom trop court', 'Le nom doit faire au moins 2 caractères.');
     if (!(value > 0)) return Alert.alert('Prix invalide', 'Indiquez un prix supérieur à 0, par exemple 12,50.');
+
+    if (!declared && allergens.length === 0) {
+      return Alert.alert('Allergènes', 'Cochez les allergènes présents, ou confirmez « Aucun de ces 14 allergènes ».');
+    }
 
     setSaving(true);
     try {
@@ -73,6 +97,8 @@ export default function ProductEditor({
         price: value,
         isAvailable: available,
         status: published ? 'ACTIVE' : 'DRAFT',
+        allergens,
+        containsAlcohol: alcohol,
       };
       // Le serveur ignore une description vide : on n'envoie que du texte.
       if (description.trim()) body.description = description.trim();
@@ -143,6 +169,42 @@ export default function ProductEditor({
             )}
 
             <SupplementsEditor productId={product.id} token={token} />
+
+            <Text style={styles.label}>Allergènes (obligatoire)</Text>
+            <View style={styles.chips}>
+              {ALLERGENES.map(([code, nom]) => (
+                <TouchableOpacity
+                  key={code}
+                  style={[styles.chip, allergens.includes(code) && styles.chipOn]}
+                  onPress={() => toggleAllergen(code)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: allergens.includes(code) }}
+                >
+                  <Text style={[styles.chipText, allergens.includes(code) && styles.chipTextOn]}>{nom}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[styles.chip, declared && allergens.length === 0 && styles.chipOn]}
+                onPress={() => {
+                  setAllergens([]);
+                  setDeclared(true);
+                }}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: declared && allergens.length === 0 }}
+              >
+                <Text style={[styles.chipText, declared && allergens.length === 0 && styles.chipTextOn]}>
+                  Aucun de ces 14 allergènes
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.switchLabel}>Contient de l&apos;alcool</Text>
+                <Text style={styles.help}>Vente interdite aux mineurs : le client doit attester sa majorité.</Text>
+              </View>
+              <Switch value={alcohol} onValueChange={setAlcohol} trackColor={{ true: COLORS.success, false: '#ccc' }} />
+            </View>
 
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>

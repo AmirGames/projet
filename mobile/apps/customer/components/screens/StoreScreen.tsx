@@ -26,6 +26,7 @@ import {
   Variant,
 } from '../../lib/stores';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { texteAllergenes } from '../../lib/allergenes';
 import { IllustrationFamille } from '../CouvertureCommerce';
 import { visuelDeFamille } from '../../lib/visuels';
 
@@ -260,6 +261,10 @@ export default function StoreScreen({
                     {item.description}
                   </Text>
                 ) : null}
+                <Text style={styles.productAllergenes} numberOfLines={2}>
+                  {texteAllergenes(item)}
+                  {item.containsAlcohol ? '  ·  Alcool — réservé aux majeurs' : ''}
+                </Text>
                 <Text style={styles.productPrice}>
                   {item.variants.length > 1 && prices.some((p) => p !== from) ? 'dès ' : ''}
                   {formatEuros(from)}
@@ -350,6 +355,8 @@ function ProductSheet({
             {image ? <Image source={{ uri: image }} style={styles.sheetImage} /> : null}
             <Text style={styles.sheetTitle}>{product.name}</Text>
             {product.description ? <Text style={styles.sheetDesc}>{product.description}</Text> : null}
+            <Text style={styles.sheetAllergenes}>{texteAllergenes(product)}</Text>
+            {product.containsAlcohol ? <Text style={styles.sheetAlcool}>Contient de l&apos;alcool — réservé aux majeurs</Text> : null}
 
             {needsVariant && (
               <View style={{ marginTop: 14 }}>
@@ -423,6 +430,7 @@ function ProductSheet({
                 ...(retained.length ? { supplements: retained } : {}),
                 price: unit,
                 quantity,
+                ...(product.containsAlcohol ? { alcool: true } : {}),
               })
             }
           >
@@ -545,6 +553,9 @@ const styles = StyleSheet.create({
   },
   sheetImage: { width: '100%', height: 180, borderRadius: 10, marginBottom: 12, backgroundColor: COLORS.bg },
   sheetTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
+  productAllergenes: { fontSize: 12, color: '#777', marginTop: 2 },
+  sheetAllergenes: { fontSize: 13, color: '#555', marginTop: 8 },
+  sheetAlcool: { fontSize: 13, color: '#b91c1c', fontWeight: '700', marginTop: 4 },
   sheetDesc: { fontSize: 14, color: '#555', marginTop: 6, lineHeight: 20 },
   variant: {
     flexDirection: 'row',

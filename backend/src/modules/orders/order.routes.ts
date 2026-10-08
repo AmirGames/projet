@@ -85,6 +85,8 @@ const createOrderSchema = z.object({
   promoCode: z.string().optional(),
   paymentMethodId: z.string().optional(),
   notes: z.string().optional(),
+  // Attestation d'âge, exigée si le panier contient de l'alcool.
+  ageMinimumConfirme: z.boolean().optional(),
   // Le détail du panier, obligatoire : sans lui, le total retombait sur le
   // montant annoncé par le navigateur (une commande à un centime passait).
   items: z

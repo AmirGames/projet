@@ -27,6 +27,7 @@ const SEGMENTS_REGIONAUX = [
   "conditions-livreurs",
   "confidentialite",
   "cookies",
+  "accessibilite",
 ];
 
 /** La création de boutique vit sous /store mais appartient au commerçant. */

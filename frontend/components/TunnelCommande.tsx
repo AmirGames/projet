@@ -126,6 +126,11 @@ export function TunnelCommande({
   >([]);
   const [submitting, setSubmitting] = useState(false);
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
+  // Attestation d'âge : demandée dès qu'un plat du panier contient de l'alcool,
+  // et exigée aussi par le serveur.
+  const [ageConfirme, setAgeConfirme] = useState(false);
+  const tAllergenes = useTranslations('allergenes');
+  const contientAlcool = lignes.some((ligne) => ligne.alcool);
   const [checkoutError, setCheckoutError] = useState('');
   const router = useRouter();
   /**
@@ -515,6 +520,7 @@ export function TunnelCommande({
     try {
       const orderData = {
         conditionsAcceptees,
+        ...(contientAlcool ? { ageMinimumConfirme: ageConfirme } : {}),
         storeId: boutique.id,
         customerName: checkoutForm.customerName,
         customerEmail: checkoutForm.customerEmail,
@@ -1304,6 +1310,18 @@ export function TunnelCommande({
 
           {alerte}
 
+          {contientAlcool && (
+            <label className="flex items-start gap-2 text-sm text-gray-800">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={ageConfirme}
+                onChange={(e) => setAgeConfirme(e.target.checked)}
+              />
+              {tAllergenes('ageCase')}
+            </label>
+          )}
+
           <AcceptationConditions
             coche={conditionsAcceptees}
             onChange={setConditionsAcceptees}
@@ -1318,6 +1336,7 @@ export function TunnelCommande({
             disabled={
               submitting ||
               !conditionsAcceptees ||
+              (contientAlcool && !ageConfirme) ||
               sousLeMinimum ||
               (enLivraison && livraison?.livrable === false)
             }

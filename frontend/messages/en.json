@@ -1399,6 +1399,35 @@
       "tropLoin": "The nearest courier is {km} km away, beyond the {rayon} km radius."
     }
   },
+  "allergenes": {
+    "titre": "Allergens",
+    "aide": "Required (EU regulation 1169/2011): tick the allergens present, or confirm there are none.",
+    "aucun": "None of these 14 allergens",
+    "alcool": "This product contains alcohol (not sold to minors)",
+    "manquant": "Declare the product's allergens, or tick “None of these 14 allergens”.",
+    "nonRenseigne": "Allergens not declared",
+    "contient": "Contains: {liste}",
+    "sansAllergene": "No allergen declared by the merchant",
+    "alcoolEtiquette": "Contains alcohol — adults only",
+    "ageCase": "My basket contains alcohol: I certify that I am of legal age to buy it and will show ID on handover.",
+    "ageErreur": "Confirm that you are of legal age to buy alcohol.",
+    "noms": {
+      "GLUTEN": "Cereals containing gluten",
+      "CRUSTACEANS": "Crustaceans",
+      "EGGS": "Eggs",
+      "FISH": "Fish",
+      "PEANUTS": "Peanuts",
+      "SOYBEANS": "Soybeans",
+      "MILK": "Milk",
+      "NUTS": "Tree nuts",
+      "CELERY": "Celery",
+      "MUSTARD": "Mustard",
+      "SESAME": "Sesame seeds",
+      "SULPHITES": "Sulphur dioxide and sulphites",
+      "LUPIN": "Lupin",
+      "MOLLUSCS": "Molluscs"
+    }
+  },
   "merchantProducts": {
     "title": "Products",
     "description": "Manage your catalog",
@@ -4234,7 +4263,8 @@
       "commercants": "Merchant terms",
       "livreurs": "Courier terms",
       "confidentialite": "Privacy policy",
-      "cookies": "Cookies and trackers"
+      "cookies": "Cookies and trackers",
+      "accessibilite": "Accessibility"
     }
   },
   "suiviLivraison": {

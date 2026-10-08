@@ -103,6 +103,7 @@ export async function remettreAuPanier(
       price: Number(prix.toFixed(2)),
       quantity: (deja?.quantity || 0) + ligne.quantity,
       isAvailable: true,
+      ...(plat.containsAlcohol ? { alcool: true } : {}),
       ...(ligne.variantId ? { variantId: ligne.variantId, variantNom } : {}),
       ...(supplements.length ? { supplements } : {}),
     };

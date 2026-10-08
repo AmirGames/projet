@@ -5,7 +5,7 @@
  * l'espace superowner (Pages légales). Les valeurs entre crochets sont à
  * remplacer avant l'ouverture au public.
  */
-export const VERSION_INITIALE = "2026-10-07";
+export const VERSION_INITIALE = "2026-10-08";
 
 export const SLUGS_LEGAUX = [
   "mentions-legales",
@@ -15,6 +15,7 @@ export const SLUGS_LEGAUX = [
   "conditions-livreurs",
   "confidentialite",
   "cookies",
+  "accessibilite",
 ] as const;
 
 export type SlugLegal = (typeof SLUGS_LEGAUX)[number];
@@ -45,9 +46,17 @@ ZupEat est une plateforme d'intermédiation. Les produits sont vendus par les co
 
 La marque ZupEat, le site, son code et ses contenus propres sont protégés. Toute reproduction sans autorisation écrite est interdite. Les photos et descriptions de produits appartiennent aux commerçants qui les publient. Les fonds de carte proviennent d'OpenStreetMap (© contributeurs OpenStreetMap, licence ODbL).
 
-## Signaler un contenu
+## Signaler un contenu illicite
 
-Tout contenu manifestement illicite peut être signalé à [contact@zupeat.com](mailto:contact@zupeat.com) en précisant l'adresse de la page, la nature du contenu et le motif du signalement.
+Conformément au règlement (UE) 2022/2065 (Digital Services Act), toute personne peut signaler un contenu qu'elle estime illicite (produit interdit, contrefaçon, avis frauduleux, etc.) à [contact@zupeat.com](mailto:contact@zupeat.com). Le signalement indique :
+
+- l'adresse exacte de la page concernée ;
+- les raisons pour lesquelles le contenu est illicite ;
+- le nom et l'adresse électronique de l'auteur du signalement (sauf infractions relevant des articles 3 à 7 de la directive 2011/93/UE).
+
+Nous accusons réception, examinons chaque signalement avec diligence et informons son auteur de la décision prise et des voies de recours. Lorsque nous retirons un contenu ou suspendons un compte, l'utilisateur concerné reçoit un exposé des motifs et peut contester la décision en répondant au même courriel, puis saisir un organisme de règlement extrajudiciaire des litiges ou la justice.
+
+Point de contact unique pour les autorités des États membres, la Commission européenne et les utilisateurs : [contact@zupeat.com](mailto:contact@zupeat.com), en français ou en anglais.
 
 ## Médiation de la consommation
 
@@ -161,7 +170,8 @@ Le commerçant fournit un dossier exact et à jour (identité de l'entreprise, S
 ## 2. Obligations du commerçant
 
 - il est le vendeur et répond de la conformité, de l'hygiène et de la sécurité des produits ;
-- il affiche des prix TTC exacts, les allergènes et toute information obligatoire ;
+- il affiche des prix TTC exacts et renseigne, pour chaque produit, les allergènes parmi les quatorze de l'annexe II du règlement (UE) 1169/2011 ; un produit sans allergène est déclaré comme tel ;
+- il signale les produits contenant de l'alcool, dont la vente est interdite aux mineurs, et s'assure de la majorité du client à la remise ;
 - il tient à jour ses horaires, stocks et zones de livraison ;
 - il accepte ou refuse chaque commande dans le délai prévu ;
 - lorsqu'il assure sa propre livraison, il en porte la responsabilité et respecte le droit du travail et des transports.
@@ -173,6 +183,8 @@ Le commerçant souscrit une formule (prix, nombre de boutiques) et paie une comm
 ## 4. Encaissement et reversement
 
 ZupEat encaisse le paiement des clients pour le compte du commerçant, via Stripe, et lui reverse les sommes dues après déduction des commissions et frais. Une facture mensuelle détaille chaque ligne.
+
+Conformément à la directive (UE) 2021/514 (DAC7), ZupEat collecte et transmet chaque année à l'administration fiscale les informations relatives aux commerçants actifs et aux sommes perçues (identité, adresse, numéro d'identification fiscale ou SIREN, TVA, IBAN, nombre de transactions et montants par trimestre). Le commerçant s'engage à fournir ces informations ; à défaut, ZupEat peut retenir les reversements après deux relances.
 
 ## 5. Données des clients
 
@@ -216,7 +228,7 @@ Avant toute course, le livreur fournit : pièce d'identité, justificatif d'imma
 
 ## 4. Rémunération
 
-Les sommes dues sont reversées périodiquement ; le détail des versements est consultable dans l'espace livreur. Le livreur s'acquitte lui-même de ses cotisations sociales et impôts.
+Les sommes dues sont reversées périodiquement ; le détail des versements est consultable dans l'espace livreur. Le livreur s'acquitte lui-même de ses cotisations sociales et impôts. Conformément à la directive (UE) 2021/514 (DAC7), ZupEat déclare chaque année à l'administration fiscale les sommes versées au livreur ; celui-ci fournit pour cela son identité, son adresse, son numéro d'identification fiscale ou SIREN et son IBAN.
 
 ## 5. Notes
 
@@ -298,5 +310,27 @@ La déconnexion efface les jetons de session. Vous pouvez supprimer à tout mome
 ## Évolution
 
 Si des traceurs soumis à consentement (mesure d'audience, publicité) étaient ajoutés, un bandeau vous permettrait de les accepter ou de les refuser aussi facilement, avant tout dépôt. Voir aussi la [politique de confidentialité](/confidentialite).`,
+  },
+
+  accessibilite: {
+    titre: "Déclaration d'accessibilité",
+    contenu: `ZupEat s'engage à rendre ses services accessibles, conformément à la directive (UE) 2019/882 (acte européen sur l'accessibilité) et à l'article 47 de la loi n° 2005-102 du 11 février 2005.
+
+## État de conformité
+
+Le site et les applications sont **partiellement conformes** aux référentiels WCAG 2.1 niveau AA et RGAA 4. Un audit complet n'a pas encore été réalisé : les résultats seront publiés ici dès qu'il sera terminé.
+
+## Contenus non accessibles
+
+- certains éléments de la carte interactive (OpenStreetMap) ne sont pas utilisables au clavier ; l'adresse peut toujours être saisie dans un champ de texte ;
+- des images fournies par les commerçants peuvent être dépourvues de description alternative.
+
+## Nous contacter
+
+Si vous ne parvenez pas à accéder à un contenu ou à un service, écrivez à [contact@zupeat.com](mailto:contact@zupeat.com) en décrivant le problème et l'outil utilisé : nous répondons sous 10 jours ouvrés et proposons une alternative.
+
+## Voies de recours
+
+Sans réponse satisfaisante, vous pouvez écrire au Défenseur des droits (formulaire en ligne sur [defenseurdesdroits.fr](https://formulaire.defenseurdesdroits.fr)) ou, en Belgique, saisir Unia.`,
   },
 };

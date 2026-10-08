@@ -13,4 +13,5 @@ export const PAGES_LEGALES = [
   { href: '/conditions-livreurs', cle: 'livreurs' },
   { href: '/confidentialite', cle: 'confidentialite' },
   { href: '/cookies', cle: 'cookies' },
+  { href: '/accessibilite', cle: 'accessibilite' },
 ] as const;
