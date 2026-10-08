@@ -125,6 +125,16 @@ router.delete("/notifications/:notificationId", authMiddleware, isSystemAdmin, a
 
     await db.notification.delete({ where: { id: notificationId } });
 
+    // Retirer une annonce efface un message déjà diffusé : à tracer comme sa diffusion.
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "DELETE_ANNOUNCEMENT",
+        target: notificationId,
+        changes: { title: existante.title ?? null },
+      },
+    });
+
     res.json({ message: "Annonce supprimée" });
   } catch (err) {
     next(err);
