@@ -171,13 +171,12 @@ jobs:
   # Bout en bout : l'API compilée et le site compilé tournent pour de vrai sur
   # PostgreSQL et Redis, et des parcours navigateur (Playwright) les pilotent.
   # Seules les suites qui passent de façon répétable sur une base vierge y
-  # figurent ; les autres, avec la raison, sont listées dans le commentaire de
-  # l'étape. Les variables de l'API viennent de backend/.env.test (valeurs
+  # figurent ; les autres sont listées dans le commentaire de l'étape. Les variables de l'API viennent de backend/.env.test (valeurs
   # factices, pas de secret) ; Stripe y est coupé.
   e2e:
     name: E2E (parcours navigateur)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:16
@@ -206,6 +205,10 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_test?schema=public
       VERIF_SITE_URL: http://localhost:3000
       VERIF_API_URL: http://localhost:3001
+      # Lues par l'API (démarrée et redémarrée par les étapes ci-dessous).
+      REDIS_URL: redis://localhost:6379
+      ADDRESS_API_URL: http://127.0.0.1:4599/ban/
+      PHOTON_API_URL: http://127.0.0.1:4599/photon/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -228,10 +231,6 @@ jobs:
       # adresse saisie n'est pas située et les livraisons échouent.
       - name: Démarrer l'API et le faux service d'adresses
         working-directory: backend
-        env:
-          REDIS_URL: redis://localhost:6379
-          ADDRESS_API_URL: http://127.0.0.1:4599/ban/
-          PHOTON_API_URL: http://127.0.0.1:4599/photon/
         run: |
           nohup node scripts/verification/faux-service-adresses.mjs > "$RUNNER_TEMP/adresses.log" 2>&1 &
           nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &
@@ -250,6 +249,14 @@ jobs:
         run: |
           npm i --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
+      # Sans clé publiable, le tunnel de commande ne propose pas le paiement en
+      # ligne, mais il charge quand même js.stripe.com. Le runner a Internet :
+      # les cadres de Stripe écrivent alors leurs propres avertissements dans la
+      # console (« payment is not allowed in this document », CSP de leurs
+      # cadres), que les suites comptent comme des erreurs du site. Les parcours
+      # ne dépendent pas d'Internet : Stripe est coupé, comme en local.
+      - name: Couper Stripe pour les parcours
+        run: echo "127.0.0.1 js.stripe.com m.stripe.network r.stripe.com q.stripe.com api.stripe.com" | sudo tee -a /etc/hosts
       - name: Build et démarrage du site
         working-directory: frontend
         env:
@@ -262,27 +269,49 @@ jobs:
             sleep 2
           done
           echo "Le site ne répond pas :"; cat "$RUNNER_TEMP/site.log"; exit 1
-      # Sous-ensemble stable, vérifié en local (répété, base remise à zéro
-      # avant chaque suite). Exclues, car elles échouent même sur une base
-      # vierge, sans que rien ne soit cassé côté CI :
-      #   - verif-commande-invite : la page affiche autre chose que
-      #     « Commande envoyée » après confirmation (contrôles à réaligner) ;
-      #   - verif-suivi-client : « Aucun livreur en ligne à proximité », la
-      #     course n'est jamais proposée ;
-      #   - verif-compte-restreint : la pastille de la cloche reste éteinte
-      #     après suspension (échec constant, davantage de contrôles selon les
-      #     passages).
-      # À les réintégrer une fois ces écarts traités. L'API limite à 120 appels
-      # publics par minute et par IP : verif-paniers, la plus bavarde, attend
-      # que la fenêtre se vide.
+      # Suites retenues : celles qui, lancées en local sur une base vierge,
+      # donnent le même résultat à chaque passage. Avant chacune, la base est
+      # remise à zéro et l'API redémarrée : sa limite de débit (120 appels
+      # publics par minute et par IP, en mémoire) ferait sinon échouer les
+      # suites bavardes par « 429 ».
+      #
+      # Pas encore retenues (échec constant ou prérequis non établis en local) :
+      #   assistant, carte-suivi, catalogue-support-direct, cloche,
+      #   commandes-direct, espace-administration, menu-merchant,
+      #   note-livreur, preuve-livraison, profil-commercant,
+      #   validation-livreurs, zones-livraison, zupdrive-chauffeur,
+      #   zupdrive-courses, zupdrive-societe. domaines demande six domaines
+      #   configurés à la construction du site : hors de ce job.
       - name: Parcours navigateur
         working-directory: frontend
         run: |
+          redemarrer_api() {
+            # L'arrêt est gracieux (quelques secondes). Une nouvelle instance
+            # lancée avant que le port soit libre échouerait en EADDRINUSE après
+            # avoir recréé le superowner de départ, et fausserait la suite
+            # (« le premier inscrit est la plateforme ») : on attend donc que
+            # l'ancienne ne réponde plus. Arrêt par le nom, sans fichier de pid.
+            pkill -f "node --env-file=.env.test dist/server.js" || true
+            for i in $(seq 1 40); do
+              curl -fsS http://localhost:3001/health > /dev/null 2>&1 || break
+              sleep 0.5
+            done
+            pkill -9 -f "node --env-file=.env.test dist/server.js" || true
+            (cd ../backend && nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &)
+            for i in $(seq 1 30); do
+              curl -fsS http://localhost:3001/health/ready > /dev/null && return 0
+              sleep 1
+            done
+            echo "L'API ne redémarre pas"; return 1
+          }
           echecs=0
-          for suite in session-perimee mot-de-passe-oublie paniers; do
+          for suite in session-perimee mot-de-passe-oublie paniers commande-invite suivi-client compte-restreint \
+                       carte-zones courses-livreur creneaux-retrait declinaisons ecran-cuisine fiche-boutique \
+                       formules-pages horaires-genre menu-restaurant tableau-de-bord versements-livreurs \
+                       vitrine-unique webhooks traductions; do
             echo "::group::verif-$suite"
+            redemarrer_api
             (cd ../backend && node scripts/verification/reinitialiser.mjs)
-            [ "$suite" = "paniers" ] && sleep 65
             node "scripts/verif-$suite.mjs" || { echo "::error title=E2E::verif-$suite a échoué"; echecs=$((echecs + 1)); }
             echo "::endgroup::"
           done
