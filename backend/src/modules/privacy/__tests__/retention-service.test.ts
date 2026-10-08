@@ -224,6 +224,17 @@ describe("rétention : demandes d'effacement et idempotence", () => {
     expect(completeErasure.mock.calls.map(c => c[0])).toEqual(["alice", "bob"]);
   });
 
+  it("un effacement qui échoue ne bloque ni les suivants ni le reste de la purge", async () => {
+    resultats["privacyErasureRequest.findMany"] = [{ userId: "alice" }, { userId: "bob" }];
+    completeErasure.mockRejectedValueOnce(new Error("fichier verrouillé")).mockResolvedValueOnce({ status: "COMPLETED" });
+    const resultat = await runRetention(MAINTENANT);
+    expect(completeErasure.mock.calls.map(c => c[0])).toEqual(["alice", "bob"]);
+    // Les étapes placées après la boucle ont bien tourné.
+    expect(de("privacyLegalHold", "deleteMany")).toHaveLength(1);
+    expect(de("order", "findMany").length).toBeGreaterThan(0);
+    expect(resultat.erasureFailures).toBe(1);
+  });
+
   it("purge les demandes terminées depuis plus de 30 jours", async () => {
     await runRetention(MAINTENANT);
     expect(de("privacyErasureRequest", "deleteMany")[0].args.where).toEqual({ status: "COMPLETED", completedAt: { lt: avant(30) } });
