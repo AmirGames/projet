@@ -22,7 +22,7 @@ export async function collectExport(userId: string) {
     const orders = await tx.order.findMany({ where: { customerId: { in: customers.map((c) => c.id) } }, include: { items: true, payments: true, invoice: true, pourboireApres: true } });
     const courier = await tx.courier.findUnique({ where: { userId }, include: { documents: true, payouts: true, supportMessages: true, deliveries: true, tips: true, ratings: true, offers: true, deliveryIncidents: true } });
     const chauffeur = await tx.chauffeurDrive.findUnique({ where: { userId }, include: { documents: true, courses: true, notes: true } });
-    const rides = await tx.courseDrive.findMany({ where: { passagerId: userId }, include: { notes: true } });
+    const rides = await tx.courseDrive.findMany({ where: { passagerId: userId }, include: { notes: true, messages: true } });
     const adressesFavorites = await tx.adresseFavoriteDrive.findMany({ where: { userId } });
     const contactConfiance = await tx.contactConfianceDrive.findUnique({ where: { userId } });
     const alertesSos = await tx.alerteSosDrive.findMany({ where: { passagerId: userId } });

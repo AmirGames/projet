@@ -3111,6 +3111,7 @@ model CourseDrive {
   vehicule  VehiculeDrive?  @relation(fields: [vehiculeId], references: [id], onDelete: SetNull)
   propositions   PropositionCourseDrive[]
   alerteSos      AlerteSosDrive?
+  messages       MessageCourseDrive[]
   notes          NoteCourseDrive[]
   ratings        RatingCourseDrive[]
   paymentIntent  PaymentIntentDrive?
@@ -3239,6 +3240,26 @@ model AlerteSosDrive {
   updatedAt DateTime @updatedAt
 
   @@index([passagerId])
+}
+
+/// Un message du chat entre le passager et son chauffeur, pendant une course.
+/// Texte court, jamais journalisé. Supprimé avec la course (cascade), à l'effacement
+/// du passager, et purgé avec l'historique des courses terminées (retention.service).
+model MessageCourseDrive {
+  id       String @id @default(cuid())
+  courseId String
+  /// PASSAGER ou CHAUFFEUR.
+  auteur   String
+  texte    String
+  /// Clé envoyée par l'application : rejouer l'envoi rend le même message.
+  cleIdempotence String
+
+  course CourseDrive @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, auteur, cleIdempotence])
+  @@index([courseId, createdAt])
 }
 
 // ============================================================================
