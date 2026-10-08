@@ -36,6 +36,7 @@ interface Earnings {
 
 export default function ZupDriveDriverApp() {
   const [booting, setBooting] = useState(true);
+  const pushToken = useRef<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [tab, setTab] = useState<string>('home');
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -121,13 +122,16 @@ export default function ZupDriveDriverApp() {
       const newSession: Session = {
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
+        // La connexion se fait par téléphone + code : le serveur ne renvoie pas toujours de courriel.
+        email: res.data.email ?? '',
       };
       await saveSession(newSession);
       setSession(newSession);
       await fetchProfile(newSession.accessToken);
       await fetchCourses(newSession.accessToken);
       await fetchEarnings(newSession.accessToken);
-      await registerForPush(newSession.accessToken);
+      const push = await registerForPush(newSession.accessToken);
+      pushToken.current = push.status === 'enabled' ? push.token : null;
     } catch (e: any) {
       Alert.alert('Erreur', e.message || 'Authentification échouée');
     } finally {
@@ -142,8 +146,9 @@ export default function ZupDriveDriverApp() {
         text: 'Oui',
         style: 'destructive',
         onPress: async () => {
-          if (session) {
-            await unregisterPush(session.accessToken);
+          if (session && pushToken.current) {
+            await unregisterPush(session.accessToken, pushToken.current);
+            pushToken.current = null;
           }
           await clearSession();
           setSession(null);
@@ -179,7 +184,7 @@ export default function ZupDriveDriverApp() {
     // Login screen
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar style="dark" />
         <ScrollView contentContainerStyle={styles.loginContainer}>
           <Text style={styles.title}>ZupDrive Chauffeur</Text>
 
@@ -221,7 +226,7 @@ export default function ZupDriveDriverApp() {
   // Main app
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <View style={styles.header}>
