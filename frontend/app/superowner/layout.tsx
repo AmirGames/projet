@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import './theme-sombre.css';
-import { useEffectChargement } from '@/lib/use-effect-chargement';
+import '../theme-sombre.css';
+import { useThemeSombre } from '@/lib/theme-sombre';
+import { BasculeTheme } from '@/components/BasculeTheme';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -61,8 +62,6 @@ import {
   Navigation,
   Euro,
   UtensilsCrossed,
-  Moon,
-  Sun,
   AlertTriangle,
 } from 'lucide-react';
 
@@ -87,33 +86,13 @@ interface SectionMenu {
   items: EntreeMenu[];
 }
 
-const CLE_THEME = 'superowner-theme';
-
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
   // Sur grand écran, la barre se replie en icônes. Sur téléphone, elle ne
   // tient pas à côté du contenu : c'est un tiroir, fermé par défaut, qui
   // s'ouvre par-dessus la page.
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [menuMobile, setMenuMobile] = useState(false);
-  // Thème sombre : un choix par navigateur, clair tant qu'on n'a rien choisi.
-  // Lu après l'affichage, pour que le serveur et le navigateur rendent la même chose.
-  const [sombre, setSombre] = useState(false);
-  useEffectChargement(() => {
-    try {
-      setSombre(localStorage.getItem(CLE_THEME) === 'sombre');
-    } catch {
-      /* stockage indisponible : thème clair */
-    }
-  }, []);
-  const changerTheme = () => {
-    const suivant = !sombre;
-    setSombre(suivant);
-    try {
-      localStorage.setItem(CLE_THEME, suivant ? 'sombre' : 'clair');
-    } catch {
-      /* le choix vaut pour cette visite seulement */
-    }
-  };
+  const { sombre, basculer, classe } = useThemeSombre('superowner-theme');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['categories', 'members']));
   const router = useRouter();
   const pathname = usePathname();
@@ -342,7 +321,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const etendu = sidebarOpen || menuMobile;
 
   return (
-    <div className={`flex min-h-screen bg-[#F7F7F6] text-gray-900 ${sombre ? 'admin-sombre' : ''}`}>
+    <div className={`flex min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
       {/* Voile derrière le tiroir : un toucher à côté le referme. */}
       {menuMobile && (
         <div
@@ -506,14 +485,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
             </div>
             {/* La cloche suit la plateforme partout : un ticket ouvert pendant
                 qu'on consulte les journaux doit se voir sans changer de page. */}
-            <button
-              onClick={changerTheme}
-              aria-label={sombre ? t('themeClair') : t('themeSombre')}
-              title={sombre ? t('themeClair') : t('themeSombre')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              {sombre ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            <BasculeTheme sombre={sombre} onClick={basculer} />
             <NotificationBell clair />
             <LanguageSwitcher clair />
           </div>
