@@ -23,3 +23,6 @@ export const STATUT_DETAIL: Record<string, string> = {
 /** Un statut inconnu (ajouté côté serveur) s'affiche tel quel plutôt que de planter. */
 export const statutCourt = (statut: string) => STATUT_COURT[statut] ?? statut;
 export const statutDetail = (statut: string) => STATUT_DETAIL[statut] ?? statut;
+
+/** Seul un trajet avec un chauffeur en route ou à bord permet l'alerte SOS (comme le serveur). */
+export const STATUTS_SOS = ['ACCEPTEE', 'ARRIVEE', 'EN_COURS'];

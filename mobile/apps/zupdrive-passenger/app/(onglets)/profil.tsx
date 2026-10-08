@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import ContactConfianceCard from '../../components/ContactConfianceCard';
 import { Card, COLORS, Row } from '../../components/ui';
 import { useAuth } from '../../lib/auth';
 import { confirmer } from '../../lib/confirmer';
@@ -15,6 +16,7 @@ export default function Profil() {
       <Card title="Mon compte">
         <Row label="E-mail" value={session?.email ?? ''} last />
       </Card>
+      <ContactConfianceCard />
       <TouchableOpacity style={styles.bouton} onPress={quitter}>
         <Text style={styles.texte}>Se déconnecter</Text>
       </TouchableOpacity>
