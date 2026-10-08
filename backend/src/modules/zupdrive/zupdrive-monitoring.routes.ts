@@ -5,12 +5,12 @@
  * Admin: Monitor platform health, alerts
  */
 
-import type { Prisma } from "@prisma/client";
 import { Router, Request, Response, NextFunction } from "express";
 import { ZupDriveMonitoringService } from "./zupdrive-monitoring.service";
 import { z } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
-import { db } from "../../services/db";
+import { chauffeurIdDuCompte } from "./chauffeur-du-compte";
+import { ZupDriveAlertesService } from "./zupdrive-alertes.service";
 import { adminAuthSection } from "./zupdrive-garde";
 
 const router = Router();
@@ -111,16 +111,13 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Find driver by user ID
-      const chauffeur = await db.chauffeurDrive.findUnique({
-        where: { userId: req.userId! },
-        select: { id: true },
-      });
+      const chauffeurId = await chauffeurIdDuCompte(req.userId!);
 
-      if (!chauffeur) {
+      if (!chauffeurId) {
         return res.status(404).json({ error: "Driver profile not found" });
       }
 
-      const metrics = await ZupDriveMonitoringService.getDriverMetrics(chauffeur.id);
+      const metrics = await ZupDriveMonitoringService.getDriverMetrics(chauffeurId);
 
       return res.json({
         success: true,
@@ -141,12 +138,9 @@ router.get(
   authMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const chauffeur = await db.chauffeurDrive.findUnique({
-        where: { userId: req.userId! },
-        select: { id: true },
-      });
+      const chauffeurId = await chauffeurIdDuCompte(req.userId!);
 
-      if (!chauffeur) {
+      if (!chauffeurId) {
         return res.status(404).json({ error: "Driver profile not found" });
       }
 
@@ -154,9 +148,9 @@ router.get(
       today.setHours(0, 0, 0, 0);
 
       const [todayStats, weekStats] = await Promise.all([
-        ZupDriveMonitoringService.getGainsChauffeur(chauffeur.id, today),
+        ZupDriveMonitoringService.getGainsChauffeur(chauffeurId, today),
         ZupDriveMonitoringService.getGainsChauffeur(
-          chauffeur.id,
+          chauffeurId,
           new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
         ),
       ]);
@@ -235,46 +229,7 @@ router.get(
     try {
       const { type: alertType } = alertesQuery.parse(req.query);
 
-      let whereClause: Prisma.ChauffeurDriveWhereInput = {};
-      if (alertType === "compliance") {
-        whereClause = {
-          complianceReports: { some: { riskLevel: { in: ["HIGH", "CRITICAL"] } } },
-        };
-      } else if (alertType === "rating") {
-        const faibles = await db.noteCourseDrive.groupBy({
-          by: ["chauffeurId"],
-          where: { auteur: "PASSAGER" },
-          _avg: { note: true },
-          having: { note: { _avg: { lt: 3.0 } } },
-        });
-        whereClause = { id: { in: faibles.map((f) => f.chauffeurId) } };
-      } else if (alertType === "suspension") {
-        whereClause = { statut: "SUSPENDU" };
-      }
-
-      const chauffeurs = await db.chauffeurDrive.findMany({
-        where: whereClause,
-        take: 50,
-        select: {
-          id: true,
-          nomComplet: true,
-          statut: true,
-          _count: {
-            select: { courses: true, notes: true },
-          },
-        },
-      });
-
-      // Note moyenne des passagers (NoteCourseDrive), triée de la plus basse à la plus haute
-      const moyennes = await db.noteCourseDrive.groupBy({
-        by: ["chauffeurId"],
-        where: { auteur: "PASSAGER", chauffeurId: { in: chauffeurs.map((c) => c.id) } },
-        _avg: { note: true },
-      });
-      const moyenneParChauffeur = new Map(moyennes.map((m) => [m.chauffeurId, m._avg.note]));
-      const alerts = chauffeurs
-        .map((c) => ({ ...c, rating: moyenneParChauffeur.get(c.id) ?? null }))
-        .sort((x, y) => (x.rating ?? Infinity) - (y.rating ?? Infinity));
+      const alerts = await ZupDriveAlertesService.chauffeursAAlerter(alertType);
 
       return res.json({
         success: true,
@@ -297,26 +252,7 @@ router.get(
   ...adminChauffeurs,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const criticalAlerts = await db.complianceReportDrive.findMany({
-        where: {
-          riskLevel: "CRITICAL",
-        },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        select: {
-          id: true,
-          chauffeurId: true,
-          complianceScore: true,
-          riskLevel: true,
-          createdAt: true,
-          chauffeur: {
-            select: {
-              nomComplet: true,
-              user: { select: { email: true } },
-            },
-          },
-        },
-      });
+      const criticalAlerts = await ZupDriveAlertesService.alertesDeConformite();
 
       return res.json({
         success: true,
@@ -338,33 +274,7 @@ router.get(
   ...adminChauffeurs,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      // Find documents expiring within 30 days
-      const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-      const expiringDocs = await db.documentChauffeurDrive.findMany({
-        where: {
-          statut: "APPROVED",
-          archiveeLe: null,
-          dateExpiration: {
-            lte: thirtyDaysFromNow,
-            gte: new Date(),
-          },
-        },
-        orderBy: { dateExpiration: "asc" },
-        take: 50,
-        select: {
-          id: true,
-          type: true,
-          dateExpiration: true,
-          chauffeurId: true,
-          chauffeur: {
-            select: {
-              nomComplet: true,
-              user: { select: { email: true } },
-            },
-          },
-        },
-      });
+      const expiringDocs = await ZupDriveAlertesService.piecesQuiExpirent();
 
       return res.json({
         success: true,
@@ -386,26 +296,7 @@ router.get(
   ...adminCourses,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const failedPayouts = await db.driverPayoutDrive.findMany({
-        where: {
-          status: "FAILED",
-        },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        select: {
-          id: true,
-          chauffeurId: true,
-          amountCentimes: true,
-          failureReason: true,
-          createdAt: true,
-          chauffeur: {
-            select: {
-              nomComplet: true,
-              user: { select: { email: true } },
-            },
-          },
-        },
-      });
+      const failedPayouts = await ZupDriveAlertesService.versementsEnEchec();
 
       return res.json({
         success: true,
@@ -427,37 +318,9 @@ router.get(
   ...adminCourses,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const [
-        driverCount,
-        activeCourses,
-        suspendedCount,
-        avgRating,
-      ] = await Promise.all([
-        db.chauffeurDrive.count({ where: { statut: "VALIDE" } }),
-        db.courseDrive.count({ where: { statut: { in: ["ACCEPTEE", "ARRIVEE", "EN_COURS"] } } }),
-        db.chauffeurDrive.count({ where: { statut: "SUSPENDU" } }),
-        db.noteCourseDrive.aggregate({
-          where: { auteur: "PASSAGER" },
-          _avg: { note: true },
-        }),
-      ]);
-
       return res.json({
         success: true,
-        health: {
-          drivers: {
-            active: driverCount,
-            suspended: suspendedCount,
-          },
-          courses: {
-            active: activeCourses,
-          },
-          quality: {
-            averageRating: Math.round((avgRating._avg.note || 0) * 100) / 100,
-          },
-          status: "OPERATIONAL",
-          timestamp: new Date().toISOString(),
-        },
+        health: await ZupDriveAlertesService.sante(),
       });
     } catch (error) {
       return next(error);
