@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { formatRating, Store } from '../../lib/stores';
 import { CouvertureCommerce } from '../CouvertureCommerce';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Favorite {
   id: string;
@@ -38,7 +39,7 @@ export default function FavoritesScreen({
     }
   }, [token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

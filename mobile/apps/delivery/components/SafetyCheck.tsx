@@ -50,12 +50,11 @@ export default function SafetyCheck({
   }, [position]);
 
   // Plus de course : plus de surveillance.
+  const sansSurveillance = !hasDelivery || waitingForCustomer;
+  if (sansSurveillance && open) setOpen(false);
   useEffect(() => {
-    if (!hasDelivery || waitingForCustomer) {
-      anchor.current = null;
-      setOpen(false);
-    }
-  }, [key, hasDelivery, waitingForCustomer]);
+    if (sansSurveillance) anchor.current = null;
+  }, [key, sansSurveillance]);
 
   useEffect(() => {
     if (!hasDelivery) return;

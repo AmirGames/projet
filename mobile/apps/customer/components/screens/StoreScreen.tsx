@@ -29,6 +29,7 @@ import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
 import { texteAllergenes } from '../../lib/allergenes';
 import { IllustrationFamille } from '../CouvertureCommerce';
 import { visuelDeFamille } from '../../lib/visuels';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 /** La vitrine d'un commerce : son menu, rangé par catégorie, et le panier de ce commerce. */
 export default function StoreScreen({
@@ -69,7 +70,7 @@ export default function StoreScreen({
     }
   }, [storeId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 
@@ -314,16 +315,18 @@ function ProductSheet({
   onClose: () => void;
   onAdd: (line: CartLine) => void;
 }) {
-  const [variantId, setVariantId] = useState<string | undefined>(undefined);
+  const [variantId, setVariantId] = useState<string | undefined>(() => product?.variants.find((v) => v.isAvailable)?.id);
   const [quantity, setQuantity] = useState(1);
   const [chosen, setChosen] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (!product) return;
+  // Un autre plat : la feuille repart de zéro (ajustement d'état pendant le rendu, sans effet ni remontage).
+  const [platVu, setPlatVu] = useState(product);
+  if (product && product !== platVu) {
+    setPlatVu(product);
     setQuantity(1);
     setChosen([]);
     setVariantId(product.variants.find((v) => v.isAvailable)?.id);
-  }, [product]);
+  }
 
   const groups = product?.supplements || [];
   /** Cocher ou décocher un choix ; un groupe plafonné à un seul choix se comporte en liste à choix unique. */

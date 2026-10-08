@@ -42,7 +42,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "eslint app components lib --max-warnings 3",
+    "lint": "eslint app components lib --max-warnings 0",
     "typecheck": "tsc --noEmit"
   },
   "private": true

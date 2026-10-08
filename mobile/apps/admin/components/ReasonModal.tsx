@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { COLORS } from './ui';
 
@@ -20,9 +20,12 @@ export default function ReasonModal({
   onConfirm: (raison: string) => void;
 }) {
   const [raison, setRaison] = useState('');
-  useEffect(() => {
+  // La raison repart de zéro à chaque ouverture (ajustement d'état pendant le rendu).
+  const [etaitVisible, setEtaitVisible] = useState(visible);
+  if (visible !== etaitVisible) {
+    setEtaitVisible(visible);
     if (visible) setRaison('');
-  }, [visible]);
+  }
   const valide = raison.trim().length >= 3;
 
   return (

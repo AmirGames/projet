@@ -29,17 +29,14 @@ export default function ChampAdresse({
   onEnregistrer?: (type: TypeAdresseFavorite, adresse: AdresseTrajet) => void;
 }) {
   const [saisie, setSaisie] = useState('');
-  const [suggestions, setSuggestions] = useState<SuggestionAdresse[]>([]);
+  const [suggestionsBrutes, setSuggestions] = useState<SuggestionAdresse[]>([]);
   const [recherche, setRecherche] = useState(false);
   const [refus, setRefus] = useState(false);
 
   // Sans temporisation, chaque frappe interrogerait le service d'adresses.
   useEffect(() => {
     const q = saisie.trim();
-    if (choisie || q.length < 3) {
-      setSuggestions([]);
-      return;
-    }
+    if (choisie || q.length < 3) return;
     let annule = false;
     const minuteur = setTimeout(async () => {
       setRecherche(true);
@@ -57,11 +54,16 @@ export default function ChampAdresse({
       clearTimeout(minuteur);
     };
   }, [saisie, choisie]);
+  // Adresse choisie, ou moins de trois caractères : aucune suggestion (dérivé, sans effet).
+  const suggestions = choisie || saisie.trim().length < 3 ? [] : suggestionsBrutes;
 
-  // Une adresse choisie hors du champ (raccourci Domicile/Travail) s'affiche dans le champ.
-  useEffect(() => {
+  // Une adresse choisie hors du champ (raccourci Domicile/Travail) s'affiche dans le champ
+  // (ajustement d'état pendant le rendu).
+  const [choisieVue, setChoisieVue] = useState(choisie);
+  if (choisie !== choisieVue) {
+    setChoisieVue(choisie);
     if (choisie) setSaisie(choisie.adresse);
-  }, [choisie]);
+  }
 
   const modifier = (texte: string) => {
     setRefus(false);

@@ -53,7 +53,7 @@ export default function AddressScreen({
   token?: string;
 }) {
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestionsBrutes, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [favorites, setFavorites] = useState<SavedAddress[]>([]);
@@ -74,10 +74,7 @@ export default function AddressScreen({
   // Sans temporisation, chaque frappe interrogerait le service d'adresses.
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 3) {
-      setSuggestions([]);
-      return;
-    }
+    if (q.length < 3) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       setSearching(true);
@@ -99,6 +96,8 @@ export default function AddressScreen({
       clearTimeout(timer);
     };
   }, [query, hint]);
+  // En dessous de trois caractères, aucune suggestion : dérivé, sans effet.
+  const suggestions = query.trim().length < 3 ? [] : suggestionsBrutes;
 
   const useMyPosition = async () => {
     setLocating(true);

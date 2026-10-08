@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { OrderDetail, Tracking } from '../../lib/orders';
 import { Card, COLORS, ErrorBox, Loading, ScreenHeader, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Given {
   rating: number;
@@ -58,7 +59,7 @@ export default function ReviewScreen({ token, orderId, onBack, onDone }: { token
     }
   }, [orderId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

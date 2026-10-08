@@ -46,17 +46,26 @@ export default function OfferSheet({
   const others = live.length - group.length;
   const offerKey = offer ? `${offer.id}|${offer.expiresAt}` : null;
 
-  useEffect(() => {
-    if (!offerKey) return;
-    setFirstSeen((seen) => seen.has(offerKey) ? seen : new Map(seen).set(offerKey, Date.now()));
-    setNow(Date.now());
+  // Une nouvelle offre : l'itinéraire repart de zéro (ajustement d'état pendant le rendu).
+  const [offreVue, setOffreVue] = useState<string | null>(null);
+  if (offerKey && offerKey !== offreVue) {
+    setOffreVue(offerKey);
     setRoute(null);
-  }, [offerKey]);
+  }
 
   useEffect(() => {
     if (!offerKey) return;
+    // Première apparition de l'offre et heure à jour aussitôt (hors du rendu), puis toutes les 250 ms.
+    const premier = setTimeout(() => {
+      const maintenant = Date.now();
+      setFirstSeen((seen) => (seen.has(offerKey) ? seen : new Map(seen).set(offerKey, maintenant)));
+      setNow(maintenant);
+    }, 0);
     const id = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(premier);
+      clearInterval(id);
+    };
   }, [offerKey]);
 
   if (!offer) return null;

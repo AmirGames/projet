@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 export interface AppNotification {
   id: string;
@@ -51,7 +52,7 @@ export default function NotificationsScreen({
     }
   }, [token, onUnreadChange]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load, refreshKey]);
 

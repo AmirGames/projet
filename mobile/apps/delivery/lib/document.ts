@@ -13,6 +13,7 @@ let cached: typeof DocumentPickerModule | null | undefined;
 function documentPicker(): typeof DocumentPickerModule | null {
   if (cached !== undefined) return cached;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     cached = require('expo-document-picker') as typeof DocumentPickerModule;
   } catch (e) {
     console.warn('expo-document-picker indisponible : recompilez l’application (expo run:android)', e);
@@ -26,6 +27,7 @@ type FileSystemLegacy = typeof import('expo-file-system/legacy');
 function fileSystem(): FileSystemLegacy | null {
   if (Platform.OS === 'web') return null;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     return require('expo-file-system/legacy') as FileSystemLegacy;
   } catch {
     return null;

@@ -8,6 +8,7 @@ import { useRealtimeEvent } from '../../lib/realtime';
 import type { Prefs } from '../../lib/session';
 import type { Position, Tracking } from '../../lib/useDriverLocation';
 import { Card, COLORS, ScreenHeader, themedStyles, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 /**
  * Plusieurs courses à la fois : les arrêts dans l'ordre, commerces et
@@ -62,7 +63,7 @@ export default function TourneeScreen({
 
   // Une course de plus ou de moins, une étape franchie : l'ordre se recalcule.
   const key = deliveries.map((d) => `${d.id}:${d.status}`).join(',');
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load, key]);
   useRealtimeEvent('donnees-modifiees', (m: { ressource?: string }) => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,6 +12,7 @@ import {
 import { apiFetch } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface SupportMessage {
   id: string;
@@ -61,7 +62,7 @@ export default function SupportScreen({
     }
   }, [token, onRead]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

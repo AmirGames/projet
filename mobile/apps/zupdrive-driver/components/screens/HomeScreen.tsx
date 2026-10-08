@@ -15,6 +15,7 @@ import type { DeliveryAddress } from '../../lib/session';
 import { Famille, formatKm, formatRating, Store } from '../../lib/stores';
 import { CouvertureCommerce } from '../CouvertureCommerce';
 import { COLORS, ErrorBox, Loading } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 const SORTS = [
   { key: 'rating', label: '⭐ Mieux notés' },
@@ -57,12 +58,14 @@ export default function HomeScreen({
   }, []);
 
   // Proches de l'adresse (avec les frais jusqu'à elle), ou tous faute de coordonnées.
+  const latitude = address?.latitude;
+  const longitude = address?.longitude;
   const load = useCallback(async () => {
     setError('');
     try {
       const path =
-        address?.latitude != null && address?.longitude != null
-          ? `/api/client/stores/nearby?latitude=${address.latitude}&longitude=${address.longitude}&maxDistance=10`
+        latitude != null && longitude != null
+          ? `/api/client/stores/nearby?latitude=${latitude}&longitude=${longitude}&maxDistance=10`
           : '/api/client/stores';
       const res = await apiFetch<{ data: Store[] }>(path, null);
       setStores(res.data || []);
@@ -72,9 +75,9 @@ export default function HomeScreen({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [address?.latitude, address?.longitude]);
+  }, [latitude, longitude]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     setLoading(true);
     load();
   }, [load]);

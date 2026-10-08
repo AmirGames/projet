@@ -47,36 +47,6 @@ export default function ZupDriveDriverApp() {
   const [earnings, setEarnings] = useState<Earnings | null>(null);
 
   const token = session?.accessToken || '';
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
-
-  // Boot: restore session if exists
-  useEffect(() => {
-    (async () => {
-      try {
-        const savedSession = await loadSession();
-        if (savedSession) {
-          setSession(savedSession);
-          await fetchProfile(savedSession.accessToken);
-          await fetchCourses(savedSession.accessToken);
-          await fetchEarnings(savedSession.accessToken);
-        }
-      } catch (e) {
-        logger.warn('Boot session restore failed', e);
-      } finally {
-        setBooting(false);
-      }
-    })();
-  }, []);
-
-  // Handle unauthorized: clear session and go back to login
-  useEffect(() => {
-    setUnauthorizedHandler(async () => {
-      await clearSession();
-      setSession(null);
-      setTab('home');
-    });
-  }, []);
 
   const fetchProfile = useCallback(async (token: string) => {
     try {
@@ -103,6 +73,34 @@ export default function ZupDriveDriverApp() {
     } catch (e) {
       logger.warn('Failed to fetch earnings', e);
     }
+  }, []);
+
+  // Boot: restore session if exists
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedSession = await loadSession();
+        if (savedSession) {
+          setSession(savedSession);
+          await fetchProfile(savedSession.accessToken);
+          await fetchCourses(savedSession.accessToken);
+          await fetchEarnings(savedSession.accessToken);
+        }
+      } catch (e) {
+        logger.warn('Boot session restore failed', e);
+      } finally {
+        setBooting(false);
+      }
+    })();
+  }, [fetchProfile, fetchCourses, fetchEarnings]);
+
+  // Handle unauthorized: clear session and go back to login
+  useEffect(() => {
+    setUnauthorizedHandler(async () => {
+      await clearSession();
+      setSession(null);
+      setTab('home');
+    });
   }, []);
 
   const handleLogin = async () => {

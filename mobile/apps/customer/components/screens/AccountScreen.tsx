@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import { apiFetch, formatEuros } from '../../lib/api';
 import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
 import SavedAddressesCard from '../SavedAddressesCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 export interface CustomerProfile {
   id: string;
@@ -71,7 +72,7 @@ export default function AccountScreen({
     }
   }, [token, onProfileLoaded]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

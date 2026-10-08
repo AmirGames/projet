@@ -19,6 +19,8 @@ import ReviewsScreen from '../components/screens/ReviewsScreen';
 import NotificationsScreen from '../components/screens/NotificationsScreen';
 import SupportScreen from '../components/screens/SupportScreen';
 import PromotionsScreen from '../components/screens/PromotionsScreen';
+import { useEffectChargement } from '../lib/useEffectChargement';
+import { useDerniereValeur } from '../lib/useDerniereValeur';
 
 interface StoreSummary {
   id: string;
@@ -62,10 +64,8 @@ export default function MerchantApp() {
 
   const token = session?.accessToken || '';
   const currentStore = stores.find((s) => s.id === storeId);
-  const storeIdRef = useRef(storeId);
-  storeIdRef.current = storeId;
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
+  const storeIdRef = useDerniereValeur(storeId);
+  const sessionRef = useDerniereValeur(session);
   const pushTokenRef = useRef<string | null>(null);
 
   const updatePrefs = (patch: Partial<Prefs>) => {
@@ -85,7 +85,7 @@ export default function MerchantApp() {
     } catch (error) {
       console.error('Erreur lors du chargement des commandes:', error);
     }
-  }, []);
+  }, [storeIdRef]);
 
   const loadStores = async (accessToken: string, organizationId: string, preferredStoreId?: string) => {
     try {
@@ -127,7 +127,7 @@ export default function MerchantApp() {
     setStorePickerOpen(false);
     setBanner(null);
     setUnreadCount(0);
-  }, []);
+  }, [sessionRef]);
 
   // Le serveur ferme toutes les sessions du compte, celle-ci comprise (D8) : on
   // revient à l'écran de connexion. Des jetons neufs, s'il en remettait, sont gardés.
@@ -141,7 +141,7 @@ export default function MerchantApp() {
     const renewed = { ...current, ...tokens };
     setSession(renewed);
     saveSession(renewed);
-  }, [handleLogout]);
+  }, [handleLogout, sessionRef]);
 
   // Démarrage : on reprend la session enregistrée et on renouvelle le jeton.
   useEffect(() => {
@@ -221,7 +221,7 @@ export default function MerchantApp() {
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (token) loadUnread(token);
   }, [token, loadUnread]);
 
@@ -288,7 +288,7 @@ export default function MerchantApp() {
     await loadOrders(token, id);
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (!pendingOpen || !session || !storeId) return;
     if (pendingOpen.storeId && pendingOpen.storeId !== storeId && stores.some((s) => s.id === pendingOpen.storeId)) {
       switchStore(pendingOpen.storeId);

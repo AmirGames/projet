@@ -55,9 +55,13 @@ export default function CompletionSummary({
     onBackRef.current = onBack;
   }, [onBack]);
   const ready = Boolean(bilan) && !pending;
-  useEffect(() => {
-    if (ready && autoReturn) setCountdown(AUTO_RETURN_S);
-  }, [ready, autoReturn]);
+  // Le décompte (re)part quand le bilan devient prêt : ajustement d'état pendant le rendu.
+  const [armeAvec, setArmeAvec] = useState(false);
+  const arme = ready && autoReturn;
+  if (arme !== armeAvec) {
+    setArmeAvec(arme);
+    if (arme) setCountdown(AUTO_RETURN_S);
+  }
   useEffect(() => {
     if (countdown == null) return;
     if (countdown <= 0) {

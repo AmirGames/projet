@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import ChampAdresse from '../../components/ChampAdresse';
@@ -91,16 +92,20 @@ export default function Commander() {
     [token]
   );
 
-  // Le devis suit les adresses : on le demande quand les deux sont choisies.
-  useEffect(() => {
+  // Le devis suit les adresses : quand elles changent, l'ancien devis tombe (ajustement d'état
+  // pendant le rendu) puis on le redemande si les deux sont choisies.
+  const [adressesVues, setAdressesVues] = useState({ depart, arrivee });
+  if (adressesVues.depart !== depart || adressesVues.arrivee !== arrivee) {
+    setAdressesVues({ depart, arrivee });
     setDevis(null);
     setInfo('');
     setErreur('');
+    if (!depart || !arrivee) setEnvoi(null);
+  }
+  useEffectChargement(() => {
+    // Une réponse du devis précédent, arrivée plus tard, est ignorée.
+    dernierDevis.current++;
     if (depart && arrivee) void chiffrer(depart, arrivee);
-    else setEnvoi(null);
-    return () => {
-      dernierDevis.current++;
-    };
     // `chiffrer` change avec le jeton : un jeton renouvelé ne doit pas refaire le devis.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [depart, arrivee]);

@@ -20,6 +20,7 @@ import TipAfterDelivery from '../TipAfterDelivery';
 import LiveMap, { RouteInfo } from '../LiveMap';
 import type { DeliveryUpdate, OrderUpdate } from '../../lib/useCustomerRealtime';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 const STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'];
 
@@ -65,7 +66,7 @@ export default function OrderScreen({
     }
   }, [orderId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

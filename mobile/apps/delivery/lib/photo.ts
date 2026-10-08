@@ -13,6 +13,7 @@ let cached: typeof ManipulatorModule | null | undefined;
 function manipulator(): typeof ManipulatorModule | null {
   if (cached !== undefined) return cached;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     cached = require('expo-image-manipulator') as typeof ManipulatorModule;
   } catch (e) {
     console.warn('expo-image-manipulator indisponible : recompilez l’application (expo run:android)', e);
