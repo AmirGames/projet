@@ -166,3 +166,73 @@
 .admin-sombre .shadow,.admin-sombre .shadow-sm,.admin-sombre .shadow-md,.admin-sombre .shadow-lg,.admin-sombre .shadow-xl{box-shadow:none!important}
 .admin-sombre .animate-spin{border-color:#F4F4F5}
 .admin-sombre{color-scheme:dark;background-color:#0B0B0C!important;color:#F4F4F5!important}
+
+/* Teintes pastel moins courantes. */
+.admin-sombre .bg-pink-50{background-color:#331222!important}
+.admin-sombre .bg-pink-100{background-color:#331222!important}
+.admin-sombre .border-pink-200{border-color:#5C1D3F!important}
+.admin-sombre .border-pink-300{border-color:#5C1D3F!important}
+.admin-sombre .text-pink-500{color:#F472B6!important}
+.admin-sombre .text-pink-600{color:#F472B6!important}
+.admin-sombre .text-pink-700{color:#F472B6!important}
+.admin-sombre .text-pink-800{color:#F472B6!important}
+.admin-sombre .text-pink-900{color:#F472B6!important}
+.admin-sombre .bg-rose-50{background-color:#331218!important}
+.admin-sombre .bg-rose-100{background-color:#331218!important}
+.admin-sombre .border-rose-200{border-color:#5C1D2A!important}
+.admin-sombre .border-rose-300{border-color:#5C1D2A!important}
+.admin-sombre .text-rose-500{color:#FB7185!important}
+.admin-sombre .text-rose-600{color:#FB7185!important}
+.admin-sombre .text-rose-700{color:#FB7185!important}
+.admin-sombre .text-rose-800{color:#FB7185!important}
+.admin-sombre .text-rose-900{color:#FB7185!important}
+.admin-sombre .bg-teal-50{background-color:#0F2B2B!important}
+.admin-sombre .bg-teal-100{background-color:#0F2B2B!important}
+.admin-sombre .border-teal-200{border-color:#1B4F4F!important}
+.admin-sombre .border-teal-300{border-color:#1B4F4F!important}
+.admin-sombre .text-teal-500{color:#2DD4BF!important}
+.admin-sombre .text-teal-600{color:#2DD4BF!important}
+.admin-sombre .text-teal-700{color:#2DD4BF!important}
+.admin-sombre .text-teal-800{color:#2DD4BF!important}
+.admin-sombre .text-teal-900{color:#2DD4BF!important}
+.admin-sombre .bg-cyan-50{background-color:#0F2833!important}
+.admin-sombre .bg-cyan-100{background-color:#0F2833!important}
+.admin-sombre .border-cyan-200{border-color:#1B4A5C!important}
+.admin-sombre .border-cyan-300{border-color:#1B4A5C!important}
+.admin-sombre .text-cyan-500{color:#22D3EE!important}
+.admin-sombre .text-cyan-600{color:#22D3EE!important}
+.admin-sombre .text-cyan-700{color:#22D3EE!important}
+.admin-sombre .text-cyan-800{color:#22D3EE!important}
+.admin-sombre .text-cyan-900{color:#22D3EE!important}
+.admin-sombre .bg-violet-50{background-color:#231744!important}
+.admin-sombre .bg-violet-100{background-color:#231744!important}
+.admin-sombre .border-violet-200{border-color:#43297A!important}
+.admin-sombre .border-violet-300{border-color:#43297A!important}
+.admin-sombre .text-violet-500{color:#A78BFA!important}
+.admin-sombre .text-violet-600{color:#A78BFA!important}
+.admin-sombre .text-violet-700{color:#A78BFA!important}
+.admin-sombre .text-violet-800{color:#A78BFA!important}
+.admin-sombre .text-violet-900{color:#A78BFA!important}
+.admin-sombre .bg-fuchsia-50{background-color:#2E1233!important}
+.admin-sombre .bg-fuchsia-100{background-color:#2E1233!important}
+.admin-sombre .border-fuchsia-200{border-color:#531D5C!important}
+.admin-sombre .border-fuchsia-300{border-color:#531D5C!important}
+.admin-sombre .text-fuchsia-500{color:#E879F9!important}
+.admin-sombre .text-fuchsia-600{color:#E879F9!important}
+.admin-sombre .text-fuchsia-700{color:#E879F9!important}
+.admin-sombre .text-fuchsia-800{color:#E879F9!important}
+.admin-sombre .text-fuchsia-900{color:#E879F9!important}
+.admin-sombre .bg-lime-50{background-color:#1F2B0F!important}
+.admin-sombre .bg-lime-100{background-color:#1F2B0F!important}
+.admin-sombre .border-lime-200{border-color:#3A4F1B!important}
+.admin-sombre .border-lime-300{border-color:#3A4F1B!important}
+.admin-sombre .text-lime-500{color:#A3E635!important}
+.admin-sombre .text-lime-600{color:#A3E635!important}
+.admin-sombre .text-lime-700{color:#A3E635!important}
+.admin-sombre .text-lime-800{color:#A3E635!important}
+.admin-sombre .text-lime-900{color:#A3E635!important}
+
+/* Gris foncés employés comme fonds pleins : à éclaircir pour se détacher des cartes. */
+.admin-sombre .bg-gray-600{background-color:#52525B!important}
+.admin-sombre .bg-gray-700{background-color:#46464D!important}
+.admin-sombre .bg-gray-800{background-color:#3F3F46!important}
