@@ -14,6 +14,7 @@ import { Cart, cartTotal, itemCount } from '../../lib/carts';
 import type { DeliveryAddress } from '../../lib/session';
 import { Famille, formatKm, formatRating, Store } from '../../lib/stores';
 import { CouvertureCommerce } from '../CouvertureCommerce';
+import OffresRegion from '../OffresRegion';
 import { COLORS, ErrorBox, Loading } from '../ui';
 
 const SORTS = [
@@ -28,6 +29,7 @@ const feeOf = (store: Store) =>
 
 export default function HomeScreen({
   header,
+  token,
   address,
   carts,
   onChangeAddress,
@@ -35,6 +37,7 @@ export default function HomeScreen({
   onOpenCart,
 }: {
   header: React.ReactNode;
+  token: string;
   address: DeliveryAddress | null;
   carts: Cart[];
   onChangeAddress: () => void;
@@ -135,6 +138,8 @@ export default function HomeScreen({
           })}
         </ScrollView>
       )}
+
+      <OffresRegion token={token} ville={address?.city || undefined} onOpenStore={onOpenCart} />
 
       {carts.length > 0 && (
         <View style={styles.cartsBlock}>
