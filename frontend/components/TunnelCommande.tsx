@@ -46,6 +46,7 @@ import { useTranslations } from 'next-intl';
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { enregistrerAdresseLivraison, useAdresseLivraisonEnregistree } from '@/lib/adresseLivraison';
+import { lireEtatAcceptation, memoriserAcceptation, oublierAcceptation } from '@/lib/acceptation-commande';
 import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
@@ -129,6 +130,9 @@ export function TunnelCommande({
   // Attestation d'âge : demandée dès qu'un plat du panier contient de l'alcool,
   // et exigée aussi par le serveur.
   const [ageConfirme, setAgeConfirme] = useState(false);
+  // Conditions déjà acceptées dans leur version en vigueur : la case n'est plus proposée.
+  const [conditionsDejaAcceptees, setConditionsDejaAcceptees] = useState(false);
+  const [versionsConditions, setVersionsConditions] = useState('');
   const tAllergenes = useTranslations('allergenes');
   const contientAlcool = lignes.some((ligne) => ligne.alcool);
   const [checkoutError, setCheckoutError] = useState('');
@@ -226,6 +230,20 @@ export function TunnelCommande({
       );
     }
   }
+
+  // La case des conditions ne revient que si leur version a changé depuis la dernière acceptation.
+  useEffect(() => {
+    let annule = false;
+    lireEtatAcceptation(user ? localStorage.getItem('accessToken') : null).then((etat) => {
+      if (annule || !etat) return;
+      setVersionsConditions(etat.versions);
+      setConditionsDejaAcceptees(etat.dejaAccepte);
+      if (etat.dejaAccepte) setConditionsAcceptees(true);
+    });
+    return () => {
+      annule = true;
+    };
+  }, [user]);
 
   // Charger les informations du profil utilisateur si connecté.
   useEffect(() => {
@@ -568,11 +586,18 @@ export function TunnelCommande({
 
       if (!response.ok) {
         const erreur = await response.json().catch(() => null);
+        // Le serveur ne reconnaît plus l'acceptation (texte republié) : on redemande la case.
+        if (JSON.stringify(erreur ?? {}).includes('CONDITIONS_REQUIRED')) {
+          oublierAcceptation();
+          setConditionsDejaAcceptees(false);
+          setConditionsAcceptees(false);
+        }
         setCheckoutError(erreur?.error || t('erreurCreation'));
         return;
       }
 
       oublierTentative();
+      if (versionsConditions) memoriserAcceptation(versionsConditions);
       const recue = await response.json();
       if (checkoutForm.deliveryType === 'DELIVERY' && checkoutForm.deliveryAddress) {
         enregistrerAdresseLivraison({
@@ -1322,12 +1347,14 @@ export function TunnelCommande({
             </label>
           )}
 
-          <AcceptationConditions
-            coche={conditionsAcceptees}
-            onChange={setConditionsAcceptees}
-            documents={[{ href: '/cgv', libelle: t('cgv') }]}
-            clair
-          />
+          {!conditionsDejaAcceptees && (
+            <AcceptationConditions
+              coche={conditionsAcceptees}
+              onChange={setConditionsAcceptees}
+              documents={[{ href: '/cgv', libelle: t('cgv') }]}
+              clair
+            />
+          )}
 
           <button
             onClick={commander}

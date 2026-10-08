@@ -46,3 +46,12 @@ Consommateurs mis à jour : site web (formulaire produit commerçant, vitrine, t
 
 - Contrôle effectif de la pièce d'identité à la remise (preuve de remise du livreur) pour les commandes contenant de l'alcool.
 - Reprise d'un ancien panier enregistré sur mobile (« Commander à nouveau ») : l'attestation est demandée par le serveur ; l'écran n'affiche la case qu'après un nouvel ajout depuis la carte.
+
+## Acceptation des conditions de commande
+
+La case « J'ai lu et j'accepte les CGV… » n'est plus redemandée tant que les versions en vigueur de `cgv` et `confidentialite` n'ont pas changé.
+
+- `GET /api/pages-legales/acceptation/commande` (jeton facultatif) → `{ aJour, versions }`. `aJour` est vrai si le compte connecté a une preuve (`AcceptationConditions`) couvrant les versions actuelles.
+- `POST /api/orders` : `conditionsAcceptees` devient facultatif ; sans `true`, le serveur exige `aJour` (sinon 400 `CONDITIONS_REQUIRED`). La preuve de chaque commande est rattachée au compte (`userId`).
+- Republier une page légale (nouveau numéro de version) fait réapparaître la case pour tous.
+- Visiteur sans compte (site) : le navigateur retient la version acceptée ; la preuve par commande reste enregistrée à l'envoi.

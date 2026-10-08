@@ -30,3 +30,35 @@ export async function enregistrerAcceptation(
     },
   });
 }
+
+/** Les documents à accepter pour commander. */
+export const DOCUMENTS_COMMANDE: DocumentLegal[] = ["cgv", "confidentialite"];
+
+/** Les versions en vigueur, « cgv@v1 confidentialite@v2 ». */
+export function versionsEnVigueur(documents: DocumentLegal[] = DOCUMENTS_COMMANDE) {
+  return PagesLegalesService.versionsDe(documents);
+}
+
+/**
+ * Ce compte a-t-il déjà accepté les versions en vigueur de ces documents ?
+ * Vrai : inutile de redemander la case. Dès qu'une page légale est republiée,
+ * la version change et la case réapparaît. Seul un compte connecté est
+ * reconnu ; une adresse e-mail saisie ne prouve rien.
+ */
+export async function acceptationAJour(
+  userId: string | undefined,
+  documents: DocumentLegal[] = DOCUMENTS_COMMANDE
+): Promise<boolean> {
+  if (!userId) return false;
+  const attendues = (await PagesLegalesService.versionsDe(documents)).split(" ");
+  const preuves = await db.acceptationConditions.findMany({
+    where: { userId, documents: { hasEvery: documents } },
+    orderBy: { acceptedAt: "desc" },
+    take: 20,
+    select: { version: true },
+  });
+  return preuves.some((p) => {
+    const acceptees = p.version.split(" ");
+    return attendues.every((v) => acceptees.includes(v));
+  });
+}

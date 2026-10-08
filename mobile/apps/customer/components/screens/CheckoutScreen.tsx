@@ -142,6 +142,8 @@ function CheckoutBody({
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   // Attestation d'âge, demandée si un plat contient de l'alcool (et exigée par le serveur).
   const [ageConfirme, setAgeConfirme] = useState(false);
+  // Conditions déjà acceptées dans leur version en vigueur : la case n'est plus proposée.
+  const [conditionsDejaAcceptees, setConditionsDejaAcceptees] = useState(false);
   const [tipChosen, setTipChosen] = useState(0);
   const [tipFree, setTipFree] = useState(false);
   const [error, setError] = useState('');
@@ -149,6 +151,18 @@ function CheckoutBody({
   const [pending, setPending] = useState(false);
   /** Commande créée, en attente du paiement en ligne : elle n'est pas encore chez le commerçant. */
   const [toPay, setToPay] = useState<{ id: string; amount: number; trackingToken?: string } | null>(null);
+
+  // La case des conditions ne revient que si leur version a changé depuis la dernière acceptation (vérifié par le serveur).
+  useEffect(() => {
+    apiFetch<{ data: { aJour: boolean } }>('/api/pages-legales/acceptation/commande', token)
+      .then((res) => {
+        if (res.data.aJour) {
+          setConditionsDejaAcceptees(true);
+          setConditionsAcceptees(true);
+        }
+      })
+      .catch(() => undefined);
+  }, [token]);
 
   // Le profil pré-remplit le contact.
   useEffect(() => {
@@ -395,6 +409,11 @@ function CheckoutBody({
       }
       onOrdered(order.id);
     } catch (e: any) {
+      // Le texte a été republié : la case est de nouveau demandée.
+      if (e.code === 'CONDITIONS_REQUIRED') {
+        setConditionsDejaAcceptees(false);
+        setConditionsAcceptees(false);
+      }
       setError(e.message || 'La commande n’a pas pu être passée');
     } finally {
       setSubmitting(false);
@@ -683,6 +702,7 @@ function CheckoutBody({
             </Text>
           </TouchableOpacity>
         )}
+        {!conditionsDejaAcceptees && (
         <TouchableOpacity
           style={styles.conditions}
           onPress={() => setConditionsAcceptees((v) => !v)}
@@ -698,6 +718,7 @@ function CheckoutBody({
             .
           </Text>
         </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.submit, (submitting || lines.length === 0 || !conditionsAcceptees || (contientAlcool && !ageConfirme)) && { opacity: 0.6 }]}
           onPress={review}

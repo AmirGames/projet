@@ -66,6 +66,7 @@ jest.mock("../../legal/acceptation-conditions.service", () => {
   return {
     champAcceptation: { conditionsAcceptees: z.literal(true) },
     enregistrerAcceptation: jest.fn(async () => undefined),
+    acceptationAJour: jest.fn(async () => false),
   };
 });
 
@@ -369,5 +370,15 @@ describe("POST /api/orders — alcool", () => {
     const res = await request(app).post("/api/orders").send(commande({ ageMinimumConfirme: true }));
 
     expect(res.status).toBe(201);
+  });
+});
+
+describe("POST /api/orders — acceptation des conditions", () => {
+  it("refuse sans case cochée ni acceptation antérieure", async () => {
+    const { conditionsAcceptees: _c, ...sans } = commande();
+    const res = await request(app).post("/api/orders").send(sans);
+
+    expect(res.status).toBe(400);
+    expect(db.order.create).not.toHaveBeenCalled();
   });
 });
