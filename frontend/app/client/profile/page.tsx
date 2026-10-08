@@ -11,6 +11,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import ChangerMotDePasse from '@/components/ChangerMotDePasse';
 import { MesAdressesClient } from '@/components/MesAdressesClient';
+import { PersonnalisationClient } from '@/components/PersonnalisationClient';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Profil {
@@ -255,6 +256,7 @@ export default function ProfilClientPage() {
           </form>
 
           <MesAdressesClient />
+          <PersonnalisationClient />
           <ChangerMotDePasse clair />
         </>
       )}

@@ -703,6 +703,7 @@ export default function CustomerApp() {
     return (
       <HomeScreen
         header={header(firstName ? `Bonjour ${firstName}` : 'Accueil')}
+        token={token}
         address={address}
         carts={cartList}
         onChangeAddress={() => pushPage({ kind: 'address' })}

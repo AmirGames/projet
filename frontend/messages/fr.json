@@ -6336,5 +6336,21 @@
     "paiementsExistants": "Ce pourcentage s'applique aux paiements créés ensuite : un paiement existant garde sa répartition. Le changement est journalisé.",
     "tarifsAide": "Le prix des courses se règle région par région :",
     "versTarifs": "Ouvrir les tarifs"
+  },
+
+  "offresRegion": {
+    "pourVousTitre": "Pour vous",
+    "gererPersonnalisation": "Gérer la personnalisation",
+    "dejaCommande": "Déjà commandé",
+    "promotionsTitre": "Promotions près de chez vous",
+    "code": "Code",
+    "minimum": "Dès {montant} d'achat",
+    "tendancesTitre": "Ce que commande votre région",
+    "commandes": "{n, plural, one {# commande} other {# commandes}}"
+  },
+  "personnalisationClient": {
+    "titre": "Suggestions personnalisées",
+    "explication": "Nous vous suggérons des commerces proches de ce que vous commandez le plus, d'après vos commandes passées. Désactivez-les à tout moment : vos commandes ne serviront plus à vous faire des suggestions.",
+    "erreur": "Le réglage n'a pas pu être enregistré. Réessayez."
   }
 }

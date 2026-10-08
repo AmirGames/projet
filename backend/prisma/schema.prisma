@@ -2102,6 +2102,11 @@ model Customer {
   // Notes (internal)
   notes           String?
 
+  /// Opposition à la personnalisation : vrai, les suggestions de commerces
+  /// ne se fondent plus sur les commandes passées de ce compte. Les offres et
+  /// tendances de la région, elles, ne dépendent pas de la personne.
+  personnalisationDesactivee Boolean @default(false)
+
   // Status
   status          String    @default("ACTIVE") // ACTIVE, BLOCKED, INACTIVE
 

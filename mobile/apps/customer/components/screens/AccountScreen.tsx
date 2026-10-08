@@ -15,6 +15,7 @@ import {
 import { apiFetch, formatEuros } from '../../lib/api';
 import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
 import SavedAddressesCard from '../SavedAddressesCard';
+import PersonnalisationCard from '../PersonnalisationCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 export interface CustomerProfile {
@@ -149,6 +150,7 @@ export default function AccountScreen({
           </Card>
 
           <SavedAddressesCard token={token} />
+          <PersonnalisationCard token={token} />
           <ChangePasswordCard token={token} onChanged={onPasswordChanged} />
         </ScrollView>
       )}

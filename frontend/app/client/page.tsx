@@ -19,6 +19,7 @@ import {
 import { euro } from '@/lib/format';
 import { visuelDeFamille } from '@/lib/visuels-familles';
 import { IllustrationFamille } from '@/components/IllustrationFamille';
+import { OffresRegion } from '@/components/OffresRegion';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -403,6 +404,9 @@ export default function ClientHomePage() {
             </div>
           </nav>
         )}
+
+        {/* Promotions, tendances et suggestions de la région : voir OffresRegion. */}
+        <OffresRegion />
 
         {/* Les filtres rapides et le tri, en pastilles. */}
         <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

@@ -23,6 +23,8 @@ import { adressesFavoritesSchema } from "./adresses-favorites";
 import { avisARedemander, avisRestaurantParCommerce } from "../reviews/avis-client.service";
 import { avecLaVraieNote } from "../reviews/review.service";
 import { CustomerCartService, panierSchema } from "../orders/customer-cart.service";
+import { promotionsDeLaRegion, tendancesDeLaRegion } from "../marketing/offres-region.service";
+import { changerPersonnalisation, personnalisationActive, recommandationsPourLeClient } from "../marketing/recommandations.service";
 import {
   COMMENTAIRE_MAX,
   NOTE_MAX,
@@ -555,6 +557,61 @@ const profilSchema = z.object({
   address: z.string().optional(),
   city: z.string().optional(),
   postalCode: z.string().optional(),
+});
+
+/** `?ville=` : texte libre, borné ; il ne sert qu'à comparer à la ville des commerces. */
+const villeDemandee = (brut: unknown) =>
+  typeof brut === "string" && brut.trim().length > 0 && brut.length <= 80 ? brut.trim() : undefined;
+
+// GET /api/client/promotions-region?pays=be&ville= - Promotions en cours des commerces de la région (public).
+router.get("/promotions-region", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const promotions = await promotionsDeLaRegion(paysDemande(req.query.pays), villeDemandee(req.query.ville));
+    res.json({ success: true, count: promotions.length, data: promotions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/tendances?pays=be&ville= - Types de cuisine les plus commandés dans la région (public, agrégé, seuil d'acheteurs).
+router.get("/tendances", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tendances = await tendancesDeLaRegion(paysDemande(req.query.pays), villeDemandee(req.query.ville));
+    res.json({ success: true, data: tendances });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/me/recommandations?pays=be - Commerces proches de ce que le compte commande. Toujours ceux du compte connecté.
+router.get("/me/recommandations", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    res.json({ success: true, data: await recommandationsPourLeClient(client.id, paysDemande(req.query.pays)) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/me/personnalisation - La personnalisation est-elle active pour ce compte ?
+router.get("/me/personnalisation", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    res.json({ success: true, data: { personnalisationActive: await personnalisationActive(client.id) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/client/me/personnalisation { desactivee } - Droit d'opposition au profilage.
+router.put("/me/personnalisation", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    const { desactivee } = z.object({ desactivee: z.boolean() }).parse(req.body);
+    res.json({ success: true, data: await changerPersonnalisation(client.id, desactivee) });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET /api/client/me/addresses - Profil et destinations des commandes du compte.
