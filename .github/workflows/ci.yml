@@ -11,9 +11,11 @@
 #
 # Deux suites d'intégration (RGPD, assistant) ne s'exécutent que si on le leur
 # demande : elles écrivent beaucoup et exigent une base à elles. Elles tournent
-# ici chacune sur sa base dédiée, migrée comme les autres. Les quatre
+# ici chacune sur sa base dédiée, migrée comme les autres. Les six
 # applications mobiles ont leur propre job : types, lint, et les tests Node
-# de l'application livreur.
+# de l'application livreur. Un job de bout en bout (E2E) démarre l'API et le
+# site pour de vrai et rejoue un sous-ensemble stable des parcours navigateur
+# de frontend/scripts/verif-*.mjs.
 #
 # Le lint est un cliquet : `--max-warnings` (dans le package.json de chaque
 # application) vaut le nombre actuel d'avertissements. Un avertissement de plus
@@ -97,6 +99,10 @@ jobs:
         run: npx jest src/modules/assistant/__tests__/integration.test.ts
       - name: Build
         run: npm run build
+      # Informatif : l'état des dépendances ne doit pas bloquer une PR.
+      - name: Audit des dépendances (informatif)
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
 
   frontend:
     name: Frontend
@@ -126,17 +132,24 @@ jobs:
         run: npx jest
       - name: Build
         run: npm run build
+      - name: Audit des dépendances (informatif)
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
 
-  # Les quatre applications Expo : sans ce job, une erreur de type ou une
+  # Les six applications Expo : sans ce job, une erreur de type ou une
   # régression de la session mobile passait la CI (rien ne les vérifiait).
+  # zupdrive-driver ne passe pas encore ses types ni son lint (imports vers un
+  # lib/auth qui n'existe pas) : il est vérifié sans bloquer la PR, le temps
+  # d'être corrigé. Retirez alors son exception ci-dessous.
   mobile:
     name: Mobile (${{ matrix.app }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    continue-on-error: ${{ matrix.app == 'zupdrive-driver' }}
     strategy:
       fail-fast: false
       matrix:
-        app: [customer, merchant, delivery, admin]
+        app: [customer, merchant, delivery, admin, zupdrive-driver, zupdrive-passenger]
     defaults:
       run:
         working-directory: mobile/apps/${{ matrix.app }}
@@ -155,3 +168,130 @@ jobs:
       - name: Tests (application livreur)
         if: matrix.app == 'delivery'
         run: npm run test:alerts && npm run test:session
+      - name: Tests (application passager ZupDrive)
+        if: matrix.app == 'zupdrive-passenger'
+        run: npm test
+
+  # Bout en bout : l'API compilée et le site compilé tournent pour de vrai sur
+  # PostgreSQL et Redis, et des parcours navigateur (Playwright) les pilotent.
+  # Seules les suites qui passent de façon répétable sur une base vierge y
+  # figurent ; les autres, avec la raison, sont listées dans le commentaire de
+  # l'étape. Les variables de l'API viennent de backend/.env.test (valeurs
+  # factices, pas de secret) ; Stripe y est coupé.
+  e2e:
+    name: E2E (parcours navigateur)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Le nom de la base doit contenir « test » : reinitialiser.mjs refuse sinon.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_test?schema=public
+      VERIF_SITE_URL: http://localhost:3000
+      VERIF_API_URL: http://localhost:3001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Dépendances du backend
+        run: npm ci
+        working-directory: backend
+      - name: Migrations
+        run: npx prisma migrate deploy
+        working-directory: backend
+      - name: Build du backend
+        run: npm run build
+        working-directory: backend
+      # Le faux service d'adresses évite de dépendre d'Internet : sans lui, une
+      # adresse saisie n'est pas située et les livraisons échouent.
+      - name: Démarrer l'API et le faux service d'adresses
+        working-directory: backend
+        env:
+          REDIS_URL: redis://localhost:6379
+          ADDRESS_API_URL: http://127.0.0.1:4599/ban/
+          PHOTON_API_URL: http://127.0.0.1:4599/photon/
+        run: |
+          nohup node scripts/verification/faux-service-adresses.mjs > "$RUNNER_TEMP/adresses.log" 2>&1 &
+          nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:3001/health/ready > /dev/null && exit 0
+            sleep 2
+          done
+          echo "L'API ne répond pas :"; cat "$RUNNER_TEMP/api.log"; exit 1
+      - name: Dépendances du frontend
+        run: npm ci
+        working-directory: frontend
+      # Playwright n'est pas une dépendance du projet (voir LISEZ-MOI.md) :
+      # installé ici sans toucher au package.json.
+      - name: Playwright et Chromium
+        working-directory: frontend
+        run: |
+          npm i --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build et démarrage du site
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: |
+          npx next build
+          nohup npx next start -p 3000 > "$RUNNER_TEMP/site.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sS -o /dev/null http://localhost:3000 && exit 0
+            sleep 2
+          done
+          echo "Le site ne répond pas :"; cat "$RUNNER_TEMP/site.log"; exit 1
+      # Sous-ensemble stable, vérifié en local (répété, base remise à zéro
+      # avant chaque suite). Exclues, car elles échouent même sur une base
+      # vierge, sans que rien ne soit cassé côté CI :
+      #   - verif-commande-invite : la page affiche autre chose que
+      #     « Commande envoyée » après confirmation (contrôles à réaligner) ;
+      #   - verif-suivi-client : « Aucun livreur en ligne à proximité », la
+      #     course n'est jamais proposée ;
+      #   - verif-compte-restreint : la pastille de la cloche reste éteinte
+      #     après suspension (échec constant, davantage de contrôles selon les
+      #     passages).
+      # À les réintégrer une fois ces écarts traités. L'API limite à 120 appels
+      # publics par minute et par IP : verif-paniers, la plus bavarde, attend
+      # que la fenêtre se vide.
+      - name: Parcours navigateur
+        working-directory: frontend
+        run: |
+          echecs=0
+          for suite in session-perimee mot-de-passe-oublie paniers; do
+            echo "::group::verif-$suite"
+            (cd ../backend && node scripts/verification/reinitialiser.mjs)
+            [ "$suite" = "paniers" ] && sleep 65
+            node "scripts/verif-$suite.mjs" || { echo "::error title=E2E::verif-$suite a échoué"; echecs=$((echecs + 1)); }
+            echo "::endgroup::"
+          done
+          [ "$echecs" -eq 0 ]
+      - name: Journaux des serveurs
+        if: failure()
+        run: |
+          for f in api site adresses; do echo "=== $f"; tail -n 100 "$RUNNER_TEMP/$f.log" || true; done
