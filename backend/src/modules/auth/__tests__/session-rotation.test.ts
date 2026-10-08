@@ -218,6 +218,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
   auth.use(express.json());
   beforeAll(async () => {
     auth.use("/api/auth", (await import("../auth.routes")).default);
+    auth.use("/api/auth", (await import("../auth.motdepasse.routes")).default);
     auth.use(errorHandler);
   });
 
@@ -351,6 +352,7 @@ it("changement de mot de passe : ferme toutes les sessions, sans remettre de jet
     const auth = express();
     auth.use(express.json());
     auth.use("/api/auth", (await import("../auth.routes")).default);
+    auth.use("/api/auth", (await import("../auth.motdepasse.routes")).default);
     auth.use(errorHandler);
     const response = await request(auth).post("/api/auth/change-password")
       .set("Authorization", `Bearer ${actuelle.accessToken}`)

@@ -47,7 +47,7 @@ jest.mock("../fiche-client.service", () => ({
   })),
 }));
 
-import routes from "../client.routes";
+import routes from "../client.compte.routes";
 const app = express();
 app.use(express.json());
 app.use("/api/client", routes);
