@@ -43,29 +43,25 @@ Aucun changement cassant dans ces plages (mineures/correctifs). Non montés volo
 
 ## Frontend
 
-`npm audit --omit=dev` : 5 *high* + 2 *moderate*, tous issus de **`tailwindcss` 3.4.19** (`braces`, `micromatch`, `fast-glob`, `chokidar`, `postcss-nested`, `postcss-selector-parser`).
+`npm audit --omit=dev` : **0 vulnérabilité** (7 avant). Les alertes de production venaient toutes de `tailwindcss` 3 (`braces`, `micromatch`, `fast-glob`, `chokidar`, `postcss-selector-parser`) ; la migration vers **Tailwind 4** (outil officiel `@tailwindcss/upgrade`, 160 fichiers) les supprime. Compatibilité conservée dans `app/globals.css` : curseur « main » des boutons, couleur des placeholders, bordure grise par défaut. Rendu comparé avant/après sur 8 pages publiques : mise en page identique ; dégradés un peu plus saturés (interpolation oklab) et quelques pixels de hauteur de ligne.
 
-| Alerte | Type | Atteignable ? | Décision |
-|---|---|---|---|
-| `braces` (épuisement de pile sur motifs imbriqués) et dérivés | Outillage de build (Tailwind scanne les fichiers du dépôt) | Non : s'exécute au `next build`/`next dev` sur nos sources, jamais sur une entrée utilisateur, et rien n'en est livré au navigateur. | Risque accepté |
-| `postcss-selector-parser` < 7.1.6 (complexité quadratique) | Outillage de build | Non : mêmes raisons (sélecteurs de nos propres CSS). | Risque accepté |
-| Chaîne `jest` 29 / `eslint-config-next` (35 *high* au total en audit complet) | devDependencies | Non : outillage de test/lint. | Risque accepté |
+`npm audit` complet : 38 alertes, toutes en devDependencies (chaîne `jest` 29, `eslint-config-next`) : outillage de test et de lint, absent du navigateur et du serveur. Risque accepté ; `jest` 30 et `eslint` 10 sont des montées de majeure à traiter à part.
 
-La seule sortie réelle est **Tailwind 3 → 4** (réécriture de la configuration, changements d'utilitaires et de thème sur toute l'interface) : c'est un chantier à part, pas un correctif de sécurité. À planifier avec une revue visuelle des espaces client, merchant, delivery et superowner.
-
-### Paquets mis à jour (dans leurs plages)
+### Paquets mis à jour
 
 | Paquet | Avant | Après |
 |---|---|---|
+| tailwindcss, @tailwindcss/postcss | 3.4.19 | 4.3.3 (autoprefixer retiré : intégré) |
+| @stripe/stripe-js | 2.4.0 | 10.0.0 |
+| @stripe/react-stripe-js | 3.11.0 | 7.0.0 |
 | @tanstack/react-query | 5.103.3 | 5.104.1 |
 | next-intl | 4.14.7 | 4.14.9 |
 | react-hook-form | 7.88.0 | 7.89.0 |
 | socket.io-client | 4.8.3 | 4.8.4 |
 | postcss | 8.5.28 | 8.5.29 |
-| autoprefixer | 10.5.6 | 10.6.1 |
 | prettier | 3.9.6 | 3.9.9 |
 
-Non montés (majeures) : `@stripe/stripe-js` 2 → 10 et `@stripe/react-stripe-js` 3 → 7 (flux de paiement : à faire avec un test de bout en bout), `zod` 3 → 4, `zustand` 4 → 5, `jest` 29 → 30, `eslint` 9 → 10, `lucide-react` 0 → 1, `typescript` 5.9 → 7.
+`components/stripe-payment.tsx` (loadStripe, Elements, CardElement, confirmCardPayment) n'a pas changé : tsc et tests passent. Non montés : `zod` 3 → 4, `zustand` 4 → 5, `jest` 29 → 30, `eslint` 9 → 10, `lucide-react` 0 → 1, `typescript` 5.9 → 7.
 
 ## Cliquet de lint
 
@@ -75,21 +71,29 @@ Principe : `--max-warnings` égale le nombre exact d'avertissements ; on le bais
 |---|---|---|
 | backend | 401 (386 réels) | **0** |
 | frontend | 0 | 0 |
-| mobile/customer | 25 | 24 |
-| mobile/delivery | 30 | 30 |
-| mobile/merchant | 20 | 20 |
-| mobile/admin | 4 | 3 |
-| mobile/zupdrive-driver | 37 | 29 |
-| mobile/zupdrive-passenger | 25 | 8 |
+| mobile/customer | 25 | **0** |
+| mobile/delivery | 30 | **0** |
+| mobile/merchant | 20 | **0** |
+| mobile/admin | 4 | **0** |
+| mobile/zupdrive-driver | 37 | **0** |
+| mobile/zupdrive-passenger | 25 | **0** |
 
 Backend : 386 avertissements au départ (360 `no-explicit-any`), **0** maintenant ; `--max-warnings 0` comme le frontend. Principes appliqués : types Prisma (`WhereInput`, `UpdateInput`, énumérations) ; entrées validées par Zod (statuts de commande, de campagne, de rapport ; réponses des fournisseurs d'adresses ; contenu de l'outbox et des sauvegardes) ; colonnes Json lues par `utils/json.ts` (`objetJson`, `listeJson`, `entreeJson`, `enJson`) ; erreurs Prisma par `utils/code-erreur.ts`. Deux assertions de type restent aux frontières de restauration (`merchant-closure.service.ts`, `backup.service.ts`) : le contenu vient d'une archive que nous avons écrite et Prisma valide les colonnes à l'écriture.
 
-Mobile : les avertissements restants sont des règles React Compiler (`react-hooks/set-state-in-effect`, `refs`, `immutability`, `preserve-manual-memoization`). Les corriger demande de réécrire des composants ; sans appareil ni test d'interface, ce n'est pas fait ici.
+Mobile : les six apps sont à `--max-warnings 0`. Les règles React Compiler sont traitées ainsi :
+- `lib/useEffectChargement.ts` (une copie par app) : chargements asynchrones, même convention que le frontend (`additionalHooks` dans `eslint.config.js`) ;
+- `lib/useDerniereValeur.ts` : référence mise à jour après le rendu au lieu d'être écrite pendant ;
+- états dérivés (suggestions d'adresse, moyen de paiement, verdict de livraison, états GPS) ou ajustés pendant le rendu (remise, plat choisi, devis ZupDrive, raison d'un refus, sélection de course) à la place des effets de remise à zéro ;
+- notification touchée : l'écoute ne s'ouvre qu'une fois connecté, sans état intermédiaire ; code de remise en main : confirmation à la saisie ;
+- `require()` paresseux de modules natifs (absents d'Expo Go et du web) : désactivation ciblée de `no-require-imports`, motivée sur la ligne.
+
+Vérifié : `tsc` et lint à 0 sur les six apps, et `expo export --platform android` produit un bundle pour chacune. **Non testé sur appareil** : les parcours touchés (notification touchée, saisie du code de remise en main, décompte de retour automatique, guidage, offres) sont à passer en recette.
 
 ## Changements de comportement à connaître (backend)
 
 - `GET /orders?status=…`, `GET /orders/status/:storeId?status=…` : un statut inconnu répond désormais **400** (validation Zod) au lieu d'une erreur Prisma 500. Valeurs : `PENDING`, `ACCEPTED`, `PREPARING`, `REJECTED`, `READY`, `COMPLETED` (+ `ALL` sur le premier).
 - Enregistrement d'une carte (`savePaymentMethod`) : le type Stripe `card` était converti en énumération Prisma par un `as any` ; « card » n'est pas une valeur de `PaymentMethodType`. Il est maintenant converti en `CREDIT_CARD`/`DEBIT_CARD` (selon `funding`), les autres moyens en `STRIPE`.
+- ZupDrive temps réel : `POST /api/zupdrive/realtime/join|leave/:courseId` lisait `req.socketId`, posé par aucun middleware (400 permanent). Le `socketId` vient maintenant du corps de la requête et doit appartenir à l'appelant.
 - Recherche de boutiques (`GET /api/client/stores/search`) : sans `city`, une clause `OR` vide annulait le filtre ; elle n'est plus ajoutée.
 - Rapports (`status`, `paymentStatus`) et campagnes marketing (`status`) : valeur inconnue → 400 au lieu d'une erreur Prisma.
 - `notification.service.ts` : `sendOrderNotification` et `sendDriverNotification` (aucun appelant, types hors énumération) supprimées.
