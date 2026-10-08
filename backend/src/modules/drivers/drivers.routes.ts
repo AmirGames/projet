@@ -391,7 +391,7 @@ router.post("/push/subscribe", authMiddleware, async (req: Request, res: Respons
       .passthrough()
       .parse(req.body);
 
-    await db.courier.update({ where: { id: livreur.id }, data: { pushSubscription: abonnement as any } });
+    await db.courier.update({ where: { id: livreur.id }, data: { pushSubscription: abonnement } });
 
     res.json({ success: true });
   } catch (err) {
@@ -639,7 +639,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
           select: { id: true, email: true, name: true }
         }
       }
-    }) as any;
+    });
 
     if (!driver) {
       throw new ApiError(404, "Driver not found", "DRIVER_NOT_FOUND");
@@ -859,7 +859,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
 
     const deliveries = await db.orderDelivery.findMany({
       where: {
-        status: filtreStatut as any,
+        status: filtreStatut,
         ...(enAttente
           ? {
               driverId: null,
@@ -895,7 +895,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
     // Les courses du livreur : celles de sa tournée qui ne sont pas encore
     // à leur tour ne montrent pas leur client.
     const etat = enAttente ? null : await DispatchService.etatTournee(livreur.id);
-    const formatted = deliveries.map((d: any) => masquerClient({
+    const formatted = deliveries.map((d) => masquerClient({
       id: d.id,
       orderId: d.orderId,
       status: d.status,
@@ -1204,7 +1204,7 @@ router.patch(
       const delivery = await db.orderDelivery.update({
         where: { id: deliveryId },
         data: {
-          status: status as any,
+          status: status,
           ...(status === "DELIVERED" && course.status !== "DELIVERED" && { deliveryTime: effectueLe }),
           // L'heure de récupération sert à l'historique et aux statistiques.
           ...(status === "PICKED_UP" && course.status !== "PICKED_UP" && { pickupTime: effectueLe })
@@ -1806,7 +1806,7 @@ router.patch(
  * /api/files (voir modules/files/files.routes.ts).
  */
 router.get(/^\/documents\/file\/(.+)$/, (req: Request, res: Response, next: NextFunction) =>
-  servirFichierPrive(cheminRelatif((req.params as any)[0]), req, res, next)
+  servirFichierPrive(cheminRelatif(String(req.params[0] ?? "")), req, res, next)
 );
 
 // GET /drivers/available - Get available delivery drivers within radius

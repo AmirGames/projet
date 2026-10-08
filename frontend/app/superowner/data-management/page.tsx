@@ -230,14 +230,14 @@ export default function DataManagementPage() {
                           <button
                             onClick={() => telecharger(backup.id, backup.name)}
                             title={t('download')}
-                            className="p-2 bg-gray-100 hover:bg-gray-200 rounded"
+                            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-sm"
                           >
                             <Download size={16} />
                           </button>
                           <button
                             onClick={() => actionSauvegarde(backup.id, 'restore')}
                             title={t('restore')}
-                            className="p-2 bg-gray-900 hover:bg-black rounded text-white"
+                            className="p-2 bg-gray-900 hover:bg-black rounded-sm text-white"
                           >
                             <RotateCcw size={16} />
                           </button>
@@ -246,7 +246,7 @@ export default function DataManagementPage() {
                       <button
                         onClick={() => actionSauvegarde(backup.id, 'delete')}
                         title={t('delete')}
-                        className="p-2 bg-red-600 hover:bg-red-700 rounded text-white"
+                        className="p-2 bg-red-600 hover:bg-red-700 rounded-sm text-white"
                       >
                         <Trash2 size={16} />
                       </button>

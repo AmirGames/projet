@@ -23,12 +23,12 @@ export function StoreSwitcher({ clair = false }: { clair?: boolean } = {}) {
 
   return (
     <div className="flex items-center gap-2">
-      <Store size={16} className="text-gray-400 flex-shrink-0" />
+      <Store size={16} className="text-gray-400 shrink-0" />
       <select
         value={storeId}
         onChange={(e) => selectStore(e.target.value)}
         title={t('managedStore')}
-        className={`rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-orange-500 max-w-[220px] ${
+        className={`rounded-lg px-3 py-1.5 text-sm focus:outline-hidden focus:border-orange-500 max-w-[220px] ${
           clair ? 'bg-white border border-gray-200 font-semibold text-gray-900' : 'bg-gray-700 border border-gray-600 text-white'
         }`}
       >

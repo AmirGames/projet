@@ -4,6 +4,7 @@ import { voitLesFinances } from "../auth/permissions-plateforme.service";
 import { authMiddleware } from "../auth/auth.middleware";
 import { getQueryString, isSystemAdmin } from "./shared";
 import { limiteBornee, decalage } from "../../utils/pagination";
+import type { Prisma } from "@prisma/client";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, r
     const offset = decalage(req.query.offset);
     const period = getQueryString(req.query.period, "");
 
-    const where: any = {};
+    const where: Prisma.CommissionHistoryWhereInput = {};
     if (period) where.period = period;
 
     const commissions = (await db.commissionHistory.findMany({
@@ -23,7 +24,7 @@ router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, r
       take: limit,
       include: { org: { select: { id: true, name: true } } },
       orderBy: { period: "desc" },
-    })) as any[];
+    }));
 
     const total = await db.commissionHistory.count({ where });
     const totalAmount = await db.commissionHistory.aggregate({
@@ -51,7 +52,7 @@ router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, r
     const offset = decalage(req.query.offset);
     const statut = req.query.status as string | undefined;
 
-    const where: any = {};
+    const where: Prisma.SecurityEventWhereInput = {};
     if (statut) where.status = statut;
 
     const [evenements, total] = await Promise.all([

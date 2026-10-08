@@ -1,3 +1,4 @@
+import type { Order } from "@prisma/client";
 import { emailTransporter, EMAIL_CONFIG } from "./email.config";
 import { logger } from "../../config/logger";
 import { lienDeSuivi } from "../orders/suivi-commande.service";
@@ -39,7 +40,7 @@ export class EmailService {
   }
 
   // Order confirmation email
-  static async sendOrderConfirmation(order: any) {
+  static async sendOrderConfirmation(order: Order) {
     try {
       // Le lien porte un jeton de suivi : sans lui, le client invité ne peut
       // plus lire sa commande.

@@ -3,6 +3,28 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { logger } from "../../config/logger";
+import { codeErreur } from "../../utils/code-erreur";
+
+/** Ce que la route de mise à jour d'une boutique accepte (voir `updateStoreSchema`). */
+export interface UpdateStoreData {
+  name?: string;
+  slug?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+  email?: string;
+  description?: string;
+  logo?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  timezone?: string;
+  currency?: string;
+  latitude?: number;
+  longitude?: number;
+  businessType?: string;
+  cuisineType?: string;
+}
 
 export class StoreService {
   static async create(data: {
@@ -79,7 +101,7 @@ export class StoreService {
           // Une cuisine n'a de sens qu'en restauration : la retenir pour une
           // épicerie brouillerait la recherche du client.
           cuisineType: data.businessType === "restaurant" ? data.cuisineType : null,
-          ...(data.settings && { settings: data.settings as any }),
+          ...(data.settings && { settings: data.settings }),
         },
         include: {
           products: true,
@@ -89,8 +111,8 @@ export class StoreService {
       });
 
       return store;
-    } catch (error: any) {
-      if (error.code === "P2002") {
+    } catch (error) {
+      if (codeErreur(error) === "P2002") {
         throw new ApiError(409, "Store slug already exists in organization", "SLUG_EXISTS");
       }
       throw error;
@@ -149,16 +171,15 @@ export class StoreService {
     return store;
   }
 
-  static async update(id: string, data: any) {
+  static async update(id: string, data: UpdateStoreData) {
     try {
-      const settingsFields = ['logo', 'primaryColor', 'secondaryColor', 'timezone', 'currency'];
-      const settings: any = {};
+      const settingsFields = ['logo', 'primaryColor', 'secondaryColor', 'timezone', 'currency'] as const;
+      const settings: Prisma.JsonObject = {};
 
-      settingsFields.forEach(field => {
-        if (field in data) {
-          settings[field] = data[field];
-        }
-      });
+      for (const field of settingsFields) {
+        const valeur = data[field];
+        if (valeur !== undefined) settings[field] = valeur;
+      }
 
       /**
        * L'adresse change sans position posée à la main : la position suit.
@@ -207,15 +228,14 @@ export class StoreService {
           ...(data.businessType !== undefined && { businessType: data.businessType }),
           ...(data.cuisineType !== undefined && { cuisineType: data.cuisineType }),
           ...(Object.keys(settings).length > 0 && { settings }),
-          ...(data.pickupSlots && { pickupSlots: data.pickupSlots }),
         },
         include: {
           products: true,
           categories: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;
@@ -227,8 +247,8 @@ export class StoreService {
       return await db.store.delete({
         where: { id },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;
@@ -265,8 +285,8 @@ export class StoreService {
           categories: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;
@@ -300,8 +320,8 @@ export class StoreService {
           categories: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;

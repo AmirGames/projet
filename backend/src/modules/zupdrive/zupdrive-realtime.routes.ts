@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { authMiddleware } from "../auth/auth.middleware";
 import { ZupDriveRealtimeService } from "./zupdrive-realtime.service";
 import { CourseDriveService } from "./course-drive.service";
@@ -23,12 +24,9 @@ router.use(authMiddleware);
 router.post("/join/:courseId", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params);
-    const userId = req.userId as string;
-    const socketId = (req as any).socketId;
-
-    if (!socketId) {
-      throw new ApiError(400, "Socket non disponible", "NO_SOCKET");
-    }
+    const userId = userIdRequis(req);
+    // La socket du client : seul le navigateur ou l'app connaît son identifiant.
+    const { socketId } = z.object({ socketId: z.string().min(1) }).parse(req.body);
 
     // Vérifier que l'utilisateur a accès à cette course
     const course = await CourseDriveService.maCourse(userId, courseId);
@@ -56,13 +54,10 @@ router.post("/join/:courseId", async (req: Request, res: Response, next: NextFun
 router.post("/leave/:courseId", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params);
-    const socketId = (req as any).socketId;
+    const userId = userIdRequis(req);
+    const { socketId } = z.object({ socketId: z.string().min(1) }).parse(req.body);
 
-    if (!socketId) {
-      throw new ApiError(400, "Socket non disponible", "NO_SOCKET");
-    }
-
-    await ZupDriveRealtimeService.leaveCourse(socketId, courseId);
+    await ZupDriveRealtimeService.leaveCourse(socketId, courseId, userId);
 
     res.json({
       success: true,

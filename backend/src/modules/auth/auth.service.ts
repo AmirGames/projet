@@ -48,7 +48,7 @@ export class AuthService {
    */
   static generateAccessToken(userId: string, sid?: string): string {
     const env = getEnv();
-    const token = (jwt.sign as any)(sid ? { userId, sid } : { userId }, env.JWT_SECRET, {
+    const token = jwt.sign(sid ? { userId, sid } : { userId }, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN,
       algorithm: "HS256",
     });
@@ -63,7 +63,7 @@ export class AuthService {
     const charge: Record<string, string> = { userId };
     if (sid) charge.sid = sid;
     if (jti) charge.jti = jti;
-    const token = (jwt.sign as any)(charge, env.JWT_REFRESH_SECRET, {
+    const token = jwt.sign(charge, env.JWT_REFRESH_SECRET, {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN,
       algorithm: "HS256",
     });

@@ -448,7 +448,7 @@ export default function StoreSettings() {
                         un logo, dégradé avec l'initiale. */}
                     <div
                       className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-300 flex items-center justify-center ${
-                        logo ? 'bg-white p-1.5' : 'bg-gradient-to-r from-orange-500 to-red-500'
+                        logo ? 'bg-white p-1.5' : 'bg-linear-to-r from-orange-500 to-red-500'
                       }`}
                     >
                       {logo ? (
@@ -505,7 +505,7 @@ export default function StoreSettings() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t('couverture')}</label>
                   {/* L'aperçu au format de la vitrine : la grande image en tête
                       de page, et la carte du commerce dans la liste. */}
-                  <div className="relative aspect-[16/6] w-full max-w-xl overflow-hidden rounded-lg border border-gray-300 bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
+                  <div className="relative aspect-16/6 w-full max-w-xl overflow-hidden rounded-lg border border-gray-300 bg-linear-to-br from-orange-500 via-orange-600 to-red-600">
                     {couverture ? (
                       <img src={couverture} alt={t('couverture')} className="h-full w-full object-cover" />
                     ) : (
@@ -559,7 +559,7 @@ export default function StoreSettings() {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600"
                     placeholder={t('nomPlaceholder')}
                   />
                 </div>
@@ -569,7 +569,7 @@ export default function StoreSettings() {
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600 resize-none"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600 resize-none"
                     placeholder={t('descriptionPlaceholder')}
                     rows={3}
                   />
@@ -582,7 +582,7 @@ export default function StoreSettings() {
                     type="url"
                     value={formData.website}
                     onChange={(e) => handleInputChange('website', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600"
                     placeholder="https://votre-site.com"
                   />
                 </div>
@@ -593,7 +593,7 @@ export default function StoreSettings() {
                     <select
                       value={formData.timezone}
                       onChange={(e) => handleInputChange('timezone', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                     >
                       <option value="">{t('selectionner')}</option>
                       <option value="UTC">UTC</option>
@@ -609,7 +609,7 @@ export default function StoreSettings() {
                     <select
                       value={formData.currency}
                       onChange={(e) => handleInputChange('currency', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                     >
                       <option value="">{t('selectionner')}</option>
                       <option value="EUR">EUR (€)</option>
@@ -624,7 +624,7 @@ export default function StoreSettings() {
                     <select
                       value={formData.language}
                       onChange={(e) => handleInputChange('language', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                     >
                       <option value="">{t('selectionner')}</option>
                       <option value="fr">Français</option>
@@ -655,7 +655,7 @@ export default function StoreSettings() {
                         longitude: adresse.longitude ?? undefined,
                       }))
                     }
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600"
                     placeholder={t('adressePlaceholder')}
                   />
                 </div>
@@ -667,7 +667,7 @@ export default function StoreSettings() {
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600"
                       placeholder={t('city')}
                     />
                   </div>
@@ -678,7 +678,7 @@ export default function StoreSettings() {
                       type="text"
                       value={formData.postalCode}
                       onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600"
                       placeholder={t('codePostal')}
                     />
                   </div>
@@ -690,7 +690,7 @@ export default function StoreSettings() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600"
                     placeholder="+33 1 23 45 67 89"
                   />
                 </div>
@@ -701,7 +701,7 @@ export default function StoreSettings() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-red-600"
                     placeholder={t('emailPlaceholder')}
                   />
                 </div>
@@ -720,7 +720,7 @@ export default function StoreSettings() {
                     type="checkbox"
                     checked={formData.notifications.orderNotifications}
                     onChange={(e) => handleNestedChange('notifications', 'orderNotifications', e.target.checked)}
-                    className="w-5 h-5 rounded"
+                    className="w-5 h-5 rounded-sm"
                   />
                 </div>
 
@@ -733,7 +733,7 @@ export default function StoreSettings() {
                     type="checkbox"
                     checked={formData.notifications.lowStockAlerts}
                     onChange={(e) => handleNestedChange('notifications', 'lowStockAlerts', e.target.checked)}
-                    className="w-5 h-5 rounded"
+                    className="w-5 h-5 rounded-sm"
                   />
                 </div>
 
@@ -746,7 +746,7 @@ export default function StoreSettings() {
                     type="checkbox"
                     checked={formData.notifications.reviewNotifications}
                     onChange={(e) => handleNestedChange('notifications', 'reviewNotifications', e.target.checked)}
-                    className="w-5 h-5 rounded"
+                    className="w-5 h-5 rounded-sm"
                   />
                 </div>
 
@@ -759,7 +759,7 @@ export default function StoreSettings() {
                     type="checkbox"
                     checked={formData.notifications.emailNotifications}
                     onChange={(e) => handleNestedChange('notifications', 'emailNotifications', e.target.checked)}
-                    className="w-5 h-5 rounded"
+                    className="w-5 h-5 rounded-sm"
                   />
                 </div>
               </div>
@@ -792,7 +792,7 @@ export default function StoreSettings() {
                             e.target.value,
                           )
                         }
-                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                       >
                         <option value="">{t('choisir')}</option>
                         {etablissements.map((genre) => (
@@ -814,7 +814,7 @@ export default function StoreSettings() {
                           id="cuisineType"
                           value={formData.cuisineType}
                           onChange={(e) => handleInputChange('cuisineType', e.target.value)}
-                          className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                          className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                         >
                           <option value="">{t('choisir')}</option>
                           {cuisines.map((genre) => (
@@ -878,7 +878,7 @@ export default function StoreSettings() {
                         value={formData.legalName}
                         onChange={(e) => handleInputChange('legalName', e.target.value)}
                         placeholder={facturation?.societe.legalName || t('celleSociete')}
-                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                       />
                     </div>
 
@@ -891,7 +891,7 @@ export default function StoreSettings() {
                         value={formData.vatNumber}
                         onChange={(e) => handleInputChange('vatNumber', e.target.value)}
                         placeholder={facturation?.societe.vatNumber || t('celuiSociete')}
-                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                       />
                     </div>
 
@@ -904,7 +904,7 @@ export default function StoreSettings() {
                         value={formData.registrationNumber}
                         onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
                         placeholder={facturation?.societe.registrationNumber || t('celuiSociete')}
-                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-600"
                       />
                     </div>
                   </div>
@@ -944,7 +944,7 @@ export default function StoreSettings() {
                       type="checkbox"
                       checked={formData.delivery.useOwnDelivery}
                       onChange={(e) => handleNestedChange('delivery', 'useOwnDelivery', e.target.checked)}
-                      className="w-5 h-5 rounded"
+                      className="w-5 h-5 rounded-sm"
                     />
                   </div>
 

@@ -10,6 +10,7 @@ import { NoteCourseDriveService } from "./note-course-drive.service";
 import { MatchingAlgorithmService } from "./matching-algorithm.service";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
 import { getEnv } from "../../config/env";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -37,11 +38,11 @@ export const DELAI_REPONSE_MS = 20_000;
 /** Au-delà, la recherche s'arrête et le passager est prévenu. */
 export const RECHERCHE_MAX_MS = 5 * 60_000;
 /** Une position plus ancienne ne dit plus où est le chauffeur. */
-export const POSITION_FRAICHE_MS = 2 * 60_000;
+const POSITION_FRAICHE_MS = 2 * 60_000;
 /** Distance maximale entre le chauffeur et le point de départ. */
-export const RAYON_KM = 15;
+const RAYON_KM = 15;
 
-export const STATUTS_ACTIFS = ["RECHERCHE", "ACCEPTEE", "ARRIVEE", "EN_COURS"];
+const STATUTS_ACTIFS = ["RECHERCHE", "ACCEPTEE", "ARRIVEE", "EN_COURS"];
 /** Une course qui a un chauffeur et n'est pas finie. */
 export const STATUTS_AVEC_CHAUFFEUR = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
 
@@ -204,9 +205,9 @@ export class CourseDriveService {
           tarifApplique: { ...devis.tarif, itineraire: devis.source } as unknown as Prisma.InputJsonValue,
         },
       });
-    } catch (err: any) {
+    } catch (err) {
       // Deux envois simultanés de la même commande : le second rend la première.
-      if (err?.code !== "P2002") throw err;
+      if (codeErreur(err) !== "P2002") throw err;
       const existante = await db.courseDrive.findUniqueOrThrow({
         where: { passagerId_cleIdempotence: { passagerId, cleIdempotence: demande.cleIdempotence } },
       });
@@ -688,9 +689,9 @@ export class CourseDriveService {
           matchScore: matchScore.score,
         });
         return proposition;
-      } catch (err: any) {
+      } catch (err) {
         // Déjà sollicité entre-temps (autre serveur) : au suivant.
-        if (err?.code !== "P2002") {
+        if (codeErreur(err) !== "P2002") {
           logger.error("Error creating proposition", { err });
           throw err;
         }

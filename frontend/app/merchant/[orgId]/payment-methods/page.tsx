@@ -231,7 +231,7 @@ export default function PaymentMethodsPage() {
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-bold">{method.name}</h3>
                       {method.isDefault && (
-                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded">{t('parDefaut')}</span>
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-sm">{t('parDefaut')}</span>
                       )}
                       <span className={`px-2 py-1 text-xs rounded ${
                         method.isActive
@@ -270,13 +270,13 @@ export default function PaymentMethodsPage() {
                     <button
                       onClick={() => ouvrirModale(method)}
                       title={t('modifierMethode')}
-                      className="p-2 hover:bg-gray-200 rounded transition text-blue-600"
+                      className="p-2 hover:bg-gray-200 rounded-sm transition text-blue-600"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(method.id)}
-                      className="p-2 hover:bg-gray-200 rounded transition text-red-600"
+                      className="p-2 hover:bg-gray-200 rounded-sm transition text-red-600"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -294,14 +294,14 @@ export default function PaymentMethodsPage() {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-sm text-sm"
               >
                 {t('precedent')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-sm text-sm"
               >
                 {t('suivant')}
               </button>
@@ -322,7 +322,7 @@ export default function PaymentMethodsPage() {
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(false)}
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="p-1 hover:bg-gray-100 rounded-sm"
                 >
                   <X size={20} />
                 </button>
@@ -336,7 +336,7 @@ export default function PaymentMethodsPage() {
                   <select
                     value={formulaire.type}
                     onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                   >
                     <option value="CASH">{t('especes')}</option>
                     <option value="CREDIT_CARD">{t('carteCredit')}</option>
@@ -359,7 +359,7 @@ export default function PaymentMethodsPage() {
                   value={formulaire.name}
                   onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
                   placeholder={t('exempleNom')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -375,7 +375,7 @@ export default function PaymentMethodsPage() {
                     onChange={(e) =>
                       setFormulaire({ ...formulaire, commissionPercent: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
                 <div>
@@ -386,7 +386,7 @@ export default function PaymentMethodsPage() {
                     min="0"
                     value={formulaire.fixedFee}
                     onChange={(e) => setFormulaire({ ...formulaire, fixedFee: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
               </div>

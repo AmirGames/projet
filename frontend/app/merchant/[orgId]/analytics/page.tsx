@@ -153,7 +153,7 @@ export default function AnalyticsPage() {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 bg-white border border-gray-200 rounded text-gray-900 focus:outline-none focus:border-red-500"
+            className="px-3 py-2 bg-white border border-gray-200 rounded-sm text-gray-900 focus:outline-hidden focus:border-red-500"
           >
             <option value="7">{t('timeRange7')}</option>
             <option value="30">{t('timeRange30')}</option>

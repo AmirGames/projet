@@ -362,7 +362,7 @@ router.post("/logout", async (req: Request, res: Response, next: NextFunction) =
 // GET /auth/me - Get current user (requires auth)
 router.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
 
     if (!userId) {
       throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
@@ -397,7 +397,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
 // GET /me/roles - Get user's current and available roles
 router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
 
     if (!userId) {
       throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
@@ -470,7 +470,7 @@ router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next
 // POST /me/become-merchant - Existing user becomes merchant
 router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
 
     if (!userId) {
       throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
@@ -599,7 +599,7 @@ router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Res
 // POST /me/become-driver - Existing user becomes driver
 router.post("/me/become-driver", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const sid = req.user?.sid;
     if (!sid) throw new ApiError(401, "Session requise", "SESSION_INVALIDE");
 
@@ -1063,11 +1063,11 @@ router.post(
   limiterCadence({
     max: 10,
     fenetreMs: 15 * 60 * 1000,
-    cle: (req) => `changement-mdp|${(req as any).userId || req.ip}`,
+    cle: (req) => `changement-mdp|${req.userId || req.ip}`,
   }),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = (req as any).userId;
+      const userId = req.userId;
       if (!userId) {
         throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
       }

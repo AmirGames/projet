@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { BarChart3, AlertCircle, Loader2, Download } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ReportsPage() {
+  const t = useTranslations('superownerZupdriveReports');
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,27 +18,27 @@ export default function ReportsPage() {
       const response = await fetch(`${API_URL}/api/zupdrive/reporting/admin/scheduled`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      if (!response.ok) throw new Error('Erreur');
+      if (!response.ok) throw new Error(t('error'));
       const data = await response.json();
       setReports(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur');
+      setError(err instanceof Error ? err.message : t('error'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Rapports Avancés</h1>
-        <p className="text-gray-600 mt-2">Rapports détaillés de performance, financiers et de conformité</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-600 mt-2">{t('subtitle')}</p>
       </div>
 
       <button onClick={loadReports} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
-        Charger les rapports
+        {t('load')}
       </button>
 
       {error && (
@@ -54,12 +56,12 @@ export default function ReportsPage() {
             <div key={r.id} className="bg-white rounded-lg border p-4">
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-semibold">{r.name}</h3>
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{r.frequency}</span>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-sm">{r.frequency}</span>
               </div>
               <p className="text-sm text-gray-600 mb-3">{r.reportType}</p>
               <button className="text-blue-600 text-sm font-medium flex items-center gap-1">
                 <Download className="w-4 h-4" />
-                Télécharger
+                {t('download')}
               </button>
             </div>
           ))}

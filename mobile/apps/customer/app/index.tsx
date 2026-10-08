@@ -31,6 +31,7 @@ import NotificationsScreen from '../components/screens/NotificationsScreen';
 import AddressScreen from '../components/screens/AddressScreen';
 import SettingsScreen from '../components/screens/SettingsScreen';
 import AccountScreen, { CustomerProfile } from '../components/screens/AccountScreen';
+import { useDerniereValeur } from '../lib/useDerniereValeur';
 
 const DRAWER_ITEMS = [
   { tab: 'orders', label: '🧾 Mes commandes' },
@@ -80,13 +81,11 @@ export default function CustomerApp() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [banner, setBanner] = useState<{ orderId: string; title: string; message: string } | null>(null);
   const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
-  const [pendingOpen, setPendingOpen] = useState<PushCustomerData | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifRefreshKey, setNotifRefreshKey] = useState(0);
 
   const token = session?.accessToken || '';
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
+  const sessionRef = useDerniereValeur(session);
   const pushTokenRef = useRef<string | null>(null);
 
   const page = pages[pages.length - 1];
@@ -147,7 +146,6 @@ export default function CustomerApp() {
     if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
     pushTokenRef.current = null;
     setPushSetup(null);
-    setPendingOpen(null);
     clearSession();
     setSession(null);
     setPassword('');
@@ -158,7 +156,7 @@ export default function CustomerApp() {
     setMenuOpen(false);
     setBanner(null);
     setUnreadCount(0);
-  }, []);
+  }, [sessionRef]);
 
   // Le serveur ferme toutes les sessions du compte, celle-ci comprise (D8) : on
   // revient à l'écran de connexion. Des jetons neufs, s'il en remettait, sont gardés.
@@ -172,7 +170,7 @@ export default function CustomerApp() {
     const renewed = { ...current, ...tokens };
     setSession(renewed);
     saveSession(renewed);
-  }, [handleLogout]);
+  }, [handleLogout, sessionRef]);
 
   // Démarrage : paniers et adresse du téléphone, puis la session renouvelée.
   useEffect(() => {
@@ -237,20 +235,22 @@ export default function CustomerApp() {
   }, [token]);
 
   // Toucher une notification ouvre la commande concernée.
-  useEffect(() => onCustomerNotificationTap(setPendingOpen), []);
-
-  useEffect(() => {
-    if (!pendingOpen || !session) return;
-    setPendingOpen(null);
-    if (pendingOpen.orderId) {
+  const ouvrirDepuisNotification = (data: PushCustomerData) => {
+    if (data.orderId) {
       setBanner(null);
-      pushPage({ kind: 'order', orderId: pendingOpen.orderId });
+      pushPage({ kind: 'order', orderId: data.orderId });
     } else {
       setPages([]);
       setTab('notifications');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingOpen, session]);
+  };
+  const ouvrirRef = useDerniereValeur(ouvrirDepuisNotification);
+  // On n'écoute qu'une fois connecté : la notification qui a lancé l'application
+  // reste en attente chez le système jusqu'à ce que la session existe.
+  useEffect(() => {
+    if (!session) return;
+    return onCustomerNotificationTap((data) => ouvrirRef.current(data));
+  }, [session, ouvrirRef]);
 
   // Un même changement arrive souvent par plusieurs événements : un seul
   // rechargement suffit.
@@ -371,10 +371,9 @@ export default function CustomerApp() {
     setMenuOpen(false);
   };
 
-  // Panier vidé depuis le tunnel : il n'y a plus rien à commander.
-  useEffect(() => {
-    if (page?.kind === 'checkout' && !carts[page.storeId]) popPage();
-  }, [page, carts]);
+  // Panier vidé depuis le tunnel : il n'y a plus rien à commander. La page se
+  // retire pendant le rendu (ajustement d'état autorisé), sans repasser par un effet.
+  if (page?.kind === 'checkout' && !carts[page.storeId]) popPage();
 
   const clearUnread = useCallback((n: number) => setUnreadCount(n), []);
   const onProfileLoaded = useCallback((p: CustomerProfile) => setProfile(p), []);

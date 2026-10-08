@@ -112,7 +112,7 @@ function Formulaire() {
             type="password"
             value={motDePasse}
             onChange={(e) => setMotDePasse(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
             placeholder="••••••••"
             minLength={8}
             autoComplete="new-password"
@@ -131,7 +131,7 @@ function Formulaire() {
             type="password"
             value={confirmation}
             onChange={(e) => setConfirmation(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
             placeholder="••••••••"
             minLength={8}
             autoComplete="new-password"
@@ -155,7 +155,7 @@ export default function Reinitialiser() {
   const t = useTranslations('resetPassword');
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10">
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
         <Suspense fallback={<p className="text-center text-slate-600">{t('chargement')}</p>}>
           <Formulaire />

@@ -2,6 +2,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { notifierPlateforme } from "../notifications/notification.service";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Les notes des courses ZupDrive, dans les deux sens : le passager note son
@@ -26,7 +27,7 @@ export const NOTE_MAX = 5;
 export const COMMENTAIRE_MAX = 500;
 export const DELAI_NOTE_MS = 7 * 24 * 3600 * 1000;
 /** À partir de cette note (incluse), l'équipe est prévenue. */
-export const SEUIL_ALERTE = 2;
+const SEUIL_ALERTE = 2;
 
 export type Auteur = "PASSAGER" | "CHAUFFEUR";
 
@@ -86,8 +87,8 @@ export class NoteCourseDriveService {
           commentaire,
         },
       });
-    } catch (err: any) {
-      if (err?.code === "P2002") {
+    } catch (err) {
+      if (codeErreur(err) === "P2002") {
         throw new ApiError(409, "Vous avez déjà noté cette course", "ALREADY_RATED");
       }
       throw err;

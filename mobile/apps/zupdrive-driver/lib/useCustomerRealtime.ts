@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { API_URL } from './api';
 import { dispatchRealtime, setRealtimeSocket } from './realtime';
 import type { Retard } from './orders';
+import { useDerniereValeur } from './useDerniereValeur';
 
 export interface OrderUpdate {
   orderId: string;
@@ -51,11 +52,9 @@ export function useCustomerRealtime({
   const [connected, setConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
-  const callbacks = useRef({ onOrderUpdate, onDeliveryUpdate, onNotification, onReconnect });
-  callbacks.current = { onOrderUpdate, onDeliveryUpdate, onNotification, onReconnect };
+  const callbacks = useDerniereValeur({ onOrderUpdate, onDeliveryUpdate, onNotification, onReconnect });
 
-  const orderIds = useRef<string[]>(activeOrderIds);
-  orderIds.current = activeOrderIds;
+  const orderIds = useDerniereValeur(activeOrderIds);
 
   useEffect(() => {
     if (!token) return;
@@ -103,7 +102,7 @@ export function useCustomerRealtime({
       setRealtimeSocket(null);
       setConnected(false);
     };
-  }, [token]);
+  }, [token, callbacks, orderIds]);
 
   // Une commande qui vient d'être passée rejoint son salon aussitôt.
   const joined = useRef(new Set<string>());
@@ -126,7 +125,7 @@ export function useCustomerRealtime({
       }
     });
     return () => sub.remove();
-  }, [token]);
+  }, [token, callbacks]);
 
   return { connected };
 }

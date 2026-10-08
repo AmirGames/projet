@@ -55,7 +55,7 @@ router.patch("/stores/:storeId", authMiddleware, isSuperOwner, async (req: Reque
 
     const { boutique, changements, situeeAutomatiquement } = await StoreSupportService.corriger(
       req.params.storeId as string,
-      corps as any,
+      corps,
       req.userId as string
     );
 
@@ -66,7 +66,7 @@ router.patch("/stores/:storeId", authMiddleware, isSuperOwner, async (req: Reque
         adminId: req.userId as string,
         action: "CORRECT_STORE",
         target: boutique.id,
-        changes: changements as any,
+        changes: changements,
       },
     });
 
@@ -110,7 +110,7 @@ router.post(
           adminId: req.userId as string,
           action: ouvert ? "OPEN_STORE" : "CLOSE_STORE",
           target: boutique.id,
-          changes: { isOpen: ouvert, motif } as any,
+          changes: { isOpen: ouvert, motif },
         },
       });
 

@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { shortId } from '../../lib/deliveries';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Earnings {
   total: number;
@@ -68,7 +69,7 @@ export default function EarningsScreen({ token, onBack }: { token: string; onBac
     }
   }, [token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

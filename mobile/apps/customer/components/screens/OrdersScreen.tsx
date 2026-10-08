@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { DELIVERY_STATUS, reorderLines, hhmm, isActive, OrderSummary, orderStatus, shortId } from '../../lib/orders';
 import { useRealtimeEvent } from '../../lib/realtime';
 import type { CartLine } from '../../lib/carts';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 const FILTERS = [
   { key: 'ALL', label: 'Toutes' },
@@ -49,7 +50,7 @@ export default function OrdersScreen({
     }
   }, [token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

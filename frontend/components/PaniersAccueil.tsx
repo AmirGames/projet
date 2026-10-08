@@ -144,14 +144,14 @@ export function PaniersAccueil() {
       >
         <ShoppingCart size={22} />
         {paniers.length > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">
             {paniers.length}
           </span>
         )}
       </button>
 
       {ouvert && (
-        <div className="absolute right-0 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-88 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50">
           {paniers.length === 0 ? (
             <p className="px-4 py-6 text-center text-gray-500 text-sm">{t('vides')}</p>
           ) : (
@@ -172,10 +172,10 @@ export function PaniersAccueil() {
                       <img
                         src={logos[panier.storeId] as string}
                         alt={panier.storeName || t('commerce')}
-                        className="w-12 h-12 flex-shrink-0 rounded-full bg-white object-contain p-1"
+                        className="w-12 h-12 shrink-0 rounded-full bg-white object-contain p-1"
                       />
                     ) : (
-                      <span className="w-12 h-12 flex-shrink-0 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-lg font-bold">
+                      <span className="w-12 h-12 shrink-0 rounded-full bg-linear-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-lg font-bold">
                         {(panier.storeName || '?').charAt(0).toUpperCase()}
                       </span>
                     )}
@@ -192,10 +192,10 @@ export function PaniersAccueil() {
                         </span>
                       )}
                     </span>
-                    <span className="w-7 h-7 flex-shrink-0 rounded-full bg-white text-gray-900 text-sm font-bold flex items-center justify-center">
+                    <span className="w-7 h-7 shrink-0 rounded-full bg-white text-gray-900 text-sm font-bold flex items-center justify-center">
                       {nombreDArticles(panier.lignes)}
                     </span>
-                    <ChevronRight size={18} className="flex-shrink-0 text-gray-500" />
+                    <ChevronRight size={18} className="shrink-0 text-gray-500" />
                   </Link>
                 </li>
               ))}

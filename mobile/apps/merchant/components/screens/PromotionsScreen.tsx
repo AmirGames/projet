@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,7 @@ import {
 import { apiFetch, formatEuros } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Promotion {
   id: string;
@@ -215,7 +216,7 @@ export default function PromotionsScreen({ token, storeId, onBack }: { token: st
     }
   }, [storeId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

@@ -89,7 +89,7 @@ export function PromoCode({ storeId, orderAmount, onApply }: PromoCodeProps) {
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="SUMMER20"
-            className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+            className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
             disabled={loading}
           />
           <button
@@ -103,7 +103,7 @@ export function PromoCode({ storeId, orderAmount, onApply }: PromoCodeProps) {
       )}
 
       {error && (
-        <div className="flex items-center gap-2 mt-2 p-2 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm">
+        <div className="flex items-center gap-2 mt-2 p-2 bg-red-900/30 border border-red-700 rounded-sm text-red-200 text-sm">
           <AlertCircle size={16} />
           {error}
         </div>

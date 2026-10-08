@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const adresseFavoriteSchema = z
+const adresseFavoriteSchema = z
   .object({
     id: z.string().trim().min(1).max(100),
     kind: z.enum(["HOME", "WORK", "OTHER"]),

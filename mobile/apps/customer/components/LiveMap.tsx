@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import { useDerniereValeur } from '../lib/useDerniereValeur';
 
 export interface MapPoint {
   lat: number;
@@ -46,14 +47,14 @@ export default function LiveMap({
 }) {
   const web = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
-  const onRouteRef = useRef(onRoute);
-  onRouteRef.current = onRoute;
+  const onRouteRef = useDerniereValeur(onRoute);
 
+  // Sérialisé à chaque rendu : la carte n'est mise à jour que si le contenu change.
+  const data = JSON.stringify({ driver, pickup, dropoff, target, follow });
   useEffect(() => {
     if (!ready) return;
-    const data = JSON.stringify({ driver, pickup, dropoff, target, follow });
     web.current?.injectJavaScript(`window.maj && window.maj(${data}); true;`);
-  }, [ready, driver?.lat, driver?.lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, target, follow]);
+  }, [ready, data]);
 
   const onMessage = (e: WebViewMessageEvent) => {
     try {

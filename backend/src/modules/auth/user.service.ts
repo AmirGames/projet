@@ -2,6 +2,13 @@ import { db } from "../../services/db";
 import { AuthService } from "./auth.service";
 import { ApiError } from "../../middleware/errorHandler";
 
+/** Violation d'unicité (P2002) portant sur ce champ. */
+function conflitUnique(error: unknown, champ: string): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error) || error.code !== "P2002") return false;
+  const cible = "meta" in error && typeof error.meta === "object" && error.meta !== null && "target" in error.meta ? error.meta.target : undefined;
+  return Array.isArray(cible) || typeof cible === "string" ? cible.includes(champ) : false;
+}
+
 export class UserService {
   static async createUser(email: string, password: string, name?: string) {
     const passwordHash = await AuthService.hashPassword(password);
@@ -20,8 +27,8 @@ export class UserService {
         email: user.email,
         name: user.name,
       };
-    } catch (error: any) {
-      if (error.code === "P2002" && error.meta?.target?.includes("email")) {
+    } catch (error) {
+      if (conflitUnique(error, "email")) {
         throw new ApiError(409, "Email already exists", "EMAIL_EXISTS");
       }
       throw error;
@@ -90,8 +97,8 @@ export class UserService {
       });
 
       return org;
-    } catch (error: any) {
-      if (error.code === "P2002" && error.meta?.target?.includes("slug")) {
+    } catch (error) {
+      if (conflitUnique(error, "slug")) {
         throw new ApiError(409, "Organization slug already exists", "SLUG_EXISTS");
       }
       throw error;

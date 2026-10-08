@@ -141,7 +141,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
       >
         <div className="p-6 border-b border-gray-200">
           <SelecteurEspace actuel="merchant" href="/merchant" clair className="gap-3 -m-2 p-2 w-full min-w-0" chevron={menuOuvert || tiroir}>
-            <div className="w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center font-extrabold flex-shrink-0">
+            <div className="w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center font-extrabold shrink-0">
               <LayoutGrid size={20} />
             </div>
             {(menuOuvert || tiroir) && (
@@ -180,7 +180,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
               title={menuOuvert || tiroir ? undefined : boutique.name}
               className={`${lienSecondaire} w-full text-left`}
             >
-              <Store size={20} className="flex-shrink-0" />
+              <Store size={20} className="shrink-0" />
               {(menuOuvert || tiroir) && (
                 <span className="min-w-0">
                   <span className="block truncate">{boutique.name}</span>
@@ -198,7 +198,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
 
           <div className="pt-3 mt-3 border-t border-gray-200 space-y-1">
             <Link href="/store/new" onClick={() => setTiroir(false)} title={menuOuvert ? undefined : t('nouvelleBoutique')} className={lienSecondaire}>
-              <Plus size={20} className="flex-shrink-0" />
+              <Plus size={20} className="shrink-0" />
               {(menuOuvert || tiroir) && <span className="truncate">{t('nouvelleBoutique')}</span>}
             </Link>
 
@@ -208,7 +208,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
               title={menuOuvert ? undefined : t('maFormule')}
               className={lienSecondaire}
             >
-              <CreditCard size={20} className="flex-shrink-0" />
+              <CreditCard size={20} className="shrink-0" />
               {(menuOuvert || tiroir) && <span className="truncate">{t('maFormule')}</span>}
             </Link>
 
@@ -218,7 +218,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
               title={menuOuvert ? undefined : t('monProfil')}
               className={lienSecondaire}
             >
-              <UserCog size={20} className="flex-shrink-0" />
+              <UserCog size={20} className="shrink-0" />
               {(menuOuvert || tiroir) && <span className="truncate">{t('monProfil')}</span>}
             </Link>
 
@@ -229,7 +229,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                 title={menuOuvert ? undefined : t('support')}
                 className={lienSecondaire}
               >
-                <MessageCircle size={20} className="flex-shrink-0" />
+                <MessageCircle size={20} className="shrink-0" />
                 {(menuOuvert || tiroir) && <span className="truncate">{t('support')}</span>}
               </Link>
             )}
@@ -241,7 +241,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             onClick={seDeconnecter}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 transition-colors text-red-600"
           >
-            <LogOut size={20} className="flex-shrink-0" />
+            <LogOut size={20} className="shrink-0" />
             {(menuOuvert || tiroir) && <span className="truncate">{t('deconnexion')}</span>}
           </button>
         </div>

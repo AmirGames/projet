@@ -189,7 +189,7 @@ export class MerchantPayoutService {
           periodStart,
           periodEnd,
           orderCount: commandes.length,
-          lines: lignes as any,
+          lines: lignes,
           amount: net,
           status,
           ...(status === "PAID" ? { paidAt: new Date(), note: "Rien à verser" } : {}),

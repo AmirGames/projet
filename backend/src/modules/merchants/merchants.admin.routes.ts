@@ -72,7 +72,7 @@ async function figerCommissionsDuMois(orgId: string, taux: number, tier: string)
         data: {
           commissionPercent: taux,
           commissionAmount: Number(((Number(c.totalAmount) * taux) / 100).toFixed(2)),
-          tierAtOrder: tier as any,
+          tierAtOrder: tier,
         },
       })
     )
@@ -454,7 +454,7 @@ router.patch(
           adminId: req.userId as string,
           action: "UPDATE_MERCHANT_DOCUMENT_EXPIRY",
           target: req.params.orgId as string,
-          changes: { type: piece.type, avant, apres: piece.expiryDate } as any,
+          changes: { type: piece.type, avant, apres: piece.expiryDate },
         },
       });
 
@@ -489,7 +489,7 @@ router.patch(
           adminId: req.userId as string,
           action: body.approuve ? "APPROVE_MERCHANT_DOCUMENT" : "REJECT_MERCHANT_DOCUMENT",
           target: req.params.orgId as string,
-          changes: { type: piece.type, note: body.note } as any,
+          changes: { type: piece.type, note: body.note },
         },
       });
 
@@ -520,7 +520,7 @@ router.post(
           adminId: req.userId as string,
           action: "APPROVE_MERCHANT",
           target: orgId,
-          changes: { approvedAt: org.approvedAt } as any,
+          changes: { approvedAt: org.approvedAt },
         },
       });
 

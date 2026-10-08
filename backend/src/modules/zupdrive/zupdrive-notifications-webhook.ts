@@ -7,7 +7,7 @@ import { ApiError } from "../../middleware/api-error";
 import { ZupDriveNotificationsService } from "./zupdrive-notifications.service";
 
 /** Écart maximal toléré entre l'horodatage signé et l'heure du serveur (rejeu). */
-export const TOLERANCE_SIGNATURE_SECONDES = 300;
+const TOLERANCE_SIGNATURE_SECONDES = 300;
 
 const corpsSchema = z.object({
   notificationLogId: z.string().min(1).max(64),

@@ -199,7 +199,7 @@ export default function ProductMediaPage() {
         </div>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-white p-6 rounded-lg shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           {t('charger')}
         </h2>
@@ -301,7 +301,7 @@ export default function ProductMediaPage() {
               onDragStart={() => handleDragStart(item.id)}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(item.id)}
-              className="bg-white rounded-lg shadow overflow-hidden cursor-move hover:shadow-lg transition"
+              className="bg-white rounded-lg shadow-sm overflow-hidden cursor-move hover:shadow-lg transition"
             >
               <div className="relative aspect-square bg-gray-100">
                 {item.type === "image" ? (
@@ -317,8 +317,8 @@ export default function ProductMediaPage() {
                   />
                 )}
                 <div className="absolute top-2 left-2 flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 bg-white ring-1 ring-gray-200 bg-opacity-50 text-gray-900 p-1 rounded" />
-                  <span className="px-2 py-1 bg-white ring-1 ring-gray-200 bg-opacity-50 text-gray-900 text-xs rounded">
+                  <GripVertical className="w-4 h-4 bg-white ring-1 ring-gray-200 bg-opacity-50 text-gray-900 p-1 rounded-sm" />
+                  <span className="px-2 py-1 bg-white ring-1 ring-gray-200 bg-opacity-50 text-gray-900 text-xs rounded-sm">
                     {item.type}
                   </span>
                 </div>
@@ -334,7 +334,7 @@ export default function ProductMediaPage() {
                 </p>
                 <button
                   onClick={() => deleteMedia(item.id)}
-                  className="mt-2 w-full p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center justify-center gap-2"
+                  className="mt-2 w-full p-2 bg-red-100 text-red-700 rounded-sm hover:bg-red-200 flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
                   {t('supprimer')}

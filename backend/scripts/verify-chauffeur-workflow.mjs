@@ -12,7 +12,6 @@
  * 6. Tester suspension (gardant CLIENT intact)
  */
 
-import fetch from "node-fetch";
 
 const API_URL = process.env.VERIF_API_URL || "http://localhost:3001";
 const SITE_URL = process.env.VERIF_SITE_URL || "http://localhost:3000";

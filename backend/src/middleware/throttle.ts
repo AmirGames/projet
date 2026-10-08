@@ -67,7 +67,7 @@ export function limiterCadence(options: Options) {
     let fenetre: { compte: number; reprendLe: number };
     try {
       fenetre = await choisirStockage().incrementer(cleDe(req), options.fenetreMs);
-    } catch (err) {
+    } catch {
       if (process.env.NODE_ENV === "production") {
         return next(new ApiError(503, "Protection de sécurité temporairement indisponible", "SECURITY_UNAVAILABLE"));
       }

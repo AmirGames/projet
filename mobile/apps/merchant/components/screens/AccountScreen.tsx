@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Me {
   user: { id: string; email: string; name?: string | null; emailVerified?: boolean };
@@ -48,7 +49,7 @@ export default function AccountScreen({
     }
   }, [token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

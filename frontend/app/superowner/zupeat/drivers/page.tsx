@@ -359,7 +359,7 @@ export default function LivreursPage() {
                     )}
                   </div>
 
-                  <span className="text-sm text-gray-500 flex-shrink-0">
+                  <span className="text-sm text-gray-500 shrink-0">
                     {ouvert ? t('collapse') : t('viewFile')}
                   </span>
                 </button>
@@ -413,7 +413,7 @@ export default function LivreursPage() {
                         {dossier.documents.map((piece) => (
                           <li
                             key={piece.id}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded bg-gray-50 px-3 py-2"
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-sm bg-gray-50 px-3 py-2"
                           >
                             <div className="min-w-0">
                               <p className="text-sm text-gray-900">
@@ -455,13 +455,13 @@ export default function LivreursPage() {
                                     min={dateMin}
                                     onChange={(e) => setEcheance({ ...echeance, [piece.id]: e.target.value })}
                                     aria-label={`${t('newExpiryDate')} — ${piece.libelle}`}
-                                    className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900"
+                                    className="bg-white border border-gray-300 rounded-sm px-2 py-1 text-xs text-gray-900"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => changerEcheance(livreur.id, piece)}
                                     disabled={!echeance[piece.id]}
-                                    className="px-2 py-1 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded text-xs"
+                                    className="px-2 py-1 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded-sm text-xs"
                                   >
                                     {t('saveExpiry')}
                                   </button>
@@ -500,7 +500,7 @@ export default function LivreursPage() {
                                   agir(`${livreur.id}/documents/${piece.id}`, { approuve: true })
                                 }
                                 aria-label={t('approveDocument', { name: piece.libelle })}
-                                className="p-1.5 rounded bg-green-50 text-green-700 hover:bg-green-100"
+                                className="p-1.5 rounded-sm bg-green-50 text-green-700 hover:bg-green-100"
                               >
                                 <Check size={14} />
                               </button>
@@ -512,7 +512,7 @@ export default function LivreursPage() {
                                   })
                                 }
                                 aria-label={t('rejectDocument', { name: piece.libelle })}
-                                className="p-1.5 rounded bg-red-50 text-red-700 hover:bg-red-100"
+                                className="p-1.5 rounded-sm bg-red-50 text-red-700 hover:bg-red-100"
                               >
                                 <X size={14} />
                               </button>
@@ -541,14 +541,14 @@ export default function LivreursPage() {
                         value={motif}
                         onChange={(e) => setMotif(e.target.value)}
                         placeholder={t('reasonPlaceholder')}
-                        className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+                        className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
                       />
 
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => agir(`${livreur.id}/approve`)}
                           disabled={!dossier.dossierComplet || livreur.status === 'ACTIVE'}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition"
+                          className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-sm text-sm font-medium transition"
                         >
                           {t('approveDriver')}
                         </button>
@@ -561,7 +561,7 @@ export default function LivreursPage() {
                                 raison: motif || t('defaultSuspendReason'),
                               })
                             }
-                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm font-medium transition"
+                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-sm text-sm font-medium transition"
                           >
                             {t('suspendDriver')}
                           </button>
@@ -573,7 +573,7 @@ export default function LivreursPage() {
                                 raison: motif || t('defaultRejectDriverReason'),
                               })
                             }
-                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm font-medium transition"
+                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-sm text-sm font-medium transition"
                           >
                             {t('rejectDriver')}
                           </button>
@@ -582,7 +582,7 @@ export default function LivreursPage() {
                         {(livreur.status === 'SUSPENDED' || livreur.status === 'INACTIVE') && (
                           <button
                             onClick={() => agir(`${livreur.id}/reactivate`)}
-                            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded text-sm font-medium transition"
+                            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-sm text-sm font-medium transition"
                           >
                             {t('reactivate')}
                           </button>

@@ -210,7 +210,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               return (
                 <li
                   key={attendue.type}
-                  className="flex items-start justify-between gap-3 rounded bg-gray-50 px-3 py-2"
+                  className="flex items-start justify-between gap-3 rounded-sm bg-gray-50 px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="text-gray-900 text-sm font-medium">{attendue.libelle}</p>
@@ -226,7 +226,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                     )}
                   </div>
 
-                  {Icone && <Icone size={18} className={`flex-shrink-0 ${marque?.classe}`} />}
+                  {Icone && <Icone size={18} className={`shrink-0 ${marque?.classe}`} />}
                 </li>
               );
             })}
@@ -247,7 +247,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                 id="piece-type"
                 value={formulaire.type}
                 onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
               >
                 <option value="">{t('choisir')}</option>
                 {dossier.piecesAttendues.map((attendue) => (
@@ -258,7 +258,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               </select>
             </div>
 
-            <div className="bg-gray-50 border border-gray-300 rounded p-3">
+            <div className="bg-gray-50 border border-gray-300 rounded-sm p-3">
               <div className="flex gap-2 mb-3">
                 <button
                   type="button"
@@ -297,7 +297,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                     type="file"
                     accept=".jpg,.jpeg,.png,.webp,.pdf"
                     onChange={(e) => setFichier(e.target.files?.[0] || null)}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm file:bg-gray-200 file:border-0 file:px-2 file:py-1 file:text-gray-900 file:cursor-pointer"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm file:bg-gray-200 file:border-0 file:px-2 file:py-1 file:text-gray-900 file:cursor-pointer"
                   />
                   {fichier && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -317,7 +317,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                     value={formulaire.documentUrl}
                     onChange={(e) => setFormulaire({ ...formulaire, documentUrl: e.target.value })}
                     placeholder="https://…"
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
                   />
                 </div>
               )}
@@ -332,7 +332,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                 type="date"
                 value={formulaire.expiryDate}
                 onChange={(e) => setFormulaire({ ...formulaire, expiryDate: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
               />
             </div>
 

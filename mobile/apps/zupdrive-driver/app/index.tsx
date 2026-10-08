@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { apiFetch, setUnauthorizedHandler } from '../lib/api';
 import { clearSession, loadSession, saveSession, Session } from '../lib/session';
 import { registerForPush, unregisterPush } from '../lib/push';
 import { COLORS } from '../components/ui';
@@ -31,54 +31,22 @@ interface DriverProfile {
 interface Earnings {
   totalEarningsCentimes: number;
   pendingCentimes: number;
-  payouts: Array<{ id: string; amount: number; status: string; period: { start: string; end: string } }>;
+  payouts: { id: string; amount: number; status: string; period: { start: string; end: string } }[];
 }
 
 export default function ZupDriveDriverApp() {
   const [booting, setBooting] = useState(true);
+  const pushToken = useRef<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [tab, setTab] = useState<string>('home');
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [earnings, setEarnings] = useState<Earnings | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
   const token = session?.accessToken || '';
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
-
-  // Boot: restore session if exists
-  useEffect(() => {
-    (async () => {
-      try {
-        const savedSession = await loadSession();
-        if (savedSession) {
-          setSession(savedSession);
-          await fetchProfile(savedSession.accessToken);
-          await fetchCourses(savedSession.accessToken);
-          await fetchEarnings(savedSession.accessToken);
-        }
-      } catch (e) {
-        logger.warn('Boot session restore failed', e);
-      } finally {
-        setBooting(false);
-      }
-    })();
-  }, []);
-
-  // Handle unauthorized: clear session and go back to login
-  useEffect(() => {
-    setUnauthorizedHandler(async () => {
-      await clearSession();
-      setSession(null);
-      setTab('home');
-    });
-  }, []);
 
   const fetchProfile = useCallback(async (token: string) => {
     try {
@@ -107,6 +75,34 @@ export default function ZupDriveDriverApp() {
     }
   }, []);
 
+  // Boot: restore session if exists
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedSession = await loadSession();
+        if (savedSession) {
+          setSession(savedSession);
+          await fetchProfile(savedSession.accessToken);
+          await fetchCourses(savedSession.accessToken);
+          await fetchEarnings(savedSession.accessToken);
+        }
+      } catch (e) {
+        logger.warn('Boot session restore failed', e);
+      } finally {
+        setBooting(false);
+      }
+    })();
+  }, [fetchProfile, fetchCourses, fetchEarnings]);
+
+  // Handle unauthorized: clear session and go back to login
+  useEffect(() => {
+    setUnauthorizedHandler(async () => {
+      await clearSession();
+      setSession(null);
+      setTab('home');
+    });
+  }, []);
+
   const handleLogin = async () => {
     if (!phone || !otp) {
       Alert.alert('Erreur', 'Veuillez entrer votre téléphone et le code OTP');
@@ -121,13 +117,16 @@ export default function ZupDriveDriverApp() {
       const newSession: Session = {
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
+        // La connexion se fait par téléphone + code : le serveur ne renvoie pas toujours de courriel.
+        email: res.data.email ?? '',
       };
       await saveSession(newSession);
       setSession(newSession);
       await fetchProfile(newSession.accessToken);
       await fetchCourses(newSession.accessToken);
       await fetchEarnings(newSession.accessToken);
-      await registerForPush(newSession.accessToken);
+      const push = await registerForPush(newSession.accessToken);
+      pushToken.current = push.status === 'enabled' ? push.token : null;
     } catch (e: any) {
       Alert.alert('Erreur', e.message || 'Authentification échouée');
     } finally {
@@ -142,8 +141,9 @@ export default function ZupDriveDriverApp() {
         text: 'Oui',
         style: 'destructive',
         onPress: async () => {
-          if (session) {
-            await unregisterPush(session.accessToken);
+          if (session && pushToken.current) {
+            await unregisterPush(session.accessToken, pushToken.current);
+            pushToken.current = null;
           }
           await clearSession();
           setSession(null);
@@ -179,7 +179,7 @@ export default function ZupDriveDriverApp() {
     // Login screen
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar style="dark" />
         <ScrollView contentContainerStyle={styles.loginContainer}>
           <Text style={styles.title}>ZupDrive Chauffeur</Text>
 
@@ -221,7 +221,7 @@ export default function ZupDriveDriverApp() {
   // Main app
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <View style={styles.header}>

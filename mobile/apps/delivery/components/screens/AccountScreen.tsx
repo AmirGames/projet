@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch, formatEuros } from '../../lib/api';
@@ -9,6 +9,7 @@ import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveri
 import BankAccountCard from '../BankAccountCard';
 import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Documents {
   status: string;
@@ -70,7 +71,7 @@ export default function AccountScreen({
     }
   }, [token, onDriverLoaded]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

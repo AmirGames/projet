@@ -25,7 +25,7 @@ export async function compteSocket(jeton: JwtPayload | undefined) {
 
 export type CompteSocket = NonNullable<Awaited<ReturnType<typeof compteSocket>>>;
 
-export async function permissionEat(compte: CompteSocket, section: string) {
+async function permissionEat(compte: CompteSocket, section: string) {
   if (compte.isSuperOwner) return true;
   if (!compte.isSystemAdmin) return false;
   const acces = compte.accesEquipe.find((a) => a.plateforme === 'EAT');

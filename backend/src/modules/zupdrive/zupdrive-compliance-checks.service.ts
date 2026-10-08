@@ -23,7 +23,7 @@ import { piecesExigees } from "./chauffeur-onboarding.service";
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
-export type ComplianceCheckType =
+type ComplianceCheckType =
   | "DOCUMENT_INTEGRITY"     // Validité des documents
   | "DOCUMENT_CONSISTENCY"   // Cohérence entre docs
   | "IDENTITY_VERIFICATION"  // Vérification identité

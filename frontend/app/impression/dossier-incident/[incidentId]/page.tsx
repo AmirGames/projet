@@ -149,10 +149,10 @@ export default function DossierIncidentPage() {
           tout le reste de la page. */}
       <div className="zone-impression mx-auto max-w-3xl px-4 py-6 sm:px-8 print:px-0 print:py-0">
         <div className="mb-4 flex flex-wrap gap-2 print:hidden">
-          <button onClick={() => window.print()} className="rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+          <button onClick={() => window.print()} className="rounded-sm bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
             {t('print')}
           </button>
-          <button onClick={telecharger} className="rounded border border-gray-400 px-4 py-2 text-sm">
+          <button onClick={telecharger} className="rounded-sm border border-gray-400 px-4 py-2 text-sm">
             {t('downloadJson')}
           </button>
         </div>
@@ -283,7 +283,7 @@ export default function DossierIncidentPage() {
           )}
         </div>
         {p.photo && (
-          <img src={p.photo} alt={t('photoAlt')} className="mt-3 max-h-96 w-auto max-w-full rounded border border-gray-300" />
+          <img src={p.photo} alt={t('photoAlt')} className="mt-3 max-h-96 w-auto max-w-full rounded-sm border border-gray-300" />
         )}
 
         <h2 className={titre}>{t('findings')}</h2>
@@ -316,7 +316,7 @@ export default function DossierIncidentPage() {
             {dossier.decisions.map((d, i) => (
               <li key={i}>
                 {date(d.le)} — <strong>{d.action}</strong> — {d.par}
-                <pre className="mt-0.5 whitespace-pre-wrap break-words text-xs text-gray-600">{JSON.stringify(d.details)}</pre>
+                <pre className="mt-0.5 whitespace-pre-wrap wrap-break-word text-xs text-gray-600">{JSON.stringify(d.details)}</pre>
               </li>
             ))}
           </ul>

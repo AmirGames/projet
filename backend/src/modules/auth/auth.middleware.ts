@@ -18,9 +18,13 @@ export interface Compte {
 }
 
 declare global {
+  // Seul moyen de compléter `Request` d'Express.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       userId?: string;
+      /** Email de l'administrateur, posé par `isSuperOwner` pour les journaux. */
+      actorEmail?: string;
       orgId?: string;
       storeIds?: string[];
       role?: string;

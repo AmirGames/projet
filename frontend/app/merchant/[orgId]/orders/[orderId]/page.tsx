@@ -455,7 +455,7 @@ export default function DetailCommandePage() {
           onChange={(e) => setNote(e.target.value)}
           rows={3}
           placeholder={t('notePlaceholder')}
-          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
         />
         <button
           onClick={ajouterNote}

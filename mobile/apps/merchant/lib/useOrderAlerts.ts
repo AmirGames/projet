@@ -4,6 +4,7 @@ import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { io, Socket } from 'socket.io-client';
 import { API_URL } from './api';
 import { dispatchRealtime } from './realtime';
+import { useDerniereValeur } from './useDerniereValeur';
 
 export interface NewOrderEvent {
   orderId: string;
@@ -46,24 +47,23 @@ export function useOrderAlerts({
   const socketRef = useRef<Socket | null>(null);
   const storeIdRef = useRef(storeId);
 
-  const callbacks = useRef({ onNewOrder, onOrdersChanged, onNotification, soundEnabled });
-  callbacks.current = { onNewOrder, onOrdersChanged, onNotification, soundEnabled };
+  const callbacks = useDerniereValeur({ onNewOrder, onOrdersChanged, onNotification, soundEnabled });
 
   useEffect(() => {
     setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
   }, []);
 
+
   const ring = useCallback(() => {
     if (!callbacks.current.soundEnabled) return;
     Vibration.vibrate(VIBRATION_PATTERN);
     try {
-      player.volume = 1;
       player.seekTo(0);
       player.play();
     } catch (e) {
       console.warn('Sonnerie impossible', e);
     }
-  }, [player]);
+  }, [player, callbacks]);
 
   useEffect(() => {
     if (!token) return;
@@ -104,7 +104,7 @@ export function useOrderAlerts({
       socketRef.current = null;
       setConnected(false);
     };
-  }, [token, ring]);
+  }, [token, ring, callbacks]);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -125,7 +125,7 @@ export function useOrderAlerts({
       }
     });
     return () => sub.remove();
-  }, [token]);
+  }, [token, callbacks]);
 
   useEffect(() => {
     if (!token || pendingCount === 0 || !soundEnabled) return;

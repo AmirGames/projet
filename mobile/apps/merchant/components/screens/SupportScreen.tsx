@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import {
 import { apiFetch } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Ticket {
   id: string;
@@ -162,7 +163,7 @@ function Conversation({ token, ticket, onBack }: { token: string; ticket: Ticket
     }
   }, [ticket.id, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
   useRealtimeEvent('reconnecte', load);
@@ -259,7 +260,7 @@ export default function SupportScreen({ token, orgId, onBack }: { token: string;
     }
   }, [orgId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

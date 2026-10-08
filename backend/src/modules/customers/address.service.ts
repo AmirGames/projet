@@ -1,5 +1,40 @@
+import { z } from "zod";
 import { logger } from "../../config/logger";
 import { distanceKm } from "../../utils/geo";
+
+// Les réponses des fournisseurs d'adresses viennent d'un tiers : relues avec des
+// schémas indulgents. Un champ absent ou d'un autre type vaut « rien », jamais une erreur.
+const texte = z.string().optional().catch(undefined);
+
+const entiteGeo = z
+  .object({
+    properties: z
+      .object({
+        label: texte, name: texte, city: texte, town: texte, village: texte, county: texte,
+        postcode: texte, housenumber: texte, street: texte, country: texte, countrycode: texte,
+        type: texte, osm_key: texte,
+      })
+      .catch({}),
+    geometry: z.object({ coordinates: z.array(z.unknown()).catch([]) }).catch({ coordinates: [] }),
+  })
+  .catch({ properties: {}, geometry: { coordinates: [] } });
+type EntiteGeo = z.infer<typeof entiteGeo>;
+
+const reponseGeo = z.object({ features: z.array(entiteGeo).catch([]) }).catch({ features: [] });
+
+const composantGoogle = z
+  .object({ types: z.array(z.string()).catch([]), longText: texte, shortText: texte })
+  .catch({ types: [] });
+const lieuGoogle = z
+  .object({
+    addressComponents: z.array(composantGoogle).catch([]),
+    formattedAddress: texte,
+    displayName: z.object({ text: texte }).catch({}),
+    location: z.object({ latitude: z.number().optional().catch(undefined), longitude: z.number().optional().catch(undefined) }).catch({}),
+  })
+  .catch({ addressComponents: [], displayName: {}, location: {} });
+type LieuGoogle = z.infer<typeof lieuGoogle>;
+const reponseGoogle = z.object({ places: z.array(lieuGoogle).catch([]) }).catch({ places: [] });
 
 /**
  * Recherche d'adresses, avec des fournisseurs interchangeables.
@@ -127,9 +162,9 @@ function paysAutorises(): string[] {
     .filter(Boolean);
 }
 
-function normaliserBan(entite: any): Suggestion {
-  const p = entite?.properties || {};
-  const coords = entite?.geometry?.coordinates || [];
+function normaliserBan(entite: EntiteGeo): Suggestion {
+  const p = entite.properties;
+  const coords = entite.geometry.coordinates;
 
   return {
     label: p.label || "",
@@ -144,9 +179,9 @@ function normaliserBan(entite: any): Suggestion {
   };
 }
 
-function normaliserPhoton(entite: any): Suggestion {
-  const p = entite?.properties || {};
-  const coords = entite?.geometry?.coordinates || [];
+function normaliserPhoton(entite: EntiteGeo): Suggestion {
+  const p = entite.properties;
+  const coords = entite.geometry.coordinates;
 
   // Photon sépare le numéro du nom de voie, et n'a pas de libellé tout fait.
   const voie = [p.housenumber, p.street || p.name].filter(Boolean).join(" ");
@@ -170,10 +205,10 @@ function normaliserPhoton(entite: any): Suggestion {
  * Places (New) rend l'adresse découpée en « composants » typés plutôt qu'en
  * champs nommés : le numéro et la voie arrivent séparés, comme chez Photon.
  */
-function normaliserGoogle(lieu: any): Suggestion {
-  const composants: any[] = lieu?.addressComponents || [];
+function normaliserGoogle(lieu: LieuGoogle): Suggestion {
+  const composants = lieu.addressComponents;
 
-  const trouver = (type: string) => composants.find((c) => (c?.types || []).includes(type));
+  const trouver = (type: string) => composants.find((c) => c.types.includes(type));
   const composant = (type: string) => trouver(type)?.longText || "";
 
   const numero = composant("street_number");
@@ -181,14 +216,14 @@ function normaliserGoogle(lieu: any): Suggestion {
   const ville = composant("locality") || composant("postal_town") || composant("administrative_area_level_2");
 
   return {
-    label: lieu?.formattedAddress || "",
-    street: [numero, voie].filter(Boolean).join(" ") || lieu?.displayName?.text || "",
+    label: lieu.formattedAddress || "",
+    street: [numero, voie].filter(Boolean).join(" ") || lieu.displayName.text || "",
     city: ville,
     postalCode: composant("postal_code"),
     country: composant("country"),
     countryCode: (trouver("country")?.shortText || "").toLowerCase(),
-    latitude: typeof lieu?.location?.latitude === "number" ? lieu.location.latitude : null,
-    longitude: typeof lieu?.location?.longitude === "number" ? lieu.location.longitude : null,
+    latitude: lieu.location.latitude ?? null,
+    longitude: lieu.location.longitude ?? null,
   };
 }
 
@@ -262,11 +297,11 @@ export function indiceValide(brut: { pays?: unknown; latitude?: unknown; longitu
 }
 
 /** Codes ISO des pays, tels que Photon les renvoie dans « countrycode ». */
-function dansLePerimetre(entite: any): boolean {
+function dansLePerimetre(entite: EntiteGeo): boolean {
   const pays = paysAutorises();
   if (pays.length === 0) return true;
 
-  const code = (entite?.properties?.countrycode || "").toLowerCase();
+  const code = (entite.properties.countrycode || "").toLowerCase();
   return pays.includes(code);
 }
 
@@ -358,8 +393,8 @@ export class AddressService {
       url.searchParams.set('lang', 'fr');
       const reponse = await fetch(url.href, { signal: controleur.signal, headers: { 'User-Agent': 'ZupEat/1.0' } });
       if (!reponse.ok) throw new Error();
-      const donnees = await reponse.json() as { features?: any[] };
-      const proches = (donnees.features || []).filter(dansLePerimetre)
+      const donnees = reponseGeo.parse(await reponse.json());
+      const proches = donnees.features.filter(dansLePerimetre)
         .filter((entite) => entite.properties?.street || entite.properties?.type === 'street' || entite.properties?.osm_key === 'highway')
         .map((entite) => ({
         adresse: normaliserPhoton(entite),
@@ -461,9 +496,9 @@ export class AddressService {
         throw new Error(`Réponse ${reponse.status} ${raison.slice(0, 200)}`);
       }
 
-      const donnees: any = await reponse.json();
+      const donnees = reponseGoogle.parse(await reponse.json());
 
-      const suggestions = (donnees.places || [])
+      const suggestions = donnees.places
         .map(normaliserGoogle)
         .filter((s: Suggestion) => s.label)
         .filter((s: Suggestion) => {
@@ -519,8 +554,7 @@ export class AddressService {
         throw new Error(`Réponse ${reponse.status}`);
       }
 
-      const donnees: any = await reponse.json();
-      const entites: any[] = donnees.features || [];
+      const entites = reponseGeo.parse(await reponse.json()).features;
 
       const suggestions = entites
         .filter((entite) => fournisseur === "ban" || dansLePerimetre(entite))

@@ -357,7 +357,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
           <button
             type="button"
             onClick={() => setAfficherFormulaire(!afficherFormulaire)}
-            className="flex items-center gap-1 text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded transition"
+            className="flex items-center gap-1 text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded-sm transition"
           >
             <Upload size={14} />
             {t('ajouter')}
@@ -365,7 +365,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
         </div>
 
         {afficherFormulaire && (
-          <form onSubmit={deposerDocument} className="bg-gray-50 border border-gray-300 rounded p-4 space-y-3">
+          <form onSubmit={deposerDocument} className="bg-gray-50 border border-gray-300 rounded-sm p-4 space-y-3">
             {erreurUpload && (
               <p className="text-sm text-red-600">{erreurUpload}</p>
             )}
@@ -378,7 +378,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                 id="type-piece"
                 value={typePiece}
                 onChange={(e) => setTypePiece(e.target.value)}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
               >
                 <option value="">{t('choisir')}</option>
                 <option value="registration">{t('registration')}</option>
@@ -398,7 +398,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.pdf"
                 onChange={(e) => setFichier(e.target.files?.[0] || null)}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm file:bg-gray-200 file:border-0 file:px-2 file:py-1 file:text-gray-900 file:cursor-pointer"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm file:bg-gray-200 file:border-0 file:px-2 file:py-1 file:text-gray-900 file:cursor-pointer"
               />
               {fichier && (
                 <p className="text-xs text-gray-500 mt-1">
@@ -411,7 +411,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
               <button
                 type="submit"
                 disabled={envoi}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-medium py-2 rounded transition"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-medium py-2 rounded-sm transition"
               >
                 {envoi ? t('envoi') : t('deposer')}
               </button>
@@ -423,7 +423,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                   setFichier(null);
                   setErreurUpload('');
                 }}
-                className="px-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded transition"
+                className="px-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-sm transition"
               >
                 {t('annuler')}
               </button>
@@ -440,7 +440,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
               const Icone = marque.icone;
 
               return (
-                <li key={piece.id} className="rounded bg-gray-50 px-3 py-2 space-y-2">
+                <li key={piece.id} className="rounded-sm bg-gray-50 px-3 py-2 space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-gray-900 text-sm font-medium">{piece.libelle}</p>
@@ -468,13 +468,13 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                             min={dateMin}
                             onChange={(e) => setEcheance({ ...echeance, [piece.id]: e.target.value })}
                             aria-label={t('nouvelleDate', { piece: piece.libelle })}
-                            className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900"
+                            className="bg-white border border-gray-300 rounded-sm px-2 py-1 text-xs text-gray-900"
                           />
                           <button
                             type="button"
                             onClick={() => changerEcheance(piece)}
                             disabled={enCours === piece.id || !echeance[piece.id]}
-                            className="px-2 py-1 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded text-xs"
+                            className="px-2 py-1 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded-sm text-xs"
                           >
                             {t('enregistrer')}
                           </button>
@@ -507,7 +507,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                         </LienPiece>
                       </div>
                     </div>
-                    <Icone size={18} className={`flex-shrink-0 ${marque.classe}`} />
+                    <Icone size={18} className={`shrink-0 ${marque.classe}`} />
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -516,13 +516,13 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                       onChange={(e) => setMotif({ ...motif, [piece.id]: e.target.value })}
                       placeholder={t('motifPlaceholder')}
                       aria-label={t('motifPour', { piece: piece.libelle })}
-                      className="flex-1 min-w-[12rem] bg-white border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 placeholder-gray-400"
+                      className="flex-1 min-w-48 bg-white border border-gray-300 rounded-sm px-2 py-1 text-sm text-gray-900 placeholder-gray-400"
                     />
                     <button
                       type="button"
                       onClick={() => statuer(piece, true)}
                       disabled={enCours === piece.id}
-                      className="px-3 py-1 bg-green-600/80 hover:bg-green-600 disabled:opacity-50 rounded text-sm text-white transition"
+                      className="px-3 py-1 bg-green-600/80 hover:bg-green-600 disabled:opacity-50 rounded-sm text-sm text-white transition"
                     >
                       {t('valider')}
                     </button>
@@ -530,7 +530,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                       type="button"
                       onClick={() => statuer(piece, false)}
                       disabled={enCours === piece.id}
-                      className="px-3 py-1 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 rounded text-sm text-white transition"
+                      className="px-3 py-1 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 rounded-sm text-sm text-white transition"
                     >
                       {t('refuser')}
                     </button>

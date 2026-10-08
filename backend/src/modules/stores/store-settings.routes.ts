@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { emailFacultatif } from "../../utils/validation";
-import { StoreSettingsService } from "./store-settings.service";
+import { StoreSettingsService, reglagesDe } from "./store-settings.service";
 import { authMiddleware } from "../auth/auth.middleware";
 import { exigerBoutique } from "../auth/autorisation-boutique";
 import { uploadMiddleware } from "../files/file-upload.middleware";
@@ -102,7 +102,7 @@ router.post("/:storeId/logo", authMiddleware, async (req: Request, res: Response
 
     res.json({
       message: "Logo uploaded",
-      logo: (store.settings as any)?.logo,
+      logo: reglagesDe(store.settings).logo,
     });
   } catch (err) {
     next(err);
@@ -144,7 +144,7 @@ router.post(
 
       res.json({
         message: "Logo enregistré",
-        logo: (store.settings as any)?.logo,
+        logo: reglagesDe(store.settings).logo,
       });
     } catch (err) {
       next(err);
@@ -181,7 +181,7 @@ router.post("/:storeId/banner", authMiddleware, async (req: Request, res: Respon
 
     res.json({
       message: "Banner uploaded",
-      banner: (store.settings as any)?.banner,
+      banner: reglagesDe(store.settings).banner,
     });
   } catch (err) {
     next(err);
@@ -224,7 +224,7 @@ router.post(
 
       res.json({
         message: "Photo de couverture enregistrée",
-        banner: (store.settings as any)?.banner,
+        banner: reglagesDe(store.settings).banner,
       });
     } catch (err) {
       next(err);

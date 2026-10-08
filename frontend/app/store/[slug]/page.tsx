@@ -679,8 +679,8 @@ export default function StorefrontPage() {
         <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4 animate-pulse" aria-busy="true">
           <span className="sr-only">{t('loading')}</span>
           <div className="h-40 md:h-56 rounded-3xl bg-gray-100" />
-          <div className="mt-6 h-8 w-64 rounded bg-gray-100" />
-          <div className="mt-3 h-4 w-96 max-w-full rounded bg-gray-100" />
+          <div className="mt-6 h-8 w-64 rounded-sm bg-gray-100" />
+          <div className="mt-3 h-4 w-96 max-w-full rounded-sm bg-gray-100" />
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
             {Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="h-36 rounded-2xl bg-gray-100" />
@@ -721,7 +721,7 @@ export default function StorefrontPage() {
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
         {/* La photo de couverture du commerçant ; à défaut, l'illustration de
             sa catégorie (une pizza pour une pizzeria). */}
-        <div className="relative h-36 md:h-64 overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
+        <div className="relative h-36 md:h-64 overflow-hidden rounded-3xl bg-linear-to-br from-orange-500 via-orange-600 to-red-600">
           {store.settings?.banner ? (
             <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
@@ -753,12 +753,12 @@ export default function StorefrontPage() {
             <button
               type="button"
               onClick={() => setShowCart(true)}
-              className="relative mt-1 flex flex-shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 py-2.5 text-sm font-semibold hover:bg-gray-200"
+              className="relative mt-1 flex shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 py-2.5 text-sm font-semibold hover:bg-gray-200"
             >
               <ShoppingBag size={18} />
               {t('cart')}
               {nombreArticles > 0 && (
-                <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-orange-600 px-1 text-xs font-bold text-white">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-600 px-1 text-xs font-bold text-white">
                   {nombreArticles > 99 ? '99+' : nombreArticles}
                 </span>
               )}
@@ -856,11 +856,11 @@ export default function StorefrontPage() {
       {categories.length > 1 && (
         <nav
           aria-label={t('categoriesNav')}
-          className="sticky top-16 z-30 mt-8 border-b border-gray-100 bg-white/95 backdrop-blur"
+          className="sticky top-16 z-30 mt-8 border-b border-gray-100 bg-white/95 backdrop-blur-sm"
         >
           <div
             ref={ongletsRef}
-            className="max-w-6xl mx-auto flex gap-1 overflow-x-auto px-4 md:px-6 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="max-w-6xl mx-auto flex gap-1 overflow-x-auto px-4 md:px-6 py-2 scrollbar-none [&::-webkit-scrollbar]:hidden"
           >
             {categories.map((categorie) => {
               const active = categorieActive === categorie.id;
@@ -875,7 +875,7 @@ export default function StorefrontPage() {
                       .getElementById(`categorie-${encodeURIComponent(categorie.id)}`)
                       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  className={`flex-shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
                     active ? 'bg-gray-900 text-white hover:text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
@@ -898,13 +898,13 @@ export default function StorefrontPage() {
             {populaires.length >= 2 && (
               <section>
                 <h2 className="mb-4 text-2xl font-bold tracking-tight">{t('popular')}</h2>
-                <div className="-mx-4 flex snap-x snap-mandatory scroll-pl-4 gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:scroll-pl-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="-mx-4 flex snap-x snap-mandatory scroll-pl-4 gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:scroll-pl-0 md:px-0 scrollbar-none [&::-webkit-scrollbar]:hidden">
                   {populaires.map((product) => (
                     <button
                       key={product.id}
                       type="button"
                       onClick={() => ouvrirProduit(product)}
-                      className="group w-44 flex-shrink-0 snap-start text-left"
+                      className="group w-44 shrink-0 snap-start text-left"
                     >
                       <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
                         {product.images?.[0] ? (
@@ -1055,7 +1055,7 @@ export default function StorefrontPage() {
                               </span>
                               <span
                                 aria-hidden="true"
-                                className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
                                   retenue ? 'border-gray-900' : 'border-gray-300'
                                 }`}
                               >
@@ -1087,7 +1087,7 @@ export default function StorefrontPage() {
                             )}
                           </span>
                           <span
-                            className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                               groupe.isRequired ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-700'
                             }`}
                           >
@@ -1120,7 +1120,7 @@ export default function StorefrontPage() {
                                 </span>
                                 <span
                                   aria-hidden="true"
-                                  className={`flex h-5 w-5 flex-shrink-0 items-center justify-center ${
+                                  className={`flex h-5 w-5 shrink-0 items-center justify-center ${
                                     groupe.maxChoices === 1 ? 'rounded-full' : 'rounded-md'
                                   } border-2 ${coche ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300'}`}
                                 >
@@ -1186,21 +1186,21 @@ export default function StorefrontPage() {
           role="status"
           className="fixed left-1/2 bottom-24 z-50 -translate-x-1/2 flex max-w-[calc(100vw-2rem)] items-center gap-2 whitespace-nowrap rounded-full bg-white px-5 py-3 text-sm font-semibold text-gray-900 shadow-xl ring-1 ring-gray-200"
         >
-          <Check size={16} className="flex-shrink-0 text-green-600" />
+          <Check size={16} className="shrink-0 text-green-600" />
           {t('added', { name: ajout })}
         </div>
       )}
 
       {/* Le panier, toujours à portée de pouce dès qu'il contient quelque chose. */}
       {nombreArticles > 0 && !showCart && !produitOuvert && (
-        <div className="fixed inset-x-4 bottom-4 z-40 md:inset-x-auto md:right-6 md:w-[26rem]">
+        <div className="fixed inset-x-4 bottom-4 z-40 md:inset-x-auto md:right-6 md:w-104">
           <button
             type="button"
             onClick={() => setShowCart(true)}
             className="flex w-full items-center justify-between gap-3 rounded-full bg-gray-900 py-3 pl-3 pr-6 text-white shadow-2xl transition hover:bg-gray-800"
           >
             <span className="flex items-center gap-3">
-              <span className="flex h-10 min-w-[2.5rem] items-center justify-center rounded-full bg-orange-600 px-2 font-bold">
+              <span className="flex h-10 min-w-10 items-center justify-center rounded-full bg-orange-600 px-2 font-bold">
                 {nombreArticles > 99 ? '99+' : nombreArticles}
               </span>
               <span className="font-bold">{t('viewCart')}</span>
@@ -1218,7 +1218,7 @@ export default function StorefrontPage() {
         <aside
           role="dialog"
           aria-label={t('cartTitle')}
-          className="fixed top-0 right-0 z-50 flex h-full w-full sm:w-[26rem] flex-col bg-white shadow-2xl"
+          className="fixed top-0 right-0 z-50 flex h-full w-full sm:w-104 flex-col bg-white shadow-2xl"
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
             <div>
@@ -1395,7 +1395,7 @@ function CartePlat({
           onOuvrir();
         }
       }}
-      className={`group flex cursor-pointer gap-4 rounded-2xl border border-gray-200 p-4 transition hover:border-gray-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+      className={`group flex cursor-pointer gap-4 rounded-2xl border border-gray-200 p-4 transition hover:border-gray-300 hover:shadow-md focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-500 ${
         product.isAvailable ? '' : 'opacity-60'
       }`}
     >
@@ -1426,7 +1426,7 @@ function CartePlat({
         <InfoAllergenes produit={product} compact />
       </div>
 
-      <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+      <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-gray-100">
         {product.images && product.images.length > 0 ? (
           <img
             src={product.images[0].url}

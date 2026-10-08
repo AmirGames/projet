@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Shield, FileCheck, AlertCircle, Loader2, Clock } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -33,6 +34,8 @@ interface ComplianceReport {
 }
 
 export default function CompliancePage() {
+  const t = useTranslations('superownerZupdriveCompliance');
+  const locale = useLocale() === 'en' ? 'en-US' : 'fr-FR';
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [reports, setReports] = useState<ComplianceReport[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,16 +54,16 @@ export default function CompliancePage() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
-      if (!response.ok) throw new Error('Erreur lors du chargement des logs');
+      if (!response.ok) throw new Error(t('logsLoadError'));
       const { logs } = await response.json();
       setAuditLogs(logs);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setError(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setLoading(false);
     }
-  }, [resourceTypeFilter]);
+  }, [resourceTypeFilter, t]);
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -69,16 +72,16 @@ export default function CompliancePage() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
-      if (!response.ok) throw new Error('Erreur lors du chargement des rapports');
+      if (!response.ok) throw new Error(t('reportsLoadError'));
       const { reports: data } = await response.json();
       setReports(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setError(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleGenerateReport = async () => {
     setLoading(true);
@@ -95,11 +98,11 @@ export default function CompliancePage() {
         }),
       });
 
-      if (!response.ok) throw new Error('Erreur lors de la génération');
-      alert('Rapport généré avec succès');
+      if (!response.ok) throw new Error(t('generateError'));
+      alert(t('generated'));
       await loadReports();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erreur inconnue');
+      alert(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setLoading(false);
     }
@@ -108,8 +111,8 @@ export default function CompliancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Conformité & Audit</h1>
-        <p className="text-gray-600 mt-2">Historique d'audit, vérification de documents et rapports de conformité</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-600 mt-2">{t('subtitle')}</p>
       </div>
 
       {/* Tabs */}
@@ -126,7 +129,7 @@ export default function CompliancePage() {
           }`}
         >
           <Clock className="w-4 h-4 inline mr-2" />
-          Historique d'audit
+          {t('tabAudit')}
         </button>
         <button
           onClick={() => {
@@ -140,7 +143,7 @@ export default function CompliancePage() {
           }`}
         >
           <FileCheck className="w-4 h-4 inline mr-2" />
-          Rapports
+          {t('tabReports')}
         </button>
       </div>
 
@@ -148,7 +151,7 @@ export default function CompliancePage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600" />
           <div>
-            <h3 className="font-medium text-red-900">Erreur</h3>
+            <h3 className="font-medium text-red-900">{t('errorTitle')}</h3>
             <p className="text-sm text-red-700">{error}</p>
           </div>
         </div>
@@ -163,17 +166,17 @@ export default function CompliancePage() {
           {activeTab === 'audit' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Filtrer par type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('filterByType')}</label>
                 <select
                   value={resourceTypeFilter}
                   onChange={(e) => setResourceTypeFilter(e.target.value)}
                   className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg"
                 >
-                  <option value="">Tous les types</option>
-                  <option value="DRIVER">Chauffeur</option>
-                  <option value="DOCUMENT">Document</option>
-                  <option value="INFRACTION">Infraction</option>
-                  <option value="PAYMENT">Paiement</option>
+                  <option value="">{t('allTypes')}</option>
+                  <option value="DRIVER">{t('type_DRIVER')}</option>
+                  <option value="DOCUMENT">{t('type_DOCUMENT')}</option>
+                  <option value="INFRACTION">{t('type_INFRACTION')}</option>
+                  <option value="PAYMENT">{t('type_PAYMENT')}</option>
                 </select>
               </div>
 
@@ -181,11 +184,11 @@ export default function CompliancePage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left text-gray-700 font-medium">Action</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-medium">Type</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-medium">Acteur</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-medium">Ressource</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-medium">Date</th>
+                      <th className="px-4 py-3 text-left text-gray-700 font-medium">{t('colAction')}</th>
+                      <th className="px-4 py-3 text-left text-gray-700 font-medium">{t('colType')}</th>
+                      <th className="px-4 py-3 text-left text-gray-700 font-medium">{t('colActor')}</th>
+                      <th className="px-4 py-3 text-left text-gray-700 font-medium">{t('colResource')}</th>
+                      <th className="px-4 py-3 text-left text-gray-700 font-medium">{t('colDate')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -193,14 +196,14 @@ export default function CompliancePage() {
                       <tr key={log.id} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium">{log.action}</td>
                         <td className="px-4 py-3">
-                          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                            {log.resourceType}
+                          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded-sm text-xs">
+                            {t.has(`type_${log.resourceType}`) ? t(`type_${log.resourceType}`) : log.resourceType}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-600">{log.actorType}</td>
                         <td className="px-4 py-3 text-gray-600">{log.resourceId}</td>
                         <td className="px-4 py-3 text-gray-600">
-                          {new Date(log.createdAt).toLocaleDateString('fr-FR')}
+                          {new Date(log.createdAt).toLocaleDateString(locale)}
                         </td>
                       </tr>
                     ))}
@@ -217,7 +220,7 @@ export default function CompliancePage() {
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                Générer un rapport
+                {t('generate')}
               </button>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -232,31 +235,31 @@ export default function CompliancePage() {
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-green-100 text-green-700'
                       }`}>
-                        Score risque: {report.riskScore.toFixed(0)}/100
+                        {t('riskScore', { score: report.riskScore.toFixed(0) })}
                       </span>
                     </div>
 
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Chauffeurs totaux</span>
+                        <span className="text-gray-600">{t('totalDrivers')}</span>
                         <span className="font-medium">{report.totalDrivers}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Documents valides</span>
+                        <span className="text-gray-600">{t('validDocuments')}</span>
                         <span className="font-medium">{report.driversWithValidDocuments}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Documents expirés bientôt</span>
+                        <span className="text-gray-600">{t('expiringDocuments')}</span>
                         <span className="font-medium">{report.driversWithExpiringDocuments}</span>
                       </div>
                       <div className="flex justify-between border-t pt-2">
-                        <span className="text-gray-600">Taux conformité</span>
+                        <span className="text-gray-600">{t('complianceRate')}</span>
                         <span className="font-medium">{report.complianceRate.toFixed(1)}%</span>
                       </div>
                     </div>
 
                     <p className="text-xs text-gray-500 mt-3">
-                      Généré: {new Date(report.generatedAt).toLocaleDateString('fr-FR')}
+                      {t('generatedOn', { date: new Date(report.generatedAt).toLocaleDateString(locale) })}
                     </p>
                   </div>
                 ))}

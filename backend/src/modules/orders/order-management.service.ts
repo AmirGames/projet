@@ -1,3 +1,4 @@
+import type { OrderStatus, Prisma } from "@prisma/client";
 import { encaissePourLaPlateforme, fraisDeServiceDus, totalCommercant } from "../delivery/delivery-mode.service";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
@@ -36,7 +37,7 @@ export interface OrderFilterOptions {
   skip?: number;
   take?: number;
   /** Un statut, ou plusieurs (les commandes en cours, pour l'écran de cuisine). */
-  status?: string | string[];
+  status?: OrderStatus | OrderStatus[];
   startDate?: Date;
   endDate?: Date;
   minAmount?: number;
@@ -77,7 +78,7 @@ export class OrderManagementService {
       const skip = options?.skip || 0;
       const take = options?.take || 50;
 
-      const whereClause: any = { storeId, ...TRANSMISE };
+      const whereClause: Prisma.OrderWhereInput = { storeId, ...TRANSMISE };
       
       if (Array.isArray(options?.status)) {
         whereClause.status = { in: options.status };
@@ -210,7 +211,7 @@ export class OrderManagementService {
     }
   }
 
-  static async updateOrderStatus(storeId: string, orderId: string, status: string) {
+  static async updateOrderStatus(storeId: string, orderId: string, status: OrderStatus) {
     try {
       const order = await db.order.findUnique({
         where: { id: orderId },
@@ -242,7 +243,7 @@ export class OrderManagementService {
       // la décision de verifierTransition n'est plus valable.
       const ecrit = await db.order.updateMany({
         where: { id: orderId, storeId, status: order.status },
-        data: { status: status as any },
+        data: { status },
       });
       if (ecrit.count !== 1) {
         throw new ApiError(409, "La commande a changé entre-temps, rechargez-la.", "ORDER_STATE_CONFLICT");

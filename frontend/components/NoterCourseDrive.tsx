@@ -83,7 +83,7 @@ export function NoterCourseDrive({ chemin, question, onNote }: Props) {
             onMouseEnter={() => setSurvolee(valeur)}
             onFocus={() => setSurvolee(valeur)}
             onClick={() => setChoisie(valeur)}
-            className="rounded p-1 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="rounded-sm p-1 transition hover:scale-110 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
           >
             <Star
               size={26}

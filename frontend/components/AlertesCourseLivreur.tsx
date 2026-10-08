@@ -54,12 +54,12 @@ export function AlertesCourseLivreur() {
         retiree ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'
       }`}
     >
-      <AlertTriangle className="flex-shrink-0 mt-0.5" size={20} />
+      <AlertTriangle className="shrink-0 mt-0.5" size={20} />
       <div className="flex-1 min-w-0">
         <p className="font-semibold">{t(retiree ? 'withdrawnTitle' : 'warningTitle')}</p>
         <p className="text-sm mt-1">{alerte.message}</p>
       </div>
-      <button onClick={() => setAlerte(null)} aria-label={t('dismiss')} className="flex-shrink-0 opacity-80 hover:opacity-100">
+      <button onClick={() => setAlerte(null)} aria-label={t('dismiss')} className="shrink-0 opacity-80 hover:opacity-100">
         <X size={18} />
       </button>
     </div>

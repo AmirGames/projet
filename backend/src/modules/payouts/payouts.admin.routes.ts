@@ -56,7 +56,7 @@ router.post("/versements/arreter", authMiddleware, isSuperOwner, async (req: Req
         adminId: req.userId as string,
         action: "DRAW_WEEKLY_PAYOUTS",
         target: "all",
-        changes: bilan as any,
+        changes: bilan,
       },
     });
 
@@ -83,7 +83,7 @@ router.get("/versements/sepa", authMiddleware, isSuperOwner, async (_req: Reques
 
 const journaliserLot = (req: Request, action: string, cible: string, changes: object = {}) =>
   db.systemAuditLog.create({
-    data: { adminId: req.userId as string, action, target: cible, changes: changes as any },
+    data: { adminId: req.userId as string, action, target: cible, changes: changes },
   });
 
 // GET /superowner/versements/lots - Les derniers lots
@@ -243,7 +243,7 @@ router.post("/payouts/draw", authMiddleware, isSuperOwner, async (req: Request, 
         adminId: req.userId as string,
         action: "DRAW_DRIVER_PAYOUTS",
         target: corps.driverId || "all",
-        changes: { periodStart: debut, periodEnd: fin, releves: releves.length } as any,
+        changes: { periodStart: debut, periodEnd: fin, releves: releves.length },
       },
     });
 
@@ -290,7 +290,7 @@ router.post("/payouts/:payoutId/pay", authMiddleware, isSuperOwner, async (req: 
         adminId: req.userId as string,
         action: "PAY_DRIVER_PAYOUT",
         target: releve.id,
-        changes: { amount: Number(releve.amount), method: corps.method, reference: corps.reference } as any,
+        changes: { amount: Number(releve.amount), method: corps.method, reference: corps.reference },
       },
     });
 
@@ -313,7 +313,7 @@ router.post("/payouts/:payoutId/cancel", authMiddleware, isSuperOwner, async (re
         adminId: req.userId as string,
         action: "CANCEL_DRIVER_PAYOUT",
         target: releve.id,
-        changes: { raison: releve.note } as any,
+        changes: { raison: releve.note },
       },
     });
 

@@ -86,7 +86,7 @@ export default function ConfigurationDrivePage() {
         </p>
       )}
 
-      <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200" data-commission={enVigueur ?? ''}>
+      <section className="rounded-2xl bg-white p-6 shadow-xs ring-1 ring-gray-200" data-commission={enVigueur ?? ''}>
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
           <Percent className="h-5 w-5 text-blue-600" />
           {t('commission')}

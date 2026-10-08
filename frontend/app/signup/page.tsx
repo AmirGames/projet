@@ -83,7 +83,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10">
         <h1 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-gray-900">
           {t("title")}
         </h1>
@@ -106,7 +106,7 @@ export default function SignupPage() {
             <SelecteurPays
               pays={pays}
               onChange={setPays}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
             />
           </div>
 
@@ -116,7 +116,7 @@ export default function SignupPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
               placeholder={t("name")}
               required
             />
@@ -128,7 +128,7 @@ export default function SignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
               placeholder={t('emailPlaceholder')}
               required
             />
@@ -140,7 +140,7 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
               placeholder="••••••••"
               autoComplete="new-password"
               required
@@ -154,7 +154,7 @@ export default function SignupPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
               placeholder="••••••••"
               required
             />

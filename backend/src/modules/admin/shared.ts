@@ -1,14 +1,14 @@
 import { exigerPermission } from "../auth/permissions-plateforme.service";
 
 // Helper to safely get string query params
-export const getQueryString = (value: any, defaultValue: string): string => {
+export const getQueryString = (value: unknown, defaultValue: string): string => {
   if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return value[0] || defaultValue;
+  if (Array.isArray(value)) return typeof value[0] === "string" && value[0] ? value[0] : defaultValue;
   return defaultValue;
 };
 
 // Helper to safely get numeric query params
-export const getQueryNumber = (value: any, defaultValue: number): number => {
+export const getQueryNumber = (value: unknown, defaultValue: number): number => {
   const str = getQueryString(value, String(defaultValue));
   const num = parseInt(str, 10);
   return isNaN(num) ? defaultValue : num;

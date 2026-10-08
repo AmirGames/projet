@@ -32,7 +32,7 @@ router.post("/orders/:id/refund", authMiddleware, isSuperOwner, async (req: Requ
 
     SecurityEventService.record({
       action: "ORDER_REFUNDED",
-      actor: (req as any).actorEmail || "inconnu",
+      actor: req.actorEmail || "inconnu",
       target: orderId,
       severity: "MEDIUM",
       details: `Remboursement de ${(remboursement?.amount ?? 0) / 100} € : ${raison}`,

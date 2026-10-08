@@ -104,7 +104,7 @@ export default function VerifierEmail() {
   const t = useTranslations('verifierEmail');
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10">
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
         <Suspense fallback={<p className="text-center text-slate-600">{t('chargement')}</p>}>
           <Confirmation />

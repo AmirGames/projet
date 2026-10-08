@@ -258,19 +258,19 @@ export default function MarketingPage() {
                 <p className="text-sm text-gray-700 mb-3">{campaign.message.substring(0, 100)}...</p>
 
                 <div className="grid grid-cols-4 gap-2 mb-4 text-xs">
-                  <div className="bg-gray-50 p-2 rounded">
+                  <div className="bg-gray-50 p-2 rounded-sm">
                     <p className="text-gray-500">{t('envoyes')}</p>
                     <p className="font-bold">{campaign.sentCount}</p>
                   </div>
-                  <div className="bg-gray-50 p-2 rounded">
+                  <div className="bg-gray-50 p-2 rounded-sm">
                     <p className="text-gray-500">{t('ouverts')}</p>
                     <p className="font-bold">{campaign.openCount}</p>
                   </div>
-                  <div className="bg-gray-50 p-2 rounded">
+                  <div className="bg-gray-50 p-2 rounded-sm">
                     <p className="text-gray-500">{t('clics')}</p>
                     <p className="font-bold">{campaign.clickCount}</p>
                   </div>
-                  <div className="bg-gray-50 p-2 rounded">
+                  <div className="bg-gray-50 p-2 rounded-sm">
                     <p className="text-gray-500">{t('tauxOuverture')}</p>
                     <p className="font-bold">{campaign.sentCount > 0 ? Math.round((campaign.openCount / campaign.sentCount) * 100) : 0}%</p>
                   </div>
@@ -280,7 +280,7 @@ export default function MarketingPage() {
                   {campaign.status === 'ACTIVE' ? (
                     <button
                       onClick={() => changerStatut(campaign, 'COMPLETED')}
-                      className="px-3 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition"
+                      className="px-3 py-1 bg-green-50 text-green-600 rounded-sm text-xs hover:bg-green-100 transition"
                     >
                       {t('terminer')}
                     </button>
@@ -289,7 +289,7 @@ export default function MarketingPage() {
                   ) : (
                     <button
                       onClick={() => changerStatut(campaign, 'ACTIVE')}
-                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition"
+                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded-sm text-xs hover:bg-blue-100 transition"
                     >
                       <Send size={14} className="inline mr-1" />
                       {t('envoyer')}
@@ -297,7 +297,7 @@ export default function MarketingPage() {
                   )}
                   <button
                     onClick={() => handleDeleteCampaign(campaign.id)}
-                    className="px-3 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 transition"
+                    className="px-3 py-1 bg-red-50 text-red-600 rounded-sm text-xs hover:bg-red-100 transition"
                   >
                     <Trash2 size={14} className="inline mr-1" />
                     {t('supprimer')}
@@ -315,14 +315,14 @@ export default function MarketingPage() {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-sm"
               >
                 {t('precedent')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-sm"
               >
                 {t('suivant')}
               </button>
@@ -341,7 +341,7 @@ export default function MarketingPage() {
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(false)}
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="p-1 hover:bg-gray-100 rounded-sm"
                 >
                   <X size={20} />
                 </button>
@@ -358,7 +358,7 @@ export default function MarketingPage() {
                   value={formulaire.name}
                   onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
                   placeholder={t('exempleNom')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -368,7 +368,7 @@ export default function MarketingPage() {
                   <select
                     value={formulaire.type}
                     onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                   >
                     <option value="EMAIL">{t('email')}</option>
                     <option value={t('sms')}>{t('sms')}</option>
@@ -383,7 +383,7 @@ export default function MarketingPage() {
                     onChange={(e) =>
                       setFormulaire({ ...formulaire, targetAudience: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                   >
                     <option value="all">{t('tous')}</option>
                     <option value="new">{t('nouveaux')}</option>
@@ -401,7 +401,7 @@ export default function MarketingPage() {
                   type="text"
                   value={formulaire.description}
                   onChange={(e) => setFormulaire({ ...formulaire, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -413,7 +413,7 @@ export default function MarketingPage() {
                   value={formulaire.message}
                   onChange={(e) => setFormulaire({ ...formulaire, message: e.target.value })}
                   placeholder={t('exempleMessage')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 

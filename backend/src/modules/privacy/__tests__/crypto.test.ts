@@ -38,14 +38,19 @@ test("aucune clé faible ou manquante ne permet une écriture", () => {
   expect(() => encrypt("secret", "test")).toThrow();
 });
 
+/** Lit `objet.a.b.c` sur une valeur dont on ne connaît pas la forme. */
+function lire(objet: unknown, ...chemin: string[]): unknown {
+  return chemin.reduce<unknown>((courant, cle) => (typeof courant === "object" && courant !== null ? Reflect.get(courant, cle) : undefined), objet);
+}
+
 test("écritures imbriquées et JSON restent lisibles uniquement via le client protégé", () => {
   const input = { email: "public@example.test", customer: { create: { phone: "123456", savedAddresses: [{ address: "Rue privée" }] } }, memberships: { create: { org: { create: { name: "test", iban: "BE68539007547034" } } } } };
   const encrypted = encryptData("User", input);
-  expect(isEncrypted(encrypted.customer.create.phone)).toBe(true);
+  expect(isEncrypted(lire(encrypted, "customer", "create", "phone"))).toBe(true);
   expect(JSON.stringify(encrypted)).not.toContain("Rue privée");
-  expect(isEncrypted(encrypted.memberships.create.org.create.iban)).toBe(true);
-  const read = decryptResult("User", { customer: encrypted.customer.create });
-  expect(read.customer.savedAddresses[0].address).toBe("Rue privée");
+  expect(isEncrypted(lire(encrypted, "memberships", "create", "org", "create", "iban"))).toBe(true);
+  const read = decryptResult("User", { customer: lire(encrypted, "customer", "create") });
+  expect(lire(read, "customer", "savedAddresses", "0", "address")).toBe("Rue privée");
   expect(input.customer.create.phone).toBe("123456");
 });
 
@@ -75,7 +80,7 @@ describe("encryptData : valeur déjà chiffrée", () => {
     const { encryptData, decryptResult } = await import("../encrypted-fields");
     const deja = encrypt(JSON.stringify("203.0.113.7"), "SystemAuditLog.ipAddress");
     const ecrit = encryptData("SystemAuditLog", { action: "X", ipAddress: deja });
-    expect(ecrit.ipAddress).toBe(deja);
-    expect(decryptResult("SystemAuditLog", ecrit).ipAddress).toBe("203.0.113.7");
+    expect(lire(ecrit, "ipAddress")).toBe(deja);
+    expect(lire(decryptResult("SystemAuditLog", ecrit), "ipAddress")).toBe("203.0.113.7");
   });
 });

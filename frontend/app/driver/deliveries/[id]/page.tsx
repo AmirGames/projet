@@ -475,7 +475,7 @@ export default function DeliveryTrackingPage() {
               return (
                 <div key={step} className="flex items-center gap-4">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 ${
                       isCompleted
                         ? 'bg-green-600 text-white'
                         : isCurrent
@@ -554,7 +554,7 @@ export default function DeliveryTrackingPage() {
                 <div className="space-y-4">
                   <p className="text-gray-700 mb-4">{t('rendezVous')}</p>
                   <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
-                    <MapPin size={24} className="text-orange-500 flex-shrink-0" />
+                    <MapPin size={24} className="text-orange-500 shrink-0" />
                     <div>
                       <p className="text-gray-900 font-semibold">{delivery.pickupStore || t('commerce')}</p>
                       <p className="text-gray-500">{delivery.pickupAddress}</p>
@@ -638,7 +638,7 @@ export default function DeliveryTrackingPage() {
                 <div className="space-y-4">
                   <p className="text-gray-700 mb-4">{t('livrez')}</p>
                   <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
-                    <MapPin size={24} className="text-green-500 flex-shrink-0" />
+                    <MapPin size={24} className="text-green-500 shrink-0" />
                     <div>
                       <p className="text-gray-900 font-semibold">{t('client')}</p>
                       <p className="text-gray-500">{delivery.deliveryAddress}</p>
@@ -679,7 +679,7 @@ export default function DeliveryTrackingPage() {
                             autoComplete="one-time-code"
                             placeholder="0000"
                             disabled={updating}
-                            className="w-32 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-2xl tracking-[0.3em] text-center disabled:opacity-60"
+                            className="w-32 bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-2xl tracking-[0.3em] text-center disabled:opacity-60"
                           />
                           {updating && (
                             <span className="flex items-center gap-2 text-sm text-gray-500">
@@ -763,7 +763,7 @@ export default function DeliveryTrackingPage() {
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
                           placeholder={t('ouDeposeExemple')}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                          className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
                         />
 
                         <button
@@ -794,7 +794,7 @@ export default function DeliveryTrackingPage() {
               {currentStep === 3 && (
                 <div className="space-y-4">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3">
-                    <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
+                    <CheckCircle size={24} className="text-green-600 shrink-0" />
                     <div>
                       <p className="text-green-800 font-semibold">{t('livraisonCompletee')}</p>
                       <p className="text-green-700 text-sm">

@@ -332,7 +332,7 @@ export default function HorairesPage() {
                       <button
                         onClick={() => ouvrirLEdition(jour)}
                         aria-label={t('modifierJour', { jour: t(`jours.${jour}`) })}
-                        className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded transition text-sm"
+                        className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded-sm transition text-sm"
                       >
                         {t('modifier')}
                       </button>
@@ -384,7 +384,7 @@ export default function HorairesPage() {
                                   : actuel
                               )
                             }
-                            className="px-2 py-1 bg-gray-200 text-gray-900 rounded text-sm"
+                            className="px-2 py-1 bg-gray-200 text-gray-900 rounded-sm text-sm"
                           />
                           <span className="text-gray-500">à</span>
                           <input
@@ -403,7 +403,7 @@ export default function HorairesPage() {
                                   : actuel
                               )
                             }
-                            className="px-2 py-1 bg-gray-200 text-gray-900 rounded text-sm"
+                            className="px-2 py-1 bg-gray-200 text-gray-900 rounded-sm text-sm"
                           />
 
                           {franchitMinuit(plage) && (
@@ -459,7 +459,7 @@ export default function HorairesPage() {
                       onClick={() => brouillon && enregistrerLeJour(jour, brouillon)}
                       disabled={envoi}
                       aria-label={t('enregistrerJour', { jour: t(`jours.${jour}`) })}
-                      className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded transition text-sm disabled:opacity-50"
+                      className="bg-orange-600 text-white hover:bg-orange-700 px-3 py-1 rounded-sm transition text-sm disabled:opacity-50"
                     >
                       {t('enregistrer')}
                     </button>
@@ -468,7 +468,7 @@ export default function HorairesPage() {
                         setJourEdite(null);
                         setBrouillon(null);
                       }}
-                      className="px-3 py-1 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition text-sm"
+                      className="px-3 py-1 bg-gray-200 text-gray-900 rounded-sm hover:bg-gray-300 transition text-sm"
                     >
                       {t('annuler')}
                     </button>
@@ -507,7 +507,7 @@ export default function HorairesPage() {
                     type="time"
                     value={nouveauCreneau.start}
                     onChange={(e) => setNouveauCreneau({ ...nouveauCreneau, start: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded text-sm"
+                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded-sm text-sm"
                   />
                 </div>
                 <div>
@@ -519,7 +519,7 @@ export default function HorairesPage() {
                     type="time"
                     value={nouveauCreneau.end}
                     onChange={(e) => setNouveauCreneau({ ...nouveauCreneau, end: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded text-sm"
+                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded-sm text-sm"
                   />
                 </div>
                 <div>
@@ -537,7 +537,7 @@ export default function HorairesPage() {
                         maxOrders: parseInt(e.target.value, 10) || 1,
                       })
                     }
-                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded text-sm"
+                    className="w-full px-3 py-2 bg-gray-200 text-gray-900 rounded-sm text-sm"
                   />
                 </div>
               </div>
@@ -546,13 +546,13 @@ export default function HorairesPage() {
                 <button
                   onClick={ajouterUnCreneau}
                   disabled={envoi}
-                  className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
+                  className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-sm transition disabled:opacity-50"
                 >
                   {t('ajouter')}
                 </button>
                 <button
                   onClick={() => setFormulaireCreneau(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition"
+                  className="px-4 py-2 bg-gray-200 text-gray-900 rounded-sm hover:bg-gray-300 transition"
                 >
                   {t('annuler')}
                 </button>
@@ -580,7 +580,7 @@ export default function HorairesPage() {
                     onClick={() => retirerUnCreneau(creneau.id)}
                     disabled={envoi}
                     title={t('retirerCreneau')}
-                    className="p-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50"
+                    className="p-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition disabled:opacity-50"
                   >
                     <Trash2 size={20} />
                   </button>

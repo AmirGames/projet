@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Ratings {
   moyenne: number | null;
@@ -31,7 +32,7 @@ export default function ReviewsScreen({ token, onBack }: { token: string; onBack
     }
   }, [token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

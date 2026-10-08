@@ -605,7 +605,7 @@ function LignePiece({
               type="date"
               value={dateExpiration}
               onChange={(e) => setDateExpiration(e.target.value)}
-              className="ml-2 rounded border border-slate-300 bg-white px-2 py-1 text-slate-900"
+              className="ml-2 rounded-sm border border-slate-300 bg-white px-2 py-1 text-slate-900"
             />
           </label>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:border-slate-400">

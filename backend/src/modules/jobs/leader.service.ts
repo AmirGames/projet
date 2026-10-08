@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { hostname } from "os";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Une seule instance lance les tâches de fond.
@@ -24,10 +25,10 @@ import { logger } from "../../config/logger";
  */
 
 const NOM = "taches-de-fond";
-export const DUREE_BAIL_MS = Number(process.env.JOBS_LEASE_MS || 30_000);
+const DUREE_BAIL_MS = Number(process.env.JOBS_LEASE_MS || 30_000);
 const RENOUVELLEMENT_MS = Math.max(1000, Math.floor(DUREE_BAIL_MS / 3));
 
-export const identifiantInstance = `${hostname()}-${process.pid}-${randomBytes(3).toString("hex")}`;
+const identifiantInstance = `${hostname()}-${process.pid}-${randomBytes(3).toString("hex")}`;
 
 /** Prend ou renouvelle le bail. `true` si cette instance en est titulaire. */
 export async function prendreLeBail(
@@ -47,9 +48,9 @@ export async function prendreLeBail(
   try {
     await db.jobLease.create({ data: { name: NOM, owner: proprietaire, expiresAt: expireLe } });
     return true;
-  } catch (err: any) {
+  } catch (err) {
     // Le bail existe et appartient à une instance vivante.
-    if (err?.code === "P2002") return false;
+    if (codeErreur(err) === "P2002") return false;
     throw err;
   }
 }

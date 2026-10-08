@@ -26,7 +26,7 @@ import { TYPE_EMAIL_ALERTE_ZUPDRIVE } from "../notifications/outbox-handlers";
 import { emitNotification } from "../realtime/socket";
 import { lireCommissionPourcentage, repartirPrixCourse } from "./commission-drive";
 
-export type NotificationType =
+type NotificationType =
   | "COURSE_COMPLETED"        // Course terminée, revenus ajoutes
   | "EARNINGS_UPDATED"        // Mise à jour des revenus
   | "PAYOUT_REQUESTED"        // Payout demandé

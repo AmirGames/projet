@@ -6,6 +6,8 @@ module.exports = defineConfig([
   expoConfig,
   {
     rules: {
+      // lib/useEffectChargement.ts : un effet dont on vérifie les dépendances.
+      'react-hooks/exhaustive-deps': ['warn', { additionalHooks: '^useEffectChargement$' }],
       // Les écrans synchronisent aussi leur cache hors réseau dans des effets.
       'react-hooks/set-state-in-effect': 'warn',
       // Règles du compilateur React : ce code a été écrit avant elles. Elles

@@ -7,10 +7,11 @@ import type { Compte } from "../auth/auth.middleware";
 import { summaryPdf, zip } from "./formats";
 
 const forbidden = /^(?:passwordHash|emailTokenHash|resetTokenHash|trackingTokenHash|stripeClientSecret|pushSubscription|jetonCentralHash|jtiHash|codeHash|token|integrity|deliveryCode)$/;
-export function cleanExport(value: any): any {
+function cleanExport<T>(value: T): T;
+function cleanExport(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(cleanExport);
   if (value instanceof Date || !value || typeof value !== "object") return value;
-  if (typeof value.toJSON === "function") return value.toJSON();
+  if ("toJSON" in value && typeof value.toJSON === "function") return value.toJSON();
   return Object.fromEntries(Object.entries(value).filter(([key]) => !forbidden.test(key)).map(([key, child]) => [key, cleanExport(child)]));
 }
 
@@ -40,21 +41,23 @@ export async function collectExport(userId: string) {
   }, { isolationLevel: "RepeatableRead", timeout: 60000 });
 }
 
-export function exportSummary(data: any) {
+export type DonneesExport = Awaited<ReturnType<typeof collectExport>>;
+
+export function exportSummary(data: DonneesExport) {
   return summaryPdf(["ZupOne / ZupEat - Export des donnees personnelles", `Genere le : ${data.generatedAt}`, `Profil : ${data.profile.email}`, `Commandes : ${data.orders.length}`, `Paiements : ${data.payments.length}`, `Trajets ZupDrive : ${data.rides.length}`, `Profils client : ${data.customers.length}`, `Livreur : ${data.courier ? "oui" : "non"}`, `Chauffeur : ${data.chauffeur ? "oui" : "non"}`, "Le fichier donnees.json contient le detail complet.", "Les documents disponibles sont inclus dans documents/ du ZIP.", "Conservez cet export dans un emplacement personnel protege."]);
 }
 
-export async function exportZip(data: any, caller: { userId: string; compte?: Compte }) {
-  const documents: { id: string; url: string }[] = [
-    ...(data.courier?.documents || []).map((d: any) => ({ id: d.id, url: d.documentUrl })),
-    ...(data.chauffeur?.documents || []).map((d: any) => ({ id: d.id, url: d.url })),
-    ...data.organizations.flatMap((o: any) => o.documents.map((d: any) => ({ id: d.id, url: d.documentUrl }))),
-    ...(data.company?.documents || []).map((d: any) => ({ id: d.id, url: d.url })),
-    ...(data.company?.vehicules || []).flatMap((v: any) => v.documents.map((d: any) => ({ id: d.id, url: d.url }))),
-    ...(data.courier?.deliveries || []).filter((d: any) => d.proofPhoto).map((d: any) => ({ id: d.id, url: d.proofPhoto })),
+export async function exportZip(data: DonneesExport, caller: { userId: string; compte?: Compte }) {
+  const documents: { id: string; url: string | null }[] = [
+    ...(data.courier?.documents || []).map((d) => ({ id: d.id, url: d.documentUrl })),
+    ...(data.chauffeur?.documents || []).map((d) => ({ id: d.id, url: d.url })),
+    ...data.organizations.flatMap((o) => o.documents.map((d) => ({ id: d.id, url: d.documentUrl }))),
+    ...(data.company?.documents || []).map((d) => ({ id: d.id, url: d.url })),
+    ...(data.company?.vehicules || []).flatMap((v) => v.documents.map((d) => ({ id: d.id, url: d.url }))),
+    ...(data.courier?.deliveries || []).filter((d) => d.proofPhoto).map((d) => ({ id: d.id, url: d.proofPhoto })),
   ];
   const entries = [{ name: "recapitulatif.pdf", content: exportSummary(data) }];
-  const manifest: any[] = [];
+  const manifest: { id: string; status: string; reason?: string; file?: string }[] = [];
   let size = 0;
   for (const document of documents) {
     const relative = cheminRelatif(document.url);

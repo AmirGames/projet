@@ -17,7 +17,7 @@ import { MerchantApprovalService } from "../merchants/merchant-approval.service"
  */
 
 /** Une plage : un service. `close` avant `open` signifie « après minuit ». */
-export interface Plage {
+interface Plage {
   open: string; // HH:mm
   close: string; // HH:mm
 }
@@ -110,7 +110,7 @@ const DEFAULT_HOURS: OperatingHours = {
  * qu'une lecture tolérante suffit. Le nouveau format s'écrit dès la première
  * modification.
  */
-export function lireLeJour(brut: unknown): DayHours {
+function lireLeJour(brut: unknown): DayHours {
   const lu = (brut || {}) as Partial<DayHours> & { open?: string; close?: string };
 
   const plages = Array.isArray(lu.plages)
@@ -156,7 +156,7 @@ function lireLesHoraires(brut: unknown): OperatingHours {
  * de retrait : le client se verrait proposer 12 h 30 deux fois, et le
  * commerçant ne comprendrait pas pourquoi.
  */
-export function verifierLesPlages(plages: Plage[]): Plage[] {
+function verifierLesPlages(plages: Plage[]): Plage[] {
   if (plages.length === 0) {
     throw new ApiError(
       400,
@@ -334,7 +334,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { operatingHours: { ...current.operatingHours, [day]: retenu } as any },
+      data: { operatingHours: { ...current.operatingHours, [day]: retenu } },
       select: { operatingHours: true },
     });
   }
@@ -353,7 +353,7 @@ export class StoreHoursService {
         operatingHours: {
           ...current.operatingHours,
           [day]: { ...dayHours, closed: !dayHours.closed },
-        } as any,
+        },
       },
       select: { operatingHours: true },
     });
@@ -404,7 +404,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: [...slots, newSlot] as any },
+      data: { pickupSlots: [...slots, newSlot] },
       select: { pickupSlots: true },
     });
   }
@@ -430,7 +430,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: updated as any },
+      data: { pickupSlots: updated },
       select: { pickupSlots: true },
     });
   }
@@ -450,7 +450,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: updated as any },
+      data: { pickupSlots: updated },
       select: { pickupSlots: true },
     });
   }

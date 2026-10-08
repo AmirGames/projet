@@ -1,5 +1,7 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Effets externes à ne pas perdre.
@@ -19,7 +21,7 @@ import { logger } from "../../config/logger";
  *   financières.
  */
 
-export type Gestionnaire = (payload: any) => Promise<unknown>;
+export type Gestionnaire = (payload: Prisma.JsonValue) => Promise<unknown>;
 
 /** Appelé une fois, quand un message est abandonné après ses dernières tentatives. */
 export type SurAbandon = (payload: Parameters<Gestionnaire>[0], erreur: string) => Promise<unknown>;
@@ -56,7 +58,7 @@ export const Outbox = {
    */
   async enregistrer(
     type: string,
-    payload: unknown,
+    payload: Prisma.InputJsonValue,
     options: { dedupeKey?: string; maxAttempts?: number; tx?: Pick<typeof db, "outboxMessage"> } = {}
   ) {
     const client = options.tx ?? db;
@@ -64,13 +66,13 @@ export const Outbox = {
       return await client.outboxMessage.create({
         data: {
           type,
-          payload: payload as any,
+          payload,
           dedupeKey: options.dedupeKey,
           ...(options.maxAttempts ? { maxAttempts: options.maxAttempts } : {}),
         },
       });
-    } catch (err: any) {
-      if (err?.code === "P2002" && options.dedupeKey) return null;
+    } catch (err) {
+      if (codeErreur(err) === "P2002" && options.dedupeKey) return null;
       throw err;
     }
   },

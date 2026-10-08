@@ -348,7 +348,7 @@ export default function PromotionsPage() {
               placeholder={t('rechercher')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
             />
           </div>
         </div>
@@ -378,7 +378,7 @@ export default function PromotionsPage() {
                         <Zap size={16} className="text-green-600" />
                       )}
                       {isExpired(promo) && (
-                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-sm">
                           {t('expire')}
                         </span>
                       )}
@@ -460,14 +460,14 @@ export default function PromotionsPage() {
                     </button>
                     <button
                       onClick={() => handleEdit(promo)}
-                      className="bg-gray-100 text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors"
+                      className="bg-gray-100 text-gray-700 hover:bg-gray-200 p-2 rounded-sm transition-colors"
                       title={t('edit')}
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(promo.id)}
-                      className="bg-red-50 text-red-700 hover:bg-red-100 p-2 rounded transition-colors"
+                      className="bg-red-50 text-red-700 hover:bg-red-100 p-2 rounded-sm transition-colors"
                       title={t('delete')}
                     >
                       <Trash2 size={16} />
@@ -502,7 +502,7 @@ export default function PromotionsPage() {
                   type="text"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500 font-mono"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500 font-mono"
                   placeholder={t('exempleCode')}
                   disabled={!!editingPromo}
                   required
@@ -514,7 +514,7 @@ export default function PromotionsPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
                   placeholder={t('descriptionPlaceholder')}
                   rows={2}
                 />
@@ -526,7 +526,7 @@ export default function PromotionsPage() {
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
                   >
                     <option value="PERCENTAGE">{t('typePourcentage')}</option>
                     <option value="FIXED_AMOUNT">{t('typeMontant')}</option>
@@ -539,7 +539,7 @@ export default function PromotionsPage() {
                     step="0.01"
                     value={formData.discountValue}
                     onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
                     placeholder={formData.type === 'PERCENTAGE' ? '20' : '10.00'}
                     required
                   />
@@ -553,7 +553,7 @@ export default function PromotionsPage() {
                   min="1"
                   value={formData.maxUses}
                   onChange={(e) => setFormData({ ...formData, maxUses: e.target.value })}
-                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
                   placeholder={t('illimite')}
                 />
               </div>
@@ -565,7 +565,7 @@ export default function PromotionsPage() {
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
                 <div>
@@ -574,7 +574,7 @@ export default function PromotionsPage() {
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
               </div>
@@ -592,7 +592,7 @@ export default function PromotionsPage() {
                       type="time"
                       value={formData.activeFromTime}
                       onChange={(e) => setFormData({ ...formData, activeFromTime: e.target.value })}
-                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-orange-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-orange-500"
                     />
                   </div>
                   <div>
@@ -601,7 +601,7 @@ export default function PromotionsPage() {
                       type="time"
                       value={formData.activeToTime}
                       onChange={(e) => setFormData({ ...formData, activeToTime: e.target.value })}
-                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-orange-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-orange-500"
                     />
                   </div>
                 </div>
@@ -642,7 +642,7 @@ export default function PromotionsPage() {
                   id="applicableToAll"
                   checked={formData.applicableToAll}
                   onChange={(e) => setFormData({ ...formData, applicableToAll: e.target.checked })}
-                  className="rounded"
+                  className="rounded-sm"
                 />
                 <label htmlFor="applicableToAll" className="text-sm text-gray-500">
                   {t('tousProduits')}
@@ -653,13 +653,13 @@ export default function PromotionsPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded font-semibold transition-colors"
+                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded-sm font-semibold transition-colors"
                 >
                   {t('annuler')}
                 </button>
                 <button
                   type="submit"
-                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 py-2 rounded font-semibold transition-colors"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 py-2 rounded-sm font-semibold transition-colors"
                 >
                   {editingPromo ? t('update') : t('create')}
                 </button>

@@ -20,6 +20,7 @@ import {
 } from "./chauffeur-onboarding.service";
 import { STATUTS_AVEC_CHAUFFEUR } from "./course-drive.service";
 import { deposerVersion, examinerVersion, type Proprietaire } from "./pieces-drive";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Les sociétés ZupDrive (taxi, VTC) : elles détiennent les licences et les
@@ -50,7 +51,7 @@ export type StatutSociete = (typeof STATUTS_SOCIETE)[number];
 const MODIFIABLE: StatutSociete[] = ["BROUILLON", "REFUSE"];
 
 /** Garde-fou contre l'envoi d'invitations en masse. */
-export const INVITATIONS_EN_ATTENTE_MAX = 50;
+const INVITATIONS_EN_ATTENTE_MAX = 50;
 
 export interface ProfilSociete {
   raisonSociale?: string;
@@ -79,7 +80,7 @@ const texte = (valeur: string | null | undefined) => (valeur?.trim() ? valeur.tr
 
 function lireSociete(where: { id: string } | { gerantId: string }) {
   return db.societeDrive.findUnique({
-    where: where as any,
+    where: where,
     include: {
       // Les versions archivées ne comptent plus : historique seul.
       documents: { where: { archiveeLe: null }, orderBy: { createdAt: "asc" } },
@@ -439,8 +440,8 @@ export class SocieteDriveService {
     let invitation;
     try {
       invitation = await db.invitationSocieteDrive.create({ data: { societeId: societe.id, email } });
-    } catch (err: any) {
-      if (err?.code !== "P2002") throw err;
+    } catch (err) {
+      if (codeErreur(err) !== "P2002") throw err;
       // Double clic : l'autre requête l'a créée.
       return db.invitationSocieteDrive.findFirstOrThrow({
         where: { societeId: societe.id, email, statut: "EN_ATTENTE" },
@@ -485,8 +486,8 @@ export class SocieteDriveService {
         where: { id: chauffeur.id, societeId: societe.id },
         data: { vehiculeId, enLigne: false },
       });
-    } catch (err: any) {
-      if (err?.code === "P2002") {
+    } catch (err) {
+      if (codeErreur(err) === "P2002") {
         throw new ApiError(409, "Ce véhicule est déjà attribué à un autre chauffeur", "VEHICLE_TAKEN");
       }
       throw err;

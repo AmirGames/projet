@@ -35,7 +35,7 @@ router.post("/pages-legales/:slug", authMiddleware, isSuperOwner, async (req: Re
   try {
     const body = publicationPageLegaleSchema.parse(req.body);
     const slug = req.params.slug as string;
-    const publiee = await PagesLegalesService.publier(slug, body, (req as any).actorEmail);
+    const publiee = await PagesLegalesService.publier(slug, body, req.actorEmail);
     await journaliser(req, "PAGE_LEGALE_PUBLIEE", slug, { version: publiee.version, titre: publiee.titre });
     res.status(201).json({ data: publiee });
   } catch (err) {

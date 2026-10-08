@@ -1,6 +1,7 @@
 import { db } from "../../services/db";
 import { totalCommercant } from "../delivery/delivery-mode.service";
 import { ApiError } from "../../middleware/errorHandler";
+import type { Prisma } from "@prisma/client";
 
 /**
  * Les clients sont GLOBAUX : un même client peut commander chez plusieurs
@@ -16,7 +17,7 @@ import { ApiError } from "../../middleware/errorHandler";
  * globale n'appartiennent qu'au client.
  */
 
-export interface CustomerData {
+interface CustomerData {
   name: string;
   email: string;
   phone?: string;
@@ -27,7 +28,7 @@ export interface CustomerData {
   status?: string;
 }
 
-export interface CreateCustomerData extends CustomerData {}
+export type CreateCustomerData = CustomerData;
 
 /** Seul ce que le commerçant sait du client se modifie depuis sa boutique. */
 export interface UpdateCustomerData {
@@ -80,7 +81,7 @@ export class CustomerService {
     const take = options?.take || 50;
     const search = options?.search || "";
 
-    const whereClause: any = clientsDeLaBoutique(storeId);
+    const whereClause: Prisma.CustomerWhereInput = clientsDeLaBoutique(storeId);
 
     if (search) {
       // Le OR du rattachement reste intact : la recherche s'y ajoute.
@@ -197,7 +198,7 @@ export class CustomerService {
       create: { storeId, customerId, ...changements },
     });
 
-    const { storeEntries, ...fiche } = client;
+    const { storeEntries: _entrees, ...fiche } = client;
     return vueBoutique(fiche, entree);
   }
 
@@ -225,7 +226,7 @@ export class CustomerService {
       create: { storeId, customerId, status: "BLOCKED" },
     });
 
-    const { storeEntries, ...fiche } = client;
+    const { storeEntries: _entrees, ...fiche } = client;
     return vueBoutique(fiche, entree);
   }
 }

@@ -13,7 +13,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 export const VALIDITE_DEVIS_MS = 10 * 60_000;
 
-export interface AdresseDevis {
+interface AdresseDevis {
   adresse: string;
   latitude: number;
   longitude: number;

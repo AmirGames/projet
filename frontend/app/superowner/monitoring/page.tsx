@@ -362,7 +362,7 @@ export default function SurveillancePage() {
                     <IconeEtat etat={incident.niveau} />
                     <div className="min-w-0">
                       <p className={`font-semibold ${TEINTE_ETAT[incident.niveau]}`}>{incident.titre}</p>
-                      <p className="text-sm text-gray-700 break-words">{incident.detail}</p>
+                      <p className="text-sm text-gray-700 wrap-break-word">{incident.detail}</p>
                       <p className="text-xs text-gray-500 mt-1">{t('openedAt', { time: dateHeure(incident.ouvertLe) })}</p>
                     </div>
                   </li>
@@ -434,15 +434,15 @@ export default function SurveillancePage() {
                     {/* Mêmes seuils que les teintes de DisponibiliteSite. */}
                     <ul className="space-y-1 text-xs text-gray-500">
                       <li className="flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 bg-green-500 rounded-sm"></span>
+                        <span className="inline-block w-3 h-3 bg-green-500 rounded-xs"></span>
                         <span>{t('slaGreen')}</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 bg-amber-500 rounded-sm"></span>
+                        <span className="inline-block w-3 h-3 bg-amber-500 rounded-xs"></span>
                         <span>{t('slaAmber')}</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 bg-red-500 rounded-sm"></span>
+                        <span className="inline-block w-3 h-3 bg-red-500 rounded-xs"></span>
                         <span>{t('slaRed')}</span>
                       </li>
                     </ul>
@@ -584,7 +584,7 @@ export default function SurveillancePage() {
                     <span className="mt-0.5"><IconeEtat etat={d.etat} /></span>
                     <div className="min-w-0">
                       <p className="font-medium">{d.libelle}</p>
-                      <p className={`text-sm break-words ${d.etat === 'OK' ? 'text-gray-500' : TEINTE_ETAT[d.etat]}`}>{d.detail}</p>
+                      <p className={`text-sm wrap-break-word ${d.etat === 'OK' ? 'text-gray-500' : TEINTE_ETAT[d.etat]}`}>{d.detail}</p>
                     </div>
                   </li>
                 ))}
@@ -612,7 +612,7 @@ export default function SurveillancePage() {
                       <td className="px-5 py-2.5">
                         <p className="font-medium">{tache.libelle}</p>
                         {tache.derniereErreur && tache.etat !== 'OK' && (
-                          <p className="text-xs text-red-700 mt-0.5 break-words">{tache.derniereErreur}</p>
+                          <p className="text-xs text-red-700 mt-0.5 wrap-break-word">{tache.derniereErreur}</p>
                         )}
                       </td>
                       <td className={`px-3 py-2.5 whitespace-nowrap ${TEINTE_ETAT[tache.etat]}`}>
@@ -649,7 +649,7 @@ export default function SurveillancePage() {
                     type="button"
                     onClick={() => setTri(cle)}
                     aria-pressed={tri === cle}
-                    className={`px-2.5 py-1 rounded ${tri === cle ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    className={`px-2.5 py-1 rounded-sm ${tri === cle ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                   >
                     {libelle}
                   </button>
@@ -660,7 +660,7 @@ export default function SurveillancePage() {
             {routesTriees.length === 0 ? (
               <p className="text-gray-500 text-sm">{t('routesEmpty')}</p>
             ) : (
-              <div className="overflow-x-auto -mx-5 max-h-[28rem] overflow-y-auto">
+              <div className="overflow-x-auto -mx-5 max-h-112 overflow-y-auto">
                 <table className="w-full text-sm min-w-[720px]">
                   <thead className="sticky top-0 bg-white">
                     <tr className="text-left text-gray-500">
@@ -701,7 +701,7 @@ export default function SurveillancePage() {
               {donnees.erreurs.serveur.length === 0 ? (
                 <p className="text-sm text-gray-500">{t('serverErrorsEmpty')}</p>
               ) : (
-                <ul className="space-y-2 max-h-[28rem] overflow-y-auto">
+                <ul className="space-y-2 max-h-112 overflow-y-auto">
                   {donnees.erreurs.serveur.map((e, i) => {
                     const cle = `s-${i}-${e.instant}`;
                     return (
@@ -710,7 +710,7 @@ export default function SurveillancePage() {
                           <p className="text-xs text-gray-500 tabular-nums">
                             {dateHeure(e.instant)} · <span className="text-red-600">{e.statut}</span> · <span className="font-mono">{e.route}</span>
                           </p>
-                          <p className="text-sm text-red-800 break-words">{e.message}</p>
+                          <p className="text-sm text-red-800 wrap-break-word">{e.message}</p>
                         </button>
                         {ouverte === cle && e.pile && (
                           <pre className="mt-2 text-[11px] text-gray-500 whitespace-pre-wrap break-all">{e.pile}</pre>
@@ -727,7 +727,7 @@ export default function SurveillancePage() {
               {donnees.erreurs.navigateur.length === 0 ? (
                 <p className="text-sm text-gray-500">{t('browserErrorsEmpty')}</p>
               ) : (
-                <ul className="space-y-2 max-h-[28rem] overflow-y-auto">
+                <ul className="space-y-2 max-h-112 overflow-y-auto">
                   {donnees.erreurs.navigateur.map((e) => {
                     const cle = `n-${e.empreinte}`;
                     return (
@@ -737,7 +737,7 @@ export default function SurveillancePage() {
                             <span className="text-amber-600 font-semibold">×{e.occurrences}</span> · {t('lastSeen', { time: dateHeure(e.derniereFois) })} ·{' '}
                             <span className="font-mono">{e.page}</span>
                           </p>
-                          <p className="text-sm text-amber-800 break-words">{e.message}</p>
+                          <p className="text-sm text-amber-800 wrap-break-word">{e.message}</p>
                         </button>
                         {ouverte === cle && (
                           <div className="mt-2 text-[11px] text-gray-500 space-y-1">
@@ -766,7 +766,7 @@ export default function SurveillancePage() {
                     <IconeEtat etat={incident.niveau} />
                     <div className="min-w-0">
                       <p className="font-medium">{incident.titre}</p>
-                      <p className="text-sm text-gray-500 break-words">{incident.detail}</p>
+                      <p className="text-sm text-gray-500 wrap-break-word">{incident.detail}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {t('historyRange', { from: dateHeure(incident.ouvertLe), to: incident.resoluLe ? dateHeure(incident.resoluLe) : '—' })}
                       </p>

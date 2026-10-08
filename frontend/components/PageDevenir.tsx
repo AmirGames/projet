@@ -87,7 +87,7 @@ export function PageDevenir({
               href={`${chemin}?pays=${code}`}
               aria-current={code === pays ? 'true' : undefined}
               className={`rounded-full px-3 py-1 font-semibold hover:no-underline ${
-                code === pays ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                code === pays ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {PAYS[code].drapeau} <span className="hidden sm:inline">{tPays(code)}</span>
@@ -146,7 +146,7 @@ export function PageDevenir({
         <ul className="space-y-3">
           {prerequis.map((p) => (
             <li key={p} className="flex gap-3">
-              <span className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${theme.teinte}`}>
+              <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-bold ${theme.teinte}`}>
                 ✓
               </span>
               <span className="text-gray-700">{p}</span>

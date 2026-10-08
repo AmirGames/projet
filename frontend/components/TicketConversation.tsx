@@ -169,7 +169,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
             onChange={(e) => setBody(e.target.value)}
             rows={2}
             placeholder={t('replyPlaceholder')}
-            className={`flex-1 rounded-lg px-4 py-2 focus:outline-none resize-none ${
+            className={`flex-1 rounded-lg px-4 py-2 focus:outline-hidden resize-none ${
               clair
                 ? 'bg-white border border-gray-300 text-gray-900 placeholder-gray-400 focus:border-orange-500'
                 : 'bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'

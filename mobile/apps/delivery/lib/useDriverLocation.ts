@@ -143,8 +143,7 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
   useEffect(() => {
     if (profile === 'loading') return;
     if (profile === 'off') {
-      setGps('off');
-      setBackground('off');
+      // Les états gps et background se lisent « off » à la sortie (voir plus bas) : rien à y remettre.
       stopBackgroundLocation();
       return;
     }
@@ -225,5 +224,5 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
     };
   }, [token, profile, recheck]);
 
-  return { position, gps, background };
+  return { position, gps: profile === 'off' ? 'off' : gps, background: profile === 'off' ? 'off' : background };
 }

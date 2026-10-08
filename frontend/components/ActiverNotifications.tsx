@@ -155,7 +155,7 @@ export function ActiverNotifications() {
 
       {etat === 'refuse' ? (
         <p className="text-xs text-amber-700 flex gap-2">
-          <BellOff size={14} className="flex-shrink-0 mt-0.5" />
+          <BellOff size={14} className="shrink-0 mt-0.5" />
           {t('bloquees')}
         </p>
       ) : etat === 'actif' ? (

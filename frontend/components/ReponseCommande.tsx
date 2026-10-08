@@ -146,7 +146,7 @@ export function ReponseCommande({
         onChange={(e) => setNote(e.target.value)}
         maxLength={300}
         placeholder={t('precision')}
-        className="w-full rounded bg-gray-100 border border-gray-300 px-3 py-2 text-sm"
+        className="w-full rounded-sm bg-gray-100 border border-gray-300 px-3 py-2 text-sm"
       />
       {commande.paymentStatus === 'SUCCEEDED' && (
         <p className="text-xs text-amber-600">
@@ -158,14 +158,14 @@ export function ReponseCommande({
           type="button"
           onClick={() => motif && agir(() => refuserCommande(storeId, commande.id, motif, note))}
           disabled={!motif || envoi}
-          className="flex-1 rounded bg-red-600 text-white hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+          className="flex-1 rounded-sm bg-red-600 text-white hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
         >
           {envoi ? '...' : t('confirmerRefus')}
         </button>
         <button
           type="button"
           onClick={() => setRefus(false)}
-          className="rounded bg-gray-100 hover:bg-gray-200 px-3 py-2 text-sm"
+          className="rounded-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 text-sm"
         >
           {t('retour')}
         </button>
@@ -214,7 +214,7 @@ export function ReponseCommande({
                 type="button"
                 onClick={() => agir(() => accepterCommande(storeId, commande.id, preparation))}
                 disabled={envoi}
-                className="flex-1 inline-flex items-center justify-center gap-1 rounded bg-green-600 text-white hover:bg-green-700 px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-1 rounded-sm bg-green-600 text-white hover:bg-green-700 px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 <Check size={16} /> {envoi ? '...' : t('accepter')}
               </button>
@@ -222,7 +222,7 @@ export function ReponseCommande({
                 type="button"
                 onClick={() => setRefus(true)}
                 disabled={envoi}
-                className="inline-flex items-center justify-center gap-1 rounded bg-gray-100 hover:bg-red-50 hover:text-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1 rounded-sm bg-gray-100 hover:bg-red-50 hover:text-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 <X size={16} /> {t('rejeter')}
               </button>

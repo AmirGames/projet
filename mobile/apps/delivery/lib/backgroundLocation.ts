@@ -112,6 +112,7 @@ function tasks() {
   // suivi au premier plan.
   if (isRunningInExpoGo() || Platform.OS === 'web') return (taskManager = null);
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     taskManager = require('expo-task-manager') as typeof import('expo-task-manager');
   } catch {
     taskManager = null;

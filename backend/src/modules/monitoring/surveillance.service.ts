@@ -124,7 +124,7 @@ function serieMinutes(nombre: number) {
 }
 
 /** Le bilan des N dernières minutes (la minute en cours comprise). */
-export function bilanFenetre(nombreMinutes: number) {
+function bilanFenetre(nombreMinutes: number) {
   const depuis = debutDeMinute(Date.now()) - (nombreMinutes - 1) * MINUTE;
   const retenues = minutes.filter((m) => m.debut >= depuis);
 
@@ -258,7 +258,7 @@ function obtenirDisque() {
         pourcentUtilise: total > 0 ? Math.round((utilise / total) * 1000) / 10 : 0,
       };
     }
-  } catch (err) {
+  } catch {
     // En cas d'erreur (Windows, droits insuffisants, etc.)
   }
 

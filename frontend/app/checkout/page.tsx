@@ -158,7 +158,7 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
             onClick={() => router.back()}
             title={t('back')}
             aria-label={t('back')}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200 hover:bg-gray-100 transition"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-xs ring-1 ring-gray-200 hover:bg-gray-100 transition"
           >
             <ArrowLeft size={20} />
           </button>

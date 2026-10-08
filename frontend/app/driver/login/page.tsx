@@ -62,7 +62,7 @@ export default function DriverLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-linear-to-b from-white to-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="bg-white border border-gray-200 rounded-3xl shadow-lg p-8">
           {/* Logo */}
@@ -77,7 +77,7 @@ export default function DriverLoginPage() {
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
-              <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
+              <AlertCircle size={20} className="text-red-600 shrink-0" />
               <p className="text-red-900 text-sm">{error}</p>
             </div>
           )}
@@ -93,7 +93,7 @@ export default function DriverLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('connexion.exempleEmail')}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -109,7 +109,7 @@ export default function DriverLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>

@@ -47,7 +47,7 @@ export const REGLE_MOT_DE_PASSE =
  * mots de passe différents donneraient la même empreinte. La limite porte sur
  * les octets UTF-8 (un caractère accentué en compte 2), pas sur les caractères.
  */
-export const OCTETS_MOT_DE_PASSE_MAX = 72;
+const OCTETS_MOT_DE_PASSE_MAX = 72;
 
 export const champMotDePasse = () =>
   z
@@ -60,7 +60,7 @@ export const champMotDePasse = () =>
     .regex(/[a-z]/, "au moins une lettre minuscule")
     .regex(/[A-Z]/, "au moins une lettre majuscule");
 
-export const ValidationSchemas = {
+const ValidationSchemas = {
   pagination: z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),
@@ -116,7 +116,7 @@ export const ValidationSchemas = {
   }),
 };
 
-export const validatePagination = (req: any) => {
+export const validatePagination = (req: { query: Record<string, unknown> }) => {
   return ValidationSchemas.pagination.parse({
     page: req.query.page,
     limit: req.query.limit,

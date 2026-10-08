@@ -249,7 +249,7 @@ export function RechercheAdresseLivraison({
           )
             event.currentTarget.close();
         }}
-        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-xl overflow-y-auto rounded-3xl bg-white p-0 text-gray-900 shadow-2xl backdrop:bg-black/40"
+        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-3xl bg-white p-0 text-gray-900 shadow-2xl backdrop:bg-black/40"
       >
         {ouvert && (
           <div className="p-5 sm:p-8">
@@ -286,7 +286,7 @@ export function RechercheAdresseLivraison({
                   setGpsEnCours(false);
                 }}
                 placeholder={t("searchAddress")}
-                className="w-full rounded-full bg-gray-100 py-4 pl-12 pr-5 text-base outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-full bg-gray-100 py-4 pl-12 pr-5 text-base outline-hidden focus:ring-2 focus:ring-orange-500"
                 onSelect={(choisie) =>
                   retenir({
                     ...choisie,
@@ -373,7 +373,7 @@ export function RechercheAdresseLivraison({
                           <Clock size={22} className="shrink-0 text-gray-500" />
                         )}
                         <span className="min-w-0 flex-1">
-                          <span className="block break-words font-semibold">
+                          <span className="block wrap-break-word font-semibold">
                             {proposee.kind && (
                               <span className="mr-2">
                                 {proposee.kind === "HOME"

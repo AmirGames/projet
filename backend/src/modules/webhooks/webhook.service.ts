@@ -50,10 +50,10 @@ export const EVENEMENTS_WEBHOOK: EvenementWebhook[] = [
   { nom: "ticket.message", description: "Un message est ajouté à un ticket" },
 ];
 
-export const EVENEMENTS_DISPONIBLES = EVENEMENTS_WEBHOOK.map((e) => e.nom);
+const EVENEMENTS_DISPONIBLES = EVENEMENTS_WEBHOOK.map((e) => e.nom);
 
 /** L'événement d'essai : envoyé à la demande, jamais par le métier. */
-export const EVENEMENT_ESSAI = "webhook.test";
+const EVENEMENT_ESSAI = "webhook.test";
 
 export class WebhookService {
   static async list(limit = 20, offset = 0) {
@@ -180,7 +180,7 @@ export class WebhookService {
     payload: Record<string, unknown>
   ) {
     const envoi = await db.webhookDelivery.create({
-      data: { webhookId: abonnement.id, event, payload: payload as any, attempt: 0 },
+      data: { webhookId: abonnement.id, event, payload: payload, attempt: 0 },
     });
 
     return this.deliver(abonnement, envoi);

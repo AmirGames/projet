@@ -192,7 +192,7 @@ export class ReviewModerationService {
         adminId: userId,
         action: decision === "REMOVED" ? "REMOVE_REVIEW" : "KEEP_REVIEW",
         target: signalement.reviewId,
-        changes: { signalement: reportId, motif: signalement.reason, note: note ?? null } as any,
+        changes: { signalement: reportId, motif: signalement.reason, note: note ?? null },
       },
     });
 

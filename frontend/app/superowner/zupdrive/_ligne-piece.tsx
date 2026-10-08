@@ -55,7 +55,7 @@ export function LignePieceAExaminer({
   const t = useTranslations('superownerChauffeurs');
 
   return (
-    <li className="rounded bg-gray-50 px-3 py-2">
+    <li className="rounded-sm bg-gray-50 px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-gray-900">
@@ -81,7 +81,7 @@ export function LignePieceAExaminer({
             <button
               onClick={() => onExaminer(true)}
               disabled={envoi}
-              className="flex items-center gap-1 rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:opacity-50"
+              className="flex items-center gap-1 rounded-sm bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:opacity-50"
             >
               <Check size={12} />
               {t('approveDocument')}
@@ -96,12 +96,12 @@ export function LignePieceAExaminer({
             onChange={(e) => onNote(e.target.value)}
             placeholder={t('documentReasonPlaceholder')}
             aria-label={`${t('documentReasonPlaceholder')} — ${piece.libelle}`}
-            className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
+            className="min-w-0 flex-1 rounded-sm border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
           />
           <button
             onClick={() => onExaminer(false)}
             disabled={envoi}
-            className="flex items-center gap-1 rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-500 disabled:opacity-50"
+            className="flex items-center gap-1 rounded-sm bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-500 disabled:opacity-50"
           >
             <X size={12} />
             {t('rejectDocument')}

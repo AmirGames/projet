@@ -4,6 +4,7 @@ import { logger } from "../../config/logger";
 import { emitNotification } from "../realtime/socket";
 import { notifierPlateforme } from "../notifications/notification.service";
 import { deposerVersion, examinerVersion } from "./pieces-drive";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * L'inscription d'un chauffeur ZupDrive (licence LVC ou de transport rémunéré
@@ -76,7 +77,7 @@ export const libelleDeLaPiece = (type: string) => LIBELLES_PIECE[type as TypePie
  */
 export const TYPES_PIECE_SOCIETE: TypePiece[] = ["tva", "actionnaires"];
 export const TYPES_PIECE_VEHICULE: TypePiece[] = ["licence", "assurance", "controle_technique", "immatriculation"];
-export const TYPES_PIECE_CHAUFFEUR_SOCIETE: TypePiece[] = ["identite", "permis", "bestuurderspas", "casier_judiciaire"];
+const TYPES_PIECE_CHAUFFEUR_SOCIETE: TypePiece[] = ["identite", "permis", "bestuurderspas", "casier_judiciaire"];
 
 /** Les pièces exigées d'une société pour valider son dossier. */
 export const piecesExigeesSociete = (): TypePiece[] => ["tva"];
@@ -167,7 +168,7 @@ type Dossier = NonNullable<Awaited<ReturnType<typeof lireDossier>>>;
 
 function lireDossier(where: { id: string } | { userId: string }) {
   return db.chauffeurDrive.findUnique({
-    where: where as any,
+    where: where,
     // Les versions archivées (remplacées) ne comptent plus : historique seul.
     include: {
       documents: { where: { archiveeLe: null }, orderBy: { createdAt: "asc" } },
@@ -233,9 +234,9 @@ export class ChauffeurOnboardingService {
       await db.chauffeurDrive.create({
         data: { userId, ...this.donneesDuProfil(profil), nomComplet },
       });
-    } catch (err: any) {
+    } catch (err) {
       // Deux requêtes simultanées : la seconde retombe sur le dossier créé.
-      if (err?.code !== "P2002") throw err;
+      if (codeErreur(err) !== "P2002") throw err;
     }
 
     logger.info("ZupDrive chauffeur dossier opened", { userId });

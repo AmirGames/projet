@@ -634,7 +634,7 @@ export function TunnelCommande({
   };
 
   const champ =
-    'w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500';
+    'w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500';
   const carte = 'bg-white border border-gray-200 rounded-2xl';
   const boutonModifier =
     'shrink-0 rounded-full bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-semibold transition-colors';
@@ -649,7 +649,7 @@ export function TunnelCommande({
 
   const alerte = checkoutError ? (
     <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
-      <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+      <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
       <p className="text-red-600 text-sm">{checkoutError}</p>
     </div>
   ) : null;

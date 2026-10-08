@@ -9,9 +9,9 @@ import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const CHAMP =
-  'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500';
+  'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-hidden focus:border-orange-500';
 const CHAMP_CLAIR =
-  'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500';
+  'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500';
 
 /**
  * Changement du mot de passe depuis le profil.

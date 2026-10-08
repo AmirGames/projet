@@ -1,7 +1,7 @@
 import express, { type RequestHandler } from "express";
 
 /** Plafond des corps JSON / urlencoded sur toute l'API. */
-export const LIMITE_CORPS = "200kb";
+const LIMITE_CORPS = "200kb";
 
 /**
  * Les lecteurs de corps de l'API. Aucune route ordinaire n'a besoin de plus

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useDerniereValeur } from './useDerniereValeur';
 
 type Handler = (payload: any) => void;
 
@@ -28,7 +29,6 @@ export function subscribeRealtime(event: string, handler: Handler) {
  * plus récent est toujours utilisé, sans se réabonner à chaque rendu.
  */
 export function useRealtimeEvent(event: string, handler: Handler) {
-  const ref = useRef(handler);
-  ref.current = handler;
-  useEffect(() => subscribeRealtime(event, (payload) => ref.current(payload)), [event]);
+  const ref = useDerniereValeur(handler);
+  useEffect(() => subscribeRealtime(event, (payload) => ref.current(payload)), [event, ref]);
 }

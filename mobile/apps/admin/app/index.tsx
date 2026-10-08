@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +13,7 @@ import SupportScreen from '../components/screens/SupportScreen';
 import AccountScreen from '../components/screens/AccountScreen';
 import PayoutsScreen from '../components/screens/PayoutsScreen';
 import TeamScreen from '../components/screens/TeamScreen';
+import { useDerniereValeur } from '../lib/useDerniereValeur';
 
 /**
  * L'application de l'équipe d'administration (superowner et membres de
@@ -66,8 +67,7 @@ export default function AdminApp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
+  const sessionRef = useDerniereValeur(session);
 
   const handleLogout = useCallback(() => {
     const current = sessionRef.current;
@@ -78,7 +78,7 @@ export default function AdminApp() {
     setPermissions(null);
     setPassword('');
     setOnglet('dashboard');
-  }, []);
+  }, [sessionRef]);
 
   /** Ouvre la session si le compte appartient à l'équipe d'administration. */
   const ouvrir = async (next: Session): Promise<boolean> => {
@@ -123,7 +123,7 @@ export default function AdminApp() {
       }
       setBooting(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {

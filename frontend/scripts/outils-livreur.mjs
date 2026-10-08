@@ -10,6 +10,12 @@
 
 const lire = async (reponse) => reponse.json().catch(() => null);
 
+/** Image PNG de 1 × 1 pixel : de quoi passer le contrôle du type de fichier. */
+const PNG_MINIMAL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64'
+);
+
 export async function validerLivreur(API, jetonLivreur, jetonPlateforme) {
   const entetes = (jeton) => ({
     'Content-Type': 'application/json',
@@ -19,11 +25,16 @@ export async function validerLivreur(API, jetonLivreur, jetonPlateforme) {
   const moi = await lire(await fetch(`${API}/api/drivers/me`, { headers: entetes(jetonLivreur) }));
   const driverId = moi?.data?.id;
 
+  // L'API refuse les liens externes : chaque pièce est un vrai fichier, déposé
+  // par la route d'upload (PNG minimal, le contenu importe peu ici).
   for (const type of moi?.data?.piecesAttendues || []) {
-    await fetch(`${API}/api/drivers/documents`, {
+    const formulaire = new FormData();
+    formulaire.append('type', type);
+    formulaire.append('file', new Blob([PNG_MINIMAL], { type: 'image/png' }), `${type}.png`);
+    await fetch(`${API}/api/drivers/documents/upload`, {
       method: 'POST',
-      headers: entetes(jetonLivreur),
-      body: JSON.stringify({ type, documentUrl: `https://exemple.fr/${type}.pdf` }),
+      headers: { Authorization: `Bearer ${jetonLivreur}` },
+      body: formulaire,
     });
   }
 

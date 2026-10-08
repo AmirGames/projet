@@ -28,6 +28,8 @@ import NotificationsScreen from '../components/screens/NotificationsScreen';
 import SupportScreen from '../components/screens/SupportScreen';
 import SettingsScreen from '../components/screens/SettingsScreen';
 import AccountScreen from '../components/screens/AccountScreen';
+import { useEffectChargement } from '../lib/useEffectChargement';
+import { useDerniereValeur } from '../lib/useDerniereValeur';
 
 /** A connected socket can still miss an event; recheck offers while the app is visible. */
 const OFFERS_POLL_MS = 5_000;
@@ -66,7 +68,6 @@ export default function DeliveryApp() {
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [answeringOfferId, setAnsweringOfferId] = useState<string | null>(null);
   const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
-  const [pendingOpen, setPendingOpen] = useState<PushDriverData | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [supportUnread, setSupportUnread] = useState(0);
   const [notifRefreshKey, setNotifRefreshKey] = useState(0);
@@ -181,7 +182,6 @@ export default function DeliveryApp() {
     if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
     pushTokenRef.current = null;
     setPushSetup(null);
-    setPendingOpen(null);
     clearSession();
     setSession(null);
     setPassword('');
@@ -272,7 +272,6 @@ export default function DeliveryApp() {
   }, [token]);
 
   // Toucher une notification ouvre la course, la proposition ou le support.
-  useEffect(() => onDriverNotificationTap(setPendingOpen), []);
 
   const loadUnread = useCallback(async (accessToken: string) => {
     try {
@@ -287,7 +286,7 @@ export default function DeliveryApp() {
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (token) loadUnread(token);
   }, [token, loadUnread]);
 
@@ -298,11 +297,10 @@ export default function DeliveryApp() {
     .filter((d) => d.status !== 'DELIVERED');
 
   const singleId = visibleDeliveries.length === 1 ? visibleDeliveries[0].id : null;
-  useEffect(() => {
-    if (tab === 'course' && singleId && !courseSel) setCourseSel(singleId);
-    // Ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
-    if (tab !== 'course') setCourseSel(null);
-  }, [tab, singleId, courseSel]);
+  // Ajustements d'état pendant le rendu, sans effet : une course seule se sélectionne d'elle-même ;
+  // ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
+  if (tab === 'course' && singleId && !courseSel) setCourseSel(singleId);
+  if (tab !== 'course' && courseSel !== null) setCourseSel(null);
 
   // Les étapes faites sans réseau partent au lancement, au retour dans
   // l'application et à la reconnexion (le retour du réseau, lui, est suivi
@@ -417,12 +415,10 @@ export default function DeliveryApp() {
     setOpenDeliveryId(deliveryId);
   }, []);
 
-  useEffect(() => {
-    if (!pendingOpen || !session) return;
-    setPendingOpen(null);
-    if (pendingOpen.deliveryId) {
-      openDelivery(pendingOpen.deliveryId);
-    } else if (pendingOpen.tag === 'support') {
+  const ouvrirDepuisNotification = (data: PushDriverData) => {
+    if (data.deliveryId) {
+      openDelivery(data.deliveryId);
+    } else if (data.tag === 'support') {
       setOpenDeliveryId(null);
       setTab('support');
     } else {
@@ -430,7 +426,14 @@ export default function DeliveryApp() {
       setTab('dashboard');
       loadAll(token);
     }
-  }, [pendingOpen, session, openDelivery, token, loadAll]);
+  };
+  const ouvrirRef = useDerniereValeur(ouvrirDepuisNotification);
+  // On n'écoute qu'une fois connecté : la notification qui a lancé l'application
+  // reste en attente chez le système jusqu'à ce que la session existe.
+  useEffect(() => {
+    if (!session) return;
+    return onDriverNotificationTap((data) => ouvrirRef.current(data));
+  }, [session, ouvrirRef]);
 
   const handleLogin = async () => {
     if (!email || !password) {

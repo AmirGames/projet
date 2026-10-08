@@ -11,9 +11,9 @@ import { db } from "../../services/db";
  * qu'il faut faire pour le remonter.
  */
 
-export type EtatControle = "OK" | "ATTENTION" | "PANNE";
+type EtatControle = "OK" | "ATTENTION" | "PANNE";
 
-export interface Controle {
+interface Controle {
   cle: string;
   libelle: string;
   /** Part du score total, en points sur 100. */

@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { CampaignStatus } from "@prisma/client";
 import { MarketingService } from "./marketing.service";
 import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
@@ -33,7 +34,7 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
     const storeId = req.params.storeId as string;
     const skip = decalage(req.query.skip);
     const take = limiteBornee(req.query.take, 50, 200);
-    const status = req.query.status as string | undefined;
+    const status = req.query.status ? z.enum(CampaignStatus).parse(req.query.status) : undefined;
 
     logger.info("Fetching campaigns", { storeId, skip, take, status });
 

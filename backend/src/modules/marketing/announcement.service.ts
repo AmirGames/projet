@@ -17,7 +17,7 @@ import { emitNotification } from "../realtime/socket";
  */
 
 /** Les publics qu'une annonce peut viser. */
-export const PUBLICS = {
+const PUBLICS = {
   ALL: "Tout le monde",
   MERCHANTS: "Les commerçants",
   CUSTOMERS: "Les clients",

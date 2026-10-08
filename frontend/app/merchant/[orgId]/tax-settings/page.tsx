@@ -317,14 +317,14 @@ export default function TaxSettingsPage() {
                         <button
                           onClick={() => ouvrirModale(taxe)}
                           title={t('edit')}
-                          className="p-1 hover:bg-gray-200 rounded transition"
+                          className="p-1 hover:bg-gray-200 rounded-sm transition"
                         >
                           <Edit2 size={16} className="text-blue-600" />
                         </button>
                         <button
                           onClick={() => supprimer(taxe.id)}
                           title={t('delete')}
-                          className="p-1 hover:bg-gray-200 rounded transition"
+                          className="p-1 hover:bg-gray-200 rounded-sm transition"
                         >
                           <Trash2 size={16} className="text-red-600" />
                         </button>
@@ -344,12 +344,12 @@ export default function TaxSettingsPage() {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-sm text-sm"
               >{t('precedent')}</button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-sm text-sm"
               >{t('suivant')}</button>
             </div>
           </div>
@@ -367,7 +367,7 @@ export default function TaxSettingsPage() {
               <h2 className="text-xl font-bold">
                 {enEdition ? t('modifier') : t('nouvelle')}
               </h2>
-              <button type="button" onClick={() => setModaleOuverte(false)} className="p-1 hover:bg-gray-100 rounded">
+              <button type="button" onClick={() => setModaleOuverte(false)} className="p-1 hover:bg-gray-100 rounded-sm">
                 <X size={20} />
               </button>
             </div>
@@ -383,7 +383,7 @@ export default function TaxSettingsPage() {
                 value={formulaire.name}
                 onChange={e => setFormulaire({ ...formulaire, name: e.target.value })}
                 placeholder={t('exempleNom')}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
               />
             </div>
 
@@ -395,7 +395,7 @@ export default function TaxSettingsPage() {
                   value={formulaire.rate}
                   onChange={e => setFormulaire({ ...formulaire, rate: e.target.value })}
                   placeholder={t('exempleTaux')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
                 />
               </div>
               <div>
@@ -403,7 +403,7 @@ export default function TaxSettingsPage() {
                 <select
                   value={formulaire.included ? 'ttc' : 'ht'}
                   onChange={e => setFormulaire({ ...formulaire, included: e.target.value === 'ttc' })}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
                 >
                   <option value="ttc">{t('prixTtc')}</option>
                   <option value="ht">{t('prixHt')}</option>
@@ -416,7 +416,7 @@ export default function TaxSettingsPage() {
               <select
                 value={formulaire.applicableTo}
                 onChange={e => setFormulaire({ ...formulaire, applicableTo: e.target.value, categoryIds: [], productIds: [] })}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
               >
                 <option value="all">{t('tousProduits')}</option>
                 <option value="categories">{t('certainesCategories')}</option>
@@ -435,7 +435,7 @@ export default function TaxSettingsPage() {
                 ) : (
                   <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-300 rounded-lg p-2">
                     {categories.map(cat => (
-                      <label key={cat.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer text-sm">
+                      <label key={cat.id} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer text-sm">
                         <input
                           type="checkbox"
                           checked={formulaire.categoryIds.includes(cat.id)}
@@ -468,7 +468,7 @@ export default function TaxSettingsPage() {
                         <div key={cat.id}>
                           <p className="px-2 py-1 text-xs text-gray-500 uppercase tracking-wide">{cat.name}</p>
                           {prods.map(prod => (
-                            <label key={prod.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer text-sm">
+                            <label key={prod.id} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer text-sm">
                               <input
                                 type="checkbox"
                                 checked={formulaire.productIds.includes(prod.id)}
@@ -483,7 +483,7 @@ export default function TaxSettingsPage() {
                     })}
                     {/* Produits sans catégorie */}
                     {produits.filter(p => !p.categoryId).map(prod => (
-                      <label key={prod.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer text-sm">
+                      <label key={prod.id} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer text-sm">
                         <input
                           type="checkbox"
                           checked={formulaire.productIds.includes(prod.id)}

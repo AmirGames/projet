@@ -20,7 +20,7 @@ import { distanceKm } from "../../utils/geo";
 /** Détour moyen de la route par rapport à la ligne droite, en ville. */
 export const COEFFICIENT_DETOUR = 1.3;
 /** Vitesse moyenne retenue pour la durée estimée, en km/h. */
-export const VITESSE_MOYENNE_KMH = 25;
+const VITESSE_MOYENNE_KMH = 25;
 /** Au-delà, le fournisseur est jugé injoignable. */
 export const DELAI_FOURNISSEUR_MS = 3000;
 

@@ -4,6 +4,8 @@ import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "
 import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
 import { DispatchService } from "../drivers/dispatch.service";
+import { codeErreur } from "../../utils/code-erreur";
+import type { DeliveryZone } from "@prisma/client";
 
 /**
  * Les zones de livraison d'une boutique.
@@ -22,7 +24,7 @@ import { DispatchService } from "../drivers/dispatch.service";
  * acceptait n'importe quel montant, de n'importe où.
  */
 
-export type ZoneType = "RADIUS" | "POLYGON";
+type ZoneType = "RADIUS" | "POLYGON";
 
 export interface DeliveryZoneData {
   storeId: string;
@@ -40,7 +42,7 @@ export interface DeliveryZoneData {
   isActive?: boolean;
 }
 
-export interface ZoneLisible {
+interface ZoneLisible {
   id: string;
   name: string;
   type: ZoneType;
@@ -85,7 +87,7 @@ const PALETTE = ["#f59e0b", "#3b82f6", "#22c55e", "#ec4899", "#a855f7", "#06b6d4
 
 const HEX_VALIDE = /^#[0-9a-fA-F]{6}$/;
 
-const lisible = (zone: any): ZoneLisible => ({
+const lisible = (zone: DeliveryZone): ZoneLisible => ({
   id: zone.id,
   name: zone.name,
   type: zone.type,
@@ -163,7 +165,7 @@ export class DeliveryZoneService {
         name: nom,
         type,
         radiusKm: type === "RADIUS" ? data.radiusKm : null,
-        polygon: type === "POLYGON" ? (data.polygon as any) : undefined,
+        polygon: type === "POLYGON" ? (data.polygon ?? undefined) : undefined,
         color: data.color || PALETTE[compte % PALETTE.length],
         opacity: data.opacity ?? 0.35,
         baseFee: data.baseFee,
@@ -253,7 +255,7 @@ export class DeliveryZoneService {
         data: {
           ...(data.name !== undefined ? { name: data.name.trim() } : {}),
           ...(existante.type === "RADIUS" && data.radiusKm !== undefined ? { radiusKm: data.radiusKm } : {}),
-          ...(existante.type === "POLYGON" && data.polygon !== undefined ? { polygon: data.polygon as any } : {}),
+          ...(existante.type === "POLYGON" && data.polygon ? { polygon: data.polygon } : {}),
           ...(data.color !== undefined ? { color: data.color } : {}),
           ...(data.opacity !== undefined ? { opacity: data.opacity } : {}),
           ...(data.baseFee !== undefined ? { baseFee: data.baseFee } : {}),
@@ -263,8 +265,8 @@ export class DeliveryZoneService {
           ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Zone de livraison introuvable", "ZONE_NOT_FOUND");
       }
       throw error;
@@ -274,8 +276,8 @@ export class DeliveryZoneService {
   static async delete(id: string) {
     try {
       return await db.deliveryZone.delete({ where: { id } });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Zone de livraison introuvable", "ZONE_NOT_FOUND");
       }
       throw error;

@@ -187,7 +187,7 @@ export default function FormulesPage() {
                     id={`nom-${formule.code}`}
                     value={brouillon.libelle}
                     onChange={(e) => modifier(formule.code, { libelle: e.target.value })}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
 
@@ -208,7 +208,7 @@ export default function FormulesPage() {
                       onChange={(e) =>
                         modifier(formule.code, { prixMensuel: Number(e.target.value) })
                       }
-                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 focus:outline-hidden focus:border-red-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       {t('priceWeekly', { price: euro(parSemaine(brouillon.prixMensuel)) })}
@@ -230,7 +230,7 @@ export default function FormulesPage() {
                       onChange={(e) =>
                         modifier(formule.code, { maxBoutiques: Number(e.target.value) })
                       }
-                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 focus:outline-hidden focus:border-red-500"
                     />
                   </div>
 
@@ -253,7 +253,7 @@ export default function FormulesPage() {
                       onChange={(e) =>
                         modifier(formule.code, { commission: Number(e.target.value) })
                       }
-                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 focus:outline-hidden focus:border-red-500"
                     />
                   </div>
                 </div>
@@ -277,7 +277,7 @@ export default function FormulesPage() {
                     onChange={(e) =>
                       modifier(formule.code, { commissionLivreursPlateforme: Number(e.target.value) })
                     }
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 focus:outline-hidden focus:border-red-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">{t('platformCommissionHelp')}</p>
                 </div>
@@ -295,7 +295,7 @@ export default function FormulesPage() {
                             copie[index] = e.target.value;
                             modifier(formule.code, { avantages: copie });
                           }}
-                          className="flex-1 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+                          className="flex-1 bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-hidden focus:border-red-500"
                         />
                         <button
                           type="button"

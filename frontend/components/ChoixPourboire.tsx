@@ -52,7 +52,7 @@ export function ChoixPourboire({
   };
 
   const pastille = (actif: boolean) =>
-    `min-w-[4.5rem] flex flex-col items-center rounded-xl border px-3 py-1.5 text-sm transition ${
+    `min-w-18 flex flex-col items-center rounded-xl border px-3 py-1.5 text-sm transition ${
       actif ? 'border-red-500 bg-red-100 text-red-800' : 'border-gray-300 text-gray-700 hover:border-gray-400'
     }`;
 
@@ -99,7 +99,7 @@ export function ChoixPourboire({
               setLibre(e.target.value);
               onChange(lireLibre(e.target.value));
             }}
-            className="w-24 bg-gray-100 border border-gray-300 rounded-full px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-red-500"
+            className="w-24 bg-gray-100 border border-gray-300 rounded-full px-3 py-1.5 text-sm text-gray-900 focus:outline-hidden focus:border-red-500"
           />
           €
         </label>

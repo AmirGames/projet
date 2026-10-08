@@ -273,7 +273,7 @@ export default function TrackOrderPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('placeholder')}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-3 text-gray-900 focus:outline-none focus:border-orange-500 placeholder-gray-400"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-3 text-gray-900 focus:outline-hidden focus:border-orange-500 placeholder-gray-400"
               />
             </div>
             <button
@@ -289,7 +289,7 @@ export default function TrackOrderPage() {
         {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
-            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
             <p className="text-red-600">{error}</p>
           </div>
         )}
@@ -298,7 +298,7 @@ export default function TrackOrderPage() {
         {order && (
           <div className="space-y-6">
             {/* Order Header */}
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
+            <div className="bg-linear-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-500 text-sm mb-1">{t('numero')}</p>
@@ -374,7 +374,7 @@ export default function TrackOrderPage() {
             {order.status === 'REJECTED' && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                 <div className="flex gap-4">
-                  <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
+                  <AlertCircle size={24} className="text-red-600 shrink-0" />
                   <div>
                     <h3 className="text-lg font-bold text-red-600 mb-2">{t('annulee')}</h3>
                     <p className="text-red-700">
@@ -545,7 +545,7 @@ export default function TrackOrderPage() {
               <h2 className="text-lg font-bold mb-4">{t('articles')}</h2>
               <div className="space-y-3">
                 {order.items && order.items.map(item => (
-                  <div key={item.id} className="flex justify-between items-center bg-gray-100 p-3 rounded">
+                  <div key={item.id} className="flex justify-between items-center bg-gray-100 p-3 rounded-sm">
                     <div>
                       {/* `item.name` n'existe pas sur une ligne de commande :
                           l'article s'affichait sans nom. */}

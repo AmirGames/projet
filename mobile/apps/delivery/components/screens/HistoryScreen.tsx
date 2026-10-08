@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { deliveryStatus, formatKm, hhmm, shortId } from '../../lib/deliveries';
 import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface HistoryItem {
   id: string;
@@ -76,7 +77,7 @@ export default function HistoryScreen({
     [filter, token]
   );
 
-  useEffect(() => {
+  useEffectChargement(() => {
     setLoading(true);
     load(1);
   }, [load]);

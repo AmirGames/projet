@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 
@@ -20,7 +21,7 @@ const enregistrementSchema = z.object({
 // POST /push-devices - Enregistre le téléphone du compte connecté
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId as string;
+    const userId = userIdRequis(req);
     const body = enregistrementSchema.parse(req.body);
 
     // Un téléphone n'a qu'un compte à la fois : s'il change de mains, le
@@ -41,7 +42,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 // DELETE /push-devices - Retire le téléphone (déconnexion)
 router.delete("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId as string;
+    const userId = userIdRequis(req);
     const { token } = z.object({ token: jeton }).parse(req.body);
 
     await db.pushDevice.deleteMany({ where: { token, userId } });

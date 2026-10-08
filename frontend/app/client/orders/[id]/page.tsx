@@ -349,7 +349,7 @@ export default function OrderTrackingPage() {
               <div className="mb-6">
                 <div className="w-full bg-gray-100 rounded-full h-2">
                   <div
-                    className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-500"
+                    className="bg-linear-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${progress}%` }}
                   ></div>
                 </div>
@@ -399,7 +399,7 @@ export default function OrderTrackingPage() {
 
                 <div className="space-y-3">
                   {order.items.map((item: any) => (
-                    <div key={item.id} className="flex justify-between items-center p-3 bg-gray-100 rounded">
+                    <div key={item.id} className="flex justify-between items-center p-3 bg-gray-100 rounded-sm">
                       <div>
                         {/* `item.name` n'existe pas sur une ligne de commande :
                             l'article s'affichait sans nom. */}
@@ -439,7 +439,7 @@ export default function OrderTrackingPage() {
               <div>
                 <p className="text-gray-500 text-sm mb-2">{t('adresseLivraison')}</p>
                 <div className="flex gap-2 text-gray-900">
-                  <MapPin size={20} className="text-orange-500 flex-shrink-0 mt-0.5" />
+                  <MapPin size={20} className="text-orange-500 shrink-0 mt-0.5" />
                   <p className="font-semibold">{order.deliveryAddress}</p>
                 </div>
               </div>

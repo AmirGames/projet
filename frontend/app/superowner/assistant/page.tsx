@@ -95,7 +95,7 @@ function HandoffCard({
       </p>
       <SafeAssistantContent content={h.summary} />
       {h.reply && (
-        <div className="p-3 bg-gray-50 rounded">
+        <div className="p-3 bg-gray-50 rounded-sm">
           <p className="font-medium">{t('reponseTransmise')}</p>
           <SafeAssistantContent content={h.reply} />
         </div>
@@ -121,10 +121,10 @@ function HandoffCard({
             maxLength={4000}
             value={reply}
             onChange={(e) => setReply(e.target.value)}
-            className="block border rounded p-2 w-full text-gray-900"
+            className="block border rounded-sm p-2 w-full text-gray-900"
           />
         </label>
-        <button disabled={busy} className="rounded border px-3 py-2">
+        <button disabled={busy} className="rounded-sm border px-3 py-2">
           {t('envoyer')}
         </button>
       </form>

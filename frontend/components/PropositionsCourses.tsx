@@ -323,7 +323,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
             {/* Timer indicator */}
             <div className="absolute top-3 right-3">
               <span
-                className={`flex items-center gap-1 px-3 py-1 rounded-full font-mono text-xs font-bold flex-shrink-0 ${
+                className={`flex items-center gap-1 px-3 py-1 rounded-full font-mono text-xs font-bold shrink-0 ${
                   restant <= 10
                     ? 'bg-red-600 text-white animate-pulse'
                     : restant <= 20

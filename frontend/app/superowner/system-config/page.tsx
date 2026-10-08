@@ -267,7 +267,7 @@ export default function SystemConfigPage() {
                   min="0"
                   value={formulaire.minOrderAmount}
                   onChange={(e) => setFormulaire({ ...formulaire, minOrderAmount: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
               </div>
               <div>
@@ -278,7 +278,7 @@ export default function SystemConfigPage() {
                   min="0"
                   value={formulaire.maxOrderAmount}
                   onChange={(e) => setFormulaire({ ...formulaire, maxOrderAmount: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
               </div>
             </div>
@@ -296,7 +296,7 @@ export default function SystemConfigPage() {
                   min="1" max="50"
                   value={formulaire.driverMaxRadiusKm}
                   onChange={(e) => setFormulaire({ ...formulaire, driverMaxRadiusKm: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('rayonAide')}</p>
               </div>
@@ -308,7 +308,7 @@ export default function SystemConfigPage() {
                   min="0.5" max="50"
                   value={formulaire.driverBikeMaxKm}
                   onChange={(e) => setFormulaire({ ...formulaire, driverBikeMaxKm: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('veloMaxAide')}</p>
               </div>
@@ -320,7 +320,7 @@ export default function SystemConfigPage() {
                   min="0.5" max="50"
                   value={formulaire.driverScooterMaxKm}
                   onChange={(e) => setFormulaire({ ...formulaire, driverScooterMaxKm: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('scooterMaxAide')}</p>
               </div>
@@ -332,7 +332,7 @@ export default function SystemConfigPage() {
                   min="0" max="3600"
                   value={formulaire.driverExceptionSeconds}
                   onChange={(e) => setFormulaire({ ...formulaire, driverExceptionSeconds: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('exceptionAide')}</p>
               </div>
@@ -344,7 +344,7 @@ export default function SystemConfigPage() {
                   min="0" max="10"
                   value={formulaire.driverSoonFreeKm}
                   onChange={(e) => setFormulaire({ ...formulaire, driverSoonFreeKm: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('bientotLibreKmAide')}</p>
               </div>
@@ -356,7 +356,7 @@ export default function SystemConfigPage() {
                   min="0" max="360"
                   value={formulaire.driverSoonFreeSeconds}
                   onChange={(e) => setFormulaire({ ...formulaire, driverSoonFreeSeconds: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('bientotLibreSecAide')}</p>
               </div>
@@ -368,7 +368,7 @@ export default function SystemConfigPage() {
                   min="10" max="600"
                   value={formulaire.driverOfferSeconds}
                   onChange={(e) => setFormulaire({ ...formulaire, driverOfferSeconds: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('delaiAide')}</p>
               </div>
@@ -380,7 +380,7 @@ export default function SystemConfigPage() {
                   min="0"
                   value={formulaire.driverBaseFee}
                   onChange={(e) => setFormulaire({ ...formulaire, driverBaseFee: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('remBaseAide')}</p>
               </div>
@@ -392,7 +392,7 @@ export default function SystemConfigPage() {
                   min="0"
                   value={formulaire.driverPerKmFee}
                   onChange={(e) => setFormulaire({ ...formulaire, driverPerKmFee: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('remKmAide')}</p>
               </div>
@@ -407,7 +407,7 @@ export default function SystemConfigPage() {
                   min="0"
                   value={formulaire.serviceFee}
                   onChange={(e) => setFormulaire({ ...formulaire, serviceFee: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {t('fraisServiceAide')}
@@ -439,7 +439,7 @@ export default function SystemConfigPage() {
                     max="5"
                     value={formulaire.driverMaxCourses}
                     onChange={(e) => setFormulaire({ ...formulaire, driverMaxCourses: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {formulaire.driverMaxCourses === '1'
@@ -459,7 +459,7 @@ export default function SystemConfigPage() {
                     max="10"
                     value={formulaire.driverGroupClientKm}
                     onChange={(e) => setFormulaire({ ...formulaire, driverGroupClientKm: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">{t('clientsAide')}</p>
                 </div>
@@ -475,7 +475,7 @@ export default function SystemConfigPage() {
                     max="10"
                     value={formulaire.driverGroupDetourKm}
                     onChange={(e) => setFormulaire({ ...formulaire, driverGroupDetourKm: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {t('detourAide')}
@@ -510,7 +510,7 @@ export default function SystemConfigPage() {
                   setFormulaire({ ...formulaire, maintenanceMessage: e.target.value })
                 }
                 placeholder={t('maintenance_message')}
-                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-orange-500"
               />
             </div>
 
@@ -569,7 +569,7 @@ export default function SystemConfigPage() {
                   {t('copiezCle')}
                 </p>
                 <div className="flex gap-2">
-                  <code className="flex-1 px-3 py-2 bg-white ring-1 ring-gray-200 rounded text-green-700 text-sm break-all">
+                  <code className="flex-1 px-3 py-2 bg-white ring-1 ring-gray-200 rounded-sm text-green-700 text-sm break-all">
                     {nouvelleCle}
                   </code>
                   <button
@@ -611,7 +611,7 @@ export default function SystemConfigPage() {
                       <p className="font-medium text-gray-900">{cle.name}</p>
                       <code className="text-xs text-gray-500 break-all">{cle.key}</code>
                     </div>
-                    <span className="text-xs text-gray-500 flex-shrink-0">
+                    <span className="text-xs text-gray-500 shrink-0">
                       {cle.lastUsedAt
                         ? t('utiliseeLe', { date: new Date(cle.lastUsedAt).toLocaleDateString(locale) })
                         : t('jamaisUtilisee')}

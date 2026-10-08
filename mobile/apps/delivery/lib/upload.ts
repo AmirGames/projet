@@ -9,6 +9,7 @@ let cached: FileSystemLegacy | null | undefined;
 export function fileSystem(): FileSystemLegacy | null {
   if (cached !== undefined) return cached;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     cached = Platform.OS === 'web' ? null : (require('expo-file-system/legacy') as FileSystemLegacy);
   } catch {
     cached = null;

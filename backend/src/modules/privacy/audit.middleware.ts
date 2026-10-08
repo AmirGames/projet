@@ -3,7 +3,7 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { recordAudit } from "./audit";
 import { ApiError } from "../../middleware/errorHandler";
 
-export function sensitiveAction(method: string, path: string): string | null {
+function sensitiveAction(method: string, path: string): string | null {
   if (/\/privacy(?:\/|$)/.test(path) || /\/files(?:\/|$)/.test(path)) return null;
   if (method === "GET" && /(?:export|download|sepa|backups.*download|incident.*dossier)/i.test(path)) return "DATA_EXPORT";
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) return null;
@@ -23,7 +23,7 @@ export function privacyAuditMiddleware(req: Request, res: Response, next: NextFu
       await recordAudit(req.userId!, action, req.path, "ATTEMPT");
       const originalJson = res.json.bind(res), originalSend = res.send.bind(res);
       let intercepted = false;
-      const send = (original: typeof res.send, body: any) => {
+      const send = (original: typeof res.send, body: unknown) => {
         if (intercepted) return original(body);
         intercepted = true;
         void recordAudit(req.userId!, action, req.path, res.statusCode < 400 ? "SUCCESS" : "REFUSED")
@@ -31,8 +31,8 @@ export function privacyAuditMiddleware(req: Request, res: Response, next: NextFu
           .catch(() => { res.json = originalJson; res.send = originalSend; next(new ApiError(503, "Journal d'audit indisponible", "AUDIT_UNAVAILABLE")); });
         return res;
       };
-      res.json = ((body: any) => send(originalJson, body)) as typeof res.json;
-      res.send = ((body: any) => send(originalSend, body)) as typeof res.send;
+      res.json = ((body: unknown) => send(originalJson, body)) as typeof res.json;
+      res.send = ((body: unknown) => send(originalSend, body)) as typeof res.send;
       return next();
     } catch (err) { return next(err); }
   });

@@ -97,7 +97,7 @@ export function NotificationsPanel({ notifications, unreadCount }: Notifications
                   {notif.urlAction && (
                     <a
                       href={notif.urlAction}
-                      className="ml-4 flex-shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                      className="ml-4 shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-700"
                     >
                       {t('view')} →
                     </a>

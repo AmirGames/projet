@@ -40,6 +40,7 @@ import CompletionSummary from '../CompletionSummary';
 import LiveMap, { RouteInfo } from '../LiveMap';
 import GuidanceCard from '../GuidanceCard';
 import { Card, COLORS, ErrorBox, isDarkTheme, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
 const PICKUP_RADIUS_M = 150;
@@ -102,9 +103,7 @@ export default function DeliveryScreen({
   // l'écran de fin ramène seul à l'accueil ; ouverte depuis l'historique, non.
   const [activeOnOpen, setActiveOnOpen] = useState<boolean | null>(null);
   const openingStatus = delivery?.status;
-  useEffect(() => {
-    if (openingStatus) setActiveOnOpen((active) => active ?? openingStatus !== 'DELIVERED');
-  }, [openingStatus]);
+  if (openingStatus && activeOnOpen === null) setActiveOnOpen(openingStatus !== 'DELIVERED');
   const onChangedRef = useRef(onChanged);
   useLayoutEffect(() => {
     onChangedRef.current = onChanged;
@@ -176,7 +175,7 @@ export default function DeliveryScreen({
     [deliveryId, token]
   );
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 
@@ -405,10 +404,6 @@ export default function DeliveryScreen({
   };
 
   // Quatre chiffres saisis : le code se vérifie sans autre geste.
-  useEffect(() => {
-    if (code.length === 4 && !photoMode && step === 2 && atCustomer && !waitingOthers && !updating) confirmHandover({ code });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
 
   /** L'appareil photo s'ouvre ; la photo part aussitôt prise. */
   /** Envoie la photo déjà réduite ; rappelée telle quelle par « Renvoyer ». */
@@ -710,7 +705,12 @@ export default function DeliveryScreen({
                   <TextInput
                     style={styles.codeInput}
                     value={code}
-                    onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 4))}
+                    onChangeText={(t) => {
+                      const saisi = t.replace(/\D/g, '').slice(0, 4);
+                      setCode(saisi);
+                      // Quatre chiffres saisis : le code se vérifie sans autre geste.
+                      if (saisi.length === 4 && !photoMode && step === 2 && atCustomer && !waitingOthers && !updating) confirmHandover({ code: saisi });
+                    }}
                     keyboardType="number-pad"
                     maxLength={4}
                     placeholder="0000"

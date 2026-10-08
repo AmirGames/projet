@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { Outbox } from "../jobs/outbox.service";
 import { EmailService } from "./email.service";
 
@@ -48,18 +49,35 @@ async function servicesZupDrive() {
   return { ZupDriveNotificationsService, ZupDriveMonitoringService };
 }
 
+// Le contenu de l'outbox vient de la base : relu et validé avant d'agir.
+const payloadAnnonceCommande = z.object({ orderId: z.string() });
+const payloadEmailSuiviCommande = z.object({
+  commande: z.object({ id: z.string(), customerName: z.string(), customerEmail: z.string(), totalAmount: z.number() }),
+  contenu: z.object({ titre: z.string(), message: z.string() }),
+});
+const payloadEmailNotificationZupDrive = z.object({ logId: z.string() });
+const payloadEmailAlerteZupDrive = z.object({ notificationId: z.string() });
+
 export function declarerGestionnairesOutbox() {
-  Outbox.declarer(TYPE_ANNONCE_COMMANDE, annoncerCommande);
-  Outbox.declarer(TYPE_EMAIL_SUIVI_COMMANDE, (payload: PayloadEmailSuiviCommande) =>
-    EmailService.sendOrderStatusUpdate(payload.commande, payload.contenu)
+  Outbox.declarer(TYPE_ANNONCE_COMMANDE, (payload) => annoncerCommande(payloadAnnonceCommande.parse(payload)));
+  Outbox.declarer(TYPE_EMAIL_SUIVI_COMMANDE, (payload) => {
+    const { commande, contenu } = payloadEmailSuiviCommande.parse(payload);
+    return EmailService.sendOrderStatusUpdate(commande, contenu);
+  }
   );
   Outbox.declarer(
     TYPE_EMAIL_NOTIFICATION_ZUPDRIVE,
-    async ({ logId }: { logId: string }) => (await servicesZupDrive()).ZupDriveNotificationsService.envoyerEmailDuJournal(logId),
-    async ({ logId }: { logId: string }, erreur) =>
-      (await servicesZupDrive()).ZupDriveNotificationsService.marquerEmailEchoue(logId, erreur)
+    async (payload) => {
+      const { logId } = payloadEmailNotificationZupDrive.parse(payload);
+      return (await servicesZupDrive()).ZupDriveNotificationsService.envoyerEmailDuJournal(logId);
+    },
+    async (payload, erreur) => {
+      const { logId } = payloadEmailNotificationZupDrive.parse(payload);
+      return (await servicesZupDrive()).ZupDriveNotificationsService.marquerEmailEchoue(logId, erreur);
+    }
   );
-  Outbox.declarer(TYPE_EMAIL_ALERTE_ZUPDRIVE, async ({ notificationId }: { notificationId: string }) =>
-    (await servicesZupDrive()).ZupDriveMonitoringService.envoyerEmailAlerte(notificationId)
-  );
+  Outbox.declarer(TYPE_EMAIL_ALERTE_ZUPDRIVE, async (payload) => {
+    const { notificationId } = payloadEmailAlerteZupDrive.parse(payload);
+    return (await servicesZupDrive()).ZupDriveMonitoringService.envoyerEmailAlerte(notificationId);
+  });
 }

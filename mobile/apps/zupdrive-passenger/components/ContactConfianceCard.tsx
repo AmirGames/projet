@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { messageErreur, useToken } from '../lib/auth';
 import {
@@ -8,6 +8,7 @@ import {
   type ContactConfiance,
 } from '../lib/sos';
 import { Card, COLORS } from './ui';
+import { useEffectChargement } from '../lib/useEffectChargement';
 
 /** La personne prévenue par e-mail quand le passager déclenche une alerte SOS. */
 export default function ContactConfianceCard() {
@@ -31,7 +32,7 @@ export default function ContactConfianceCard() {
     }
   }, [token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     void lire();
   }, [lire]);
 

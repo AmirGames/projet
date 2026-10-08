@@ -33,7 +33,7 @@ export interface ReglesTournee {
 
 export const REGLES_TOURNEE_PAR_DEFAUT: ReglesTournee = { maxCourses: 3, rayonClientsKm: 2, detourMaxKm: 2 };
 /** Deux retraits plus proches que cela : le même commerce. */
-export const MEME_COMMERCE_KM = 0.1;
+const MEME_COMMERCE_KM = 0.1;
 
 /** Une course vue par la tournée : où la prendre, où la remettre, où elle en est. */
 export interface CourseTournee {
@@ -44,7 +44,7 @@ export interface CourseTournee {
   recuperee: boolean;
 }
 
-export interface Arret {
+interface Arret {
   deliveryId: string;
   type: "RETRAIT" | "REMISE";
   point: Point;
