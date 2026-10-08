@@ -249,6 +249,14 @@ jobs:
         run: |
           npm i --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
+      # Sans clé publiable, le tunnel de commande ne propose pas le paiement en
+      # ligne, mais il charge quand même js.stripe.com. Le runner a Internet :
+      # les cadres de Stripe écrivent alors leurs propres avertissements dans la
+      # console (« payment is not allowed in this document », CSP de leurs
+      # cadres), que les suites comptent comme des erreurs du site. Les parcours
+      # ne dépendent pas d'Internet : Stripe est coupé, comme en local.
+      - name: Couper Stripe pour les parcours
+        run: echo "127.0.0.1 js.stripe.com m.stripe.network r.stripe.com q.stripe.com api.stripe.com" | sudo tee -a /etc/hosts
       - name: Build et démarrage du site
         working-directory: frontend
         env:
