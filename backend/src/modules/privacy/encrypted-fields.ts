@@ -12,6 +12,8 @@ export const ENCRYPTED_FIELDS: Record<string, string[]> = {
   Invoice: ["emetteurJson", "destinataireJson"],
   PlatformInvoice: ["sellerJson", "buyerJson", "ublXml"],
   ChauffeurDrive: ["telephone", "numeroLicence", "vehiculePlaque"],
+  CompteBancaireChauffeurDrive: ["iban", "bic", "accountHolder"],
+  DriverPayoutDrive: ["ibanSnapshot"],
   SocieteDrive: ["telephone"],
   VehiculeDrive: ["numeroLicence"],
   CourseDrive: ["departAdresse", "arriveeAdresse", "motifAnnulation"],

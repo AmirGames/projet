@@ -8,16 +8,22 @@
  * - Compliance warnings
  * - Admin escalations
  *
- * Channels:
- * - Push notifications (mobile)
- * - Email summaries
- * - In-app notifications
- * - WebSocket (real-time dashboard)
+ * Channels (la ligne en base est la vérité ; un canal en échec n'annule rien) :
+ * - Push mobile : Notifier.expoPush, vers les téléphones connectés au compte
+ * - Email : outbox durable (rejouée avec délai croissant tant qu'elle échoue)
+ * - In-app / temps réel : socket du compte (emitNotification), comme les autres
+ *   notifications ZupDrive ; le client retrouve l'état par l'API si l'événement est perdu
  */
 
 import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
+import { logger } from "../../config/logger";
+import { Outbox } from "../jobs/outbox.service";
+import { EmailService } from "../notifications/email.service";
+import { Notifier } from "../notifications/notifier.service";
+import { TYPE_EMAIL_ALERTE_ZUPDRIVE } from "../notifications/outbox-handlers";
+import { emitNotification } from "../realtime/socket";
 import { lireCommissionPourcentage, repartirPrixCourse } from "./commission-drive";
 
 type NotificationType =
@@ -66,6 +72,9 @@ export interface DriverMetrics {
   status: "ACTIVE" | "WARNING" | "SUSPENDED" | "INACTIVE";
 }
 
+const echapperHtml = (texte: string) =>
+  texte.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+
 export const ZupDriveMonitoringService = {
   /**
    * Créer une notification
@@ -91,7 +100,10 @@ export const ZupDriveMonitoringService = {
 
       return notification.id;
     } catch (error) {
-      console.error("Failed to create notification:", error);
+      logger.error("ZupDrive notification creation failed", {
+        type: payload.type,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new ApiError(500, "Notification creation failed");
     }
   },
@@ -103,58 +115,125 @@ export const ZupDriveMonitoringService = {
     notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
-    const channels: Promise<void>[] = [];
+    const channels: Array<[string, Promise<void>]> = [];
 
     // Push notification (si priority >= medium)
     if (["medium", "high", "critical"].includes(payload.priority)) {
-      channels.push(this.sendPushNotification(notificationId, payload));
+      channels.push(["push", this.sendPushNotification(notificationId, payload)]);
     }
 
     // Email (si high ou critical)
     if (["high", "critical"].includes(payload.priority)) {
-      channels.push(this.sendEmailNotification(notificationId, payload));
+      channels.push(["email", this.sendEmailNotification(notificationId, payload)]);
     }
 
     // WebSocket (always, pour real-time)
-    channels.push(this.broadcastWebSocketNotification(notificationId, payload));
+    channels.push(["websocket", this.broadcastWebSocketNotification(notificationId, payload)]);
 
-    await Promise.allSettled(channels);
+    // Un canal en échec ne défait ni la notification ni les autres canaux.
+    const resultats = await Promise.allSettled(channels.map(([, envoi]) => envoi));
+    resultats.forEach((resultat, i) => {
+      if (resultat.status === "rejected") {
+        logger.warn("ZupDrive notification channel failed", {
+          notificationId,
+          channel: channels[i][0],
+          error: resultat.reason instanceof Error ? resultat.reason.message : String(resultat.reason),
+        });
+      }
+    });
   },
 
   /**
-   * Envoyer push notification (mobile)
+   * Envoyer push notification (mobile) aux téléphones connectés au compte.
+   * Les jetons périmés sont retirés par le notifier.
    */
   async sendPushNotification(
-    _notificationId: string,
+    notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
-    // TODO: Integration with Firebase Cloud Messaging or OneSignal
-    // Placeholder for real implementation
-    console.log(`[PUSH] ${payload.title}: ${payload.message}`);
+    const appareils = await db.pushDevice.findMany({
+      where: { userId: payload.userId },
+      select: { token: true },
+    });
+    if (appareils.length === 0) return;
+
+    await Notifier.expoPush(
+      appareils.map((a) => a.token),
+      {
+        title: payload.title,
+        body: payload.message,
+        data: {
+          tag: "zupdrive-notification",
+          type: payload.type,
+          notificationId,
+          ...(payload.actionUrl ? { url: payload.actionUrl } : {}),
+        },
+      }
+    );
   },
 
   /**
-   * Envoyer email
+   * Envoyer email : l'intention est écrite en base (outbox) pour ne rien perdre
+   * si le serveur de courriel est indisponible ; un worker l'envoie et la rejoue.
+   * Rejouer la demande pour la même notification n'enregistre qu'un message.
    */
   async sendEmailNotification(
-    _notificationId: string,
-    payload: NotificationPayload
+    notificationId: string,
+    _payload: NotificationPayload
   ): Promise<void> {
-    // TODO: Integration with email service (SendGrid, Mailgun)
-    // Placeholder for real implementation
-    console.log(`[EMAIL] To ${payload.userId}: ${payload.title}`);
+    await Outbox.enregistrer(
+      TYPE_EMAIL_ALERTE_ZUPDRIVE,
+      { notificationId },
+      { dedupeKey: `${TYPE_EMAIL_ALERTE_ZUPDRIVE}:${notificationId}` }
+    );
   },
 
   /**
-   * Broadcast WebSocket
+   * Exécuté par l'outbox : envoie l'e-mail d'une notification enregistrée.
+   * Lève en cas d'échec d'envoi pour que l'outbox le rejoue ; sans adresse,
+   * il n'y a rien à envoyer (pas d'erreur, un rejeu n'y changerait rien).
+   */
+  async envoyerEmailAlerte(notificationId: string): Promise<void> {
+    const notification = await db.notificationDrive.findUnique({
+      where: { id: notificationId },
+      select: { title: true, message: true, user: { select: { email: true } } },
+    });
+    const destinataire = notification?.user?.email;
+    if (!notification || !destinataire) return;
+
+    await EmailService.sendEmail({
+      to: destinataire,
+      subject: notification.title,
+      text: notification.message,
+      html: `<p>${echapperHtml(notification.message).replace(/\n/g, "<br>")}</p>`,
+    });
+  },
+
+  /**
+   * Broadcast WebSocket : le socket du compte (même canal que les autres
+   * notifications ZupDrive). Sans connexion ouverte, rien n'est perdu : la
+   * notification est en base et se relit par l'API.
    */
   async broadcastWebSocketNotification(
-    _notificationId: string,
+    notificationId: string,
     payload: NotificationPayload
   ): Promise<void> {
-    // TODO: WebSocket broadcast to connected clients
-    // Placeholder for real implementation
-    console.log(`[WS] Broadcasting ${payload.type} to ${payload.userId}`);
+    const utilisateur = await db.user.findUnique({
+      where: { id: payload.userId },
+      select: { email: true },
+    });
+    if (!utilisateur?.email) return;
+
+    emitNotification(utilisateur.email, {
+      id: notificationId,
+      type: payload.type,
+      title: payload.title,
+      message: payload.message,
+      priority: payload.priority,
+      data: payload.data ?? {},
+      actionUrl: payload.actionUrl ?? null,
+      createdAt: new Date().toISOString(),
+    });
   },
 
   /**
@@ -578,6 +657,6 @@ export const ZupDriveMonitoringService = {
  * │ LOW         │ ❌       │ ❌     │ ✅       │
  * │ MEDIUM      │ ✅       │ ❌     │ ✅       │
  * │ HIGH        │ ✅       │ ✅     │ ✅       │
- * │ CRITICAL    │ ✅ (SMS) │ ✅     │ ✅       │
+ * │ CRITICAL    │ ✅       │ ✅     │ ✅       │
  * └─────────────┴──────────┴────────┴──────────┘
  */

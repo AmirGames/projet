@@ -102,6 +102,7 @@ Toutes les routes exigent une session. Le dossier manipulé est toujours celui d
 | PATCH | `/api/zupdrive/chauffeur/me` | Met à jour le profil |
 | POST | `/api/zupdrive/chauffeur/me/documents` | Dépose une pièce (multipart `file`, `type`, `dateExpiration?`) |
 | POST | `/api/zupdrive/chauffeur/me/submit` | Soumet le dossier (idempotent) |
+| GET / PUT | `/api/zupdrive/chauffeur/me/bank-account` | Compte des versements (fin de l'IBAN seulement en lecture) — voir `docs/zupdrive-api-admin.md` |
 
 ### API équipe ZupDrive
 

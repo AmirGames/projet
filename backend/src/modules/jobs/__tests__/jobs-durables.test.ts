@@ -124,6 +124,26 @@ describe("outbox", () => {
     expect((await Outbox.etat()).echecs).toBeGreaterThanOrEqual(1);
   });
 
+  it("à l'abandon, le hook du type est appelé une fois avec la charge et le motif — pas avant, et son échec ne bloque rien", async () => {
+    const abandons: Array<[unknown, string]> = [];
+    Outbox.declarer(
+      "test.abandon",
+      async () => { throw new Error("SMTP indisponible"); },
+      async (payload, erreur) => { abandons.push([payload, erreur]); throw new Error("le hook lui-même échoue"); }
+    );
+    const msg = await Outbox.enregistrer("test.abandon", { logId: "log-1" }, { maxAttempts: 2 });
+    let t = new Date();
+
+    await Outbox.traiterLesDus(20, () => t);
+    expect(abandons).toEqual([]); // première tentative : à rejouer, pas abandonné
+
+    t = new Date(t.getTime() + 10 * MINUTE);
+    await Outbox.traiterLesDus(20, () => t);
+
+    expect(abandons).toEqual([[{ logId: "log-1" }, "SMTP indisponible"]]);
+    expect((await lire(msg!.id)).status).toBe("FAILED");
+  });
+
   it("un type sans gestionnaire est abandonné, pas rejoué à l'infini", async () => {
     const msg = await Outbox.enregistrer("test.inconnu", {});
     await Outbox.traiterLesDus();

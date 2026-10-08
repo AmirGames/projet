@@ -5,6 +5,7 @@ const db: any = {
   courseDrive: { findUniqueOrThrow: jest.fn(), findMany: jest.fn() },
   paymentIntentDrive: { findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn(), create: jest.fn() },
   driverPayoutDrive: { upsert: jest.fn(), findMany: jest.fn(), createMany: jest.fn(), updateMany: jest.fn(), aggregate: jest.fn() },
+  compteBancaireChauffeurDrive: { findUnique: jest.fn() },
   driverPayoutBatchDrive: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   $transaction: jest.fn(),
 };
@@ -12,6 +13,7 @@ const stripe: any = { paymentIntents: { create: jest.fn(), retrieve: jest.fn() }
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 jest.mock("../../payments/stripe", () => ({ stripe, STRIPE_CONFIG: { currency: "eur", webhookSecret: "whsec" } }));
+import { logger } from "../../../config/logger";
 import { ZupDrivePaymentService } from "../zupdrive-payment.service";
 import { ZupDrivePaymentDriverService } from "../zupdrive-payment-driver.service";
 import { ZupDriveMonitoringService } from "../zupdrive-monitoring.service";
@@ -38,6 +40,7 @@ beforeEach(() => {
   db.paymentIntentDrive.updateMany.mockResolvedValue({ count: 1 });
   db.$transaction.mockImplementation(async (fn: any) => fn(db));
   db.driverPayoutDrive.upsert.mockImplementation(async ({ create }: any) => ({ id: "po-1", ...create }));
+  db.compteBancaireChauffeurDrive.findUnique.mockResolvedValue(null);
 });
 afterEach(() => { jest.useRealTimers(); });
 
@@ -190,6 +193,25 @@ describe("versement du chauffeur : dans l'ordre où paiement et fin de course ar
       .mockResolvedValueOnce(paiement({ status: "SUCCEEDED" }));
     await ZupDrivePaymentService.courseTerminee("course-1");
     expect(db.driverPayoutDrive.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("chauffeur avec IBAN : la copie normalisée est figée sur le versement, sans fuiter dans les logs", async () => {
+    db.compteBancaireChauffeurDrive.findUnique.mockResolvedValue({ iban: "be68 5390 0754 7034" });
+    db.paymentIntentDrive.findUnique.mockResolvedValue(paiement({ status: "SUCCEEDED" }));
+    await ZupDrivePaymentService.creerVersementSiDu("pay-1");
+    expect(db.compteBancaireChauffeurDrive.findUnique).toHaveBeenCalledWith({ where: { chauffeurId: "c1" }, select: { iban: true } });
+    expect(db.driverPayoutDrive.upsert.mock.calls[0][0].create.ibanSnapshot).toBe("BE68539007547034");
+    expect(JSON.stringify((logger.info as any).mock.calls)).not.toContain("BE68");
+  });
+
+  it("chauffeur sans IBAN (ou IBAN invalide) : le versement est créé quand même, sans copie", async () => {
+    db.paymentIntentDrive.findUnique.mockResolvedValue(paiement({ status: "SUCCEEDED" }));
+    await ZupDrivePaymentService.creerVersementSiDu("pay-1");
+    expect(db.driverPayoutDrive.upsert.mock.calls[0][0].create).toEqual(expect.objectContaining({ amountCentimes: 1200, status: "PENDING", ibanSnapshot: null }));
+
+    db.compteBancaireChauffeurDrive.findUnique.mockResolvedValue({ iban: "BE00 0000 0000 0000" });
+    await ZupDrivePaymentService.creerVersementSiDu("pay-1");
+    expect(db.driverPayoutDrive.upsert.mock.calls[1][0].create.ibanSnapshot).toBeNull();
   });
 
   it("course terminée sans paiement confirmé : aucun versement", async () => {

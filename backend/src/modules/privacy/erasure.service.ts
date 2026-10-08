@@ -81,6 +81,8 @@ export async function completeErasure(userId: string): Promise<{ status: string 
     if (user.chauffeurDrive) {
       await tx.documentChauffeurDrive.deleteMany({ where: { chauffeurId: user.chauffeurDrive.id, id: { notIn: holds("DocumentChauffeurDrive") } } });
       await tx.messageCourseDrive.updateMany({ where: { auteur: "CHAUFFEUR", course: { chauffeurId: user.chauffeurDrive.id } }, data: { texte: "Message effacé" } });
+      // Les versements déjà créés gardent leur copie chiffrée de l'IBAN (obligation comptable) ; le compte lui-même s'efface.
+      await tx.compteBancaireChauffeurDrive.deleteMany({ where: { chauffeurId: user.chauffeurDrive.id } });
       await tx.chauffeurDrive.update({ where: { id: user.chauffeurDrive.id }, data: { nomComplet: "Chauffeur supprimé", telephone: null, numeroLicence: null, vehiculePlaque: null, motifStatut: null, societeId: null, vehiculeId: null } });
     }
     if (user.societeDrive) await tx.documentChauffeurDrive.deleteMany({ where: { id: { notIn: holds("DocumentChauffeurDrive") }, OR: [{ societeId: user.societeDrive.id }, { vehicule: { societeId: user.societeDrive.id } }] } });

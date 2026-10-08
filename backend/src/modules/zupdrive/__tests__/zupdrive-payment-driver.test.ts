@@ -31,6 +31,9 @@ jest.mock("../../../services/db", () => ({
     driverPayoutBatchDrive: {
       findFirst: jest.fn(),
     },
+    compteBancaireChauffeurDrive: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -200,6 +203,21 @@ describe("ZupDrivePaymentDriverService", () => {
           ],
         })
       );
+    });
+
+    it("avec IBAN enregistré : chaque versement porte la copie normalisée ; sans IBAN : null, le versement est créé quand même", async () => {
+      const paiements = reponse([{ id: "pay-1", driverEarningsCentimes: 1600, currency: "EUR" }]);
+      jest.mocked(db.driverPayoutDrive.createMany).mockResolvedValue({ count: 1 });
+
+      jest.mocked(db.paymentIntentDrive.findMany).mockResolvedValueOnce(paiements);
+      jest.mocked(db.compteBancaireChauffeurDrive.findUnique).mockResolvedValueOnce(reponse({ iban: "be68 5390 0754 7034" }));
+      await ZupDrivePaymentDriverService.preparePayout(mockChauffeurId);
+      expect(jest.mocked(db.driverPayoutDrive.createMany).mock.calls[0][0]!.data).toEqual([expect.objectContaining({ ibanSnapshot: "BE68539007547034" })]);
+
+      jest.mocked(db.paymentIntentDrive.findMany).mockResolvedValueOnce(paiements);
+      jest.mocked(db.compteBancaireChauffeurDrive.findUnique).mockResolvedValueOnce(null);
+      await ZupDrivePaymentDriverService.preparePayout(mockChauffeurId);
+      expect(jest.mocked(db.driverPayoutDrive.createMany).mock.calls[1][0]!.data).toEqual([expect.objectContaining({ ibanSnapshot: null })]);
     });
 
     it("ne cherche que les paiements confirmés, de courses terminées, sans versement, de ce chauffeur", async () => {

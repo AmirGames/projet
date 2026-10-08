@@ -4,6 +4,7 @@ import { stripe, STRIPE_CONFIG } from "../payments/stripe";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { lireCommissionPourcentage, repartirPrixCourse } from "./commission-drive";
+import { CompteBancaireChauffeurService } from "./compte-bancaire-chauffeur.service";
 import { debutSemaineVersement, finSemaineVersement } from "./semaine-versement";
 
 /**
@@ -350,7 +351,7 @@ export class ZupDrivePaymentService {
         status: "PENDING",
         periodStart,
         periodEnd,
-        ibanSnapshot: await this.getChauffeurIban(),
+        ibanSnapshot: await CompteBancaireChauffeurService.ibanPourVersement(payment.course.chauffeurId),
       },
     });
 
@@ -578,12 +579,5 @@ export class ZupDrivePaymentService {
           : null,
       })),
     };
-  }
-
-  // Utilitaires
-
-  private static async getChauffeurIban(): Promise<string | null> {
-    // TODO: Récupérer l'IBAN depuis le User ou une table de bankAccounts
-    return null;
   }
 }

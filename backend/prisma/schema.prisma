@@ -2911,6 +2911,8 @@ model ChauffeurDrive {
   documentWorkflows DocumentVerificationWorkflow[]
   chauffeurDocuments ChauffeurDocument[]
   infractions ChauffeurInfraction[]
+  /// Où verser les gains : table à part pour que l'IBAN ne sorte jamais avec la fiche.
+  compteBancaire CompteBancaireChauffeurDrive?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2919,6 +2921,25 @@ model ChauffeurDrive {
   alertesNotification NotificationAlert[]
 
   @@index([societeId])
+}
+
+/// Le compte bancaire où le chauffeur reçoit ses versements hebdomadaires.
+/// Table à part (et non des colonnes de ChauffeurDrive) : la fiche est lue et
+/// renvoyée en entier par plusieurs routes, l'IBAN ne doit jamais les suivre.
+/// iban, bic et accountHolder sont chiffrés (voir ENCRYPTED_FIELDS) ; l'API ne
+/// rend jamais que les 4 derniers caractères de l'IBAN.
+model CompteBancaireChauffeurDrive {
+  id            String   @id @default(cuid())
+  chauffeurId   String   @unique
+  /// Normalisé (sans espaces, majuscules) et validé (clé modulo 97) avant écriture.
+  iban          String
+  bic           String?
+  accountHolder String
+
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// Une société ZupDrive (taxi, VTC) : elle détient les licences, assure les
@@ -3352,7 +3373,7 @@ model DriverPayoutDrive {
   periodStart     DateTime
   periodEnd       DateTime
 
-  /// L'IBAN du chauffeur au moment du versement (copie pour historique).
+  /// L'IBAN du chauffeur au moment du versement (copie pour historique, chiffrée).
   ibanSnapshot    String?
 
   /// Confirmation Stripe (Payout object id).
@@ -3903,6 +3924,8 @@ model NotificationTemplate {
 
 model NotificationLog {
   id            String    @id @default(cuid())
+  /// Un même événement ne produit qu'un envoi : la clé est unique (NULL = pas de dédoublonnage).
+  dedupeKey     String?   @unique
   recipientId   String
   recipientType String
   type          String

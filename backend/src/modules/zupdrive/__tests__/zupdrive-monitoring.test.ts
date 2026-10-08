@@ -4,6 +4,17 @@
 
 import { ZupDriveMonitoringService } from "../zupdrive-monitoring.service";
 import { db } from "../../../services/db";
+import { logger } from "../../../config/logger";
+import { Notifier } from "../../notifications/notifier.service";
+import { EmailService } from "../../notifications/email.service";
+import { Outbox } from "../../jobs/outbox.service";
+import { emitNotification } from "../../realtime/socket";
+
+jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
+jest.mock("../../notifications/notifier.service", () => ({ Notifier: { expoPush: jest.fn() } }));
+jest.mock("../../notifications/email.service", () => ({ EmailService: { sendEmail: jest.fn() } }));
+jest.mock("../../jobs/outbox.service", () => ({ Outbox: { enregistrer: jest.fn(), declarer: jest.fn() } }));
+jest.mock("../../realtime/socket", () => ({ emitNotification: jest.fn() }));
 
 jest.mock("../../../services/db", () => ({
   db: {
@@ -16,6 +27,8 @@ jest.mock("../../../services/db", () => ({
       updateMany: jest.fn(),
       groupBy: jest.fn(),
     },
+    pushDevice: { findMany: jest.fn() },
+    user: { findUnique: jest.fn() },
     noteCourseDrive: {
       aggregate: jest.fn(),
     },
@@ -383,21 +396,108 @@ describe("ZupDriveMonitoringService", () => {
     });
   });
 
-  describe("Notification priorities", () => {
-    it("devrait envoyer push pour priority medium+", async () => {
-      jest.mocked(db.notificationDrive.create).mockResolvedValueOnce({
-        id: "notif-1",
-      } as never);
+  describe("canaux réels selon la priorité", () => {
+    const charge = (priority: "low" | "medium" | "high" | "critical") => ({
+      type: "PAYOUT_FAILED" as const,
+      userId: mockUserId,
+      title: "Virement échoué",
+      message: "Mettez à jour votre IBAN.\nMerci",
+      priority,
+      actionUrl: "/chauffeur/versements",
+    });
 
-      await ZupDriveMonitoringService.createNotification({
-        type: "COURSE_COMPLETED",
-        userId: mockUserId,
-        title: "Course completed",
-        message: "Earned €8.25",
-        priority: "medium",
+    beforeEach(() => {
+      jest.mocked(db.notificationDrive.create).mockResolvedValue({ id: "notif-1" } as never);
+      jest.mocked(db.pushDevice.findMany).mockResolvedValue([{ token: "ExponentPushToken[a]" }, { token: "ExponentPushToken[b]" }] as never);
+      jest.mocked(db.user.findUnique).mockResolvedValue({ email: "sam@example.com" } as never);
+    });
+
+    it("low : temps réel seulement (ni push, ni e-mail)", async () => {
+      await ZupDriveMonitoringService.createNotification(charge("low"));
+
+      expect(Notifier.expoPush).not.toHaveBeenCalled();
+      expect(Outbox.enregistrer).not.toHaveBeenCalled();
+      expect(emitNotification).toHaveBeenCalledWith("sam@example.com", expect.objectContaining({ id: "notif-1", type: "PAYOUT_FAILED", priority: "low" }));
+    });
+
+    it("medium : push vers les téléphones du compte, pas d'e-mail", async () => {
+      await ZupDriveMonitoringService.createNotification(charge("medium"));
+
+      expect(db.pushDevice.findMany).toHaveBeenCalledWith({ where: { userId: mockUserId }, select: { token: true } });
+      expect(Notifier.expoPush).toHaveBeenCalledWith(
+        ["ExponentPushToken[a]", "ExponentPushToken[b]"],
+        expect.objectContaining({ title: "Virement échoué", body: expect.stringContaining("IBAN"), data: expect.objectContaining({ notificationId: "notif-1", url: "/chauffeur/versements" }) })
+      );
+      expect(Outbox.enregistrer).not.toHaveBeenCalled();
+    });
+
+    it("high : l'e-mail passe par l'outbox, avec une clé qui empêche le doublon", async () => {
+      await ZupDriveMonitoringService.createNotification(charge("high"));
+
+      expect(Notifier.expoPush).toHaveBeenCalledTimes(1);
+      expect(Outbox.enregistrer).toHaveBeenCalledWith(
+        "zupdrive.alerte_email",
+        { notificationId: "notif-1" },
+        { dedupeKey: "zupdrive.alerte_email:notif-1" }
+      );
+      expect(EmailService.sendEmail).not.toHaveBeenCalled();
+    });
+
+    it("sans téléphone enregistré : pas d'appel push ; sans connexion temps réel ni adresse : rien ne casse", async () => {
+      jest.mocked(db.pushDevice.findMany).mockResolvedValue([] as never);
+      jest.mocked(db.user.findUnique).mockResolvedValue({ email: null } as never);
+
+      await expect(ZupDriveMonitoringService.createNotification(charge("critical"))).resolves.toBe("notif-1");
+
+      expect(Notifier.expoPush).not.toHaveBeenCalled();
+      expect(emitNotification).not.toHaveBeenCalled();
+    });
+
+    it("un canal en échec n'annule ni la notification ni les autres canaux, et l'échec est journalisé", async () => {
+      jest.mocked(Notifier.expoPush).mockRejectedValue(new Error("Expo indisponible"));
+      jest.mocked(Outbox.enregistrer).mockRejectedValue(new Error("base lente"));
+
+      await expect(ZupDriveMonitoringService.createNotification(charge("high"))).resolves.toBe("notif-1");
+
+      expect(emitNotification).toHaveBeenCalledTimes(1);
+      expect(logger.warn).toHaveBeenCalledWith("ZupDrive notification channel failed", expect.objectContaining({ channel: "push", error: "Expo indisponible" }));
+      expect(logger.warn).toHaveBeenCalledWith("ZupDrive notification channel failed", expect.objectContaining({ channel: "email", error: "base lente" }));
+    });
+
+    it("jamais de console.log : plus rien n'est simulé", async () => {
+      const espion = jest.spyOn(console, "log").mockImplementation(() => undefined);
+      await ZupDriveMonitoringService.createNotification(charge("critical"));
+      expect(espion).not.toHaveBeenCalled();
+      espion.mockRestore();
+    });
+  });
+
+  describe("envoyerEmailAlerte (exécuté par l'outbox)", () => {
+    it("envoie le titre et le message à l'adresse du compte, HTML échappé", async () => {
+      jest.mocked(db.notificationDrive.findUnique).mockResolvedValue({ title: "Alerte", message: "a<b>\nc", user: { email: "sam@example.com" } } as never);
+
+      await ZupDriveMonitoringService.envoyerEmailAlerte("notif-1");
+
+      expect(EmailService.sendEmail).toHaveBeenCalledWith({
+        to: "sam@example.com",
+        subject: "Alerte",
+        text: "a<b>\nc",
+        html: "<p>a&lt;b&gt;<br>c</p>",
       });
+    });
 
-      expect(db.notificationDrive.create).toHaveBeenCalled();
+    it("échec d'envoi : l'erreur remonte pour que l'outbox rejoue", async () => {
+      jest.mocked(db.notificationDrive.findUnique).mockResolvedValue({ title: "T", message: "M", user: { email: "sam@example.com" } } as never);
+      jest.mocked(EmailService.sendEmail).mockRejectedValue(new Error("SMTP"));
+      await expect(ZupDriveMonitoringService.envoyerEmailAlerte("notif-1")).rejects.toThrow("SMTP");
+    });
+
+    it("notification disparue ou compte sans adresse : rien à envoyer, pas d'erreur (un rejeu n'y changerait rien)", async () => {
+      jest.mocked(db.notificationDrive.findUnique).mockResolvedValueOnce(null as never);
+      await expect(ZupDriveMonitoringService.envoyerEmailAlerte("notif-x")).resolves.toBeUndefined();
+      jest.mocked(db.notificationDrive.findUnique).mockResolvedValueOnce({ title: "T", message: "M", user: { email: null } } as never);
+      await expect(ZupDriveMonitoringService.envoyerEmailAlerte("notif-1")).resolves.toBeUndefined();
+      expect(EmailService.sendEmail).not.toHaveBeenCalled();
     });
   });
 });
