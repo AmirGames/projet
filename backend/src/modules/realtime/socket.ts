@@ -74,6 +74,7 @@ export function initializeSocket(httpServer: HTTPServer) {
       const compte = await compteSocket(jeton);
       if (!compte) return next(new Error('Invalid token'));
       socket.userId = compte.id;
+      socket.data.userId = compte.id;
       socket.data.jeton = jeton;
       socket.data.compteInitial = compte;
       next();

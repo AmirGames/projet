@@ -222,18 +222,19 @@ export class ZupDriveRealtimeService {
         return false;
       }
 
+      // La socket doit appartenir à l'appelant : sinon on abonnerait celle d'un autre.
       const socket = io.sockets.sockets.get(socketId);
-      if (socket) {
-        await socket.join(salonCourse(courseId));
+      if (!socket || socket.data.userId !== userId) return false;
 
-        // Si c'est le chauffeur, rejoindre aussi le salon localisation
-        if (isDriver) {
-          const chauffeur = await db.chauffeurDrive.findUnique({
-            where: { userId },
-          });
-          if (chauffeur) {
-            await socket.join(salonLocalisationChauffeur(chauffeur.id));
-          }
+      await socket.join(salonCourse(courseId));
+
+      // Si c'est le chauffeur, rejoindre aussi le salon localisation
+      if (isDriver) {
+        const chauffeur = await db.chauffeurDrive.findUnique({
+          where: { userId },
+        });
+        if (chauffeur) {
+          await socket.join(salonLocalisationChauffeur(chauffeur.id));
         }
       }
 
@@ -248,11 +249,11 @@ export class ZupDriveRealtimeService {
   /**
    * Quitter le salon de suivi d'une course.
    */
-  static async leaveCourse(socketId: string, courseId: string) {
+  static async leaveCourse(socketId: string, courseId: string, userId: string) {
     if (!io) return;
 
     const socket = io.sockets.sockets.get(socketId);
-    if (socket) {
+    if (socket && socket.data.userId === userId) {
       await socket.leave(salonCourse(courseId));
       logger.info("Socket left course", { socketId, courseId });
     }
