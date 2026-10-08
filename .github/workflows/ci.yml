@@ -234,7 +234,6 @@ jobs:
         run: |
           nohup node scripts/verification/faux-service-adresses.mjs > "$RUNNER_TEMP/adresses.log" 2>&1 &
           nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &
-          echo $! > "$RUNNER_TEMP/api.pid"
           for i in $(seq 1 30); do
             curl -fsS http://localhost:3001/health/ready > /dev/null && exit 0
             sleep 2
@@ -279,17 +278,18 @@ jobs:
         working-directory: frontend
         run: |
           redemarrer_api() {
-            # L'arrêt est gracieux (quelques secondes) : attendre que le port soit
-            # libre, sinon la nouvelle instance échoue en EADDRINUSE pendant que
-            # l'ancienne répond encore à la sonde.
-            ancien="$(cat "$RUNNER_TEMP/api.pid")"
-            kill "$ancien" 2>/dev/null || true
+            # L'arrêt est gracieux (quelques secondes). Une nouvelle instance
+            # lancée avant que le port soit libre échouerait en EADDRINUSE après
+            # avoir recréé le superowner de départ, et fausserait la suite
+            # (« le premier inscrit est la plateforme ») : on attend donc que
+            # l'ancienne ne réponde plus. Arrêt par le nom, sans fichier de pid.
+            pkill -f "node --env-file=.env.test dist/server.js" || true
             for i in $(seq 1 40); do
-              kill -0 "$ancien" 2>/dev/null || break
+              curl -fsS http://localhost:3001/health > /dev/null 2>&1 || break
               sleep 0.5
             done
-            kill -9 "$ancien" 2>/dev/null || true
-            (cd ../backend && nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 & echo $! > "$RUNNER_TEMP/api.pid")
+            pkill -9 -f "node --env-file=.env.test dist/server.js" || true
+            (cd ../backend && nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &)
             for i in $(seq 1 30); do
               curl -fsS http://localhost:3001/health/ready > /dev/null && return 0
               sleep 1
