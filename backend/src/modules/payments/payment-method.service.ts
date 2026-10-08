@@ -1,13 +1,13 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { Prisma } from "@prisma/client";
+import { Prisma, PaymentMethodType } from "@prisma/client";
 
 const { Decimal } = Prisma;
 
 export interface PaymentMethodData {
-  type: string;
+  type: PaymentMethodType;
   name: string;
-  config?: any;
+  config?: Prisma.InputJsonObject;
   isDefault?: boolean;
   commissionPercent?: number;
   fixedFee?: number;
@@ -68,7 +68,7 @@ export class PaymentMethodService {
       const method = await db.paymentMethod.create({
         data: {
           storeId,
-          type: data.type as any,
+          type: data.type,
           name: data.name,
           config: data.config || {},
           isDefault: data.isDefault || false,
@@ -101,7 +101,7 @@ export class PaymentMethodService {
         });
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.PaymentMethodUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.config !== undefined) updateData.config = data.config;
       if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;

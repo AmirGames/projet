@@ -30,7 +30,7 @@ router.post("/api-keys", authMiddleware, isSuperOwner, async (req: Request, res:
 
     SecurityEventService.record({
       action: "API_KEY_CREATED",
-      actor: (req as any).actorEmail || "inconnu",
+      actor: req.userId || "inconnu",
       target: cle.id,
       severity: "MEDIUM",
       details: `Clé « ${body.name} » générée`,
@@ -50,7 +50,7 @@ router.post("/api-keys/:keyId/revoke", authMiddleware, isSuperOwner, async (req:
 
     SecurityEventService.record({
       action: "API_KEY_REVOKED",
-      actor: (req as any).actorEmail || "inconnu",
+      actor: req.userId || "inconnu",
       target: keyId,
       severity: "HIGH",
       details: `Clé « ${cle.name} » révoquée`,

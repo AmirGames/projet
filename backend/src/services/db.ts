@@ -218,3 +218,6 @@ export const db: PrismaClientSingleton =
   annoncerLesCommandes(garderLOrigine(prismaClientSingleton()));
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+
+/** Le client reçu par `db.$transaction(async (tx) => …)` : celui de `db`, extensions comprises. */
+export type ClientTransaction = Parameters<Extract<Parameters<typeof db.$transaction>[0], (...args: never[]) => unknown>>[0];

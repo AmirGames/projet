@@ -216,7 +216,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
   // Les routes réelles sont montées ici : seule la base est simulée.
   const auth = express();
   auth.use(express.json());
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+   
   auth.use("/api/auth", require("../auth.routes").default);
   auth.use(errorHandler);
 

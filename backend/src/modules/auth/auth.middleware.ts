@@ -18,6 +18,8 @@ export interface Compte {
 }
 
 declare global {
+  // Seul moyen de compléter `Request` d'Express.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       userId?: string;

@@ -116,7 +116,7 @@ export class PayoutBatchService {
           status: "PREPARED",
           total,
           itemCount: aPayer.length,
-          itemsJson: aPayer as any,
+          itemsJson: aPayer,
           createdBy: adminId,
         },
       });

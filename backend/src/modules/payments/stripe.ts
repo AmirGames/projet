@@ -11,7 +11,7 @@ if (!stripeSecretKey) {
 // l'API entière quand Stripe n'est pas encore configuré (ENABLE_STRIPE=false).
 // Une clé factice la laisse démarrer : seuls les appels à Stripe échouent.
 export const stripe = new Stripe(stripeSecretKey || "sk_non_configuree", {
-  apiVersion: "2026-08-26.dahlia" as any,
+  apiVersion: "2026-08-26.dahlia",
 });
 
 export const STRIPE_CONFIG = {
