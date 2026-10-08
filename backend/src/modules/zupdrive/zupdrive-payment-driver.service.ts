@@ -16,6 +16,7 @@
  *         → Virement bancaire SEPA
  */
 
+import { CompteBancaireChauffeurService } from "./compte-bancaire-chauffeur.service";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
@@ -251,6 +252,9 @@ export const ZupDrivePaymentDriverService = {
       throw new ApiError(400, "Aucun revenu à verser");
     }
 
+    // Copie de l'IBAN au moment de la demande (null si le chauffeur n'en a pas encore enregistré).
+    const ibanSnapshot = await CompteBancaireChauffeurService.ibanPourVersement(chauffeurId);
+
     const { count } = await db.driverPayoutDrive.createMany({
       data: paiements.map((p) => ({
         paymentId: p.id,
@@ -260,6 +264,7 @@ export const ZupDrivePaymentDriverService = {
         status: "PENDING",
         periodStart,
         periodEnd,
+        ibanSnapshot,
       })),
       skipDuplicates: true,
     });

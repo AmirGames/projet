@@ -127,6 +127,7 @@ router.post(
       type: z.enum(["EMAIL", "SMS", "PUSH"]),
       recipient: z.string(),
       variables: z.record(z.string(), z.string()).optional(),
+      dedupeKey: z.string().min(1).max(200).optional(),
     }),
   }),
   async (req, res, next) => {
@@ -138,7 +139,8 @@ router.post(
         templateKey: req.body.templateKey,
         type: req.body.type,
       });
-      res.status(201).json(log);
+      // Clé d'idempotence déjà vue : le journal existant, sans nouvel envoi.
+      res.status(log.deduplicated ? 200 : 201).json(log);
     } catch (error) {
       next(error);
     }
@@ -157,14 +159,15 @@ router.post(
       type: z.enum(["DOCUMENT_EXPIRY", "INFRACTION_REPORTED", "SUSPENSION", "PAYMENT_ISSUE"]),
       driverId: z.string(),
       variables: z.record(z.string(), z.string()),
+      dedupeKey: z.string().min(1).max(200).optional(),
     }),
   }),
   async (req, res, next) => {
     try {
       const { driverId, ...reste } = req.body;
-      await ZupDriveNotificationsService.triggerEventNotification({ ...reste, chauffeurId: driverId });
+      const { logs, ignores } = await ZupDriveNotificationsService.triggerEventNotification({ ...reste, chauffeurId: driverId });
       await journaliser(req, "ZUPDRIVE_TRIGGER_NOTIFICATION_EVENT", driverId, { type: reste.type });
-      res.json({ success: true, message: "Notification déclenché" });
+      res.json({ success: true, message: "Notification déclenché", notifications: logs.map((l) => ({ id: l.id, type: l.type, status: l.status })), ignores });
     } catch (error) {
       next(error);
     }

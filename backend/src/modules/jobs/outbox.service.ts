@@ -21,7 +21,11 @@ import { logger } from "../../config/logger";
 
 export type Gestionnaire = (payload: any) => Promise<unknown>;
 
+/** Appelé une fois, quand un message est abandonné après ses dernières tentatives. */
+export type SurAbandon = (payload: Parameters<Gestionnaire>[0], erreur: string) => Promise<unknown>;
+
 const gestionnaires = new Map<string, Gestionnaire>();
+const surAbandons = new Map<string, SurAbandon>();
 
 const BAIL_TRAITEMENT_MS = 2 * 60_000;
 const DELAI_BASE_MS = 30_000;
@@ -40,8 +44,9 @@ function resume(err: unknown) {
 }
 
 export const Outbox = {
-  declarer(type: string, gestionnaire: Gestionnaire) {
+  declarer(type: string, gestionnaire: Gestionnaire, surAbandon?: SurAbandon) {
     gestionnaires.set(type, gestionnaire);
+    if (surAbandon) surAbandons.set(type, surAbandon);
   },
 
   /**
@@ -122,6 +127,10 @@ export const Outbox = {
         });
         if (definitif) {
           logger.error("Message d'outbox abandonné", { id: message.id, type: message.type, tentatives, error: resume(err) });
+          // L'état métier doit refléter l'abandon (ex. journal d'une notification : FAILED).
+          await surAbandons.get(message.type)?.(message.payload, resume(err)).catch((e) =>
+            logger.warn("Réaction à l'abandon d'un message d'outbox en échec", { id: message.id, error: resume(e) })
+          );
         } else {
           logger.warn("Message d'outbox à rejouer", { id: message.id, type: message.type, tentatives });
         }

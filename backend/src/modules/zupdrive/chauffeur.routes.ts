@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ApiError } from "../../middleware/errorHandler";
+import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
 import { uploadMiddleware } from "../files/file-upload.middleware";
 import { presenter } from "../files/fichiers-prives.service";
@@ -12,6 +13,7 @@ import {
 } from "./chauffeur-onboarding.service";
 import { CourseDriveService } from "./course-drive.service";
 import { SocieteDriveService } from "./societe-drive.service";
+import { CompteBancaireChauffeurService } from "./compte-bancaire-chauffeur.service";
 import { ZupDriveDriverManagementService } from "./zupdrive-driver-management.service";
 import { ChatCourseDriveService } from "./chat-course-drive.service";
 import { lectureSchema, messageSchema } from "./chat-course-drive.routes";
@@ -96,6 +98,42 @@ router.patch("/me", async (req: Request, res: Response, next: NextFunction) => {
     const profil = profilSchema.parse(req.body ?? {});
     const dossier = await ChauffeurOnboardingService.modifier(req.userId as string, profil);
     res.json({ success: true, data: presenterDossier(dossier!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const compteBancaireSchema = z
+  .object({
+    iban: z.string().trim().min(15).max(40),
+    bic: z.string().trim().max(11).nullable().optional(),
+    accountHolder: z.string().trim().min(2).max(70),
+  })
+  .strict();
+
+/** Le chauffeur du compte connecté : un compte sans dossier n'a pas de versements. */
+async function chauffeurConnecte(userId: string) {
+  const chauffeur = await db.chauffeurDrive.findUnique({ where: { userId }, select: { id: true } });
+  if (!chauffeur) throw new ApiError(404, "Dossier chauffeur introuvable", "CHAUFFEUR_NOT_FOUND");
+  return chauffeur;
+}
+
+// GET /api/zupdrive/chauffeur/me/bank-account — le compte des versements (4 derniers caractères seulement)
+router.get("/me/bank-account", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const chauffeur = await chauffeurConnecte(req.userId as string);
+    res.json({ success: true, data: await CompteBancaireChauffeurService.lire(chauffeur.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/zupdrive/chauffeur/me/bank-account — enregistrer le compte où recevoir ses versements du lundi
+router.put("/me/bank-account", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const chauffeur = await chauffeurConnecte(req.userId as string);
+    const saisie = compteBancaireSchema.parse(req.body ?? {});
+    res.json({ success: true, data: await CompteBancaireChauffeurService.enregistrer(chauffeur.id, saisie) });
   } catch (err) {
     next(err);
   }

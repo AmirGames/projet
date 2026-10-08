@@ -81,10 +81,21 @@ Chauffeur (jeton ; le chauffeur est celui du jeton, un `?driverId=` ou un `drive
 |---|---|---|---|
 | POST | `/admin/templates` | `{ key, name, type: EMAIL\|SMS\|PUSH, subject?, body, variables[], active }` → 201 | `ZUPDRIVE_UPSERT_NOTIFICATION_TEMPLATE` |
 | GET | `/admin/templates`, `/admin/templates/:key` | query `activeOnly` | — |
-| POST | `/admin/send` | `{ recipientId, recipientType, templateKey, type, recipient, variables? }` → 201 | `ZUPDRIVE_SEND_NOTIFICATION` (sans l'adresse du destinataire) |
-| POST | `/admin/trigger-event` | `{ type, driverId, variables }` | `ZUPDRIVE_TRIGGER_NOTIFICATION_EVENT` |
+| POST | `/admin/send` | `{ recipientId, recipientType, templateKey, type, recipient, variables?, dedupeKey? }` → 201 (200 si `dedupeKey` déjà vue : journal existant, `deduplicated: true`, aucun nouvel envoi) | `ZUPDRIVE_SEND_NOTIFICATION` (sans l'adresse du destinataire) |
+| POST | `/admin/trigger-event` | `{ type, driverId, variables, dedupeKey? }` → `{ success, message, notifications: [{ id, type, status }], ignores: [{ type, motif }] }` | `ZUPDRIVE_TRIGGER_NOTIFICATION_EVENT` |
 | POST | `/admin/alerts` | `{ driverId, type, severity, title, message, triggerAction? }` → 201 | `ZUPDRIVE_CREATE_ALERT` |
 | GET | `/admin/history`, `/admin/stats` | filtres, pagination | — |
+
+### Envoi réel, statuts et idempotence
+
+Le journal `NotificationLog` dit la réalité, et un échec d'envoi ne lève jamais d'erreur (la notification ne défait pas l'opération qui la déclenche) :
+
+- **E-mail** : journal `PENDING` et message d'outbox (`zupdrive.notification_email`) écrits dans la même transaction. Le worker envoie (SMTP), puis le journal passe `SENT` ; en cas d'échec il est rejoué avec un délai croissant (le motif est noté dans `errorMessage`), et devient `FAILED` si l'outbox abandonne. Livraison « au moins une fois ».
+- **SMS** (Twilio) et **push** (Expo) : envoi immédiat par le notifier ; `SENT` ou `FAILED` avec motif (canal non configuré, refus du fournisseur, jeton invalide). Au plus un envoi par clé.
+- Un accusé du webhook (`BOUNCED`…) n'est jamais écrasé : le passage à `SENT`/`FAILED` n'agit que sur un journal encore `PENDING`.
+- **Idempotence** : `NotificationLog.dedupeKey` est unique. `trigger-event` la dérive de `(type, chauffeur, variables)` — le même document avec la même date d'expiration ne prévient qu'une fois, un document renouvelé prévient à nouveau — ou prend `dedupeKey` s'il est fourni (à fournir quand deux événements distincts ont des variables identiques). Un journal `FAILED` n'est pas rejoué par un nouveau déclenchement de la même clé.
+- `trigger-event` : e-mail (gabarit `KEY`, obligatoire), SMS (gabarit `KEY_SMS`) et push (gabarit `KEY_PUSH`) seulement s'ils sont utilisables ; les canaux écartés (pas d'adresse, pas de numéro, canal SMS non configuré, aucun appareil, gabarit absent) sont rendus dans `ignores`.
+- Gabarits : toutes les occurrences de `{{variable}}` sont remplacées, en un seul passage (une valeur n'est jamais réinterprétée) ; variable inconnue laissée telle quelle.
 
 ### Webhook d'accusés — `POST /api/zupdrive/notifications/webhooks/status`
 
@@ -268,5 +279,14 @@ Quatre routeurs n'ont jamais été montés ; ils ont été supprimés (code, tes
 |---|---|---|
 | GET | `/api/zupdrive/chauffeur/me/stats` | Jeton. Courses, taux de réalisation, gains versés, infractions graves ; le dossier est celui du jeton, un `driverId` éventuel est ignoré. 404 sans dossier chauffeur. |
 | GET | `/api/zupdrive/chauffeur/me/infractions` | Jeton. L'historique de ses infractions et leur résolution. |
+
+### Compte bancaire des versements
+
+| Méthode | Route | Notes |
+|---|---|---|
+| GET | `/api/zupdrive/chauffeur/me/bank-account` | Jeton. `{ ibanFin, titulaire, valide }` ou `null` : jamais l'IBAN entier. 404 sans dossier chauffeur. |
+| PUT | `/api/zupdrive/chauffeur/me/bank-account` | Jeton. `{ iban, bic?, accountHolder }` (champ inconnu refusé) ; 400 `INVALID_IBAN` si le format ou la clé modulo 97 est faux. |
+
+Même mécanisme que le livreur ZupEat (`PUT /drivers/me/bank-account`) : IBAN normalisé, chiffré au repos (`CompteBancaireChauffeurDrive`, table à part pour qu'il ne sorte jamais avec la fiche), supprimé à l'effacement du compte. `DriverPayoutDrive.ibanSnapshot` (chiffré) reçoit la copie à la création du versement (webhook Stripe, fin de course, « demander mes versements ») ; sans IBAN le versement est créé quand même, et la copie est posée à l'enregistrement du compte pour les versements en attente hors lot. L'IBAN n'est jamais journalisé.
 
 L'app chauffeur (`mobile/apps/zupdrive-driver`) les utilise à la place des routes `/admin/drivers/:id/*` (réservées à l'équipe) ; `GET /finance/admin/settings/commission` (superowner) rend la commission en vigueur.
