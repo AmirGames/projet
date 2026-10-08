@@ -279,7 +279,16 @@ jobs:
         working-directory: frontend
         run: |
           redemarrer_api() {
-            kill "$(cat "$RUNNER_TEMP/api.pid")" 2>/dev/null || true
+            # L'arrêt est gracieux (quelques secondes) : attendre que le port soit
+            # libre, sinon la nouvelle instance échoue en EADDRINUSE pendant que
+            # l'ancienne répond encore à la sonde.
+            ancien="$(cat "$RUNNER_TEMP/api.pid")"
+            kill "$ancien" 2>/dev/null || true
+            for i in $(seq 1 40); do
+              kill -0 "$ancien" 2>/dev/null || break
+              sleep 0.5
+            done
+            kill -9 "$ancien" 2>/dev/null || true
             (cd ../backend && nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 & echo $! > "$RUNNER_TEMP/api.pid")
             for i in $(seq 1 30); do
               curl -fsS http://localhost:3001/health/ready > /dev/null && return 0
