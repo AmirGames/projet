@@ -1,8 +1,10 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useState, useCallback } from 'react';
 import { connexionTempsReel, suivreSalon, useConnexionTempsReel } from '@/lib/temps-reel';
-import { useStockageLocal } from '@/lib/navigateur';
+import { useJetonAcces } from '@/lib/navigateur';
 import type { Retard } from '@/components/RetardLivraison';
 import { useTranslations } from 'next-intl';
 
@@ -45,7 +47,7 @@ export function useOrderTracking(orderId: string) {
   const [eta, setEta] = useState<number | null>(null);
   const [gpsPerdu, setGpsPerdu] = useState<boolean | null>(null);
   // Suivie tant qu'une commande est ouverte par un compte connecté.
-  const jetonPresent = Boolean(useStockageLocal('accessToken'));
+  const jetonPresent = Boolean(useJetonAcces());
   const isConnected = useConnexionTempsReel(Boolean(orderId) && jetonPresent);
   const [notification, setNotification] = useState<StatusNotification | null>(null);
   const [livreurProche, setLivreurProche] = useState(false);
@@ -54,7 +56,7 @@ export function useOrderTracking(orderId: string) {
   useEffect(() => {
     if (!orderId) return;
 
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     // La connexion de l'onglet : le salon de la commande est rejoint à

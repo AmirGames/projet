@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
@@ -28,7 +30,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
   const onSelectRef = useDerniereValeur(onSelect);
 
   const fetchPaymentMethods = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {
@@ -57,7 +59,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
   }, [fetchPaymentMethods]);
 
   const handleDelete = async (methodId: string) => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {

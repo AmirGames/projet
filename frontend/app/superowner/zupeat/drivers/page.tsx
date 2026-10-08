@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Les livreurs de la plateforme, et la validation de leur dossier.
  *
@@ -106,7 +108,7 @@ export default function LivreursPage() {
   // Demain : une date du jour serait déjà passée pour le serveur (minuit UTC).
   const [dateMin, setDateMin] = useState('');
 
-  const jeton = () => localStorage.getItem('accessToken');
+  const jeton = () => jetonAcces();
 
   // silencieux : une relecture en direct garde la page affichée.
   const charger = useCallback(async (silencieux = false) => {

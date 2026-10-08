@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
@@ -86,7 +88,7 @@ export default function RootLayoutContent({
   useEffect(() => {
     const initializeTheme = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = jetonAcces();
         const isSuperOwner = localStorage.getItem('isSuperOwner') === 'true';
 
         if (token && isSuperOwner) {

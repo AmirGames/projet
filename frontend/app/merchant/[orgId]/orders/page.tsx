@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -95,7 +97,7 @@ export default function OrdersPage() {
   const itemsPerPage = 20;
 
   const jeton = useCallback(() => {
-    const valeur = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    const valeur = jetonAcces();
     if (!valeur) router.push('/login');
     return valeur;
   }, [router]);
@@ -158,7 +160,7 @@ export default function OrdersPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
 
       const response = await fetch(`${API_URL}/api/order-management/${storeId}/stats/overview`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -184,7 +186,7 @@ export default function OrdersPage() {
 
   const fetchDeliverySettings = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) return;
 
       const response = await fetch(`${API_URL}/api/store-settings/${storeId}`, {
@@ -232,7 +234,7 @@ export default function OrdersPage() {
       setShowDeliveryModal(orderId);
       setDispatchMessage(null);
       setDriversDiagnostic(null);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) return;
 
       // Récupérer la liste des livreurs disponibles (rayon réglé par la plateforme)
@@ -262,7 +264,7 @@ export default function OrdersPage() {
   const handleSelectDriver = async (driverId: string | null, orderId: string) => {
     try {
       setDispatchMessage(null);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) return;
 
       // Proposer la course au livreur sélectionné (ou au plus proche si aucun

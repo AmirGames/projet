@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Modal pour annuler une course acceptée.
  * Utilisé par le livreur pour annuler une course avec raison.
@@ -47,7 +49,7 @@ export function AnnulerCourse({ deliveryId, onSuccess, onCancel }: Props) {
       setLoading(true);
       setError('');
 
-      const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) {
         setError(t('nonAuthentifie'));
         return;

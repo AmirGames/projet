@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -45,7 +47,7 @@ export default function FavoritesPage() {
   const [error, setError] = useState('');
 
   const loadFavorites = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/login');
       return;
@@ -74,7 +76,7 @@ export default function FavoritesPage() {
   }, [loadFavorites]);
 
   const removeFavorite = async (storeId: string) => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {

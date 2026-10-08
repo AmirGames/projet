@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Database, Clock, Download, RotateCcw, Trash2 } from 'lucide-react';
@@ -39,7 +41,7 @@ export default function DataManagementPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/data-management`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -65,7 +67,7 @@ export default function DataManagementPage() {
   const createBackup = async () => {
     setCreating(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/backups`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -89,7 +91,7 @@ export default function DataManagementPage() {
     if (!confirm(confirmation)) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/backups/${id}${action === 'restore' ? '/restore' : ''}`, {
         method: action === 'restore' ? 'POST' : 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -109,7 +111,7 @@ export default function DataManagementPage() {
 
   const telecharger = async (id: string, nom: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/backups/${id}/download`, {
         headers: { Authorization: `Bearer ${token}` },
       });

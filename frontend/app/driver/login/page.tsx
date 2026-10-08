@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, AlertCircle, Bike } from 'lucide-react';
 import { confierSessionCentrale, demanderSessionCentrale } from '@/lib/sso';
-import { ENTETE_TRANSPORT } from '@/lib/jeton-session';
+import { ENTETE_TRANSPORT, jetonAcces, poserJeton } from '@/lib/jeton-session';
 
 import { useTranslations } from 'next-intl';
 
@@ -19,7 +19,7 @@ export default function DriverLoginPage() {
 
   useEffect(() => {
     // Si le livreur est déjà loggé, le rediriger vers son dashboard
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (token) {
       router.push('/driver');
       return;
@@ -47,8 +47,7 @@ export default function DriverLoginPage() {
       }
 
       const data = await response.json();
-      localStorage.setItem('driverToken', data.accessToken);
-      localStorage.setItem('accessToken', data.accessToken);
+      poserJeton(data.accessToken);
       localStorage.setItem('driverUser', JSON.stringify(data.user));
 
       // En passant par zupone.com, qui garde la session pour les autres domaines.

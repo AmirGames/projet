@@ -1,5 +1,7 @@
 "use client";
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 
@@ -53,7 +55,7 @@ export default function ProductSeoPage() {
     const charger = async () => {
       try {
         const res = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -76,7 +78,7 @@ export default function ProductSeoPage() {
     try {
       const res = await fetch(`${API_URL}/api/product-seo/${storeId}/${productId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 
@@ -105,7 +107,7 @@ export default function ProductSeoPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify(formData),
       });

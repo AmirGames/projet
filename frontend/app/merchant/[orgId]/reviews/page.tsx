@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -52,7 +54,7 @@ export default function ReviewsPage() {
 
   const itemsPerPage = 20;
 
-  const jeton = () => localStorage.getItem('accessToken') || localStorage.getItem('token');
+  const jeton = () => jetonAcces();
 
   const compter = useCallback(async (token: string, f: 'signales' | 'retires') => {
     const res = await fetch(`${API_URL}/api/reviews/${storeId}?take=1&filtre=${f}`, {

@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -45,7 +46,7 @@ export function useStatutCompte(orgId?: string | null) {
       return;
     }
 
-    const jeton = localStorage.getItem('accessToken');
+    const jeton = jetonAcces();
     if (!jeton) {
       setChargement(false);
       return;

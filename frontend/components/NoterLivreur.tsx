@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Noter son livreur, une fois la commande reçue.
  *
@@ -68,7 +70,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({
           note: choisie,

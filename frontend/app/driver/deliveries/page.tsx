@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -95,7 +97,7 @@ export default function HistoriqueCoursesPage() {
 
   // silencieux : une relecture en direct ne remplace pas la liste par la roue.
   const charger = useCallback(async (silencieux = false) => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
       return;

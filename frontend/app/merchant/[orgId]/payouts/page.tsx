@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Les reversements du commerçant.
  *
@@ -40,7 +42,7 @@ export default function ReversementsPage() {
   const [ouvert, setOuvert] = useState<Releve | null>(null);
   const [erreur, setErreur] = useState('');
 
-  const entetes = () => ({ Authorization: `Bearer ${localStorage.getItem('accessToken')}` });
+  const entetes = () => ({ Authorization: `Bearer ${jetonAcces()}` });
 
   const ouvrir = async (id: string) => {
     const rep = await fetch(`${API_URL}/api/merchant-payouts/${id}`, { headers: entetes() });

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { oublierJeton } from '@/lib/jeton-session';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, Menu, X, Home, DollarSign, FileText, BarChart3, MessageCircle } from 'lucide-react';
@@ -7,7 +9,7 @@ import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { AlertesCourseLivreur } from '@/components/AlertesCourseLivreur';
-import { useStockageLocal } from '@/lib/navigateur';
+import { useJetonAcces } from '@/lib/navigateur';
 import { fermerSessionPartout } from '@/lib/sso';
 import { useTranslations } from 'next-intl';
 import '@/app/theme-sombre.css';
@@ -26,7 +28,7 @@ export default function DriverLayout({
   // Relu à chaque rendu, donc à chaque changement de page : le layout reste
   // monté d'une page à l'autre, et une déconnexion doit faire disparaître la
   // barre livreur. `undefined` tant que le navigateur n'a pas été lu.
-  const token = useStockageLocal('driverToken');
+  const token = useJetonAcces();
   const { sombre, basculer, classe } = useThemeSombre('driver-theme');
   const isAuthenticated = !!token;
   const isLoading = token === undefined;
@@ -52,9 +54,8 @@ export default function DriverLayout({
     // Ferme la session sur tous les domaines, puis l'efface d'ici — jeton de
     // compte compris : laissé en place, il gardait l'espace ouvert ailleurs.
     fermerSessionPartout();
-    localStorage.removeItem('driverToken');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    oublierJeton();
+    oublierJeton();
     router.push('/driver/login');
   };
 

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces, poserJeton } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
@@ -79,7 +81,7 @@ export default function DriverOnboardPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) {
         throw new Error('Pas de token');
       }
@@ -106,7 +108,7 @@ export default function DriverOnboardPage() {
       setSuccessMessage(t('successMessage'));
 
       // Stocker les infos du livreur
-      localStorage.setItem('driverToken', data.accessToken);
+      poserJeton(data.accessToken);
 
       setTimeout(() => {
         router.push('/driver');

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowDownRight, ArrowUpRight, BarChart3, Star } from 'lucide-react';
@@ -93,7 +95,7 @@ export default function AnalyticsLivreurPage() {
   const [erreur, setErreur] = useState('');
 
   const charger = useCallback(async () => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
       return;

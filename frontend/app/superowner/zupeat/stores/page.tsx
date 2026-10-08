@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -58,7 +60,7 @@ export default function BoutiquesAdminPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const parametres = new URLSearchParams({
         limit: String(limit),
         offset: String(offset),

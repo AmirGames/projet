@@ -90,6 +90,13 @@ await db.chauffeurDrive.updateMany({ where: { region: 'WALLONIE', id: { not: cha
 await db.courseDrive.updateMany({ where: { statut: 'RECHERCHE' }, data: { statut: 'ANNULEE' } });
 
 const passager = await inscrire('passager');
+// Le navigateur ne garde plus de jeton lisible : on en demande un à l'API.
+const jetonDe = async (email) =>
+  (await fetch(`${API}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: MDP }),
+  }).then((x) => x.json())).accessToken;
 
 const nav = await chromium.launch();
 const erreurs = [];
@@ -194,7 +201,7 @@ const devisApi = await fetch(`${API}/api/zupdrive/courses/devis`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${await pagePassager.evaluate(() => localStorage.getItem('accessToken'))}`,
+    Authorization: `Bearer ${await jetonDe(passager.email)}`,
   },
   body: JSON.stringify({
     depart: { adresse: DEPART.label, latitude: DEPART.latitude, longitude: DEPART.longitude, codePostal: DEPART.postalCode },

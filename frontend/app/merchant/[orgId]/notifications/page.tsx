@@ -1,5 +1,7 @@
 "use client";
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
@@ -54,7 +56,7 @@ export default function NotificationsPage() {
 
       const res = await fetch(`${API_URL}/api/notifications/${storeId}?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 
@@ -74,7 +76,7 @@ export default function NotificationsPage() {
     try {
       const res = await fetch(`${API_URL}/api/notifications/${storeId}/unread/count`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 
@@ -100,7 +102,7 @@ export default function NotificationsPage() {
         {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${jetonAcces()}`,
           },
         }
       );
@@ -118,7 +120,7 @@ export default function NotificationsPage() {
       const res = await fetch(`${API_URL}/api/notifications/${storeId}/read-all`, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 
@@ -137,7 +139,7 @@ export default function NotificationsPage() {
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${jetonAcces()}`,
           },
         }
       );

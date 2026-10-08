@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -126,7 +128,7 @@ export default function StoreSettings() {
   const [commissions, setCommissions] = useState<{ propre: number; plateforme: number } | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    const token = jetonAcces();
     if (!orgId || !token) return;
 
     fetch(`${API_URL}/api/plans/${orgId}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -155,7 +157,7 @@ export default function StoreSettings() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;
@@ -249,7 +251,7 @@ export default function StoreSettings() {
 
   const envoyerImage = async (quelle: keyof typeof IMAGES, fichier: File) => {
     const image = IMAGES[quelle];
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    const token = jetonAcces();
     if (!token || !storeId) return;
 
     if (fichier.size > 2 * 1024 * 1024) {
@@ -287,7 +289,7 @@ export default function StoreSettings() {
 
   const retirerImage = async (quelle: keyof typeof IMAGES) => {
     const image = IMAGES[quelle];
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    const token = jetonAcces();
     if (!token || !storeId) return;
 
     try {
@@ -332,7 +334,7 @@ export default function StoreSettings() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;

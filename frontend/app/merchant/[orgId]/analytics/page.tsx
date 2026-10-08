@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lucide-react';
@@ -53,7 +55,7 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/orders?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

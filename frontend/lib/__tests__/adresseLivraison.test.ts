@@ -4,6 +4,7 @@ import {
   lireAdresseLivraison,
   oublierAdresseLivraison,
 } from "../adresseLivraison";
+import { oublierJeton, poserJeton } from "../jeton-session";
 
 const adresse = (n: number) => ({
   label: `Rue ${n}, Namur`,
@@ -13,7 +14,10 @@ const adresse = (n: number) => ({
   latitude: 50.46,
   longitude: 4.86,
 });
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  oublierJeton();
+});
 
 test("garde les cinq dernières adresses distinctes après relecture et remonte une adresse réutilisée", () => {
   for (let i = 1; i <= 7; i++) enregistrerAdresseLivraison(adresse(i));
@@ -46,10 +50,7 @@ test("migre l’ancienne adresse unique sans la perdre lors du choix suivant", (
 
 test("sépare les historiques des comptes et supporte un stockage corrompu", () => {
   const connecter = (userId: string) =>
-    localStorage.setItem(
-      "accessToken",
-      `header.${btoa(JSON.stringify({ userId }))}.signature`,
-    );
+    poserJeton(`header.${btoa(JSON.stringify({ userId }))}.signature`);
   connecter("alice");
   enregistrerAdresseLivraison(adresse(1));
   enregistrerAdresseLivraison(adresse(2));

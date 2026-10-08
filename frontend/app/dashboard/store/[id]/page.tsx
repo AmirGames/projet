@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
@@ -23,7 +25,7 @@ export default function AncienneGestionBoutique() {
   useEffect(() => {
     const rediriger = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = jetonAcces();
         const reponse = await fetch(`${API_URL}/api/stores/${storeId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, CreditCard, Clock, Gift, Store } from 'lucide-react';
@@ -63,7 +65,7 @@ export default function MaFormulePage() {
   const [envoi, setEnvoi] = useState('');
 
   const charger = useCallback(async () => {
-    const jeton = localStorage.getItem('accessToken');
+    const jeton = jetonAcces();
     const org = localStorage.getItem('currentOrgId');
 
     if (!jeton || !org) {
@@ -106,7 +108,7 @@ export default function MaFormulePage() {
     setErreur('');
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/plans/${orgId}/demande`, {
         method: 'POST',
         headers: {

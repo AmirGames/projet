@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Les versements aux livreurs.
  *
@@ -83,7 +85,7 @@ export default function VersementsPage() {
     null
   );
 
-  const jeton = () => localStorage.getItem('accessToken');
+  const jeton = () => jetonAcces();
 
   // silencieux : une relecture en direct garde la page affichée.
   const charger = useCallback(async (silencieux = false) => {

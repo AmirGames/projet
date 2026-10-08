@@ -1,5 +1,7 @@
 "use client";
 
+
+import { poserJeton } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState } from "react";
 import AcceptationConditions from '@/components/AcceptationConditions';
@@ -61,7 +63,7 @@ export default function SignupPage() {
       }
 
       // Save tokens and user role
-      localStorage.setItem("accessToken", result.accessToken);
+      poserJeton(result.accessToken);
       // L'inscription ne dit pas les droits d'administration : /auth/me les
       // donne à qui est connecté (le premier compte devient superowner).
       const moi = await api.getMe().catch(() => null);

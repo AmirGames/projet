@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { TrendingUp } from 'lucide-react';
@@ -45,7 +47,7 @@ export default function AnalyticsDashboard() {
   const fetchAnalytics = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/analytics?period=${timeRange}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

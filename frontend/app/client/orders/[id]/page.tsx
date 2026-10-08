@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import DetailDuTotal from '@/components/DetailDuTotal';
 import { PourboireApresLivraison } from '@/components/PourboireApresLivraison';
 import { signalerErreur } from '@/lib/erreurs';
@@ -76,7 +78,7 @@ export default function OrderTrackingPage() {
   // Chargé à l'arrivée, et quand la commande passe « terminée » en direct.
   useEffect(() => {
     if (order?.status !== 'COMPLETED') return;
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     fetch(`${API_URL}/api/reviews/commande/${orderId}`, {
@@ -92,7 +94,7 @@ export default function OrderTrackingPage() {
   }, [order?.status, orderId]);
 
   const loadOrderData = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/login');
       return;

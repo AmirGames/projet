@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Copy, X } from 'lucide-react';
@@ -51,7 +53,7 @@ export default function DupliquerBoutique({
     setEnvoi(true);
     setErreur('');
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const corps = Object.fromEntries(Object.entries(form).filter(([, v]) => v.trim() !== ''));
       const res = await fetch(`${API_URL}/api/stores/${source.id}/duplicate`, {
         method: 'POST',

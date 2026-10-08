@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { PackageX } from 'lucide-react';
@@ -56,7 +58,7 @@ export function ReclamationLivraison({
     setEnvoi(true);
     setErreur('');
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId), '/reclamation-livraison')}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}) },

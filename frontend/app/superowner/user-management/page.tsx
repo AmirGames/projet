@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Users, Plus, Trash2 } from 'lucide-react';
@@ -51,7 +53,7 @@ export default function UserManagementPage() {
   const fetchAdmins = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const query = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
@@ -88,7 +90,7 @@ export default function UserManagementPage() {
   const [rolesParPlateforme, setRolesParPlateforme] = useState<Record<string, { code: string; label: string }[]>>({});
   const codesPlateformes = plateformes.map((p) => p.code).join(',');
   useEffectChargement(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     for (const code of codesPlateformes.split(',').filter(Boolean)) {
       fetch(`${API_URL}/api/superowner/roles?plateforme=${code}`, { headers: { Authorization: `Bearer ${token}` } })
         .then((res) => (res.ok ? res.json() : null))
@@ -111,7 +113,7 @@ export default function UserManagementPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/admins`, {
         method: 'POST',
         headers: {
@@ -137,7 +139,7 @@ export default function UserManagementPage() {
     if (!confirm(t('deleteConfirm'))) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/admins/${adminId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -157,7 +159,7 @@ export default function UserManagementPage() {
   const handleChangeRole = async (adminId: string, plateforme: Plateforme, role: string) => {
     if (!role && !confirm(t('revokePlatformConfirm', { plateforme: plateforme.label }))) return;
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = role
         ? await fetch(`${API_URL}/api/superowner/admins/${adminId}/role`, {
             method: 'PATCH',

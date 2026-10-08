@@ -21,6 +21,7 @@ import {
   type Region,
 } from '@/i18n/regions';
 import { estCheminRegional, separerRegion } from '@/i18n/chemins-regionaux';
+import { ENTETE_CSP, construireCsp, genererNonce, modeCsp } from '@/lib/csp';
 
 const UN_AN = 60 * 60 * 24 * 365;
 
@@ -140,6 +141,29 @@ export function proxy(requete: NextRequest) {
   entetes.delete(ENTETE_REGION);
   entetes.delete(ENTETE_CHEMIN);
 
+  // Politique de sécurité des contenus, avec un nonce par page (lib/csp.ts).
+  // Next.js lit le nonce dans l'en-tête de la *requête* ; le navigateur reçoit
+  // le même en-tête dans la *réponse*. Jamais sur l'API ni les rapports eux-mêmes.
+  const mode = modeCsp();
+  const avecCsp = !chemin.startsWith('/api/') && mode !== 'off';
+  const csp = avecCsp
+    ? construireCsp({
+        nonce: genererNonce(),
+        dev: process.env.NODE_ENV === 'development',
+        urlApi: process.env.NEXT_PUBLIC_API_URL,
+      })
+    : null;
+  if (csp && mode !== 'off') {
+    // Un en-tête venu du navigateur ne doit jamais tenir lieu de politique.
+    entetes.delete('content-security-policy');
+    entetes.delete('content-security-policy-report-only');
+    entetes.set(ENTETE_CSP[mode], csp);
+  }
+  const poserCsp = (reponse: NextResponse): NextResponse => {
+    if (csp && mode !== 'off') reponse.headers.set(ENTETE_CSP[mode], csp);
+    return reponse;
+  };
+
   const { region, reste } = separerRegion(chemin);
 
   if (region) {
@@ -158,7 +182,7 @@ export function proxy(requete: NextRequest) {
     entetes.set(ENTETE_CHEMIN, reste);
     const url = requete.nextUrl.clone();
     url.pathname = cible;
-    const reponse = NextResponse.rewrite(url, { request: { headers: entetes } });
+    const reponse = poserCsp(NextResponse.rewrite(url, { request: { headers: entetes } }));
 
     // Arriver par /gb-en/… vaut choix : le reste du site (tunnel, compte)
     // suit la région et la langue de l'adresse.
@@ -182,11 +206,11 @@ export function proxy(requete: NextRequest) {
   const cible = aiguillerDomaine(requete, chemin, espaceHote);
   if (typeof cible !== 'string') return cible;
 
-  if (cible === chemin) return NextResponse.next({ request: { headers: entetes } });
+  if (cible === chemin) return poserCsp(NextResponse.next({ request: { headers: entetes } }));
 
   const url = requete.nextUrl.clone();
   url.pathname = cible;
-  return NextResponse.rewrite(url, { request: { headers: entetes } });
+  return poserCsp(NextResponse.rewrite(url, { request: { headers: entetes } }));
 }
 
 export const config = {

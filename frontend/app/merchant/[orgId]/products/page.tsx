@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
@@ -237,7 +239,7 @@ export default function ProductsPage() {
 
   const fetchProductsStats = useCallback(async (productList: Product[]) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const stats: Record<string, ProductStats> = {};
 
       for (const product of productList) {
@@ -263,7 +265,7 @@ export default function ProductsPage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -279,7 +281,7 @@ export default function ProductsPage() {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -330,7 +332,7 @@ export default function ProductsPage() {
 
       setIsReordering(true);
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = jetonAcces();
 
         const ordering = newOrder.map((prod, index) => ({
           id: prod.id,
@@ -370,7 +372,7 @@ export default function ProductsPage() {
     setCategories(prev => prev.map(c => (c.id === categoryId ? { ...c, sortMode } : c)));
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/categories/${categoryId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -410,7 +412,7 @@ export default function ProductsPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
 
       if (editingProduct) {
         const response = await fetch(`${API_URL}/api/products/${editingProduct.id}`, {
@@ -496,7 +498,7 @@ export default function ProductsPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/products/${productId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -560,7 +562,7 @@ export default function ProductsPage() {
   // Une seule bascule remplace l'ajustement chiffré du stock.
   const basculerDisponibilite = async (product: Product) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/products/${product.id}/availability`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

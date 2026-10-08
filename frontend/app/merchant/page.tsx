@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -67,7 +69,7 @@ export default function MerchantDashboard() {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const org = localStorage.getItem('currentOrgId');
 
       if (!token || !org) {

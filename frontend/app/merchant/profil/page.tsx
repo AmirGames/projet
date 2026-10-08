@@ -1,6 +1,8 @@
 'use client';
 
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Le profil du commerçant.
  *
@@ -199,7 +201,7 @@ export default function ProfilCommercantPage() {
   };
 
   const charger = useCallback(async () => {
-    const jeton = localStorage.getItem('accessToken');
+    const jeton = jetonAcces();
     const org = localStorage.getItem('currentOrgId');
 
     if (!jeton || !org) {
@@ -241,7 +243,7 @@ export default function ProfilCommercantPage() {
     setEnvoi(true);
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       // Un IBAN vide n'efface pas celui qui est enregistré : il n'est pas envoyé.
       const { iban, ...reste } = form;
       const corps: Record<string, string> = { ...reste };
@@ -285,7 +287,7 @@ export default function ProfilCommercantPage() {
     setEnvoiPiece(true);
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
 
       if (piece.file) {
         const formData = new FormData();
@@ -336,7 +338,7 @@ export default function ProfilCommercantPage() {
 
   const retirer = async (documentId: string) => {
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       await fetch(`${API_URL}/api/merchant-profile/${orgId}/documents/${documentId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${jeton}` },

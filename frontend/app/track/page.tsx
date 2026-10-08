@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import DetailDuTotal from '@/components/DetailDuTotal';
 import { PourboireApresLivraison } from '@/components/PourboireApresLivraison';
 import { signalerErreur } from '@/lib/erreurs';
@@ -101,7 +103,7 @@ interface Delivery {
 function lireSuivi(orderId: string, suite = '') {
   let session: string | null = null;
   try {
-    session = localStorage.getItem('accessToken');
+    session = jetonAcces();
   } catch {}
 
   return fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId), suite)}`, {

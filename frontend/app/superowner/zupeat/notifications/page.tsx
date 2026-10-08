@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -41,7 +43,7 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,7 +68,7 @@ export default function NotificationsPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -91,7 +93,7 @@ export default function NotificationsPage() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       await fetch(`${API_URL}/api/admin/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
@@ -104,7 +106,7 @@ export default function NotificationsPage() {
 
   const handleDelete = async (notificationId: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       await fetch(`${API_URL}/api/admin/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Driver Dashboard Component
  * Real-time earnings, notifications, metrics, payouts
@@ -55,7 +57,7 @@ export function DriverDashboardClient() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = jetonAcces();
         if (!token) {
           setError(t('notAuthenticated'));
           return;

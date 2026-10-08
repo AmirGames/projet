@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { Fragment, useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Shield, AlertCircle } from 'lucide-react';
@@ -52,7 +54,7 @@ export default function AuditLogsPage() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const query = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),

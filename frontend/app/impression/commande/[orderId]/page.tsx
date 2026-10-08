@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 
@@ -56,7 +58,7 @@ function DocumentImprimable() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/invoices/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

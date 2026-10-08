@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { ChevronDown, ChevronUp, Plus, PlusCircle, Save, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -69,7 +71,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
   const charger = useCallback(async () => {
     try {
       const reponse = await fetch(`${API_URL}/api/products/${productId}/supplements`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
       if (!reponse.ok) return;
       const lus = lire((await reponse.json()).data);
@@ -129,7 +131,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({ groupes: aEnvoyer }),
       });

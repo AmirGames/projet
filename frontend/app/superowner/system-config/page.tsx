@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Settings, Key, Copy, Save, Database, Webhook, Wrench } from 'lucide-react';
@@ -81,7 +83,7 @@ export default function SystemConfigPage() {
   const fetchConfig = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/system-config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -135,7 +137,7 @@ export default function SystemConfigPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/system-config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -186,7 +188,7 @@ export default function SystemConfigPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/api-keys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

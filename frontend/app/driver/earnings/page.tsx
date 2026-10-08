@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -47,14 +49,14 @@ export default function RevenusLivreurPage() {
 
   useEffect(() => {
     // Vérifier l'authentification avant de charger les données
-    const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
     }
   }, [router]);
 
   const charger = useCallback(async () => {
-    const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
+    const token = jetonAcces();
 
     if (!token) {
       router.push('/driver/login');

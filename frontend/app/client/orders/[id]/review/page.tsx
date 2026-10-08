@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -105,7 +107,7 @@ export default function ReviewPage() {
   });
 
   const loadOrderData = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/login');
       return;
@@ -173,7 +175,7 @@ export default function ReviewPage() {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/login');
       return;

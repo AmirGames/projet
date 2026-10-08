@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MesAdressesClient } from "../MesAdressesClient";
+import { poserJeton } from "@/lib/jeton-session";
 
 jest.mock("next-intl", () => {
   const translate = (key) => key;
@@ -19,7 +20,7 @@ let mockAdresses = [];
 beforeEach(() => {
   mockAdresses = [];
   localStorage.clear();
-  localStorage.setItem("accessToken", "session");
+  poserJeton("session");
   global.fetch = jest.fn().mockImplementation(async (url, options) => {
     if (options?.method === "PUT")
       mockAdresses = JSON.parse(options.body).addresses.map((a) => ({

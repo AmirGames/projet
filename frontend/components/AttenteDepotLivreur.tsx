@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -39,7 +41,7 @@ export function AttenteDepotLivreur({
   }, [reste]);
 
   const lancer = async () => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return;
     setEnvoi(true);
     setErreur('');

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Clear authentication tokens from localStorage
- * Useful for development when JWT secrets change
+ * Clear the browser session in development when JWT secrets change.
+ * The access token lives in memory only and the refresh token in an httpOnly
+ * cookie: nothing to clear in localStorage but the old keys and the hint.
  *
  * Usage:
  *   node scripts/clear-auth.js
@@ -16,22 +17,15 @@ console.log('');
 console.log('Copy and paste this into your browser console:');
 console.log('');
 console.log(`
-localStorage.removeItem('accessToken');
-localStorage.removeItem('refreshToken');
-localStorage.removeItem('user');
-console.log('✅ Authentication tokens cleared!');
-location.reload();
+fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', credentials: 'same-origin' })
+  .finally(() => { localStorage.removeItem('sessionOuverte'); localStorage.removeItem('user'); location.reload(); });
 `);
 console.log('');
 console.log('Or add this to your browser bookmarks for quick access:');
 console.log('');
 const bookmarkletCode = `
 javascript:(function(){
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
-  alert('✅ Auth tokens cleared! Reloading...');
-  location.reload();
+  fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',credentials:'same-origin'}).finally(function(){localStorage.removeItem('sessionOuverte');localStorage.removeItem('user');location.reload();});
 })()
 `;
 console.log(bookmarkletCode);

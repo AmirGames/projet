@@ -1,6 +1,8 @@
 'use client';
 
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Les horaires d'ouverture de la boutique.
  *
@@ -79,7 +81,7 @@ export default function HorairesPage() {
     if (!storeId) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -125,7 +127,7 @@ export default function HorairesPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/day/${jour}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -156,7 +158,7 @@ export default function HorairesPage() {
     setEnvoi(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -185,7 +187,7 @@ export default function HorairesPage() {
     setErreur('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -214,7 +216,7 @@ export default function HorairesPage() {
     setEnvoi(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots/${creneauId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

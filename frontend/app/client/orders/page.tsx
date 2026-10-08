@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -96,7 +98,7 @@ export default function OrdersPage() {
   // silencieux : une relecture en direct ne vide pas la liste le temps de la
   // réponse.
   const loadOrders = useCallback(async (silencieux = false) => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/login');
       return;

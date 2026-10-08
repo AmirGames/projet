@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ShieldCheck, Save, RotateCcw, Plus, Trash2 } from 'lucide-react';
@@ -46,7 +48,7 @@ export default function RolesPage() {
   const charger = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/roles?plateforme=${plateforme}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -121,7 +123,7 @@ export default function RolesPage() {
   const enregistrer = async (code: string) => {
     setSaving(code);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/roles/${code}?plateforme=${plateforme}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -151,7 +153,7 @@ export default function RolesPage() {
     if (nouveauRole.trim().length < 2) return;
     setCreation(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/roles?plateforme=${plateforme}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -173,7 +175,7 @@ export default function RolesPage() {
   const supprimerRole = async (role: Role) => {
     if (!confirm(t('deleteConfirm', { role: role.label }))) return;
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/roles/${role.code}?plateforme=${plateforme}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

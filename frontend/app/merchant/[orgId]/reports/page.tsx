@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 
 import { useState, useCallback } from 'react';
@@ -71,7 +73,7 @@ export default function ReportsPage() {
   const fetchAllReports = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const params = new URLSearchParams({ storeId });
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
@@ -112,7 +114,7 @@ export default function ReportsPage() {
   const handleExport = async (type: string) => {
     setExporting(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const params = new URLSearchParams({ storeId });
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);

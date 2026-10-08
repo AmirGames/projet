@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Accepter ou refuser une commande : les libellés et les appels.
  *
@@ -44,7 +45,7 @@ export function delaiRestant(echeance: string | Date, maintenant = Date.now(), t
 }
 
 async function envoyer(chemin: string, corps: unknown) {
-  const jeton = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  const jeton = jetonAcces();
   const reponse = await fetch(`${API_URL}${chemin}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
@@ -73,7 +74,7 @@ export function refuserCommande(storeId: string, orderId: string, motif: MotifDe
 
 /** Faire avancer une commande acceptée : en préparation, prête, remise. */
 export async function avancerCommande(storeId: string, orderId: string, status: string) {
-  const jeton = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  const jeton = jetonAcces();
   const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },

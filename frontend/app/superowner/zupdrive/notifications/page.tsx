@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bell, Share2, AlertCircle, Loader2 } from 'lucide-react';
@@ -34,10 +36,10 @@ export default function NotificationsPage() {
     try {
       const [templatesRes, webhooksRes] = await Promise.all([
         fetch(`${API_URL}/api/zupdrive/notifications/admin/templates`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         }),
         fetch(`${API_URL}/api/zupdrive/webhooks/admin/endpoints`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         }),
       ]);
 

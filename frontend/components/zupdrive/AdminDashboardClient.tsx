@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Admin Dashboard Component
  * Platform monitoring, health, compliance, payouts, alerts
@@ -44,7 +46,7 @@ export function AdminDashboardClient() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = jetonAcces();
         if (!token) {
           setError(t('notAuthenticated'));
           return;

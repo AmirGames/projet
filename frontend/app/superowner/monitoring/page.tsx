@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -201,7 +203,7 @@ export default function SurveillancePage() {
     async (relever = false) => {
       setChargement(true);
       try {
-        const jeton = localStorage.getItem('accessToken');
+        const jeton = jetonAcces();
         const reponse = await fetch(`${API_URL}/api/superowner/monitoring${relever ? '/releve' : ''}`, {
           method: relever ? 'POST' : 'GET',
           headers: { Authorization: `Bearer ${jeton}` },

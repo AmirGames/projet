@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
@@ -52,7 +54,7 @@ export default function SupportPage() {
   const fetchTickets = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/support/tickets?orgId=${orgId}&archived=${showArchived}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -80,7 +82,7 @@ export default function SupportPage() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/support/tickets`, {
         method: 'POST',
         headers: {

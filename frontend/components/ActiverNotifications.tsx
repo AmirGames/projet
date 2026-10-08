@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Bell, BellOff, BellRing } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -78,7 +80,7 @@ export function ActiverNotifications() {
   }, []);
 
   const activer = async () => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return;
 
     setEtat('chargement');
@@ -132,7 +134,7 @@ export function ActiverNotifications() {
   };
 
   const desactiver = async () => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     const enregistrement = await serviceWorkerNotifications();
     const abonnement = await enregistrement?.pushManager?.getSubscription().catch(() => null);
     await abonnement?.unsubscribe().catch(() => {});

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import CompteVersementLivreur from '@/components/CompteVersementLivreur';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
@@ -51,7 +53,7 @@ export default function DriverProfilePage() {
   });
 
   const loadDriverData = useCallback(async () => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
       return;
@@ -96,7 +98,7 @@ export default function DriverProfilePage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { BarChart3, AlertCircle, Loader2, Download } from 'lucide-react';
@@ -16,7 +18,7 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/zupdrive/reporting/admin/scheduled`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
       if (!response.ok) throw new Error(t('error'));
       const data = await response.json();

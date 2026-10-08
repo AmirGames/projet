@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
@@ -70,7 +72,7 @@ export default function SupportTicketsPage() {
   const fetchTickets = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const query = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
@@ -112,7 +114,7 @@ export default function SupportTicketsPage() {
 
   const handleUpdateStatus = async (ticketId: string, newStatus: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/support-tickets/${ticketId}/status`, {
         method: 'PATCH',
         headers: {
@@ -131,7 +133,7 @@ export default function SupportTicketsPage() {
 
   const handleUpdatePriority = async (ticketId: string, priorite: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/support-tickets/${ticketId}/priority`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

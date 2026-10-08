@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Les webhooks : prévenir un système extérieur de ce qui se passe ici.
  *
@@ -64,7 +66,7 @@ const COULEUR_ETAT: Record<string, string> = {
   FAILED: 'bg-red-100 text-red-600',
 };
 
-const jeton = () => localStorage.getItem('accessToken');
+const jeton = () => jetonAcces();
 
 export default function WebhooksPage() {
   const locale = useLocale();

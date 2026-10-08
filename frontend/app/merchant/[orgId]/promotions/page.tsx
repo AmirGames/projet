@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
@@ -58,7 +60,7 @@ export default function PromotionsPage() {
 
   const fetchPromotions = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/promotions?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -102,7 +104,7 @@ export default function PromotionsPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
 
       const payload = {
         storeId,
@@ -171,7 +173,7 @@ export default function PromotionsPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/promotions/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -192,7 +194,7 @@ export default function PromotionsPage() {
 
   const handleToggleStatus = async (id: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/promotions/${id}/toggle`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },

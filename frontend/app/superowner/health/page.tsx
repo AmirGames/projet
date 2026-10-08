@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState, type ReactElement } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
@@ -63,7 +65,7 @@ export default function SanteSystemePage() {
   const charger = useCallback(async () => {
     setChargement(true);
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/superowner/system-health`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });

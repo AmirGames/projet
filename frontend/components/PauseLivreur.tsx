@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useState } from 'react';
 import { Coffee, Play } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -49,7 +51,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
   }, [fin, maintenant, isOnline, enCourse, surChangement]);
 
   const appeler = async (methode: 'POST' | 'DELETE', corps?: object) => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return;
 
     setEnCours(true);

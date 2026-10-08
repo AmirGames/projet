@@ -1,5 +1,7 @@
 'use client';
 
+
+import { oublierJeton } from '@/lib/jeton-session';
 import { useState } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { fermerSessionPartout } from '@/lib/sso';
@@ -75,8 +77,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
   const handleLogout = () => {
     // Ferme la session sur tous les domaines, puis l'efface d'ici.
     fermerSessionPartout();
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    oublierJeton();
     localStorage.removeItem('currentOrgId');
     router.push('/login');
   };

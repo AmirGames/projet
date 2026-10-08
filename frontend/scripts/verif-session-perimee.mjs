@@ -92,8 +92,10 @@ await page.click('button[type="submit"]');
 await entrerEspaceCommercant(page);
 await page.waitForTimeout(1500);
 
-const jeton = await page.evaluate(() => localStorage.getItem('accessToken'));
-check('sa session est ouverte', !!jeton, 'aucun jeton');
+// Le jeton d'accès n'est qu'en mémoire (lib/jeton-session.ts) : la session
+// ouverte se voit au cookie httpOnly de renouvellement, pas au stockage.
+const cookieOuvert = (await page.context().cookies()).find((c) => c.name === 'zup_refresh');
+check('sa session est ouverte', !!cookieOuvert, 'pas de cookie zup_refresh');
 
 titre('Sa session cesse d’être valable');
 /**
@@ -136,11 +138,11 @@ check(
 
 titre('Et la session effacée ne traîne pas');
 const restes = await page.evaluate(() => ({
-  acces: localStorage.getItem('accessToken'),
-  rafraichissement: localStorage.getItem('refreshToken'),
+  jetons: ['accessToken', 'driverToken', 'refreshToken', 'token'].filter((c) => localStorage.getItem(c) !== null),
+  indice: localStorage.getItem('sessionOuverte'),
 }));
-check('le jeton d’accès est effacé', !restes.acces, `${restes.acces}`);
-check('celui de renouvellement aussi', !restes.rafraichissement, `${restes.rafraichissement}`);
+check('aucun jeton ne traîne dans le stockage', restes.jetons.length === 0, restes.jetons.join(','));
+check('l’indice de session est effacé', !restes.indice, `${restes.indice}`);
 
 titre('Il peut se reconnecter');
 await page.fill('input[type="email"]', email);

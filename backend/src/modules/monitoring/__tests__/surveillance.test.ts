@@ -71,6 +71,14 @@ describe("Surveillance", () => {
     expect(Surveillance.fenetre(5).erreursNavigateur).toBe(3);
   });
 
+  it("liste les violations CSP sans les compter comme des erreurs navigateur", () => {
+    Surveillance.erreurNavigateur({ message: "CSP script-src : https://evil.example", page: "/", csp: true });
+
+    expect(Surveillance.erreursNavigateur()).toHaveLength(1);
+    expect(Surveillance.erreursNavigateur()[0].csp).toBe(true);
+    expect(Surveillance.fenetre(5).erreursNavigateur).toBe(0);
+  });
+
   it("suit les passages des tâches, et signale les échecs répétés", async () => {
     Surveillance.declarerTache("t", "Tâche", 1000);
 

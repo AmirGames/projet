@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
@@ -126,7 +128,7 @@ export default function DeliveryTrackingPage() {
 
   useEffect(() => {
     // Vérifier l'authentification avant de charger les données
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
     }
@@ -140,7 +142,7 @@ export default function DeliveryTrackingPage() {
 
   const envoyerPosition = useCallback(
     (latitude: number, longitude: number) => {
-      const token = localStorage.getItem('driverToken');
+      const token = jetonAcces();
       if (!token || !deliveryId) return;
 
       fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/location`, {
@@ -182,7 +184,7 @@ export default function DeliveryTrackingPage() {
 
   // silencieux : une relecture en direct qui échoue garde la course affichée.
   const loadDeliveryData = useCallback(async (silencieux = false) => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
       return;
@@ -257,7 +259,7 @@ export default function DeliveryTrackingPage() {
           : 0;
 
   const envoyerStatut = async (status: 'PICKED_UP' | 'DELIVERED', preuve?: Record<string, unknown>) => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return null;
 
     return fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}`, {
@@ -368,7 +370,7 @@ export default function DeliveryTrackingPage() {
       ? { latitude: ici.latitude, longitude: ici.longitude, precision: ici.precision, releveeLe: new Date(ici.le).toISOString() }
       : null;
 
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return;
 
     setEnvoiPhoto(true);

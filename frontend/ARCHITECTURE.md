@@ -140,7 +140,7 @@ export default function MaPage() {
   const charger = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/ma-ressource`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -179,14 +179,24 @@ Trois particularités à connaître :
   par la règle `react-hooks/set-state-in-effect` ; ce hook nomme ce cas au lieu
   de le faire taire, et ses dépendances sont vérifiées comme celles d'un effet
   (voir `eslint.config.mjs`).
+- **La CSP** (`lib/csp.ts`, posée par `proxy.ts`) porte un nonce par requête ;
+  Next.js le met sur ses scripts tout seul. Un script en ligne ou une balise
+  `<Script>` faite à la main doit lire le nonce (`(await headers()).get('x-nonce')`),
+  sans quoi le navigateur le refuse. Toute nouvelle origine externe (script,
+  image, API, iframe) s'ajoute dans `construireCsp` avec son test. Mode par
+  `CSP_MODE` : `report-only` (défaut, observation), `enforce`, `off`. Vérifier
+  avec `node scripts/verif-csp.mjs`.
 - **`signalerErreur`** (`lib/erreurs.ts`) remplace `console.error` : elle ne
   journalise pas quand le navigateur quitte la page (les requêtes coupées par
   le départ du visiteur ne sont pas des pannes).
-- **Le jeton d'accès** se lit par `localStorage.getItem('accessToken')`.
-  Rassurez-vous : `lib/jeton-session.ts` redirige cette clé **vers la mémoire**
-  de l'onglet — rien n'est écrit sur le disque, et le jeton est renouvelé en
-  silence avant son expiration (15 minutes) grâce à un cookie `httpOnly`. Ne
-  stockez jamais un jeton ailleurs.
+- **Le jeton d'accès** passe uniquement par `lib/jeton-session.ts` :
+  `jetonAcces()` pour le lire, `poserJeton()` après une connexion,
+  `oublierJeton()` pour la fermer, `useJetonAcces()` (`lib/navigateur.ts`) pour
+  un rendu qui en dépend. Il ne vit qu'**en mémoire** de l'onglet : rien n'est
+  écrit dans `localStorage`, un rechargement le redemande au cookie `httpOnly`
+  (`POST /api/auth/refresh`) et il est renouvelé en silence avant son
+  expiration (15 minutes). N'écrivez ni ne lisez jamais `accessToken`,
+  `driverToken` ou `refreshToken` dans le stockage, et n'en gardez pas ailleurs.
 
 ---
 
@@ -267,11 +277,11 @@ par un collègue), branchez le temps réel : voir [I](#i-mettre-à-jour-un-écra
 
 ### C. Une page de l'espace livreur
 
-Sous `app/driver/`. L'espace livreur a **sa propre session** : le jeton est
-lu sous la clé `driverToken`, pas `accessToken`.
+Sous `app/driver/`. L'espace livreur a **sa propre authentification** côté
+API (`/api/drivers`), mais le même jeton d'accès que le reste du site.
 
 ```tsx
-const token = localStorage.getItem('driverToken');
+const token = jetonAcces();
 ```
 
 Le lien de navigation s'ajoute dans le tableau `navItems` de
@@ -401,7 +411,7 @@ L'adresse de base est `process.env.NEXT_PUBLIC_API_URL` (par défaut
 `http://localhost:3001`). Le motif habituel, avec le jeton :
 
 ```ts
-const token = localStorage.getItem('accessToken');
+const token = jetonAcces();
 const res = await fetch(`${API_URL}/api/…`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

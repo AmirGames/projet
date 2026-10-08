@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -15,7 +17,7 @@ export default function ExportsPage() {
   const exportData = async (type: string, format: 'csv' | 'json') => {
     setLoading(type);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
 
       if (type === 'merchants') {
         const response = await fetch(`${API_URL}/api/admin/merchants?limit=10000`, {

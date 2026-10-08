@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DOMAINE_LIVREUR } from '@/lib/domaines';
@@ -23,7 +25,7 @@ export function VersTableauDeBord() {
 
     let jeton: string | null = null;
     try {
-      jeton = localStorage.getItem('accessToken');
+      jeton = jetonAcces();
     } catch {
       return;
     }

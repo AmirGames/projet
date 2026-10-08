@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
@@ -24,7 +25,7 @@ export function estPiecePrivee(adresse: string | null | undefined): boolean {
 export async function adresseLisible(adresse: string): Promise<string> {
   if (!estPiecePrivee(adresse)) return adresse;
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = typeof window !== 'undefined' ? jetonAcces() : null;
   const reponse = await fetch(
     `${API_URL}/api/files/signed-url?url=${encodeURIComponent(adresse)}`,
     { headers: token ? { Authorization: `Bearer ${token}` } : {} }

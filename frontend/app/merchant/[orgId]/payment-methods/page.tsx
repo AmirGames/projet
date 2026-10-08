@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -76,7 +78,7 @@ export default function PaymentMethodsPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const url = enEdition
         ? `${API_URL}/api/payment-methods/${storeId}/${enEdition.id}`
         : `${API_URL}/api/payment-methods/${storeId}`;
@@ -123,7 +125,7 @@ export default function PaymentMethodsPage() {
   const fetchPaymentMethods = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;
@@ -153,7 +155,7 @@ export default function PaymentMethodsPage() {
 
   const handleToggle = async (methodId: string) => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/payment-methods/${storeId}/${methodId}/toggle`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
@@ -169,7 +171,7 @@ export default function PaymentMethodsPage() {
 
   const handleDelete = async (methodId: string) => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/payment-methods/${storeId}/${methodId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

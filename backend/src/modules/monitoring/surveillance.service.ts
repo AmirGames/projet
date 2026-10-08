@@ -186,6 +186,8 @@ export interface ErreurNavigateur {
   page: string;
   pile?: string;
   navigateur?: string;
+  /** Violation de Content-Security-Policy (phase d'observation), pas une panne. */
+  csp?: boolean;
   occurrences: number;
   premiereFois: string;
   derniereFois: string;
@@ -389,8 +391,11 @@ export const Surveillance = {
     page: string;
     pile?: string;
     navigateur?: string;
+    csp?: boolean;
   }) {
-    minuteCourante().erreursNavigateur += 1;
+    // Les rapports CSP en observation ne comptent pas comme des pannes : ils
+    // feraient ouvrir un incident « erreurs navigateur » (seuil de la vigie).
+    if (!erreur.csp) minuteCourante().erreursNavigateur += 1;
 
     const premiereLigne = erreur.pile?.split("\n").find((l) => l.trim().startsWith("at ")) || "";
     const empreinte = `${erreur.message.slice(0, 200)}|${erreur.source || premiereLigne}`;

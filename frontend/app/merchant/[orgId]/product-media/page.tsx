@@ -1,5 +1,7 @@
 "use client";
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useEffect } from "react";
 import { Image as ImageIcon, Trash2, GripVertical } from "lucide-react";
 
@@ -50,7 +52,7 @@ export default function ProductMediaPage() {
     const charger = async () => {
       try {
         const res = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -73,7 +75,7 @@ export default function ProductMediaPage() {
     try {
       const res = await fetch(`${API_URL}/api/product-media/${storeId}/${productId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 
@@ -99,7 +101,7 @@ export default function ProductMediaPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({
           url: mediaUrl,
@@ -124,7 +126,7 @@ export default function ProductMediaPage() {
       const res = await fetch(`${API_URL}/api/product-media/${storeId}/${mediaId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 
@@ -144,7 +146,7 @@ export default function ProductMediaPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${jetonAcces()}`,
           },
           body: JSON.stringify({ mediaOrder }),
         }

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces, poserJeton } from '@/lib/jeton-session';
 import { useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import ReglesMotDePasse from '@/components/ReglesMotDePasse';
@@ -46,7 +48,7 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken') || ''}`,
+          Authorization: `Bearer ${jetonAcces() || ''}`,
         },
         body: JSON.stringify({ currentPassword: actuel, newPassword: nouveau }),
       });
@@ -59,7 +61,7 @@ export default function ChangerMotDePasse({ clair = false }: { clair?: boolean }
 
       // Les anciens jetons ne valent plus rien : on garde ceux de cette session.
       try {
-        if (donnees.accessToken) localStorage.setItem('accessToken', donnees.accessToken);
+        if (donnees.accessToken) poserJeton(donnees.accessToken);
       } catch {
         // Stockage refusé : la session se refera à la prochaine connexion.
       }

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * ZupDrive Admin — Compliance & Audit
  * Audit logs, document verification workflows, compliance reports.
@@ -51,7 +53,7 @@ export default function CompliancePage() {
       params.append('limit', '100');
 
       const response = await fetch(`${API_URL}/api/zupdrive/compliance/admin/audit-logs?${params}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
 
       if (!response.ok) throw new Error(t('logsLoadError'));
@@ -69,7 +71,7 @@ export default function CompliancePage() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/zupdrive/compliance/admin/reports?limit=20`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
 
       if (!response.ok) throw new Error(t('reportsLoadError'));
@@ -90,7 +92,7 @@ export default function CompliancePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({
           reportType: 'AD_HOC',

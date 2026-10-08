@@ -1,5 +1,7 @@
 "use client";
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 
@@ -54,7 +56,7 @@ export default function ProductTagPage() {
 
       const res = await fetch(`${API_URL}/api/product-tags/${storeId}?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 
@@ -126,7 +128,7 @@ export default function ProductTagPage() {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify(formData),
       });
@@ -149,7 +151,7 @@ export default function ProductTagPage() {
       const res = await fetch(`${API_URL}/api/product-tags/${storeId}/${tagId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 

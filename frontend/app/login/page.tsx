@@ -1,5 +1,7 @@
 "use client";
 
+
+import { jetonAcces, poserJeton } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -113,11 +115,11 @@ export default function LoginPage() {
       }
 
       // Save tokens
-      localStorage.setItem("accessToken", result.accessToken);
+      poserJeton(result.accessToken);
       localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
 
       console.log("Tokens saved:", {
-        hasAccessToken: !!localStorage.getItem("accessToken"),
+        hasAccessToken: !!jetonAcces(),
         isSuperOwner: result.user?.isSuperOwner,
         userId: result.user?.id,
       });
