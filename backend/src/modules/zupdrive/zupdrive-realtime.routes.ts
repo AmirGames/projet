@@ -24,7 +24,7 @@ router.post("/join/:courseId", async (req: Request, res: Response, next: NextFun
   try {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params);
     const userId = req.userId as string;
-    const socketId = (req as any).socketId;
+    const socketId = req.socketId;
 
     if (!socketId) {
       throw new ApiError(400, "Socket non disponible", "NO_SOCKET");
@@ -56,7 +56,7 @@ router.post("/join/:courseId", async (req: Request, res: Response, next: NextFun
 router.post("/leave/:courseId", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params);
-    const socketId = (req as any).socketId;
+    const socketId = req.socketId;
 
     if (!socketId) {
       throw new ApiError(400, "Socket non disponible", "NO_SOCKET");

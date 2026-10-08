@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { invalidateMaintenanceCache } from "../monitoring/maintenance.middleware";
 import { isSystemAdmin } from "./shared";
 
@@ -42,7 +43,7 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
     });
 
     const body = schema.parse(req.body);
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     let config = await db.systemConfig.findFirst();
     if (!config) {
@@ -62,7 +63,7 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
         adminId,
         action: "UPDATE_SYSTEM_CONFIG",
         target: "SYSTEM_CONFIG",
-        changes: body as any,
+        changes: body,
       },
     });
 

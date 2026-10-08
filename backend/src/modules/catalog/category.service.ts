@@ -3,6 +3,7 @@ import { exigerBoutique, type Acteur } from "../auth/autorisation-boutique";
 import { validerOrdre, exigerLotComplet } from "./reordonnancement";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { codeErreur } from "../../utils/code-erreur";
 
 export interface CategoryData {
   storeId: string;
@@ -50,8 +51,8 @@ export class CategoryService {
         },
       });
       return category;
-    } catch (err: any) {
-      if (err.code === "P2002") {
+    } catch (err) {
+      if (codeErreur(err) === "P2002") {
         throw new ApiError(400, "Category name already exists for this store", "DUPLICATE_NAME");
       }
       throw err;
@@ -90,11 +91,11 @@ export class CategoryService {
         },
         include: { products: true },
       });
-    } catch (err: any) {
-      if (err.code === "P2025") {
+    } catch (err) {
+      if (codeErreur(err) === "P2025") {
         throw new ApiError(404, "Category not found", "CATEGORY_NOT_FOUND");
       }
-      if (err.code === "P2002") {
+      if (codeErreur(err) === "P2002") {
         throw new ApiError(400, "Category name already exists for this store", "DUPLICATE_NAME");
       }
       throw err;
@@ -119,8 +120,8 @@ export class CategoryService {
       await db.category.delete({
         where: { id },
       });
-    } catch (err: any) {
-      if (err.code === "P2025") {
+    } catch (err) {
+      if (codeErreur(err) === "P2025") {
         throw new ApiError(404, "Category not found", "CATEGORY_NOT_FOUND");
       }
       throw err;

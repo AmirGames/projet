@@ -180,7 +180,7 @@ export class ZupDriveRealtimeService {
     courseId: string,
     type: "driver-cancelled" | "system-issue" | "safety-report",
     message: string,
-    data?: any
+    data?: Record<string, unknown>
   ) {
     if (!io) return;
 

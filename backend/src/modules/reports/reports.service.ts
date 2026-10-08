@@ -1,14 +1,15 @@
 import { db } from "../../services/db";
 import { montantCommercant, totalCommercant } from "../delivery/delivery-mode.service";
 import { TRANSMISE } from "../../utils/commande-transmise";
+import type { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 
 export interface ReportFilters {
   storeId?: string;
   orgId?: string;
   startDate?: Date;
   endDate?: Date;
-  status?: string;
-  paymentStatus?: string;
+  status?: OrderStatus;
+  paymentStatus?: PaymentStatus;
 }
 
 /**
@@ -30,7 +31,7 @@ function cellule(valeur: unknown): string {
 export class ReportsService {
   static async getSalesReport(filters: ReportFilters) {
     try {
-      const where: any = { ...TRANSMISE };
+      const where: Prisma.OrderWhereInput = { ...TRANSMISE };
 
       if (filters.storeId) {
         where.storeId = filters.storeId;
@@ -99,7 +100,7 @@ export class ReportsService {
 
   static async getRevenueByDate(filters: ReportFilters) {
     try {
-      const where: any = { ...TRANSMISE };
+      const where: Prisma.OrderWhereInput = { ...TRANSMISE };
 
       if (filters.storeId) {
         where.storeId = filters.storeId;
@@ -242,7 +243,7 @@ export class ReportsService {
     }
   }
 
-  static exportToCSV(data: any[], _filename: string): string {
+  static exportToCSV(data: Record<string, unknown>[], _filename: string): string {
     if (!data || data.length === 0) {
       return "";
     }

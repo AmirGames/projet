@@ -10,6 +10,7 @@ import { NoteCourseDriveService } from "./note-course-drive.service";
 import { MatchingAlgorithmService } from "./matching-algorithm.service";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
 import { getEnv } from "../../config/env";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -204,9 +205,9 @@ export class CourseDriveService {
           tarifApplique: { ...devis.tarif, itineraire: devis.source } as unknown as Prisma.InputJsonValue,
         },
       });
-    } catch (err: any) {
+    } catch (err) {
       // Deux envois simultanés de la même commande : le second rend la première.
-      if (err?.code !== "P2002") throw err;
+      if (codeErreur(err) !== "P2002") throw err;
       const existante = await db.courseDrive.findUniqueOrThrow({
         where: { passagerId_cleIdempotence: { passagerId, cleIdempotence: demande.cleIdempotence } },
       });
@@ -688,9 +689,9 @@ export class CourseDriveService {
           matchScore: matchScore.score,
         });
         return proposition;
-      } catch (err: any) {
+      } catch (err) {
         // Déjà sollicité entre-temps (autre serveur) : au suivant.
-        if (err?.code !== "P2002") {
+        if (codeErreur(err) !== "P2002") {
           logger.error("Error creating proposition", { err });
           throw err;
         }

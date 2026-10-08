@@ -2,6 +2,7 @@ import winston from "winston";
 import Transport from "winston-transport";
 import { getEnv } from "./env";
 import { redact } from "../modules/privacy/redaction";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * La console du serveur, gardée en mémoire pour la page « Console » du
@@ -38,9 +39,10 @@ export function lireConsole(apres = 0): LigneConsole[] {
 }
 
 class TransportMemoire extends Transport {
-  log(info: any, callback: () => void) {
+  log(info: Record<string | symbol, unknown> & { level: string; message: string }, callback: () => void) {
     const { level, message, timestamp: _t, ...meta } = info;
-    for (const cle of Object.getOwnPropertySymbols(meta)) delete (meta as any)[cle];
+    // Les symboles de winston (LEVEL, MESSAGE, SPLAT) ne sont pas des données : le spread les copie.
+    for (const cle of Object.getOwnPropertySymbols(meta)) Reflect.deleteProperty(meta, cle);
     ajouterLigneConsole(level, message, meta);
     callback();
   }
@@ -99,7 +101,7 @@ const createLogger = () => {
 
 export const logger = createLogger();
 
-export const requestLogger = (req: any, res: any, next: any) => {
+export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
 
   res.on("finish", () => {

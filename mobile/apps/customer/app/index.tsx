@@ -249,7 +249,7 @@ export default function CustomerApp() {
       setPages([]);
       setTab('notifications');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [pendingOpen, session]);
 
   // Un même changement arrive souvent par plusieurs événements : un seul

@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { BarChart3, TrendingUp, Users, DollarSign, AlertCircle, Loader2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -33,6 +34,8 @@ interface RegionalMetrics {
 }
 
 export default function AnalyticsPage() {
+  const t = useTranslations('superownerZupdriveAnalytics');
+  const locale = useLocale() === 'en' ? 'en-US' : 'fr-FR';
   const [metrics, setMetrics] = useState<AnalyticsPeriod | null>(null);
   const [regional, setRegional] = useState<RegionalMetrics[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +67,7 @@ export default function AnalyticsPage() {
         }),
       ]);
 
-      if (!metricsRes.ok || !regionalRes.ok) throw new Error('Erreur lors du chargement des métriques');
+      if (!metricsRes.ok || !regionalRes.ok) throw new Error(t('loadError'));
 
       const metricsData = await metricsRes.json();
       const regionalData = await regionalRes.json();
@@ -73,25 +76,25 @@ export default function AnalyticsPage() {
       setRegional(regionalData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setError(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, t]);
 
   return (
     <div className="space-y-6">
       {/* En-tête */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Analytics & Rapports</h1>
-        <p className="text-gray-600 mt-2">Performances, tendances et métriques de la plateforme</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-gray-600 mt-2">{t('subtitle')}</p>
       </div>
 
       {/* Sélection de période */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('startDate')}</label>
             <input
               type="date"
               value={startDate}
@@ -100,7 +103,7 @@ export default function AnalyticsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date de fin</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('endDate')}</label>
             <input
               type="date"
               value={endDate}
@@ -114,7 +117,7 @@ export default function AnalyticsPage() {
               className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
-              Charger
+              {t('load')}
             </button>
           </div>
         </div>
@@ -124,7 +127,7 @@ export default function AnalyticsPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
           <div>
-            <h3 className="font-medium text-red-900">Erreur</h3>
+            <h3 className="font-medium text-red-900">{t('errorTitle')}</h3>
             <p className="text-sm text-red-700">{error}</p>
           </div>
         </div>
@@ -141,7 +144,7 @@ export default function AnalyticsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Courses</p>
+                  <p className="text-sm text-gray-600">{t('courses')}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.totalCourses}</p>
                 </div>
                 <BarChart3 className="w-8 h-8 text-blue-500" />
@@ -151,7 +154,7 @@ export default function AnalyticsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Revenu</p>
+                  <p className="text-sm text-gray-600">{t('revenue')}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
                     €{(metrics.totalRevenue / 100).toFixed(0)}
                   </p>
@@ -163,7 +166,7 @@ export default function AnalyticsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Note moyenne</p>
+                  <p className="text-sm text-gray-600">{t('avgRating')}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.avgRating.toFixed(2)}</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-yellow-500" />
@@ -173,7 +176,7 @@ export default function AnalyticsPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Taux succès</p>
+                  <p className="text-sm text-gray-600">{t('successRate')}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.successRate.toFixed(1)}%</p>
                 </div>
                 <Users className="w-8 h-8 text-purple-500" />
@@ -184,33 +187,33 @@ export default function AnalyticsPage() {
           {/* Détails */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Résumé période</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('periodSummary')}</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Chauffeurs actifs</span>
+                  <span className="text-gray-600">{t('activeDrivers')}</span>
                   <span className="font-medium">{metrics.totalDrivers}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Passagers</span>
+                  <span className="text-gray-600">{t('passengers')}</span>
                   <span className="font-medium">{metrics.totalPassengers}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Prix moyen</span>
+                  <span className="text-gray-600">{t('avgPrice')}</span>
                   <span className="font-medium">€{(metrics.avgPrice / 100).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Période</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('period')}</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Début</span>
-                  <span className="font-medium">{new Date(metrics.startDate).toLocaleDateString('fr-FR')}</span>
+                  <span className="text-gray-600">{t('from')}</span>
+                  <span className="font-medium">{new Date(metrics.startDate).toLocaleDateString(locale)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Fin</span>
-                  <span className="font-medium">{new Date(metrics.endDate).toLocaleDateString('fr-FR')}</span>
+                  <span className="text-gray-600">{t('to')}</span>
+                  <span className="font-medium">{new Date(metrics.endDate).toLocaleDateString(locale)}</span>
                 </div>
               </div>
             </div>
@@ -219,16 +222,16 @@ export default function AnalyticsPage() {
           {/* Analytics régionales */}
           {regional.length > 0 && (
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Analytics par région</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('byRegion')}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="px-4 py-2 text-left text-gray-600">Région</th>
-                      <th className="px-4 py-2 text-left text-gray-600">Courses</th>
-                      <th className="px-4 py-2 text-left text-gray-600">Revenu</th>
-                      <th className="px-4 py-2 text-left text-gray-600">Chauffeurs</th>
-                      <th className="px-4 py-2 text-left text-gray-600">Tendance</th>
+                      <th className="px-4 py-2 text-left text-gray-600">{t('colRegion')}</th>
+                      <th className="px-4 py-2 text-left text-gray-600">{t('courses')}</th>
+                      <th className="px-4 py-2 text-left text-gray-600">{t('revenue')}</th>
+                      <th className="px-4 py-2 text-left text-gray-600">{t('colDrivers')}</th>
+                      <th className="px-4 py-2 text-left text-gray-600">{t('colTrend')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -244,9 +247,9 @@ export default function AnalyticsPage() {
                             r.demandTrend === 'DECREASING' ? 'bg-red-100 text-red-700' :
                             'bg-gray-100 text-gray-700'
                           }`}>
-                            {r.demandTrend === 'INCREASING' ? '↑ Croissante' :
-                             r.demandTrend === 'DECREASING' ? '↓ Décroissante' :
-                             '→ Stable'}
+                            {r.demandTrend === 'INCREASING' ? t('trendIncreasing') :
+                             r.demandTrend === 'DECREASING' ? t('trendDecreasing') :
+                             t('trendStable')}
                           </span>
                         </td>
                       </tr>

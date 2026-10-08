@@ -3,9 +3,11 @@ import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { TicketMessageService } from "../support/ticket-message.service";
 import { isSuperOwner, journaliser } from "./shared";
 import { limiteBornee, decalage } from "../../utils/pagination";
+import type { Prisma } from "@prisma/client";
 
 const router = Router();
 
@@ -83,7 +85,7 @@ router.post("/support-tickets/:ticketId/messages", authMiddleware, isSuperOwner,
 
     const message = await TicketMessageService.add({
       ticketId: req.params.ticketId as string,
-      authorId: (req as any).userId,
+      authorId: userIdRequis(req),
       authorRole: "ADMIN",
       body: body.body,
     });
@@ -115,7 +117,7 @@ router.get("/support-tickets", authMiddleware, isSuperOwner, async (req: Request
      */
     const archives = req.query.archived === "true";
 
-    const where: any = { archivedAt: archives ? { not: null } : null };
+    const where: Prisma.MerchantTicketWhereInput = { archivedAt: archives ? { not: null } : null };
     if (status) where.status = status;
     if (priority) where.priority = versPrioriteStockee(priority);
 
@@ -182,7 +184,7 @@ router.patch("/support-tickets/:ticketId/status", authMiddleware, isSuperOwner, 
         adminId: req.userId as string,
         action: "UPDATE_TICKET_STATUS",
         target: ticketId,
-        changes: { status: body.status } as any,
+        changes: { status: body.status },
       },
     });
 

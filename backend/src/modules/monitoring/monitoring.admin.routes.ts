@@ -74,7 +74,7 @@ router.post("/backups", authMiddleware, isSuperOwner, async (req: Request, res: 
 
     SecurityEventService.record({
       action: "BACKUP_CREATED",
-      actor: (req as any).actorEmail || "inconnu",
+      actor: req.actorEmail || "inconnu",
       target: sauvegarde.id,
       severity: "MEDIUM",
       details: sauvegarde.name,
@@ -114,7 +114,7 @@ router.post("/backups/:backupId/restore", authMiddleware, isSuperOwner, async (r
 
     SecurityEventService.record({
       action: "BACKUP_RESTORED",
-      actor: (req as any).actorEmail || "inconnu",
+      actor: req.actorEmail || "inconnu",
       target: backupId,
       severity: "CRITICAL",
       details: `Restaurés : ${Object.entries(resultats).map(([k, v]) => `${v} ${k}`).join(", ")}`,
@@ -134,7 +134,7 @@ router.delete("/backups/:backupId", authMiddleware, isSuperOwner, async (req: Re
 
     SecurityEventService.record({
       action: "BACKUP_DELETED",
-      actor: (req as any).actorEmail || "inconnu",
+      actor: req.actorEmail || "inconnu",
       target: backupId,
       severity: "HIGH",
     });

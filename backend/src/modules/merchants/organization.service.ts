@@ -1,5 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { codeErreur } from "../../utils/code-erreur";
+import type { OrganizationTier, Prisma } from "@prisma/client";
 
 export class OrganizationService {
   static async create(data: {
@@ -24,8 +26,8 @@ export class OrganizationService {
       });
 
       return org;
-    } catch (err: any) {
-      if (err.code === "P2002") {
+    } catch (err) {
+      if (codeErreur(err) === "P2002") {
         throw new ApiError(400, "Organization slug already exists", "DUPLICATE_SLUG");
       }
       throw err;
@@ -91,9 +93,9 @@ export class OrganizationService {
     });
   }
 
-  static async update(id: string, data: { name?: string; tier?: string }) {
+  static async update(id: string, data: { name?: string; tier?: OrganizationTier }) {
     try {
-      const updateData: any = {};
+      const updateData: Prisma.OrganizationUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.tier !== undefined) updateData.tier = data.tier;
 
@@ -107,8 +109,8 @@ export class OrganizationService {
         },
         },
       });
-    } catch (err: any) {
-      if (err.code === "P2025") {
+    } catch (err) {
+      if (codeErreur(err) === "P2025") {
         throw new ApiError(404, "Organization not found", "ORG_NOT_FOUND");
       }
       throw err;
@@ -120,8 +122,8 @@ export class OrganizationService {
       await db.organization.delete({
         where: { id },
       });
-    } catch (err: any) {
-      if (err.code === "P2025") {
+    } catch (err) {
+      if (codeErreur(err) === "P2025") {
         throw new ApiError(404, "Organization not found", "ORG_NOT_FOUND");
       }
       throw err;

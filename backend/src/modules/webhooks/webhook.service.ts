@@ -180,7 +180,7 @@ export class WebhookService {
     payload: Record<string, unknown>
   ) {
     const envoi = await db.webhookDelivery.create({
-      data: { webhookId: abonnement.id, event, payload: payload as any, attempt: 0 },
+      data: { webhookId: abonnement.id, event, payload: payload, attempt: 0 },
     });
 
     return this.deliver(abonnement, envoi);

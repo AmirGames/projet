@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 
@@ -75,7 +76,7 @@ export class ProductTagService {
         throw new ApiError(404, "Tag not found", "TAG_NOT_FOUND");
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.ProductTagUpdateInput = {};
       if (data.name) {
         updateData.name = data.name;
         updateData.slug = data.name.toLowerCase().replace(/\s+/g, "-");

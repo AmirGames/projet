@@ -3,6 +3,7 @@ import { exigerBoutique, type Acteur } from "../auth/autorisation-boutique";
 import { validerOrdre, exigerLotComplet } from "./reordonnancement";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { codeErreur } from "../../utils/code-erreur";
 
 export interface ProductData {
   storeId: string;
@@ -47,8 +48,8 @@ export class ProductService {
       });
 
       return product;
-    } catch (error: any) {
-      if (error.code === "P2002") {
+    } catch (error) {
+      if (codeErreur(error) === "P2002") {
         throw new ApiError(409, "Product SKU already exists in store", "SKU_EXISTS");
       }
       throw error;
@@ -141,8 +142,8 @@ export class ProductService {
           images: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
       }
       throw error;
@@ -158,8 +159,8 @@ export class ProductService {
         where: { id },
         data: { stock: product.stock + quantity },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
       }
       throw error;
@@ -169,8 +170,8 @@ export class ProductService {
   static async delete(id: string) {
     try {
       return await db.product.delete({ where: { id } });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
       }
       throw error;
@@ -271,8 +272,8 @@ export class ProductService {
           images: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
       }
       throw error;

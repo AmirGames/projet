@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { PaymentMethodType } from "@prisma/client";
 import { montantAEncaisser } from "../delivery/delivery-mode.service";
 import { PourboireService } from "../orders/pourboire.service";
 import { db } from "../../services/db";
@@ -18,6 +19,10 @@ const INTENTION_EN_COURS = new Set([
 
 /** Euros → centimes, l'unité que Stripe attend. */
 const enCentimes = (euros: number) => Math.round(euros * 100);
+
+/** Type local d'un moyen de paiement Stripe : l'énumération Prisma n'a pas les valeurs de Stripe (« card »…). */
+const typeLocal = (pm: Stripe.PaymentMethod): PaymentMethodType =>
+  pm.type === "card" ? (pm.card?.funding === "debit" ? "DEBIT_CARD" : "CREDIT_CARD") : "STRIPE";
 
 const idIntention = (intention: string | Stripe.PaymentIntent | null) =>
   typeof intention === "string" ? intention : intention?.id ?? null;
@@ -144,7 +149,7 @@ export const paymentService = {
    * ne l'est pas deux fois.
    */
   async journaliserEvenement(evenement: Stripe.Event): Promise<"nouveau" | "deja_traite" | "a_reprendre"> {
-    const objet: any = evenement.data?.object ?? {};
+    const objet = (evenement.data?.object ?? {}) as { id?: unknown; metadata?: { orderId?: unknown } | null };
     try {
       await db.stripeEvent.create({
         data: {
@@ -155,8 +160,8 @@ export const paymentService = {
         },
       });
       return "nouveau";
-    } catch (err: any) {
-      if (err?.code !== "P2002") throw err;
+    } catch (err) {
+      if (typeof err !== "object" || err === null || !("code" in err) || err.code !== "P2002") throw err;
     }
     const existant = await db.stripeEvent.findUnique({ where: { id: evenement.id }, select: { processedAt: true } });
     if (existant?.processedAt) return "deja_traite";
@@ -167,20 +172,23 @@ export const paymentService = {
   async traiterEvenement(evenement: Stripe.Event) {
     // Les paiements de courses ZupDrive (metadata.courseId, sans orderId) ont leur propre suite :
     // sans cet aiguillage ils seraient pris pour une commande ZupEat sans commande, et ignorés.
-    const objet: any = evenement.data?.object;
     if (
-      ["payment_intent.succeeded", "payment_intent.payment_failed", "payment_intent.canceled"].includes(evenement.type) &&
-      ZupDrivePaymentService.estUnPaiementDrive(objet)
+      evenement.type === "payment_intent.succeeded" ||
+      evenement.type === "payment_intent.payment_failed" ||
+      evenement.type === "payment_intent.canceled"
     ) {
-      if (evenement.type === "payment_intent.succeeded") await ZupDrivePaymentService.marquerPaye(objet);
-      else if (evenement.type === "payment_intent.payment_failed") await ZupDrivePaymentService.marquerEchec(objet);
-      else await ZupDrivePaymentService.marquerAnnule(objet);
-      return;
+      const intention = evenement.data.object;
+      if (ZupDrivePaymentService.estUnPaiementDrive(intention)) {
+        if (evenement.type === "payment_intent.succeeded") await ZupDrivePaymentService.marquerPaye(intention);
+        else if (evenement.type === "payment_intent.payment_failed") await ZupDrivePaymentService.marquerEchec(intention);
+        else await ZupDrivePaymentService.marquerAnnule(intention);
+        return;
+      }
     }
 
     // Les remboursements d'une course ZupDrive : relus chez Stripe, jamais pris pour ceux d'une commande.
-    if (["charge.refunded", "refund.failed", "refund.updated"].includes(evenement.type)) {
-      const intentionId = idIntention(objet.payment_intent);
+    if (evenement.type === "charge.refunded" || evenement.type === "refund.failed" || evenement.type === "refund.updated") {
+      const intentionId = idIntention(evenement.data.object.payment_intent);
       if (intentionId && (await ZupDrivePaymentService.surRemboursement(intentionId))) return;
     }
 
@@ -239,7 +247,7 @@ export const paymentService = {
    * inscrit au journal et signalé dans les logs.
    */
   async noterLitige(litige: Stripe.Dispute, evenementId: string, ouvert: boolean) {
-    const intentionId = idIntention(litige.payment_intent as any);
+    const intentionId = idIntention(litige.payment_intent);
     const paiement = intentionId
       ? await db.payment.findFirst({ where: { stripePaymentIntentId: intentionId }, select: { orderId: true } })
       : null;
@@ -784,7 +792,7 @@ export const paymentService = {
       data: {
         storeId,
         userId: customerId,
-        type: paymentMethod.type as any,
+        type: typeLocal(paymentMethod),
         name: paymentMethod.card?.brand || "Card",
         stripePaymentMethodId: paymentMethod.id,
         stripeCustomerId: clientId,

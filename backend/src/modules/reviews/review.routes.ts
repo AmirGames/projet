@@ -28,7 +28,7 @@ const avisCommandeSchema = z.object({
 
 /** Le client connecté et sa commande, ou le refus qui convient. */
 async function commandeDuClient(req: Request, orderId: string) {
-  const userId = req.userId || (req as any).user?.userId;
+  const userId = req.userId;
   const client = await ficheClientDuCompte(userId, { creer: false });
 
   const commande = await db.order.findFirst({

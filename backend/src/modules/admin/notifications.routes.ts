@@ -55,7 +55,7 @@ const annonceSchema = z.object({
 router.post("/notifications", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = annonceSchema.parse(req.body);
-    const auteur = (req as any).actorEmail || "plateforme";
+    const auteur = req.actorEmail || "plateforme";
 
     // Une seule ligne était créée, adressée à son auteur : l'annonce
     // n'atteignait personne. Elle est maintenant recopiée dans la boîte de

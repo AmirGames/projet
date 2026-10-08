@@ -3,9 +3,11 @@ import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { TicketMessageService } from "../support/ticket-message.service";
 import { getQueryString, isSystemAdmin } from "./shared";
 import { limiteBornee, decalage } from "../../utils/pagination";
+import type { Prisma } from "@prisma/client";
 
 const router = Router();
 
@@ -32,7 +34,7 @@ router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: 
 
     const archived = getQueryString(req.query.archived, "") === "true";
 
-    const where: any = { archivedAt: archived ? { not: null } : null };
+    const where: Prisma.MerchantTicketWhereInput = { archivedAt: archived ? { not: null } : null };
     if (status) where.status = status;
     if (priority) where.priority = priority;
 
@@ -48,7 +50,7 @@ router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: 
         { priority: "desc" },
         { createdAt: "desc" },
       ],
-    })) as any[];
+    }));
 
     const total = await db.merchantTicket.count({ where });
 
@@ -71,7 +73,7 @@ router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Re
     });
 
     const body = schema.parse(req.body);
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     const avant = await db.merchantTicket.findUnique({
       where: { id: ticketId },
@@ -96,7 +98,7 @@ router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Re
         adminId,
         action: "UPDATE_TICKET",
         target: ticketId,
-        changes: body as any,
+        changes: body,
       },
     });
 
@@ -144,7 +146,7 @@ router.post("/tickets/:ticketId/messages", authMiddleware, isSystemAdmin, async 
 
     const message = await TicketMessageService.add({
       ticketId,
-      authorId: (req as any).userId,
+      authorId: userIdRequis(req),
       authorRole: "ADMIN",
       body: body.body,
     });
@@ -163,7 +165,7 @@ router.post("/tickets/:ticketId/messages", authMiddleware, isSystemAdmin, async 
 router.post("/tickets/:ticketId/archive", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const ticketId = req.params.ticketId as string;
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     const ticket = await TicketMessageService.archive(ticketId);
 
@@ -172,7 +174,7 @@ router.post("/tickets/:ticketId/archive", authMiddleware, isSystemAdmin, async (
         adminId,
         action: "ARCHIVE_TICKET",
         target: ticketId,
-        changes: {} as any,
+        changes: {},
       },
     });
 

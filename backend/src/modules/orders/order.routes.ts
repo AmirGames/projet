@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { OrderStatus } from "@prisma/client";
 import { PourboireService } from "./pourboire.service";
 import { champEmail } from "../../utils/validation";
 import { OrderService } from "./order.service";
@@ -17,12 +18,15 @@ import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
+const statutCommande = z.enum(OrderStatus);
+const filtreStatut = z.union([statutCommande, z.literal("ALL")]);
+
 // GET /orders - Get orders by orgId or storeId (protected)
 router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.query.orgId as string;
     const storeId = req.query.storeId as string;
-    const status = req.query.status as string | undefined;
+    const status = req.query.status ? filtreStatut.parse(req.query.status) : undefined;
     const limit = limiteBornee(req.query.limit, 100, 500);
     const offset = decalage(req.query.offset);
 
@@ -292,11 +296,10 @@ router.get("/store/:storeId", authMiddleware, async (req: Request, res: Response
 router.get("/status/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
-    const status = (req.query.status as string) || "";
-
-    if (!status) {
+    if (!req.query.status) {
       throw new ApiError(400, "Paramètre 'status' requis", "INVALID_INPUT");
     }
+    const status = statutCommande.parse(req.query.status);
 
     const orders = await OrderService.getByStatus(storeId, status);
 

@@ -334,7 +334,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { operatingHours: { ...current.operatingHours, [day]: retenu } as any },
+      data: { operatingHours: { ...current.operatingHours, [day]: retenu } },
       select: { operatingHours: true },
     });
   }
@@ -353,7 +353,7 @@ export class StoreHoursService {
         operatingHours: {
           ...current.operatingHours,
           [day]: { ...dayHours, closed: !dayHours.closed },
-        } as any,
+        },
       },
       select: { operatingHours: true },
     });
@@ -404,7 +404,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: [...slots, newSlot] as any },
+      data: { pickupSlots: [...slots, newSlot] },
       select: { pickupSlots: true },
     });
   }
@@ -430,7 +430,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: updated as any },
+      data: { pickupSlots: updated },
       select: { pickupSlots: true },
     });
   }
@@ -450,7 +450,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: updated as any },
+      data: { pickupSlots: updated },
       select: { pickupSlots: true },
     });
   }

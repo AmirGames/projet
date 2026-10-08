@@ -206,8 +206,7 @@ export function photoPriseLoinDuClient(course: {
   return distance > marge ? distance : null;
 }
 
-const TYPES_PREUVE = ["CODE", "PHOTO"] as const;
-export type TypePreuve = (typeof TYPES_PREUVE)[number];
+export type TypePreuve = "CODE" | "PHOTO";
 
 /**
  * Un code à quatre chiffres, tiré au sort.

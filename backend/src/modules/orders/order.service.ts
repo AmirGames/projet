@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
+import type { Order, OrderStatus, Prisma } from "@prisma/client";
+import { codeErreur } from "../../utils/code-erreur";
 import { type Appelant, commandeVisible, genererJetonDeSuivi } from "./suivi-commande.service";
-import { db } from "../../services/db";
+import { db, type ClientTransaction } from "../../services/db";
 import { EmailService } from "../notifications/email.service";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
@@ -73,7 +75,7 @@ export interface OptionsCreation {
   /** En-tête Idempotency-Key : l'identifiant de la tentative d'achat. */
   cleIdempotence?: string;
   /** Écrit dans la transaction de création (preuve d'acceptation des conditions). */
-  acceptation?: (tx: any, commande: { id: string }) => Promise<unknown>;
+  acceptation?: (tx: ClientTransaction, commande: { id: string }) => Promise<unknown>;
 }
 
 /**
@@ -656,7 +658,7 @@ export class OrderService {
           customerName: data.customerName,
           customerEmail: data.customerEmail,
           customerPhone: data.customerPhone,
-          deliveryType: data.deliveryType as any,
+          deliveryType: data.deliveryType,
           pickupTime: data.pickupTime ? new Date(data.pickupTime) : null,
           deliveryAddress: data.deliveryAddress,
           deliveryCity: data.deliveryCity,
@@ -680,8 +682,8 @@ export class OrderService {
           tierAtOrder: commission.tier,
           commissionWaived: commission.offerte,
           deliveryMode: modeLivraison,
-          status: "PENDING" as any,
-          paymentStatus: "PENDING" as any,
+          status: "PENDING",
+          paymentStatus: "PENDING",
           items: {
             create: lignesTarifees.map((ligne, index) => ({
               productId: ligne.productId,
@@ -691,7 +693,7 @@ export class OrderService {
               total: Number((ligne.price * ligne.quantity).toFixed(2)),
               // La copie des suppléments payés : un supplément retiré ou
               // renommé plus tard ne change pas ce qui a été commandé.
-              selectedOptions: ligne.supplements.length > 0 ? ({ supplements: ligne.supplements } as any) : {},
+              selectedOptions: ligne.supplements.length > 0 ? { supplements: ligne.supplements } : {},
               // La taxe de cette ligne, figée au moment de la commande.
               // Permet le récapitulatif multi-taux (6 % nourriture + 21 % boissons)
               // sur le ticket, sans avoir à recalculer après coup.
@@ -720,10 +722,10 @@ export class OrderService {
       const { trackingTokenHash: _empreinte, ...commande } = order;
 
       return { ...commande, paiementEnLigne: enLigne, trackingToken: suivi.jeton };
-    } catch (error: any) {
+    } catch (error) {
       // Deux envois simultanés de la même tentative : le second heurte
       // l'unicité de la clé et reprend la commande du premier.
-      if (error?.code === "P2002" && options.cleIdempotence) {
+      if (codeErreur(error) === "P2002" && options.cleIdempotence) {
         const rejouee = await this.rejouerSiConnue(data.storeId, options.cleIdempotence, empreinteDeLAchat(data));
         if (rejouee) return rejouee;
       }
@@ -777,7 +779,7 @@ export class OrderService {
    * Aussitôt passée pour un paiement sur place ; à l'encaissement pour un
    * paiement en ligne (appelée par le webhook Stripe).
    */
-  static async annoncerAuCommercant(order: any) {
+  static async annoncerAuCommercant(order: Order) {
     try {
       await EmailService.sendOrderConfirmation(order);
     } catch (emailErr) {
@@ -864,9 +866,9 @@ export class OrderService {
     });
   }
 
-  static async getByStatus(storeId: string, status: string, limit: number = 50) {
+  static async getByStatus(storeId: string, status: OrderStatus, limit: number = 50) {
     return await db.order.findMany({
-      where: { storeId, status: status as any, ...TRANSMISE },
+      where: { storeId, status, ...TRANSMISE },
       include: {
         items: { include: { product: true } },
       },
@@ -875,7 +877,7 @@ export class OrderService {
     });
   }
 
-  static async updateStatus(id: string, status: string) {
+  static async updateStatus(id: string, status: OrderStatus) {
     try {
       // L'ancien état est lu avant la mise à jour : un abonné qui reçoit « la
       // commande est prête » sans savoir d'où elle vient ne peut pas distinguer
@@ -892,7 +894,7 @@ export class OrderService {
       // invalide la vérification de transition.
       const ecrit = await db.order.updateMany({
         where: { id, status: avant.status },
-        data: { status: status as any },
+        data: { status },
       });
       if (ecrit.count !== 1) {
         throw new ApiError(409, "La commande a changé entre-temps, rechargez-la.", "ORDER_STATE_CONFLICT");
@@ -915,8 +917,8 @@ export class OrderService {
       await OrderAcceptanceService.surAvancement(commande);
 
       return commande;
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
       throw error;
@@ -995,16 +997,16 @@ export class OrderService {
       return await db.order.delete({
         where: { id },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
       throw error;
     }
   }
 
-  static async getByOrgId(orgId: string, status?: string, limit: number = 100, offset: number = 0) {
-    const whereClause: any = {
+  static async getByOrgId(orgId: string, status?: OrderStatus | "ALL", limit: number = 100, offset: number = 0) {
+    const whereClause: Prisma.OrderWhereInput = {
       store: { orgId },
       ...TRANSMISE,
     };
@@ -1033,8 +1035,8 @@ export class OrderService {
    * La page d'accueil du commerçant affichait « 0,00 € » et « 0 commande » en
    * dur : les deux compteurs n'étaient jamais renseignés.
    */
-  static async chiffreAffairesOrg(orgId: string, status?: string) {
-    const where: any = { store: { orgId }, deletedAt: null, ...TRANSMISE };
+  static async chiffreAffairesOrg(orgId: string, status?: OrderStatus | "ALL") {
+    const where: Prisma.OrderWhereInput = { store: { orgId }, deletedAt: null, ...TRANSMISE };
     if (status && status !== "ALL") where.status = status;
 
     const somme = await db.order.aggregate({
@@ -1050,8 +1052,8 @@ export class OrderService {
     };
   }
 
-  static async countByOrgId(orgId: string, status?: string) {
-    const whereClause: any = {
+  static async countByOrgId(orgId: string, status?: OrderStatus | "ALL") {
+    const whereClause: Prisma.OrderWhereInput = {
       store: { orgId },
       ...TRANSMISE,
     };

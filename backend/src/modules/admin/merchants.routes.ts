@@ -3,10 +3,12 @@ import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { MerchantClosureService } from "../merchants/merchant-closure.service";
 import { logger } from "../../config/logger";
 import { getQueryString, isSystemAdmin } from "./shared";
 import { limiteBornee, decalage } from "../../utils/pagination";
+import type { Prisma } from "@prisma/client";
 
 const router = Router();
 
@@ -17,7 +19,7 @@ router.get("/merchants", authMiddleware, isSystemAdmin, async (req: Request, res
     const offset = decalage(req.query.offset);
     const status = getQueryString(req.query.status, "");
 
-    const where: any = {};
+    const where: Prisma.OrganizationWhereInput = {};
     if (status) where.status = status;
 
     const merchants = (await db.organization.findMany({
@@ -29,7 +31,7 @@ router.get("/merchants", authMiddleware, isSystemAdmin, async (req: Request, res
         memberships: { select: { id: true, role: true, user: { select: { email: true } } } },
       },
       orderBy: { createdAt: "desc" },
-    })) as any[];
+    }));
 
     const total = await db.organization.count({ where });
 
@@ -59,14 +61,14 @@ router.get("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Reque
         tickets: { take: 5, orderBy: { createdAt: "desc" } },
         commissionHistory: { take: 12, orderBy: { period: "desc" } },
       },
-    }) as any;
+    });
 
     if (!merchant) {
       throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
     }
 
     // Get revenue stats
-    const storeIds = (merchant.stores || []).map((s: any) => s.id);
+    const storeIds = (merchant.stores || []).map((s) => s.id);
     const orders = await db.order.findMany({
       where: {
         storeId: {
@@ -113,7 +115,7 @@ router.patch("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Req
     }
 
     const body = schema.parse(req.body);
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     const merchant = await db.organization.update({
       where: { id: orgId },
@@ -125,7 +127,7 @@ router.patch("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Req
         adminId,
         action: "UPDATE_MERCHANT",
         target: orgId,
-        changes: body as any,
+        changes: body,
       },
     });
 
@@ -144,7 +146,7 @@ router.post("/merchants/:orgId/suspend", authMiddleware, isSystemAdmin, async (r
     });
 
     const body = schema.parse(req.body);
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     const updated = await MerchantClosureService.suspend(orgId, body.reason);
 
@@ -153,7 +155,7 @@ router.post("/merchants/:orgId/suspend", authMiddleware, isSystemAdmin, async (r
         adminId,
         action: "SUSPEND_MERCHANT",
         target: orgId,
-        changes: { reason: body.reason } as any,
+        changes: { reason: body.reason },
       },
     });
 
@@ -168,7 +170,7 @@ router.post("/merchants/:orgId/suspend", authMiddleware, isSystemAdmin, async (r
 router.post("/merchants/:orgId/unsuspend", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.params.orgId as string;
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     const updated = await MerchantClosureService.unsuspend(orgId);
 
@@ -177,7 +179,7 @@ router.post("/merchants/:orgId/unsuspend", authMiddleware, isSystemAdmin, async 
         adminId,
         action: "UNSUSPEND_MERCHANT",
         target: orgId,
-        changes: {} as any,
+        changes: {},
       },
     });
 
@@ -197,7 +199,7 @@ router.post("/merchants/:orgId/close", authMiddleware, isSystemAdmin, async (req
     });
 
     const body = schema.parse(req.body);
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     const result = await MerchantClosureService.close(orgId, body.reason);
 
@@ -209,7 +211,7 @@ router.post("/merchants/:orgId/close", authMiddleware, isSystemAdmin, async (req
         changes: {
           reason: body.reason,
           archiveId: result.archive.id,
-        } as any,
+        },
       },
     });
 
@@ -224,7 +226,7 @@ router.post("/merchants/:orgId/close", authMiddleware, isSystemAdmin, async (req
 router.post("/merchants/:orgId/restore-from-backup", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.params.orgId as string;
-    const adminId = (req as any).userId;
+    const adminId = userIdRequis(req);
 
     const updated = await MerchantClosureService.restoreFromBackup(orgId, adminId);
 
@@ -233,7 +235,7 @@ router.post("/merchants/:orgId/restore-from-backup", authMiddleware, isSystemAdm
         adminId,
         action: "RESTORE_MERCHANT",
         target: orgId,
-        changes: {} as any,
+        changes: {},
       },
     });
 
@@ -252,7 +254,7 @@ router.get("/stores", authMiddleware, isSystemAdmin, async (req: Request, res: R
     const limit = limiteBornee(req.query.limit, 50, 200);
     const offset = decalage(req.query.offset);
 
-    const where: any = { deletedAt: null };
+    const where: Prisma.StoreWhereInput = { deletedAt: null };
 
     if (recherche) {
       where.OR = [

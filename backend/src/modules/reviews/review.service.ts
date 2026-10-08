@@ -2,6 +2,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 
 import { etatModeration } from "./etat-moderation";
+import type { Prisma } from "@prisma/client";
 
 export interface NoteDuCommerce {
   /** Moyenne des avis publiés, ou null tant que personne n'a noté. */
@@ -73,7 +74,7 @@ export class ReviewService {
     const skip = options?.skip || 0;
     const take = options?.take || 50;
 
-    const whereClause: any = { storeId };
+    const whereClause: Prisma.ReviewWhereInput = { storeId };
     if (options?.productId) {
       whereClause.productId = options.productId;
     }

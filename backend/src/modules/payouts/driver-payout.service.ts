@@ -19,8 +19,7 @@ import { ibanNormalise, ibanValide } from "../../utils/sepa";
  * `OrderDelivery.payoutId` interdit qu'une course soit payée deux fois.
  */
 
-const ETATS_VERSEMENT = ["PENDING", "PAID", "CANCELLED"] as const;
-export type EtatVersement = (typeof ETATS_VERSEMENT)[number];
+export type EtatVersement = "PENDING" | "PAID" | "CANCELLED";
 
 /** Les moyens de versement proposés. */
 export const MOYENS_VERSEMENT = ["BANK_TRANSFER", "CASH", "OTHER"] as const;

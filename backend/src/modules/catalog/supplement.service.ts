@@ -71,7 +71,7 @@ export const schemaGroupes = z
 function choixLisibles(brut: unknown): ChoixSupplement[] {
   if (!Array.isArray(brut)) return [];
   return brut
-    .filter((c): c is Record<string, unknown> => Boolean(c) && typeof c === "object" && typeof (c as any).id === "string")
+    .filter((c): c is Record<string, unknown> & { id: string } => typeof c === "object" && c !== null && "id" in c && typeof c.id === "string")
     .map((c) => ({
       id: c.id as string,
       label: String(c.label ?? ""),

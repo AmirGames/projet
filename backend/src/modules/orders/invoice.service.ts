@@ -1,6 +1,10 @@
+import { PaymentStatus, type Invoice, type Prisma } from "@prisma/client";
 import { db } from "../../services/db";
+import { codeErreur } from "../../utils/code-erreur";
 import { totalCommercant } from "../delivery/delivery-mode.service";
 import { ApiError } from "../../middleware/errorHandler";
+import { objetJson, listeJson } from "../../utils/json";
+
 
 export class InvoiceService {
   /**
@@ -89,7 +93,7 @@ export class InvoiceService {
       category:    item.product.category?.name || null,
       variant:     item.variant?.label         || null,
       // Les suppléments payés, figés sur la ligne : « Bacon », « Cheddar ».
-      supplements: (((item.selectedOptions as any)?.supplements || []) as { label: string }[]).map((x) => x.label),
+      supplements: listeJson(objetJson(item.selectedOptions).supplements).map((x) => objetJson(x).label).filter((l): l is string => typeof l === "string"),
       sku:         item.variant?.sku || item.product.sku,
       quantity:    item.quantity,
       unitPrice:   parseFloat(item.price.toString()),
@@ -139,11 +143,11 @@ export class InvoiceService {
             storeId,
             orderId:          order.id,
             issuedAt:         order.createdAt,
-            emetteurJson:     emetteur     as any,
-            destinataireJson: destinataire as any,
-            lignesJson:       lignes       as any,
+            emetteurJson:     emetteur    ,
+            destinataireJson: destinataire,
+            lignesJson:       lignes      ,
             subtotal,
-            taxJson:  recapTva as any,
+            taxJson:  recapTva,
             taxTotal,
             fees,
             discount,
@@ -151,10 +155,10 @@ export class InvoiceService {
           },
         });
       });
-    } catch (error: any) {
+    } catch (error) {
       // Émission concurrente : l'autre transaction a gagné, la nôtre est
       // annulée avec son numéro. On rend la facture déjà créée.
-      if (error?.code !== "P2002") throw error;
+      if (codeErreur(error) !== "P2002") throw error;
       const existante = await db.invoice.findUnique({ where: { orderId: order.id } });
       if (!existante) throw error;
       facture = existante;
@@ -170,11 +174,11 @@ export class InvoiceService {
    * change après l'émission (webhook Stripe, remboursement). L'écran ne le
    * recevait pas et affichait « En attente de paiement » sur une commande payée.
    */
-  private static _factureDepuisStockage(facture: any, paymentStatus: string) {
-    const emetteur:     any = facture.emetteurJson;
-    const destinataire: any = facture.destinataireJson;
-    const lignes:       any[] = facture.lignesJson as any[];
-    const taxJson:      any[] = facture.taxJson    as any[];
+  private static _factureDepuisStockage(facture: Invoice, paymentStatus: string) {
+    const emetteur     = objetJson(facture.emetteurJson);
+    const destinataire = objetJson(facture.destinataireJson);
+    const lignes       = listeJson(facture.lignesJson);
+    const taxJson      = listeJson(facture.taxJson);
 
     return {
       invoiceNumber: facture.number,
@@ -187,7 +191,7 @@ export class InvoiceService {
       subtotal:    parseFloat(facture.subtotal.toString()),
       taxDetail:   taxJson,                                          // tableau multi-taux
       tax:         parseFloat(facture.taxTotal.toString()),
-      taxRate:     taxJson.length === 1 ? taxJson[0].taux : null,   // null si multi-taux
+      taxRate:     taxJson.length === 1 ? (objetJson(taxJson[0]).taux ?? null) : null,   // null si multi-taux
       taxIncluded: true,
       fees:        parseFloat(facture.fees.toString()),
       discount:    parseFloat(facture.discount.toString()),
@@ -229,18 +233,20 @@ export class InvoiceService {
     const skip = options?.skip || 0;
     const take = options?.take || 50;
 
-    const whereClause: any = { storeId };
+    const whereClause: Prisma.InvoiceWhereInput = { storeId };
 
     // Les filtres de l'écran (payées, en attente, échouées) portent sur le
     // paiement de la commande.
-    if (options?.paymentStatus && ["PENDING", "SUCCEEDED", "FAILED", "REFUNDED"].includes(options.paymentStatus)) {
-      whereClause.order = { paymentStatus: options.paymentStatus };
+    const statutPaiement = Object.values(PaymentStatus).find((statut) => statut === options?.paymentStatus);
+    if (statutPaiement) {
+      whereClause.order = { paymentStatus: statutPaiement };
     }
 
     if (options?.startDate || options?.endDate) {
-      whereClause.issuedAt = {};
-      if (options.startDate) whereClause.issuedAt.gte = options.startDate;
-      if (options.endDate)   whereClause.issuedAt.lte = options.endDate;
+      whereClause.issuedAt = {
+        ...(options.startDate ? { gte: options.startDate } : {}),
+        ...(options.endDate ? { lte: options.endDate } : {}),
+      };
     }
 
     const [invoices, total] = await Promise.all([
@@ -257,10 +263,10 @@ export class InvoiceService {
       data: invoices.map((inv) => ({
         invoiceNumber: inv.number,
         orderId:       inv.orderId,
-        customerName:  (inv.destinataireJson as any)?.name || "—",
-        customerEmail: (inv.destinataireJson as any)?.email || "—",
+        customerName:  objetJson(inv.destinataireJson).name || "—",
+        customerEmail: objetJson(inv.destinataireJson).email || "—",
         amount:        parseFloat(inv.total.toString()),
-        itemCount:     ((inv.lignesJson as any[]) || []).length,
+        itemCount:     listeJson(inv.lignesJson).length,
         status:        inv.order.paymentStatus,
         date:          inv.issuedAt,
       })),

@@ -112,17 +112,19 @@ const GESTES_PUBLICS: { methode: string; chemin: RegExp }[] = [
  * savoir à qui il appartient. Les boutiques et les organisations n'y figurent
  * pas : leurs identifiants sont reconnus par la fouille du chemin.
  */
+const PROPRIETAIRE = { storeId: true, store: { select: { orgId: true } } } as const;
+
 const RESSOURCES: {
   prefixe: string;
-  /** Nom du délégué Prisma. */
-  modele: string;
+  /** Lecture du propriétaire (boutique et organisation) de la ressource désignée. */
+  lire: (id: string) => Promise<{ storeId: string | null; store: { orgId: string } | null } | null>;
 }[] = [
-  { prefixe: "/api/staff", modele: "staff" },
-  { prefixe: "/api/products", modele: "product" },
-  { prefixe: "/api/categories", modele: "category" },
-  { prefixe: "/api/orders", modele: "order" },
-  { prefixe: "/api/promotions", modele: "promotion" },
-  { prefixe: "/api/delivery-zones", modele: "deliveryZone" },
+  { prefixe: "/api/staff", lire: (id) => db.staff.findUnique({ where: { id }, select: PROPRIETAIRE }) },
+  { prefixe: "/api/products", lire: (id) => db.product.findUnique({ where: { id }, select: PROPRIETAIRE }) },
+  { prefixe: "/api/categories", lire: (id) => db.category.findUnique({ where: { id }, select: PROPRIETAIRE }) },
+  { prefixe: "/api/orders", lire: (id) => db.order.findUnique({ where: { id }, select: PROPRIETAIRE }) },
+  { prefixe: "/api/promotions", lire: (id) => db.promotion.findUnique({ where: { id }, select: PROPRIETAIRE }) },
+  { prefixe: "/api/delivery-zones", lire: (id) => db.deliveryZone.findUnique({ where: { id }, select: PROPRIETAIRE }) },
 ];
 
 interface Cible { orgId: string; storeId?: string }
@@ -177,13 +179,7 @@ async function cibleDeLaRessource(chemin: string): Promise<Cible | null | undefi
   if (!premier || !ressembleAUnId(premier)) return undefined;
 
   try {
-    const delegue = (db as any)[ressource.modele];
-    if (!delegue?.findUnique) throw new Error("Ressource non vérifiable");
-
-    const trouvee = await delegue.findUnique({
-      where: { id: premier },
-      select: { storeId: true, store: { select: { orgId: true } } },
-    });
+    const trouvee = await ressource.lire(premier);
 
     if (!trouvee) return null;
     if (!trouvee.store?.orgId || !trouvee.storeId) throw new Error("Propriétaire de la ressource inconnu");

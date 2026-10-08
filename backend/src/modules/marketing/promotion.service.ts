@@ -1,5 +1,6 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { codeErreur } from "../../utils/code-erreur";
 
 export interface PromotionData {
   storeId: string;
@@ -95,8 +96,8 @@ export class PromotionService {
       });
 
       return promotion;
-    } catch (error: any) {
-      if (error.code === "P2002") {
+    } catch (error) {
+      if (codeErreur(error) === "P2002") {
         throw new ApiError(409, "Code promo déjà utilisé dans ce store", "CODE_EXISTS");
       }
       throw error;
@@ -191,11 +192,11 @@ export class PromotionService {
     // Les prix sont TTC et vérifiés côté serveur : la plage horaire doit l'être
     // aussi. Un client qui sait que la promo est valable de 12h à 14h n'a qu'à
     // attendre que l'heure tourne côté serveur si on ne vérifie que le frontend.
-    if ((promotion as any).activeFromTime || (promotion as any).activeToTime) {
+    if (promotion.activeFromTime || promotion.activeToTime) {
       const now2 = new Date();
       const minutesMaintenant = now2.getHours() * 60 + now2.getMinutes();
-      const debut = (promotion as any).activeFromTime ? enMinutes((promotion as any).activeFromTime) : 0;
-      const fin   = (promotion as any).activeToTime   ? enMinutes((promotion as any).activeToTime)   : 24 * 60;
+      const debut = promotion.activeFromTime ? enMinutes(promotion.activeFromTime) : 0;
+      const fin   = promotion.activeToTime   ? enMinutes(promotion.activeToTime)   : 24 * 60;
 
       const dansLaPlage =
         fin > debut
@@ -203,8 +204,8 @@ export class PromotionService {
           : minutesMaintenant >= debut || minutesMaintenant < fin;  // passe minuit (22h–02h)
 
       if (!dansLaPlage) {
-        const de = (promotion as any).activeFromTime ?? "00:00";
-        const a  = (promotion as any).activeToTime   ?? "24:00";
+        const de = promotion.activeFromTime ?? "00:00";
+        const a  = promotion.activeToTime   ?? "24:00";
         throw new ApiError(
           400,
           `Ce code promo n'est valable qu'entre ${de} et ${a}`,
@@ -214,7 +215,7 @@ export class PromotionService {
     }
 
     // ── Jours de la semaine ────────────────────────────────────────────────
-    const jours = (promotion as any).activeDays as number[] | undefined;
+    const jours = promotion.activeDays;
     if (jours && jours.length > 0) {
       const jourSemaine = new Date().getDay(); // 0 = dimanche
       if (!jours.includes(jourSemaine)) {
@@ -271,8 +272,8 @@ export class PromotionService {
         where: { id },
         data: { currentUses: { increment: 1 } },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Promotion non trouvée", "PROMOTION_NOT_FOUND");
       }
       throw error;
@@ -298,8 +299,8 @@ export class PromotionService {
           ...(data.activeDays     !== undefined && { activeDays:     data.activeDays }),
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Promotion non trouvée", "PROMOTION_NOT_FOUND");
       }
       throw error;
@@ -319,8 +320,8 @@ export class PromotionService {
           status: promotion.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Promotion non trouvée", "PROMOTION_NOT_FOUND");
       }
       throw error;
@@ -332,8 +333,8 @@ export class PromotionService {
       return await db.promotion.delete({
         where: { id },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Promotion non trouvée", "PROMOTION_NOT_FOUND");
       }
       throw error;

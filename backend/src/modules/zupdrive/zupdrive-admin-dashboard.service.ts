@@ -1,5 +1,6 @@
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
+import type { Prisma } from "@prisma/client";
 
 /**
  * Admin Dashboard pour ZupDrive.
@@ -108,7 +109,7 @@ export class ZupDriveAdminDashboardService {
 
     // Construire la réponse
     const byStatus: Record<string, number> = {};
-    coursesByStatus.forEach((item: any) => {
+    coursesByStatus.forEach((item) => {
       byStatus[item.statut] = item._count;
     });
 
@@ -132,7 +133,7 @@ export class ZupDriveAdminDashboardService {
         successRate: paymentProcessed + paymentPending > 0 ? (paymentProcessed / (paymentProcessed + paymentPending)) * 100 : 0,
         avgPayout: (paymentStats._avg.amountCentimes || 0) / 100, // En euros
       },
-      regions: regions.map((r: any) => ({
+      regions: regions.map((r) => ({
         name: r.region,
         courseCount: r._count,
         driverCount: 0, // Sera rempli après
@@ -190,7 +191,7 @@ export class ZupDriveAdminDashboardService {
     limit: number = 50,
     offset: number = 0
   ) {
-    const where: any = {};
+    const where: Prisma.CourseDriveWhereInput = {};
     if (filters?.region) where.region = filters.region;
     if (filters?.status) where.statut = filters.status;
     if (filters?.driverId) where.chauffeurId = filters.driverId;
@@ -283,7 +284,7 @@ export class ZupDriveAdminDashboardService {
    * Alertes et anomalies de la plateforme.
    */
   static async getAlerts() {
-    const alerts: any[] = [];
+    const alerts: { type: string; severity: "LOW" | "MEDIUM" | "HIGH"; message: string; count: number }[] = [];
 
     // Chauffeurs hors ligne depuis longtemps
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);

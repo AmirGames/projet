@@ -258,7 +258,7 @@ function obtenirDisque() {
         pourcentUtilise: total > 0 ? Math.round((utilise / total) * 1000) / 10 : 0,
       };
     }
-  } catch (err) {
+  } catch {
     // En cas d'erreur (Windows, droits insuffisants, etc.)
   }
 

@@ -224,7 +224,7 @@ router.patch("/:id/availability", authMiddleware, autoriserCatalogue, checkOrgSt
 
     // Un produit épuisé reste publié : il s'affiche en vitrine, barré, mais ne
     // peut plus être commandé.
-    const product = await ProductService.update(id, { isAvailable: body.isAvailable } as any);
+    const product = await ProductService.update(id, { isAvailable: body.isAvailable });
 
     logger.info("Product availability changed", { id, isAvailable: body.isAvailable });
 

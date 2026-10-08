@@ -3,6 +3,7 @@ import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
 import { isSuperOwner } from "./shared";
 import { limiteBornee, decalage } from "../../utils/pagination";
+import { objetJson } from "../../utils/json";
 
 const router = Router();
 
@@ -84,7 +85,7 @@ router.get("/analytics", authMiddleware, isSuperOwner, async (req: Request, res:
     const duPlusRecent = [...data].reverse();
 
     res.json({
-      data: duPlusRecent.map(({ periodeIndex, ...reste }) => reste),
+      data: duPlusRecent.map(({ periodeIndex: _index, ...reste }) => reste),
       summary: {
         totalRevenue: Number(totalRevenue.toFixed(2)),
         totalTransactions,
@@ -123,7 +124,7 @@ router.get("/audit-logs", authMiddleware, isSuperOwner, async (req: Request, res
         actorEmail: entree.admin?.email || "—",
         resource: entree.action.split("_").slice(1).join("_") || "SYSTEM",
         resourceId: entree.target,
-        changes: { before: {}, after: (entree.changes as Record<string, any>) || {} },
+        changes: { before: {}, after: objetJson(entree.changes) },
         status: "SUCCESS",
         // Renseignées depuis que la table les garde : la section
         // « Informations réseau » du journal était vide.

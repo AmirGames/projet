@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
+    "test:messages": "jest lib/__tests__/messages-parite.test.ts",
     "test:checkout": "jest app/checkout/__tests__/page.test.jsx --runInBand",
     "format": "prettier --write .",
     "verif:domaines": "node scripts/verif-domaines.mjs",

@@ -166,7 +166,7 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
         adminId: req.userId as string,
         action: "GRANT_ADMIN",
         target: promu.id,
-        changes: { role: body.role, plateforme: body.plateforme } as any,
+        changes: { role: body.role, plateforme: body.plateforme },
       },
     });
 
@@ -223,7 +223,7 @@ router.delete("/admins/:adminId", authMiddleware, superOwnerSeul, async (req: Re
         adminId: req.userId as string,
         action: "REVOKE_ADMIN",
         target: adminId,
-        changes: {} as any,
+        changes: {},
       },
     });
 
@@ -277,7 +277,7 @@ router.patch("/admins/:adminId/role", authMiddleware, superOwnerSeul, async (req
         adminId: req.userId as string,
         action: "CHANGE_PLATFORM_ROLE",
         target: adminId,
-        changes: { plateforme, avant: avant?.role ?? null, apres: role } as any,
+        changes: { plateforme, avant: avant?.role ?? null, apres: role },
       },
     });
 
@@ -307,7 +307,7 @@ router.delete("/admins/:adminId/acces/:plateforme", authMiddleware, superOwnerSe
         adminId: req.userId as string,
         action: "REVOKE_PLATFORM_ROLE",
         target: adminId,
-        changes: { plateforme } as any,
+        changes: { plateforme },
       },
     });
 
@@ -442,7 +442,7 @@ router.put("/roles/:code", authMiddleware, superOwnerSeul, async (req: Request, 
         adminId: req.userId as string,
         action: "UPDATE_PLATFORM_ROLE_PERMISSIONS",
         target: `${plateforme}:${code}`,
-        changes: { plateforme, permissions: role.permissions } as any,
+        changes: { plateforme, permissions: role.permissions },
       },
     });
 
@@ -467,7 +467,7 @@ router.post("/roles", authMiddleware, superOwnerSeul, async (req: Request, res: 
         adminId: req.userId as string,
         action: "CREATE_PLATFORM_ROLE",
         target: `${plateforme}:${role.code}`,
-        changes: { plateforme, label: role.label } as any,
+        changes: { plateforme, label: role.label },
       },
     });
 
@@ -493,7 +493,7 @@ router.delete("/roles/:code", authMiddleware, superOwnerSeul, async (req: Reques
         adminId: req.userId as string,
         action: "DELETE_PLATFORM_ROLE",
         target: `${plateforme}:${code}`,
-        changes: { plateforme } as any,
+        changes: { plateforme },
       },
     });
 

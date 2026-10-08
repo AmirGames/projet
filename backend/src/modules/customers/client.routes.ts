@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { finAttente } from "../drivers/delivery-proof.service";
 import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient, retardPourLeClient } from "../drivers/retard-livraison";
 import { positionLivreurVisible } from "../orders/suivi-commande.service";
@@ -16,6 +17,7 @@ import { genreDuCommerce } from "../stores/store-type.service";
 import { trierProduitsSelonCategorie } from "../catalog/category.service";
 import { DeliveryZoneService } from "../delivery/delivery-zone.service";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { CustomerAccountService } from "./customer-account.service";
 import { ficheClientDuCompte } from "./fiche-client.service";
 import { adressesDuClient } from "./adresses-client.service";
@@ -210,8 +212,8 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
         OR: [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
-          { city: city ? { contains: city as string, mode: "insensitive" } : undefined }
-        ].filter(Boolean) as any
+          ...(city ? [{ city: { contains: city as string, mode: "insensitive" as const } }] : []),
+        ]
       },
       include: {
         org: {
@@ -257,17 +259,33 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
  * Elles arrivaient brutes : sans ordre, et sans le prix réellement payé. La
  * page n'a pas à savoir qu'un prix vide signifie « celui du plat ».
  */
-function declinaisonsLisibles(produit: any) {
+interface VarianteBrute {
+  id: string;
+  label: string;
+  price: Prisma.Decimal | number | null;
+  isAvailable: boolean;
+  displayOrder: number;
+}
+
+interface ProduitBrut {
+  name: string;
+  price: Prisma.Decimal | number;
+  variants?: VarianteBrute[] | null;
+  variantLabel?: string | null;
+  category?: { name: string; displayOrder?: number | null; sortMode?: string | null } | null;
+}
+
+function declinaisonsLisibles(produit: ProduitBrut) {
   const variantes = Array.isArray(produit.variants) ? produit.variants : [];
 
   return variantes
     .slice()
-    .sort((a: any, b: any) =>
+    .sort((a, b) =>
       a.displayOrder !== b.displayOrder
         ? a.displayOrder - b.displayOrder
         : String(a.label).localeCompare(String(b.label), "fr")
     )
-    .map((variante: any) => ({
+    .map((variante) => ({
       id: variante.id,
       label: variante.label,
       price: variante.price === null ? null : Number(variante.price),
@@ -276,8 +294,13 @@ function declinaisonsLisibles(produit: any) {
     }));
 }
 
-function regrouperParCategorie(produits: any[]) {
-  const categories = new Map<string, { ordre: number; sortMode: string | undefined; produits: any[] }>();
+type ProduitLisible<P extends ProduitBrut> = Omit<P, "variants" | "variantLabel"> & {
+  variants: ReturnType<typeof declinaisonsLisibles>;
+  variantLabel: string | null;
+};
+
+function regrouperParCategorie<P extends ProduitBrut>(produits: P[]) {
+  const categories = new Map<string, { ordre: number; sortMode: string | null | undefined; produits: ProduitLisible<P>[] }>();
 
   for (const produit of produits) {
     const nom = produit.category?.name || "Autres";
@@ -345,7 +368,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           }
         }
       }
-    }) as any;
+    });
 
     if (!store) {
       throw new ApiError(404, "Restaurant non trouvé", "NOT_FOUND");
@@ -390,13 +413,13 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
 
     // Les suppléments payants de chaque plat, TTC comme le reste.
     const supplements = await SupplementService.auClient(store.id, store.products);
-    store.products = store.products.map((produit: any) => ({
+    store.products = store.products.map((produit) => ({
       ...produit,
       supplements: supplements.get(produit.id) || [],
     }));
 
     const categorizedProducts = regrouperParCategorie(
-      store.products.map((produit: any) => ({ ...produit, note: noteDe.get(produit.id) ?? null }))
+      store.products.map((produit) => ({ ...produit, note: noteDe.get(produit.id) ?? null }))
     );
 
     res.json({
@@ -545,7 +568,7 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
  * confirmée (voir fiche-client.service.ts).
  */
 async function clientConnecte(req: Request) {
-  const userId = req.userId || (req as any).user?.userId;
+  const userId = userIdRequis(req);
   return ficheClientDuCompte(userId, { creer: true });
 }
 
@@ -590,7 +613,7 @@ router.put("/me/addresses", authMiddleware, async (req: Request, res: Response, 
  */
 router.get("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.userId || (req as any).user?.userId;
+    const userId = userIdRequis(req);
     res.json({ success: true, data: CustomerAccountService.public(await CustomerAccountService.apercu(userId)) });
   } catch (err) {
     next(err);
@@ -600,7 +623,7 @@ router.get("/me/suppression", authMiddleware, async (req: Request, res: Response
 // POST /client/me/suppression - Supprimer son compte ZupEat
 router.post("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.userId || (req as any).user?.userId;
+    const userId = userIdRequis(req);
     const { motif } = z.object({ motif: z.string().max(500).optional() }).parse(req.body ?? {});
     const apercu = await CustomerAccountService.supprimer(userId, motif);
     res.json({

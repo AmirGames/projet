@@ -26,7 +26,7 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
     const config = await db.systemConfig.findFirst();
     const tauxParDefaut = Number(config?.platformFeePercent ?? 5);
     const grille = await PlanService.grille();
-    const tauxParFormule = new Map(grille.map((formule) => [formule.code, formule.commission]));
+    const tauxParFormule = new Map<string, number>(grille.map((formule) => [formule.code, formule.commission]));
 
     const debutMois = new Date();
     debutMois.setDate(1);
@@ -104,8 +104,8 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
 
           // Ancienne commande : tierAtOrder contient le code du plan qui
           // valait ce jour-là ; tauxParFormule le convertit en taux.
-          const tauxHistorique = (c as any).tierAtOrder
-            ? tauxParFormule.get((c as any).tierAtOrder) ?? tauxDuJour
+          const tauxHistorique = c.tierAtOrder
+            ? tauxParFormule.get(c.tierAtOrder) ?? tauxDuJour
             : tauxDuJour;
 
           return somme + (Number(c.totalAmount) * tauxHistorique) / 100;

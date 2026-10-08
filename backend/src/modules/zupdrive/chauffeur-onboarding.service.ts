@@ -4,6 +4,7 @@ import { logger } from "../../config/logger";
 import { emitNotification } from "../realtime/socket";
 import { notifierPlateforme } from "../notifications/notification.service";
 import { deposerVersion, examinerVersion } from "./pieces-drive";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * L'inscription d'un chauffeur ZupDrive (licence LVC ou de transport rémunéré
@@ -167,7 +168,7 @@ type Dossier = NonNullable<Awaited<ReturnType<typeof lireDossier>>>;
 
 function lireDossier(where: { id: string } | { userId: string }) {
   return db.chauffeurDrive.findUnique({
-    where: where as any,
+    where: where,
     // Les versions archivées (remplacées) ne comptent plus : historique seul.
     include: {
       documents: { where: { archiveeLe: null }, orderBy: { createdAt: "asc" } },
@@ -233,9 +234,9 @@ export class ChauffeurOnboardingService {
       await db.chauffeurDrive.create({
         data: { userId, ...this.donneesDuProfil(profil), nomComplet },
       });
-    } catch (err: any) {
+    } catch (err) {
       // Deux requêtes simultanées : la seconde retombe sur le dossier créé.
-      if (err?.code !== "P2002") throw err;
+      if (codeErreur(err) !== "P2002") throw err;
     }
 
     logger.info("ZupDrive chauffeur dossier opened", { userId });

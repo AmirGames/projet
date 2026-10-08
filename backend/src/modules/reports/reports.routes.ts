@@ -1,3 +1,5 @@
+import { OrderStatus, PaymentStatus } from "@prisma/client";
+import { z } from "zod";
 import { Router, Request, Response, NextFunction } from "express";
 import { ReportsService } from "./reports.service";
 import { montantCommercant } from "../delivery/delivery-mode.service";
@@ -14,8 +16,8 @@ router.get("/sales", authMiddleware, async (req: Request, res: Response, next: N
     const orgId = req.query.orgId as string;
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-    const status = req.query.status as string;
-    const paymentStatus = req.query.paymentStatus as string;
+    const status = req.query.status ? z.enum(OrderStatus).parse(req.query.status) : undefined;
+    const paymentStatus = req.query.paymentStatus ? z.enum(PaymentStatus).parse(req.query.paymentStatus) : undefined;
 
     if (!storeId && !orgId) {
       throw new ApiError(400, "Parameter 'storeId' or 'orgId' required", "MISSING_PARAM");
@@ -109,7 +111,7 @@ router.get("/export/:type", authMiddleware, async (req: Request, res: Response, 
 
     logger.info("Exporting report", { type, storeId });
 
-    let data: any[] = [];
+    let data: Record<string, unknown>[] = [];
     let filename = "";
 
     if (type === "sales") {
@@ -118,7 +120,7 @@ router.get("/export/:type", authMiddleware, async (req: Request, res: Response, 
         startDate,
         endDate,
       });
-      data = report.orders.map((o: any) => ({
+      data = report.orders.map((o) => ({
         ID: o.id,
         Date: new Date(o.createdAt).toISOString().split("T")[0],
         Customer: o.customerName,

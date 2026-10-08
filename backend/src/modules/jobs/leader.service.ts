@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { hostname } from "os";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Une seule instance lance les tâches de fond.
@@ -47,9 +48,9 @@ export async function prendreLeBail(
   try {
     await db.jobLease.create({ data: { name: NOM, owner: proprietaire, expiresAt: expireLe } });
     return true;
-  } catch (err: any) {
+  } catch (err) {
     // Le bail existe et appartient à une instance vivante.
-    if (err?.code === "P2002") return false;
+    if (codeErreur(err) === "P2002") return false;
     throw err;
   }
 }
