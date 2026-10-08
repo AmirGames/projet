@@ -138,14 +138,10 @@ jobs:
 
   # Les six applications Expo : sans ce job, une erreur de type ou une
   # régression de la session mobile passait la CI (rien ne les vérifiait).
-  # zupdrive-driver ne passe pas encore ses types ni son lint (imports vers un
-  # lib/auth qui n'existe pas) : il est vérifié sans bloquer la PR, le temps
-  # d'être corrigé. Retirez alors son exception ci-dessous.
   mobile:
     name: Mobile (${{ matrix.app }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    continue-on-error: ${{ matrix.app == 'zupdrive-driver' }}
     strategy:
       fail-fast: false
       matrix:
