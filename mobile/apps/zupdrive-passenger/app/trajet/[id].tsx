@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import LiveMap from '../../components/LiveMap';
+import BoutonSos from '../../components/BoutonSos';
 import PaiementCarte from '../../components/PaiementCarte';
 import { Card, COLORS, ErrorBox, Loading, Row } from '../../components/ui';
 import { messageErreur, useToken } from '../../lib/auth';
@@ -19,7 +20,7 @@ import {
 } from '../../lib/courses';
 import { confirmer } from '../../lib/confirmer';
 import { etatPaiementTrajet } from '../../lib/paiement';
-import { statutDetail } from '../../lib/statuts';
+import { STATUTS_SOS, statutDetail } from '../../lib/statuts';
 
 const etoiles = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
@@ -211,6 +212,8 @@ export default function SuiviTrajet() {
         <Row label="Distance" value={`${kilometres(trajet.distanceMetres)} · ${minutes(trajet.dureeSecondes)}`} />
         <Row label="Prix" value={prix(trajet.prixCentimes)} last />
       </Card>
+
+      {STATUTS_SOS.includes(trajet.statut) ? <BoutonSos token={token} courseId={trajet.id} /> : null}
 
       {trajet.peutNoter ? (
         <Card title={`Comment s'est passé votre trajet avec ${chauffeur?.prenom ?? 'votre chauffeur'} ?`}>

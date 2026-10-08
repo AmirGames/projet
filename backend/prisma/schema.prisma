@@ -104,6 +104,10 @@ model User {
   paymentsIntentDrive PaymentIntentDrive[]
   /// Ses adresses « Domicile » et « Travail » pour commander un trajet ZupDrive.
   adressesFavoritesDrive AdresseFavoriteDrive[]
+  /// La personne à prévenir en cas d'alerte SOS pendant un trajet ZupDrive.
+  contactConfianceDrive ContactConfianceDrive?
+  /// Ses alertes SOS ZupDrive.
+  alertesSosDrive AlerteSosDrive[]
   /// Les notifications in-app de cet utilisateur.
   notificationsDrive NotificationDrive[]
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
@@ -3106,6 +3110,7 @@ model CourseDrive {
   societe   SocieteDrive?   @relation(fields: [societeId], references: [id], onDelete: SetNull)
   vehicule  VehiculeDrive?  @relation(fields: [vehiculeId], references: [id], onDelete: SetNull)
   propositions   PropositionCourseDrive[]
+  alerteSos      AlerteSosDrive?
   notes          NoteCourseDrive[]
   ratings        RatingCourseDrive[]
   paymentIntent  PaymentIntentDrive?
@@ -3192,6 +3197,48 @@ model AdresseFavoriteDrive {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, type])
+}
+
+/// La personne de confiance d'un passager ZupDrive : prévenue par e-mail quand
+/// il déclenche une alerte SOS. `consentementLe` : le passager a confirmé avoir
+/// informé cette personne. Donnée personnelle d'un tiers : supprimée avec le compte.
+model ContactConfianceDrive {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  nom            String
+  email          String
+  consentementLe DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Une alerte SOS déclenchée par un passager pendant un trajet ZupDrive.
+/// Une seule par course (rejouer l'appel rend la même alerte). L'alerte est vraie
+/// en base avant tout envoi : un échec de notification ne l'annule pas, et
+/// `equipePrevenueLe` / `contactPrevenuLe` disent ce qui est réellement parti.
+model AlerteSosDrive {
+  id        String  @id @default(cuid())
+  courseId  String  @unique
+  /// Nul une fois le compte supprimé.
+  passagerId String?
+  /// Position du téléphone au moment de l'alerte, si le passager l'a autorisée.
+  latitude  Float?
+  longitude Float?
+  /// Le ticket CRITIQUE ouvert pour l'équipe (traité depuis le support ZupDrive).
+  ticketNumber      String?
+  equipePrevenueLe  DateTime?
+  contactPrevenuLe  DateTime?
+
+  course  CourseDrive @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  passager User?      @relation(fields: [passagerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([passagerId])
 }
 
 // ============================================================================

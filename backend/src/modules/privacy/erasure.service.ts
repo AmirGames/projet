@@ -92,6 +92,8 @@ export async function completeErasure(userId: string): Promise<{ status: string 
     }
     await tx.courseDrive.updateMany({ where: { passagerId: userId }, data: { passagerId: null, departAdresse: "Effacé", arriveeAdresse: "Effacé", departLatitude: 0, departLongitude: 0, arriveeLatitude: 0, arriveeLongitude: 0, motifAnnulation: null } });
     await tx.adresseFavoriteDrive.deleteMany({ where: { userId } });
+    await tx.contactConfianceDrive.deleteMany({ where: { userId } });
+    await tx.alerteSosDrive.updateMany({ where: { passagerId: userId }, data: { passagerId: null, latitude: null, longitude: null } });
     await tx.membership.deleteMany({ where: { userId } });
     await tx.ticketMessage.deleteMany({ where: { authorId: userId } });
     await tx.notification.deleteMany({ where: { recipientEmail: user.email } });
