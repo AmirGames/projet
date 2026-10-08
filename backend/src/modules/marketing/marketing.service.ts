@@ -1,22 +1,24 @@
+import type { Prisma } from "@prisma/client";
+import type { CampaignStatus, CampaignType } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 
 export interface CampaignData {
   name: string;
   description?: string;
-  type: string;
+  type: CampaignType;
   message: string;
   targetAudience?: string;
   scheduledAt?: Date;
 }
 
 export class MarketingService {
-  static async getCampaigns(storeId: string, options?: { skip?: number; take?: number; status?: string }) {
+  static async getCampaigns(storeId: string, options?: { skip?: number; take?: number; status?: CampaignStatus }) {
     try {
       const skip = options?.skip || 0;
       const take = options?.take || 50;
 
-      const whereClause: any = { storeId };
+      const whereClause: Prisma.MarketingCampaignWhereInput = { storeId };
       if (options?.status) {
         whereClause.status = options.status;
       }
@@ -65,7 +67,7 @@ export class MarketingService {
           storeId,
           name: data.name,
           description: data.description,
-          type: data.type as any,
+          type: data.type,
           message: data.message,
           targetAudience: data.targetAudience || "all",
           status: "DRAFT",
@@ -89,7 +91,7 @@ export class MarketingService {
         throw new ApiError(404, "Campaign not found", "CAMPAIGN_NOT_FOUND");
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.MarketingCampaignUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.message !== undefined) updateData.message = data.message;
@@ -107,7 +109,7 @@ export class MarketingService {
     }
   }
 
-  static async updateCampaignStatus(storeId: string, campaignId: string, status: string) {
+  static async updateCampaignStatus(storeId: string, campaignId: string, status: CampaignStatus) {
     try {
       const campaign = await db.marketingCampaign.findUnique({
         where: { id: campaignId },
@@ -117,7 +119,7 @@ export class MarketingService {
         throw new ApiError(404, "Campaign not found", "CAMPAIGN_NOT_FOUND");
       }
 
-      const updateData: any = { status };
+      const updateData: Prisma.MarketingCampaignUpdateInput = { status };
       if (status === "ACTIVE") {
         updateData.startedAt = new Date();
       } else if (status === "COMPLETED") {
@@ -165,7 +167,7 @@ export class MarketingService {
         throw new ApiError(404, "Campaign not found", "CAMPAIGN_NOT_FOUND");
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.MarketingCampaignUpdateInput = {};
       if (field === "sent") updateData.sentCount = { increment };
       if (field === "open") updateData.openCount = { increment };
       if (field === "click") updateData.clickCount = { increment };

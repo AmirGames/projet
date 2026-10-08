@@ -3,6 +3,7 @@ import { db } from "../../services/db";
 import { AddressService } from "../customers/address.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { verifierLaTva } from "../merchants/merchant-profile.service";
+import { objetJson } from "../../utils/json";
 import { codeErreur } from "../../utils/code-erreur";
 import {
   libelleDeLEtablissement,
@@ -12,9 +13,7 @@ import {
 } from "./store-type.service";
 
 /** Les réglages d'une boutique (colonne Json) : un objet, quoi qu'il y ait en base. */
-export function reglagesDe(settings: Prisma.JsonValue | null | undefined): Prisma.JsonObject {
-  return typeof settings === "object" && settings !== null && !Array.isArray(settings) ? settings : {};
-}
+export const reglagesDe = objetJson;
 
 export interface StoreSettingsData {
   name?: string;
@@ -132,7 +131,7 @@ export class StoreSettingsService {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
 
-      const currentSettings = (typeof store.settings === 'object' && store.settings ? store.settings : {}) as Record<string, any>;
+      const currentSettings = reglagesDe(store.settings);
       const updatedSettings = {
         ...currentSettings,
         ...(data.timezone && { timezone: data.timezone }),
@@ -180,7 +179,7 @@ export class StoreSettingsService {
       throw new ApiError(400, "Type de cuisine inconnu", "UNKNOWN_CUISINE_TYPE");
     }
 
-      const updateData: any = {
+      const updateData: Prisma.StoreUpdateInput = {
         ...(data.name && { name: data.name }),
         ...(data.description && { description: data.description }),
         ...(data.address && { address: data.address }),
@@ -200,9 +199,9 @@ export class StoreSettingsService {
 
       // L'adresse change : la position suit.
       const position = await AddressService.repositionner(store, {
-        address: updateData.address ?? store.address,
-        city: updateData.city ?? store.city,
-        postalCode: updateData.postalCode ?? store.postalCode,
+        address: data.address || store.address,
+        city: data.city || store.city,
+        postalCode: data.postalCode || store.postalCode,
       }, { latitude: data.latitude, longitude: data.longitude });
 
       if (position) {
@@ -238,8 +237,7 @@ export class StoreSettingsService {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
 
-      const settings = (typeof store.settings === 'object' && store.settings ? store.settings : {}) as Record<string, any>;
-      settings.logo = logoUrl;
+      const settings = { ...reglagesDe(store.settings), logo: logoUrl };
 
       return await db.store.update({
         where: { id: storeId },
@@ -258,9 +256,7 @@ export class StoreSettingsService {
       throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
     }
 
-    const { logo: _retire, ...settings } = (
-      typeof store.settings === "object" && store.settings ? store.settings : {}
-    ) as Record<string, any>;
+    const { logo: _retire, ...settings } = reglagesDe(store.settings);
 
     return db.store.update({ where: { id: storeId }, data: { settings } });
   }
@@ -275,8 +271,7 @@ export class StoreSettingsService {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
 
-      const settings = (typeof store.settings === 'object' && store.settings ? store.settings : {}) as Record<string, any>;
-      settings.banner = bannerUrl;
+      const settings = { ...reglagesDe(store.settings), banner: bannerUrl };
 
       return await db.store.update({
         where: { id: storeId },
@@ -295,9 +290,7 @@ export class StoreSettingsService {
       throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
     }
 
-    const { banner: _retire, ...settings } = (
-      typeof store.settings === "object" && store.settings ? store.settings : {}
-    ) as Record<string, any>;
+    const { banner: _retire, ...settings } = reglagesDe(store.settings);
 
     return db.store.update({ where: { id: storeId }, data: { settings } });
   }

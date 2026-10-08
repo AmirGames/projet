@@ -16,6 +16,7 @@ import { genreDuCommerce } from "../stores/store-type.service";
 import { trierProduitsSelonCategorie } from "../catalog/category.service";
 import { DeliveryZoneService } from "../delivery/delivery-zone.service";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { CustomerAccountService } from "./customer-account.service";
 import { ficheClientDuCompte } from "./fiche-client.service";
 import { adressesDuClient } from "./adresses-client.service";
@@ -210,8 +211,8 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
         OR: [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
-          { city: city ? { contains: city as string, mode: "insensitive" } : undefined }
-        ].filter(Boolean) as any
+          ...(city ? [{ city: { contains: city as string, mode: "insensitive" as const } }] : []),
+        ]
       },
       include: {
         org: {
@@ -345,7 +346,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           }
         }
       }
-    }) as any;
+    });
 
     if (!store) {
       throw new ApiError(404, "Restaurant non trouvé", "NOT_FOUND");
@@ -545,7 +546,7 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
  * confirmée (voir fiche-client.service.ts).
  */
 async function clientConnecte(req: Request) {
-  const userId = req.userId || (req as any).user?.userId;
+  const userId = userIdRequis(req);
   return ficheClientDuCompte(userId, { creer: true });
 }
 
@@ -590,7 +591,7 @@ router.put("/me/addresses", authMiddleware, async (req: Request, res: Response, 
  */
 router.get("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.userId || (req as any).user?.userId;
+    const userId = userIdRequis(req);
     res.json({ success: true, data: CustomerAccountService.public(await CustomerAccountService.apercu(userId)) });
   } catch (err) {
     next(err);
@@ -600,7 +601,7 @@ router.get("/me/suppression", authMiddleware, async (req: Request, res: Response
 // POST /client/me/suppression - Supprimer son compte ZupEat
 router.post("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.userId || (req as any).user?.userId;
+    const userId = userIdRequis(req);
     const { motif } = z.object({ motif: z.string().max(500).optional() }).parse(req.body ?? {});
     const apercu = await CustomerAccountService.supprimer(userId, motif);
     res.json({

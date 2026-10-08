@@ -19,7 +19,7 @@ export class TaxService {
       const skip = options?.skip || 0;
       const take = options?.take || 50;
 
-      const whereClause: any = { storeId };
+      const whereClause: Prisma.TaxSettingWhereInput = { storeId };
       if (options?.status) {
         whereClause.status = options.status;
       }
@@ -99,7 +99,7 @@ export class TaxService {
         throw new ApiError(400, "Tax rate must be between 0 and 100", "INVALID_TAX_RATE");
       }
 
-      const updateData: any = {};
+      const updateData: Prisma.TaxSettingUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.rate !== undefined) updateData.rate = new Decimal(data.rate);
       if (data.applicableTo !== undefined) updateData.applicableTo = data.applicableTo;
@@ -262,7 +262,7 @@ export class TaxService {
 
   static async calculateTax(storeId: string, amount: number, categoryIds?: string[], productIds?: string[]) {
     try {
-      const whereClause: any = {
+      const whereClause: Prisma.TaxSettingWhereInput = {
         storeId,
         status: "ACTIVE",
       };

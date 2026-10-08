@@ -7,6 +7,7 @@ import { completeErasure } from "./erasure.service";
 import { BackupService } from "../monitoring/backup.service";
 import { activeHolds } from "./legal-holds";
 import { Prisma } from "@prisma/client";
+import { codeErreur } from "../../utils/code-erreur";
 
 const RETENTION = { gps: 1, proof: 90, contact: 90, support: 730, audit: 180, security: 90, backup: 14, deletedProfile: 30, documentsReplaced: 30, accounting: 3653, consent: 1826 } as const;
 const before = (days: number, now: Date) => new Date(now.getTime() - days * 86400000);
@@ -104,7 +105,7 @@ async function purgeOrphans(now: Date) {
   }
   for (const folder of DOSSIERS_PRIVES) {
     let names: string[];
-    try { names = await fs.readdir(path.join(privateRoot(), folder)); } catch (err: any) { if (err.code === "ENOENT") continue; throw err; }
+    try { names = await fs.readdir(path.join(privateRoot(), folder)); } catch (err) { if (codeErreur(err) === "ENOENT") continue; throw err; }
     for (const name of names) {
       const relative = `${folder}/${name}`;
       const stat = await fs.lstat(path.join(privateRoot(), relative));

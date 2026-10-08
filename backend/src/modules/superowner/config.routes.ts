@@ -6,6 +6,7 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { ApiKeyService } from "../auth/api-key.service";
 import { invalidateMaintenanceCache } from "../monitoring/maintenance.middleware";
 import { isSuperOwner, journaliser } from "./shared";
+import { objetJson } from "../../utils/json";
 
 const router = Router();
 
@@ -176,7 +177,7 @@ async function chargerReglages() {
     config = await db.systemConfig.create({ data: {} });
   }
 
-  const enregistres = (config.settings as Record<string, any>) || {};
+  const enregistres = objetJson(config.settings);
 
   return {
     config,
@@ -185,7 +186,7 @@ async function chargerReglages() {
       ...enregistres,
       performanceOptimizations: {
         ...REGLAGES_PAR_DEFAUT.performanceOptimizations,
-        ...(enregistres.performanceOptimizations || {}),
+        ...objetJson(enregistres.performanceOptimizations),
       },
       // Ces deux-là ont leur propre colonne : elles font foi.
       id: config.id,
@@ -238,7 +239,7 @@ router.put("/advanced-settings", authMiddleware, isSuperOwner, async (req: Reque
     const misAJour = await db.systemConfig.update({
       where: { id: config.id },
       data: {
-        settings: fusionnes as any,
+        settings: fusionnes,
         ...(body.maintenanceMode !== undefined && { maintenanceMode: body.maintenanceMode }),
         ...(body.maintenanceMessage !== undefined && { maintenanceMessage: body.maintenanceMessage }),
       },
@@ -252,7 +253,7 @@ router.put("/advanced-settings", authMiddleware, isSuperOwner, async (req: Reque
         adminId: req.userId as string,
         action: "UPDATE_ADVANCED_SETTINGS",
         target: "SYSTEM_CONFIG",
-        changes: body as any,
+        changes: body,
       },
     });
 

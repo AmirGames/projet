@@ -44,7 +44,7 @@ router.post("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res:
 
     SecurityEventService.record({
       action: "WEBHOOK_CREATED",
-      actor: req.userId || "inconnu",
+      actor: req.actorEmail || "inconnu",
       target: abonnement.id,
       severity: "MEDIUM",
       details: `Webhook vers ${body.url}`,
@@ -79,7 +79,7 @@ router.delete("/webhooks/:webhookId", authMiddleware, isSuperOwner, async (req: 
 
     SecurityEventService.record({
       action: "WEBHOOK_DELETED",
-      actor: req.userId || "inconnu",
+      actor: req.actorEmail || "inconnu",
       target: webhookId,
       severity: "MEDIUM",
     });

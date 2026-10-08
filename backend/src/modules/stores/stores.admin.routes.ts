@@ -55,7 +55,7 @@ router.patch("/stores/:storeId", authMiddleware, isSuperOwner, async (req: Reque
 
     const { boutique, changements, situeeAutomatiquement } = await StoreSupportService.corriger(
       req.params.storeId as string,
-      corps as any,
+      corps,
       req.userId as string
     );
 

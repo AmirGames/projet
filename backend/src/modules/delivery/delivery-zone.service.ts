@@ -4,6 +4,7 @@ import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "
 import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
 import { DispatchService } from "../drivers/dispatch.service";
+import { codeErreur } from "../../utils/code-erreur";
 
 /**
  * Les zones de livraison d'une boutique.
@@ -253,7 +254,7 @@ export class DeliveryZoneService {
         data: {
           ...(data.name !== undefined ? { name: data.name.trim() } : {}),
           ...(existante.type === "RADIUS" && data.radiusKm !== undefined ? { radiusKm: data.radiusKm } : {}),
-          ...(existante.type === "POLYGON" && data.polygon !== undefined ? { polygon: data.polygon as any } : {}),
+          ...(existante.type === "POLYGON" && data.polygon ? { polygon: data.polygon } : {}),
           ...(data.color !== undefined ? { color: data.color } : {}),
           ...(data.opacity !== undefined ? { opacity: data.opacity } : {}),
           ...(data.baseFee !== undefined ? { baseFee: data.baseFee } : {}),
@@ -263,8 +264,8 @@ export class DeliveryZoneService {
           ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Zone de livraison introuvable", "ZONE_NOT_FOUND");
       }
       throw error;
@@ -274,8 +275,8 @@ export class DeliveryZoneService {
   static async delete(id: string) {
     try {
       return await db.deliveryZone.delete({ where: { id } });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Zone de livraison introuvable", "ZONE_NOT_FOUND");
       }
       throw error;

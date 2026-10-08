@@ -8,6 +8,7 @@ import { ENCRYPTED_FIELDS, decryptResult, encryptData } from "../modules/privacy
 import { privateRoot, readPrivate, writePrivate } from "../modules/files/private-storage";
 import { scanFile } from "../modules/files/antivirus";
 import { detecterType } from "../utils/file-type";
+import { codeErreur } from "../utils/code-erreur";
 
 const mode = process.argv[2] || "--check";
 if (!["--check", "--apply", "--rotate"].includes(mode)) throw new Error("Usage : privacy-storage --check|--apply|--rotate");
@@ -47,7 +48,7 @@ try {
   for (const folder of ["drivers", "merchants", "deliveries", "chauffeurs"]) {
     const legacy = path.resolve("uploads", folder);
     let names: string[] = [];
-    try { names = await fs.readdir(legacy); } catch (err: any) { if (err.code !== "ENOENT") throw err; }
+    try { names = await fs.readdir(legacy); } catch (err) { if (codeErreur(err) !== "ENOENT") throw err; }
     counts[`legacy:${folder}`] = names.length; problems += names.length;
     for (const name of names) {
       const relative = `${folder}/${name}`, source = path.join(legacy, name);
@@ -56,13 +57,13 @@ try {
         const data = await fs.readFile(source);
         if (!detecterType(data) || data.length > 5 * 1024 * 1024) throw new Error("Ancien document invalide : réimport manuel requis");
         await scanFile(data);
-        try { await writePrivate(relative, data); } catch (error: any) { if (error.code !== "EEXIST") throw error; }
+        try { await writePrivate(relative, data); } catch (error) { if (codeErreur(error) !== "EEXIST") throw error; }
         if (!(await readPrivate(relative)).equals(data)) throw new Error("Migration documentaire non vérifiée");
         await fs.unlink(source);
       }
     }
     let privateNames: string[] = [];
-    try { privateNames = await fs.readdir(path.join(privateRoot(), folder)); } catch (err: any) { if (err.code !== "ENOENT") throw err; }
+    try { privateNames = await fs.readdir(path.join(privateRoot(), folder)); } catch (err) { if (codeErreur(err) !== "ENOENT") throw err; }
     for (const name of privateNames) {
       const relative = `${folder}/${name}`;
       const data = await readPrivate(relative);

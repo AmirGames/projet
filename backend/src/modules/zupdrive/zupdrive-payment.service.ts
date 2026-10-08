@@ -470,7 +470,7 @@ export class ZupDrivePaymentService {
       currency: STRIPE_CONFIG.currency,
       description: `ZupDrive driver payouts week ${batch.periodStart.toISOString().split("T")[0]}`,
       method: "standard", // SEPA
-    } as any);
+    });
 
     // Mettre à jour le batch
     await db.driverPayoutBatchDrive.update({

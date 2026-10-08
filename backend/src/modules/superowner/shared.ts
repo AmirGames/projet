@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "../../services/db";
 import { exigerPermission } from "../auth/permissions-plateforme.service";
+import { userIdRequis } from "../auth/utilisateur-requis";
 
 // Garde de l'espace : le superowner passe partout, un membre de l'équipe
 // selon les permissions de son groupe (voir permissions-plateforme.service).
@@ -12,7 +13,7 @@ export const isSuperOwner = (req: Request, res: Response, next: NextFunction) =>
     try {
       // Le jeton ne porte pas l'email : on l'expose pour les journaux.
       const user = await db.user.findUnique({ where: { id: req.userId }, select: { email: true } });
-      (req as any).actorEmail = user?.email;
+      req.actorEmail = user?.email;
       next();
     } catch (e) {
       next(e);
@@ -24,10 +25,10 @@ export const isSuperOwner = (req: Request, res: Response, next: NextFunction) =>
 export async function journaliser(req: Request, action: string, target: string, changes?: unknown) {
   await db.systemAuditLog.create({
     data: {
-      adminId: (req as any).userId,
+      adminId: userIdRequis(req),
       action,
       target,
-      changes: (changes ?? {}) as any,
+      changes: (changes ?? {}),
     },
   });
 }

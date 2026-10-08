@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import { objetJson } from "../../utils/json";
 /**
  * Qui livre les commandes d'une boutique.
  *
@@ -15,8 +17,8 @@
 export type ModeDeLivraison = "OWN" | "PLATFORM";
 
 export function modeDeLivraison(settings: unknown): ModeDeLivraison {
-  const reglages = (settings && typeof settings === "object" ? settings : {}) as Record<string, any>;
-  return reglages.delivery?.useOwnDelivery === true ? "OWN" : "PLATFORM";
+  const livraison = objetJson(settings as Prisma.JsonValue | null | undefined).delivery;
+  return objetJson(livraison).useOwnDelivery === true ? "OWN" : "PLATFORM";
 }
 
 /**

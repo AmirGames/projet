@@ -200,10 +200,11 @@ export class Notifier {
     try {
       await webpush.sendNotification(abonnement as PushSubscription, JSON.stringify(message), { TTL: 60 });
       return true;
-    } catch (err: any) {
+    } catch (err) {
+      const statusCode = err instanceof webpush.WebPushError ? err.statusCode : undefined;
       // 404/410 : le navigateur a révoqué l'abonnement.
-      if (err?.statusCode === 404 || err?.statusCode === 410) return "expire";
-      logger.warn("Notification push impossible", { status: err?.statusCode, error: err?.message });
+      if (statusCode === 404 || statusCode === 410) return "expire";
+      logger.warn("Notification push impossible", { status: statusCode, error: err instanceof Error ? err.message : undefined });
       return false;
     }
   }

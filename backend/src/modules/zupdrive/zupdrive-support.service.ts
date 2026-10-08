@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
@@ -90,7 +91,7 @@ export class ZupDriveSupportService {
     const limit = Math.min(filters.limit || 50, 100);
     const offset = filters.offset || 0;
 
-    const where: any = {};
+    const where: Prisma.SupportTicketWhereInput = {};
     if (filters.status) where.status = filters.status;
     if (filters.priority) where.priority = filters.priority;
     if (filters.category) where.category = filters.category;
@@ -240,7 +241,7 @@ export class ZupDriveSupportService {
     const ticket = await db.supportTicket.findUnique({ where: { id: ticketId } });
     if (!ticket) throw new ApiError(404, "Ticket non trouvé");
 
-    const data: any = { status };
+    const data: Prisma.SupportTicketUpdateInput = { status };
     if (status === "RESOLU" || status === "FERME") {
       data.resolvedAt = new Date();
       data.resolution = resolution;

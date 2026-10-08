@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { Outbox } from "../jobs/outbox.service";
 import { EmailService } from "./email.service";
 
@@ -33,9 +34,18 @@ export async function annoncerCommande({ orderId }: PayloadAnnonceCommande) {
   await OrderService.annoncerAuCommercant(commande);
 }
 
+// Le contenu de l'outbox vient de la base : relu et validé avant d'agir.
+const payloadAnnonceCommande = z.object({ orderId: z.string() });
+const payloadEmailSuiviCommande = z.object({
+  commande: z.object({ id: z.string(), customerName: z.string(), customerEmail: z.string(), totalAmount: z.number() }),
+  contenu: z.object({ titre: z.string(), message: z.string() }),
+});
+
 export function declarerGestionnairesOutbox() {
-  Outbox.declarer(TYPE_ANNONCE_COMMANDE, annoncerCommande);
-  Outbox.declarer(TYPE_EMAIL_SUIVI_COMMANDE, (payload: PayloadEmailSuiviCommande) =>
-    EmailService.sendOrderStatusUpdate(payload.commande, payload.contenu)
+  Outbox.declarer(TYPE_ANNONCE_COMMANDE, (payload) => annoncerCommande(payloadAnnonceCommande.parse(payload)));
+  Outbox.declarer(TYPE_EMAIL_SUIVI_COMMANDE, (payload) => {
+    const { commande, contenu } = payloadEmailSuiviCommande.parse(payload);
+    return EmailService.sendOrderStatusUpdate(commande, contenu);
+  }
   );
 }

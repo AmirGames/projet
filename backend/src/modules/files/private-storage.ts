@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { decrypt, encrypt } from "../privacy/crypto";
+import { codeErreur } from "../../utils/code-erreur";
 
 export const privateRoot = () => resolve(process.env.PRIVATE_DOCUMENTS_DIR || "private-documents");
 export function privatePath(relative: string): string {
@@ -22,5 +23,5 @@ export async function readPrivate(relative: string): Promise<Buffer> {
 }
 export async function removePrivate(relative: string) {
   try { await fs.unlink(privatePath(relative)); }
-  catch (error: any) { if (error.code !== "ENOENT") throw error; }
+  catch (error) { if (codeErreur(error) !== "ENOENT") throw error; }
 }

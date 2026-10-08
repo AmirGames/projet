@@ -1,6 +1,7 @@
 import { db } from "../../services/db";
 import { totalCommercant } from "../delivery/delivery-mode.service";
 import { ApiError } from "../../middleware/errorHandler";
+import type { Prisma } from "@prisma/client";
 
 /**
  * Les clients sont GLOBAUX : un même client peut commander chez plusieurs
@@ -80,7 +81,7 @@ export class CustomerService {
     const take = options?.take || 50;
     const search = options?.search || "";
 
-    const whereClause: any = clientsDeLaBoutique(storeId);
+    const whereClause: Prisma.CustomerWhereInput = clientsDeLaBoutique(storeId);
 
     if (search) {
       // Le OR du rattachement reste intact : la recherche s'y ajoute.

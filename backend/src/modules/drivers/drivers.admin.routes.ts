@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
+import { userIdRequis } from "../auth/utilisateur-requis";
 import { DriverApprovalService, libelleDuDocument, piecesAttendues } from "./driver-approval.service";
 import { DriverPayoutService } from "../payouts/driver-payout.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
@@ -161,7 +162,7 @@ router.patch(
           adminId: req.userId as string,
           action: "UPDATE_DRIVER_DOCUMENT_EXPIRY",
           target: req.params.driverId as string,
-          changes: { type: piece.type, avant, apres: piece.expiryDate } as any,
+          changes: { type: piece.type, avant, apres: piece.expiryDate },
         },
       });
 
@@ -196,7 +197,7 @@ router.patch(
           adminId: req.userId as string,
           action: body.approuve ? "APPROVE_DRIVER_DOCUMENT" : "REJECT_DRIVER_DOCUMENT",
           target: req.params.driverId as string,
-          changes: { type: piece.type, note: body.note } as any,
+          changes: { type: piece.type, note: body.note },
         },
       });
 
@@ -220,7 +221,7 @@ router.post("/drivers/:driverId/approve", authMiddleware, isSuperOwner, async (r
         adminId: req.userId as string,
         action: "APPROVE_DRIVER",
         target: livreur.id,
-        changes: { status: "ACTIVE" } as any,
+        changes: { status: "ACTIVE" },
       },
     });
 
@@ -253,7 +254,7 @@ router.post("/drivers/:driverId/reject", authMiddleware, isSuperOwner, async (re
         adminId: req.userId as string,
         action: "SET_ASIDE_DRIVER",
         target: livreur.id,
-        changes: { status: body.etat, raison: body.raison } as any,
+        changes: { status: body.etat, raison: body.raison },
       },
     });
 
@@ -276,7 +277,7 @@ router.post("/drivers/:driverId/reactivate", authMiddleware, isSuperOwner, async
         adminId: req.userId as string,
         action: "REACTIVATE_DRIVER",
         target: livreur.id,
-        changes: { status: "ACTIVE" } as any,
+        changes: { status: "ACTIVE" },
       },
     });
 
@@ -332,7 +333,7 @@ router.post("/driver-support/:driverId", authMiddleware, isSuperOwner, async (re
   try {
     const body = z.object({ body: z.string().min(1).max(LONGUEUR_MAX) }).parse(req.body);
     const message = await DriverSupportService.envoyer(req.params.driverId as string, "SUPPORT", body.body, {
-      authorId: (req as any).userId,
+      authorId: userIdRequis(req),
     });
     res.status(201).json({ success: true, data: message });
   } catch (err) {

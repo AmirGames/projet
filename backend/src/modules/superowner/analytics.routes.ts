@@ -3,6 +3,7 @@ import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
 import { isSuperOwner } from "./shared";
 import { limiteBornee, decalage } from "../../utils/pagination";
+import { objetJson } from "../../utils/json";
 
 const router = Router();
 
@@ -123,7 +124,7 @@ router.get("/audit-logs", authMiddleware, isSuperOwner, async (req: Request, res
         actorEmail: entree.admin?.email || "—",
         resource: entree.action.split("_").slice(1).join("_") || "SYSTEM",
         resourceId: entree.target,
-        changes: { before: {}, after: (entree.changes as Record<string, any>) || {} },
+        changes: { before: {}, after: objetJson(entree.changes) },
         status: "SUCCESS",
         // Renseignées depuis que la table les garde : la section
         // « Informations réseau » du journal était vide.

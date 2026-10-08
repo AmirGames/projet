@@ -3,11 +3,8 @@ import { db } from "../../services/db";
 import { codeErreur } from "../../utils/code-erreur";
 import { totalCommercant } from "../delivery/delivery-mode.service";
 import { ApiError } from "../../middleware/errorHandler";
+import { objetJson, listeJson } from "../../utils/json";
 
-/** Les colonnes Json d'une facture, lues sans rien supposer de leur contenu. */
-const objet = (valeur: Prisma.JsonValue | undefined): Prisma.JsonObject =>
-  typeof valeur === "object" && valeur !== null && !Array.isArray(valeur) ? valeur : {};
-const liste = (valeur: Prisma.JsonValue | undefined): Prisma.JsonArray => (Array.isArray(valeur) ? valeur : []);
 
 export class InvoiceService {
   /**
@@ -96,7 +93,7 @@ export class InvoiceService {
       category:    item.product.category?.name || null,
       variant:     item.variant?.label         || null,
       // Les suppléments payés, figés sur la ligne : « Bacon », « Cheddar ».
-      supplements: liste(objet(item.selectedOptions).supplements).map((x) => objet(x).label).filter((l): l is string => typeof l === "string"),
+      supplements: listeJson(objetJson(item.selectedOptions).supplements).map((x) => objetJson(x).label).filter((l): l is string => typeof l === "string"),
       sku:         item.variant?.sku || item.product.sku,
       quantity:    item.quantity,
       unitPrice:   parseFloat(item.price.toString()),
@@ -178,10 +175,10 @@ export class InvoiceService {
    * recevait pas et affichait « En attente de paiement » sur une commande payée.
    */
   private static _factureDepuisStockage(facture: Invoice, paymentStatus: string) {
-    const emetteur     = objet(facture.emetteurJson);
-    const destinataire = objet(facture.destinataireJson);
-    const lignes       = liste(facture.lignesJson);
-    const taxJson      = liste(facture.taxJson);
+    const emetteur     = objetJson(facture.emetteurJson);
+    const destinataire = objetJson(facture.destinataireJson);
+    const lignes       = listeJson(facture.lignesJson);
+    const taxJson      = listeJson(facture.taxJson);
 
     return {
       invoiceNumber: facture.number,
@@ -194,7 +191,7 @@ export class InvoiceService {
       subtotal:    parseFloat(facture.subtotal.toString()),
       taxDetail:   taxJson,                                          // tableau multi-taux
       tax:         parseFloat(facture.taxTotal.toString()),
-      taxRate:     taxJson.length === 1 ? (objet(taxJson[0]).taux ?? null) : null,   // null si multi-taux
+      taxRate:     taxJson.length === 1 ? (objetJson(taxJson[0]).taux ?? null) : null,   // null si multi-taux
       taxIncluded: true,
       fees:        parseFloat(facture.fees.toString()),
       discount:    parseFloat(facture.discount.toString()),
@@ -266,10 +263,10 @@ export class InvoiceService {
       data: invoices.map((inv) => ({
         invoiceNumber: inv.number,
         orderId:       inv.orderId,
-        customerName:  objet(inv.destinataireJson).name || "—",
-        customerEmail: objet(inv.destinataireJson).email || "—",
+        customerName:  objetJson(inv.destinataireJson).name || "—",
+        customerEmail: objetJson(inv.destinataireJson).email || "—",
         amount:        parseFloat(inv.total.toString()),
-        itemCount:     liste(inv.lignesJson).length,
+        itemCount:     listeJson(inv.lignesJson).length,
         status:        inv.order.paymentStatus,
         date:          inv.issuedAt,
       })),

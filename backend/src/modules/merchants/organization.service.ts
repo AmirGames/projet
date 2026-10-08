@@ -1,6 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { codeErreur } from "../../utils/code-erreur";
+import type { OrganizationTier, Prisma } from "@prisma/client";
 
 export class OrganizationService {
   static async create(data: {
@@ -92,9 +93,9 @@ export class OrganizationService {
     });
   }
 
-  static async update(id: string, data: { name?: string; tier?: string }) {
+  static async update(id: string, data: { name?: string; tier?: OrganizationTier }) {
     try {
-      const updateData: any = {};
+      const updateData: Prisma.OrganizationUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.tier !== undefined) updateData.tier = data.tier;
 

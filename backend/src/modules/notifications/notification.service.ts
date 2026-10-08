@@ -1,3 +1,4 @@
+import type { NotificationType } from "@prisma/client";
 import { db } from "../../services/db";
 import { emitNotification } from "../realtime/socket";
 import { logger } from "../../config/logger";
@@ -33,14 +34,14 @@ export async function notifierPlateforme(titre: string, message: string, lien: s
 }
 
 export const notificationService = {
-  async create(storeId: string, recipientEmail: string, title: string, message: string, type: string, relatedOrderId?: string) {
+  async create(storeId: string, recipientEmail: string, title: string, message: string, type: NotificationType, relatedOrderId?: string) {
     const notification = await db.notification.create({
       data: {
         storeId,
         recipientEmail,
         title,
         message,
-        type: type as any,
+        type,
         relatedOrderId,
         isRead: false,
       },
@@ -82,30 +83,5 @@ export const notificationService = {
       where: { recipientEmail, isRead: false },
       data: { isRead: true },
     });
-  },
-
-  async sendOrderNotification(orderId: string, storeId: string, recipientEmail: string, status: string) {
-    const messages: Record<string, string> = {
-      PENDING: "Votre commande a été créée",
-      CONFIRMED: "Votre commande a été confirmée",
-      PREPARING: "Votre commande est en préparation",
-      READY: "Votre commande est prête",
-      PICKED_UP: "Votre commande est en route",
-      DELIVERED: "Votre commande a été livrée",
-      CANCELLED: "Votre commande a été annulée",
-    };
-
-    return this.create(
-      storeId,
-      recipientEmail,
-      "Mise à jour de commande",
-      messages[status] || "Mise à jour de votre commande",
-      "ORDER_UPDATE",
-      orderId
-    );
-  },
-
-  async sendDriverNotification(storeId: string, recipientEmail: string, title: string, message: string) {
-    return this.create(storeId, recipientEmail, title, message, "DELIVERY", undefined);
   },
 };

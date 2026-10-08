@@ -72,7 +72,7 @@ async function figerCommissionsDuMois(orgId: string, taux: number, tier: string)
         data: {
           commissionPercent: taux,
           commissionAmount: Number(((Number(c.totalAmount) * taux) / 100).toFixed(2)),
-          tierAtOrder: tier as any,
+          tierAtOrder: tier,
         },
       })
     )
