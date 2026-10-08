@@ -50,13 +50,19 @@ Application **Expo/React Native** pour passagers ZupDrive.
 
 ## API Endpoints
 
+Toutes sous `/api/zupdrive`, avec le compte ZupOne du passager (couche `lib/courses.ts`) :
+
 ```
-POST /api/zupdrive/courses — créer course
-GET /api/zupdrive/courses/:id — détail course
-PATCH /api/zupdrive/courses/:id — annuler/noter
-POST /api/zupdrive/payment/intent — créer paiement Stripe
-GET /api/zupdrive/realtime/join/:courseId — subscribe realtime
+POST /courses/devis           — prix fixe d'un trajet (devis signé, 10 min)
+POST /courses                 — commander le devis (cleIdempotence : rejouable)
+GET  /courses                 — mes trajets
+GET  /courses/:id             — un trajet, son chauffeur et son paiement
+POST /courses/:id/annuler     — tant que le passager n'est pas à bord
+POST /courses/:id/note        — noter son chauffeur (course terminée)
+POST /payment/intent          — { courseId } seulement, jamais le montant
 ```
+
+Le prix vient toujours du serveur ; « payé » n'apparaît que quand le serveur le dit (webhook Stripe), pas quand la carte est acceptée sur le téléphone. Le suivi se relit toutes les 4 s (`RELECTURE_MS`).
 
 ## Real-Time (Socket.io)
 
