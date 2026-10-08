@@ -8,6 +8,7 @@ import { BackupService } from "../monitoring/backup.service";
 import { activeHolds } from "./legal-holds";
 import { Prisma } from "@prisma/client";
 import { codeErreur } from "../../utils/code-erreur";
+import { logger } from "../../config/logger";
 
 const RETENTION = { gps: 1, proof: 90, contact: 90, support: 730, audit: 180, security: 90, backup: 14, deletedProfile: 30, documentsReplaced: 30, accounting: 3653, consent: 1826 } as const;
 const before = (days: number, now: Date) => new Date(now.getTime() - days * 86400000);
@@ -55,7 +56,18 @@ export async function runRetention(now = new Date()) {
   const rejectedMerchants = await db.organizationDocument.findMany({ where: { id: { notIn: holds("OrganizationDocument") }, status: "REJECTED", reviewedAt: { lt: before(30, now) } }, select: { id: true, documentUrl: true }, take: 500 });
   for (const doc of rejectedMerchants) { const relative = cheminRelatif(doc.documentUrl); if (relative) await removePrivate(relative); await db.organizationDocument.delete({ where: { id: doc.id } }); }
   const requests = await db.privacyErasureRequest.findMany({ where: { status: "PENDING" }, select: { userId: true }, take: 100 });
-  for (const request of requests) await completeErasure(request.userId);
+  // Un effacement en échec ne doit pas bloquer les autres ni le reste de la purge (obligations
+  // comptables, gels échus) : il reste PENDING, est retenté à la prochaine exécution, et la tâche
+  // alerte le DPO s'il dépasse 30 jours.
+  result.erasureFailures = 0;
+  for (const request of requests) {
+    try {
+      await completeErasure(request.userId);
+    } catch (err) {
+      result.erasureFailures += 1;
+      logger.error("Effacement RGPD en échec, nouvelle tentative à la prochaine purge", { code: codeErreur(err) });
+    }
+  }
   const deletedCouriers = await db.courier.findMany({ where: { suppressionDemandeeLe: { not: null }, email: { not: { startsWith: "supprime-" } } }, include: { documents: true }, take: 100 });
   for (const courier of deletedCouriers) {
     const pending = await db.courierPayout.count({ where: { driverId: courier.id, status: "PENDING" } });
