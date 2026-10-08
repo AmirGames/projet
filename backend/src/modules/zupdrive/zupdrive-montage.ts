@@ -2,6 +2,7 @@ import type { Application, Router } from "express";
 import zupdriveChauffeurRouter from "./chauffeur.routes";
 import zupdriveAdminRouter from "./chauffeur.admin.routes";
 import zupdriveCoursesRouter from "./course-drive.routes";
+import zupdriveAdressesRouter from "./adresse-favorite-drive.routes";
 import zupdriveSocieteRouter from "./societe.routes";
 import zupdrivePaymentRouter from "./zupdrive-payment.routes";
 import zupdriveRealtimeRouter from "./zupdrive-realtime.routes";
@@ -39,6 +40,8 @@ export const MONTAGE_ZUPDRIVE: MontageRouteur[] = [
   { prefixe: "/api/zupdrive/admin", routeur: zupdriveDriverManagementRouter },
   { prefixe: "/api/zupdrive/admin", routeur: zupdriveAdminRouter },
   { prefixe: "/api/zupdrive/courses", routeur: zupdriveCoursesRouter },
+  // Adresses « Domicile » et « Travail » du passager (jeton seulement).
+  { prefixe: "/api/zupdrive/adresses", routeur: zupdriveAdressesRouter },
   { prefixe: "/api/zupdrive/societe", routeur: zupdriveSocieteRouter },
   { prefixe: "/api/zupdrive/payment", routeur: zupdrivePaymentRouter },
   { prefixe: "/api/zupdrive/realtime", routeur: zupdriveRealtimeRouter },

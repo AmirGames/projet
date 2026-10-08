@@ -23,6 +23,7 @@ export async function collectExport(userId: string) {
     const courier = await tx.courier.findUnique({ where: { userId }, include: { documents: true, payouts: true, supportMessages: true, deliveries: true, tips: true, ratings: true, offers: true, deliveryIncidents: true } });
     const chauffeur = await tx.chauffeurDrive.findUnique({ where: { userId }, include: { documents: true, courses: true, notes: true } });
     const rides = await tx.courseDrive.findMany({ where: { passagerId: userId }, include: { notes: true } });
+    const adressesFavorites = await tx.adresseFavoriteDrive.findMany({ where: { userId } });
     const memberships = await tx.membership.findMany({ where: { userId }, select: { orgId: true, role: true, storeIds: true, createdAt: true } });
     const accessibleOrganizations = await tx.organization.findMany({ where: { id: { in: memberships.filter((m) => m.role === "ADMIN").map((m) => m.orgId) } }, include: { documents: true, merchantPayouts: true, platformInvoices: true } });
     const organizations = accessibleOrganizations.filter((org) => org.ownerEmail === profile.email);
@@ -31,7 +32,7 @@ export async function collectExport(userId: string) {
     const notifications = profile.emailVerified ? await tx.notification.findMany({ where: { recipientEmail: profile.email } }) : [];
     const messages = await tx.ticketMessage.findMany({ where: { authorId: userId } });
     const audit = await tx.privacyAuditEvent.findMany({ where: { actor: actorHash(userId) }, select: { action: true, target: true, outcome: true, createdAt: true } });
-    const result = cleanExport({ version: 1, generatedAt: new Date().toISOString(), profile, customers, orders, payments: orders.flatMap((order) => order.payments), addresses: customers.map((c) => ({ customerId: c.id, address: c.address, city: c.city, postalCode: c.postalCode, savedAddresses: c.savedAddresses })), preferences: customers.map((c) => ({ favorites: c.favorites, carts: c.carts })), courier, chauffeur, rides, memberships, organizations, company, consents, notifications, messages, audit });
+    const result = cleanExport({ version: 1, generatedAt: new Date().toISOString(), profile, customers, orders, payments: orders.flatMap((order) => order.payments), addresses: customers.map((c) => ({ customerId: c.id, address: c.address, city: c.city, postalCode: c.postalCode, savedAddresses: c.savedAddresses })), preferences: customers.map((c) => ({ favorites: c.favorites, carts: c.carts })), courier, chauffeur, rides, adressesFavorites, memberships, organizations, company, consents, notifications, messages, audit });
     if (Buffer.byteLength(JSON.stringify(result)) > 50 * 1024 * 1024) throw new ApiError(413, "Export trop volumineux : contactez le délégué à la protection des données", "EXPORT_TOO_LARGE");
     return result;
   }, { isolationLevel: "RepeatableRead", timeout: 60000 });

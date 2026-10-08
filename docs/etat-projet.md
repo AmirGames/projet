@@ -105,7 +105,7 @@ confirmations ultérieures et ce document donnent le suivi actuel.
   Le commerce de démonstration existant refuse les commandes ; il ne remplace
   pas ce mode d'entraînement. Un paiement Stripe TEST ne constitue pas non plus
   ce mode métier.
-- **ZupDrive V2** : activer le paiement obligatoire après vérification sur le VPS avec Stripe, essai de l'app mobile passager sur téléphone avec une carte Stripe de test (écrans, formulaire de carte et nettoyage des écrans hérités de ZupEat faits), règles de
+- **ZupDrive V2** : activer le paiement obligatoire après vérification sur le VPS avec Stripe, essai de l'app mobile passager sur téléphone avec une carte Stripe de test (écrans, formulaire de carte et nettoyage des écrans hérités de ZupEat et adresses favorites faits), règles de
   facturation (émetteur de la facture, TVA), frais d'annulation éventuels
   (le remboursement d'une course non aboutie est total et automatique), et tables sans code à supprimer par migration
   (voir [`zupdrive-api-admin.md`](zupdrive-api-admin.md#routeurs-supprimés)).
