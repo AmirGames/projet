@@ -80,6 +80,7 @@ export async function completeErasure(userId: string): Promise<{ status: string 
     }
     if (user.chauffeurDrive) {
       await tx.documentChauffeurDrive.deleteMany({ where: { chauffeurId: user.chauffeurDrive.id, id: { notIn: holds("DocumentChauffeurDrive") } } });
+      await tx.messageCourseDrive.updateMany({ where: { auteur: "CHAUFFEUR", course: { chauffeurId: user.chauffeurDrive.id } }, data: { texte: "Message effacé" } });
       await tx.chauffeurDrive.update({ where: { id: user.chauffeurDrive.id }, data: { nomComplet: "Chauffeur supprimé", telephone: null, numeroLicence: null, vehiculePlaque: null, motifStatut: null, societeId: null, vehiculeId: null } });
     }
     if (user.societeDrive) await tx.documentChauffeurDrive.deleteMany({ where: { id: { notIn: holds("DocumentChauffeurDrive") }, OR: [{ societeId: user.societeDrive.id }, { vehicule: { societeId: user.societeDrive.id } }] } });
@@ -90,6 +91,7 @@ export async function completeErasure(userId: string): Promise<{ status: string 
       await tx.store.updateMany({ where: { orgId: org.id }, data: { isOpen: false } });
       await tx.organization.update({ where: { id: org.id }, data: { status: "CLOSED", ownerFirstName: null, ownerLastName: null, ownerEmail: null, ownerPhone: null, ownerBirthDate: null, ...(waiting ? {} : { iban: null, bic: null, accountHolder: null }) } });
     }
+    await tx.messageCourseDrive.deleteMany({ where: { course: { passagerId: userId } } });
     await tx.courseDrive.updateMany({ where: { passagerId: userId }, data: { passagerId: null, departAdresse: "Effacé", arriveeAdresse: "Effacé", departLatitude: 0, departLongitude: 0, arriveeLatitude: 0, arriveeLongitude: 0, motifAnnulation: null } });
     await tx.adresseFavoriteDrive.deleteMany({ where: { userId } });
     await tx.contactConfianceDrive.deleteMany({ where: { userId } });

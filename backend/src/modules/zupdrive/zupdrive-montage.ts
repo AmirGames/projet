@@ -2,6 +2,7 @@ import type { Application, Router } from "express";
 import zupdriveChauffeurRouter from "./chauffeur.routes";
 import zupdriveAdminRouter from "./chauffeur.admin.routes";
 import zupdriveCoursesRouter from "./course-drive.routes";
+import zupdriveChatRouter from "./chat-course-drive.routes";
 import zupdriveAdressesRouter from "./adresse-favorite-drive.routes";
 import zupdriveSosRouter from "./sos-drive.routes";
 import zupdriveSocieteRouter from "./societe.routes";
@@ -41,6 +42,8 @@ export const MONTAGE_ZUPDRIVE: MontageRouteur[] = [
   { prefixe: "/api/zupdrive/admin", routeur: zupdriveDriverManagementRouter },
   { prefixe: "/api/zupdrive/admin", routeur: zupdriveAdminRouter },
   { prefixe: "/api/zupdrive/courses", routeur: zupdriveCoursesRouter },
+  // Chat du passager avec son chauffeur (/:id/messages) : chemins distincts de ceux des courses.
+  { prefixe: "/api/zupdrive/courses", routeur: zupdriveChatRouter },
   // Adresses « Domicile » et « Travail » du passager (jeton seulement).
   { prefixe: "/api/zupdrive/adresses", routeur: zupdriveAdressesRouter },
   // Alerte SOS du passager et sa personne de confiance (jeton seulement).

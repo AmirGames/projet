@@ -13,6 +13,8 @@ import {
 import { CourseDriveService } from "./course-drive.service";
 import { SocieteDriveService } from "./societe-drive.service";
 import { ZupDriveDriverManagementService } from "./zupdrive-driver-management.service";
+import { ChatCourseDriveService } from "./chat-course-drive.service";
+import { lectureSchema, messageSchema } from "./chat-course-drive.routes";
 import { COMMENTAIRE_MAX, NOTE_MAX, NOTE_MIN, NoteCourseDriveService } from "./note-course-drive.service";
 
 /**
@@ -269,6 +271,28 @@ router.post("/me/courses/:id/annuler", async (req: Request, res: Response, next:
       success: true,
       data: await CourseDriveService.annulerParChauffeur(req.userId as string, idCourse.parse(req.params.id), motif),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET|POST /api/zupdrive/chauffeur/me/courses/:id/messages — le chat avec son passager
+// (avant la route des étapes : « messages » n'en est pas une)
+router.get("/me/courses/:id/messages", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { depuis } = lectureSchema.parse(req.query);
+    const chauffeur = await CourseDriveService.chauffeurDuCompte(req.userId as string);
+    res.json({ success: true, data: await ChatCourseDriveService.lister({ auteur: "CHAUFFEUR", chauffeurId: chauffeur.id }, idCourse.parse(req.params.id), depuis) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/me/courses/:id/messages", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { texte, cleIdempotence } = messageSchema.parse(req.body);
+    const chauffeur = await CourseDriveService.chauffeurDuCompte(req.userId as string);
+    res.status(201).json({ success: true, data: await ChatCourseDriveService.envoyer({ auteur: "CHAUFFEUR", chauffeurId: chauffeur.id }, idCourse.parse(req.params.id), texte, cleIdempotence) });
   } catch (err) {
     next(err);
   }
