@@ -139,13 +139,6 @@ router.patch(
   }
 );
 
-/*
- * Pas de routes « document-verification » : le workflow vit dans DocumentVerificationWorkflow,
- * une table en doublon de DocumentChauffeurDrive (la référence des pièces). Approuver un
- * workflow n'approuvait aucune pièce réelle. La validation des pièces passe par
- * zupdrive-document-validation et chauffeur.admin.routes.
- */
-
 /**
  * GET /api/zupdrive/admin/compliance/expiring-documents
  * Récupérer les documents bientôt expirés
