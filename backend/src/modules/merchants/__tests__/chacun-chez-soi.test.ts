@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import express from "express";
 import request from "supertest";
 
-jest.mock("../../../services/db", () => ({ db: require("../../../test-support/base-locataires").db }));
+jest.mock("../../../services/db", () => ({ db: jest.requireActual<typeof import("../../../test-support/base-locataires")>("../../../test-support/base-locataires").db }));
 jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 jest.mock("../../auth/security-event.service", () => ({ SecurityEventService: { record: jest.fn() } }));
 // Seule la cryptographie du jeton est simulée : le jeton est le nom de l'utilisateur.
-jest.mock("../../auth/auth.service", () => ({ AuthService: { verifyAccessToken: (jeton: string) => require("../../../test-support/base-locataires").verifierJetonFactice(jeton) } }));
+jest.mock("../../auth/auth.service", () => ({ AuthService: { verifyAccessToken: (jeton: string) => jest.requireActual<typeof import("../../../test-support/base-locataires")>("../../../test-support/base-locataires").verifierJetonFactice(jeton) } }));
 jest.mock("../../auth/sso.service", () => ({ SsoService: { sessionActive: async () => true } }));
 jest.mock("../../files/file-upload.middleware", () => ({ uploadMiddleware: { single: () => (_req: any, _res: any, next: any) => next() } }));
 jest.mock("../merchant-profile.service", () => ({

@@ -6,6 +6,8 @@
  * d'accès doit les laisser vides.
  */
 
+import { ApiError } from "../middleware/errorHandler";
+
 export const ID = {
   orgA: "organisationa0000000000001",
   orgB: "organisationb0000000000002",
@@ -184,8 +186,6 @@ export function reinitialiser() {
 /** Le contenu de la fabrique `jest.mock("…/auth.service")` : le jeton est le nom de l'utilisateur. */
 export function verifierJetonFactice(jeton: string) {
   if (!UTILISATEURS.includes(jeton)) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { ApiError } = require("../middleware/errorHandler");
     throw new ApiError(401, "Jeton invalide", "INVALID_TOKEN");
   }
   return { userId: jeton, sid: `session-${jeton}` };
