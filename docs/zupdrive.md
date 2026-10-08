@@ -268,6 +268,7 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 - La commande est idempotente (`cleIdempotence`), et un passager ne peut avoir qu'un trajet actif à la fois.
 - Le passager voit le prénom du chauffeur, son véhicule et sa plaque, et sur une **carte** (`CarteCourseDrive`, fonds OpenStreetMap) le départ, la destination, le tracé de la route et le chauffeur pendant son approche. La position du chauffeur n'est plus exposée une fois le passager à bord. Le chauffeur voit le prénom du passager.
 - L'état fait foi en base. Les écrans le relisent toutes les 3 à 4 secondes pendant une course, et les notifications ne sont qu'un signal.
+- **Paiement en ligne** : avec `ZUPDRIVE_PAIEMENT_OBLIGATOIRE=true`, la course reste en recherche sans être proposée à un chauffeur tant que le webhook Stripe n'a pas confirmé son paiement ; la page de suivi affiche alors le formulaire carte. Faute de paiement dans les 5 minutes de la recherche, elle passe « sans chauffeur » comme les autres. Par défaut (`false`), la recherche démarre sans paiement et la page n'affiche rien.
 - La suppression d'un compte est refusée pendant un trajet actif. Une fois le compte supprimé, ses courses restent dans l'historique sans la personne (`passagerId` à null).
 
 ### API
@@ -275,8 +276,10 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 |---|---|---|
 | Passager | `POST /api/zupdrive/courses/devis` | Distance, durée, prix, tracé, devis signé |
 | Passager | `POST /api/zupdrive/courses` | Commander un devis signé (`devis`, `cleIdempotence`) |
-| Passager | `GET /api/zupdrive/courses`, `GET …/:id`, `POST …/:id/annuler` | Suivre, annuler |
+| Passager | `GET /api/zupdrive/courses`, `GET …/:id`, `POST …/:id/annuler` | Suivre, annuler. La course porte `paiement: { obligatoire, statut }` (statut du paiement enregistré par le webhook Stripe) |
+| Passager | `POST /api/zupdrive/payment/intent` | Payer la course (page de suivi, carte Stripe) ; voir [`zupdrive-api-admin.md`](./zupdrive-api-admin.md) |
 | Chauffeur | `GET /api/zupdrive/chauffeur/me/courses` | En ligne ?, proposition ouverte, course, historique |
+| Chauffeur | `GET …/me/stats`, `GET …/me/infractions` | Mes statistiques, mes infractions |
 | Chauffeur | `POST …/me/disponibilite`, `POST …/me/position` | En ligne / hors ligne, position |
 | Chauffeur | `POST …/me/propositions/:id/(accepter\|refuser)` | Répondre à une proposition |
 | Chauffeur | `POST …/me/courses/:id/(arrive\|demarrer\|terminer\|annuler)` | Étapes |

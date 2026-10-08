@@ -9,6 +9,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ZupDrivePaymentDriverService } from "./zupdrive-payment-driver.service";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
+import { lireCommissionPourcentage } from "./commission-drive";
 import { ApiError } from "../../middleware/api-error";
 import { adminAuth, adminAuthSection } from "./zupdrive-garde";
 import { limiterCadence } from "../../middleware/throttle";
@@ -416,8 +417,25 @@ router.post(
 );
 
 /**
+ * GET /api/zupdrive/finance/admin/settings/commission
+ * La commission en vigueur (PlatformSettingsDrive, 20 par défaut). Elle ne s'applique qu'aux paiements créés
+ * ensuite : un paiement existant garde sa répartition. Superowner.
+ */
+router.get(
+  "/admin/settings/commission",
+  ...adminAuth,
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      return res.json({ success: true, commissionPercentage: await lireCommissionPourcentage() });
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+/**
  * Admin: Update platform commission rate
- * POST /api/zupdrive/admin/settings/commission
+ * POST /api/zupdrive/finance/admin/settings/commission
  */
 router.post(
   "/admin/settings/commission",

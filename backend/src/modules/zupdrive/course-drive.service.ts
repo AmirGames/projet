@@ -9,6 +9,7 @@ import { lireDevis, signerDevis, VALIDITE_DEVIS_MS } from "./devis-signe";
 import { NoteCourseDriveService } from "./note-course-drive.service";
 import { MatchingAlgorithmService } from "./matching-algorithm.service";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
+import { getEnv } from "../../config/env";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -56,6 +57,9 @@ export interface Adresse extends Point {
   adresse: string;
   codePostal: string;
 }
+
+/** ZUPDRIVE_PAIEMENT_OBLIGATOIRE : lu à chaque appel, une configuration absente (tests) vaut « non ». */
+const paiementObligatoire = () => getEnv().ZUPDRIVE_PAIEMENT_OBLIGATOIRE === true;
 
 const prenom = (nom: string | null | undefined) => (nom || "").trim().split(/\s+/)[0] || null;
 
@@ -240,12 +244,13 @@ export class CourseDriveService {
       vehiculeId: _vehiculeId,
       ...reste
     } = course;
-    const [noteChauffeur, maNote] = await Promise.all([
+    const [noteChauffeur, maNote, paiement] = await Promise.all([
       course.chauffeurId ? NoteCourseDriveService.moyenneChauffeur(course.chauffeurId) : null,
       db.noteCourseDrive.findUnique({
         where: { courseId_auteur: { courseId, auteur: "PASSAGER" } },
         select: { note: true },
       }),
+      db.paymentIntentDrive.findUnique({ where: { courseId }, select: { status: true } }),
     ]);
     const chauffeur = chauffeurPourLePassager(course);
     return {
@@ -254,6 +259,8 @@ export class CourseDriveService {
       // Sa propre note (jamais celle que le chauffeur lui a donnée), et s'il peut encore noter.
       maNote: maNote?.note ?? null,
       peutNoter: NoteCourseDriveService.peutNoter(course, !!maNote),
+      // L'état du paiement tel que le webhook Stripe l'a enregistré (jamais ce que le navigateur annonce).
+      paiement: { obligatoire: paiementObligatoire(), statut: paiement?.status ?? null },
     };
   }
 
@@ -617,6 +624,13 @@ export class CourseDriveService {
         );
       }
       return null;
+    }
+
+    // Paiement obligatoire : la course attend d'être payée (confirmation du webhook Stripe) avant d'être
+    // proposée ; faute de paiement, elle expire ci-dessus comme une course sans chauffeur.
+    if (paiementObligatoire()) {
+      const paiement = await db.paymentIntentDrive.findUnique({ where: { courseId }, select: { status: true } });
+      if (paiement?.status !== "SUCCEEDED") return null;
     }
 
     const dejaSollicites = course.propositions.map((p) => p.chauffeurId);

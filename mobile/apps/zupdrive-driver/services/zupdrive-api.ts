@@ -72,26 +72,30 @@ class ZupDriveAPI {
   /**
    * Récupérer les statistiques du chauffeur
    */
-  async getDriverStats(driverId: string): Promise<DriverStats> {
-    const response = await this.api.get(`/api/zupdrive/admin/drivers/${driverId}/stats`);
-    return response.data;
+  async getDriverStats(_driverId?: string): Promise<DriverStats> {
+    // Le serveur lit le dossier du jeton : aucun identifiant ne part (les routes /admin/* sont réservées à l'équipe).
+    const response = await this.api.get('/api/zupdrive/chauffeur/me/stats');
+    return response.data.data;
   }
 
   /**
    * Récupérer les infractions du chauffeur
    */
-  async getDriverInfractions(driverId: string): Promise<Infraction[]> {
-    const response = await this.api.get(`/api/zupdrive/admin/drivers/${driverId}/infractions`);
-    return response.data;
+  async getDriverInfractions(_driverId?: string): Promise<Infraction[]> {
+    const response = await this.api.get('/api/zupdrive/chauffeur/me/infractions');
+    // Le serveur donne la date de résolution ; l'écran attend un booléen.
+    return (response.data.data as Array<Infraction & { resolvedAt?: string }>).map((i) => ({
+      ...i,
+      resolved: !!i.resolvedAt,
+    }));
   }
 
   /**
    * Récupérer les alertes non lues
    */
-  async getUnreadAlerts(driverId: string): Promise<NotificationAlert[]> {
-    const response = await this.api.get(`/api/zupdrive/notifications/alerts/unread`, {
-      params: { driverId },
-    });
+  async getUnreadAlerts(_driverId?: string): Promise<NotificationAlert[]> {
+    // Le chauffeur est celui du jeton ; l'identifiant n'est plus envoyé.
+    const response = await this.api.get('/api/zupdrive/notifications/alerts/unread');
     return response.data;
   }
 
@@ -110,9 +114,11 @@ class ZupDriveAPI {
     priority: string;
     subject: string;
     description: string;
-    reporterId: string;
+    reporterId?: string;
   }): Promise<SupportTicket> {
-    const response = await this.api.post('/api/zupdrive/support/tickets', data);
+    // Le déclarant est le compte du jeton : seuls les champs du ticket partent.
+    const { category, priority, subject, description } = data;
+    const response = await this.api.post('/api/zupdrive/support/tickets', { category, priority, subject, description });
     return response.data;
   }
 
@@ -128,12 +134,9 @@ class ZupDriveAPI {
   /**
    * Ajouter un message au ticket
    */
-  async addTicketMessage(ticketId: string, message: string, authorId: string): Promise<void> {
-    await this.api.post(`/api/zupdrive/support/tickets/${ticketId}/messages`, {
-      authorId,
-      authorType: 'CHAUFFEUR',
-      message,
-    });
+  async addTicketMessage(ticketId: string, message: string, _authorId?: string): Promise<void> {
+    // L'auteur est le compte du jeton, avec le type de son ticket.
+    await this.api.post(`/api/zupdrive/support/tickets/${ticketId}/messages`, { message });
   }
 
   /**
@@ -141,26 +144,6 @@ class ZupDriveAPI {
    */
   async getTicketDetail(ticketId: string): Promise<any> {
     const response = await this.api.get(`/api/zupdrive/support/tickets/${ticketId}`);
-    return response.data;
-  }
-
-  /**
-   * Calculer le prix d'une course (pour estimation)
-   */
-  async calculatePrice(data: {
-    region: string;
-    distanceKm: number;
-    durationMin: number;
-  }): Promise<any> {
-    const response = await this.api.post('/api/zupdrive/config/calculate-price', data);
-    return response.data;
-  }
-
-  /**
-   * Obtenir les configurations régionales
-   */
-  async getRegionalConfig(region: string): Promise<any> {
-    const response = await this.api.get(`/api/zupdrive/admin/config/regions/${region}`);
     return response.data;
   }
 }

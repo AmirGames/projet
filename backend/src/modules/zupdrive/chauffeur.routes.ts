@@ -12,6 +12,7 @@ import {
 } from "./chauffeur-onboarding.service";
 import { CourseDriveService } from "./course-drive.service";
 import { SocieteDriveService } from "./societe-drive.service";
+import { ZupDriveDriverManagementService } from "./zupdrive-driver-management.service";
 import { COMMENTAIRE_MAX, NOTE_MAX, NOTE_MIN, NoteCourseDriveService } from "./note-course-drive.service";
 
 /**
@@ -193,6 +194,27 @@ router.post("/me/quitter-societe", async (req: Request, res: Response, next: Nex
 const idCourse = z.string().min(1).max(64);
 
 // GET /api/zupdrive/chauffeur/me/courses — disponibilité, proposition ouverte, course, historique
+// GET /api/zupdrive/chauffeur/me/stats — mes statistiques (courses, taux, gains versés, infractions graves)
+router.get("/me/stats", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Le chauffeur est celui du jeton : aucun identifiant de dossier ne se lit dans la requête.
+    const chauffeur = await CourseDriveService.chauffeurDuCompte(req.userId as string);
+    res.json({ success: true, data: await ZupDriveDriverManagementService.getDriverStats(chauffeur.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/zupdrive/chauffeur/me/infractions — l'historique de mes infractions et leur résolution
+router.get("/me/infractions", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const chauffeur = await CourseDriveService.chauffeurDuCompte(req.userId as string);
+    res.json({ success: true, data: await ZupDriveDriverManagementService.getDriverInfractions(chauffeur.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/me/courses", async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.json({ success: true, data: await CourseDriveService.tableauDeBord(req.userId as string) });

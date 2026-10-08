@@ -27,6 +27,11 @@ interface StripePaymentProps {
    * commande ; le pourboire après livraison passe sa propre route.
    */
   creerIntention?: () => Promise<string>;
+  /**
+   * Vrai par défaut : après le paiement, relève la commande ZupEat (`/api/payments/confirm`).
+   * Faux pour un paiement qui n'est pas une commande (course ZupDrive) : seul le webhook confirme.
+   */
+  confirmerCommande?: boolean;
 }
 
 function StripePaymentForm({
@@ -37,6 +42,7 @@ function StripePaymentForm({
   onPaymentComplete,
   demanderConfirmation,
   creerIntention,
+  confirmerCommande = true,
 }: StripePaymentProps) {
   const t = useTranslations('stripePayment');
   const stripe = useStripe();
@@ -111,15 +117,17 @@ function StripePaymentForm({
       } else if (result.paymentIntent?.status === 'succeeded') {
         // Le webhook fait foi, mais il peut arriver après : ce relevé transmet
         // la commande au commerçant sans l'attendre. Son échec n'y change rien.
-        await fetch(`${API_URL}/api/payments/confirm`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId,
-            paymentIntentId: result.paymentIntent.id,
-            trackingToken: jetonDeSuivi(orderId) || undefined,
-          }),
-        }).catch(() => undefined);
+        if (confirmerCommande) {
+          await fetch(`${API_URL}/api/payments/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId,
+              paymentIntentId: result.paymentIntent.id,
+              trackingToken: jetonDeSuivi(orderId) || undefined,
+            }),
+          }).catch(() => undefined);
+        }
         onPaymentComplete(true);
       }
     } catch (err) {

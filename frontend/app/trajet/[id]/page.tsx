@@ -9,7 +9,8 @@ import { CarteCourseDrive } from '@/components/CarteCourseDrive';
 import { Etoiles, NoterCourseDrive } from '@/components/NoterCourseDrive';
 import { useAuth } from '@/lib/auth-context';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
-import { appelerZupDrive, kilometres, minutes, prix, STATUTS_ACTIFS } from '@/lib/zupdrive';
+import { StripePayment } from '@/components/stripe-payment';
+import { appelerZupDrive, etatPaiementTrajet, kilometres, minutes, prix, STATUTS_ACTIFS, type PaiementTrajet } from '@/lib/zupdrive';
 
 /**
  * ZupDrive — le suivi d'un trajet par son passager.
@@ -43,6 +44,7 @@ interface Trajet {
   } | null;
   maNote: number | null;
   peutNoter: boolean;
+  paiement: PaiementTrajet;
 }
 
 const RELECTURE_MS = 4000;
@@ -56,6 +58,8 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
   const [trajet, setTrajet] = useState<Trajet | null>(null);
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
+  // Stripe a accepté la carte ; le serveur ne le sait qu'à l'arrivée du webhook (relu toutes les 4 s).
+  const [paiementEnvoye, setPaiementEnvoye] = useState(false);
 
   const charger = useCallback(async () => {
     try {
@@ -76,6 +80,10 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
     return () => clearInterval(minuteur);
   }, [actif, charger]);
 
+  /** Crée l'intention de paiement : le serveur lit le prix sur la course, seul son identifiant part. */
+  const creerIntention = async () =>
+    (await appelerZupDrive<{ clientSecret: string }>('/api/zupdrive/payment/intent', { method: 'POST', corps: { courseId: id } })).clientSecret;
+
   const annuler = async () => {
     setEnvoi(true);
     setErreur('');
@@ -87,6 +95,8 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
       setEnvoi(false);
     }
   };
+
+  const etatPaiement = trajet ? etatPaiementTrajet(trajet.statut, trajet.paiement) : 'aucun';
 
   if (isLoading || (user && !trajet && !erreur)) {
     return (
@@ -126,6 +136,40 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
                 chauffeur={trajet.chauffeur?.position ?? null}
               />
             </div>
+          )}
+
+          {etatPaiement === 'a_payer' && (
+            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4" data-paiement="a_payer">
+              <p className="font-semibold text-slate-900">{t('paiement.titre')}</p>
+              <p className="mb-3 text-sm text-slate-600">{t('paiement.aide', { prix: prix(trajet.prixCentimes) })}</p>
+              {paiementEnvoye ? (
+                <p role="status" className="text-sm text-slate-700">{t('paiement.confirmation')}</p>
+              ) : (
+                <StripePayment
+                  orderId={trajet.id}
+                  amount={trajet.prixCentimes / 100}
+                  customerEmail={user?.email ?? ''}
+                  customerName={user?.name ?? ''}
+                  creerIntention={creerIntention}
+                  confirmerCommande={false}
+                  onPaymentComplete={(reussi) => {
+                    if (reussi) {
+                      setPaiementEnvoye(true);
+                      void charger();
+                    }
+                  }}
+                />
+              )}
+            </div>
+          )}
+          {etatPaiement === 'paye' && (
+            <p className="mt-4 text-sm text-green-700" data-paiement="paye">{t('paiement.paye')}</p>
+          )}
+          {etatPaiement === 'remboursement' && (
+            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700" data-paiement="remboursement">{t('paiement.remboursement')}</p>
+          )}
+          {etatPaiement === 'rembourse' && (
+            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700" data-paiement="rembourse">{t('paiement.rembourse')}</p>
           )}
 
           {trajet.chauffeur && (

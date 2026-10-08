@@ -190,21 +190,3 @@ export function useDriverSupport(driverId: string, token?: string): UseDriverTic
 
   return { tickets, openCount, loading, createTicket, refetch };
 }
-
-/**
- * Hook pour calculer le prix d'une course
- */
-export function usePriceCalculation(token?: string) {
-  const api = new ZupDriveAPI(token);
-
-  return useCallback(
-    async (region: string, distanceKm: number, durationMin: number) => {
-      return api.calculatePrice({
-        region,
-        distanceKm,
-        durationMin,
-      });
-    },
-    [api]
-  );
-}

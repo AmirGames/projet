@@ -114,6 +114,14 @@ describe("administration financière : droits et journal", () => {
     expect(journaliser).toHaveBeenCalledWith(expect.anything(), "ZUPDRIVE_UPDATE_COMMISSION", "default", { avant: 20, apres: 25 });
   });
 
+  it("la commission en vigueur se lit côté superowner seulement", async () => {
+    db.platformSettingsDrive.findUnique.mockResolvedValue({ commissionPercentage: 25 } as never);
+    expect((await request(app).get("/api/zupdrive/finance/admin/settings/commission").set(equipe)).status).toBe(403);
+    const res = await request(app).get("/api/zupdrive/finance/admin/settings/commission").set(owner);
+    expect(res.status).toBe(200);
+    expect(res.body.commissionPercentage).toBe(25);
+  });
+
   it("une commission hors de 0-100 est refusée", async () => {
     expect((await request(app).post("/api/zupdrive/finance/admin/settings/commission").set(owner).send({ commissionPercentage: 120 })).status).toBe(400);
     expect(db.platformSettingsDrive.upsert).not.toHaveBeenCalled();

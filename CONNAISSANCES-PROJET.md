@@ -1148,7 +1148,7 @@ reversements/SEPA, pages légales, cartes et publication mobile.
   perte du signal, notifications et statistiques. Des suites de support et
   permissions existent déjà ; leur présence ne vaut pas validation de tous
   les parcours sur le VPS.
-- **ZupDrive V2** : écrans de paiement (le serveur est prêt : voir
+- **ZupDrive V2** : activer `ZUPDRIVE_PAIEMENT_OBLIGATOIRE` après essai sur le VPS (le formulaire est sur `/trajet/[id]`, l'app mobile passager reste à faire ; le serveur est prêt : voir
   [docs/zupdrive-api-admin.md](docs/zupdrive-api-admin.md)), règles de
   facturation et frais d'annulation éventuels (une course payée qui n'aboutit
   pas est déjà remboursée en totalité, automatiquement).

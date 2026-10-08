@@ -2,7 +2,6 @@ import type {
   AuditLog as AuditLogRow,
   ComplianceCheck as ComplianceCheckRow,
   ComplianceReport as ComplianceReportRow,
-  DocumentVerificationWorkflow as DocumentVerificationWorkflowRow,
   Prisma,
 } from "@prisma/client";
 import { db } from "../../services/db";
@@ -39,20 +38,6 @@ export interface ComplianceCheck {
   completedAt?: Date;
   completedBy?: string;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface DocumentVerificationWorkflow {
-  id: string;
-  chauffeurId: string;
-  documentType: "PERMIS" | "ASSURANCE" | "INSPECTION" | "IDENTITE";
-  status: "PENDING_UPLOAD" | "UPLOADED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "EXPIRED";
-  uploadedAt?: Date;
-  reviewedAt?: Date;
-  reviewedBy?: string;
-  rejectionReason?: string;
-  nextReviewDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -227,71 +212,6 @@ export class ZupDriveComplianceService {
   }
 
   /**
-   * Créer un workflow de vérification de document.
-   */
-  static async initiateDocumentVerification(data: {
-    chauffeurId: string;
-    documentType: "PERMIS" | "ASSURANCE" | "INSPECTION" | "IDENTITE";
-  }): Promise<DocumentVerificationWorkflow> {
-    const workflow = await db.documentVerificationWorkflow.upsert({
-      where: {
-        chauffeurId_documentType: {
-          chauffeurId: data.chauffeurId,
-          documentType: data.documentType,
-        },
-      },
-      update: {
-        status: "PENDING_UPLOAD",
-      },
-      create: {
-        chauffeurId: data.chauffeurId,
-        documentType: data.documentType,
-        status: "PENDING_UPLOAD",
-      },
-    });
-
-    return this.formatDocumentVerificationWorkflow(workflow);
-  }
-
-  /**
-   * Mettre à jour le statut d'un workflow de vérification.
-   */
-  static async updateDocumentVerificationStatus(
-    workflowId: string,
-    status: "UPLOADED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "EXPIRED",
-    reviewedBy?: string,
-    rejectionReason?: string
-  ): Promise<void> {
-    const updateData: Prisma.DocumentVerificationWorkflowUpdateInput = {
-      status,
-    };
-
-    if (status === "UNDER_REVIEW") {
-      updateData.uploadedAt = new Date();
-    }
-
-    if (status === "APPROVED" || status === "REJECTED") {
-      updateData.reviewedAt = new Date();
-      updateData.reviewedBy = reviewedBy;
-    }
-
-    if (status === "REJECTED") {
-      updateData.rejectionReason = rejectionReason;
-    }
-
-    if (status === "APPROVED") {
-      updateData.nextReviewDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 an
-    }
-
-    await db.documentVerificationWorkflow.update({
-      where: { id: workflowId },
-      data: updateData,
-    });
-
-    logger.info(`Document verification workflow ${workflowId} updated to ${status}`);
-  }
-
-  /**
    * Récupérer les pièces approuvées expirées ou bientôt expirées.
    * La référence est DocumentChauffeurDrive (versions non archivées).
    */
@@ -443,22 +363,6 @@ export class ZupDriveComplianceService {
       notes: check.notes || undefined,
       createdAt: check.createdAt,
       updatedAt: check.updatedAt,
-    };
-  }
-
-  private static formatDocumentVerificationWorkflow(workflow: DocumentVerificationWorkflowRow): DocumentVerificationWorkflow {
-    return {
-      id: workflow.id,
-      chauffeurId: workflow.chauffeurId,
-      documentType: workflow.documentType as DocumentVerificationWorkflow["documentType"],
-      status: workflow.status as DocumentVerificationWorkflow["status"],
-      uploadedAt: workflow.uploadedAt || undefined,
-      reviewedAt: workflow.reviewedAt || undefined,
-      reviewedBy: workflow.reviewedBy || undefined,
-      rejectionReason: workflow.rejectionReason || undefined,
-      nextReviewDate: workflow.nextReviewDate || undefined,
-      createdAt: workflow.createdAt,
-      updatedAt: workflow.updatedAt,
     };
   }
 
