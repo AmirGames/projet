@@ -293,7 +293,7 @@ export default function WebhooksPage() {
       {secret && (
         <div className="p-4 bg-green-100 border border-green-500/30 rounded-lg space-y-3">
           <div className="flex items-start gap-2">
-            <AlertCircle size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
+            <AlertCircle size={18} className="text-green-600 mt-0.5 shrink-0" />
             <div>
               <p className="text-green-600 font-semibold">
                 {t('secret_warning')}
@@ -307,7 +307,7 @@ export default function WebhooksPage() {
           <div className="flex gap-2">
             <code
               data-secret-webhook
-              className="flex-1 px-3 py-2 bg-white ring-1 ring-gray-200 rounded text-green-700 text-sm break-all"
+              className="flex-1 px-3 py-2 bg-white ring-1 ring-gray-200 rounded-sm text-green-700 text-sm break-all"
             >
               {secret.valeur}
             </code>
@@ -343,7 +343,7 @@ export default function WebhooksPage() {
               value={formulaire.url}
               onChange={(e) => setFormulaire({ ...formulaire, url: e.target.value })}
               placeholder="https://mon-serveur.fr/zupeat"
-              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
@@ -418,7 +418,7 @@ export default function WebhooksPage() {
                     {abonnement.events.map((evenement) => (
                       <code
                         key={evenement}
-                        className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700"
+                        className="px-2 py-0.5 bg-gray-100 rounded-sm text-xs text-gray-700"
                       >
                         {evenement}
                       </code>
@@ -426,9 +426,9 @@ export default function WebhooksPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-semibold ${COULEUR_ETAT[abonnement.status]}`}
+                    className={`px-2 py-1 rounded-sm text-xs font-semibold ${COULEUR_ETAT[abonnement.status]}`}
                   >
                     {t(abonnement.status.toLowerCase())}
                   </span>
@@ -493,7 +493,7 @@ export default function WebhooksPage() {
               {/* Un abonnement coupé ne dit pas de lui-même comment repartir. */}
               {abonnement.status === 'FAILED' && (
                 <p className="text-xs text-red-600 flex items-start gap-2">
-                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                  <AlertCircle size={14} className="mt-0.5 shrink-0" />
                   {t('failedWarning')}
                 </p>
               )}

@@ -102,7 +102,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
               e.stopPropagation();
               handleDelete(method.id);
             }}
-            className="p-1 text-red-500 hover:bg-red-900/20 rounded"
+            className="p-1 text-red-500 hover:bg-red-900/20 rounded-sm"
           >
             <Trash2 size={18} />
           </button>

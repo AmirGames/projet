@@ -165,7 +165,7 @@ export default function CommanderTrajetPage() {
         </Link>
       )}
 
-      <section className="mt-8 space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <section className="mt-8 space-y-4 rounded-3xl bg-white p-6 shadow-xs ring-1 ring-gray-200">
         <label className="block text-sm">
           <span className="flex items-center gap-1 font-medium text-slate-700">
             <MapPin size={14} /> {t('depart')}
@@ -186,7 +186,7 @@ export default function CommanderTrajetPage() {
             placeholder={t('departPlaceholder')}
             pays="BE"
             clair
-            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-600/20"
           />
         </label>
         <label className="block text-sm">
@@ -209,7 +209,7 @@ export default function CommanderTrajetPage() {
             placeholder={t('destinationPlaceholder')}
             pays="BE"
             clair
-            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-600/20"
           />
         </label>
 

@@ -98,7 +98,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
       ) : (
         <div className="flex gap-2 pt-3">
           {/* Axe des valeurs */}
-          <div className="relative w-12 flex-shrink-0 text-[11px] text-gray-500" style={{ height: hauteur }}>
+          <div className="relative w-12 shrink-0 text-[11px] text-gray-500" style={{ height: hauteur }}>
             {graduations.map((g) => (
               <span
                 key={g}
@@ -136,7 +136,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
                       key={c.labelComplet}
                       // La zone de survol couvre toute la hauteur de la tranche,
                       // bien plus large que la colonne elle-même.
-                      className="relative flex-1 h-full flex items-end justify-center outline-none"
+                      className="relative flex-1 h-full flex items-end justify-center outline-hidden"
                       tabIndex={0}
                       role="img"
                       aria-label={`${c.labelComplet} : ${format(c.valeur)}`}
@@ -145,7 +145,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
                       onFocus={() => setSurvol(i)}
                       onBlur={() => setSurvol(null)}
                     >
-                      {actif && <div className={`absolute inset-y-0 w-full rounded ${clair ? 'bg-gray-900/5' : 'bg-white/5'}`} />}
+                      {actif && <div className={`absolute inset-y-0 w-full rounded-sm ${clair ? 'bg-gray-900/5' : 'bg-white/5'}`} />}
                       {c.valeur > 0 && (
                         <div
                           className="relative rounded-t"
@@ -160,13 +160,13 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
 
                       {actif && (
                         <div
-                          className={`absolute z-10 top-0 min-w-[8rem] rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-xs shadow-lg pointer-events-none ${
+                          className={`absolute z-10 top-0 min-w-32 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-xs shadow-lg pointer-events-none ${
                             i > colonnes.length / 2 ? 'right-0' : 'left-0'
                           }`}
                         >
                           <p className="text-gray-400">{c.labelComplet}</p>
                           <p className="text-white font-semibold text-sm flex items-center gap-1.5">
-                            <span className="inline-block w-2 h-2 rounded-sm" style={{ background: ACCENT }} />
+                            <span className="inline-block w-2 h-2 rounded-xs" style={{ background: ACCENT }} />
                             {format(c.valeur)}
                           </p>
                           {c.details?.map((d) => (

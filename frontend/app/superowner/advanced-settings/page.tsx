@@ -180,7 +180,7 @@ export default function AdvancedSettingsPage() {
                     onChange={(e) =>
                       setSettings((prev) => prev ? { ...prev, debugMode: e.target.checked } : prev)
                     }
-                    className="w-5 h-5 rounded border-gray-300"
+                    className="w-5 h-5 rounded-sm border-gray-300"
                   />
                   <span className="text-gray-900 font-medium">{t('debugMode')}</span>
                 </label>
@@ -200,7 +200,7 @@ export default function AdvancedSettingsPage() {
                     type="checkbox"
                     checked={settings?.enabledFeatures?.includes(feature.id) ?? false}
                     onChange={() => toggleFeature(feature.id)}
-                    className="w-5 h-5 rounded border-gray-300"
+                    className="w-5 h-5 rounded-sm border-gray-300"
                   />
                   <span className="text-gray-700">{feature.label}</span>
                 </label>
@@ -230,7 +230,7 @@ export default function AdvancedSettingsPage() {
                           : prev
                       )
                     }
-                    className="w-5 h-5 rounded border-gray-300"
+                    className="w-5 h-5 rounded-sm border-gray-300"
                   />
                   <span className="text-gray-900 font-medium">{t('cacheEnabled')}</span>
                 </label>
@@ -278,7 +278,7 @@ export default function AdvancedSettingsPage() {
                           : prev
                       )
                     }
-                    className="w-5 h-5 rounded border-gray-300"
+                    className="w-5 h-5 rounded-sm border-gray-300"
                   />
                   <span className="text-gray-900 font-medium">{t('compressionEnabled')}</span>
                 </label>

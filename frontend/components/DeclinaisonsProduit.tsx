@@ -181,7 +181,7 @@ export function DeclinaisonsProduit({
       {ouvert && (
         <div className="mt-4 space-y-4">
           {erreur && (
-            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">
               {erreur}
             </p>
           )}
@@ -199,7 +199,7 @@ export function DeclinaisonsProduit({
                 value={libelleDuChoix}
                 onChange={(e) => setLibelleDuChoix(e.target.value)}
                 placeholder={t('questionPlaceholder')}
-                className="flex-1 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
+                className="flex-1 bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-sm focus:outline-hidden focus:border-orange-500"
               />
               <button
                 type="button"
@@ -226,7 +226,7 @@ export function DeclinaisonsProduit({
               {declinaisons.map((declinaison, index) => (
                 <li
                   key={declinaison.id}
-                  className="flex items-center gap-2 bg-gray-50 rounded px-2 py-2 flex-wrap"
+                  className="flex items-center gap-2 bg-gray-50 rounded-sm px-2 py-2 flex-wrap"
                 >
                   <div className="flex flex-col">
                     <button
@@ -257,7 +257,7 @@ export function DeclinaisonsProduit({
                         renommer(declinaison, e.target.value.trim());
                       }
                     }}
-                    className="flex-1 min-w-[8rem] bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                    className="flex-1 min-w-32 bg-gray-100 border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-orange-500"
                   />
 
                   <input
@@ -272,7 +272,7 @@ export function DeclinaisonsProduit({
                       const actuel = declinaison.price === null ? '' : String(declinaison.price);
                       if (valeur !== actuel) retarifer(declinaison, valeur);
                     }}
-                    className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                    className="w-24 bg-gray-100 border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-orange-500"
                   />
 
                   <span className="text-xs text-gray-500 w-20">
@@ -305,7 +305,7 @@ export function DeclinaisonsProduit({
           )}
 
           <div className="flex gap-2 items-end flex-wrap">
-            <div className="flex-1 min-w-[8rem]">
+            <div className="flex-1 min-w-32">
               <label htmlFor={`nom-${productId}`} className="block text-xs text-gray-500 mb-1">
                 {t('newVariantLabel')}
               </label>
@@ -317,7 +317,7 @@ export function DeclinaisonsProduit({
                   if (e.key === 'Enter') ajouter();
                 }}
                 placeholder={t('newVariantPlaceholder')}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-2 py-1.5 text-sm focus:outline-hidden focus:border-orange-500"
               />
             </div>
 
@@ -333,7 +333,7 @@ export function DeclinaisonsProduit({
                 value={nouveauPrix}
                 onChange={(e) => setNouveauPrix(e.target.value)}
                 placeholder={String(prixDuPlat)}
-                className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                className="w-24 bg-gray-100 border border-gray-300 rounded-sm px-2 py-1.5 text-sm focus:outline-hidden focus:border-orange-500"
               />
             </div>
 

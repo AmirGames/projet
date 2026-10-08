@@ -111,7 +111,7 @@ export default function SecurityAuditPage() {
 
       {summary.criticalEvents > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertTriangle size={20} className="text-red-600 mt-1 flex-shrink-0" />
+          <AlertTriangle size={20} className="text-red-600 mt-1 shrink-0" />
           <div>
             <p className="font-bold text-red-600">{t('criticalEvents', { count: summary.criticalEvents })}</p>
             <p className="text-sm text-red-600/80">{t('attentionRequired')}</p>

@@ -369,7 +369,7 @@ export default function DriverDashboard() {
                   <div>
                     <p className="text-orange-500 font-semibold mb-2">{t('toPickup')}</p>
                     <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
-                      <MapPin size={24} className="text-orange-500 flex-shrink-0" />
+                      <MapPin size={24} className="text-orange-500 shrink-0" />
                       <div>
                         <p className="text-gray-900 font-semibold">{activeDelivery.pickupAddress}</p>
                         <p className="text-gray-500 text-sm">{activeDelivery.customerName}</p>
@@ -381,7 +381,7 @@ export default function DriverDashboard() {
                   <div>
                     <p className="text-green-500 font-semibold mb-2">{t('deliverTo')}</p>
                     <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
-                      <MapPin size={24} className="text-green-500 flex-shrink-0" />
+                      <MapPin size={24} className="text-green-500 shrink-0" />
                       <div>
                         <p className="text-gray-900 font-semibold">{activeDelivery.deliveryAddress}</p>
                         <p className="text-gray-500 text-sm">{activeDelivery.customerName}</p>
@@ -472,7 +472,7 @@ export default function DriverDashboard() {
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-6">
               <div>
                 <p className="text-gray-500 text-sm mb-2">{t('profile')}</p>
-                <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                <div className="w-16 h-16 bg-linear-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {driver.name.charAt(0)}
                 </div>
                 <p className="text-gray-900 font-semibold mt-3">{driver.name}</p>

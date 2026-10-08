@@ -182,14 +182,14 @@ export default function MerchantOnboardPage() {
         <div className="bg-white border border-gray-200 rounded-lg p-8">
           {apiError && (
             <div className="mb-6 bg-red-100 border border-red-500/50 rounded-lg p-4 flex gap-3">
-              <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+              <AlertCircle className="text-red-600 shrink-0" size={20} />
               <p className="text-red-600">{apiError}</p>
             </div>
           )}
 
           {successMessage && (
             <div className="mb-6 bg-green-100 border border-green-500/50 rounded-lg p-4 flex gap-3">
-              <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
+              <CheckCircle className="text-green-600 shrink-0" size={20} />
               <p className="text-green-600">{successMessage}</p>
             </div>
           )}
@@ -205,7 +205,7 @@ export default function MerchantOnboardPage() {
                   name="businessName"
                   value={formData.businessName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 {errors.businessName && <p className="text-red-600 text-sm mt-1">{errors.businessName}</p>}
               </div>
@@ -218,7 +218,7 @@ export default function MerchantOnboardPage() {
                   name="businessType"
                   value={formData.businessType}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 >
                   <option value="RESTAURANT">{t('types.restaurant')}</option>
                   <option value="BAKERY">{t('types.boulangerie')}</option>
@@ -238,7 +238,7 @@ export default function MerchantOnboardPage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
               </div>
@@ -252,7 +252,7 @@ export default function MerchantOnboardPage() {
                   name="storeName"
                   value={formData.storeName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 {errors.storeName && <p className="text-red-600 text-sm mt-1">{errors.storeName}</p>}
               </div>
@@ -267,7 +267,7 @@ export default function MerchantOnboardPage() {
                   placeholder="exemple-boutique"
                   value={formData.storeSlug}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 {errors.storeSlug && <p className="text-red-600 text-sm mt-1">{errors.storeSlug}</p>}
               </div>
@@ -281,7 +281,7 @@ export default function MerchantOnboardPage() {
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 {errors.city && <p className="text-red-600 text-sm mt-1">{errors.city}</p>}
               </div>
@@ -302,7 +302,7 @@ export default function MerchantOnboardPage() {
                       postalCode: adresse.postalCode || prev.postalCode,
                     }))
                   }
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 {errors.address && <p className="text-red-600 text-sm mt-1">{errors.address}</p>}
               </div>
@@ -316,7 +316,7 @@ export default function MerchantOnboardPage() {
                   name="postalCode"
                   value={formData.postalCode}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
                 />
                 {errors.postalCode && <p className="text-red-600 text-sm mt-1">{errors.postalCode}</p>}
               </div>
@@ -331,7 +331,7 @@ export default function MerchantOnboardPage() {
                 value={formData.description}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-blue-500"
               />
               {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
             </div>

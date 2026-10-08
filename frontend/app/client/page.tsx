@@ -313,7 +313,7 @@ export default function ClientHomePage() {
         />
         {/* L'accroche : un grand aplat chaleureux, et l'adresse au centre du
             jeu — sans elle, ni frais ni délais justes. */}
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 px-6 py-10 md:px-12 md:py-14 text-white">
+        <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-orange-500 via-orange-600 to-red-600 px-6 py-10 md:px-12 md:py-14 text-white">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 hidden select-none lg:grid grid-cols-3 gap-x-10 gap-y-8 text-7xl rotate-6"
@@ -344,7 +344,7 @@ export default function ClientHomePage() {
           <nav aria-label={t('categories')} className="relative mt-8">
             {/* Un fondu sous la flèche : les catégories y glissent au lieu de
                 buter contre elle. */}
-            <div className="hidden md:flex absolute inset-y-0 left-0 z-10 w-16 items-center justify-start pointer-events-none bg-gradient-to-r from-white via-white/90 to-transparent">
+            <div className="hidden md:flex absolute inset-y-0 left-0 z-10 w-16 items-center justify-start pointer-events-none bg-linear-to-r from-white via-white/90 to-transparent">
               <button
                 type="button"
                 onClick={() => defiler(-1)}
@@ -356,7 +356,7 @@ export default function ClientHomePage() {
             </div>
             <ul
               ref={rangee}
-              className="flex gap-1 md:gap-3 pb-2 md:px-10 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex gap-1 md:gap-3 pb-2 md:px-10 overflow-x-auto scroll-smooth scrollbar-none [&::-webkit-scrollbar]:hidden"
             >
               {familles.map((famille) => {
                 const choisie = familleChoisie === famille.code;
@@ -367,7 +367,7 @@ export default function ClientHomePage() {
                       aria-pressed={choisie}
                       title={famille.libelle}
                       onClick={() => setFamilleChoisie(choisie ? null : famille.code)}
-                      className="group w-20 flex-shrink-0 flex flex-col items-center gap-2 py-1"
+                      className="group w-20 shrink-0 flex flex-col items-center gap-2 py-1"
                     >
                       <span
                         aria-hidden="true"
@@ -391,7 +391,7 @@ export default function ClientHomePage() {
                 );
               })}
             </ul>
-            <div className="hidden md:flex absolute inset-y-0 right-0 z-10 w-16 items-center justify-end pointer-events-none bg-gradient-to-l from-white via-white/90 to-transparent">
+            <div className="hidden md:flex absolute inset-y-0 right-0 z-10 w-16 items-center justify-end pointer-events-none bg-linear-to-l from-white via-white/90 to-transparent">
               <button
                 type="button"
                 onClick={() => defiler(1)}
@@ -405,7 +405,7 @@ export default function ClientHomePage() {
         )}
 
         {/* Les filtres rapides et le tri, en pastilles. */}
-        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden">
           {filtresRapides.map(({ cle, libelle, icone: Icone }) => {
             const actif = filtres.has(cle);
             return (
@@ -414,7 +414,7 @@ export default function ClientHomePage() {
                 type="button"
                 aria-pressed={actif}
                 onClick={() => basculerFiltre(cle)}
-                className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
                   actif ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
               >
@@ -424,12 +424,12 @@ export default function ClientHomePage() {
             );
           })}
 
-          <label className="relative flex-shrink-0">
+          <label className="relative shrink-0">
             <span className="sr-only">{t('sortByRating')}</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="appearance-none cursor-pointer rounded-full bg-gray-100 py-2 pl-4 pr-9 text-sm font-semibold text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="appearance-none cursor-pointer rounded-full bg-gray-100 py-2 pl-4 pr-9 text-sm font-semibold text-gray-900 hover:bg-gray-200 focus:outline-hidden focus:ring-2 focus:ring-orange-500"
             >
               <option value="rating">{t('sortByRating')}</option>
               <option value="distance">{t('sortByDistance')}</option>
@@ -442,7 +442,7 @@ export default function ClientHomePage() {
             <button
               type="button"
               onClick={effacerFiltres}
-              className="flex-shrink-0 px-3 py-2 text-sm font-semibold text-orange-600 hover:text-orange-700"
+              className="shrink-0 px-3 py-2 text-sm font-semibold text-orange-600 hover:text-orange-700"
             >
               {t('resetFilters')}
             </button>
@@ -546,7 +546,7 @@ function Rangee({
       </div>
       <div
         ref={liste}
-        className="-mx-4 flex snap-x snap-mandatory scroll-pl-4 md:scroll-pl-0 gap-5 overflow-x-auto scroll-smooth px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 flex snap-x snap-mandatory scroll-pl-4 md:scroll-pl-0 gap-5 overflow-x-auto scroll-smooth px-4 pb-2 md:mx-0 md:px-0 scrollbar-none [&::-webkit-scrollbar]:hidden"
       >
         {children}
       </div>
@@ -598,11 +598,11 @@ function CarteCommerce({
   return (
     <Link
       href={`/store/${store.slug}`}
-      className={`group block rounded-2xl text-gray-900 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-4 ${
-        enRangee ? 'w-[78%] sm:w-[300px] flex-shrink-0 snap-start' : ''
+      className={`group block rounded-2xl text-gray-900 hover:text-gray-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-4 ${
+        enRangee ? 'w-[78%] sm:w-[300px] shrink-0 snap-start' : ''
       }`}
     >
-      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100">
+      <div className="relative aspect-video overflow-hidden rounded-2xl bg-gray-100">
         {/* La photo de couverture du commerçant ; à défaut, l'illustration de
             sa catégorie (une pizza pour une pizzeria). Le logo se pose en
             pastille ; sans logo, l'emoji de la catégorie le remplace sur une
@@ -639,7 +639,7 @@ function CarteCommerce({
 
         {/* Ce qui fait cliquer : la livraison offerte, en étiquette. */}
         {!ferme && livraisonOfferte(store) && (
-          <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-xs font-bold text-white shadow">
+          <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
             <Bike size={13} />
             {t('filterFreeDelivery')}
           </span>
@@ -650,7 +650,7 @@ function CarteCommerce({
           onClick={onFavori}
           aria-pressed={favori}
           aria-label={favori ? t('removeFavorite') : t('addFavorite')}
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow transition hover:scale-110"
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-110"
         >
           <Heart size={18} className={favori ? 'fill-red-500 text-red-500' : 'text-gray-900'} />
         </button>
@@ -670,7 +670,7 @@ function CarteCommerce({
         <h3 className="min-w-0 truncate text-base font-semibold">{store.name}</h3>
         {store.totalRatings && store.rating != null ? (
           <span
-            className="flex flex-shrink-0 items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-sm font-semibold"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-sm font-semibold"
             title={`${store.totalRatings} ${t('reviews')}`}
           >
             {note(store.rating)}
@@ -679,7 +679,7 @@ function CarteCommerce({
           </span>
         ) : (
           nouveau && (
-            <span className="flex-shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700">
+            <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700">
               {t('newStore')}
             </span>
           )
@@ -705,9 +705,9 @@ function GrilleEnChargement() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-8" aria-busy="true">
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i} className="animate-pulse">
-          <div className="aspect-[16/9] rounded-2xl bg-gray-100" />
-          <div className="mt-3 h-4 w-2/3 rounded bg-gray-100" />
-          <div className="mt-2 h-3 w-1/2 rounded bg-gray-100" />
+          <div className="aspect-video rounded-2xl bg-gray-100" />
+          <div className="mt-3 h-4 w-2/3 rounded-sm bg-gray-100" />
+          <div className="mt-2 h-3 w-1/2 rounded-sm bg-gray-100" />
         </div>
       ))}
     </div>

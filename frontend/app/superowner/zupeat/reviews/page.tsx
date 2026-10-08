@@ -203,7 +203,7 @@ export default function AvisSignalesPage() {
                     onChange={(e) => setNotes((n) => ({ ...n, [s.id]: e.target.value }))}
                     placeholder={t('notePlaceholder')}
                     rows={2}
-                    className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-orange-500"
                   />
                   <div className="flex flex-wrap gap-2">
                     <button

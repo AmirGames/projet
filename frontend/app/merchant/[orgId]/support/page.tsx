@@ -178,7 +178,7 @@ export default function SupportPage() {
                   setFormData({ ...formData, subject: e.target.value })
                 }
                 required
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-orange-500"
                 placeholder={t('sujetPlaceholder')}
               />
             </div>
@@ -194,7 +194,7 @@ export default function SupportPage() {
                 }
                 required
                 rows={4}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-orange-500"
                 placeholder={t('details')}
               />
             </div>
@@ -208,7 +208,7 @@ export default function SupportPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, priority: e.target.value })
                 }
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-orange-500"
               >
                 <option value="LOW">{t('basse')}</option>
                 <option value="MEDIUM">{t('moyenne')}</option>
@@ -266,7 +266,7 @@ export default function SupportPage() {
                     <p className="text-gray-500 text-sm mb-2">{ticket.description}</p>
                     <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
                       <span>{new Date(ticket.createdAt).toLocaleDateString(locale)}</span>
-                      <span className={`px-2 py-1 rounded ${getPriorityColor(ticket.priority)}`}>
+                      <span className={`px-2 py-1 rounded-sm ${getPriorityColor(ticket.priority)}`}>
                         {t.has(`priorites.${ticket.priority}`) ? t(`priorites.${ticket.priority}`) : ticket.priority}
                       </span>
                       <span>{LIBELLES_STATUT.includes(ticket.status) ? t(`statuts.${ticket.status}`) : ticket.status}</span>
@@ -282,9 +282,9 @@ export default function SupportPage() {
                     </div>
                   </div>
                   {openTicketId === ticket.id ? (
-                    <ChevronDown size={20} className="text-gray-500 flex-shrink-0" />
+                    <ChevronDown size={20} className="text-gray-500 shrink-0" />
                   ) : (
-                    <ChevronRight size={20} className="text-gray-500 flex-shrink-0" />
+                    <ChevronRight size={20} className="text-gray-500 shrink-0" />
                   )}
                 </div>
               </button>

@@ -140,7 +140,7 @@ export default function AccessLogsPage() {
               placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
@@ -149,7 +149,7 @@ export default function AccessLogsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
             >
               <option value="ALL">{t('allStatuses')}</option>
               <option value="SUCCESS">{t('success')}</option>
@@ -161,7 +161,7 @@ export default function AccessLogsPage() {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
           >
             <option value="">{t('allActions')}</option>
             {actions.map(action => (
@@ -213,11 +213,11 @@ export default function AccessLogsPage() {
                       <p className="text-xs text-gray-500">{log.user.email}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs bg-gray-50 rounded px-2 py-1">
+                  <td className="px-6 py-4 font-mono text-xs bg-gray-50 rounded-sm px-2 py-1">
                     {log.resource}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium">
+                    <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-sm text-xs font-medium">
                       {log.action}
                     </span>
                   </td>

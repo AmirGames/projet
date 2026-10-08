@@ -136,7 +136,7 @@ export default function AuditLogsPage() {
               setFilterAction(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
           >
             {actions.map((action) => (
               <option key={action} value={action}>
@@ -153,7 +153,7 @@ export default function AuditLogsPage() {
               setFilterStatus(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
           >
             <option value="ALL">{t('allStatuses')}</option>
             <option value="SUCCESS">{t('success')}</option>
@@ -203,7 +203,7 @@ export default function AuditLogsPage() {
                       <div className="text-xs text-gray-500">{log.resourceId}</div>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(log.status)}`}>
+                      <span className={`px-2 py-1 rounded-sm text-xs font-semibold ${getStatusColor(log.status)}`}>
                         {log.status}
                       </span>
                     </td>
@@ -214,7 +214,7 @@ export default function AuditLogsPage() {
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
-                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
+                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm text-sm transition"
                       >
                         {expandedLog === log.id ? t('hide') : t('show')}
                       </button>
@@ -226,7 +226,7 @@ export default function AuditLogsPage() {
                         <div className="space-y-4">
                           <div>
                             <h4 className="text-sm font-bold text-gray-900 mb-2">{t('networkInfo')}</h4>
-                            <div className="bg-white ring-1 ring-gray-200 rounded p-3 text-xs space-y-1 text-gray-500">
+                            <div className="bg-white ring-1 ring-gray-200 rounded-sm p-3 text-xs space-y-1 text-gray-500">
                               <div>IP: <span className="text-gray-700">{log.ipAddress}</span></div>
                               <div className="break-all">User-Agent: <span className="text-gray-700">{log.userAgent}</span></div>
                             </div>
@@ -237,13 +237,13 @@ export default function AuditLogsPage() {
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">{t('before')}</p>
-                                  <pre className="bg-white ring-1 ring-gray-200 rounded p-2 text-xs overflow-auto max-h-48 text-gray-700">
+                                  <pre className="bg-white ring-1 ring-gray-200 rounded-sm p-2 text-xs overflow-auto max-h-48 text-gray-700">
                                     {JSON.stringify(log.changes.before, null, 2)}
                                   </pre>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">{t('after')}</p>
-                                  <pre className="bg-white ring-1 ring-gray-200 rounded p-2 text-xs overflow-auto max-h-48 text-gray-700">
+                                  <pre className="bg-white ring-1 ring-gray-200 rounded-sm p-2 text-xs overflow-auto max-h-48 text-gray-700">
                                     {JSON.stringify(log.changes.after, null, 2)}
                                   </pre>
                                 </div>
@@ -269,14 +269,14 @@ export default function AuditLogsPage() {
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

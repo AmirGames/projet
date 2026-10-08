@@ -152,7 +152,7 @@ export default function ProductSeoPage() {
         </div>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-white p-6 rounded-lg shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           {t('selectionner')}
         </h2>
@@ -185,7 +185,7 @@ export default function ProductSeoPage() {
         </div>
       ) : productId ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">
               {t('metadonnees')}
             </h2>
@@ -256,7 +256,7 @@ export default function ProductSeoPage() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">
               {t('openGraph')}
             </h2>

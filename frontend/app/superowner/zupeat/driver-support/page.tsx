@@ -180,7 +180,7 @@ export default function DriverSupportPage() {
                       className={c.isOnline ? 'fill-green-500 text-green-500' : 'fill-gray-500 text-gray-500'}
                     />
                     <span className="truncate">{c.driverName}</span>
-                    {c.enCourse && <Package size={14} className="text-orange-600 flex-shrink-0" />}
+                    {c.enCourse && <Package size={14} className="text-orange-600 shrink-0" />}
                   </span>
                   {c.unread > 0 && (
                     <span className="bg-orange-600 text-white text-xs font-bold rounded-full px-2 py-0.5">{c.unread}</span>

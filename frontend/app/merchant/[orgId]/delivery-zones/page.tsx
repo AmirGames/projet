@@ -530,7 +530,7 @@ export default function DeliveryZonesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={t('exempleNom')}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -540,7 +540,7 @@ export default function DeliveryZonesPage() {
                 {editingZone ? (
                   // La forme d'une zone ne se change pas après coup : ça
                   // reviendrait à en recréer une autre sous le même nom.
-                  <p className="px-3 py-2 bg-white text-gray-700 rounded border border-gray-200 text-sm">
+                  <p className="px-3 py-2 bg-white text-gray-700 rounded-sm border border-gray-200 text-sm">
                     {formData.type === 'RADIUS' ? t('rayonAnneau') : t('polygoneDessine')}
                   </p>
                 ) : (
@@ -552,7 +552,7 @@ export default function DeliveryZonesPage() {
                       setFormData({ ...formData, type });
                       setDessin(type === 'POLYGON' ? [] : null);
                     }}
-                    className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                   >
                     <option value="RADIUS">{t('optionRayon')}</option>
                     <option value="POLYGON">{t('optionPolygone')}</option>
@@ -574,7 +574,7 @@ export default function DeliveryZonesPage() {
                     value={formData.radiusKm}
                     onChange={(e) => setFormData({ ...formData, radiusKm: e.target.value })}
                     placeholder="3"
-                    className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                   />
                 </div>
               ) : (
@@ -582,7 +582,7 @@ export default function DeliveryZonesPage() {
                   <span className="text-gray-700 text-sm block mb-2">{t('trace')}</span>
                   {dessin != null ? (
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-2 bg-white text-gray-700 rounded border border-gray-200 text-sm flex-1">
+                      <span className="px-3 py-2 bg-white text-gray-700 rounded-sm border border-gray-200 text-sm flex-1">
                         {t('sommets', { n: dessin.length })}
                       </span>
                       <button
@@ -590,7 +590,7 @@ export default function DeliveryZonesPage() {
                         onClick={() => setDessin((actuel) => (actuel && actuel.length > 0 ? actuel.slice(0, -1) : actuel))}
                         disabled={dessin.length === 0}
                         title={t('retirerSommet')}
-                        className="px-2 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 rounded text-sm"
+                        className="px-2 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 rounded-sm text-sm"
                       >
                         ↩︎
                       </button>
@@ -599,7 +599,7 @@ export default function DeliveryZonesPage() {
                     <button
                       type="button"
                       onClick={redessinerZone}
-                      className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded border border-gray-300 text-sm"
+                      className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm border border-gray-300 text-sm"
                     >
                       {t('redessiner')}
                     </button>
@@ -618,7 +618,7 @@ export default function DeliveryZonesPage() {
                   value={formData.baseFee}
                   onChange={(e) => setFormData({ ...formData, baseFee: e.target.value })}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -633,7 +633,7 @@ export default function DeliveryZonesPage() {
                   value={formData.minOrder}
                   onChange={(e) => setFormData({ ...formData, minOrder: e.target.value })}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -648,7 +648,7 @@ export default function DeliveryZonesPage() {
                   value={formData.freeAbove}
                   onChange={(e) => setFormData({ ...formData, freeAbove: e.target.value })}
                   placeholder={t('jamais')}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -663,7 +663,7 @@ export default function DeliveryZonesPage() {
                   value={formData.deliveryMinutes}
                   onChange={(e) => setFormData({ ...formData, deliveryMinutes: e.target.value })}
                   placeholder="30"
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -675,7 +675,7 @@ export default function DeliveryZonesPage() {
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  className="w-full h-10 px-1 py-1 bg-gray-100 rounded border border-gray-300 cursor-pointer"
+                  className="w-full h-10 px-1 py-1 bg-gray-100 rounded-sm border border-gray-300 cursor-pointer"
                 />
               </div>
               <div>
@@ -702,7 +702,7 @@ export default function DeliveryZonesPage() {
               <button
                 onClick={handleSaveZone}
                 disabled={saving}
-                className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
+                className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-sm transition disabled:opacity-50"
               >
                 {editingZone ? t('mettreAJour') : t('create')}
               </button>
@@ -712,7 +712,7 @@ export default function DeliveryZonesPage() {
                   setEditingZone(null);
                   setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', freeAbove: '', deliveryMinutes: '' }); setDessin(null);
                 }}
-                className="px-4 py-2 bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition"
+                className="px-4 py-2 bg-gray-100 text-gray-900 rounded-sm hover:bg-gray-200 transition"
               >
                 {t('annuler')}
               </button>
@@ -729,7 +729,7 @@ export default function DeliveryZonesPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={t('rechercher')}
-              className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:border-amber-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:border-amber-500 focus:outline-hidden"
             />
           </div>
         </div>
@@ -756,14 +756,14 @@ export default function DeliveryZonesPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditZone(zone)}
-                      className="p-2 text-amber-600 hover:bg-gray-100 rounded transition"
+                      className="p-2 text-amber-600 hover:bg-gray-100 rounded-sm transition"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDeleteZone(zone.id)}
                       disabled={saving}
-                      className="p-2 text-red-600 hover:bg-gray-100 rounded transition disabled:opacity-50"
+                      className="p-2 text-red-600 hover:bg-gray-100 rounded-sm transition disabled:opacity-50"
                     >
                       <Trash2 size={18} />
                     </button>

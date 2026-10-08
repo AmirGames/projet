@@ -103,7 +103,7 @@ export function NotificationBell({ clair = false }: { clair?: boolean } = {}) {
                         {new Date(notif.createdAt).toLocaleString(locale)}
                       </p>
                     </div>
-                    {!notif.isRead && <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 flex-shrink-0" />}
+                    {!notif.isRead && <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 shrink-0" />}
                   </div>
                 </div>
               ))}

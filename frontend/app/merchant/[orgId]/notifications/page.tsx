@@ -235,7 +235,7 @@ export default function NotificationsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded ${getTypeColor(notification.type)}`}>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-sm ${getTypeColor(notification.type)}`}>
                       {notification.type.replace(/_/g, " ")}
                     </span>
                     {!notification.isRead && (

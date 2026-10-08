@@ -153,14 +153,14 @@ export default function DriverOnboardPage() {
         <div className="bg-white border border-gray-200 rounded-lg p-8">
           {apiError && (
             <div className="mb-6 bg-red-100 border border-red-500/50 rounded-lg p-4 flex gap-3">
-              <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+              <AlertCircle className="text-red-600 shrink-0" size={20} />
               <p className="text-red-600">{apiError}</p>
             </div>
           )}
 
           {successMessage && (
             <div className="mb-6 bg-green-100 border border-green-500/50 rounded-lg p-4 flex gap-3">
-              <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
+              <CheckCircle className="text-green-600 shrink-0" size={20} />
               <p className="text-green-600">{successMessage}</p>
             </div>
           )}
@@ -176,7 +176,7 @@ export default function DriverOnboardPage() {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder={t('phonePlaceholder')}
-                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
               />
               {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
             </div>
@@ -220,7 +220,7 @@ export default function DriverOnboardPage() {
                   value={formData.vehiclePlate}
                   onChange={handleChange}
                   placeholder={t('platePlaceholder')}
-                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
                 />
                 {errors.vehiclePlate && <p className="text-red-600 text-sm mt-1">{errors.vehiclePlate}</p>}
               </div>

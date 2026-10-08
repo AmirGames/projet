@@ -67,21 +67,21 @@ export default function CompteVersementLivreur({
             value={iban}
             onChange={(e) => setIban(e.target.value)}
             placeholder={t('iban')}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
             required
           />
           <input
             value={titulaire}
             onChange={(e) => setTitulaire(e.target.value)}
             placeholder={t('titulaire')}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
             required
           />
           {erreur && <p className="text-red-600 text-sm">{erreur}</p>}
           <button
             type="submit"
             disabled={envoi}
-            className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 rounded"
+            className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 rounded-sm"
           >
             {t('enregistrer')}
           </button>

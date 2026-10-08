@@ -131,7 +131,7 @@ const jamaisRempli = (lu: Profil) =>
   !lu.legalName && !lu.billingAddress && !lu.ownerFirstName && !lu.ownerLastName;
 
 const CHAMP =
-  'w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 placeholder-gray-400';
+  'w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 placeholder-gray-400';
 
 export default function ProfilCommercantPage() {
   const t = useTranslations('merchantProfile');
@@ -748,7 +748,7 @@ export default function ProfilCommercantPage() {
               return (
                 <li
                   key={document.id}
-                  className="flex items-start justify-between gap-3 rounded bg-gray-50 px-3 py-2"
+                  className="flex items-start justify-between gap-3 rounded-sm bg-gray-50 px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="text-gray-900 text-sm font-medium">{document.libelle}</p>
@@ -777,7 +777,7 @@ export default function ProfilCommercantPage() {
                     </LienPiece>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                     <Icone size={18} className={marque.classe} />
                     <button
                       type="button"

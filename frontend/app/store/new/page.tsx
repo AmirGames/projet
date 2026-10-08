@@ -234,7 +234,7 @@ export default function CreateStorePage() {
                     value={formData.name}
                     onChange={handleNameChange}
                     placeholder={t('nomExemple')}
-                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -249,7 +249,7 @@ export default function CreateStorePage() {
                     value={formData.slug}
                     onChange={handleChange}
                     placeholder="ma-pizzeria"
-                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -264,7 +264,7 @@ export default function CreateStorePage() {
                       name="businessType"
                       value={formData.businessType}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                       required
                     >
                       {etablissements.map((genre) => (
@@ -287,7 +287,7 @@ export default function CreateStorePage() {
                         name="cuisineType"
                         value={formData.cuisineType}
                         onChange={handleChange}
-                        className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">{t('selectionnez')}</option>
                         {cuisines.map((genre) => (
@@ -310,7 +310,7 @@ export default function CreateStorePage() {
                     onChange={handleChange}
                     placeholder={t('descriptionAide')}
                     rows={3}
-                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function CreateStorePage() {
                       })
                     }
                     placeholder={t('adresseExemple')}
-                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -361,7 +361,7 @@ export default function CreateStorePage() {
                       value={formData.city}
                       onChange={handleChange}
                       placeholder={t('villeExemple')}
-                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -375,7 +375,7 @@ export default function CreateStorePage() {
                       value={formData.postalCode}
                       onChange={handleChange}
                       placeholder="4000"
-                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export default function CreateStorePage() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+32 4 XX XX XX XX"
-                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -409,7 +409,7 @@ export default function CreateStorePage() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder={t('emailExemple')}
-                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>

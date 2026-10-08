@@ -152,7 +152,7 @@ export default function ConsolePage() {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
           placeholder={t('search')}
-          className="flex-1 min-w-[12rem] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm"
+          className="flex-1 min-w-48 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm"
         />
       </div>
 

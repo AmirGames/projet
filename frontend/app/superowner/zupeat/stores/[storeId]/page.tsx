@@ -334,7 +334,7 @@ export default function FicheBoutiquePage() {
               href={`/store/${fiche.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
+              className="inline-flex items-center gap-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm text-sm transition"
             >
               <ExternalLink size={14} />
               {t('seeShowcase')}
@@ -345,7 +345,7 @@ export default function FicheBoutiquePage() {
               <button
                 onClick={() => setFermetureEnCours(true)}
                 disabled={bascule}
-                className="inline-flex items-center gap-1 px-4 py-2 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 text-white rounded text-sm font-medium transition"
+                className="inline-flex items-center gap-1 px-4 py-2 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 text-white rounded-sm text-sm font-medium transition"
               >
                 <Power size={14} />
                 {t('closeStore')}
@@ -354,7 +354,7 @@ export default function FicheBoutiquePage() {
               <button
                 onClick={() => basculerLOuverture(true)}
                 disabled={bascule}
-                className="inline-flex items-center gap-1 px-4 py-2 bg-green-600/80 hover:bg-green-600 disabled:opacity-50 text-white rounded text-sm font-medium transition"
+                className="inline-flex items-center gap-1 px-4 py-2 bg-green-600/80 hover:bg-green-600 disabled:opacity-50 text-white rounded-sm text-sm font-medium transition"
               >
                 <Power size={14} />
                 {t('reopenStore')}
@@ -364,7 +364,7 @@ export default function FicheBoutiquePage() {
             {!enEdition && (
               <button
                 onClick={ouvrirEdition}
-                className="inline-flex items-center gap-1 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded text-sm font-medium transition"
+                className="inline-flex items-center gap-1 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-sm text-sm font-medium transition"
               >
                 <Pencil size={14} />
                 {t('edit')}
@@ -389,14 +389,14 @@ export default function FicheBoutiquePage() {
             onChange={(e) => setMotifFermeture(e.target.value)}
             placeholder={t('closureReason')}
             aria-label={t('closureReasonLabel')}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
           />
 
           <div className="flex gap-2">
             <button
               onClick={() => basculerLOuverture(false)}
               disabled={bascule || !motifFermeture.trim()}
-              className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white rounded text-sm font-medium transition"
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white rounded-sm text-sm font-medium transition"
             >
               {t('confirmClose')}
             </button>
@@ -405,7 +405,7 @@ export default function FicheBoutiquePage() {
                 setFermetureEnCours(false);
                 setMotifFermeture('');
               }}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm text-sm transition"
             >
               {tCommon('cancel')}
             </button>
@@ -430,7 +430,7 @@ export default function FicheBoutiquePage() {
           commerçant dit ne plus recevoir de livreur. */}
       {!fiche.situee && (
         <div className="p-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 flex gap-3">
-          <AlertTriangle size={20} className="flex-shrink-0 text-amber-600" />
+          <AlertTriangle size={20} className="shrink-0 text-amber-600" />
           <div>
             <p className="font-semibold">{t('pasSituee')}</p>
             <p className="text-sm text-amber-800/80">
@@ -461,7 +461,7 @@ export default function FicheBoutiquePage() {
                   type={type}
                   value={formulaire[champ] ?? ''}
                   onChange={(e) => setFormulaire({ ...formulaire, [champ]: e.target.value })}
-                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
                 />
               </div>
             ))}
@@ -500,13 +500,13 @@ export default function FicheBoutiquePage() {
           <div className="flex gap-2">
             <button
               onClick={enregistrer}
-              className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-medium transition"
+              className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-sm text-sm font-medium transition"
             >
               {t('enregistrer')}
             </button>
             <button
               onClick={() => setEnEdition(false)}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm text-sm transition"
             >
               {t('annuler')}
             </button>
@@ -625,11 +625,11 @@ export default function FicheBoutiquePage() {
                               taux pour ne pas afficher "PRO" sur une commande
                               facturée à 8 % (taux FREE). */}
                           {c.tierAtOrder ? (
-                            <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                            <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-sm">
                               {c.tierAtOrder}
                             </span>
                           ) : (
-                            <span className="text-xs bg-gray-50 px-2 py-0.5 rounded text-gray-500" title={t('formuleInconnue')}>
+                            <span className="text-xs bg-gray-50 px-2 py-0.5 rounded-sm text-gray-500" title={t('formuleInconnue')}>
                               ~{c.commissionPercent.toFixed(0)} %
                             </span>
                           )}

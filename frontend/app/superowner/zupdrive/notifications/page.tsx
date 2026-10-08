@@ -115,7 +115,7 @@ export default function NotificationsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">{tr('key', { key: t.key })}</p>
-                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-sm">
                     {t.type}
                   </span>
                 </div>

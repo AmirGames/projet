@@ -130,7 +130,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
       ) : (
         <div
           className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-extrabold text-white sm:h-14 sm:w-14 ${
-            product.isAvailable ? 'bg-gradient-to-br from-orange-400 to-orange-700' : 'bg-gray-300'
+            product.isAvailable ? 'bg-linear-to-br from-orange-400 to-orange-700' : 'bg-gray-300'
           }`}
           aria-hidden="true"
         >
@@ -626,7 +626,7 @@ export default function ProductsPage() {
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent text-sm outline-none placeholder:text-gray-500"
+              className="w-full bg-transparent text-sm outline-hidden placeholder:text-gray-500"
             />
           </label>
           <button
@@ -651,7 +651,7 @@ export default function ProductsPage() {
         {produitsEpuises.length > 0 && (
           <div className="rounded-[18px] border border-orange-200 bg-orange-50 p-4">
             <div className="flex gap-3">
-              <AlertCircle size={20} className="text-orange-700 flex-shrink-0 mt-0.5" />
+              <AlertCircle size={20} className="text-orange-700 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold text-orange-900 mb-2">
                   {t('outOfStockProducts', { count: produitsEpuises.length })}
@@ -727,7 +727,7 @@ export default function ProductsPage() {
                           <select
                             value={group.sortMode}
                             onChange={(e) => changerTriCategorie(group.category.id, e.target.value as CategorySortMode)}
-                            className="ml-auto rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-semibold text-gray-800 focus:outline-none focus:border-orange-500"
+                            className="ml-auto rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-semibold text-gray-800 focus:outline-hidden focus:border-orange-500"
                             title={t('sortTitle')}
                           >
                             <option value="MANUAL">{t('sortMode_manual')}</option>
@@ -790,7 +790,7 @@ export default function ProductsPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-hidden focus:border-orange-500"
                   placeholder={t('formPlaceholder_name')}
                   required
                 />
@@ -802,7 +802,7 @@ export default function ProductsPage() {
                   type="text"
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-hidden focus:border-orange-500"
                   placeholder={t('formPlaceholder_sku')}
                 />
               </div>
@@ -812,7 +812,7 @@ export default function ProductsPage() {
                 <select
                   value={formData.categoryId}
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-hidden focus:border-orange-500"
                 >
                   <option value="">{t('formSelect_category')}</option>
                   {categories.map(cat => (
@@ -826,7 +826,7 @@ export default function ProductsPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-hidden focus:border-orange-500"
                   placeholder={t('formPlaceholder_description')}
                   rows={3}
                 />
@@ -842,7 +842,7 @@ export default function ProductsPage() {
                     step="0.01"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-none focus:border-orange-500"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-hidden focus:border-orange-500"
                     placeholder="0.00"
                     required
                   />
@@ -868,7 +868,7 @@ export default function ProductsPage() {
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-gray-900 focus:outline-hidden focus:border-orange-500"
                 >
                   <option value="DRAFT">{t('statusDraft')}</option>
                   <option value="ACTIVE">{t('statusActive')}</option>

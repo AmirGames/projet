@@ -195,7 +195,7 @@ export default function ProfilClientPage() {
                 required
                 minLength={2}
                 {...champ('name')}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
               />
             </div>
 
@@ -204,7 +204,7 @@ export default function ProfilClientPage() {
               <input
                 type="tel"
                 {...champ('phone')}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
               />
             </div>
 
@@ -222,7 +222,7 @@ export default function ProfilClientPage() {
                     postalCode: adresse.postalCode || formulaire.postalCode,
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
               />
             </div>
 
@@ -232,7 +232,7 @@ export default function ProfilClientPage() {
                 <input
                   type="text"
                   {...champ('postalCode')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -240,7 +240,7 @@ export default function ProfilClientPage() {
                 <input
                   type="text"
                   {...champ('city')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
                 />
               </div>
             </div>

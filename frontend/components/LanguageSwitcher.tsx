@@ -111,7 +111,7 @@ export function LanguageSwitcher({ clair = false }: { clair?: boolean } = {}) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="region-titre"
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 sm:p-6"
+            className="fixed inset-0 z-100 flex items-end sm:items-center justify-center bg-black/60 sm:p-6"
             onMouseDown={(e) => e.target === e.currentTarget && setIsOpen(false)}
           >
             <div className="w-full max-w-5xl max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-white text-gray-900 shadow-2xl">

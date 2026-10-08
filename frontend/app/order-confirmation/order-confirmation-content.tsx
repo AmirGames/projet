@@ -14,7 +14,7 @@ export default function OrderConfirmationContent() {
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <EnTeteClient />
       <div className="max-w-2xl mx-auto p-6 pt-12">
-        <div className="bg-white p-8 rounded-3xl text-center shadow-sm ring-1 ring-gray-200">
+        <div className="bg-white p-8 rounded-3xl text-center shadow-xs ring-1 ring-gray-200">
           {/* Success Icon */}
           <div className="text-6xl mb-6">🕒</div>
 

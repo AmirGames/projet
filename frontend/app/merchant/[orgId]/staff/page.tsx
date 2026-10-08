@@ -267,7 +267,7 @@ export default function StaffPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={t('exempleNom')}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -277,7 +277,7 @@ export default function StaffPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder={t('exempleEmail')}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -287,7 +287,7 @@ export default function StaffPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+33 6 XX XX XX XX"
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 />
               </div>
               <div>
@@ -295,7 +295,7 @@ export default function StaffPage() {
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as StaffRole })}
-                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
                 >
                   <option value="CASHIER">{t('caissier')}</option>
                   <option value="KITCHEN">{t('cuisine')}</option>
@@ -309,7 +309,7 @@ export default function StaffPage() {
               <button
                 onClick={handleSaveStaff}
                 disabled={saving}
-                className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
+                className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-sm transition disabled:opacity-50"
               >
                 {editingStaff ? t('mettreAJour') : t('create')}
               </button>
@@ -319,7 +319,7 @@ export default function StaffPage() {
                   setEditingStaff(null);
                   setFormData({ name: '', email: '', phone: '', role: 'CASHIER' });
                 }}
-                className="px-4 py-2 bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition"
+                className="px-4 py-2 bg-gray-100 text-gray-900 rounded-sm hover:bg-gray-200 transition"
               >
                 {t('annuler')}
               </button>
@@ -336,7 +336,7 @@ export default function StaffPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={t('rechercher')}
-              className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:border-amber-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:border-amber-500 focus:outline-hidden"
             />
           </div>
         </div>
@@ -386,14 +386,14 @@ export default function StaffPage() {
                         </button>
                         <button
                           onClick={() => handleEditStaff(s)}
-                          className="p-2 text-amber-600 hover:bg-gray-100 rounded transition"
+                          className="p-2 text-amber-600 hover:bg-gray-100 rounded-sm transition"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteStaff(s.id)}
                           disabled={saving}
-                          className="p-2 text-red-600 hover:bg-gray-100 rounded transition disabled:opacity-50"
+                          className="p-2 text-red-600 hover:bg-gray-100 rounded-sm transition disabled:opacity-50"
                         >
                           <Trash2 size={18} />
                         </button>

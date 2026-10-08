@@ -17,7 +17,7 @@ import { BusinessPanel } from "./BusinessPanel";
 import { useEffectChargement } from "@/lib/use-effect-chargement";
 
 const buttonClass =
-  "rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50";
+  "rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-100 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50";
 export function safeAssistantLink(value: string) {
   // Liens locaux seulement, sans protocole, contrôle ni échappement de domaine.
   return /^\/(?!\/)[a-zA-Z0-9/_-]*(?:#[a-zA-Z0-9_-]+)?$/.test(value)
@@ -41,7 +41,7 @@ export function SafeAssistantContent({ content }: { content: string }) {
           ),
         img: () => <span>{t('imageNonPriseEnCharge')}</span>,
         p: ({ children }) => (
-          <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words">
+          <p className="mb-2 last:mb-0 whitespace-pre-wrap wrap-break-word">
             {children}
           </p>
         ),
@@ -285,7 +285,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gray-950 text-white px-4 py-3 shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 print:hidden"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gray-950 text-white px-4 py-3 shadow-xl focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-blue-600 print:hidden"
       >
         <MessageCircle size={22} aria-hidden="true" />
         <span className="hidden sm:inline">{t('titre')}</span>
@@ -293,7 +293,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
       {open && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 z-[60] print:hidden"
+            className="fixed inset-0 bg-black/20 z-60 print:hidden"
             aria-hidden="true"
             onClick={() => setOpen(false)}
           />
@@ -307,7 +307,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                 ? { maxHeight: `calc(${viewportHeight}px - 16px)` }
                 : undefined
             }
-            className="fixed z-[61] bottom-2 right-2 left-2 sm:left-auto sm:right-5 sm:bottom-5 sm:w-[440px] h-[min(680px,calc(100dvh-16px))] flex flex-col rounded-2xl shadow-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden print:hidden"
+            className="fixed z-61 bottom-2 right-2 left-2 sm:left-auto sm:right-5 sm:bottom-5 sm:w-[440px] h-[min(680px,calc(100dvh-16px))] flex flex-col rounded-2xl shadow-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden print:hidden"
           >
             <header
               className={`p-4 flex gap-3 items-start text-white ${activeService === "EAT" ? "bg-orange-600" : activeService === "DRIVE" ? "bg-blue-700" : "bg-gray-950"}`}
@@ -334,7 +334,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
               <button
                 aria-label={t('fermer')}
                 onClick={() => setOpen(false)}
-                className="p-1 rounded focus-visible:outline"
+                className="p-1 rounded-sm focus-visible:outline-solid"
               >
                 <X size={22} />
               </button>
@@ -619,7 +619,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                           maxLength={500}
                           value={reason}
                           onChange={(e) => setReason(e.target.value)}
-                          className="block w-full border rounded p-2 mt-1 text-gray-900"
+                          className="block w-full border rounded-sm p-2 mt-1 text-gray-900"
                         />
                       </label>
                       <p className="text-xs">
@@ -745,7 +745,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                             );
                           })
                         }
-                        className="block border p-2 mt-1 w-full rounded text-gray-900"
+                        className="block border p-2 mt-1 w-full rounded-sm text-gray-900"
                       >
                         <option value={conversation.id}>
                           {t('actuelle')}
@@ -805,7 +805,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
                   type="submit"
                   aria-label={t('envoyer')}
                   disabled={busy || !conversation || !text.trim()}
-                  className="rounded-xl bg-gray-950 text-white p-3 disabled:opacity-40 focus-visible:outline focus-visible:outline-blue-600"
+                  className="rounded-xl bg-gray-950 text-white p-3 disabled:opacity-40 focus-visible:outline-solid focus-visible:outline-blue-600"
                 >
                   <Send size={20} />
                 </button>

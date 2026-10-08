@@ -431,7 +431,7 @@ export default function ReviewPage() {
                         }))}
                         placeholder={t('restaurantPlaceholder')}
                         rows={4}
-                        className="w-full px-4 py-3 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
+                        className="w-full px-4 py-3 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
                       />
                     </div>
                   )}
@@ -460,7 +460,7 @@ export default function ReviewPage() {
                         }))}
                         placeholder={t('deliveryPlaceholder')}
                         rows={4}
-                        className="w-full px-4 py-3 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
+                        className="w-full px-4 py-3 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
                       />
                     </div>
                   )}
@@ -506,7 +506,7 @@ export default function ReviewPage() {
                             }))}
                             placeholder={t('productPlaceholder')}
                             rows={3}
-                            className="w-full px-4 py-3 bg-gray-200 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400 text-sm"
+                            className="w-full px-4 py-3 bg-gray-200 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 placeholder-gray-400 text-sm"
                           />
                         )}
                       </div>

@@ -228,13 +228,13 @@ export default function RolesPage() {
             onChange={(e) => setNouveauRole(e.target.value)}
             placeholder={t('newRolePlaceholder')}
             maxLength={40}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
           />
         </label>
         <button
           type="submit"
           disabled={creation || nouveauRole.trim().length < 2}
-          className="flex items-center gap-1 px-4 py-2 rounded bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white"
+          className="flex items-center gap-1 px-4 py-2 rounded-sm bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white"
         >
           <Plus size={16} />
           {t('create')}
@@ -270,7 +270,7 @@ export default function RolesPage() {
                         onClick={() => supprimerRole(role)}
                         title={t('delete')}
                         aria-label={`${t('delete')} ${role.label}`}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        className="p-1 text-red-600 hover:bg-red-50 rounded-sm"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -330,7 +330,7 @@ export default function RolesPage() {
                       <button
                         onClick={() => enregistrer(role.code)}
                         disabled={!modifie(role.code) || saving !== null}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-sm bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white"
                       >
                         <Save size={14} />
                         {saving === role.code ? t('saving') : t('save')}
@@ -340,7 +340,7 @@ export default function RolesPage() {
                           onClick={() => annuler(role.code)}
                           title={t('reset')}
                           aria-label={t('reset')}
-                          className="p-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-900"
+                          className="p-1.5 rounded-sm bg-gray-100 hover:bg-gray-200 text-gray-900"
                         >
                           <RotateCcw size={14} />
                         </button>

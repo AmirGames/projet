@@ -287,7 +287,7 @@ export function AddressAutocomplete({
                     : clair ? 'hover:bg-gray-50' : 'hover:bg-gray-700'
                 }`}
               >
-                <MapPin size={14} className="text-orange-500 mt-1 flex-shrink-0" />
+                <MapPin size={14} className="text-orange-500 mt-1 shrink-0" />
                 <span className="min-w-0">
                   <span className={`block text-sm truncate ${clair ? 'text-gray-900' : 'text-white'}`}>{adresse.street}</span>
                   <span className={`block text-xs truncate ${clair ? 'text-gray-500' : 'text-gray-400'}`}>

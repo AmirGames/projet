@@ -309,15 +309,15 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       {/* Infos */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded p-2 flex gap-2 text-sm text-red-600">
+          <div className="bg-red-50 border border-red-200 rounded-sm p-2 flex gap-2 text-sm text-red-600">
             <AlertCircle size={16} />
             {error}
           </div>
         )}
 
         {currentDelivery.status === 'ACCEPTED' && (
-          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded p-3">
-            <Truck size={18} className="text-blue-600 flex-shrink-0" />
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-sm p-3">
+            <Truck size={18} className="text-blue-600 shrink-0" />
             <div>
               <p className="text-blue-600 font-semibold text-sm">
                 {t('enRoute', { nom: driverName || t('livreur') })}
@@ -329,14 +329,14 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
 
         {timeRemaining && distance !== undefined && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 rounded p-3">
+            <div className="bg-gray-50 rounded-sm p-3">
               <p className="text-gray-500 text-xs mb-1">{t('distance')}</p>
               <p className="text-gray-900 font-bold text-lg flex items-center gap-1">
                 <MapPin size={16} className="text-orange-500" />
                 {distance.toFixed(1)} km
               </p>
             </div>
-            <div className="bg-gray-50 rounded p-3">
+            <div className="bg-gray-50 rounded-sm p-3">
               <p className="text-gray-500 text-xs mb-1">{t('tempsEstime')}</p>
               <p className="text-gray-900 font-bold text-lg flex items-center gap-1">
                 <Clock size={16} className="text-green-500" />
@@ -347,7 +347,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
         )}
 
         {currentDelivery.status === 'COMPLETED' && (
-          <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
+          <div className="bg-green-50 border border-green-200 rounded-sm p-3 text-center">
             <p className="text-green-600 font-semibold">{t('livree')}</p>
           </div>
         )}

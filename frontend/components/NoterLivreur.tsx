@@ -118,7 +118,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
             onMouseEnter={() => setSurvolee(valeur)}
             onFocus={() => setSurvolee(valeur)}
             onClick={() => setChoisie(valeur)}
-            className="p-1 rounded transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="p-1 rounded-sm transition hover:scale-110 focus:outline-hidden focus:ring-2 focus:ring-orange-500"
           >
             <Star
               size={28}
@@ -141,7 +141,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
             maxLength={500}
             rows={2}
             placeholder={t('commentaire')}
-            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
+            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-orange-500"
           />
 
           <button

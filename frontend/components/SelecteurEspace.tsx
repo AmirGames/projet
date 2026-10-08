@@ -89,7 +89,7 @@ export function SelecteurEspace({
         {chevron && (
           <ChevronDown
             size={16}
-            className={`ml-auto flex-shrink-0 text-gray-400 transition-transform ${ouvert ? 'rotate-180' : ''}`}
+            className={`ml-auto shrink-0 text-gray-400 transition-transform ${ouvert ? 'rotate-180' : ''}`}
           />
         )}
       </button>
@@ -119,7 +119,7 @@ export function SelecteurEspace({
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                 }`}
               >
-                <Icone size={18} className="flex-shrink-0" />
+                <Icone size={18} className="shrink-0" />
                 <span className="flex-1 text-left">{espace.libelle || t(`espaces.${espace.id}`)}</span>
                 {estActuel && <Check size={16} className="text-orange-500" />}
               </button>

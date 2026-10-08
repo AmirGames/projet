@@ -98,7 +98,7 @@ export function AnnulerCourse({ deliveryId, onSuccess, onCancel }: Props) {
 
         <div className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-600">
+            <div className="bg-red-50 border border-red-200 rounded-sm p-3 text-sm text-red-600">
               {error}
             </div>
           )}
@@ -139,7 +139,7 @@ export function AnnulerCourse({ deliveryId, onSuccess, onCancel }: Props) {
                 value={customReason}
                 onChange={(e) => setCustomReason(e.target.value)}
                 placeholder={t('decrivez')}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg p-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg p-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-orange-500"
                 rows={3}
               />
             </div>

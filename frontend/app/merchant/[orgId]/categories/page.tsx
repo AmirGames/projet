@@ -82,14 +82,14 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(category)}
-            className="bg-gray-100 text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors"
+            className="bg-gray-100 text-gray-700 hover:bg-gray-200 p-2 rounded-sm transition-colors"
             title={t('edit')}
           >
             <Edit2 size={16} />
           </button>
           <button
             onClick={() => onDelete(category.id)}
-            className="bg-red-50 text-red-700 hover:bg-red-100 p-2 rounded transition-colors"
+            className="bg-red-50 text-red-700 hover:bg-red-100 p-2 rounded-sm transition-colors"
             title={t('delete')}
           >
             <Trash2 size={16} />
@@ -104,7 +104,7 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
             {category.products.map((product: any) => (
               <span
                 key={product.id}
-                className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-700"
+                className="bg-gray-100 px-2 py-1 rounded-sm text-xs text-gray-700"
               >
                 {product.name}
               </span>
@@ -419,7 +419,7 @@ export default function CategoriesPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500"
                   placeholder={t('exempleNom')}
                   autoFocus
                   required
@@ -430,13 +430,13 @@ export default function CategoriesPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded font-semibold transition-colors"
+                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded-sm font-semibold transition-colors"
                 >
                   {t('annuler')}
                 </button>
                 <button
                   type="submit"
-                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 py-2 rounded font-semibold transition-colors"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 py-2 rounded-sm font-semibold transition-colors"
                 >
                   {editingCategory ? t('update') : t('create')}
                 </button>

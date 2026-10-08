@@ -45,7 +45,7 @@ export default function SelecteurTheme() {
           id="selecteur-theme"
           value={selectionne}
           onChange={(e) => changer(e.target.value)}
-          className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500"
+          className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-hidden focus:border-blue-500"
         >
           {/* Nom et description : `themes.<id>` des traductions, le nom enregistré sinon. */}
           {Object.entries(AVAILABLE_THEMES).map(([id, theme]) => (

@@ -43,7 +43,7 @@ export default function DupliquerBoutique({
   const champ = (cle: keyof typeof form) => ({
     value: form[cle],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [cle]: e.target.value })),
-    className: 'w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-orange-600 outline-none',
+    className: 'w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-orange-600 outline-hidden',
   });
 
   const envoyer = async (e: React.FormEvent) => {

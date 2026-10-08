@@ -201,8 +201,8 @@ export default function VersementsSepaPage() {
         </p>
       </div>
 
-      {message && <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3">{message}</div>}
-      {erreur && <div className="bg-red-50 border border-red-200 text-red-700 rounded p-3">{erreur}</div>}
+      {message && <div className="bg-green-50 border border-green-200 text-green-700 rounded-sm p-3">{message}</div>}
+      {erreur && <div className="bg-red-50 border border-red-200 text-red-700 rounded-sm p-3">{erreur}</div>}
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <h2 className="text-xl font-semibold text-gray-900">{t('lotAVerser')}</h2>
@@ -229,7 +229,7 @@ export default function VersementsSepaPage() {
             </div>
 
             {lot.ecartes.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800 space-y-1">
+              <div className="bg-amber-50 border border-amber-200 rounded-sm p-3 text-sm text-amber-800 space-y-1">
                 <p className="font-semibold flex items-center gap-2">
                   <AlertTriangle size={16} /> {t('ecartes')}
                 </p>
@@ -247,7 +247,7 @@ export default function VersementsSepaPage() {
             )}
 
             {actif ? (
-              <div className="border border-gray-200 rounded p-4 space-y-3" data-testid="lot-actif">
+              <div className="border border-gray-200 rounded-sm p-4 space-y-3" data-testid="lot-actif">
                 <p className="text-sm text-gray-500">
                   {t('lotEnCours')} <span className="font-mono text-gray-900">{actif.reference}</span> ·{' '}
                   {euro(actif.total)} · {t('virementsN', { n: actif.itemCount })}
@@ -262,12 +262,12 @@ export default function VersementsSepaPage() {
                         onChange={(e) => setMotDePasse(e.target.value)}
                         placeholder={t('motDePasse')}
                         autoComplete="current-password"
-                        className="border border-gray-300 rounded px-3 py-2 text-gray-900"
+                        className="border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
                       />
                       <button
                         onClick={() => agirSurLeLot('approuver', { motDePasse })}
                         disabled={!motDePasse || occupe}
-                        className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                        className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-sm flex items-center gap-2"
                       >
                         <Check size={18} /> {t('approuver')}
                       </button>
@@ -277,7 +277,7 @@ export default function VersementsSepaPage() {
                     <button
                       onClick={telecharger}
                       disabled={occupe}
-                      className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                      className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-sm flex items-center gap-2"
                     >
                       <Download size={18} /> {t('telecharger')}
                     </button>
@@ -286,7 +286,7 @@ export default function VersementsSepaPage() {
                     <button
                       onClick={() => agirSurLeLot('transmettre')}
                       disabled={occupe}
-                      className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded"
+                      className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded-sm"
                     >
                       {t('marquerTransmis')}
                     </button>
@@ -296,14 +296,14 @@ export default function VersementsSepaPage() {
                       <button
                         onClick={confirmerVerse}
                         disabled={occupe}
-                        className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                        className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-sm flex items-center gap-2"
                       >
                         <Check size={18} /> {t('marquerVerse')}
                       </button>
                       <button
                         onClick={() => confirm(t('confirmerRejet')) && agirSurLeLot('rejeter', { raison: t('refuseParBanque') })}
                         disabled={occupe}
-                        className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded"
+                        className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded-sm"
                       >
                         {t('refuse')}
                       </button>
@@ -313,7 +313,7 @@ export default function VersementsSepaPage() {
                     <button
                       onClick={() => agirSurLeLot('annuler')}
                       disabled={occupe}
-                      className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded"
+                      className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded-sm"
                     >
                       {t('annulerLot')}
                     </button>
@@ -325,14 +325,14 @@ export default function VersementsSepaPage() {
                 <button
                   onClick={preparer}
                   disabled={!lot.pret || occupe}
-                  className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                  className="bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-sm flex items-center gap-2"
                 >
                   <Download size={18} /> {t('preparer')}
                 </button>
                 <button
                   onClick={arreter}
                   disabled={occupe}
-                  className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded flex items-center gap-2"
+                  className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 px-4 py-2 rounded-sm flex items-center gap-2"
                 >
                   <RefreshCw size={18} /> {t('arreter')}
                 </button>
@@ -353,7 +353,7 @@ export default function VersementsSepaPage() {
           <select
             value={filtre}
             onChange={(e) => setFiltre(e.target.value)}
-            className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
           >
             <option value="PENDING">{t('filtreAVerser')}</option>
             <option value="PAID">{t('filtreVerses')}</option>
@@ -369,7 +369,7 @@ export default function VersementsSepaPage() {
               <button
                 key={r.id}
                 onClick={() => ouvrir(r.id)}
-                className="w-full text-left py-3 flex flex-wrap justify-between gap-2 hover:bg-gray-50 px-2 rounded"
+                className="w-full text-left py-3 flex flex-wrap justify-between gap-2 hover:bg-gray-50 px-2 rounded-sm"
               >
                 <span>
                   <span className="text-gray-900 font-semibold">{r.organization}</span>
@@ -392,7 +392,7 @@ export default function VersementsSepaPage() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setOuvert(null)}>
           <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <ReleveReversement releve={ouvert} />
-            <button onClick={() => setOuvert(null)} className="mt-3 w-full bg-gray-100 text-gray-900 py-2 rounded">
+            <button onClick={() => setOuvert(null)} className="mt-3 w-full bg-gray-100 text-gray-900 py-2 rounded-sm">
               {t('fermer')}
             </button>
           </div>

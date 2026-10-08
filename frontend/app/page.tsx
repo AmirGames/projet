@@ -100,7 +100,7 @@ export default function Home() {
       </header>
 
       {/* HERO */}
-      <section className="bg-gradient-to-b from-white to-slate-100 px-6 py-20 text-center md:py-32">
+      <section className="bg-linear-to-b from-white to-slate-100 px-6 py-20 text-center md:py-32">
         <span className="mb-6 inline-block rounded-full bg-blue-100 px-4 py-2.5 font-bold text-primary">
           {t('badge')}
         </span>

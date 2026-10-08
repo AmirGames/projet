@@ -206,7 +206,7 @@ export default function RoleSelectionPage() {
                   {roles.merchant.organizations.map((org) => (
                     <div
                       key={org.id}
-                      className="text-sm bg-gray-100 p-2 rounded text-gray-800"
+                      className="text-sm bg-gray-100 p-2 rounded-sm text-gray-800"
                     >
                       <p className="font-semibold">{org.name}</p>
                       <p className="text-xs text-gray-500">{org.role}</p>
@@ -309,7 +309,7 @@ export default function RoleSelectionPage() {
                       businessName: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -323,7 +323,7 @@ export default function RoleSelectionPage() {
                       storeSlug: slugify(e.target.value),
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -336,7 +336,7 @@ export default function RoleSelectionPage() {
                       storeSlug: slugify(e.target.value, false),
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <select
@@ -347,7 +347,7 @@ export default function RoleSelectionPage() {
                       businessType: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 >
                   <option value="">{tr('typeEntreprise')}</option>
@@ -367,7 +367,7 @@ export default function RoleSelectionPage() {
                         cuisineType: e.target.value,
                       })
                     }
-                    className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   >
                     <option value="">{tr('typeCuisineFacultatif')}</option>
                     {cuisines.map((cuisine) => (
@@ -387,7 +387,7 @@ export default function RoleSelectionPage() {
                       phone: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <AddressAutocomplete
@@ -404,7 +404,7 @@ export default function RoleSelectionPage() {
                       postalCode: adresse.postalCode || prev.postalCode,
                     }))
                   }
-                  className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -417,7 +417,7 @@ export default function RoleSelectionPage() {
                       city: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -430,7 +430,7 @@ export default function RoleSelectionPage() {
                       postalCode: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                   required
                 />
               </div>
@@ -443,7 +443,7 @@ export default function RoleSelectionPage() {
                     description: e.target.value,
                   })
                 }
-                className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-green-500"
                 required
               />
               <button
@@ -474,7 +474,7 @@ export default function RoleSelectionPage() {
                       name: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500"
                   required
                 />
                 <input
@@ -487,7 +487,7 @@ export default function RoleSelectionPage() {
                       email: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500"
                   required
                 />
                 <input
@@ -500,7 +500,7 @@ export default function RoleSelectionPage() {
                       phone: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500"
                   required
                 />
                 <select
@@ -511,7 +511,7 @@ export default function RoleSelectionPage() {
                       vehicleType: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500"
                   required
                 >
                   <option value="">{tr('typeVehicule')}</option>
@@ -529,7 +529,7 @@ export default function RoleSelectionPage() {
                       vehiclePlate: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500"
                   required
                 />
               </div>

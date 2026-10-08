@@ -286,7 +286,7 @@ export default function MerchantRegisterPage() {
                     name="businessName"
                     value={formData.businessName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.businessName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('inscription.exempleEntreprise')}
@@ -302,7 +302,7 @@ export default function MerchantRegisterPage() {
                     name="businessType"
                     value={formData.businessType}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                   >
                     {etablissements.map((genre) => (
                       <option key={genre.code} value={genre.code}>
@@ -323,7 +323,7 @@ export default function MerchantRegisterPage() {
                       name="cuisineType"
                       value={formData.cuisineType}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                     >
                       <option value="">{t('inscription.nonPrecise')}</option>
                       {cuisines.map((cuisine) => (
@@ -344,7 +344,7 @@ export default function MerchantRegisterPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('inscription.exempleEmail')}
@@ -361,7 +361,7 @@ export default function MerchantRegisterPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.phone ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleTelephone}
@@ -378,7 +378,7 @@ export default function MerchantRegisterPage() {
                     value={formData.description}
                     onChange={handleChange}
                     rows={3}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.description ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('inscription.exempleDescription')}
@@ -395,7 +395,7 @@ export default function MerchantRegisterPage() {
                     name="website"
                     value={formData.website}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                     placeholder="https://example.com"
                   />
                 </div>
@@ -417,7 +417,7 @@ export default function MerchantRegisterPage() {
                   <SelecteurPays
                     pays={pays}
                     onChange={setPays}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
 
@@ -437,7 +437,7 @@ export default function MerchantRegisterPage() {
                         postalCode: adresse.postalCode || prev.postalCode,
                       }))
                     }
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.address ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleRue}
@@ -455,7 +455,7 @@ export default function MerchantRegisterPage() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.city ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleVille}
@@ -472,7 +472,7 @@ export default function MerchantRegisterPage() {
                     name="postalCode"
                     value={formData.postalCode}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.postalCode ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleCodePostal}
@@ -499,7 +499,7 @@ export default function MerchantRegisterPage() {
                     name="storeName"
                     value={formData.storeName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.storeName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('myStores')}
@@ -520,7 +520,7 @@ export default function MerchantRegisterPage() {
                       name="storeSlug"
                       value={formData.storeSlug}
                       onChange={handleChange}
-                      className={`flex-1 px-4 py-2 bg-gray-100 border rounded-r-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                      className={`flex-1 px-4 py-2 bg-gray-100 border rounded-r-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                         errors.storeSlug ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="ma-boutique"
@@ -552,7 +552,7 @@ export default function MerchantRegisterPage() {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
@@ -571,7 +571,7 @@ export default function MerchantRegisterPage() {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
                       errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"

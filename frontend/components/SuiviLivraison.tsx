@@ -182,7 +182,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
         </div>
 
         {minutes != null && !livree && (
-          <div className="text-right flex-shrink-0">
+          <div className="text-right shrink-0">
             <p className="text-2xl font-bold text-orange-500">{t('minutes', { n: minutes })}</p>
             <p className="text-xs text-gray-500">{t('estime')}</p>
           </div>
@@ -286,11 +286,11 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
 
         <div className={`flex items-start justify-between text-xs ${surLaCarte ? 'mt-2' : '-mt-2'}`}>
           <span className="flex items-center gap-1 text-gray-500 max-w-[45%]">
-            <Store size={12} className="flex-shrink-0" />
+            <Store size={12} className="shrink-0" />
             <span className="truncate">{course.boutique || t('leCommerce')}</span>
           </span>
           <span className="flex items-center gap-1 text-gray-500 max-w-[45%] justify-end text-right">
-            <MapPin size={12} className="flex-shrink-0" />
+            <MapPin size={12} className="shrink-0" />
             <span className="truncate">{course.adresseLivraison || t('chezVous')}</span>
           </span>
         </div>
@@ -320,7 +320,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
 
       {course.driver && (
         <div className="flex items-center gap-3 border-t border-gray-200 pt-4">
-          <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
             <Bike size={20} />
           </div>
           <div className="min-w-0 flex-1">
@@ -344,7 +344,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           {course.driver.phone && !livree && (
             <a
               href={`tel:${course.driver.phone}`}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-900 transition flex-shrink-0"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-900 transition shrink-0"
             >
               {t('appeler')}
             </a>

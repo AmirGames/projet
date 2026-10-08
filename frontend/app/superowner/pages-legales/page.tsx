@@ -218,7 +218,7 @@ export default function PagesLegalesPage() {
                     id="titre"
                     value={brouillon.titre}
                     onChange={(e) => setBrouillon({ ...brouillon, titre: e.target.value })}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
                 <div>
@@ -229,7 +229,7 @@ export default function PagesLegalesPage() {
                     id="version"
                     value={brouillon.version}
                     onChange={(e) => setBrouillon({ ...brouillon, version: e.target.value })}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 font-mono focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 font-mono focus:outline-hidden focus:border-red-500"
                   />
                 </div>
               </div>
@@ -244,12 +244,12 @@ export default function PagesLegalesPage() {
                     value={brouillon.contenu}
                     onChange={(e) => setBrouillon({ ...brouillon, contenu: e.target.value })}
                     rows={28}
-                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 font-mono text-sm leading-relaxed focus:outline-none focus:border-red-500"
+                    className="w-full bg-white border border-gray-300 rounded-sm px-3 py-2 font-mono text-sm leading-relaxed focus:outline-hidden focus:border-red-500"
                   />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">{t('apercu')}</p>
-                  <div className="legal bg-white ring-1 ring-gray-200 text-gray-800 rounded p-6 max-h-[42rem] overflow-y-auto">
+                  <div className="legal bg-white ring-1 ring-gray-200 text-gray-800 rounded-sm p-6 max-h-168 overflow-y-auto">
                     <h1>{brouillon.titre}</h1>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{brouillon.contenu}</ReactMarkdown>
                   </div>
@@ -342,7 +342,7 @@ export default function PagesLegalesPage() {
             </p>
             <h1>{consultee.titre}</h1>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{consultee.contenu}</ReactMarkdown>
-            <button onClick={() => setConsultee(null)} className="mt-6 rounded bg-white ring-1 ring-gray-200 px-4 py-2 text-gray-900">
+            <button onClick={() => setConsultee(null)} className="mt-6 rounded-sm bg-white ring-1 ring-gray-200 px-4 py-2 text-gray-900">
               {t('fermer')}
             </button>
           </div>

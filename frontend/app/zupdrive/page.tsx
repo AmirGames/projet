@@ -103,7 +103,7 @@ export default function AccueilZupDrive() {
           </div>
           <Link
             href={accueilDe('public')}
-            className={`flex-shrink-0 rounded-full px-8 py-4 font-bold hover:no-underline ${MARQUES.zupeat.bouton}`}
+            className={`shrink-0 rounded-full px-8 py-4 font-bold hover:no-underline ${MARQUES.zupeat.bouton}`}
           >
             {t('decouvrir')}
           </Link>

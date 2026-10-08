@@ -227,7 +227,7 @@ export default function SupportTicketsPage() {
               setFilterStatus(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
           >
             <option value="ALL">{t('allStatuses')}</option>
             <option value="OPEN">{t('statusOpen')}</option>
@@ -244,7 +244,7 @@ export default function SupportTicketsPage() {
               setFilterPriority(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+            className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
           >
             <option value="ALL">{t('allPriorities')}</option>
             <option value="URGENT">{t('priorityUrgent')}</option>
@@ -277,14 +277,14 @@ export default function SupportTicketsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-bold text-gray-900">{ticket.title}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}>
+                    <span className={`px-2 py-1 rounded-sm text-xs font-semibold ${getPriorityColor(ticket.priority)}`}>
                       {ticket.priority}
                     </span>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold text-gray-900 bg-gray-100`}>
+                    <span className={`px-2 py-1 rounded-sm text-xs font-semibold text-gray-900 bg-gray-100`}>
                       {LIBELLES_STATUT[ticket.status] || ticket.status}
                     </span>
                     {ticket.archivedAt && (
-                      <span className="px-2 py-1 rounded text-xs font-semibold bg-white ring-1 ring-gray-200 text-gray-500">
+                      <span className="px-2 py-1 rounded-sm text-xs font-semibold bg-white ring-1 ring-gray-200 text-gray-500">
                         {t('archivedBadge')}
                       </span>
                     )}
@@ -309,7 +309,7 @@ export default function SupportTicketsPage() {
                 <select
                   value={ticket.status}
                   onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
-                  className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm text-gray-900"
+                  className="bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-sm text-gray-900"
                 >
                   {statusOptions.map((status) => (
                     <option key={status} value={status}>
@@ -321,7 +321,7 @@ export default function SupportTicketsPage() {
                   <select
                     value={ticket.priority}
                     onChange={(e) => handleUpdatePriority(ticket.id, e.target.value)}
-                    className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm text-gray-900"
+                    className="bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-sm text-gray-900"
                     title={t('ticketPriority')}
                   >
                     {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((p) => (
@@ -333,14 +333,14 @@ export default function SupportTicketsPage() {
                   {ticket.archivedAt && (
                     <button
                       onClick={() => rouvrir(ticket.id)}
-                      className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded text-sm transition"
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-sm text-sm transition"
                     >
                       {t('reopen')}
                     </button>
                   )}
                   <button
                     onClick={() => setTicketOuvert(ticketOuvert === ticket.id ? null : ticket.id)}
-                    className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded text-sm transition"
+                    className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-sm text-sm transition"
                   >
                     {ticketOuvert === ticket.id ? t('collapse') : t('viewConversation')}
                   </button>
@@ -370,14 +370,14 @@ export default function SupportTicketsPage() {
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

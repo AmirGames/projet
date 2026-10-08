@@ -122,7 +122,7 @@ export default function BoutiquesAdminPage() {
             setRecherche(e.target.value);
           }}
           placeholder={t('searchPlaceholder')}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-green-500"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:outline-hidden focus:border-green-500"
         />
       </div>
 
