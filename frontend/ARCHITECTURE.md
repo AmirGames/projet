@@ -505,6 +505,15 @@ page fait le même travail.
   `disabled:bg-gray-100` ou `-200` sur un bouton à texte blanc — le texte
   disparaît. Une variante désactivée qui change le fond change aussi le texte
   (`disabled:text-gray-500`).
+- **Seule exception : l'administration (`/superowner`) a un thème sombre
+  optionnel** (bouton lune/soleil dans l'en-tête, choix gardé dans
+  `localStorage`, clair par défaut). Il vit dans
+  `app/superowner/theme-sombre.css` : ce fichier redéfinit, sous la classe
+  `.admin-sombre` posée par le gabarit, les classes de couleur Tailwind
+  (`bg-white`, `text-gray-500`, `bg-red-50`…). Une page de l'administration
+  garde donc ses classes claires habituelles ; si elle emploie une couleur
+  absente du fichier, ajoutez-la là plutôt que d'écrire des `dark:`. Les
+  fenêtres rendues hors du gabarit (portails) ne sont pas couvertes.
 - **Pas de variantes `dark:`** : la configuration Tailwind n'a pas de
   `darkMode`, elles suivraient le réglage du système et repasseraient une page
   en sombre au milieu d'un espace clair.

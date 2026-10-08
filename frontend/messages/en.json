@@ -61,6 +61,8 @@
   "superowner": {
     "loading": "Loading...",
     "brand": "SuperOwner",
+    "themeClair": "Switch to light theme",
+    "themeSombre": "Switch to dark theme",
     "headerTitle": "SuperOwner - Full Management",
     "logout": "Log out",
     "nav": {
