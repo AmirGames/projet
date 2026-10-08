@@ -107,8 +107,8 @@ confirmations ultérieures et ce document donnent le suivi actuel.
   ce mode métier.
 - **ZupDrive V2** : activer le paiement obligatoire après vérification sur le VPS avec Stripe, écran de paiement de l'app mobile passager (squelette), règles de
   facturation (émetteur de la facture, TVA), frais d'annulation éventuels
-  (le remboursement d'une course non aboutie est total et automatique), et routeurs non montés (`platform-config`,
-  `chauffeur-onboarding`, `document-validation`) à supprimer ou rebrancher.
+  (le remboursement d'une course non aboutie est total et automatique), et tables sans code à supprimer par migration
+  (voir [`zupdrive-api-admin.md`](zupdrive-api-admin.md#routeurs-supprimés)).
 - **Notifications fiables après interruption** : compléter les effets après
   paiement par une outbox transactionnelle ou un mécanisme persistant.
   Les webhooks sortants disposent déjà de relances en base ; cela ne garantit

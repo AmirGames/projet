@@ -279,6 +279,7 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 | Passager | `GET /api/zupdrive/courses`, `GET …/:id`, `POST …/:id/annuler` | Suivre, annuler. La course porte `paiement: { obligatoire, statut }` (statut du paiement enregistré par le webhook Stripe) |
 | Passager | `POST /api/zupdrive/payment/intent` | Payer la course (page de suivi, carte Stripe) ; voir [`zupdrive-api-admin.md`](./zupdrive-api-admin.md) |
 | Chauffeur | `GET /api/zupdrive/chauffeur/me/courses` | En ligne ?, proposition ouverte, course, historique |
+| Chauffeur | `GET …/me/stats`, `GET …/me/infractions` | Mes statistiques, mes infractions |
 | Chauffeur | `POST …/me/disponibilite`, `POST …/me/position` | En ligne / hors ligne, position |
 | Chauffeur | `POST …/me/propositions/:id/(accepter\|refuser)` | Répondre à une proposition |
 | Chauffeur | `POST …/me/courses/:id/(arrive\|demarrer\|terminer\|annuler)` | Étapes |

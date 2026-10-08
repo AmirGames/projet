@@ -186,6 +186,7 @@ Superowner (journalisés) :
 |---|---|---|
 | POST | `/admin/courses/:courseId/refund` : voir « Remboursement » ci-dessus | `ZUPDRIVE_REFUND_COURSE` |
 | POST | `/admin/payouts/:payoutId/process` : rattache le versement `PENDING` au lot de sa semaine ; 404 / 400 / 409 (déjà rattaché, lot soumis) | `ZUPDRIVE_PROCESS_PAYOUT` |
+| GET | `/admin/settings/commission` : la commission en vigueur | — |
 | POST | `/admin/settings/commission` : `{ commissionPercentage }` entier 0-100 | `ZUPDRIVE_UPDATE_COMMISSION` (`avant`, `apres`) |
 
 ### Règles financières
@@ -248,11 +249,24 @@ Rapports programmés : `POST /admin/scheduled` (`{ name, reportType, frequency, 
 Règle du rapport financier : `netProfit` = commissions des paiements confirmés − remboursements − frais (frais de paiement non enregistrés : 0). Les versements aux chauffeurs ne sont pas retirés (ils sont la part du prix hors commission).
 La génération et l'envoi automatiques des rapports programmés n'existent pas encore.
 
-## Routeurs non montés
+## Routeurs supprimés
 
-| Routeur | Raison |
+Quatre routeurs n'ont jamais été montés ; ils ont été supprimés (code, tests et documents de phase) parce qu'ils doublonnaient une fonction existante, ou la contredisaient, et qu'aucun écran ni script ne les utilisait. Leur historique reste dans git.
+
+| Routeur | Pourquoi |
 |---|---|
-| `zupdrive-platform-config` | Écrit `CommissionConfig`, `RegionalConfig`, `PricingRule` et `PlatformSettings`, qu'aucun code de tarification ou de paiement ne lit : la commission réelle est `PlatformSettingsDrive` et les tarifs `TarificationDriveService` (`/admin/tarifs`). Le monter laisserait changer une commission « sans effet ». Journalisation ajoutée ; `POST /calculate-price` accepte un `surgeMultiplier` du client. |
-| `zupdrive-chauffeur-onboarding` | Doublon de `/api/zupdrive/chauffeur` + `/admin/chauffeurs/:id/approve` via `UnifiedRolesService` : `approveChauffeur` ne vérifie pas les pièces exigées (`piecesExigees`), `submit` ne vérifie pas la complétude. Le monter contournerait les règles d'inscription. |
-| `zupdrive-document-validation` | Doublon du dépôt de pièces (`/chauffeur/me/documents`) et de leur examen (`PATCH /admin/chauffeurs/:id/documents/:id`) : accepte une URL de fichier fournie par le client, types en majuscules (`PERMIS`) alors que la référence est en minuscules (`permis`), approbation sans contrôle d'appartenance. |
-| `zupdrive-driver-rating` | **Supprimé** : `submitRating` écrivait `RatingCourseDrive` alors que la moyenne vient de `NoteCourseDrive` (notes non comptées), `POST /courses/:id/note` existe déjà, et la réputation et les avis de n'importe quel chauffeur étaient lisibles par tout compte. Le modèle `RatingCourseDrive` reste au schéma (aucun écrivain) ; une contrainte unique `(courseId, passengerId)` n'a donc pas lieu d'être tant qu'on n'y écrit pas. |
+| `zupdrive-platform-config` | Écrivait `CommissionConfig`, `RegionalConfig`, `PricingRule` et `PlatformSettings`, que rien ne lisait : la commission réelle est `PlatformSettingsDrive` (`/finance/admin/settings/commission`) et les tarifs `TarificationDriveService` (`/admin/tarifs`). Son `POST /calculate-price` acceptait un `surgeMultiplier` du client et ne demandait aucun jeton. La page superowner « configuration » règle maintenant la vraie commission. |
+| `zupdrive-chauffeur-onboarding` | Doublon de `/chauffeur/me*` et de `/admin/chauffeurs/:id/approve` via `UnifiedRolesService` : l'approbation ne vérifiait pas les pièces exigées (`piecesExigees`). `UnifiedRolesService` (attribuait `ADMIN_ZUPDRIVE` à tout rôle DRIVE hors `SUPPORT`) n'avait plus aucun appelant et est supprimé avec ses tests. |
+| `zupdrive-document-validation` | Doublon du dépôt (`/chauffeur/me/documents`) et de l'examen des pièces (`PATCH /admin/chauffeurs/:id/documents/:id`) ; acceptait une URL de fichier fournie par le client et des types en majuscules (`PERMIS`) alors que la référence est en minuscules. Les méthodes du workflow `DocumentVerificationWorkflow` du service de conformité sont retirées aussi. |
+| `zupdrive-driver-rating` | `submitRating` écrivait `RatingCourseDrive` alors que la moyenne vient de `NoteCourseDrive` ; `POST /courses/:id/note` existe déjà ; réputation et avis de tout chauffeur lisibles par tout compte. |
+
+**Tables laissées en base** (aucune migration sans accord : données et historique) : `CommissionConfig`, `RegionalConfig`, `PricingRule`, `PlatformSettings`, `DocumentVerificationWorkflow`, `ChauffeurDocument`, `RatingCourseDrive`. Plus aucun code ne les lit ni ne les écrit : elles peuvent être supprimées par une migration dédiée, une fois vérifié qu'elles sont vides en production.
+
+## Côté chauffeur : ses statistiques et ses infractions
+
+| Méthode | Route | Notes |
+|---|---|---|
+| GET | `/api/zupdrive/chauffeur/me/stats` | Jeton. Courses, taux de réalisation, gains versés, infractions graves ; le dossier est celui du jeton, un `driverId` éventuel est ignoré. 404 sans dossier chauffeur. |
+| GET | `/api/zupdrive/chauffeur/me/infractions` | Jeton. L'historique de ses infractions et leur résolution. |
+
+L'app chauffeur (`mobile/apps/zupdrive-driver`) les utilise à la place des routes `/admin/drivers/:id/*` (réservées à l'équipe) ; `GET /finance/admin/settings/commission` (superowner) rend la commission en vigueur.
