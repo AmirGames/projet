@@ -49,6 +49,8 @@ export interface LignePanier {
   quantity: number;
   description?: string;
   isAvailable?: boolean;
+  /** Le plat contient de l'alcool : le tunnel de commande demande l'attestation d'âge. */
+  alcool?: boolean;
 }
 
 export interface PanierBoutique {

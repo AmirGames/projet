@@ -51,6 +51,12 @@ export interface OrderData {
   /** Le pourboire laissé au livreur de la plateforme, en euros. */
   tipAmount?: number;
   notes?: string;
+  /**
+   * Le client atteste avoir l'âge légal d'acheter de l'alcool. Exigé dès qu'un
+   * article du panier en contient ; le livreur ou le commerçant contrôle la
+   * pièce d'identité à la remise.
+   */
+  ageMinimumConfirme?: boolean;
   /** Le panier. Les prix sont relus du catalogue, jamais fournis par l'appelant. */
   items: {
     productId: string;
@@ -328,6 +334,22 @@ export class OrderService {
 
       if (!boutique || boutique.deletedAt) {
         throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+      }
+
+      // Alcool : vente interdite aux mineurs (CSP L3342-1). L'attestation est
+      // exigée par le serveur, quel que soit ce que l'écran affiche.
+      if (!data.ageMinimumConfirme) {
+        const produits = await db.product.findMany({
+          where: { id: { in: data.items.map((i) => i.productId) }, storeId: data.storeId },
+          select: { containsAlcohol: true },
+        });
+        if (produits.some((p) => p.containsAlcohol)) {
+          throw new ApiError(
+            400,
+            "Votre panier contient de l'alcool : confirmez que vous avez l'âge légal pour en acheter",
+            "AGE_CONFIRMATION_REQUIRED"
+          );
+        }
       }
 
       // La boutique de démonstration n'est pas un vrai commerce.

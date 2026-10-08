@@ -70,6 +70,10 @@ export interface Product {
   price: number | string;
   isAvailable: boolean;
   variantLabel?: string | null;
+  /** Allergènes déclarés ; `allergensDeclared` faux = non renseignés. */
+  allergens?: string[];
+  allergensDeclared?: boolean;
+  containsAlcohol?: boolean;
   variants: Variant[];
   supplements?: SupplementGroup[];
   media?: { url: string }[];

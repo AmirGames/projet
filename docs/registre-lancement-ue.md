@@ -6,8 +6,8 @@ Mis à jour le 8 octobre 2026. Chaque ligne doit avoir un responsable, une date 
 
 | Sujet | Base | Ce qui est fait |
 |---|---|---|
-| Allergènes | Règlement (UE) 1169/2011 | Champs `allergens` / `allergensDeclared` sur `Product`, validés par l'API, exposés au catalogue public, copiés à la duplication de boutique. |
-| Alcool | Code de la santé publique L3342-1 | Champ `containsAlcohol` sur `Product` et exposé publiquement. |
+| Allergènes | Règlement (UE) 1169/2011 | Champs sur `Product` ; saisie obligatoire côté commerçant (web, mobile) ; affichage au client avant commande (web, mobile) ; copie à la duplication de boutique. |
+| Alcool | Code de la santé publique L3342-1 | Champ `containsAlcohol` ; case d'attestation d'âge au paiement (web, mobile) ; refus serveur `AGE_CONFIRMATION_REQUIRED`. |
 | Signalement de contenu, point de contact | DSA 2022/2065 art. 11, 12, 16, 17 | Procédure et point de contact dans les mentions légales. |
 | Déclaration des revenus | DAC7 (UE) 2021/514 | Clauses de collecte dans les conditions commerçants et livreurs. |
 | Accessibilité | Directive (UE) 2019/882 | Page `/accessibilite` (état « partiellement conforme »). |
@@ -27,8 +27,22 @@ Mis à jour le 8 octobre 2026. Chaque ligne doit avoir un responsable, une date 
 | 9 | Facturation électronique B2B (factures plateforme → commerçants) | | | |
 | 10 | Fiches de stores : confidentialité, suppression de compte, déclaration de collecte | | | |
 
-## Reste à faire — code (suites de ce lot)
+## Contrat d'API modifié (additif, non cassant)
 
-- Saisie des allergènes et de l'alcool dans les interfaces commerçant (web et mobile) ; affichage chez le client avant commande.
-- Contrôle de majorité à la commande lorsqu'un produit contient de l'alcool (changement côté clients web et mobile : à coordonner).
-- Revue des 26 + 44 vulnérabilités de dépendances (`docs/audit-dependances.md`).
+| Route | Changement |
+|---|---|
+| `POST /api/products`, `PUT /api/products/:id` (marchand, rôle catalogue) | Champs optionnels `allergens` (liste parmi les 14 codes UE, doublons écartés ; liste vide = « aucun ») et `containsAlcohol`. Envoyer `allergens` (même vide) marque `allergensDeclared = true`. |
+| `GET /api/client/stores/:id`, `/menu`, catalogue public | Renvoient `allergens`, `allergensDeclared`, `containsAlcohol`. |
+| `POST /api/orders` (public / connecté) | Champ optionnel `ageMinimumConfirme`. Si un article contient de l'alcool et que le champ n'est pas `true` : 400 `AGE_CONFIRMATION_REQUIRED`. Aucun produit n'est marqué alcool tant qu'un commerçant ne le coche pas : les anciennes applications continuent de fonctionner pour tout le reste. |
+
+Consommateurs mis à jour : site web (formulaire produit commerçant, vitrine, tunnel de commande), app mobile commerçant (fiche produit), app mobile client (vitrine, panier, paiement). Les apps mobiles déjà publiées sans l'attestation recevront l'erreur 400 uniquement pour un panier contenant de l'alcool.
+
+## Dépendances
+
+- Frontend : Next.js 16.3.6 → 16.4.0 (correctifs d'empoisonnement de cache SSG/ISR, SSRF image, fuites d'informations — pertinents en auto-hébergement). Il reste des alertes sur la chaîne Tailwind (`braces`, `micromatch`, `fast-glob`) : outils de build, non exécutés en production.
+- Backend : alertes restantes (`prisma`, `mysql2`, `deepmerge-ts`) uniquement via la CLI Prisma. Le correctif proposé rétrograderait Prisma (6.19) et n'est pas appliqué ; à traiter lors d'une montée de version Prisma planifiée.
+
+## Reste à faire — code
+
+- Contrôle effectif de la pièce d'identité à la remise (preuve de remise du livreur) pour les commandes contenant de l'alcool.
+- Reprise d'un ancien panier enregistré sur mobile (« Commander à nouveau ») : l'attestation est demandée par le serveur ; l'écran n'affiche la case qu'après un nouvel ajout depuis la carte.

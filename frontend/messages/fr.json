@@ -1399,6 +1399,35 @@
       "tropLoin": "Le livreur le plus proche est à {km} km, au-delà du rayon de {rayon} km."
     }
   },
+  "allergenes": {
+    "titre": "Allergènes",
+    "aide": "Obligatoire (règlement UE 1169/2011) : cochez les allergènes présents, ou confirmez qu'il n'y en a aucun.",
+    "aucun": "Aucun de ces 14 allergènes",
+    "alcool": "Ce produit contient de l'alcool (vente interdite aux mineurs)",
+    "manquant": "Renseignez les allergènes du produit, ou cochez « Aucun de ces 14 allergènes ».",
+    "nonRenseigne": "Allergènes non renseignés",
+    "contient": "Contient : {liste}",
+    "sansAllergene": "Sans allergène déclaré par le commerçant",
+    "alcoolEtiquette": "Contient de l'alcool — réservé aux majeurs",
+    "ageCase": "Mon panier contient de l'alcool : je certifie avoir l'âge légal pour en acheter et je présenterai une pièce d'identité à la remise.",
+    "ageErreur": "Confirmez que vous avez l'âge légal pour acheter de l'alcool.",
+    "noms": {
+      "GLUTEN": "Céréales contenant du gluten",
+      "CRUSTACEANS": "Crustacés",
+      "EGGS": "Œufs",
+      "FISH": "Poissons",
+      "PEANUTS": "Arachides",
+      "SOYBEANS": "Soja",
+      "MILK": "Lait",
+      "NUTS": "Fruits à coque",
+      "CELERY": "Céleri",
+      "MUSTARD": "Moutarde",
+      "SESAME": "Graines de sésame",
+      "SULPHITES": "Anhydride sulfureux et sulfites",
+      "LUPIN": "Lupin",
+      "MOLLUSCS": "Mollusques"
+    }
+  },
   "merchantProducts": {
     "title": "Produits",
     "description": "Gérez votre catalogue",

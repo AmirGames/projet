@@ -27,6 +27,8 @@ export interface CartLine {
   /** En euros, prix unitaire suppléments compris. */
   price: number;
   quantity: number;
+  /** Le plat contient de l'alcool : la commande demande l'attestation d'âge. */
+  alcool?: boolean;
 }
 
 export interface Cart {

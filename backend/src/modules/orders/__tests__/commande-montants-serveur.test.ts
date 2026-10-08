@@ -348,3 +348,26 @@ describe("quota de promotion (C-15)", () => {
   });
 });
 
+
+describe("POST /api/orders — alcool", () => {
+  const avecAlcool = () =>
+    db.product.findMany.mockResolvedValue([
+      { id: "pizza", name: "Bière", storeId: STORE_ID, isAvailable: true, deletedAt: null, categoryId: null, containsAlcohol: true },
+    ]);
+
+  it("refuse un panier contenant de l'alcool sans attestation d'âge", async () => {
+    avecAlcool();
+    const res = await request(app).post("/api/orders").send(commande());
+
+    expect(res.status).toBe(400);
+    expect(res.body.code ?? res.body.error?.code).toBe("AGE_CONFIRMATION_REQUIRED");
+    expect(db.order.create).not.toHaveBeenCalled();
+  });
+
+  it("accepte le même panier avec l'attestation", async () => {
+    avecAlcool();
+    const res = await request(app).post("/api/orders").send(commande({ ageMinimumConfirme: true }));
+
+    expect(res.status).toBe(201);
+  });
+});

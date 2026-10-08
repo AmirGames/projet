@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
+import InfoAllergenes from '@/components/InfoAllergenes';
+import type { Allergene } from '@/lib/allergenes';
 import { MapPin, Phone, Clock, Star, X, Bike, Plus, Minus, Check, Trash2, ShoppingBag } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -81,6 +83,10 @@ interface Product {
   images: Array<{ url: string }>;
   /** La question posée : « Type de pâtes », « Taille ». */
   variantLabel?: string | null;
+  /** Allergènes déclarés par le commerçant ; `allergensDeclared` faux = non renseignés. */
+  allergens?: Allergene[];
+  allergensDeclared?: boolean;
+  containsAlcohol?: boolean;
   variants?: Declinaison[];
   supplements?: GroupeSupplements[];
   /** La note des clients, calculée sur les avis publiés. Nulle sans avis. */
@@ -316,6 +322,7 @@ export default function StorefrontPage() {
               description: ligne.description || '',
               price: prixDeBase,
               isAvailable: ligne.isAvailable !== false,
+              containsAlcohol: !!ligne.alcool,
               images: [],
             },
           quantity: ligne.quantity,
@@ -366,6 +373,7 @@ export default function StorefrontPage() {
         price: prixDeLaLigne(item),
         quantity: item.quantity,
         isAvailable: item.product.isAvailable,
+        ...(item.product.containsAlcohol ? { alcool: true } : {}),
         ...(item.variante ? { variantId: item.variante.id, variantNom: item.variante.label } : {}),
         ...(item.supplements?.length ? { supplements: item.supplements } : {}),
       })),
@@ -421,6 +429,9 @@ export default function StorefrontPage() {
                 price: Number(produit.price || 0),
                 isAvailable: produit.isAvailable !== false,
                 variantLabel: produit.variantLabel || null,
+                allergens: produit.allergens || [],
+                allergensDeclared: !!produit.allergensDeclared,
+                containsAlcohol: !!produit.containsAlcohol,
                 note:
                   produit.note && produit.note.nombre > 0
                     ? { moyenne: Number(produit.note.moyenne), nombre: Number(produit.note.nombre) }
@@ -1006,6 +1017,7 @@ export default function StorefrontPage() {
                     </p>
                   )}
                   {product.description && <p className="mt-3 text-gray-600">{product.description}</p>}
+                  <InfoAllergenes produit={product} />
 
                   {/* Les déclinaisons : « Type de pâtes », « Taille »… */}
                   {declinaisons.length > 0 && (
@@ -1411,6 +1423,7 @@ function CartePlat({
           )}
         </p>
         {product.description && <p className="mt-2 line-clamp-2 text-sm text-gray-500">{product.description}</p>}
+        <InfoAllergenes produit={product} compact />
       </div>
 
       <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">

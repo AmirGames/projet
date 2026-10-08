@@ -3,6 +3,8 @@
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import ChampsAllergenes from '@/components/ChampsAllergenes';
+import { declarationComplete, declarationVide, type Allergene, type DeclarationAllergenes } from '@/lib/allergenes';
 import { Plus, Edit2, Trash2, Search, AlertCircle, GripVertical, X } from 'lucide-react';
 import {
   DndContext,
@@ -38,6 +40,9 @@ interface Product {
   price: number;
   stock: number;
   isAvailable: boolean;
+  allergens?: Allergene[];
+  allergensDeclared?: boolean;
+  containsAlcohol?: boolean;
   sku: string;
   displayOrder: number;
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
@@ -199,6 +204,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
 
 export default function ProductsPage() {
   const t = useTranslations('merchantProducts');
+  const tAllergenes = useTranslations('allergenes');
   const { storeId } = useCurrentStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [productStats, setProductStats] = useState<Record<string, ProductStats>>({});
@@ -219,6 +225,8 @@ export default function ProductsPage() {
     status: 'ACTIVE' as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
     categoryId: '',
   });
+  const [allergenes, setAllergenes] = useState<DeclarationAllergenes>(declarationVide());
+  const [alcool, setAlcool] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -396,6 +404,11 @@ export default function ProductsPage() {
       return;
     }
 
+    if (!declarationComplete(allergenes)) {
+      setMessage(`❌ ${tAllergenes('manquant')}`);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('accessToken');
 
@@ -414,6 +427,8 @@ export default function ProductsPage() {
             sku: formData.sku.trim() || undefined,
             status: formData.status,
             categoryId: formData.categoryId || undefined,
+            allergens: allergenes.allergens,
+            containsAlcohol: alcool,
           }),
         });
 
@@ -441,6 +456,8 @@ export default function ProductsPage() {
           isAvailable: formData.isAvailable,
           sku: formData.sku.trim() || undefined,
           status: formData.status,
+          allergens: allergenes.allergens,
+          containsAlcohol: alcool,
         };
 
         if (formData.categoryId && formData.categoryId.trim()) {
@@ -512,6 +529,8 @@ export default function ProductsPage() {
       status: product.status,
       categoryId: product.category?.id || '',
     });
+    setAllergenes({ allergens: product.allergens ?? [], declare: !!product.allergensDeclared });
+    setAlcool(!!product.containsAlcohol);
     setShowForm(true);
   };
 
@@ -527,6 +546,8 @@ export default function ProductsPage() {
       status: 'ACTIVE',
       categoryId: '',
     });
+    setAllergenes(declarationVide());
+    setAlcool(false);
   };
 
   const filteredProducts = products.filter(p =>
@@ -810,6 +831,8 @@ export default function ProductsPage() {
                   rows={3}
                 />
               </div>
+
+              <ChampsAllergenes valeur={allergenes} alcool={alcool} onChange={setAllergenes} onAlcool={setAlcool} />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

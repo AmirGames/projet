@@ -140,6 +140,8 @@ function CheckoutBody({
   const [checkingCode, setCheckingCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
+  // Attestation d'âge, demandée si un plat contient de l'alcool (et exigée par le serveur).
+  const [ageConfirme, setAgeConfirme] = useState(false);
   const [tipChosen, setTipChosen] = useState(0);
   const [tipFree, setTipFree] = useState(false);
   const [error, setError] = useState('');
@@ -212,6 +214,7 @@ function CheckoutBody({
     setMethodId((usable.find((m) => m.isDefault) || usable[0])?.id || '');
   }, [usable, methodId]);
 
+  const contientAlcool = lines.some((l) => l.alcool);
   const subtotal = cartTotal(lines);
   // Le seuil de la zone atteint, la livraison est offerte : le serveur
   // l'applique de la même façon.
@@ -331,6 +334,7 @@ function CheckoutBody({
     try {
       const body = {
         conditionsAcceptees,
+        ...(contientAlcool ? { ageMinimumConfirme: ageConfirme } : {}),
         storeId: cart.storeId,
         customerName: contact.name.trim(),
         customerEmail: contact.email.trim(),
@@ -666,6 +670,19 @@ function CheckoutBody({
 
         {error ? <Text style={[styles.error, { textAlign: 'center', marginBottom: 10 }]}>{error}</Text> : null}
 
+        {contientAlcool && (
+          <TouchableOpacity
+            style={styles.conditions}
+            onPress={() => setAgeConfirme((v) => !v)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: ageConfirme }}
+          >
+            <Text style={styles.conditionsCase}>{ageConfirme ? '☑' : '☐'}</Text>
+            <Text style={styles.conditionsTexte}>
+              Mon panier contient de l&apos;alcool : je certifie avoir l&apos;âge légal pour en acheter et je présenterai une pièce d&apos;identité à la remise.
+            </Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.conditions}
           onPress={() => setConditionsAcceptees((v) => !v)}
@@ -682,9 +699,9 @@ function CheckoutBody({
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.submit, (submitting || lines.length === 0 || !conditionsAcceptees) && { opacity: 0.6 }]}
+          style={[styles.submit, (submitting || lines.length === 0 || !conditionsAcceptees || (contientAlcool && !ageConfirme)) && { opacity: 0.6 }]}
           onPress={review}
-          disabled={submitting || lines.length === 0 || !conditionsAcceptees}
+          disabled={submitting || lines.length === 0 || !conditionsAcceptees || (contientAlcool && !ageConfirme)}
         >
           {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Commander · {formatEuros(total)}</Text>}
         </TouchableOpacity>
