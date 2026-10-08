@@ -67,6 +67,7 @@ jest.mock("../dossier-incident.service", () => ({
 }));
 
 import router from "../drivers.admin.routes";
+import incidentsRouter from "../drivers.incidents.admin.routes";
 import { errorHandler } from "../../../middleware/errorHandler";
 import { DriverApprovalService } from "../driver-approval.service";
 import { DriverSupportService } from "../driver-support.service";
@@ -75,6 +76,7 @@ import { SurveillanceCoursesService } from "../surveillance-courses.service";
 const app = express();
 app.use(express.json());
 app.use("/api/superowner", router);
+app.use("/api/superowner", incidentsRouter);
 app.use(errorHandler);
 const owner = (r: request.Test) => r.set("Authorization", "Bearer owner");
 
