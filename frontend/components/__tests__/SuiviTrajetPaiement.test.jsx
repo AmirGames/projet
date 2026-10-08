@@ -2,10 +2,11 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import SuiviTrajetPage from "../../app/trajet/[id]/page";
 import { appelerZupDrive } from "@/lib/zupdrive";
 
-jest.mock("next-intl", () => ({
-  useLocale: () => "fr",
-  useTranslations: () => (cle, valeurs) => (valeurs ? `${cle} ${JSON.stringify(valeurs)}` : cle),
-}));
+// Comme le vrai hook, la fonction de traduction garde la même identité d'un rendu à l'autre.
+jest.mock("next-intl", () => {
+  const traduire = (cle, valeurs) => (valeurs ? `${cle} ${JSON.stringify(valeurs)}` : cle);
+  return { useLocale: () => "fr", useTranslations: () => traduire };
+});
 jest.mock("next/link", () => ({ __esModule: true, default: ({ children, href }) => <a href={href}>{children}</a> }));
 jest.mock("@/components/CarteCourseDrive", () => ({ CarteCourseDrive: () => <div data-testid="carte" /> }));
 jest.mock("@/components/NoterCourseDrive", () => ({ Etoiles: () => null, NoterCourseDrive: () => null }));

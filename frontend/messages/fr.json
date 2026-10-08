@@ -4791,7 +4791,8 @@
     "zupdriveDescription": "ZupDrive prépare son service de transport de personnes avec chauffeur (VTC). Chauffeurs, faites-vous connaître dès maintenant.",
     "connexionEnCours": "Connexion en cours",
     "siteTitre": "ZupEat — Commandez chez vos commerces de proximité",
-    "siteDescription": "La plateforme qui relie commerçants, clients et livreurs de proximité."
+    "siteDescription": "La plateforme qui relie commerçants, clients et livreurs de proximité.",
+    "configuration": "Configuration"
   },
   "bandeauCommande": {
     "acceptee": "Commande acceptée",
@@ -6290,5 +6291,20 @@
         ]
       }
     }
+  },
+  "superownerConfigDrive": {
+    "titre": "Configuration ZupDrive",
+    "sousTitre": "La commission que la plateforme prélève sur chaque course payée.",
+    "erreur": "Une erreur est survenue. Réessayez.",
+    "commission": "Commission",
+    "commissionAide": "Part du prix d'une course gardée par la plateforme ; le reste revient au chauffeur.",
+    "pourcentage": "Pourcentage (0 à 100)",
+    "pourcentageInvalide": "Indiquez un nombre entier de 0 à 100.",
+    "enregistrer": "Enregistrer",
+    "enregistrement": "Enregistrement…",
+    "enregistree": "Commission enregistrée : {valeur} %.",
+    "paiementsExistants": "Ce pourcentage s'applique aux paiements créés ensuite : un paiement existant garde sa répartition. Le changement est journalisé.",
+    "tarifsAide": "Le prix des courses se règle région par région :",
+    "versTarifs": "Ouvrir les tarifs"
   }
 }

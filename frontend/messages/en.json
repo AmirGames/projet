@@ -4791,7 +4791,8 @@
     "zupdriveDescription": "ZupDrive is preparing its chauffeur-driven passenger service. Drivers, sign up now.",
     "connexionEnCours": "Logging in",
     "siteTitre": "ZupEat — Order from your local shops",
-    "siteDescription": "The platform connecting local merchants, customers and couriers."
+    "siteDescription": "The platform connecting local merchants, customers and couriers.",
+    "configuration": "Settings"
   },
   "bandeauCommande": {
     "acceptee": "Order accepted",
@@ -6290,5 +6291,20 @@
         ]
       }
     }
+  },
+  "superownerConfigDrive": {
+    "titre": "ZupDrive settings",
+    "sousTitre": "The commission the platform takes on each paid ride.",
+    "erreur": "Something went wrong. Please try again.",
+    "commission": "Commission",
+    "commissionAide": "The share of a ride's price kept by the platform; the rest goes to the driver.",
+    "pourcentage": "Percentage (0 to 100)",
+    "pourcentageInvalide": "Enter a whole number from 0 to 100.",
+    "enregistrer": "Save",
+    "enregistrement": "Saving…",
+    "enregistree": "Commission saved: {valeur}%.",
+    "paiementsExistants": "This percentage applies to payments created from now on: an existing payment keeps its split. The change is logged.",
+    "tarifsAide": "Ride prices are set region by region:",
+    "versTarifs": "Open fares"
   }
 }
