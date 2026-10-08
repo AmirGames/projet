@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import LiveMap from '../../components/LiveMap';
+import PaiementCarte from '../../components/PaiementCarte';
 import { Card, COLORS, ErrorBox, Loading, Row } from '../../components/ui';
 import { messageErreur, useToken } from '../../lib/auth';
 import {
@@ -35,6 +36,8 @@ export default function SuiviTrajet() {
   const [erreurAction, setErreurAction] = useState('');
   const [reseau, setReseau] = useState(false);
   const [envoi, setEnvoi] = useState(false);
+  // Stripe a accepté la carte ; le serveur ne le sait qu'à l'arrivée du webhook (relu toutes les 4 s).
+  const [paiementEnvoye, setPaiementEnvoye] = useState(false);
   const [noteChoisie, setNoteChoisie] = useState(0);
   const enVol = useRef(false);
   const vivant = useRef(true);
@@ -157,11 +160,23 @@ export default function SuiviTrajet() {
       ) : null}
 
       {etatPaiement === 'a_payer' ? (
-        <Card title="Paiement">
-          <Text style={ui.texte}>
-            Ce trajet ({prix(trajet.prixCentimes)}) se règle en ligne par carte avant la recherche d'un chauffeur.
-            Le paiement depuis l'application arrive bientôt : réglez-le pour l'instant depuis le site ZupDrive.
+        <Card title="Payer votre trajet">
+          <Text style={ui.aide}>
+            Le paiement de {prix(trajet.prixCentimes)} se fait par carte ; la recherche d'un chauffeur commence dès qu'il est confirmé.
           </Text>
+          {paiementEnvoye ? (
+            <Text style={ui.texte}>Paiement envoyé, confirmation en cours…</Text>
+          ) : (
+            <PaiementCarte
+              token={token}
+              courseId={trajet.id}
+              prixCentimes={trajet.prixCentimes}
+              onEnvoye={() => {
+                setPaiementEnvoye(true);
+                void charger();
+              }}
+            />
+          )}
         </Card>
       ) : null}
       {etatPaiement === 'paye' ? <Text style={ui.paye}>Trajet payé en ligne.</Text> : null}

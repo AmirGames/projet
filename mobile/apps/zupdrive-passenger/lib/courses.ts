@@ -124,6 +124,24 @@ export async function noterChauffeur(token: string, id: string, note: number, co
   });
 }
 
+/**
+ * Crée (ou retrouve) l'intention de paiement du trajet. Seul l'identifiant part :
+ * le serveur lit le prix sur la course, jamais sur le téléphone.
+ */
+export async function creerIntentionPaiement(token: string, courseId: string): Promise<string> {
+  const res = await apiFetch<Enveloppe<{ clientSecret: string }>>('/api/zupdrive/payment/intent', token, {
+    method: 'POST',
+    body: { courseId },
+  });
+  return res.data.clientSecret;
+}
+
+/** La clé publique Stripe (sans secret, la même que reçoit le navigateur) ; null si le paiement en ligne n'est pas branché. */
+export async function lireClePubliqueStripe(): Promise<string | null> {
+  const res = await apiFetch<Enveloppe<{ enLigne: boolean; publishableKey: string | null }>>('/api/payments/config', null);
+  return res.data.enLigne ? res.data.publishableKey : null;
+}
+
 /** Une clé d'idempotence (8 à 64 caractères alphanumériques) pour un devis. */
 export function cleAleatoire(): string {
   const caracteres = 'abcdefghijklmnopqrstuvwxyz0123456789';
