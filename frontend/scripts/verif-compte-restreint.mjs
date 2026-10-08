@@ -11,7 +11,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
+import { baseDeDonnees, inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -61,6 +61,11 @@ const commercant = await inscriptionVia(appeler, {
 });
 const T = commercant.donnees.accessToken;
 const ORG = commercant.donnees.organization.id;
+
+// Le serveur n'envoie les notifications en direct qu'à une adresse vérifiée.
+// Les comptes créés par la suite ne le sont pas : on le fait ici, en base,
+// pour que la cloche puisse annoncer la suspension sans rechargement.
+await baseDeDonnees().$executeRaw`UPDATE "User" SET "emailVerified" = true WHERE email = ${`m-${uniq}@t.fr`}`;
 
 const boutique = await appeler('/api/stores', {
   method: 'POST',

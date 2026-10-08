@@ -98,7 +98,10 @@ export function createApp(): Express {
       origin: originesAutorisees,
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-Refresh-Transport"],
+      // Idempotency-Key : le site l'envoie avec chaque commande (voir order.routes) ;
+      // sans lui dans cette liste, le préflight échouait et le navigateur ne
+      // postait jamais la commande depuis un domaine autre que celui de l'API.
+      allowedHeaders: ["Content-Type", "Authorization", "X-Refresh-Transport", "Idempotency-Key"],
     })
   );
 
