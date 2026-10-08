@@ -5,6 +5,12 @@ import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { logger } from "../../config/logger";
 import { codeErreur } from "../../utils/code-erreur";
 
+/**
+ * Les taux de TVA belges préajoutés à la création d'une boutique (en %).
+ * Le commerçant les modifie ou les supprime ensuite comme n'importe quel réglage.
+ */
+export const TAUX_TVA_PAR_DEFAUT_BE = [6, 12, 21] as const;
+
 /** Ce que la route de mise à jour d'une boutique accepte (voir `updateStoreSchema`). */
 export interface UpdateStoreData {
   name?: string;
@@ -85,6 +91,21 @@ export class StoreService {
       const store = await db.store.create({
         data: {
           orgId: data.orgId,
+          // Les trois taux de TVA belges, préajoutés : le commerçant n'a qu'à
+          // affecter ses catégories et ses articles. Il peut les modifier ou
+          // les supprimer comme les autres réglages. Pas de taux par défaut
+          // pour une boutique établie en France (taux différents).
+          ...(countryCode !== "FR" && {
+            taxSettings: {
+              create: TAUX_TVA_PAR_DEFAUT_BE.map((taux) => ({
+                name: `TVA ${taux} %`,
+                rate: taux,
+                applicableTo: "all",
+                included: true,
+                status: "ACTIVE",
+              })),
+            },
+          }),
           isOpen: !!org?.approvedAt,
           name: data.name,
           slug: data.slug,
