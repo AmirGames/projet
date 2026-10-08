@@ -10,6 +10,9 @@ import { AlertesCourseLivreur } from '@/components/AlertesCourseLivreur';
 import { useStockageLocal } from '@/lib/navigateur';
 import { fermerSessionPartout } from '@/lib/sso';
 import { useTranslations } from 'next-intl';
+import '@/app/theme-sombre.css';
+import { useThemeSombre } from '@/lib/theme-sombre';
+import { BasculeTheme } from '@/components/BasculeTheme';
 
 export default function DriverLayout({
   children,
@@ -24,6 +27,7 @@ export default function DriverLayout({
   // monté d'une page à l'autre, et une déconnexion doit faire disparaître la
   // barre livreur. `undefined` tant que le navigateur n'a pas été lu.
   const token = useStockageLocal('driverToken');
+  const { sombre, basculer, classe } = useThemeSombre('driver-theme');
   const isAuthenticated = !!token;
   const isLoading = token === undefined;
 
@@ -60,7 +64,7 @@ export default function DriverLayout({
 
   return (
     <>
-      <div className="min-h-screen bg-[#F7F7F6] text-gray-900">
+      <div className={`min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
         {/* Mobile Navigation - Afficher uniquement si authentifié */}
         {afficherBarre && (
           <nav className="md:hidden bg-white border-b border-[#ECECEA] sticky top-0 z-40">
@@ -73,6 +77,7 @@ export default function DriverLayout({
               </SelecteurEspace>
 
               <div className="flex items-center gap-2">
+                <BasculeTheme sombre={sombre} onClick={basculer} />
                 <LanguageSwitcher clair />
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -155,6 +160,7 @@ export default function DriverLayout({
                   <LogOut size={18} />
                   {t('deconnexion')}
                 </button>
+                <BasculeTheme sombre={sombre} onClick={basculer} />
                 <LanguageSwitcher clair />
               </div>
             </div>
