@@ -155,7 +155,8 @@ describe("exportZip : documents du compte", () => {
   const manifeste = (zip: Buffer) => {
     const texte = zip.toString("utf8");
     const debut = texte.indexOf("{\n  \"version\"");
-    return JSON.parse(texte.slice(debut, texte.lastIndexOf("}") + 1)).documents;
+    // Le JSON est la dernière entrée : il s'arrête où commence le répertoire central du ZIP.
+    return JSON.parse(texte.slice(debut, texte.indexOf("PK\u0001\u0002", debut))).documents;
   };
 
   it("contient toujours le récapitulatif et les données", async () => {
