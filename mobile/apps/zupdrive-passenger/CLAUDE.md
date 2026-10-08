@@ -12,7 +12,7 @@ Application **Expo/React Native** pour passagers ZupDrive.
   - `trajet/[id].tsx` **Suivi** : relu toutes les 4 s, statut, chauffeur, carte, annulation, note, paiement
 - `components/` — `ChampAdresse` (suggestions `GET /api/addresses/search`), `LiveMap`, `ui`
 - `lib/` — `courses.ts` (dont `creerIntentionPaiement`) (API des trajets), `adresses.ts`, `auth.tsx`, `paiement.ts` (`etatPaiementTrajet`, pure), `statuts.ts`, `confirmer.ts`
-- `components/screens/`, `lib/{carts,orders,stores,…}` : **hérités de ZupEat, plus utilisés** ; à supprimer à l'étape 4.
+- Les écrans et la logique hérités de l'app client ZupEat (panier, commande, commerces, temps réel, adresses favorites, changement de mot de passe…) ont été supprimés ; ils restent dans l'historique git.
 
 ## Règles des écrans
 
@@ -49,7 +49,7 @@ POST /payment/intent          — { courseId } seulement, jamais le montant
 
 Le prix vient toujours du serveur ; « payé » n'apparaît que quand le serveur le dit (webhook Stripe), pas quand la carte est acceptée sur le téléphone. Le suivi se relit toutes les 4 s (`RELECTURE_MS`).
 
-## Real-Time (Socket.io)
+## Real-Time (Socket.io) — prévu, non branché (le suivi se relit toutes les 4 s)
 
 - `driver-location-update` — position chauffeur
 - `course-status` — changement état
