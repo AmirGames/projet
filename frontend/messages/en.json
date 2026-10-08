@@ -6306,5 +6306,21 @@
     "paiementsExistants": "This percentage applies to payments created from now on: an existing payment keeps its split. The change is logged.",
     "tarifsAide": "Ride prices are set region by region:",
     "versTarifs": "Open fares"
+  },
+
+  "offresRegion": {
+    "pourVousTitre": "For you",
+    "gererPersonnalisation": "Manage personalisation",
+    "dejaCommande": "Ordered before",
+    "promotionsTitre": "Offers near you",
+    "code": "Code",
+    "minimum": "From {montant} spent",
+    "tendancesTitre": "What your region is ordering",
+    "commandes": "{n, plural, one {# order} other {# orders}}"
+  },
+  "personnalisationClient": {
+    "titre": "Personalised suggestions",
+    "explication": "We suggest shops similar to what you order most, based on your past orders. Turn this off at any time: your orders will no longer be used to make suggestions.",
+    "erreur": "The setting could not be saved. Please try again."
   }
 }
