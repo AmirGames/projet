@@ -1,8 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
 import { userIdRequis } from "../auth/utilisateur-requis";
+import { journaliser } from "../superowner/shared";
+import { SystemConfigService } from "../superowner/system-config.service";
 import { invalidateMaintenanceCache } from "../monitoring/maintenance.middleware";
 import { isSystemAdmin } from "./shared";
 
@@ -11,15 +12,7 @@ const router = Router();
 // GET /admin/config - Get system configuration
 router.get("/config", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    let config = await db.systemConfig.findFirst();
-
-    if (!config) {
-      config = await db.systemConfig.create({
-        data: {},
-      });
-    }
-
-    res.json(config);
+    res.json(await SystemConfigService.lireOuCreer());
   } catch (err) {
     next(err);
   }
@@ -43,29 +36,14 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
     });
 
     const body = schema.parse(req.body);
-    const adminId = userIdRequis(req);
+    userIdRequis(req); // identité exigée avant d'agir (le journal la relit)
 
-    let config = await db.systemConfig.findFirst();
-    if (!config) {
-      config = await db.systemConfig.create({ data: {} });
-    }
-
-    const updated = await db.systemConfig.update({
-      where: { id: config.id },
-      data: body,
-    });
+    const updated = await SystemConfigService.mettreAJour(body);
 
     // Le middleware met le réglage en cache : forcer sa relecture.
     invalidateMaintenanceCache();
 
-    await db.systemAuditLog.create({
-      data: {
-        adminId,
-        action: "UPDATE_SYSTEM_CONFIG",
-        target: "SYSTEM_CONFIG",
-        changes: body,
-      },
-    });
+    await journaliser(req, "UPDATE_SYSTEM_CONFIG", "SYSTEM_CONFIG", body);
 
     res.json(updated);
   } catch (err) {
