@@ -19,7 +19,11 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
-import { piecesExigees } from "./chauffeur-onboarding.service";
+import { REGIONS, piecesExigees, type Region } from "./chauffeur-onboarding.service";
+import { distanceALaZoneKm } from "./zones-regions";
+
+/** Un départ de course à plus de cette distance (km) de la zone de la région du chauffeur est signalé. */
+export const SEUIL_ELOIGNEMENT_KM = 100;
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -29,6 +33,7 @@ type ComplianceCheckType =
   | "IDENTITY_VERIFICATION"  // Vérification identité
   | "INFRACTION_HISTORY"     // Historique infractions
   | "BEHAVIORAL_PATTERN"     // Pattern comportemental
+  | "GEOGRAPHIC_ANOMALY"     // Courses très éloignées de la région
   | "DUPLICATE_DETECTION"    // Détection doublons
   | "FRAUD_INDICATORS";      // Indicateurs fraude
 
@@ -69,7 +74,7 @@ const SELECTION_CONTROLE = {
   createdAt: true,
   documents: { where: { archiveeLe: null }, select: { type: true, statut: true, dateExpiration: true } },
   infractions: { select: { severity: true } },
-  courses: { select: { statut: true } },
+  courses: { select: { statut: true, departLatitude: true, departLongitude: true } },
 } satisfies Prisma.ChauffeurDriveSelect;
 
 type ChauffeurControle = Prisma.ChauffeurDriveGetPayload<{ select: typeof SELECTION_CONTROLE }>;
@@ -106,13 +111,13 @@ export const ZupDriveComplianceChecksService = {
     // 5. Patterns comportementaux
     checks.push(await this.checkBehavioralPatterns(chauffeur));
 
-    // Pas de contrôle géographique : aucune donnée de zone (centre, rayon) n'existe pour une région,
-    // donc aucune distance réelle ne peut être mesurée. Voir docs/zupdrive-api-admin.md.
+    // 6. Anomalies géographiques
+    checks.push(await this.checkGeographicAnomalies(chauffeur));
 
-    // 6. Détection doublons
+    // 7. Détection doublons
     checks.push(await this.checkDuplicateDetection());
 
-    // 7. Indicateurs fraude
+    // 8. Indicateurs fraude
     checks.push(await this.checkFraudIndicators(chauffeur));
 
     // Calculer les scores
@@ -396,6 +401,45 @@ export const ZupDriveComplianceChecksService = {
   },
 
   /**
+   * Anomalies géographiques : départs de courses très éloignés de la région déclarée.
+   * Distance à vol d'oiseau entre le départ et la zone de la région (zones-regions.ts) ;
+   * au-delà de SEUIL_ELOIGNEMENT_KM, la course est signalée.
+   */
+  async checkGeographicAnomalies(chauffeur: Pick<ChauffeurControle, "region" | "courses">): Promise<ComplianceCheckResult> {
+    const region = REGIONS.find((r) => r === chauffeur.region) as Region | undefined;
+    if (!region) {
+      return {
+        type: "GEOGRAPHIC_ANOMALY",
+        passed: false,
+        riskScore: 20,
+        severity: "MEDIUM",
+        message: "No region specified",
+        evidence: { region: chauffeur.region ?? null },
+      };
+    }
+
+    const distances = chauffeur.courses
+      .filter((c) => Number.isFinite(c.departLatitude) && Number.isFinite(c.departLongitude))
+      .map((c) => distanceALaZoneKm(region, { latitude: c.departLatitude, longitude: c.departLongitude }));
+    const loin = distances.filter((d) => d > SEUIL_ELOIGNEMENT_KM);
+    const passed = loin.length === 0;
+    return {
+      type: "GEOGRAPHIC_ANOMALY",
+      passed,
+      riskScore: passed ? 0 : 20,
+      severity: passed ? "LOW" : "MEDIUM",
+      message: passed
+        ? `Region ${region} is primary`
+        : `${loin.length} course(s) start more than ${SEUIL_ELOIGNEMENT_KM} km from ${region}`,
+      evidence: {
+        region,
+        farCoursesCount: loin.length,
+        maxDistanceKm: distances.length > 0 ? Math.round(Math.max(...distances)) : 0,
+      },
+    };
+  },
+
+  /**
    * Détection doublons
    */
   async checkDuplicateDetection(): Promise<ComplianceCheckResult> {
@@ -573,10 +617,13 @@ export const ZupDriveComplianceChecksService = {
  *    ✅ Taux de complétion bon?
  *    ✅ Pas trop d'annulations?
  *
- * 6️⃣ DUPLICATE_DETECTION
+ * 6️⃣ GEOGRAPHIC_ANOMALY
+ *    ✅ Départs de courses à moins de 100 km de la région déclarée?
+ *
+ * 7️⃣ DUPLICATE_DETECTION
  *    ✅ Pas de compte en doublon?
  *
- * 7️⃣ FRAUD_INDICATORS
+ * 8️⃣ FRAUD_INDICATORS
  *    ✅ Pas de signaux fraude?
  *
  * Résult: Score de risque 0-100 + niveau AUTO_DECISION

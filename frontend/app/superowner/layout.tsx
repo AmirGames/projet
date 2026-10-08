@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import '../theme-sombre.css';
+import { useThemeSombre } from '@/lib/theme-sombre';
+import { BasculeTheme } from '@/components/BasculeTheme';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -89,6 +92,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   // s'ouvre par-dessus la page.
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [menuMobile, setMenuMobile] = useState(false);
+  const { sombre, basculer, classe } = useThemeSombre('superowner-theme');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['categories', 'members']));
   const router = useRouter();
   const pathname = usePathname();
@@ -317,7 +321,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const etendu = sidebarOpen || menuMobile;
 
   return (
-    <div className="flex min-h-screen bg-[#F7F7F6] text-gray-900">
+    <div className={`flex min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
       {/* Voile derrière le tiroir : un toucher à côté le referme. */}
       {menuMobile && (
         <div
@@ -481,6 +485,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
             </div>
             {/* La cloche suit la plateforme partout : un ticket ouvert pendant
                 qu'on consulte les journaux doit se voir sans changer de page. */}
+            <BasculeTheme sombre={sombre} onClick={basculer} />
             <NotificationBell clair />
             <LanguageSwitcher clair />
           </div>

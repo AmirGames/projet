@@ -45,6 +45,9 @@ import {
   ChevronsRight,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import '@/app/theme-sombre.css';
+import { useThemeSombre } from '@/lib/theme-sombre';
+import { BasculeTheme } from '@/components/BasculeTheme';
 
 // Chaque formule a sa couleur, pour être identifiable d'un coup d'œil.
 // Le libellé : `formules.<code>` des traductions.
@@ -59,6 +62,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
   // Sur grand écran, la barre se replie en icônes ; sur téléphone, c'est un
   // tiroir fermé par défaut, qui se referme à chaque page ouverte.
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { sombre, basculer, classe } = useThemeSombre('merchant-theme');
   const [tiroirOuvert, setTiroirOuvert] = useState(false);
   const router = useRouter();
   const params = useParams();
@@ -193,7 +197,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
 
   return (
     <CurrentStoreProvider orgId={orgId}>
-    <div className="flex min-h-screen bg-[#F7F7F6] text-gray-900">
+    <div className={`flex min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
       {/* Le voile derrière le tiroir, sur téléphone. */}
       {tiroirOuvert && (
         <button
@@ -281,6 +285,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           </button>
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <StoreSwitcher clair />
+            <BasculeTheme sombre={sombre} onClick={basculer} />
             <NotificationBell clair />
             <LanguageSwitcher clair />
           </div>

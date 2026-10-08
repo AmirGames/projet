@@ -27,6 +27,9 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { useTranslations } from 'next-intl';
+import '@/app/theme-sombre.css';
+import { useThemeSombre } from '@/lib/theme-sombre';
+import { BasculeTheme } from '@/components/BasculeTheme';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -105,6 +108,8 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
     if (auNiveauDuChoix) charger();
   }, [auNiveauDuChoix, charger]);
 
+  const { sombre, basculer, classe } = useThemeSombre('merchant-theme');
+
   const seDeconnecter = () => {
     // Ferme la session sur tous les domaines, puis l'efface d'ici.
     fermerSessionPartout();
@@ -124,7 +129,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
     'flex items-center gap-3 px-3 py-2 rounded-[10px] text-sm font-semibold transition-colors text-gray-700 hover:bg-gray-100 hover:text-gray-900';
 
   return (
-    <div className="flex min-h-screen bg-[#F7F7F6] text-gray-900">
+    <div className={`flex min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
       {/* Le voile derrière le tiroir, sur téléphone. */}
       {tiroir && (
         <button
@@ -276,6 +281,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             </div>
             {/* Une réponse du support arrive souvent pendant qu'on choisit sa
                 boutique : la cloche manquait à ce niveau-là. */}
+            <BasculeTheme sombre={sombre} onClick={basculer} />
             <NotificationBell clair />
             <LanguageSwitcher clair />
           </div>

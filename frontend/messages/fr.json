@@ -6512,5 +6512,9 @@
     "previous": "Précédent",
     "next": "Suivant",
     "showingRange": "Affichage {from} à {to}"
+  },
+  "themeSombre": {
+    "clair": "Passer au thème clair",
+    "sombre": "Passer au thème sombre"
   }
 }
