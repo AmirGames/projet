@@ -11,7 +11,7 @@ Application **Expo/React Native** pour passagers ZupDrive.
   - `(onglets)/historique.tsx` : `mesTrajets` ; `(onglets)/profil.tsx` : déconnexion
   - `trajet/[id].tsx` **Suivi** : relu toutes les 4 s, statut, chauffeur, carte, annulation, note, paiement
 - `components/` — `ChampAdresse` (suggestions `GET /api/addresses/search`), `LiveMap`, `ui`
-- `lib/` — `courses.ts` (API des trajets), `adresses.ts`, `auth.tsx`, `paiement.ts` (`etatPaiementTrajet`, pure), `statuts.ts`, `confirmer.ts`
+- `lib/` — `courses.ts` (dont `creerIntentionPaiement`) (API des trajets), `adresses.ts`, `auth.tsx`, `paiement.ts` (`etatPaiementTrajet`, pure), `statuts.ts`, `confirmer.ts`
 - `components/screens/`, `lib/{carts,orders,stores,…}` : **hérités de ZupEat, plus utilisés** ; à supprimer à l'étape 4.
 
 ## Règles des écrans
@@ -19,7 +19,8 @@ Application **Expo/React Native** pour passagers ZupDrive.
 - **Prix** : celui du devis signé du serveur, renvoyé tel quel ; aucun calcul dans l'app. Une clé d'idempotence (`cleAleatoire`) par devis, gardée tant que le devis ne change pas ; `QUOTE_EXPIRED` redemande un devis et le dit.
 - **Adresse** : une suggestion sans coordonnées ni code postal est refusée (`adresseTrajet`).
 - **Suivi** : la relecture s'arrête quand le trajet n'est plus actif, que l'écran perd le focus ou que l'app passe en arrière-plan. Une coupure réseau garde le trajet affiché ; une 401 est gérée par `apiFetch` (renouvellement), la déconnexion n'a lieu que si le serveur refuse le renouvellement.
-- **Paiement** : « payé » seulement si `paiement.statut === 'SUCCEEDED'` (webhook). Remboursement et « remboursé » affichés pour une course `ANNULEE`/`SANS_CHAUFFEUR` payée. Le formulaire de carte n'est pas encore là (étape 3).
+- **Paiement** : « payé » seulement si `paiement.statut === 'SUCCEEDED'` (webhook). Remboursement et « remboursé » affichés pour une course `ANNULEE`/`SANS_CHAUFFEUR` payée. Le formulaire de carte (`components/PaiementCarte.tsx`, natif ; `.web.tsx` sur le web) apparaît quand `etatPaiementTrajet` vaut `a_payer` : `POST /api/zupdrive/payment/intent { courseId }` (jamais le montant) puis `confirmPayment`. Carte acceptée = « Paiement envoyé, confirmation en cours… », jamais « payé ». La clé publique Stripe vient du serveur (`GET /api/payments/config`, comme l'app client et le site) : aucune variable `EXPO_PUBLIC_…` ni clé en dur.
+- **Tests** : `npm test` (Jest + ts-jest, fonctions pures de `lib/*.test.ts`, ex. `paiement.test.ts`).
 - Couleur : bleu ZupDrive (`COLORS.primary`), thème clair.
 - Pas de notifications push pour l'instant : `POST /api/push-devices` n'accepte que `app` = `merchant`, `delivery`, `customer` (voir `registerForPush` dans `lib/push.ts`, non branché).
 - Sur le web (`npm run web`), `expo-secure-store` n'existe pas : la session n'y survit pas à un rechargement. Sur téléphone, elle est conservée.
