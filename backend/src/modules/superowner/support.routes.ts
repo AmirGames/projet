@@ -90,6 +90,8 @@ router.post("/support-tickets/:ticketId/messages", authMiddleware, isSuperOwner,
       body: body.body,
     });
 
+    await journaliser(req, "REPLY_TICKET", req.params.ticketId as string);
+
     res.status(201).json({ message: "Réponse envoyée", data: message });
   } catch (err) {
     next(err);
