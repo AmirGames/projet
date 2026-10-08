@@ -22,6 +22,7 @@ import {
 import { ZupDriveReportingService } from "../zupdrive-reporting.service";
 import { ZupDriveSupportService } from "../zupdrive-support.service";
 import { ZupDriveComplianceChecksService } from "../zupdrive-compliance-checks.service";
+import { distanceALaZoneKm, distanceKm } from "../zones-regions";
 
 const T0 = new Date("2026-03-01T10:00:00Z");
 const apres = (minutes: number, depuis = T0) => new Date(depuis.getTime() + minutes * 60_000);
@@ -216,16 +217,52 @@ describe("rapport de conformité : suspensions", () => {
   });
 });
 
-describe("contrôles de conformité : pas de contrôle géographique sans géométrie de région", () => {
-  it("la liste ne contient plus GEOGRAPHIC_ANOMALY", async () => {
+describe("contrôle géographique : départs éloignés de la région déclarée", () => {
+  const BRUXELLES = { departLatitude: 50.8466, departLongitude: 4.3528 };
+  const LIEGE = { departLatitude: 50.6326, departLongitude: 5.5797 }; // ~95 km de Bruxelles
+  const ARLON = { departLatitude: 49.6833, departLongitude: 5.8167 }; // ~150 km
+  const PARIS = { departLatitude: 48.8566, departLongitude: 2.3522 };
+  const verifier = (region: string | null, courses: object[]) =>
+    ZupDriveComplianceChecksService.checkGeographicAnomalies({ region, courses } as any);
+
+  it("distances connues (haversine)", () => {
+    expect(distanceKm({ latitude: 50.8466, longitude: 4.3528 }, { latitude: 48.8566, longitude: 2.3522 })).toBeCloseTo(264, -1);
+    expect(distanceALaZoneKm("BRUXELLES", { latitude: 50.8503, longitude: 4.3517 })).toBe(0);
+  });
+
+  it("courses dans la région ou à moins de 100 km de sa zone : OK", async () => {
+    const r = await verifier("BRUXELLES", [BRUXELLES, LIEGE]);
+    expect(r).toMatchObject({ type: "GEOGRAPHIC_ANOMALY", passed: true, riskScore: 0 });
+    expect(r.evidence).toMatchObject({ farCoursesCount: 0 });
+  });
+
+  it("départs très éloignés : signalés avec leur nombre et la distance maximale", async () => {
+    const r = await verifier("BRUXELLES", [BRUXELLES, ARLON, PARIS]);
+    expect(r.passed).toBe(false);
+    expect(r.riskScore).toBe(20);
+    expect(r.evidence).toMatchObject({ region: "BRUXELLES", farCoursesCount: 2 });
+    expect((r.evidence as any).maxDistanceKm).toBeGreaterThan(240);
+  });
+
+  it("la même course n'est pas une anomalie pour un chauffeur de Wallonie", async () => {
+    expect((await verifier("WALLONIE", [ARLON, LIEGE])).passed).toBe(true);
+  });
+
+  it("sans course : OK ; sans région : échec ; coordonnées absentes ignorées", async () => {
+    expect((await verifier("FLANDRE", [])).passed).toBe(true);
+    expect((await verifier("FLANDRE", [])).evidence).toMatchObject({ maxDistanceKm: 0 });
+    expect((await verifier(null, [BRUXELLES])).passed).toBe(false);
+    expect((await verifier("BRUXELLES", [{ statut: "TERMINEE" }])).passed).toBe(true);
+  });
+
+  it("fait partie des 8 contrôles d'un rapport complet", async () => {
     db.chauffeurDrive.findUnique.mockResolvedValue({
       id: "c1", userId: "u1", nomComplet: "X", region: "BRUXELLES", societeId: null, statut: "SOUMIS",
-      createdAt: new Date(), documents: [], infractions: [], courses: [],
+      createdAt: new Date(), documents: [], infractions: [], courses: [PARIS],
     });
     (db as any).complianceReportDrive = { create: jest.fn(async () => ({})) };
     const rapport = await ZupDriveComplianceChecksService.runFullCompliance("c1");
-    expect(rapport.checks.map((c) => c.type)).not.toContain("GEOGRAPHIC_ANOMALY");
-    expect(rapport.checks).toHaveLength(7);
-    expect((ZupDriveComplianceChecksService as any).checkGeographicAnomalies).toBeUndefined();
+    expect(rapport.checks).toHaveLength(8);
+    expect(rapport.checks.find((c) => c.type === "GEOGRAPHIC_ANOMALY")?.passed).toBe(false);
   });
 });

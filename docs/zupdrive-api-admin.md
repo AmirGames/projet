@@ -171,7 +171,7 @@ Retirés : `POST /admin/audit-logs` (l'acteur venait du corps : entrée falsifia
 | GET | `/admin/compliance/flagged-for-review`, `/dashboard` | niveaux `HIGH`/`CRITICAL` | — |
 | GET | `/admin/compliance/:reportId/export?format=json\|pdf` | `pdf` : 501 | — |
 
-`run-checks` exécute 7 contrôles (pièces, cohérence, identité, infractions, comportement, doublons, fraude). Le contrôle « anomalie géographique » a été retiré : il ne testait aucune distance (le code était un `TODO` qui ne renvoyait jamais d'anomalie) et le schéma ne porte aucune géométrie de région (centre, rayon, polygone) pour mesurer l'éloignement d'une course. À rétablir si une telle donnée est ajoutée.
+`run-checks` exécute 8 contrôles (pièces, cohérence, identité, infractions, comportement, **géographie**, doublons, fraude). Le contrôle `GEOGRAPHIC_ANOMALY` signale (risque 20, sévérité `MEDIUM`) un chauffeur dont au moins un départ de course est à plus de 100 km (`SEUIL_ELOIGNEMENT_KM`, à vol d'oiseau) de la zone de sa région déclarée, ou sans région. Les régions n'ayant pas de frontière en base, `zones-regions.ts` les approche par un cercle (centre + rayon) : valeurs approximatives, à affiner si besoin ; le code postal reste ce qui décide de la région d'un trajet.
 
 ## `analytics` — `/api/zupdrive/analytics` (Équipe `courses-drive`, lecture seule)
 
