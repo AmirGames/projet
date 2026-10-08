@@ -247,7 +247,13 @@ Le livreur peut clôturer son compte à tout moment. ZupEat peut désactiver un 
 | Preuve d'acceptation des conditions | e-mail, documents et versions acceptés, adresse IP, navigateur, date | obligation légale / intérêt légitime | 5 ans après la fin de la relation |
 | Support et réclamations | messages, pièces jointes | intérêt légitime | 3 ans après clôture |
 | Sécurité et prévention de la fraude | journaux de connexion, adresse IP | obligation légale / intérêt légitime | 1 an |
+| Offres de votre région | région choisie, commandes agrégées et anonymes (seuil minimal d'acheteurs) | intérêt légitime | 3 ans |
+| Suggestions personnalisées (compte connecté) | types de cuisine de vos commandes passées | intérêt légitime, avec droit d'opposition | calculées à la demande, sans copie conservée |
 | Notifications | abonnement aux notifications push | consentement | jusqu'au retrait du consentement |
+
+## Personnalisation
+
+Si vous avez un compte, nous vous suggérons des commerces proches des types de cuisine que vous commandez le plus. Ce calcul est fait à la volée sur vos commandes ; aucun profil n'est conservé, aucune décision ne produit d'effet juridique et rien n'est transmis aux commerçants. Les catégories pouvant révéler une appartenance religieuse ou une donnée de santé ne servent jamais à personnaliser. Vous pouvez désactiver la personnalisation à tout moment dans les réglages de votre compte ; les clients sans compte ne sont pas profilés. Les tendances de votre région sont des statistiques agrégées, publiées uniquement au-delà d'un nombre minimal d'acheteurs.
 
 ## Destinataires
 
@@ -280,12 +286,19 @@ Voir la page [cookies et traceurs](/cookies).`,
 
 | Nom | Type | Rôle | Durée |
 | --- | --- | --- | --- |
-| Cookie de langue | cookie | mémoriser la langue choisie | 1 an |
+| ZUPEAT_REGION | cookie | mémoriser la région et la langue du site | 1 an |
+| pays | cookie | mémoriser le pays choisi pour n'afficher que les commerces et offres de votre région | 1 an |
+| zup_refresh | cookie HttpOnly | renouveler la session sans ressaisir le mot de passe | 7 jours |
+| zupone-session | cookie HttpOnly | connexion unique entre les sites du groupe ZupOne | 30 jours |
 | accessToken, refreshToken, driverToken | stockage local | maintenir la session connectée | jusqu'à la déconnexion |
 | currentOrgId, currentDriverId, userEmail | stockage local | retrouver la boutique ou le compte actif | jusqu'à la déconnexion |
-| Panier | stockage local | conserver le panier entre deux visites | jusqu'à la commande ou au vidage |
-| selectedTheme | stockage local | mémoriser le thème d'affichage | persistant |
+| Panier, adresse de livraison, adresses récentes | stockage local | conserver le panier et l'adresse entre deux visites | jusqu'à la commande ou au vidage |
+| selectedTheme | stockage local | mémoriser le thème de la vitrine d'un commerçant | persistant |
 | Cookies Stripe | cookie tiers | sécuriser le paiement et prévenir la fraude, uniquement lors du paiement | selon Stripe |
+
+## Personnalisation des offres
+
+Les offres de votre région et les restaurants suggérés ne reposent sur **aucun traceur** : ils sont calculés par nos serveurs à partir de votre région et, si vous avez un compte, de vos commandes passées. Voir la [politique de confidentialité](/confidentialite).
 
 ## Services tiers
 
