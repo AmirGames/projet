@@ -28,6 +28,8 @@ export interface ContenuDevis {
   distanceMetres: number;
   dureeSecondes: number;
   prixCentimes: number;
+  /** Majoration appliquée au prix ; absente des devis émis avant son enregistrement. */
+  surgeFactor?: number;
   devise: "EUR";
   tarif: Record<string, number>;
   source: string;

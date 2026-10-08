@@ -171,10 +171,18 @@ Retirés : `POST /admin/audit-logs` (l'acteur venait du corps : entrée falsifia
 | GET | `/admin/compliance/flagged-for-review`, `/dashboard` | niveaux `HIGH`/`CRITICAL` | — |
 | GET | `/admin/compliance/:reportId/export?format=json\|pdf` | `pdf` : 501 | — |
 
+`run-checks` exécute 7 contrôles (pièces, cohérence, identité, infractions, comportement, doublons, fraude). Le contrôle « anomalie géographique » a été retiré : il ne testait aucune distance (le code était un `TODO` qui ne renvoyait jamais d'anomalie) et le schéma ne porte aucune géométrie de région (centre, rayon, polygone) pour mesurer l'éloignement d'une course. À rétablir si une telle donnée est ajoutée.
+
 ## `analytics` — `/api/zupdrive/analytics` (Équipe `courses-drive`, lecture seule)
 
 `GET /period`, `/drivers` (+`limit`), `/regions`, `/payments` : query `startDate`, `endDate` (ISO 8601, `fin ≥ début`, au plus 366 jours, sinon `400`).
 `GET /compare` : `period1Start/End`, `period2Start/End`, mêmes bornes. `GET /dashboard` : synthèse. Les réponses financières sont filtrées pour un rôle sans la permission `billing`.
+
+Aucune valeur n'est inventée : une statistique sans donnée vaut `null` (le frontend affiche « n'est pas disponible »), jamais `0` ni une constante.
+- `/drivers` → `avgResponseTime` (min) = moyenne de `accepteeLe − createdAt` des courses acceptées ; `null` sans course acceptée.
+- `/regions` → `avgWaitTime` (min) = moyenne de `arriveeLe − accepteeLe` ; `avgSurgeMultiplier` = moyenne de `CourseDrive.surgeFactor` (figé à la commande ; `null` pour les courses antérieures à son enregistrement, qui sont ignorées).
+- `/payments` → `failureReasons` = nombre d'échecs par code Stripe (`PaymentIntentDrive.failureReason`, posé par le webhook `payment_intent.payment_failed`) ; objet vide sans échec enregistré.
+- `/compare` → `courseGrowth` / `revenueGrowth` valent `null` quand la période de référence est vide.
 
 ## `finance` — `/api/zupdrive/finance`
 
@@ -259,6 +267,8 @@ Chauffeur : `GET /notifications?limit` (1-100), `POST /notifications/:id/read` (
 Rapports programmés : `POST /admin/scheduled` (`{ name, reportType, frequency, recipients[], format }` → 201, `ZUPDRIVE_CREATE_SCHEDULED_REPORT`), `GET /admin/scheduled`, `PATCH /admin/scheduled/:reportId` (404 inconnu, `ZUPDRIVE_UPDATE_SCHEDULED_REPORT`).
 Règle du rapport financier : `netProfit` = commissions des paiements confirmés − remboursements − frais (frais de paiement non enregistrés : 0). Les versements aux chauffeurs ne sont pas retirés (ils sont la part du prix hors commission).
 La génération et l'envoi automatiques des rapports programmés n'existent pas encore.
+Rapport de conformité : `suspensions.recent30Days` compte les chauffeurs suspendus depuis 30 jours d'après `ChauffeurDrive.suspendedAt` (posé à chaque suspension — équipe ou expiration d'une pièce — et effacé au rétablissement) ; `suspensions.sansDate` compte les suspendus sans date (suspensions antérieures au suivi), non inclus dans `recent30Days`.
+Support : `avgFirstResponseTime` (heures) = moyenne de « premier message `AGENT`/`ADMIN` − ouverture du ticket » ; `avgResolutionTime` et `avgFirstResponseTime` valent `null` sans donnée.
 
 ## Routeurs supprimés
 

@@ -6470,6 +6470,10 @@
     "colRegion": "Région",
     "colDrivers": "Chauffeurs",
     "colTrend": "Tendance",
+    "colWaitTime": "Attente moyenne",
+    "colSurge": "Majoration moyenne",
+    "notAvailable": "n'est pas disponible",
+    "minutes": "{value} min",
     "trendIncreasing": "↑ Croissante",
     "trendDecreasing": "↓ Décroissante",
     "trendStable": "→ Stable"

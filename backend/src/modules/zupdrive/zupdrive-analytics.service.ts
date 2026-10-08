@@ -26,7 +26,8 @@ export interface DriverPerformance {
   completionRate: number;
   avgEarnings: number;
   totalEarnings: number;
-  avgResponseTime: number; // minutes
+  /** Minutes entre la commande et l'acceptation ; null sans course acceptée sur la période. */
+  avgResponseTime: number | null;
   cancellationRate: number;
 }
 
@@ -34,9 +35,11 @@ export interface RegionalAnalytics {
   region: string;
   totalCourses: number;
   totalRevenue: number;
-  avgSurgeMultiplier: number;
+  /** Moyenne des majorations enregistrées ; null si aucune course de la période n'en porte. */
+  avgSurgeMultiplier: number | null;
   activeDrivers: number;
-  avgWaitTime: number; // minutes
+  /** Minutes entre l'acceptation et l'arrivée du chauffeur ; null sans course concernée. */
+  avgWaitTime: number | null;
   demandTrend: "INCREASING" | "STABLE" | "DECREASING";
 }
 
@@ -46,12 +49,44 @@ export interface PaymentAnalytics {
   successRate: number;
   totalAmount: number;
   avgAmount: number;
+  /** Nombre d'échecs par code Stripe ; vide s'il n'y a eu aucun échec enregistré. */
   failureReasons: Record<string, number>;
   topPaymentMethods: Array<{
     method: string;
     count: number;
     totalAmount: number;
   }>;
+}
+
+const MS_PAR_MINUTE = 60_000;
+
+/** Moyenne des valeurs ; null (et non 0) quand il n'y en a aucune. */
+export function moyenneOuNull(valeurs: number[]): number | null {
+  return valeurs.length > 0 ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length : null;
+}
+
+/** Durée moyenne en minutes entre deux instants connus ; les paires incomplètes ou négatives sont ignorées. */
+export function delaiMoyenMinutes(paires: Array<{ debut: Date | null; fin: Date | null }>): number | null {
+  const delais = paires.flatMap(({ debut, fin }) => {
+    if (!debut || !fin) return [];
+    const ms = fin.getTime() - debut.getTime();
+    return ms >= 0 ? [ms / MS_PAR_MINUTE] : [];
+  });
+  return moyenneOuNull(delais);
+}
+
+/** Échecs de paiement regroupés par code ; les paiements sans échec enregistré ne comptent pas. */
+export function compterParMotif(paiements: Array<{ failureReason: string | null }>): Record<string, number> {
+  const parMotif: Record<string, number> = {};
+  for (const { failureReason } of paiements) {
+    if (failureReason) parMotif[failureReason] = (parMotif[failureReason] ?? 0) + 1;
+  }
+  return parMotif;
+}
+
+/** Évolution en % ; null quand la période de référence est vide (division par zéro). */
+export function croissancePourcent(avant: number, apres: number): number | null {
+  return avant > 0 ? ((apres - avant) / avant) * 100 : null;
 }
 
 export class ZupDriveAnalyticsService {
@@ -125,6 +160,7 @@ export class ZupDriveAnalyticsService {
             statut: true,
             prixCentimes: true,
             createdAt: true,
+            accepteeLe: true,
             // Gain net du chauffeur (centimes), figé avec le paiement de la course.
             paymentIntent: { select: { status: true, driverEarningsCentimes: true } },
           },
@@ -158,7 +194,7 @@ export class ZupDriveAnalyticsService {
         completionRate: d.courses.length > 0 ? (completedCourses / d.courses.length) * 100 : 0,
         avgEarnings: d.courses.length > 0 ? totalEarnings / d.courses.length : 0,
         totalEarnings,
-        avgResponseTime: 5, // TODO: Calculate from real data
+        avgResponseTime: delaiMoyenMinutes(d.courses.map((c) => ({ debut: c.createdAt, fin: c.accepteeLe }))),
         cancellationRate: d.courses.length > 0 ? (cancelledCourses / d.courses.length) * 100 : 0,
       };
     });
@@ -181,6 +217,9 @@ export class ZupDriveAnalyticsService {
           select: {
             id: true,
             prixCentimes: true,
+            surgeFactor: true,
+            accepteeLe: true,
+            arriveeLe: true,
           },
         });
 
@@ -212,9 +251,9 @@ export class ZupDriveAnalyticsService {
           region,
           totalCourses: courses.length,
           totalRevenue,
-          avgSurgeMultiplier: 1.2, // TODO: Calculate from actual surge data
+          avgSurgeMultiplier: moyenneOuNull(courses.flatMap((c) => (c.surgeFactor === null ? [] : [c.surgeFactor]))),
           activeDrivers,
-          avgWaitTime: 8, // TODO: Calculate from real data
+          avgWaitTime: delaiMoyenMinutes(courses.map((c) => ({ debut: c.accepteeLe, fin: c.arriveeLe }))),
           demandTrend,
         };
       })
@@ -235,6 +274,7 @@ export class ZupDriveAnalyticsService {
         id: true,
         amountCentimes: true,
         status: true,
+        failureReason: true,
       },
     });
 
@@ -246,12 +286,7 @@ export class ZupDriveAnalyticsService {
       successRate: payments.length > 0 ? (successfulPayments.length / payments.length) * 100 : 0,
       totalAmount: payments.reduce((sum, p) => sum + p.amountCentimes, 0),
       avgAmount: payments.length > 0 ? payments.reduce((sum, p) => sum + p.amountCentimes, 0) / payments.length : 0,
-      failureReasons: {
-        // TODO: Track actual failure reasons in database
-        "Card declined": 5,
-        "Insufficient funds": 3,
-        "Expired card": 2,
-      },
+      failureReasons: compterParMotif(payments),
       topPaymentMethods: [
         { method: "Card", count: payments.length, totalAmount: payments.reduce((sum, p) => sum + p.amountCentimes, 0) },
       ],
@@ -271,8 +306,8 @@ export class ZupDriveAnalyticsService {
       period1,
       period2,
       comparison: {
-        courseGrowth: ((period2.totalCourses - period1.totalCourses) / period1.totalCourses) * 100,
-        revenueGrowth: ((period2.totalRevenue - period1.totalRevenue) / period1.totalRevenue) * 100,
+        courseGrowth: croissancePourcent(period1.totalCourses, period2.totalCourses),
+        revenueGrowth: croissancePourcent(period1.totalRevenue, period2.totalRevenue),
         ratingChange: period2.avgRating - period1.avgRating,
         successRateChange: period2.successRate - period1.successRate,
       },

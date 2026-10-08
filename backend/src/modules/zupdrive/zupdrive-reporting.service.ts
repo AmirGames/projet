@@ -69,7 +69,10 @@ export interface ComplianceReport {
   };
   suspensions: {
     active: number;
+    /** Suspensions décidées dans les 30 derniers jours (date suspendedAt). */
     recent30Days: number;
+    /** Chauffeurs suspendus sans date enregistrée (suspensions antérieures au suivi) : non comptés ci-dessus. */
+    sansDate: number;
   };
   riskMetrics: {
     riskScore: number;
@@ -307,6 +310,7 @@ export class ZupDriveReportingService {
         documents: { where: { archiveeLe: null }, select: { statut: true, dateExpiration: true } },
         infractions: { select: { type: true, severity: true } },
         statut: true,
+        suspendedAt: true,
       },
     });
 
@@ -345,7 +349,11 @@ export class ZupDriveReportingService {
     });
 
     // Suspensions
-    const suspended = drivers.filter((d) => d.statut === "SUSPENDU").length;
+    const suspendedDrivers = drivers.filter((d) => d.statut === "SUSPENDU");
+    const suspended = suspendedDrivers.length;
+    const since30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const recent30Days = suspendedDrivers.filter((d) => d.suspendedAt && d.suspendedAt >= since30Days).length;
+    const sansDate = suspendedDrivers.filter((d) => !d.suspendedAt).length;
     const lowRating = moyennes.filter((m) => m._avg.note !== null && m._avg.note < 4).length;
 
     // Risk score
@@ -380,7 +388,8 @@ export class ZupDriveReportingService {
       },
       suspensions: {
         active: suspended,
-        recent30Days: suspended, // TODO: track suspension date
+        recent30Days,
+        sansDate,
       },
       riskMetrics: {
         riskScore,

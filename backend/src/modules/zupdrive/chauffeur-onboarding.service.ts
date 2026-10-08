@@ -442,7 +442,13 @@ export class ChauffeurOnboardingService {
       dossier,
       ["VALIDE"],
       // Décidée par l'équipe : un simple dépôt ne la lèvera pas.
-      { statut: "SUSPENDU", motifStatut: this.motifExige(motif), suspenduPourExpirationLe: null, enLigne: false },
+      {
+        statut: "SUSPENDU",
+        motifStatut: this.motifExige(motif),
+        suspenduPourExpirationLe: null,
+        suspendedAt: new Date(),
+        enLigne: false,
+      },
       "Votre compte chauffeur ZupDrive est suspendu",
       motif.trim()
     );
@@ -454,7 +460,7 @@ export class ChauffeurOnboardingService {
     return this.changerStatut(
       dossier,
       ["SUSPENDU"],
-      { statut: "VALIDE", motifStatut: null, suspenduPourExpirationLe: null },
+      { statut: "VALIDE", motifStatut: null, suspenduPourExpirationLe: null, suspendedAt: null },
       "Votre compte chauffeur ZupDrive est rétabli",
       "Vous pouvez de nouveau exercer via ZupDrive."
     );
@@ -473,7 +479,7 @@ export class ChauffeurOnboardingService {
 
     const { count } = await db.chauffeurDrive.updateMany({
       where: { id: chauffeurId, statut: "SUSPENDU", suspenduPourExpirationLe: { not: null } },
-      data: { statut: "VALIDE", motifStatut: null, suspenduPourExpirationLe: null },
+      data: { statut: "VALIDE", motifStatut: null, suspenduPourExpirationLe: null, suspendedAt: null },
     });
     if (count !== 1) return false;
 

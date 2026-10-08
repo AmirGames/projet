@@ -207,7 +207,11 @@ export class ZupDrivePaymentService {
     if (!payment) return;
     await db.paymentIntentDrive.updateMany({
       where: { id: payment.id, status: { notIn: STATUTS_ENCAISSES } },
-      data: { status: intention.status.toUpperCase() },
+      data: {
+        status: intention.status.toUpperCase(),
+        // Le code Stripe (card_declined…) : stable, donc regroupable dans les statistiques.
+        failureReason: intention.last_payment_error?.code ?? intention.last_payment_error?.decline_code ?? "unknown",
+      },
     });
   }
 
