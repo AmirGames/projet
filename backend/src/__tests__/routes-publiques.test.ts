@@ -73,6 +73,7 @@ export const ROUTES_PUBLIQUES: Record<string, string> = {
   "GET /api/promotions/active/:storeId": VITRINE,
   "POST /api/promotions/validate": "aperçu d'une remise (le calcul de la commande reste serveur)",
   "GET /api/pages-legales/": "textes légaux",
+  "GET /api/pages-legales/acceptation/commande": "jeton facultatif : ne renseigne que sur l'appelant connecté et sur les versions publiques des textes",
   "GET /api/pages-legales/:slug": "textes légaux",
   "GET /api/client/stores": VITRINE,
   "GET /api/client/stores/nearby": VITRINE,

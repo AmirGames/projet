@@ -9,7 +9,7 @@ import { limiterCadence } from "../../middleware/throttle";
 import { commandeVisible, courseVisible, estLeClientDeLaCommande, type Appelant } from "./suivi-commande.service";
 import { logger } from "../../config/logger";
 import { emitOrderUpdate } from "../realtime/socket";
-import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
+import { acceptationAJour, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
 
 import { DispatchService } from "../drivers/dispatch.service";
 import { SurveillanceCoursesService } from "../drivers/surveillance-courses.service";
@@ -104,7 +104,9 @@ const createOrderSchema = z.object({
     )
     .min(1, "Le panier est vide")
     .max(100, "Trop d'articles dans le panier"),
-  ...champAcceptation,
+  // Cochée à la commande, ou omise lorsque le compte connecté a déjà accepté
+  // les versions en vigueur : le serveur le vérifie lui-même (voir la route).
+  conditionsAcceptees: z.boolean().optional(),
 });
 
 const updateOrderStatusSchema = z.object({
@@ -115,7 +117,13 @@ const updateOrderStatusSchema = z.object({
 // en a un, rattache la commande à la fiche du compte connecté.
 router.post("/", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { conditionsAcceptees: _accepte, ...body } = createOrderSchema.parse(req.body);
+    const { conditionsAcceptees: accepte, ...body } = createOrderSchema.parse(req.body);
+
+    // Pas de commande sans acceptation : la case cochée, ou une acceptation
+    // déjà enregistrée par ce compte pour les versions actuelles.
+    if (accepte !== true && !(await acceptationAJour(req.userId))) {
+      throw new ApiError(400, "Vous devez accepter les conditions pour continuer", "CONDITIONS_REQUIRED");
+    }
 
     logger.info("Creating order", { customerName: body.customerName, storeId: body.storeId });
 
@@ -133,7 +141,7 @@ router.post("/", authFacultative, async (req: Request, res: Response, next: Next
         acceptation: (tx, commande) =>
           enregistrerAcceptation(
             req,
-            { email: body.customerEmail, orderId: commande.id, documents: ["cgv", "confidentialite"] },
+            { email: body.customerEmail, orderId: commande.id, userId: req.userId, documents: ["cgv", "confidentialite"] },
             tx
           ),
       }
