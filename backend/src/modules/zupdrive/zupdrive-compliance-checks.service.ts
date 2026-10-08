@@ -29,7 +29,6 @@ type ComplianceCheckType =
   | "IDENTITY_VERIFICATION"  // Vérification identité
   | "INFRACTION_HISTORY"     // Historique infractions
   | "BEHAVIORAL_PATTERN"     // Pattern comportemental
-  | "GEOGRAPHIC_ANOMALY"     // Anomalie géographique
   | "DUPLICATE_DETECTION"    // Détection doublons
   | "FRAUD_INDICATORS";      // Indicateurs fraude
 
@@ -107,15 +106,13 @@ export const ZupDriveComplianceChecksService = {
     // 5. Patterns comportementaux
     checks.push(await this.checkBehavioralPatterns(chauffeur));
 
-    // 6. Anomalies géographiques
-    checks.push(
-      await this.checkGeographicAnomalies(chauffeur.region ?? undefined)
-    );
+    // Pas de contrôle géographique : aucune donnée de zone (centre, rayon) n'existe pour une région,
+    // donc aucune distance réelle ne peut être mesurée. Voir docs/zupdrive-api-admin.md.
 
-    // 7. Détection doublons
+    // 6. Détection doublons
     checks.push(await this.checkDuplicateDetection());
 
-    // 8. Indicateurs fraude
+    // 7. Indicateurs fraude
     checks.push(await this.checkFraudIndicators(chauffeur));
 
     // Calculer les scores
@@ -399,36 +396,6 @@ export const ZupDriveComplianceChecksService = {
   },
 
   /**
-   * Anomalies géographiques
-   */
-  async checkGeographicAnomalies(
-    region?: string
-  ): Promise<ComplianceCheckResult> {
-    // Vérifier que le région correspond
-    const issues: string[] = [];
-
-    if (!region) {
-      issues.push("No region specified");
-    }
-
-    // Vérifier qu'il n'y a pas de courses dans des régions très éloignées
-    // TODO: Implémenter la vérification de distance (aucune donnée de distance aux régions pour l'instant)
-    const farCourses: unknown[] = [];
-
-    const passed = issues.length === 0 && farCourses.length === 0;
-    return {
-      type: "GEOGRAPHIC_ANOMALY",
-      passed,
-      riskScore: passed ? 0 : 20,
-      severity: passed ? "LOW" : "MEDIUM",
-      message: passed
-        ? `Region ${region} is primary`
-        : `Geographic anomalies detected`,
-      evidence: { region, farCoursesCount: farCourses.length },
-    };
-  },
-
-  /**
    * Détection doublons
    */
   async checkDuplicateDetection(): Promise<ComplianceCheckResult> {
@@ -606,13 +573,10 @@ export const ZupDriveComplianceChecksService = {
  *    ✅ Taux de complétion bon?
  *    ✅ Pas trop d'annulations?
  *
- * 6️⃣ GEOGRAPHIC_ANOMALY
- *    ✅ Région cohérente?
- *
- * 7️⃣ DUPLICATE_DETECTION
+ * 6️⃣ DUPLICATE_DETECTION
  *    ✅ Pas de compte en doublon?
  *
- * 8️⃣ FRAUD_INDICATORS
+ * 7️⃣ FRAUD_INDICATORS
  *    ✅ Pas de signaux fraude?
  *
  * Résult: Score de risque 0-100 + niveau AUTO_DECISION

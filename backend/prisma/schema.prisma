@@ -3138,6 +3138,9 @@ model CourseDrive {
   dureeSecondes    Int
   /// Le prix annoncé au passager et figé à la commande, en centimes d'euro.
   prixCentimes     Int
+  /// Coefficient de majoration (demande/offre) appliqué au prix à la commande.
+  /// Nul pour les courses créées avant son enregistrement : inconnu, pas 1.
+  surgeFactor      Float?
   devise           String   @default("EUR")
   /// Le tarif appliqué, recopié : le prix reste explicable même si le tarif change.
   tarifApplique    Json
@@ -3330,6 +3333,9 @@ model PaymentIntentDrive {
   status         String   @default("REQUIRES_PAYMENT_METHOD")
   /// Le motif d'annulation, le cas échéant.
   cancellationReason String?
+  /// Code de l'échec rapporté par Stripe (payment_intent.payment_failed),
+  /// p. ex. card_declined. Nul tant qu'aucun échec n'a été enregistré.
+  failureReason String?
 
   // Revenus figés à l'acceptation (avant charge Stripe, mais connus)
   /// Commission plateforme en centimes.

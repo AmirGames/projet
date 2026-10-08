@@ -43,8 +43,10 @@ export interface SupportMessage {
 export interface SupportMetrics {
   totalTickets: number;
   openTickets: number;
-  avgResolutionTime: number; // heures
-  avgFirstResponseTime: number; // heures
+  /** Heures ; null sans ticket résolu. */
+  avgResolutionTime: number | null;
+  /** Heures jusqu'à la première réponse d'un agent ; null sans ticket répondu. */
+  avgFirstResponseTime: number | null;
   resolutionRate: number; // %
   satisfactionScore?: number; // 1-5
 }
@@ -306,6 +308,27 @@ export class ZupDriveSupportService {
   }
 
   /**
+   * Délai moyen (heures) entre l'ouverture d'un ticket et le premier message d'un agent.
+   * Les tickets sans réponse d'agent sont ignorés ; null s'il n'y en a aucun.
+   */
+  static async delaiPremiereReponseHeures(tickets: Array<{ id: string; createdAt: Date }>): Promise<number | null> {
+    if (tickets.length === 0) return null;
+    const premiers = await db.supportMessage.groupBy({
+      by: ["ticketId"],
+      where: { ticketId: { in: tickets.map((t) => t.id) }, authorType: { in: ["AGENT", "ADMIN"] } },
+      _min: { createdAt: true },
+    });
+    const ouverture = new Map(tickets.map((t) => [t.id, t.createdAt]));
+    const delais = premiers.flatMap((p) => {
+      const debut = ouverture.get(p.ticketId);
+      const reponse = p._min.createdAt;
+      if (!debut || !reponse) return [];
+      return [Math.max(0, reponse.getTime() - debut.getTime()) / (1000 * 60 * 60)];
+    });
+    return delais.length > 0 ? delais.reduce((a, b) => a + b, 0) / delais.length : null;
+  }
+
+  /**
    * Récupérer les métriques de support.
    */
   static async getSupportMetrics(): Promise<SupportMetrics> {
@@ -325,10 +348,9 @@ export class ZupDriveSupportService {
     const resolutionTimes = resolvedTickets
       .filter((t) => t.resolvedAt)
       .map((t) => (t.resolvedAt!.getTime() - t.createdAt.getTime()) / (1000 * 60 * 60)); // en heures
-    const avgResolutionTime = resolutionTimes.length > 0 ? resolutionTimes.reduce((a, b) => a + b) / resolutionTimes.length : 0;
+    const avgResolutionTime = resolutionTimes.length > 0 ? resolutionTimes.reduce((a, b) => a + b) / resolutionTimes.length : null;
 
-    // TODO: Calculer firstResponseTime depuis les messages
-    const avgFirstResponseTime = 2; // placeholder
+    const avgFirstResponseTime = await this.delaiPremiereReponseHeures(allTickets);
 
     return {
       totalTickets: allTickets.length,

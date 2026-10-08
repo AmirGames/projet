@@ -6470,6 +6470,10 @@
     "colRegion": "Region",
     "colDrivers": "Drivers",
     "colTrend": "Trend",
+    "colWaitTime": "Average wait",
+    "colSurge": "Average surge",
+    "notAvailable": "not available",
+    "minutes": "{value} min",
     "trendIncreasing": "↑ Increasing",
     "trendDecreasing": "↓ Decreasing",
     "trendStable": "→ Stable"

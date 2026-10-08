@@ -176,12 +176,20 @@ describe("webhook Stripe d'un paiement ZupDrive", () => {
     expect(db.paymentIntentDrive.updateMany).not.toHaveBeenCalled();
   });
 
+  it("enregistre le code d'échec rapporté par Stripe", async () => {
+    db.paymentIntentDrive.findUnique.mockResolvedValue(paiement({ status: "REQUIRES_PAYMENT_METHOD" }));
+    await ZupDrivePaymentService.marquerEchec(
+      intention({ status: "requires_payment_method", last_payment_error: { code: "card_declined", decline_code: "insufficient_funds" } }) as any
+    );
+    expect(db.paymentIntentDrive.updateMany.mock.calls[0][0].data).toEqual({ status: "REQUIRES_PAYMENT_METHOD", failureReason: "card_declined" });
+  });
+
   it("un échec ou une annulation en retard ne défait jamais un paiement réglé ni remboursé", async () => {
     db.paymentIntentDrive.findUnique.mockResolvedValue(paiement({ status: "REFUNDED" }));
     await ZupDrivePaymentService.marquerEchec(intention({ status: "requires_payment_method" }) as any);
     await ZupDrivePaymentService.marquerAnnule(intention({ status: "canceled", cancellation_reason: "abandoned" }) as any);
     const [echec, annulation] = db.paymentIntentDrive.updateMany.mock.calls.map(([a]: any[]) => a);
-    expect(echec).toEqual({ where: { id: "pay-1", status: { notIn: ENCAISSES } }, data: { status: "REQUIRES_PAYMENT_METHOD" } });
+    expect(echec).toEqual({ where: { id: "pay-1", status: { notIn: ENCAISSES } }, data: { status: "REQUIRES_PAYMENT_METHOD", failureReason: "unknown" } });
     expect(annulation).toEqual({ where: { id: "pay-1", status: { notIn: ENCAISSES } }, data: { status: "CANCELED", cancellationReason: "abandoned" } });
   });
 });
