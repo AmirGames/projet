@@ -77,6 +77,8 @@ jest.mock("../auth.middleware", () => ({
 }));
 
 import authRouter from "../auth.routes";
+import authInscriptionsRouter from "../auth.inscriptions.routes";
+import authMotDePasseRouter from "../auth.motdepasse.routes";
 import { errorHandler } from "../../../middleware/errorHandler";
 import { AuthService } from "../auth.service";
 import { UserService } from "../user.service";
@@ -89,6 +91,8 @@ import { SsoService } from "../sso.service";
 const app = express();
 app.use(express.json());
 app.use("/api/auth", authRouter);
+app.use("/api/auth", authInscriptionsRouter);
+app.use("/api/auth", authMotDePasseRouter);
 app.use(errorHandler);
 
 const alice = (r: request.Test) => r.set("Authorization", "Bearer alice");

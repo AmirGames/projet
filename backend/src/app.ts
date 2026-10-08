@@ -19,6 +19,8 @@ import { limiterCadence, limiterStripeWebhook, limiterApiPublique, limiterAdress
 import { Surveillance } from "./modules/monitoring/surveillance.service";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import authRouter from "./modules/auth/auth.routes";
+import authInscriptionsRouter from "./modules/auth/auth.inscriptions.routes";
+import authMotDePasseRouter from "./modules/auth/auth.motdepasse.routes";
 import filesRouter from "./modules/files/files.routes";
 import ssoRouter from "./modules/auth/sso.routes";
 import organizationRouter from "./modules/merchants/organization.routes";
@@ -247,7 +249,10 @@ export function createApp(): Express {
   app.use("/api", limiterApiPublique);
 
   // ===== API Routes =====
+  // Un seul préfixe, trois routeurs par sujet : leurs chemins ne se recoupent pas.
   app.use("/api/auth", authRouter);
+  app.use("/api/auth", authInscriptionsRouter);
+  app.use("/api/auth", authMotDePasseRouter);
   app.use("/api/privacy", privacyRouter);
   app.use("/api/files", filesRouter);
   app.use("/api/sso", ssoRouter);
