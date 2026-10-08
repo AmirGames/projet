@@ -142,6 +142,36 @@ export async function lireClePubliqueStripe(): Promise<string | null> {
   return res.data.enLigne ? res.data.publishableKey : null;
 }
 
+export type TypeAdresseFavorite = 'DOMICILE' | 'TRAVAIL';
+
+export interface AdresseFavorite extends AdresseTrajet {
+  type: TypeAdresseFavorite;
+}
+
+/** Mes adresses « Domicile » et « Travail » (celles du compte connecté seulement). */
+export async function mesAdressesFavorites(token: string): Promise<AdresseFavorite[]> {
+  const res = await apiFetch<Enveloppe<AdresseFavorite[]>>('/api/zupdrive/adresses', token);
+  return res.data;
+}
+
+/** Enregistre ou remplace l'adresse du type. */
+export async function enregistrerAdresseFavorite(token: string, type: TypeAdresseFavorite, adresse: AdresseTrajet): Promise<AdresseFavorite> {
+  const res = await apiFetch<Enveloppe<AdresseFavorite>>(`/api/zupdrive/adresses/${type}`, token, {
+    method: 'PUT',
+    body: {
+      adresse: adresse.adresse,
+      latitude: adresse.latitude,
+      longitude: adresse.longitude,
+      codePostal: adresse.codePostal,
+    },
+  });
+  return res.data;
+}
+
+export async function supprimerAdresseFavorite(token: string, type: TypeAdresseFavorite): Promise<void> {
+  await apiFetch(`/api/zupdrive/adresses/${type}`, token, { method: 'DELETE' });
+}
+
 /** Une clé d'idempotence (8 à 64 caractères alphanumériques) pour un devis. */
 export function cleAleatoire(): string {
   const caracteres = 'abcdefghijklmnopqrstuvwxyz0123456789';

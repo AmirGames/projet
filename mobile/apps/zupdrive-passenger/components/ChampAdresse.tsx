@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { adresseTrajet, rechercherAdresses, type SuggestionAdresse } from '../lib/adresses';
-import type { AdresseTrajet } from '../lib/courses';
+import type { AdresseFavorite, AdresseTrajet, TypeAdresseFavorite } from '../lib/courses';
 import { COLORS } from './ui';
 
 /**
@@ -15,12 +15,18 @@ export default function ChampAdresse({
   choisie,
   onChoisir,
   desactive,
+  favorites = [],
+  onEnregistrer,
 }: {
   libelle: string;
   placeholder: string;
   choisie: AdresseTrajet | null;
   onChoisir: (adresse: AdresseTrajet | null) => void;
   desactive?: boolean;
+  /** Les adresses « Domicile » et « Travail » déjà enregistrées : un geste pour les choisir. */
+  favorites?: AdresseFavorite[];
+  /** Retient l'adresse choisie comme Domicile ou Travail. */
+  onEnregistrer?: (type: TypeAdresseFavorite, adresse: AdresseTrajet) => void;
 }) {
   const [saisie, setSaisie] = useState('');
   const [suggestions, setSuggestions] = useState<SuggestionAdresse[]>([]);
@@ -52,6 +58,11 @@ export default function ChampAdresse({
     };
   }, [saisie, choisie]);
 
+  // Une adresse choisie hors du champ (raccourci Domicile/Travail) s'affiche dans le champ.
+  useEffect(() => {
+    if (choisie) setSaisie(choisie.adresse);
+  }, [choisie]);
+
   const modifier = (texte: string) => {
     setRefus(false);
     setSaisie(texte);
@@ -82,6 +93,34 @@ export default function ChampAdresse({
         style={[styles.champ, choisie && styles.champChoisi]}
         accessibilityLabel={libelle}
       />
+      {!choisie && favorites.length > 0 ? (
+        <View style={styles.raccourcis}>
+          {favorites.map((f) => (
+            <TouchableOpacity
+              key={f.type}
+              style={styles.raccourci}
+              onPress={() => onChoisir({ adresse: f.adresse, latitude: f.latitude, longitude: f.longitude, codePostal: f.codePostal })}
+              disabled={desactive}
+            >
+              <Text style={styles.raccourciTexte}>{f.type === 'DOMICILE' ? '🏠 Domicile' : '💼 Travail'}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
+      {choisie && onEnregistrer ? (
+        <View style={styles.raccourcis}>
+          {(['DOMICILE', 'TRAVAIL'] as const).map((type) => {
+            const deja = favorites.find((f) => f.type === type);
+            const identique = !!deja && deja.latitude === choisie.latitude && deja.longitude === choisie.longitude;
+            if (identique) return null;
+            return (
+              <TouchableOpacity key={type} onPress={() => onEnregistrer(type, choisie)} disabled={desactive}>
+                <Text style={styles.enregistrer}>Enregistrer comme {type === 'DOMICILE' ? 'domicile' : 'travail'}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ) : null}
       {recherche ? <ActivityIndicator color={COLORS.primary} style={styles.attente} /> : null}
       {refus ? (
         <Text style={styles.refus}>
@@ -110,6 +149,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   champChoisi: { borderColor: COLORS.primary, backgroundColor: COLORS.primarySoft },
+  raccourcis: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  raccourci: { backgroundColor: COLORS.primarySoft, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
+  raccourciTexte: { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
+  enregistrer: { color: COLORS.primary, fontSize: 12, textDecorationLine: 'underline' },
   attente: { marginTop: 6 },
   refus: { color: COLORS.danger, fontSize: 13, marginTop: 6 },
   suggestion: {

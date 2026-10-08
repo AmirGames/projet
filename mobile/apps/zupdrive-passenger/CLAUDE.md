@@ -21,6 +21,7 @@ Application **Expo/React Native** pour passagers ZupDrive.
 - **Suivi** : la relecture s'arrête quand le trajet n'est plus actif, que l'écran perd le focus ou que l'app passe en arrière-plan. Une coupure réseau garde le trajet affiché ; une 401 est gérée par `apiFetch` (renouvellement), la déconnexion n'a lieu que si le serveur refuse le renouvellement.
 - **Paiement** : « payé » seulement si `paiement.statut === 'SUCCEEDED'` (webhook). Remboursement et « remboursé » affichés pour une course `ANNULEE`/`SANS_CHAUFFEUR` payée. Le formulaire de carte (`components/PaiementCarte.tsx`, natif ; `.web.tsx` sur le web) apparaît quand `etatPaiementTrajet` vaut `a_payer` : `POST /api/zupdrive/payment/intent { courseId }` (jamais le montant) puis `confirmPayment`. Carte acceptée = « Paiement envoyé, confirmation en cours… », jamais « payé ». La clé publique Stripe vient du serveur (`GET /api/payments/config`, comme l'app client et le site) : aucune variable `EXPO_PUBLIC_…` ni clé en dur.
 - **Tests** : `npm test` (Jest + ts-jest, fonctions pures de `lib/*.test.ts`, ex. `paiement.test.ts`).
+- **Adresses favorites** : raccourcis « Domicile / Travail » dans `ChampAdresse`, « Enregistrer comme… » après le choix d'une adresse.
 - Couleur : bleu ZupDrive (`COLORS.primary`), thème clair.
 - Pas de notifications push pour l'instant : `POST /api/push-devices` n'accepte que `app` = `merchant`, `delivery`, `customer` (voir `registerForPush` dans `lib/push.ts`, non branché).
 - Sur le web (`npm run web`), `expo-secure-store` n'existe pas : la session n'y survit pas à un rechargement. Sur téléphone, elle est conservée.
@@ -44,6 +45,8 @@ GET  /courses                 — mes trajets
 GET  /courses/:id             — un trajet, son chauffeur et son paiement
 POST /courses/:id/annuler     — tant que le passager n'est pas à bord
 POST /courses/:id/note        — noter son chauffeur (course terminée)
+GET  /adresses                — mes adresses Domicile / Travail
+PUT  /adresses/:type          — enregistrer (DOMICILE | TRAVAIL), DELETE pour retirer
 POST /payment/intent          — { courseId } seulement, jamais le montant
 ```
 

@@ -8,14 +8,18 @@ import {
   cleAleatoire,
   commanderTrajet,
   demanderDevis,
+  enregistrerAdresseFavorite,
   kilometres,
+  mesAdressesFavorites,
   mesTrajets,
   minutes,
   prix,
   STATUTS_ACTIFS,
+  type AdresseFavorite,
   type AdresseTrajet,
   type Devis,
   type ResumeTrajet,
+  type TypeAdresseFavorite,
 } from '../../lib/courses';
 
 /**
@@ -34,6 +38,7 @@ export default function Commander() {
   const [envoi, setEnvoi] = useState<'devis' | 'commande' | null>(null);
   const [erreur, setErreur] = useState('');
   const [info, setInfo] = useState('');
+  const [favorites, setFavorites] = useState<AdresseFavorite[]>([]);
   const [enCours, setEnCours] = useState<ResumeTrajet | null>(null);
   // Remonte les champs d'adresse pour les vider après une commande.
   const [formulaire, setFormulaire] = useState(0);
@@ -43,6 +48,13 @@ export default function Commander() {
   useFocusEffect(
     useCallback(() => {
       let vivant = true;
+      mesAdressesFavorites(token)
+        .then((liste) => {
+          if (vivant) setFavorites(liste);
+        })
+        .catch(() => {
+          // Un raccourci en moins n'empêche pas de commander.
+        });
       mesTrajets(token)
         .then((liste) => {
           if (vivant) setEnCours(liste.find((t) => STATUTS_ACTIFS.includes(t.statut)) ?? null);
@@ -93,6 +105,16 @@ export default function Commander() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [depart, arrivee]);
 
+  const enregistrerFavorite = async (type: TypeAdresseFavorite, adresse: AdresseTrajet) => {
+    try {
+      const enregistree = await enregistrerAdresseFavorite(token, type, adresse);
+      setFavorites((liste) => [...liste.filter((f) => f.type !== type), enregistree]);
+      setInfo(type === 'DOMICILE' ? 'Adresse enregistrée comme domicile.' : 'Adresse enregistrée comme travail.');
+    } catch (e) {
+      setErreur(messageErreur(e));
+    }
+  };
+
   const commander = async () => {
     if (!depart || !arrivee || !devis || commandeEnVol.current) return;
     commandeEnVol.current = true;
@@ -136,8 +158,8 @@ export default function Commander() {
 
         <Text style={styles.intro}>Indiquez votre départ et votre destination : le prix est fixé avant de commander.</Text>
 
-        <ChampAdresse key={`d${formulaire}`} libelle="Départ" placeholder="Adresse de départ" choisie={depart} onChoisir={setDepart} desactive={envoi === 'commande'} />
-        <ChampAdresse key={`a${formulaire}`} libelle="Destination" placeholder="Adresse d'arrivée" choisie={arrivee} onChoisir={setArrivee} desactive={envoi === 'commande'} />
+        <ChampAdresse key={`d${formulaire}`} libelle="Départ" placeholder="Adresse de départ" choisie={depart} onChoisir={setDepart} desactive={envoi === 'commande'} favorites={favorites} onEnregistrer={enregistrerFavorite} />
+        <ChampAdresse key={`a${formulaire}`} libelle="Destination" placeholder="Adresse d'arrivée" choisie={arrivee} onChoisir={setArrivee} desactive={envoi === 'commande'} favorites={favorites} onEnregistrer={enregistrerFavorite} />
 
         {envoi === 'devis' ? (
           <View style={styles.calcul}>
