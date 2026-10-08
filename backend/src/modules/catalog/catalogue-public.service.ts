@@ -19,6 +19,7 @@ export const produitPublic = {
 export const champsProduitPublic = {
   id: true, storeId: true, name: true, description: true, price: true,
   categoryId: true, isAvailable: true, displayOrder: true, variantLabel: true,
+  allergens: true, allergensDeclared: true, containsAlcohol: true,
   category: { select: { id: true, storeId: true, name: true, displayOrder: true, sortMode: true } },
   images: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
   media: { select: { id: true, url: true, alt: true, type: true, displayOrder: true }, orderBy: { displayOrder: "asc" } },

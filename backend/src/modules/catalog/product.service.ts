@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Allergen, Prisma } from "@prisma/client";
 import { exigerBoutique, type Acteur } from "../auth/autorisation-boutique";
 import { validerOrdre, exigerLotComplet } from "./reordonnancement";
 import { db } from "../../services/db";
@@ -14,6 +14,9 @@ export interface ProductData {
   categoryId?: string | null;
   stock?: number;
   status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+  /** Défini (même vide) = le commerçant a déclaré ses allergènes. */
+  allergens?: Allergen[];
+  containsAlcohol?: boolean;
 }
 
 export class ProductService {
@@ -32,6 +35,8 @@ export class ProductService {
           categoryId: data.categoryId,
           stock: data.stock || 0,
           status: data.status || "ACTIVE",
+          ...(data.allergens !== undefined && { allergens: data.allergens, allergensDeclared: true }),
+          ...(data.containsAlcohol !== undefined && { containsAlcohol: data.containsAlcohol }),
           // Était accepté puis ignoré : le produit restait toujours disponible.
           ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
         },
@@ -123,6 +128,8 @@ export class ProductService {
           ...(data.price && { price: data.price }),
           ...(data.stock !== undefined && { stock: data.stock }),
           ...(data.status && { status: data.status }),
+          ...(data.allergens !== undefined && { allergens: data.allergens, allergensDeclared: true }),
+          ...(data.containsAlcohol !== undefined && { containsAlcohol: data.containsAlcohol }),
           ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
           // Ces deux champs étaient ignorés : modifier la référence ou la
           // disponibilité d'un produit restait sans effet.

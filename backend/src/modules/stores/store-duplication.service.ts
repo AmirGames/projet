@@ -146,6 +146,9 @@ export class StoreDuplicationService {
                 displayOrder: p.displayOrder,
                 status: p.status,
                 variantLabel: p.variantLabel,
+                allergens: p.allergens,
+                allergensDeclared: p.allergensDeclared,
+                containsAlcohol: p.containsAlcohol,
               },
             });
             produits.set(p.id, copie.id);

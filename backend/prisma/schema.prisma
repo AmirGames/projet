@@ -827,6 +827,24 @@ enum ProductStatus {
   ARCHIVED
 }
 
+/// Les 14 allergènes à déclaration obligatoire (règlement (UE) 1169/2011, annexe II).
+enum Allergen {
+  GLUTEN
+  CRUSTACEANS
+  EGGS
+  FISH
+  PEANUTS
+  SOYBEANS
+  MILK
+  NUTS
+  CELERY
+  MUSTARD
+  SESAME
+  SULPHITES
+  LUPIN
+  MOLLUSCS
+}
+
 model Product {
   id          String        @id @default(cuid())
   storeId     String
@@ -846,6 +864,13 @@ model Product {
   // La question posée au client quand le plat se décline : « Type de pâtes »,
   // « Taille ». Vide, le plat n'a qu'une forme.
   variantLabel String?
+
+  // Allergènes : `allergensDeclared` distingue « aucun allergène » (true, liste
+  // vide) de « le commerçant n'a rien renseigné » (false).
+  allergens         Allergen[] @default([])
+  allergensDeclared Boolean    @default(false)
+  // Produit contenant de l'alcool : vente interdite aux mineurs.
+  containsAlcohol   Boolean    @default(false)
 
   // Soft delete
   deletedAt   DateTime?

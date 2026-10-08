@@ -12,6 +12,18 @@ import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
 
+const ALLERGENES = [
+  "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK",
+  "NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS",
+] as const;
+
+/** Le commerçant déclare les allergènes (liste vide = « aucun ») et l'alcool. */
+const champsReglementaires = {
+  allergens: z.array(z.enum(ALLERGENES)).max(ALLERGENES.length).optional()
+    .transform((a) => (a ? [...new Set(a)] : a)),
+  containsAlcohol: z.boolean().optional(),
+};
+
 const createProductSchema = z.object({
   storeId: z.string().min(1, "storeId requis"),
   sku: z.string().trim().optional().transform((v) => v || undefined),
@@ -22,6 +34,7 @@ const createProductSchema = z.object({
   stock: z.number().int().min(0, "Stock minimum 0").optional(),
   isAvailable: z.boolean().optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
+  ...champsReglementaires,
 });
 
 const updateProductSchema = z.object({
@@ -33,6 +46,7 @@ const updateProductSchema = z.object({
   stock: z.number().int().min(0).optional(),
   isAvailable: z.boolean().optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
+  ...champsReglementaires,
 });
 
 // POST /products - Create product (protected)
