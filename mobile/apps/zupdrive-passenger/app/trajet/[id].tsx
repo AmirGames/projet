@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import ChatCourse from '../../components/ChatCourse';
 import LiveMap from '../../components/LiveMap';
 import BoutonSos from '../../components/BoutonSos';
 import PaiementCarte from '../../components/PaiementCarte';
@@ -213,6 +214,7 @@ export default function SuiviTrajet() {
         <Row label="Prix" value={prix(trajet.prixCentimes)} last />
       </Card>
 
+      {STATUTS_SOS.includes(trajet.statut) ? <ChatCourse token={token} courseId={trajet.id} prenom={chauffeur?.prenom ?? null} /> : null}
       {STATUTS_SOS.includes(trajet.statut) ? <BoutonSos token={token} courseId={trajet.id} /> : null}
 
       {trajet.peutNoter ? (

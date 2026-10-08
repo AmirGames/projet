@@ -23,6 +23,7 @@ Application **Expo/React Native** pour passagers ZupDrive.
 - **Tests** : `npm test` (Jest + ts-jest, fonctions pures de `lib/*.test.ts`, ex. `paiement.test.ts`).
 - **Adresses favorites** : raccourcis « Domicile / Travail » dans `ChampAdresse`, « Enregistrer comme… » après le choix d'une adresse.
 - **SOS** (`components/BoutonSos.tsx`) : visible pendant `ACCEPTEE`/`ARRIVEE`/`EN_COURS` ; numéros 17 et 112 d'abord, puis « Alerter ZupDrive » (confirmation, position du téléphone si autorisée). Le texte dit ce que le **serveur** a réellement envoyé (`equipePrevenueLe`, `contactPrevenuLe`) et ne promet aucune intervention. Personne de confiance : carte du profil, avec case de consentement.
+- **Chat** (`components/ChatCourse.tsx`, `lib/messages.ts` pure et testée) : pendant `ACCEPTEE`/`ARRIVEE`/`EN_COURS`, relu toutes les 4 s comme le suivi (écran affiché, app au premier plan). Un message n'apparaît qu'après l'accord du serveur ; une clé d'idempotence par message rend le même message si l'envoi est rejoué.
 - Couleur : bleu ZupDrive (`COLORS.primary`), thème clair.
 - Pas de notifications push pour l'instant : `POST /api/push-devices` n'accepte que `app` = `merchant`, `delivery`, `customer` (voir `registerForPush` dans `lib/push.ts`, non branché).
 - Sur le web (`npm run web`), `expo-secure-store` n'existe pas : la session n'y survit pas à un rechargement. Sur téléphone, elle est conservée.
@@ -50,6 +51,7 @@ GET  /adresses                — mes adresses Domicile / Travail
 PUT  /adresses/:type          — enregistrer (DOMICILE | TRAVAIL), DELETE pour retirer
 POST /sos                     — alerte SOS d'un trajet en cours ({ courseId, latitude?, longitude? })
 GET|PUT|DELETE /sos/contact   — personne de confiance (PUT : consentement: true)
+GET|POST /courses/:id/messages — chat avec le chauffeur ({ texte, cleIdempotence }, relecture ?depuis=)
 POST /payment/intent          — { courseId } seulement, jamais le montant
 ```
 
