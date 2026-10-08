@@ -61,6 +61,8 @@
   "superowner": {
     "loading": "Chargement...",
     "brand": "SuperOwner",
+    "themeClair": "Passer au thème clair",
+    "themeSombre": "Passer au thème sombre",
     "headerTitle": "SuperOwner - Gestion Complète",
     "logout": "Déconnexion",
     "nav": {
