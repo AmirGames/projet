@@ -50,6 +50,7 @@ import adminRouter from "./modules/admin/admin.routes";
 import superOwnerRouter from "./modules/superowner/superowner.routes";
 import pagesLegalesRouter from "./modules/legal/pages-legales.routes";
 import clientRouter from "./modules/customers/client.routes";
+import clientCompteRouter from "./modules/customers/client.compte.routes";
 import mapsRouter from "./modules/maps/maps.routes";
 import driversRouter from "./modules/drivers/drivers.routes";
 import driversDossierRouter from "./modules/drivers/drivers.dossier.routes";
@@ -288,7 +289,9 @@ export function createApp(): Express {
   app.use("/api/admin", adminRouter);
   app.use("/api/superowner", superOwnerRouter);
   app.use("/api/pages-legales", pagesLegalesRouter);
+  // Un seul préfixe, deux routeurs (vitrine publique, espace du client connecté) : chemins disjoints.
   app.use("/api/client", clientRouter);
+  app.use("/api/client", clientCompteRouter);
   app.use("/api/maps", limiterCartes, mapsRouter);
   // Un seul préfixe, quatre routeurs par sujet : leurs chemins ne se recoupent pas.
   app.use("/api/drivers", driversRouter);

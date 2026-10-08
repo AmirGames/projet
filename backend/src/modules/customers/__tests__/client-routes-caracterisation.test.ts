@@ -87,6 +87,7 @@ jest.mock("../../drivers/driver-rating.service", () => ({
 }));
 
 import clientVitrineRouter from "../client.routes";
+import clientCompteRouter from "../client.compte.routes";
 import { DeliveryZoneService } from "../../delivery/delivery-zone.service";
 import { StoreHoursService } from "../../delivery/store-hours.service";
 import { CustomerAccountService } from "../customer-account.service";
@@ -97,6 +98,7 @@ import { errorHandler } from "../../../middleware/errorHandler";
 const app = express();
 app.use(express.json());
 app.use("/api/client", clientVitrineRouter);
+app.use("/api/client", clientCompteRouter);
 app.use(errorHandler);
 
 const alice = (r: request.Test) => r.set("Authorization", "Bearer alice");

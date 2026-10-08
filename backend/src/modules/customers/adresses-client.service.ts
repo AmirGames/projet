@@ -10,7 +10,7 @@ interface ProfilAdresse {
   savedAddresses?: unknown;
 }
 
-interface Adresse {
+export interface Adresse {
   id?: string;
   kind?: "HOME" | "WORK" | "OTHER";
   name?: string;
