@@ -7,7 +7,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { ZupDriveComplianceChecksService } from "./zupdrive-compliance-checks.service";
 import { z } from "zod";
-import { db } from "../../services/db";
+import { ZupDriveComplianceLectureService } from "./zupdrive-compliance-lecture.service";
 import { journaliser } from "../superowner/shared";
 import { adminAuthSection } from "./zupdrive-garde";
 
@@ -69,10 +69,7 @@ router.get(
     try {
       const chauffeurId = idSchema.parse(req.params.chauffeurId);
 
-      const report = await db.complianceReportDrive.findFirst({
-        where: { chauffeurId },
-        orderBy: { createdAt: "desc" },
-      });
+      const report = await ZupDriveComplianceLectureService.dernierRapport(chauffeurId);
 
       if (!report) {
         return res.status(404).json({ error: "No compliance report found" });
@@ -125,25 +122,7 @@ router.get(
   ...adminAuth,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const flagged = await db.complianceReportDrive.findMany({
-        where: { riskLevel: { in: ["HIGH", "CRITICAL"] } },
-        // Score de conformité le plus bas d'abord : le risque le plus élevé en tête.
-        orderBy: { complianceScore: "asc" },
-        take: 50,
-        select: {
-          id: true,
-          chauffeurId: true,
-          complianceScore: true,
-          riskLevel: true,
-          createdAt: true,
-          chauffeur: {
-            select: {
-              nomComplet: true,
-              user: { select: { email: true } },
-            },
-          },
-        },
-      });
+      const flagged = await ZupDriveComplianceLectureService.dossiersSignales();
 
       return res.json({
         success: true,
@@ -165,44 +144,9 @@ router.get(
   ...adminAuth,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const [total, critical, high, medium, low, flagged, recent] = await Promise.all([
-        db.complianceReportDrive.count(),
-        db.complianceReportDrive.count({ where: { riskLevel: "CRITICAL" } }),
-        db.complianceReportDrive.count({ where: { riskLevel: "HIGH" } }),
-        db.complianceReportDrive.count({ where: { riskLevel: "MEDIUM" } }),
-        db.complianceReportDrive.count({ where: { riskLevel: "LOW" } }),
-        db.complianceReportDrive.count({ where: { riskLevel: { in: ["HIGH", "CRITICAL"] } } }),
-        db.complianceReportDrive.findMany({
-          orderBy: { createdAt: "desc" },
-          take: 5,
-          select: {
-            id: true,
-            chauffeurId: true,
-            complianceScore: true,
-            riskLevel: true,
-            createdAt: true,
-          },
-        }),
-      ]);
-
-      const avgRiskScore = await db.complianceReportDrive.aggregate({
-        _avg: { complianceScore: true },
-      });
-
       return res.json({
         success: true,
-        dashboard: {
-          totalReports: total,
-          riskDistribution: {
-            critical,
-            high,
-            medium,
-            low,
-          },
-          flaggedForReview: flagged,
-          averageRiskScore: avgRiskScore._avg.complianceScore === null ? 0 : 100 - Math.round(avgRiskScore._avg.complianceScore),
-          recentReports: recent,
-        },
+        dashboard: await ZupDriveComplianceLectureService.tableauDeBord(),
       });
     } catch (error) {
       return next(error);
@@ -222,18 +166,7 @@ router.get(
       const reportId = idSchema.parse(req.params.reportId);
       const { format } = exportQuery.parse(req.query);
 
-      const report = await db.complianceReportDrive.findUnique({
-        where: { id: reportId },
-        include: {
-          chauffeur: {
-            select: {
-              nomComplet: true,
-              region: true,
-              user: { select: { email: true } },
-            },
-          },
-        },
-      });
+      const report = await ZupDriveComplianceLectureService.rapportPourExport(reportId);
 
       if (!report) {
         return res.status(404).json({ error: "Report not found" });
