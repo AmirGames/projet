@@ -22,6 +22,7 @@ Application **Expo/React Native** pour passagers ZupDrive.
 - **Paiement** : « payé » seulement si `paiement.statut === 'SUCCEEDED'` (webhook). Remboursement et « remboursé » affichés pour une course `ANNULEE`/`SANS_CHAUFFEUR` payée. Le formulaire de carte (`components/PaiementCarte.tsx`, natif ; `.web.tsx` sur le web) apparaît quand `etatPaiementTrajet` vaut `a_payer` : `POST /api/zupdrive/payment/intent { courseId }` (jamais le montant) puis `confirmPayment`. Carte acceptée = « Paiement envoyé, confirmation en cours… », jamais « payé ». La clé publique Stripe vient du serveur (`GET /api/payments/config`, comme l'app client et le site) : aucune variable `EXPO_PUBLIC_…` ni clé en dur.
 - **Tests** : `npm test` (Jest + ts-jest, fonctions pures de `lib/*.test.ts`, ex. `paiement.test.ts`).
 - **Adresses favorites** : raccourcis « Domicile / Travail » dans `ChampAdresse`, « Enregistrer comme… » après le choix d'une adresse.
+- **SOS** (`components/BoutonSos.tsx`) : visible pendant `ACCEPTEE`/`ARRIVEE`/`EN_COURS` ; numéros 17 et 112 d'abord, puis « Alerter ZupDrive » (confirmation, position du téléphone si autorisée). Le texte dit ce que le **serveur** a réellement envoyé (`equipePrevenueLe`, `contactPrevenuLe`) et ne promet aucune intervention. Personne de confiance : carte du profil, avec case de consentement.
 - Couleur : bleu ZupDrive (`COLORS.primary`), thème clair.
 - Pas de notifications push pour l'instant : `POST /api/push-devices` n'accepte que `app` = `merchant`, `delivery`, `customer` (voir `registerForPush` dans `lib/push.ts`, non branché).
 - Sur le web (`npm run web`), `expo-secure-store` n'existe pas : la session n'y survit pas à un rechargement. Sur téléphone, elle est conservée.
@@ -47,6 +48,8 @@ POST /courses/:id/annuler     — tant que le passager n'est pas à bord
 POST /courses/:id/note        — noter son chauffeur (course terminée)
 GET  /adresses                — mes adresses Domicile / Travail
 PUT  /adresses/:type          — enregistrer (DOMICILE | TRAVAIL), DELETE pour retirer
+POST /sos                     — alerte SOS d'un trajet en cours ({ courseId, latitude?, longitude? })
+GET|PUT|DELETE /sos/contact   — personne de confiance (PUT : consentement: true)
 POST /payment/intent          — { courseId } seulement, jamais le montant
 ```
 

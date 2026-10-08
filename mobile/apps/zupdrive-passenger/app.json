@@ -35,7 +35,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "ZupEat utilise votre position pour trouver votre adresse de livraison et les commerces qui livrent chez vous."
+          "locationWhenInUsePermission": "ZupDrive utilise votre position, si vous l'autorisez, pour la joindre à une alerte SOS envoyée pendant un trajet."
         }
       ],
       [

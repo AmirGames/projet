@@ -278,6 +278,8 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 | Passager | `POST /api/zupdrive/courses` | Commander un devis signé (`devis`, `cleIdempotence`) |
 | Passager | `GET /api/zupdrive/courses`, `GET …/:id`, `POST …/:id/annuler` | Suivre, annuler. La course porte `paiement: { obligatoire, statut }` (statut du paiement enregistré par le webhook Stripe) |
 | Passager | `GET /api/zupdrive/adresses`, `PUT`/`DELETE …/:type` (`DOMICILE` ou `TRAVAIL`) | Ses adresses favorites (`AdresseFavoriteDrive`, une par type, jeton seulement). Supprimées avec le compte, incluses dans l'export RGPD |
+| Passager | `POST /api/zupdrive/sos` (`courseId`, position facultative) | Alerte SOS pendant un trajet `ACCEPTEE`, `ARRIVEE` ou `EN_COURS` : alerte enregistrée d'abord (une par course, rejouable), puis ticket CRITIQUE de support, cloche de l'administration et e-mail à la personne de confiance. Aucune intervention sur place n'est promise : l'app renvoie vers le 17 et le 112 |
+| Passager | `GET`/`PUT`/`DELETE /api/zupdrive/sos/contact` | Sa personne de confiance (nom, e-mail ; `consentement: true` exigé : le passager confirme l'avoir informée). Supprimée avec le compte, incluse dans l'export |
 | Passager | `POST /api/zupdrive/payment/intent` | Payer la course (page de suivi, carte Stripe) ; voir [`zupdrive-api-admin.md`](./zupdrive-api-admin.md) |
 | Chauffeur | `GET /api/zupdrive/chauffeur/me/courses` | En ligne ?, proposition ouverte, course, historique |
 | Chauffeur | `GET …/me/stats`, `GET …/me/infractions` | Mes statistiques, mes infractions |
