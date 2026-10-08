@@ -57,7 +57,7 @@ export function origineCentrale(): string | null {
  * Sans cette liste, un code pourrait être envoyé à n'importe quelle adresse,
  * et la session avec lui.
  */
-export function audienceAutorisee(origine: string | undefined | null): origine is string {
+function audienceAutorisee(origine: string | undefined | null): origine is string {
   if (!origine) return false;
   const centrale = origineCentrale();
   return origine === centrale || originesAutorisees().includes(origine);

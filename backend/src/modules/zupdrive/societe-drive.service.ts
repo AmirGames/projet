@@ -50,7 +50,7 @@ export type StatutSociete = (typeof STATUTS_SOCIETE)[number];
 const MODIFIABLE: StatutSociete[] = ["BROUILLON", "REFUSE"];
 
 /** Garde-fou contre l'envoi d'invitations en masse. */
-export const INVITATIONS_EN_ATTENTE_MAX = 50;
+const INVITATIONS_EN_ATTENTE_MAX = 50;
 
 export interface ProfilSociete {
   raisonSociale?: string;

@@ -67,14 +67,14 @@ const COURSE_A_PROPOSER = {
  */
 
 /** En deçà, le client est prévenu que le livreur arrive et peut descendre. */
-export const RAYON_APPROCHE_KM = 0.3;
+const RAYON_APPROCHE_KM = 0.3;
 
 /** Délai avant de reproposer une course à un livreur qui a refusé ou laissé expirer. */
-export const RELANCE_APRES_MS = 3 * 60000;
+const RELANCE_APRES_MS = 3 * 60000;
 /** Au-delà, la course n'est plus proposée d'office à ce livreur. */
 export const MAX_SOLLICITATIONS = 3;
 /** Une recherche sans preneur est relancée automatiquement pendant cette durée. */
-export const RECHERCHE_MAX_MS = 3 * 60 * 60000;
+const RECHERCHE_MAX_MS = 3 * 60 * 60000;
 
 interface Sollicitation {
   driverId: string;

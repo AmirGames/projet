@@ -26,7 +26,7 @@ import { arriveeChezLeCommercant } from "../../utils/commande-transmise";
  */
 
 /** Les motifs de refus, tels que le client les lit. */
-export const MOTIFS_DE_REFUS = {
+const MOTIFS_DE_REFUS = {
   TOO_BUSY: "le restaurant est trop occupé pour le moment",
   PRODUCT_UNAVAILABLE: "un produit de votre commande n'est plus disponible",
   EXCEPTIONAL_CLOSURE: "le restaurant a dû fermer exceptionnellement",
@@ -55,11 +55,11 @@ export const MOTIFS_DU_COMMERCANT = [
 ] as const;
 
 /** Le temps que le commerçant a pour répondre à une livraison. */
-export const REPONSE_LIVRAISON_MIN = 10;
+const REPONSE_LIVRAISON_MIN = 10;
 /** Un retrait programmé doit être accepté au plus tard ce temps avant le créneau. */
-export const REPONSE_AVANT_RETRAIT_MIN = 20;
+const REPONSE_AVANT_RETRAIT_MIN = 20;
 /** Le temps qu'il faut à un livreur pour rejoindre la boutique. */
-export const APPROCHE_LIVREUR_MIN = 10;
+const APPROCHE_LIVREUR_MIN = 10;
 
 const MINUTE = 60 * 1000;
 

@@ -27,7 +27,7 @@ import { distanceKm, estUnPoint, Point } from "../../utils/geo";
  * suffiraient à clore n'importe quelle course.
  */
 
-export const ESSAIS_MAX = 5;
+const ESSAIS_MAX = 5;
 
 /** Ce que le livreur attend un client injoignable avant de déposer la commande. */
 export const ATTENTE_CLIENT_MS = 6 * 60 * 1000;
@@ -71,7 +71,7 @@ export function exigerAttenteTerminee(course: { customerWaitStartedAt: Date | nu
  * les 150 m de l'application : en ville, le GPS dérive de plusieurs dizaines
  * de mètres au pied d'un immeuble.
  */
-export const RAYON_CHEZ_CLIENT_KM = 0.25;
+const RAYON_CHEZ_CLIENT_KM = 0.25;
 
 /**
  * L'attente du client injoignable ne se lance que devant chez lui.
@@ -154,7 +154,7 @@ export function exigerResteChezClient(course: { customerWaitLeftAt: Date | null 
  * La position du téléphone quand la photo du dépôt a été prise, envoyée avec
  * le dépôt (qui peut partir bien plus tard, de la file hors réseau).
  */
-export const schemaPositionDepot = z.object({
+const schemaPositionDepot = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   /** Précision annoncée par le téléphone, en mètres. */
@@ -206,7 +206,7 @@ export function photoPriseLoinDuClient(course: {
   return distance > marge ? distance : null;
 }
 
-export const TYPES_PREUVE = ["CODE", "PHOTO"] as const;
+const TYPES_PREUVE = ["CODE", "PHOTO"] as const;
 export type TypePreuve = (typeof TYPES_PREUVE)[number];
 
 /**

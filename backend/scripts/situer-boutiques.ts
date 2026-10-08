@@ -15,7 +15,7 @@
  */
 
 import { db } from "../src/services/db";
-import { AddressService } from "../src/services/address.service";
+import { AddressService } from "../src/modules/customers/address.service";
 
 const ecrire = process.argv.includes("--ecrire");
 

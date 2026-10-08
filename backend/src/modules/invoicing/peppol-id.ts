@@ -11,7 +11,7 @@ export interface IdentifiantPeppol {
   valeur: string;
 }
 
-export const SCHEMA_BCE = "0208";
+const SCHEMA_BCE = "0208";
 
 /** « BE 0123.456.789 » → « BE0123456789 » ; null si ce n'est pas un numéro belge. */
 export function tvaBelge(tva?: string | null): string | null {

@@ -95,7 +95,7 @@ export const SEUILS_COURSE = {
   relanceAlerteMin: 15,
 };
 
-export type TypeIncident =
+type TypeIncident =
   | "RETARD_RETRAIT"
   | "ECART_RETRAIT"
   | "RETARD_LIVRAISON"

@@ -30,7 +30,7 @@ const multerBase = multer({
  * déclaré, et tenir dans la limite de ce type. Le type détecté remplace celui
  * du client.
  */
-export function verifierContenu(req: Request, _res: Response, next: NextFunction) {
+function verifierContenu(req: Request, _res: Response, next: NextFunction) {
   const fichiers: Express.Multer.File[] = [];
   if (req.file) fichiers.push(req.file);
   if (Array.isArray(req.files)) fichiers.push(...req.files);

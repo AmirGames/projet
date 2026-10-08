@@ -16,7 +16,7 @@ import { ApiError } from "../../middleware/errorHandler";
  * globale n'appartiennent qu'au client.
  */
 
-export interface CustomerData {
+interface CustomerData {
   name: string;
   email: string;
   phone?: string;

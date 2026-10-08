@@ -30,13 +30,13 @@ export function estPlateforme(code: unknown): code is Plateforme {
 /** Les rôles d'un compte, par plateforme. */
 export type Acces = Partial<Record<Plateforme, string>>;
 
-export type Niveau = "read" | "write";
+type Niveau = "read" | "write";
 export type Permissions = Record<string, Niveau>;
 
-export const ROLES_PLATEFORME = ["SUPER_ADMIN", "ADMIN", "SUPPORT"] as const;
+const ROLES_PLATEFORME = ["SUPER_ADMIN", "ADMIN", "SUPPORT"] as const;
 export type RolePlateforme = (typeof ROLES_PLATEFORME)[number];
 
-export const LIBELLES_ROLES: Record<RolePlateforme, string> = {
+const LIBELLES_ROLES: Record<RolePlateforme, string> = {
   SUPER_ADMIN: "SuperAdmin",
   ADMIN: "Administrateur",
   SUPPORT: "Support",

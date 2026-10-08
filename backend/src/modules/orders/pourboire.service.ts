@@ -22,8 +22,8 @@ import { POURBOIRE_MAXIMUM } from "../delivery/delivery-mode.service";
  */
 
 /** Combien de temps après la livraison le pourboire reste proposé. */
-export const DELAI_POURBOIRE_JOURS = 7;
-export const POURBOIRE_MINIMUM = 0.5;
+const DELAI_POURBOIRE_JOURS = 7;
+const POURBOIRE_MINIMUM = 0.5;
 
 const enCentimes = (montant: number) => Math.round(montant * 100);
 const paiementEnLigne = () => getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY);

@@ -31,7 +31,7 @@ router.use(authMiddleware);
 
 const texte = (max: number) => z.string().trim().max(max).nullable().optional();
 
-export const profilSchema = z
+const profilSchema = z
   .object({
     nomComplet: z.string().trim().min(2, "Indiquez votre nom complet").max(120).optional(),
     telephone: z

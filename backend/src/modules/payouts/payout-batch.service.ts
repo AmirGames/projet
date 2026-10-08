@@ -25,7 +25,7 @@ import { MerchantPayoutService } from "./merchant-payout.service";
  * - Confirmer marque versés les seuls relevés du lot ; rejeter les libère.
  */
 
-export interface LigneDuLot extends VirementSepa {
+interface LigneDuLot extends VirementSepa {
   kind: "commercant" | "livreur";
   payoutId: string;
 }

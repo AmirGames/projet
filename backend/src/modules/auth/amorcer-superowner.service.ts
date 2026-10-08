@@ -7,7 +7,7 @@ import {
 } from "./superowner-initial.service";
 
 /** Adresse du premier superowner quand SUPEROWNER_EMAIL n'est pas donné. */
-export const EMAIL_SUPEROWNER_PAR_DEFAUT = "noreply@zupone.com";
+const EMAIL_SUPEROWNER_PAR_DEFAUT = "noreply@zupone.com";
 
 const adresseDuSite = () =>
   (process.env.SITE_URL || process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");

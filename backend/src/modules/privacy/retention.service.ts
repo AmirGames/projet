@@ -8,7 +8,7 @@ import { BackupService } from "../monitoring/backup.service";
 import { activeHolds } from "./legal-holds";
 import { Prisma } from "@prisma/client";
 
-export const RETENTION = { gps: 1, proof: 90, contact: 90, support: 730, audit: 180, security: 90, backup: 14, deletedProfile: 30, documentsReplaced: 30, accounting: 3653, consent: 1826 } as const;
+const RETENTION = { gps: 1, proof: 90, contact: 90, support: 730, audit: 180, security: 90, backup: 14, deletedProfile: 30, documentsReplaced: 30, accounting: 3653, consent: 1826 } as const;
 const before = (days: number, now: Date) => new Date(now.getTime() - days * 86400000);
 const terminal = ["DELIVERED", "FAILED", "CANCELLED"];
 
@@ -90,7 +90,7 @@ export async function runRetention(now = new Date()) {
 }
 
 /** Grace de 24 h pour les uploads dont l'écriture SQL a échoué ou a été remplacée. */
-export async function purgeOrphans(now: Date) {
+async function purgeOrphans(now: Date) {
   const refs = new Set<string>();
   const sources: { delegate: any; field: string }[] = [{ delegate: db.courierDocument, field: "documentUrl" }, { delegate: db.organizationDocument, field: "documentUrl" }, { delegate: db.documentChauffeurDrive, field: "url" }, { delegate: db.orderDelivery, field: "proofPhoto" }];
   for (const { delegate, field } of sources) {

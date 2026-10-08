@@ -45,7 +45,7 @@ export function fraisDusALaPlateforme(commande: {
  * Les frais de service tant que la plateforme n'en a pas réglé d'autres : une
  * base neuve n'a pas encore de ligne de configuration.
  */
-export const FRAIS_DE_SERVICE_PAR_DEFAUT = 0.25;
+const FRAIS_DE_SERVICE_PAR_DEFAUT = 0.25;
 
 /** Les frais de service en vigueur, lus dans la configuration de la plateforme. */
 export function fraisDeServiceEnVigueur(config: { serviceFee: unknown } | null) {

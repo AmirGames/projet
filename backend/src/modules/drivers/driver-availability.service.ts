@@ -14,15 +14,15 @@ import { Notifier, enArrierePlan } from "../notifications/notifier.service";
  * lève d'elle-même à l'heure dite.
  */
 
-export const PAUSE_MIN_MINUTES = 5;
+const PAUSE_MIN_MINUTES = 5;
 
 /** Sans position depuis ce délai, le signal GPS est considéré perdu. La
  *  position part toutes les 15 s : deux minutes, c'est huit envois manqués. */
 export const GPS_PERDU_APRES_MS = 2 * 60000;
 /** Sans course et sans signal depuis ce délai, le livreur est mis hors ligne :
  *  il a sans doute fermé l'application sans se déconnecter. */
-export const HORS_LIGNE_APRES_MS = 10 * 60000;
-export const PAUSE_MAX_MINUTES = 240;
+const HORS_LIGNE_APRES_MS = 10 * 60000;
+const PAUSE_MAX_MINUTES = 240;
 
 /** L'e-mail du salon temps réel : celui du compte, à défaut celui de la fiche. */
 async function emailDuLivreur(driverId: string) {

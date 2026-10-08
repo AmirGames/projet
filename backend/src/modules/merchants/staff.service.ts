@@ -2,7 +2,7 @@ import { perimetreBoutiques, exigerBoutique, type Acteur } from "../auth/autoris
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 
-export type StaffRole = "MANAGER" | "CASHIER" | "KITCHEN" | "DELIVERY" | "SUPPORT";
+type StaffRole = "MANAGER" | "CASHIER" | "KITCHEN" | "DELIVERY" | "SUPPORT";
 
 export interface StaffData {
   storeId: string;

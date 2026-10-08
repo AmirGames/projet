@@ -12,7 +12,7 @@ export type PageLegale = {
   parDefaut: boolean;
 };
 
-export function estSlugLegal(slug: string): slug is SlugLegal {
+function estSlugLegal(slug: string): slug is SlugLegal {
   return (SLUGS_LEGAUX as readonly string[]).includes(slug);
 }
 

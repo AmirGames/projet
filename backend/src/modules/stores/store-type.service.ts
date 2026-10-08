@@ -140,7 +140,7 @@ export const libelleDeLaCuisine = (code?: string | null) =>
   (code && LIBELLE_CUISINE.get(code as never)) || null;
 
 /** Seule la restauration a une cuisine : ailleurs, le champ n'a pas de sens. */
-export const aUneCuisine = (businessType?: string | null) => businessType === "restaurant";
+const aUneCuisine = (businessType?: string | null) => businessType === "restaurant";
 
 /**
  * Les valeurs qu'envoyaient les anciens formulaires d'inscription.
@@ -324,7 +324,7 @@ export const FAMILLES = [
   etablissements?: readonly string[];
 }[];
 
-export type Famille = (typeof FAMILLES)[number];
+type Famille = (typeof FAMILLES)[number];
 
 const FAMILLE_PAR_CUISINE = new Map<string, Famille>();
 const FAMILLE_PAR_ETABLISSEMENT = new Map<string, Famille>();

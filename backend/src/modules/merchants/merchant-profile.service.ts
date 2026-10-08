@@ -26,7 +26,7 @@ const PAYS = {
   Belgique: { tva: /^BE[01][0-9]{9}$/, exemple: "BE0123456789" },
 } as const;
 
-export const PAYS_CONNUS = Object.keys(PAYS);
+const PAYS_CONNUS = Object.keys(PAYS);
 
 /** Les pièces qu'un commerçant peut déposer. */
 export const TYPES_DOCUMENT_COMMERCANT = [
@@ -101,7 +101,7 @@ export function etatDeValidation(
  * Le rendre en entier exposerait une coordonnée bancaire à chaque ouverture de
  * page, à chaque appel d'API, à quiconque lirait un journal.
  */
-export function ibanMasque(iban: string | null): string | null {
+function ibanMasque(iban: string | null): string | null {
   if (!iban) return null;
 
   const propre = iban.replace(/\s+/g, "");

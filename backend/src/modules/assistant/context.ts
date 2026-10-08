@@ -37,7 +37,7 @@ export function hostMapping(): Record<string, Surface> {
   }
   return map;
 }
-export function gatewaySecret() {
+function gatewaySecret() {
   const key = process.env.ASSISTANT_GATEWAY_SECRET;
   if (key && key.length >= 32) return key;
   if (process.env.NODE_ENV !== "production")

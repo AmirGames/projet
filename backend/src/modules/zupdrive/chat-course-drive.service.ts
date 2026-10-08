@@ -11,7 +11,7 @@ import { ApiError } from "../../middleware/errorHandler";
  * à bord ; la lecture reste possible ensuite, aux seuls participants, jusqu'à
  * la purge de l'historique. Le texte n'est jamais écrit dans les journaux.
  */
-export const STATUTS_CHAT = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
+const STATUTS_CHAT = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
 export const TEXTE_MAX = 500;
 /** Garde-fou contre un fil interminable : une course n'est pas un forum. */
 export const MESSAGES_MAX = 200;

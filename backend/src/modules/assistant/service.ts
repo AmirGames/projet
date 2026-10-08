@@ -85,7 +85,7 @@ export async function ownedConversation(actor: AssistantActor, id: string) {
     await exigerBoutique(actor, conversation.storeId, "read");
   return conversation;
 }
-export async function authorizedCategories(actor: Acteur) {
+async function authorizedCategories(actor: Acteur) {
   if (!actor.userId) return [] as Category[];
   const [membership, courier, driver, company] = await Promise.all([
     db.membership.findFirst({
