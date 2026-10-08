@@ -31,9 +31,8 @@ Application **Expo/React Native** pour passagers ZupDrive.
 ## Dépendances Clés
 
 - `expo-router` — routing
-- `expo-location` — géolocalisation
+- `expo-location` — position jointe à l'alerte SOS (si le passager l'autorise)
 - `expo-notifications` — notifications
-- `socket.io-client` — real-time tracking
 - `@stripe/stripe-react-native` — paiement CB
 
 ## API Endpoints
@@ -57,7 +56,7 @@ POST /payment/intent          — { courseId } seulement, jamais le montant
 
 Le prix vient toujours du serveur ; « payé » n'apparaît que quand le serveur le dit (webhook Stripe), pas quand la carte est acceptée sur le téléphone. Le suivi se relit toutes les 4 s (`RELECTURE_MS`).
 
-## Real-Time (Socket.io) — prévu, non branché (le suivi se relit toutes les 4 s)
+## Real-Time (Socket.io) — prévu, non branché (le suivi se relit toutes les 4 s ; `socket.io-client` n'est plus une dépendance, à rajouter avec le temps réel)
 
 - `driver-location-update` — position chauffeur
 - `course-status` — changement état
