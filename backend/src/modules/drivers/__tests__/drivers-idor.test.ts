@@ -22,12 +22,18 @@ jest.mock("../../auth/auth.middleware", () => ({ authMiddleware: (req: any, res:
 } }));
 
 import router from "../drivers.routes";
+import driversDossierRouter from "../drivers.dossier.routes";
+import driversCoursesRouter from "../drivers.courses.routes";
+import driversOffresRouter from "../drivers.offres.routes";
 import { DispatchService } from "../dispatch.service";
 import { DriverPayoutService } from "../../payouts/driver-payout.service";
 
 const app = express();
 app.use(express.json());
 app.use("/api/drivers", router);
+app.use("/api/drivers", driversDossierRouter);
+app.use("/api/drivers", driversCoursesRouter);
+app.use("/api/drivers", driversOffresRouter);
 app.use((error: any, _req: any, res: any, _next: any) => res.status(error.statusCode || 500).json({ code: error.code }));
 
 const mutations: [string, string, any, number][] = [

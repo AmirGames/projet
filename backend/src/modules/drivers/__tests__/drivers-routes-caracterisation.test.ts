@@ -44,6 +44,9 @@ jest.mock("../../auth/auth.middleware", () => ({ authMiddleware: (req: any, res:
 } }));
 
 import driversRouter from "../drivers.routes";
+import driversDossierRouter from "../drivers.dossier.routes";
+import driversCoursesRouter from "../drivers.courses.routes";
+import driversOffresRouter from "../drivers.offres.routes";
 import { DispatchService } from "../dispatch.service";
 import { DriverPayoutService } from "../../payouts/driver-payout.service";
 import { DriverApprovalService } from "../driver-approval.service";
@@ -61,6 +64,9 @@ import { emitDeliveryUpdate, emitNotification } from "../../realtime/socket";
 const app = express();
 app.use(express.json());
 app.use("/api/drivers", driversRouter);
+app.use("/api/drivers", driversDossierRouter);
+app.use("/api/drivers", driversCoursesRouter);
+app.use("/api/drivers", driversOffresRouter);
 app.use((error: any, _req: any, res: any, _next: any) => res.status(error.statusCode || 500).json({ code: error.code }));
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0]);
 const PDF = Buffer.from("%PDF-1.4\n");

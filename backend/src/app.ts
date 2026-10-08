@@ -50,6 +50,9 @@ import pagesLegalesRouter from "./modules/legal/pages-legales.routes";
 import clientRouter from "./modules/customers/client.routes";
 import mapsRouter from "./modules/maps/maps.routes";
 import driversRouter from "./modules/drivers/drivers.routes";
+import driversDossierRouter from "./modules/drivers/drivers.dossier.routes";
+import driversCoursesRouter from "./modules/drivers/drivers.courses.routes";
+import driversOffresRouter from "./modules/drivers/drivers.offres.routes";
 import { monterZupDrive } from "./modules/zupdrive/zupdrive-montage";
 import { webhookStatutNotification as webhookNotificationsDrive } from "./modules/zupdrive/zupdrive-notifications-webhook";
 import notificationsApiRouter from "./modules/notifications/notifications-api.routes";
@@ -282,7 +285,11 @@ export function createApp(): Express {
   app.use("/api/pages-legales", pagesLegalesRouter);
   app.use("/api/client", clientRouter);
   app.use("/api/maps", limiterCartes, mapsRouter);
+  // Un seul préfixe, quatre routeurs par sujet : leurs chemins ne se recoupent pas.
   app.use("/api/drivers", driversRouter);
+  app.use("/api/drivers", driversDossierRouter);
+  app.use("/api/drivers", driversCoursesRouter);
+  app.use("/api/drivers", driversOffresRouter);
   monterZupDrive(app);
   app.use("/api/notifications", notificationsApiRouter);
   app.use("/api/support", supportRouter);
