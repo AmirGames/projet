@@ -314,6 +314,7 @@ let notificationsModule: typeof NotificationsModule | null | undefined;
 function notifications() {
   if (notificationsModule !== undefined) return notificationsModule;
   notificationsModule =
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     isRunningInExpoGo() || Platform.OS === 'web' ? null : (require('expo-notifications') as typeof NotificationsModule);
   return notificationsModule;
 }

@@ -118,7 +118,7 @@ export function ChoixAdresseLivraison({
                 })
               }
               placeholder={t("placeholder")}
-              className={`w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none ${clair ? "border border-gray-300 focus:border-gray-900" : ""}`}
+              className={`w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-hidden ${clair ? "border border-gray-300 focus:border-gray-900" : ""}`}
             />
           </div>
           <button
@@ -182,16 +182,16 @@ export function ChoixAdresseLivraison({
         clair ? "bg-gray-100 hover:bg-gray-200" : "bg-white hover:bg-orange-50"
       }`}
     >
-      <MapPin size={18} className="text-red-600 flex-shrink-0" />
+      <MapPin size={18} className="text-red-600 shrink-0" />
       {adresse ? (
         <>
-          <span className="text-gray-500 flex-shrink-0">{t("deliverTo")}</span>
+          <span className="text-gray-500 shrink-0">{t("deliverTo")}</span>
           <span className="font-semibold truncate">{adresse.label}</span>
         </>
       ) : (
         <span className="font-semibold">{t("enterAddress")}</span>
       )}
-      <ChevronDown size={18} className="flex-shrink-0" />
+      <ChevronDown size={18} className="shrink-0" />
     </button>
   );
 }

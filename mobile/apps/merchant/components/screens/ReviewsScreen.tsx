@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -15,6 +15,7 @@ import {
 import { apiFetch } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Review {
   id: string;
@@ -74,7 +75,7 @@ export default function ReviewsScreen({ token, storeId, onBack }: { token: strin
     }
   }, [storeId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

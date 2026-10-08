@@ -283,7 +283,7 @@ export function CarteCommandeCuisine({
             maxLength={300}
             aria-label={t('precision')}
             placeholder={t('precision')}
-            className="w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-400"
+            className="w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-red-400"
           />
           {commande.paymentStatus === 'SUCCEEDED' && (
             <p className="text-xs text-red-900">{t('remboursementAuto')}</p>

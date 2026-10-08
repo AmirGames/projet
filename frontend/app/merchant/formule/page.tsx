@@ -186,7 +186,7 @@ export default function MaFormulePage() {
 
             {quota.commissionFree && (
               <p className="mt-3 flex items-center gap-2 text-sm text-pink-700">
-                <Gift size={16} className="flex-shrink-0" />
+                <Gift size={16} className="shrink-0" />
                 {quota.commissionFreeUntil
                   ? t('offertJusquau', { date: new Date(quota.commissionFreeUntil).toLocaleDateString(locale) })
                   : t('offert')}
@@ -205,7 +205,7 @@ export default function MaFormulePage() {
 
         {demande && (
           <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-            <Clock size={20} className="text-blue-700 flex-shrink-0 mt-0.5" />
+            <Clock size={20} className="text-blue-700 shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-blue-800">{demande.title}</p>
               <p className="text-sm text-blue-700/80">
@@ -236,7 +236,7 @@ export default function MaFormulePage() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xl font-bold">{formule.libelle}</h3>
                   {actuelle && (
-                    <span className="px-2 py-0.5 rounded border border-orange-500/50 bg-orange-100 text-orange-700 text-xs font-semibold uppercase tracking-wide">
+                    <span className="px-2 py-0.5 rounded-sm border border-orange-500/50 bg-orange-100 text-orange-700 text-xs font-semibold uppercase tracking-wide">
                       {t('badgeEnCours')}
                     </span>
                   )}
@@ -262,7 +262,7 @@ export default function MaFormulePage() {
                 <ul className="space-y-2 mb-6 flex-1">
                   {formule.avantages.map((avantage) => (
                     <li key={avantage} className="flex items-start gap-2 text-sm text-gray-700">
-                      <Check size={16} className="text-green-600 flex-shrink-0 mt-0.5" />
+                      <Check size={16} className="text-green-600 shrink-0 mt-0.5" />
                       {avantage}
                     </li>
                   ))}

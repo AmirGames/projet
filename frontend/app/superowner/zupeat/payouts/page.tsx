@@ -251,7 +251,7 @@ export default function VersementsPage() {
               type="date"
               value={bornes.debut}
               onChange={(e) => setBornes({ ...bornes, debut: e.target.value })}
-              className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+              className="bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
             />
           </div>
 
@@ -264,13 +264,13 @@ export default function VersementsPage() {
               type="date"
               value={bornes.fin}
               onChange={(e) => setBornes({ ...bornes, fin: e.target.value })}
-              className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+              className="bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
             />
           </div>
 
           <button
             onClick={arreter}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded text-sm font-medium transition"
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-sm text-sm font-medium transition"
           >
             {t('drawButton')}
           </button>
@@ -323,7 +323,7 @@ export default function VersementsPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <FileText size={16} className="text-gray-500 flex-shrink-0" />
+                    <FileText size={16} className="text-gray-500 shrink-0" />
                     <h3 className="text-gray-900 font-semibold">{releve.driverName}</h3>
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-semibold ${
@@ -372,7 +372,7 @@ export default function VersementsPage() {
                         onClick={() =>
                           setVersement({ id: releve.id, method: 'BANK_TRANSFER', reference: '' })
                         }
-                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-medium transition"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-sm text-sm font-medium transition"
                       >
                         <Check size={14} />
                         {t('markPaid')}
@@ -380,7 +380,7 @@ export default function VersementsPage() {
                       <button
                         onClick={() => annuler(releve)}
                         aria-label={t('cancelPayout', { driver: releve.driverName })}
-                        className="p-1.5 rounded bg-red-50 text-red-700 hover:bg-red-100"
+                        className="p-1.5 rounded-sm bg-red-50 text-red-700 hover:bg-red-100"
                       >
                         <X size={14} />
                       </button>
@@ -403,7 +403,7 @@ export default function VersementsPage() {
                         id={`moyen-${releve.id}`}
                         value={versement.method}
                         onChange={(e) => setVersement({ ...versement, method: e.target.value })}
-                        className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+                        className="bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
                       >
                         <option value="BANK_TRANSFER">{t('methodBankTransfer')}</option>
                         <option value="CASH">{t('methodCash')}</option>
@@ -411,7 +411,7 @@ export default function VersementsPage() {
                       </select>
                     </div>
 
-                    <div className="flex-1 min-w-[12rem]">
+                    <div className="flex-1 min-w-48">
                       <label
                         htmlFor={`reference-${releve.id}`}
                         className="block text-sm text-gray-500 mb-1"
@@ -423,20 +423,20 @@ export default function VersementsPage() {
                         value={versement.reference}
                         onChange={(e) => setVersement({ ...versement, reference: e.target.value })}
                         placeholder={t('referencePlaceholder')}
-                        className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
+                        className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 text-sm"
                       />
                     </div>
 
                     <button
                       onClick={verser}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-medium transition"
+                      className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-sm text-sm font-medium transition"
                     >
                       {t('confirmPayout')}
                     </button>
 
                     <button
                       onClick={() => setVersement(null)}
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm text-sm transition"
                     >
                       {tCommon('cancel')}
                     </button>

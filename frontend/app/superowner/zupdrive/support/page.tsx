@@ -168,7 +168,7 @@ export default function SupportPage() {
                     <p className="text-xs text-gray-500">{ticket.category}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                    <span className={`inline-block px-2 py-1 rounded-sm text-xs font-medium ${getStatusColor(ticket.status)}`}>
                       {libelle('status', ticket.status)}
                     </span>
                   </td>

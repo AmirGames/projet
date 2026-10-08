@@ -158,17 +158,17 @@ export default function ApiKeysPage() {
             {t('keyCreated')}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <code className="bg-white ring-1 ring-gray-200 px-3 py-2 rounded text-sm break-all">{nouvelleCle}</code>
+            <code className="bg-white ring-1 ring-gray-200 px-3 py-2 rounded-sm text-sm break-all">{nouvelleCle}</code>
             <button
               onClick={() => copyToClipboard(nouvelleCle)}
-              className="p-2 bg-gray-100 hover:bg-gray-200 rounded"
+              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-sm"
               title={t('copy')}
             >
               <Copy size={16} />
             </button>
             <button
               onClick={() => setNouvelleCle(null)}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-sm text-sm"
             >
               {t('copied')}
             </button>
@@ -186,19 +186,19 @@ export default function ApiKeysPage() {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
                 placeholder={t('keyNamePlaceholder')}
                 required
               />
             </div>
             <div className="flex gap-2">
-              <button type="submit" className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+              <button type="submit" className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-sm">
                 {t('create')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded"
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm"
               >
                 {t('cancel')}
               </button>
@@ -233,7 +233,7 @@ export default function ApiKeysPage() {
                 <tr key={apiKey.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 text-sm">{apiKey.name}</td>
                   <td className="px-6 py-4 text-sm flex items-center gap-2">
-                    <code className="bg-white ring-1 ring-gray-200 px-2 py-1 rounded text-xs">
+                    <code className="bg-white ring-1 ring-gray-200 px-2 py-1 rounded-sm text-xs">
                       {apiKey.key}
                     </code>
                   </td>
@@ -252,7 +252,7 @@ export default function ApiKeysPage() {
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => handleRevokeKey(apiKey.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-sm transition"
                       disabled={apiKey.status === 'REVOKED'}
                     >
                       <Trash2 size={18} />
@@ -273,14 +273,14 @@ export default function ApiKeysPage() {
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

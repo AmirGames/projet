@@ -123,7 +123,7 @@ export function MesAdressesClient() {
         <p className="font-semibold text-gray-900">
           {titre({ kind, name: adresse?.name || "" })}
         </p>
-        <p className="break-words text-sm text-gray-500">
+        <p className="wrap-break-word text-sm text-gray-500">
           {adresse
             ? `${adresse.street}, ${adresse.postalCode} ${adresse.city}`
             : t("notAdded")}

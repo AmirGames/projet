@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,6 +15,7 @@ import {
 import { apiFetch, formatEuros } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Store {
   id: string;
@@ -206,7 +207,7 @@ export default function StoreScreen({ token, storeId, onBack }: { token: string;
     }
   }, [storeId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

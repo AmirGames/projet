@@ -239,7 +239,7 @@ export default function UserManagementPage() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
                 placeholder="admin@example.com"
                 required
               />
@@ -250,7 +250,7 @@ export default function UserManagementPage() {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
                 placeholder={t('namePlaceholder')}
                 required
               />
@@ -260,7 +260,7 @@ export default function UserManagementPage() {
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
               >
                 {rolesDe(formData.plateforme).map((r) => (
                   <option key={r.code} value={r.code}>
@@ -274,7 +274,7 @@ export default function UserManagementPage() {
               <select
                 value={formData.plateforme}
                 onChange={(e) => setFormData({ ...formData, plateforme: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900"
               >
                 {plateformes.map((p) => (
                   <option key={p.code} value={p.code}>{p.label}</option>
@@ -283,13 +283,13 @@ export default function UserManagementPage() {
               <p className="text-xs text-gray-500 mt-1">{t('platformHint')}</p>
             </div>
             <div className="flex gap-2">
-              <button type="submit" className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+              <button type="submit" className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-sm">
                 {t('create')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded"
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm"
               >
                 {t('cancel')}
               </button>
@@ -332,7 +332,7 @@ export default function UserManagementPage() {
                     return (
                       <td key={p.code} className="px-6 py-4 text-sm">
                         {admin.role === 'SUPEROWNER' ? (
-                          <span className={`px-2 py-1 rounded text-xs font-semibold text-gray-900 ${getRoleColor('SUPEROWNER')}`}>
+                          <span className={`px-2 py-1 rounded-sm text-xs font-semibold text-gray-900 ${getRoleColor('SUPEROWNER')}`}>
                             {t('roleSuperOwner')}
                           </span>
                         ) : (
@@ -340,7 +340,7 @@ export default function UserManagementPage() {
                             value={role}
                             onChange={(e) => handleChangeRole(admin.id, p, e.target.value)}
                             aria-label={`${t('colRole')} ${p.label}`}
-                            className={`px-2 py-1 rounded text-xs font-semibold text-gray-900 border-0 ${getRoleColor(role)}`}
+                            className={`px-2 py-1 rounded-sm text-xs font-semibold text-gray-900 border-0 ${getRoleColor(role)}`}
                           >
                             <option value="">{t('noAccess')}</option>
                             {rolesDe(p.code).map((r) => (
@@ -362,7 +362,7 @@ export default function UserManagementPage() {
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => handleDeleteAdmin(admin.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-sm transition"
                       title={t('delete')}
                     >
                       <Trash2 size={18} />
@@ -383,14 +383,14 @@ export default function UserManagementPage() {
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

@@ -199,7 +199,7 @@ export default function NotificationsPage() {
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
                 required
               />
             </div>
@@ -208,7 +208,7 @@ export default function NotificationsPage() {
               <textarea
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
                 rows={3}
                 required
               />
@@ -219,7 +219,7 @@ export default function NotificationsPage() {
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
                 >
                   <option value="INFO">{t('type_info')}</option>
                   <option value="SUCCESS">{t('type_success')}</option>
@@ -232,7 +232,7 @@ export default function NotificationsPage() {
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
                 >
                   <option value="LOW">{t('priority_low')}</option>
                   <option value="MEDIUM">{t('priority_medium')}</option>
@@ -246,7 +246,7 @@ export default function NotificationsPage() {
               <select
                 value={formData.targetAudience}
                 onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
               >
                 <option value="ALL">{t('audience_all')}</option>
                 <option value="MERCHANTS">{t('audience_merchants')}</option>
@@ -282,14 +282,14 @@ export default function NotificationsPage() {
               placeholder={t('search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
           >
             <option value="ALL">{t('filterByType')}</option>
             <option value="INFO">{t('type_info')}</option>
@@ -301,7 +301,7 @@ export default function NotificationsPage() {
           <select
             value={readFilter}
             onChange={(e) => setReadFilter(e.target.value as any)}
-            className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
           >
             <option value="ALL">{t('filterByRead')}</option>
             <option value="UNREAD">{t('filterByReadUnread')}</option>
@@ -343,7 +343,7 @@ export default function NotificationsPage() {
                 <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
                   <span>{new Date(notif.createdAt).toLocaleString(locale)}</span>
                   <span>•</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">{notif.targetAudience}</span>
+                  <span className="bg-gray-100 px-2 py-1 rounded-sm">{notif.targetAudience}</span>
                   <span>•</span>
                   <span className={`font-medium ${notif.read ? 'text-gray-500' : 'text-blue-600'}`}>
                     {notif.read ? t('lu') : t('nonLu')}
@@ -355,7 +355,7 @@ export default function NotificationsPage() {
                 {!notif.read && (
                   <button
                     onClick={() => handleMarkAsRead(notif.id)}
-                    className="p-2 hover:bg-gray-100 rounded transition-colors"
+                    className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
                     title={t('mark_as_read')}
                   >
                     <CheckCircle size={18} className="text-green-600" />
@@ -363,7 +363,7 @@ export default function NotificationsPage() {
                 )}
                 <button
                   onClick={() => handleDelete(notif.id)}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors text-red-600 hover:text-red-700"
+                  className="p-2 hover:bg-gray-100 rounded-sm transition-colors text-red-600 hover:text-red-700"
                   title={t('delete')}
                 >
                   <Trash2 size={18} />

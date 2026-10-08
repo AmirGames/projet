@@ -253,11 +253,11 @@ export default function HistoriqueCoursesPage() {
 
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                     <p className="flex items-start gap-2 text-gray-700">
-                      <MapPin size={14} className="text-orange-500 mt-0.5 flex-shrink-0" />
+                      <MapPin size={14} className="text-orange-500 mt-0.5 shrink-0" />
                       {c.pickupAddress || '—'}
                     </p>
                     <p className="flex items-start gap-2 text-gray-700">
-                      <MapPin size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
+                      <MapPin size={14} className="text-green-500 mt-0.5 shrink-0" />
                       {c.deliveryCity || '—'}
                     </p>
                   </div>

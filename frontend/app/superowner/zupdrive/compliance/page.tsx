@@ -196,7 +196,7 @@ export default function CompliancePage() {
                       <tr key={log.id} className="border-b border-gray-200 hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium">{log.action}</td>
                         <td className="px-4 py-3">
-                          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded-sm text-xs">
                             {t.has(`type_${log.resourceType}`) ? t(`type_${log.resourceType}`) : log.resourceType}
                           </span>
                         </td>

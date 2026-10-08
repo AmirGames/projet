@@ -77,7 +77,7 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
                     {m.sender === 'SUPPORT' ? t('support') : t('livreur')}
                   </p>
                 )}
-                <p className="whitespace-pre-wrap break-words text-sm">{m.body}</p>
+                <p className="whitespace-pre-wrap wrap-break-word text-sm">{m.body}</p>
                 <div className={`flex items-center gap-2 mt-1 text-[11px] ${deMoi ? 'text-orange-100/80' : clair ? 'text-gray-500' : 'text-gray-400'}`}>
                   {m.deliveryId && (
                     <span className="inline-flex items-center gap-1" title={t('pendantCourse')}>
@@ -108,7 +108,7 @@ export function FilSupport({ messages, moi, surEnvoi, vide, hauteur = 'h-[60vh]'
           rows={1}
           maxLength={2000}
           placeholder={t('votreMessage')}
-          className={`flex-1 resize-none rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 border ${
+          className={`flex-1 resize-none rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-orange-500 border ${
             clair ? 'bg-white border-gray-300 text-gray-900' : 'bg-gray-700 border-gray-600 text-white'
           }`}
         />

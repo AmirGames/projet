@@ -49,7 +49,7 @@ export function EnTeteClient() {
   return (
     <>
       {/* Mobile Navigation */}
-      <nav className="md:hidden bg-white/95 backdrop-blur border-b border-gray-100 sticky top-0 z-40">
+      <nav className="md:hidden bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
         <div className="flex items-center justify-between p-4">
           <SelecteurEspace actuel="client" href="/client" clair className="gap-2 -ml-2 px-2 py-1">
             <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
@@ -117,7 +117,7 @@ export function EnTeteClient() {
       </nav>
 
       {/* Desktop Navigation */}
-      <nav className="hidden md:block bg-white/95 backdrop-blur border-b border-gray-100 sticky top-0 z-40">
+      <nav className="hidden md:block bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <SelecteurEspace actuel="client" href="/client" clair className="gap-2 -ml-2 px-2 py-1">
             <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
@@ -135,7 +135,7 @@ export function EnTeteClient() {
                   href={item.href}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
                     isActive(item.href)
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-white text-gray-900 shadow-xs'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >

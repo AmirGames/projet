@@ -28,7 +28,7 @@ export const MARQUES: Record<Marque, ThemeMarque> = {
   zupone: {
     nom: 'ZupOne',
     logo: 'bg-gray-900 text-white',
-    bandeau: 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700',
+    bandeau: 'bg-linear-to-br from-gray-900 via-gray-800 to-gray-700',
     bouton: 'bg-gray-900 text-white hover:bg-gray-800',
     teinte: 'bg-gray-100 text-gray-800',
     accent: 'text-gray-900',
@@ -36,7 +36,7 @@ export const MARQUES: Record<Marque, ThemeMarque> = {
   zupeat: {
     nom: 'ZupEat',
     logo: 'bg-orange-600 text-white',
-    bandeau: 'bg-gradient-to-br from-orange-500 via-orange-600 to-red-600',
+    bandeau: 'bg-linear-to-br from-orange-500 via-orange-600 to-red-600',
     bouton: 'bg-orange-600 text-white hover:bg-orange-700',
     teinte: 'bg-orange-50 text-orange-700',
     accent: 'text-orange-600',
@@ -44,7 +44,7 @@ export const MARQUES: Record<Marque, ThemeMarque> = {
   zupdrive: {
     nom: 'ZupDrive',
     logo: 'bg-blue-600 text-white',
-    bandeau: 'bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700',
+    bandeau: 'bg-linear-to-br from-sky-500 via-blue-600 to-indigo-700',
     bouton: 'bg-blue-600 text-white hover:bg-blue-700',
     teinte: 'bg-blue-50 text-blue-700',
     accent: 'text-blue-600',

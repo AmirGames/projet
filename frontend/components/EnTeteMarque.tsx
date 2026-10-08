@@ -22,7 +22,7 @@ export function EnTeteMarque({
   return (
     <header className="sticky top-0 z-40 border-b border-gray-100 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
-        <Link href={href} className="flex flex-shrink-0 items-center gap-2 text-gray-900 hover:no-underline">
+        <Link href={href} className="flex shrink-0 items-center gap-2 text-gray-900 hover:no-underline">
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm font-extrabold ${theme.logo}`}
             aria-hidden="true"

@@ -151,9 +151,13 @@ export default function DashboardScreen({
   const ticking = pauseEnd > now;
   useEffect(() => {
     if (!ticking) return;
-    setNow(Date.now());
+    // L'heure se rafraîchit aussitôt (hors du rendu), puis chaque seconde.
+    const premier = setTimeout(() => setNow(Date.now()), 0);
     const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(premier);
+      clearInterval(id);
+    };
   }, [ticking]);
 
   const dateLabel = new Date(now).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });

@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, RefreshControl, SectionList, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
 import ProductEditor, { Category } from '../ProductEditor';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 interface Product {
   id: string;
@@ -42,7 +43,7 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
     }
   }, [storeId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

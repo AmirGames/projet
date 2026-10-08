@@ -27,6 +27,7 @@ function notifications(): typeof NotificationsModule | null {
     cached = null;
     return cached;
   }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
   cached = require('expo-notifications') as typeof NotificationsModule;
 
   // App ouverte : le bandeau de l'app et le suivi en direct suffisent, une

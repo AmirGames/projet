@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { montantCommercant } from '../../lib/orders';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { useEffectChargement } from '../../lib/useEffectChargement';
 
 type Period = 'today' | '7d' | '30d';
 
@@ -228,7 +229,7 @@ export default function StatsScreen({ token, storeId, onBack }: { token: string;
     }
   }, [period, storeId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     setLoading(true);
     load();
   }, [load]);

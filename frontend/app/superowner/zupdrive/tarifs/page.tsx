@@ -118,7 +118,7 @@ export default function TarifsDrivePage() {
                     inputMode="decimal"
                     value={saisie[champ]}
                     onChange={(e) => setSaisies({ ...saisies, [tarif.region]: { ...saisie, [champ]: e.target.value } })}
-                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                    className="mt-1 w-full rounded-sm border border-gray-300 bg-white px-3 py-2 text-gray-900"
                   />
                 </label>
               ))}
@@ -135,7 +135,7 @@ export default function TarifsDrivePage() {
                 type="button"
                 onClick={() => enregistrer(tarif.region)}
                 disabled={envoi !== null}
-                className="w-full rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
+                className="w-full rounded-sm bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
               >
                 {envoi === tarif.region ? t('enregistrement') : t('enregistrer')}
               </button>

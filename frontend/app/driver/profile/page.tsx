@@ -197,7 +197,7 @@ export default function DriverProfilePage() {
           <div className="space-y-6">
             {/* Profile Avatar */}
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 text-center">
-              <div className="w-24 h-24 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4">
+              <div className="w-24 h-24 bg-linear-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4">
                 {driver.name.charAt(0)}
               </div>
               <p className="text-gray-900 text-lg font-semibold">{driver.name}</p>
@@ -317,7 +317,7 @@ export default function DriverProfilePage() {
                     value={formData.name}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-orange-600"
+                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-orange-600"
                   />
                 </div>
 
@@ -333,7 +333,7 @@ export default function DriverProfilePage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-orange-600"
+                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-orange-600"
                   />
                 </div>
 
@@ -349,7 +349,7 @@ export default function DriverProfilePage() {
                     value={formData.phone}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-orange-600"
+                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-orange-600"
                   />
                 </div>
 
@@ -365,7 +365,7 @@ export default function DriverProfilePage() {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     rows={3}
-                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-orange-600"
+                    className="w-full bg-gray-100 text-gray-900 rounded-lg px-4 py-2 disabled:opacity-60 focus:outline-hidden focus:ring-2 focus:ring-orange-600"
                   />
                 </div>
 

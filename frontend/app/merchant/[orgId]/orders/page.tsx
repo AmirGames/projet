@@ -353,7 +353,7 @@ export default function OrdersPage() {
               aria-selected={vue === cle}
               onClick={() => setVue(cle)}
               className={`rounded-full px-4 py-1.5 text-sm transition ${
-                vue === cle ? 'bg-white font-bold shadow-sm' : 'font-semibold text-gray-600 hover:text-gray-900'
+                vue === cle ? 'bg-white font-bold shadow-xs' : 'font-semibold text-gray-600 hover:text-gray-900'
               }`}
             >
               {tc(cle)}
@@ -369,7 +369,7 @@ export default function OrdersPage() {
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
               placeholder={tc('rechercher')}
-              className="w-full bg-transparent text-sm outline-none placeholder:text-gray-500"
+              className="w-full bg-transparent text-sm outline-hidden placeholder:text-gray-500"
             />
           </label>
         )}

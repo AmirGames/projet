@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import type * as NetworkModule from 'expo-network';
 
@@ -17,6 +17,7 @@ function network(): typeof NetworkModule | null {
   try {
     // Chargé à la demande : une application compilée sans lui considère le
     // réseau présent, et seuls les appels ratés signalent la coupure.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     networkModule = Platform.OS === 'web' ? null : (require('expo-network') as typeof NetworkModule);
   } catch {
     networkModule = null;
@@ -75,12 +76,7 @@ export function subscribeOnline(listener: (online: boolean) => void) {
 }
 
 export function useOnline() {
-  const [online, setOnline] = useState(isOnline);
-  useEffect(() => {
-    setOnline(isOnline());
-    return subscribeOnline(setOnline);
-  }, []);
-  return online;
+  return useSyncExternalStore((prevenir) => subscribeOnline(() => prevenir()), isOnline);
 }
 
 /**

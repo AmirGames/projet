@@ -56,7 +56,7 @@ export default function ReportsPage() {
             <div key={r.id} className="bg-white rounded-lg border p-4">
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-semibold">{r.name}</h3>
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{r.frequency}</span>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-sm">{r.frequency}</span>
               </div>
               <p className="text-sm text-gray-600 mb-3">{r.reportType}</p>
               <button className="text-blue-600 text-sm font-medium flex items-center gap-1">

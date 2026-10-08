@@ -288,7 +288,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
                 <div className="min-w-0">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{societe.raisonSociale}</h3>
-                    <span className={`rounded px-2 py-0.5 text-xs font-semibold ${COULEURS[societe.statut] || COULEURS.BROUILLON}`}>
+                    <span className={`rounded-sm px-2 py-0.5 text-xs font-semibold ${COULEURS[societe.statut] || COULEURS.BROUILLON}`}>
                       {tC(`status.${societe.statut}`)}
                     </span>
                   </div>
@@ -397,7 +397,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
                     {chauffeur.nomComplet}
                   </Link>
                   <span className="text-gray-500">{chauffeur.email}</span>
-                  <span className={`rounded px-2 py-0.5 text-xs ${COULEURS[chauffeur.statut] || COULEURS.BROUILLON}`}>
+                  <span className={`rounded-sm px-2 py-0.5 text-xs ${COULEURS[chauffeur.statut] || COULEURS.BROUILLON}`}>
                     {tC(`status.${chauffeur.statut}`)}
                   </span>
                   {chauffeur.enLigne && <span className="text-xs text-green-600">{t('online')}</span>}
@@ -422,7 +422,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
               placeholder={dossier.statut === 'SOUMIS' ? t('rejectReasonPlaceholder') : t('suspendReasonPlaceholder')}
               aria-label={tC('reasonLabel')}
               rows={2}
-              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+              className="w-full rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             />
           )}
           <div className="flex flex-wrap gap-2">
@@ -431,14 +431,14 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
                 <button
                   onClick={() => decider('approve')}
                   disabled={envoi || !dossier.dossierValidable}
-                  className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50"
+                  className="rounded-sm bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50"
                 >
                   {t('approve')}
                 </button>
                 <button
                   onClick={() => decider('reject')}
                   disabled={envoi}
-                  className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+                  className="rounded-sm bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
                 >
                   {t('reject')}
                 </button>
@@ -448,7 +448,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
               <button
                 onClick={() => decider('suspend')}
                 disabled={envoi}
-                className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+                className="rounded-sm bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
               >
                 {t('suspend')}
               </button>
@@ -457,7 +457,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
               <button
                 onClick={() => decider('reactivate')}
                 disabled={envoi}
-                className="rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
+                className="rounded-sm bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
               >
                 {t('reactivate')}
               </button>

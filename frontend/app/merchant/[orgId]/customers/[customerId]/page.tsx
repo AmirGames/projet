@@ -237,15 +237,15 @@ export default function FicheClientPage() {
           <h2 className="text-lg font-bold mb-4">{t('coordonnees')}</h2>
           <div className="space-y-3 text-sm">
             <p className="flex items-start gap-2 text-gray-700">
-              <Mail size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
+              <Mail size={16} className="text-gray-500 mt-0.5 shrink-0" />
               <span className="break-all">{client.email}</span>
             </p>
             <p className="flex items-center gap-2 text-gray-700">
-              <Phone size={16} className="text-gray-500 flex-shrink-0" />
+              <Phone size={16} className="text-gray-500 shrink-0" />
               {client.phone || t('nonRenseigne')}
             </p>
             <p className="flex items-start gap-2 text-gray-700">
-              <MapPin size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
+              <MapPin size={16} className="text-gray-500 mt-0.5 shrink-0" />
               <span>
                 {client.address || t('adresseNonRenseignee')}
                 {(client.postalCode || client.city) && (
@@ -290,7 +290,7 @@ export default function FicheClientPage() {
                       {new Date(commande.createdAt).toLocaleString(locale)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${
                         COULEURS[commande.status] || 'bg-gray-500/20 text-gray-500'
@@ -314,7 +314,7 @@ export default function FicheClientPage() {
           onChange={(e) => setNote(e.target.value)}
           rows={3}
           placeholder={t('notePlaceholder')}
-          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
         />
         <button
           onClick={enregistrerNote}

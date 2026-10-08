@@ -169,7 +169,7 @@ export function DisponibiliteSite() {
                   {cible.depuis && ` · ${t('uptimeSince', { date: dateHeure(cible.depuis) })}`}
                 </p>
                 {cible.etat === 'PANNE' && cible.derniereErreur && (
-                  <p className="text-sm text-red-700 mt-1 break-words">
+                  <p className="text-sm text-red-700 mt-1 wrap-break-word">
                     {cible.derniereErreur}
                     {cible.etatDepuis && ` — ${t('uptimeDownSince', { date: dateHeure(cible.etatDepuis) })}`}
                   </p>
@@ -208,7 +208,7 @@ export function DisponibiliteSite() {
                         onMouseLeave={() => setSurvol(null)}
                         onFocus={() => setSurvol({ cible: cible.cle, index })}
                         onBlur={() => setSurvol(null)}
-                        className={`flex-1 min-w-0 rounded-sm outline-none ${teinte(item.disponibilite)} ${
+                        className={`flex-1 min-w-0 rounded-xs outline-hidden ${teinte(item.disponibilite)} ${
                           actif ? 'opacity-100 ring-1 ring-white/70' : survol?.cible === cible.cle ? 'opacity-60' : ''
                         }`}
                       />
@@ -218,7 +218,7 @@ export function DisponibiliteSite() {
 
                 {survol?.cible === cible.cle && donneesAffichees(cible).donnees[survol.index] && (
                   <div
-                    className={`absolute z-10 top-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs shadow-lg pointer-events-none min-w-[11rem] ${
+                    className={`absolute z-10 top-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs shadow-lg pointer-events-none min-w-44 ${
                       survol.index > donneesAffichees(cible).donnees.length / 2 ? 'right-0' : 'left-0'
                     }`}
                   >
@@ -268,7 +268,7 @@ export function DisponibiliteSite() {
                     {cible.incidents.map((incident) => (
                       <li key={incident.debut} className="py-2 flex items-start justify-between gap-3 flex-wrap">
                         <div className="min-w-0">
-                          <p className="text-gray-800 break-words">{incident.cause}</p>
+                          <p className="text-gray-800 wrap-break-word">{incident.cause}</p>
                           <p className="text-xs text-gray-500">
                             {dateHeure(incident.debut)} → {incident.fin ? dateHeure(incident.fin) : t('uptimeOngoing')}
                           </p>

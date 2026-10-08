@@ -255,7 +255,7 @@ export default function OrdersPage() {
                           {reprise?.orderId === order.id && !reprise.message ? t('reordering') : t('reorder')}
                         </button>
                         {reprise?.orderId === order.id && reprise.message && (
-                          <p role="status" className="text-sm text-amber-700 flex-1 min-w-[12rem]">
+                          <p role="status" className="text-sm text-amber-700 flex-1 min-w-48">
                             {reprise.message}{' '}
                             {reprise.slug && (
                               <button

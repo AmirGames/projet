@@ -157,7 +157,7 @@ export default function SanteSystemePage() {
           <section className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
             {sante.controles.map((controle) => (
               <div key={controle.cle} className="p-6 flex items-start gap-4">
-                <span className="mt-0.5 flex-shrink-0">{ICONES[controle.etat]}</span>
+                <span className="mt-0.5 shrink-0">{ICONES[controle.etat]}</span>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-3 flex-wrap">
@@ -174,7 +174,7 @@ export default function SanteSystemePage() {
                   <p className="text-gray-700 mt-2">{controle.detail}</p>
 
                   {controle.remede && (
-                    <p className="text-sm text-amber-700 mt-2 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                    <p className="text-sm text-amber-700 mt-2 bg-amber-50 border border-amber-200 rounded-sm px-3 py-2">
                       {controle.remede}
                     </p>
                   )}

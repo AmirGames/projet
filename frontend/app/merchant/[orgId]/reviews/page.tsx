@@ -272,19 +272,19 @@ export default function ReviewsPage() {
                       onChange={(e) => setMotif(e.target.value)}
                       placeholder={t('reportPlaceholder')}
                       rows={3}
-                      className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-red-500"
                     />
                     <div className="flex gap-2">
                       <button
                         onClick={() => signaler(review.id)}
                         disabled={envoi || motif.trim().length < 5}
-                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium disabled:opacity-50"
+                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-sm text-xs font-medium disabled:opacity-50"
                       >
                         {envoi ? '...' : t('sendReport')}
                       </button>
                       <button
                         onClick={() => { setASignaler(null); setMotif(''); }}
-                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium"
+                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm text-xs font-medium"
                       >
                         {t('cancel')}
                       </button>
@@ -293,7 +293,7 @@ export default function ReviewsPage() {
                 ) : review.peutSignaler && (
                   <button
                     onClick={() => { setASignaler(review.id); setMotif(''); setErreur(''); }}
-                    className="px-3 py-2 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 rounded text-xs font-medium transition-colors"
+                    className="px-3 py-2 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 rounded-sm text-xs font-medium transition-colors"
                   >
                     <Flag size={14} className="inline mr-1" />
                     {t('report')}
@@ -314,14 +314,14 @@ export default function ReviewsPage() {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded-sm transition-colors"
               >
                 {t('previous')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded-sm transition-colors"
               >
                 {t('next')}
               </button>

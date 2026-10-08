@@ -105,7 +105,7 @@ export function AdminDashboardClient() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="border-b border-gray-200 bg-white shadow-sm">
+      <div className="border-b border-gray-200 bg-white shadow-xs">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
@@ -153,7 +153,7 @@ export function AdminDashboardClient() {
               </div>
               <a
                 href="/admin/drivers?status=suspended"
-                className="flex-shrink-0 rounded-lg bg-red-600 px-4 py-2 text-white font-semibold hover:bg-red-700 transition-colors"
+                className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-white font-semibold hover:bg-red-700 transition-colors"
               >
                 {t('review')} →
               </a>

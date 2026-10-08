@@ -150,7 +150,7 @@ export default function SuppressionCompte() {
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-primary"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:border-primary"
                   />
                 </div>
                 <div>
@@ -164,7 +164,7 @@ export default function SuppressionCompte() {
                     autoComplete="current-password"
                     value={motDePasse}
                     onChange={(e) => setMotDePasse(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-primary"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:border-primary"
                   />
                 </div>
                 <button
@@ -224,7 +224,7 @@ export default function SuppressionCompte() {
                     rows={3}
                     value={motif}
                     onChange={(e) => setMotif(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-primary"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-hidden focus:border-primary"
                   />
                 </div>
 

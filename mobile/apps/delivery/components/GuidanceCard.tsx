@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { distanceM, formatDistance } from '../lib/deliveries';
 import { instruction, maneuverIcon, NavStep, nextManeuver } from '../lib/navigation';
@@ -31,12 +31,16 @@ export default function GuidanceCard({
   const sameRoute = progress.steps === steps;
   const current = nextManeuver(steps, sameRoute ? progress.index : 1, driver);
 
+  // La mémoire de la manœuvre suit l'itinéraire : ajustement d'état pendant le rendu.
+  if (!sameRoute || progress.index !== current) setProgress({ steps, index: current });
+
+  // Une manœuvre faite : une brève vibration, le livreur garde les yeux sur la route.
+  const precedente = useRef({ steps, index: current });
   useEffect(() => {
-    if (sameRoute && progress.index === current) return;
-    // Une manœuvre faite : une brève vibration, le livreur garde les yeux sur la route.
-    if (sameRoute) Vibration.vibrate(60);
-    setProgress({ steps, index: current });
-  }, [sameRoute, progress.index, current, steps]);
+    const avant = precedente.current;
+    if (avant.steps === steps && avant.index !== current) Vibration.vibrate(60);
+    precedente.current = { steps, index: current };
+  }, [steps, current]);
 
   const voiceProblem = useVoiceGuidance(steps, current, driver, voice);
 

@@ -57,7 +57,7 @@ export function AdminAlertsPanel({ alerts }: AdminAlertsPanelProps) {
                   </div>
                   <a
                     href={`/admin/drivers/${alert.chauffeurId}`}
-                    className="flex-shrink-0 ml-4 font-semibold hover:underline"
+                    className="shrink-0 ml-4 font-semibold hover:underline"
                   >
                     {t('review')} →
                   </a>

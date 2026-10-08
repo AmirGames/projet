@@ -184,7 +184,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           actif ? 'bg-orange-50 font-bold text-orange-700' : 'font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900'
         }`}
       >
-        <item.icon size={18} className="flex-shrink-0" aria-hidden="true" />
+        <item.icon size={18} className="shrink-0" aria-hidden="true" />
         <span className={`truncate ${libelle}`}>{item.label}</span>
       </Link>
     );
@@ -211,7 +211,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
         {/* Le commerce, et le passage aux autres espaces du groupe. */}
         <div className="border-b border-[#ECECEA] p-4">
           <SelecteurEspace actuel="merchant" href="/merchant" clair className="gap-3 -m-1 p-1 w-full min-w-0" chevron={sidebarOpen}>
-            <div className="w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center font-extrabold flex-shrink-0">
+            <div className="w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center font-extrabold shrink-0">
               {orgStatus?.name?.charAt(0).toUpperCase() || 'M'}
             </div>
             <div className={`min-w-0 ${libelle}`}>
@@ -253,7 +253,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
             title={sidebarOpen ? undefined : t('deconnexion')}
             className="flex w-full items-center gap-3 rounded-[10px] px-3 py-1.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
           >
-            <LogOut size={18} className="flex-shrink-0" aria-hidden="true" />
+            <LogOut size={18} className="shrink-0" aria-hidden="true" />
             <span className={`truncate ${libelle}`}>{t('deconnexion')}</span>
           </button>
         </div>
@@ -294,7 +294,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
         {!loadingStatus && orgStatus?.validation && !orgStatus.validation.valide && (
           <div className="border-b border-sky-200 bg-sky-50 px-4 py-4 sm:px-6">
             <div className="flex items-start gap-3">
-              <Clock size={20} className="text-sky-700 mt-0.5 flex-shrink-0" />
+              <Clock size={20} className="text-sky-700 mt-0.5 shrink-0" />
               <div className="flex-1 text-sm">
                 <h3 className="font-bold text-sky-900">{t('enAttente')}</h3>
                 <p className="text-gray-700 mt-1">

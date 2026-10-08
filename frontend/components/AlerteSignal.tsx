@@ -57,7 +57,7 @@ export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
   if (!enLigne) {
     return (
       <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm flex gap-3">
-        <WifiOff size={20} className="flex-shrink-0 mt-0.5" />
+        <WifiOff size={20} className="shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold">{t('horsConnexion')}</p>
           <p className="text-red-800/80">
@@ -71,7 +71,7 @@ export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
   if (gps === 'refuse') {
     return (
       <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm flex gap-3">
-        <MapPinOff size={20} className="flex-shrink-0 mt-0.5" />
+        <MapPinOff size={20} className="shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold">{t('refusee')}</p>
           <p className="text-red-800/80">
@@ -85,7 +85,7 @@ export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
   if (gps === 'faible' || perduCoteServeur) {
     return (
       <div role="alert" className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm flex gap-3">
-        <SatelliteDish size={20} className="flex-shrink-0 mt-0.5" />
+        <SatelliteDish size={20} className="shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold">{t('faible')}</p>
           <p className="text-amber-800/80">

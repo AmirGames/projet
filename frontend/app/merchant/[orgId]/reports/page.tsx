@@ -167,7 +167,7 @@ export default function ReportsPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+              className="px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
             />
           </div>
           <div>
@@ -176,7 +176,7 @@ export default function ReportsPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
+              className="px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
             />
           </div>
         </div>

@@ -392,7 +392,7 @@ export default function MerchantDetailPage() {
             <select
               value={newTier}
               onChange={(e) => setNewTier(e.target.value)}
-              className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
+              className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500"
             >
               <option value="FREE">FREE</option>
               <option value="PREMIUM">PREMIUM</option>
@@ -436,7 +436,7 @@ export default function MerchantDetailPage() {
                   placeholder={t('raisonPlaceholder')}
                   value={actionReason}
                   onChange={(e) => setActionReason(e.target.value)}
-                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-hidden focus:border-blue-500 resize-none"
                   rows={3}
                 />
               </>
@@ -538,8 +538,8 @@ export default function MerchantDetailPage() {
               <div key={ticket.id} className="p-3 bg-gray-100 rounded-lg">
                 <p className="font-medium">{ticket.title}</p>
                 <div className="text-sm text-gray-500 mt-1 flex gap-2">
-                  <span className="px-2 py-1 bg-gray-200 rounded">{ticket.status}</span>
-                  <span className="px-2 py-1 bg-gray-200 rounded">{ticket.priority}</span>
+                  <span className="px-2 py-1 bg-gray-200 rounded-sm">{ticket.status}</span>
+                  <span className="px-2 py-1 bg-gray-200 rounded-sm">{ticket.priority}</span>
                 </div>
               </div>
             ))}

@@ -301,7 +301,7 @@ export default function IncidentsLivraisonPage() {
                         <img
                           src={incident.course.depot.photo}
                           alt={t('depositPhoto')}
-                          className="mt-1 h-32 w-auto max-w-full rounded border border-gray-200 object-cover"
+                          className="mt-1 h-32 w-auto max-w-full rounded-sm border border-gray-200 object-cover"
                         />
                       </a>
                     )}
@@ -334,7 +334,7 @@ export default function IncidentsLivraisonPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <div className="bg-gray-50 rounded p-3 space-y-1">
+                  <div className="bg-gray-50 rounded-sm p-3 space-y-1">
                     <p className="text-gray-500 text-xs uppercase">{t('driver')}</p>
                     <p className="text-gray-900 flex items-center gap-2">
                       <Circle
@@ -363,7 +363,7 @@ export default function IncidentsLivraisonPage() {
                       <MessageCircle size={12} /> {t('chat')}
                     </Link>
                   </div>
-                  <div className="bg-gray-50 rounded p-3 space-y-1">
+                  <div className="bg-gray-50 rounded-sm p-3 space-y-1">
                     <p className="text-gray-500 text-xs uppercase">{t('store')}</p>
                     <p className="text-gray-900 flex items-center gap-2">
                       <Store size={14} /> {incident.course.boutique?.name || '—'}
@@ -377,7 +377,7 @@ export default function IncidentsLivraisonPage() {
                       </a>
                     )}
                   </div>
-                  <div className="bg-gray-50 rounded p-3 space-y-1">
+                  <div className="bg-gray-50 rounded-sm p-3 space-y-1">
                     <p className="text-gray-500 text-xs uppercase">{t('customer')}</p>
                     <p className="text-gray-900 flex items-center gap-2">
                       <User size={14} /> {incident.course.client?.nom || '—'}
@@ -403,7 +403,7 @@ export default function IncidentsLivraisonPage() {
                       rows={2}
                       maxLength={500}
                       placeholder={t(ouvert.type === 'clore' ? 'resolutionPlaceholder' : 'reasonPlaceholder')}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-orange-500"
                     />
                     {(ouvert.type === 'echec' || ouvert.type === 'refuser') && (
                       <div className="space-y-1 text-sm text-gray-800">

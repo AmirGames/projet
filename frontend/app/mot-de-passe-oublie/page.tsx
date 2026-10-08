@@ -54,7 +54,7 @@ export default function MotDePasseOublie() {
   if (!isLoading && isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10 text-center space-y-4">
+        <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10 text-center space-y-4">
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('connecte')}</h1>
           <p className="text-slate-600">{t('changerDepuisProfil')}</p>
           <Link href="/" className="inline-block mt-2 font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
@@ -67,7 +67,7 @@ export default function MotDePasseOublie() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10">
         {envoye ? (
           <div className="text-center space-y-4">
             <MailCheck size={48} className="mx-auto text-gray-900" />
@@ -107,7 +107,7 @@ export default function MotDePasseOublie() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
                   placeholder={t('exempleEmail')}
                   required
                   autoFocus

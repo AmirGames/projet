@@ -125,12 +125,12 @@ function CheckoutBody({
   const lines = cart.lines;
   const [isOpenNow, setIsOpenNow] = useState<boolean | null>(null);
   const [mode, setMode] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
-  const [verdict, setVerdict] = useState<DeliveryVerdict | null>(null);
+  const [verdictBrut, setVerdict] = useState<DeliveryVerdict | null>(null);
   const [slots, setSlots] = useState<SlotDay[]>([]);
   const [slotDay, setSlotDay] = useState(0);
   const [pickupTime, setPickupTime] = useState('');
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
-  const [methodId, setMethodId] = useState('');
+  const [methodChoisi, setMethodId] = useState('');
   const [serviceFee, setServiceFee] = useState(0);
   const [contact, setContact] = useState({ name: '', email: '', phone: '' });
   const [notes, setNotes] = useState('');
@@ -179,10 +179,7 @@ function CheckoutBody({
   }, [cart.storeId]);
 
   useEffect(() => {
-    if (mode !== 'DELIVERY' || !address) {
-      setVerdict(null);
-      return;
-    }
+    if (mode !== 'DELIVERY' || !address) return;
     const params =
       address.latitude != null && address.longitude != null
         ? `lat=${address.latitude}&lng=${address.longitude}`
@@ -191,6 +188,8 @@ function CheckoutBody({
       .then((res) => setVerdict(res.data))
       .catch(() => setVerdict(null));
   }, [mode, address, cart.storeId]);
+  // Hors livraison ou sans adresse, aucun verdict : dérivé, sans effet.
+  const verdict = mode === 'DELIVERY' && address ? verdictBrut : null;
 
   useEffect(() => {
     if (mode !== 'PICKUP') return;
@@ -207,10 +206,10 @@ function CheckoutBody({
     () => (config.enLigne && !pay ? methods.filter((m) => m.type === 'CASH') : methods),
     [methods, config.enLigne, pay]
   );
-  useEffect(() => {
-    if (usable.some((m) => m.id === methodId)) return;
-    setMethodId((usable.find((m) => m.isDefault) || usable[0])?.id || '');
-  }, [usable, methodId]);
+  // Le moyen choisi, ou à défaut celui par défaut : dérivé, sans effet.
+  const methodId = usable.some((m) => m.id === methodChoisi)
+    ? methodChoisi
+    : (usable.find((m) => m.isDefault) || usable[0])?.id || '';
 
   const subtotal = cartTotal(lines);
   // Le seuil de la zone atteint, la livraison est offerte : le serveur
@@ -233,10 +232,12 @@ function CheckoutBody({
   const total = Number((orderTotal + tip).toFixed(2));
   const belowMinimum = mode === 'DELIVERY' && Boolean(verdict?.livrable) && subtotal < (verdict?.minimum ?? 0);
 
-  // Le panier change : la remise calculée ne vaut plus.
-  useEffect(() => {
+  // Le panier change : la remise calculée ne vaut plus (ajustement d'état pendant le rendu).
+  const [sousTotalDeLaRemise, setSousTotalDeLaRemise] = useState(subtotal);
+  if (sousTotalDeLaRemise !== subtotal) {
+    setSousTotalDeLaRemise(subtotal);
     setDiscount(null);
-  }, [subtotal]);
+  }
 
   const applyCode = async () => {
     const typed = code.trim();

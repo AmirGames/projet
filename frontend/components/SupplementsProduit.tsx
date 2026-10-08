@@ -184,7 +184,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
           {groupes.map((groupe, gi) => (
             <fieldset key={gi} className="bg-gray-50 rounded-lg p-3 space-y-3">
               <div className="flex flex-wrap items-end gap-2">
-                <div className="flex-1 min-w-[10rem]">
+                <div className="flex-1 min-w-40">
                   <label htmlFor={`groupe-${productId}-${gi}`} className="block text-xs text-gray-500 mb-1">
                     {t('groupName')}
                   </label>
@@ -193,7 +193,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                     value={groupe.name}
                     onChange={(e) => changerGroupe(gi, { name: e.target.value })}
                     placeholder={t('groupPlaceholder')}
-                    className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-sm px-2 py-1.5 text-sm focus:outline-hidden focus:border-orange-500"
                   />
                 </div>
                 <div>
@@ -207,7 +207,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                     value={groupe.maxChoices}
                     onChange={(e) => changerGroupe(gi, { maxChoices: e.target.value })}
                     placeholder={t('unlimited')}
-                    className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                    className="w-24 bg-gray-100 border border-gray-300 rounded-sm px-2 py-1.5 text-sm focus:outline-hidden focus:border-orange-500"
                   />
                 </div>
                 <label className="flex items-center gap-2 text-sm text-gray-700 py-1.5">
@@ -237,7 +237,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                       onChange={(e) => changerChoix(gi, ci, { label: e.target.value })}
                       placeholder={t('choicePlaceholder')}
                       aria-label={t('choiceName')}
-                      className="flex-1 min-w-[8rem] bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                      className="flex-1 min-w-32 bg-gray-100 border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-orange-500"
                     />
                     <input
                       type="number"
@@ -247,7 +247,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                       onChange={(e) => changerChoix(gi, ci, { price: e.target.value })}
                       placeholder="0"
                       aria-label={t('choicePrice', { nom: choix.label || '…' })}
-                      className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                      className="w-24 bg-gray-100 border border-gray-300 rounded-sm px-2 py-1 text-sm focus:outline-hidden focus:border-orange-500"
                     />
                     <span className="text-xs text-gray-500 w-20">
                       {Number(choix.price) > 0 ? `+ ${euro(Number(choix.price))}` : t('free')}
@@ -296,7 +296,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
             <button
               type="button"
               onClick={() => setGroupes((actuels) => [...actuels, groupeVide(actuels.length === 0 ? t('defaultGroup') : '')])}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-gray-100 hover:bg-gray-200 text-sm transition"
             >
               <Plus size={14} />
               {t('addGroup')}
@@ -305,7 +305,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
               type="button"
               onClick={enregistrer}
               disabled={chargement || !modifie}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:bg-gray-100 disabled:text-gray-500 text-sm font-medium transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-orange-600 text-white hover:bg-orange-700 disabled:bg-gray-100 disabled:text-gray-500 text-sm font-medium transition"
             >
               <Save size={14} />
               {t('save')}
@@ -314,7 +314,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
           </div>
 
           {erreur && (
-            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">
               {erreur}
             </p>
           )}

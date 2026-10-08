@@ -29,6 +29,7 @@ function notifications(): typeof NotificationsModule | null {
   cached =
     isRunningInExpoGo() || Platform.OS === 'web'
       ? null
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
       : (require('expo-notifications') as typeof NotificationsModule);
   return cached;
 }
@@ -125,6 +126,7 @@ export async function registerOfferCategory() {
   const N = notifications();
   if (!N || Platform.OS !== 'android') return;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- chargement paresseux : le module natif est absent d'Expo Go / du web
     const TaskManager = require('expo-task-manager') as typeof import('expo-task-manager');
     TaskManager.defineTask(TASK, async ({ data }) => {
       const payload = data as NotificationsModule.NotificationTaskPayload;

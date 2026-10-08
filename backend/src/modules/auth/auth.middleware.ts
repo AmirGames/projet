@@ -25,8 +25,6 @@ declare global {
       userId?: string;
       /** Email de l'administrateur, posé par `isSuperOwner` pour les journaux. */
       actorEmail?: string;
-      /** Identifiant de socket du client, s'il est posé par un middleware de temps réel. */
-      socketId?: string;
       orgId?: string;
       storeIds?: string[];
       role?: string;

@@ -98,7 +98,7 @@ export function BusinessPanel({
             value={storeId}
             disabled={busy}
             onChange={(e) => chooseStore(e.target.value)}
-            className="block w-full rounded border p-2 text-gray-900"
+            className="block w-full rounded-sm border p-2 text-gray-900"
           >
             <option value="">{t('choisir')}</option>
             {resources.map((r) => (
@@ -111,7 +111,7 @@ export function BusinessPanel({
       )}
       {category !== "restaurant" &&
         resources.map((r) => (
-          <article key={r.id} className="rounded bg-white border p-2">
+          <article key={r.id} className="rounded-sm bg-white border p-2">
             <p>
               {r.store?.name || t("course")} — {r.status || r.statut}
             </p>
@@ -232,7 +232,7 @@ export function BusinessPanel({
           </div>
           {hours && <p className="whitespace-pre-wrap">{hours}</p>}
           {orders.map((order) => (
-            <p key={order.id} className="rounded border p-2 bg-white">
+            <p key={order.id} className="rounded-sm border p-2 bg-white">
               {t("commande", { id: order.id, statut: order.status ?? "" })}
             </p>
           ))}
@@ -243,7 +243,7 @@ export function BusinessPanel({
                 value={productId}
                 disabled={busy}
                 onChange={(e) => setProductId(e.target.value)}
-                className="w-full border rounded p-2 text-gray-900"
+                className="w-full border rounded-sm p-2 text-gray-900"
               >
                 <option value="">{t('choisirProduit')}</option>
                 {products.map((p) => (
@@ -285,7 +285,7 @@ export function BusinessPanel({
                 aria-label={t('jourAModifier')}
                 value={day}
                 onChange={(e) => setDay(e.target.value)}
-                className="border rounded p-1 text-gray-900"
+                className="border rounded-sm p-1 text-gray-900"
               >
                 {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map(
                   (d) => (
@@ -302,7 +302,7 @@ export function BusinessPanel({
                   type="time"
                   value={opening}
                   onChange={(e) => setOpening(e.target.value)}
-                  className="block border rounded p-1 text-gray-900"
+                  className="block border rounded-sm p-1 text-gray-900"
                 />
               </label>
               <label>
@@ -312,7 +312,7 @@ export function BusinessPanel({
                   type="time"
                   value={closing}
                   onChange={(e) => setClosing(e.target.value)}
-                  className="block border rounded p-1 text-gray-900"
+                  className="block border rounded-sm p-1 text-gray-900"
                 />
               </label>
               <label className="self-center">

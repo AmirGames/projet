@@ -141,7 +141,7 @@ export function AlerteCommandes({
     <div role="status" className="border-b border-green-200 bg-green-50 px-4 py-3 sm:px-6">
       {livreursTrouves.map((l) => (
         <div key={l.orderId} className="flex items-center gap-3 text-sm">
-          <Bike size={20} className="text-green-700 flex-shrink-0" />
+          <Bike size={20} className="text-green-700 shrink-0" />
           <p className="flex-1 text-green-900">
             {t.rich('livreurTrouve', { livreur: l.livreur, numero: l.numero, b: (c) => <span className="font-bold">{c}</span> })}
           </p>
@@ -234,7 +234,7 @@ export function AlerteCommandes({
       className="bg-gray-900 px-4 py-3 text-white sm:px-6"
     >
       <div className="flex flex-wrap items-center gap-3">
-        <BellRing size={22} className="text-orange-400 flex-shrink-0 animate-pulse" />
+        <BellRing size={22} className="text-orange-400 shrink-0 animate-pulse" />
         <div className="flex-1 min-w-0 text-sm">
           <p className="font-extrabold">
             {t('aAccepter', { n: enAttente.length })}

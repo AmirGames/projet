@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { apiFetch } from './api';
 import { Cart, CartLine, Carts, keyOf, saveCarts } from './carts';
 import { useRealtimeEvent } from './realtime';
+import { useDerniereValeur } from './useDerniereValeur';
 
 /** Une ligne telle que le serveur et le site la gardent (`frontend/lib/paniers.ts`). */
 interface RemoteLine {
@@ -84,8 +85,7 @@ export function useCartSync({
   /** Tant que la première fusion n'est pas faite, rien ne part : on écraserait un panier plus récent. */
   const ready = useRef(false);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const cartsRef = useRef(carts);
-  cartsRef.current = carts;
+  const cartsRef = useDerniereValeur(carts);
 
   const push = useCallback(
     (storeId: string) => {
@@ -124,7 +124,7 @@ export function useCartSync({
         }, 400)
       );
     },
-    [token, setCarts]
+    [token, setCarts, cartsRef]
   );
 
   const syncAll = useCallback(async () => {

@@ -333,7 +333,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           menuMobile ? 'translate-x-0' : '-translate-x-full'
         } lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           sidebarOpen ? 'lg:w-64' : 'lg:w-20'
-        } flex-shrink-0 bg-white border-r border-[#ECECEA] transition-all duration-300 flex flex-col`}
+        } shrink-0 bg-white border-r border-[#ECECEA] transition-all duration-300 flex flex-col`}
       >
         {/* Logo */}
         <div className="p-4 border-b border-[#ECECEA]">
@@ -374,7 +374,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
                     actif ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <Icone size={16} className="flex-shrink-0" />
+                  <Icone size={16} className="shrink-0" />
                   {etendu && <span className="truncate">{label}</span>}
                 </Link>
               );
@@ -425,7 +425,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
                           : 'font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
-                      <item.icon size={18} className="flex-shrink-0" />
+                      <item.icon size={18} className="shrink-0" />
                       {etendu && <span className="truncate">{item.label}</span>}
                     </Link>
                   );
@@ -474,7 +474,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
               <Lock size={16} className="text-red-600" />
               {t('headerTitle')}
               {!acces.isSuperOwner && acces.roleLabel && (
-                <span className="ml-2 px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">
+                <span className="ml-2 px-2 py-0.5 rounded-sm bg-gray-100 text-gray-700 text-xs">
                   {tRoles('yourRole', { role: acces.roleLabel })}
                 </span>
               )}

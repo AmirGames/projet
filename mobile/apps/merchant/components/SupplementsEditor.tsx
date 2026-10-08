@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../lib/api';
 import { COLORS } from './ui';
+import { useEffectChargement } from '../lib/useEffectChargement';
 
 interface Choice {
   id?: string;
@@ -62,7 +63,7 @@ export default function SupplementsEditor({ productId, token }: { productId: str
     }
   }, [productId, token]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     load();
   }, [load]);
 

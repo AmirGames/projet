@@ -579,7 +579,7 @@ export default function OrganizationsPage() {
                 value={promo.until}
                 min={new Date().toISOString().slice(0, 10)}
                 onChange={(e) => setPromo({ ...promo, until: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-pink-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-pink-500"
               />
               <p className="text-xs text-gray-500 mt-1">{t('promoUntilHelp')}</p>
             </div>
@@ -594,7 +594,7 @@ export default function OrganizationsPage() {
                 maxLength={200}
                 placeholder={t('promoNotePlaceholder')}
                 onChange={(e) => setPromo({ ...promo, note: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-pink-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-pink-500"
               />
             </div>
 
@@ -654,7 +654,7 @@ export default function OrganizationsPage() {
                 value={conditions.commission}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, commission: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
             <div>
@@ -670,7 +670,7 @@ export default function OrganizationsPage() {
                 value={conditions.commissionLivreurs}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, commissionLivreurs: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
             <div>
@@ -686,7 +686,7 @@ export default function OrganizationsPage() {
                 value={conditions.maxBoutiques}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, maxBoutiques: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
             <div>
@@ -702,7 +702,7 @@ export default function OrganizationsPage() {
                 value={conditions.prixMensuel}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, prixMensuel: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
 
@@ -716,7 +716,7 @@ export default function OrganizationsPage() {
                 maxLength={500}
                 placeholder={t('termsNotePlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, note: e.target.value })}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-sm px-3 py-2 text-gray-900 focus:outline-hidden focus:border-amber-500"
               />
             </div>
 

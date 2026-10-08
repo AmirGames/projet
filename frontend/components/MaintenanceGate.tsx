@@ -59,7 +59,7 @@ export function MaintenanceGate() {
   if (!message || exempt) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#F7F7F6] flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-100 bg-[#F7F7F6] flex items-center justify-center p-6">
       <div className="max-w-md text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto">
           <Wrench size={32} className="text-orange-600" />

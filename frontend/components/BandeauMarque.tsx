@@ -41,7 +41,7 @@ export function BandeauMarque({
 
         <div className="relative max-w-2xl">
           {badge && (
-            <span className="mb-5 inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-bold backdrop-blur">
+            <span className="mb-5 inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-bold backdrop-blur-sm">
               {badge}
             </span>
           )}

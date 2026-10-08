@@ -125,7 +125,7 @@ export default function InscriptionLivreurPage() {
             <SelecteurPays
               pays={pays}
               onChange={setPays}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
             />
           </div>
 
@@ -136,7 +136,7 @@ export default function InscriptionLivreurPage() {
               required
               minLength={2}
               {...champ('name')}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
             />
           </div>
 
@@ -146,7 +146,7 @@ export default function InscriptionLivreurPage() {
               type="email"
               required
               {...champ('email')}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
             />
           </div>
 
@@ -158,7 +158,7 @@ export default function InscriptionLivreurPage() {
               minLength={9}
               placeholder={PAYS[pays].exempleTelephone}
               {...champ('phone')}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
             />
           </div>
 
@@ -172,7 +172,7 @@ export default function InscriptionLivreurPage() {
               minLength={8}
               autoComplete="new-password"
               {...champ('password')}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
             />
             <ReglesMotDePasse valeur={formulaire.password} />
           </div>
@@ -206,7 +206,7 @@ export default function InscriptionLivreurPage() {
               <input
                 type="text"
                 {...champ('vehiclePlate')}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
               />
             </div>
           )}

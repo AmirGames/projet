@@ -242,7 +242,7 @@ export default function ProductTagPage() {
                     name="color"
                     value={formData.color}
                     onChange={handleInputChange}
-                    className="w-12 h-10 border rounded cursor-pointer"
+                    className="w-12 h-10 border rounded-sm cursor-pointer"
                   />
                   <input
                     type="text"
@@ -286,7 +286,7 @@ export default function ProductTagPage() {
           {tags.map((tag) => (
             <div
               key={tag.id}
-              className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition"
+              className="bg-white rounded-lg shadow-sm p-4 hover:shadow-lg transition"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -301,14 +301,14 @@ export default function ProductTagPage() {
                 <div className="flex gap-1">
                   <button
                     onClick={() => openModal(tag)}
-                    className="p-1 hover:bg-gray-100 rounded transition"
+                    className="p-1 hover:bg-gray-100 rounded-sm transition"
                     title={t('edit')}
                   >
                     <Edit2 className="w-4 h-4 text-blue-600" />
                   </button>
                   <button
                     onClick={() => deleteTag(tag.id)}
-                    className="p-1 hover:bg-gray-100 rounded transition"
+                    className="p-1 hover:bg-gray-100 rounded-sm transition"
                     title={t('delete')}
                   >
                     <Trash2 className="w-4 h-4 text-red-600" />

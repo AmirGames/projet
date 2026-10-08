@@ -105,7 +105,7 @@ export default function DriversPage() {
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+              className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-yellow-500"
             />
           </div>
           <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg flex items-center gap-2 text-gray-700 transition-colors">
@@ -160,13 +160,13 @@ export default function DriversPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button className="p-2 hover:bg-gray-200 rounded transition-colors text-gray-500 hover:text-gray-700" title={t('view')}>
+                        <button className="p-2 hover:bg-gray-200 rounded-sm transition-colors text-gray-500 hover:text-gray-700" title={t('view')}>
                           <Eye size={18} />
                         </button>
-                        <button className="p-2 hover:bg-gray-200 rounded transition-colors text-gray-500 hover:text-gray-700" title={t('edit')}>
+                        <button className="p-2 hover:bg-gray-200 rounded-sm transition-colors text-gray-500 hover:text-gray-700" title={t('edit')}>
                           <Edit2 size={18} />
                         </button>
-                        <button className="p-2 hover:bg-red-50 rounded transition-colors text-gray-500 hover:text-red-600" title={t('delete')}>
+                        <button className="p-2 hover:bg-red-50 rounded-sm transition-colors text-gray-500 hover:text-red-600" title={t('delete')}>
                           <Trash2 size={18} />
                         </button>
                       </div>
