@@ -102,6 +102,8 @@ model User {
   ratingsGiven  RatingCourseDrive[]
   /// Les paiements Stripe pour trajets ZupDrive.
   paymentsIntentDrive PaymentIntentDrive[]
+  /// Ses adresses « Domicile » et « Travail » pour commander un trajet ZupDrive.
+  adressesFavoritesDrive AdresseFavoriteDrive[]
   /// Les notifications in-app de cet utilisateur.
   notificationsDrive NotificationDrive[]
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
@@ -3169,6 +3171,27 @@ model NoteCourseDrive {
   @@unique([courseId, auteur])
   @@index([chauffeurId, auteur])
   @@index([passagerId, auteur])
+}
+
+/// L'adresse « Domicile » ou « Travail » d'un passager ZupDrive, pour remplir
+/// un trajet en un geste. Une seule par type et par compte. Donnée personnelle :
+/// supprimée avec le compte (erasure.service) et incluse dans l'export.
+model AdresseFavoriteDrive {
+  id         String   @id @default(cuid())
+  userId     String
+  /// DOMICILE ou TRAVAIL.
+  type       String
+  adresse    String
+  latitude   Float
+  longitude  Float
+  codePostal String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type])
 }
 
 // ============================================================================
