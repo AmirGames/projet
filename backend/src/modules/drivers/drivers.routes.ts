@@ -895,7 +895,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
     // Les courses du livreur : celles de sa tournée qui ne sont pas encore
     // à leur tour ne montrent pas leur client.
     const etat = enAttente ? null : await DispatchService.etatTournee(livreur.id);
-    const formatted = deliveries.map((d: any) => masquerClient({
+    const formatted = deliveries.map((d) => masquerClient({
       id: d.id,
       orderId: d.orderId,
       status: d.status,
@@ -1806,7 +1806,7 @@ router.patch(
  * /api/files (voir modules/files/files.routes.ts).
  */
 router.get(/^\/documents\/file\/(.+)$/, (req: Request, res: Response, next: NextFunction) =>
-  servirFichierPrive(cheminRelatif((req.params as any)[0]), req, res, next)
+  servirFichierPrive(cheminRelatif(String(req.params[0] ?? "")), req, res, next)
 );
 
 // GET /drivers/available - Get available delivery drivers within radius

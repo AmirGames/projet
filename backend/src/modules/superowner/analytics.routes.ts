@@ -85,7 +85,7 @@ router.get("/analytics", authMiddleware, isSuperOwner, async (req: Request, res:
     const duPlusRecent = [...data].reverse();
 
     res.json({
-      data: duPlusRecent.map(({ periodeIndex, ...reste }) => reste),
+      data: duPlusRecent.map(({ periodeIndex: _index, ...reste }) => reste),
       summary: {
         totalRevenue: Number(totalRevenue.toFixed(2)),
         totalTransactions,

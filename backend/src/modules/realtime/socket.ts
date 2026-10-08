@@ -244,7 +244,7 @@ export function emitNotification(recipientEmail: string, notification: unknown) 
   return envoyerPrive([salonUtilisateur(recipientEmail)], 'notification', notification);
 }
 
-export async function emitOrderUpdate(orderId: string, status: string, data?: any) {
+export async function emitOrderUpdate(orderId: string, status: string, data?: Record<string, unknown>) {
   if (!io) return;
 
   await envoyerPrive([`order-${orderId}`], 'order-update', {
@@ -257,7 +257,7 @@ export async function emitOrderUpdate(orderId: string, status: string, data?: an
   void prevenirLaBoutique(orderId, { status });
 }
 
-export async function emitDeliveryUpdate(orderId: string, data: any) {
+export async function emitDeliveryUpdate(orderId: string, data: Record<string, unknown>) {
   if (!io) return;
 
   await envoyerPrive([`order-${orderId}`], 'delivery-update', {

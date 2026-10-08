@@ -13,18 +13,19 @@ const env = getEnv();
 const UPLOADS_DIR = join(process.cwd(), "uploads");
 const API_URL = env.API_URL || "http://localhost:3001";
 
-let cloudinary: any = null;
+let cloudinary: typeof import("cloudinary").v2 | null = null;
 
 // Lazy-load cloudinary seulement si configuré
 async function getCloudinary() {
-  if (!cloudinary && isCloudinaryConfigured()) {
+  if (!cloudinary) {
+    if (!isCloudinaryConfigured()) throw new Error("Cloudinary n'est pas configuré");
     const { v2 } = await import("cloudinary");
-    cloudinary = v2;
-    cloudinary.config({
+    v2.config({
       cloud_name: env.CLOUDINARY_CLOUD_NAME,
       api_key: env.CLOUDINARY_API_KEY,
       api_secret: env.CLOUDINARY_API_SECRET,
     });
+    cloudinary = v2;
   }
   return cloudinary;
 }
@@ -117,7 +118,7 @@ export class FileUploadService {
           overwrite: true,
           ...(publique ? {} : { access_mode: "token" }),
         },
-        (error: any, result: any) => {
+        (error, result) => {
           if (error) {
             logger.error("Cloudinary upload failed", { error });
             reject(error);

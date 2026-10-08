@@ -93,12 +93,19 @@ export async function runRetention(now = new Date()) {
 /** Grace de 24 h pour les uploads dont l'écriture SQL a échoué ou a été remplacée. */
 async function purgeOrphans(now: Date) {
   const refs = new Set<string>();
-  const sources: { delegate: any; field: string }[] = [{ delegate: db.courierDocument, field: "documentUrl" }, { delegate: db.organizationDocument, field: "documentUrl" }, { delegate: db.documentChauffeurDrive, field: "url" }, { delegate: db.orderDelivery, field: "proofPhoto" }];
-  for (const { delegate, field } of sources) {
+  // Une page de 500 références, après `cursor` : chaque table garde son fichier dans un champ différent.
+  type Page = { id: string; fichier: string | null }[];
+  const sources: ((cursor?: string) => Promise<Page>)[] = [
+    async (cursor) => (await db.courierDocument.findMany({ select: { id: true, documentUrl: true }, orderBy: { id: "asc" }, take: 500, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) })).map((r) => ({ id: r.id, fichier: r.documentUrl })),
+    async (cursor) => (await db.organizationDocument.findMany({ select: { id: true, documentUrl: true }, orderBy: { id: "asc" }, take: 500, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) })).map((r) => ({ id: r.id, fichier: r.documentUrl })),
+    async (cursor) => (await db.documentChauffeurDrive.findMany({ select: { id: true, url: true }, orderBy: { id: "asc" }, take: 500, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) })).map((r) => ({ id: r.id, fichier: r.url })),
+    async (cursor) => (await db.orderDelivery.findMany({ select: { id: true, proofPhoto: true }, orderBy: { id: "asc" }, take: 500, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) })).map((r) => ({ id: r.id, fichier: r.proofPhoto })),
+  ];
+  for (const page of sources) {
     let cursor: string | undefined;
     for (;;) {
-      const rows = await delegate.findMany({ select: { id: true, [field]: true }, orderBy: { id: "asc" }, take: 500, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) });
-      for (const row of rows) { const relative = cheminRelatif(row[field]); if (relative) refs.add(relative); }
+      const rows = await page(cursor);
+      for (const row of rows) { const relative = cheminRelatif(row.fichier); if (relative) refs.add(relative); }
       if (rows.length < 500) break;
       cursor = rows[rows.length - 1].id;
     }

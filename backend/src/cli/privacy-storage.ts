@@ -17,23 +17,40 @@ if (mutate && process.env.PRIVACY_MAINTENANCE_ACK !== "stopped") throw new Error
 keyring();
 process.env.PRIVACY_ALLOW_LEGACY_READ = "true";
 const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+/** Ce que ce script utilise de chaque table, quel que soit son modèle. */
+interface Delegue {
+  findMany(args: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+  update(args: Record<string, unknown>): Promise<unknown>;
+}
+
+function estDelegue(candidat: unknown): candidat is Delegue {
+  return typeof candidat === "object" && candidat !== null && typeof Reflect.get(candidat, "findMany") === "function" && typeof Reflect.get(candidat, "update") === "function";
+}
+
+function delegueDe(modele: string): Delegue {
+  const delegue = Reflect.get(client, modele[0].toLowerCase() + modele.slice(1));
+  if (!estDelegue(delegue)) throw new Error(`Modèle introuvable : ${modele}`);
+  return delegue;
+}
+
 let problems = 0;
 const counts: Record<string, number> = {};
 try {
   if (mutate) await client.merchantArchive.updateMany({ data: { ordersData: Prisma.DbNull, customersData: Prisma.DbNull } });
   for (const [model, fields] of Object.entries(ENCRYPTED_FIELDS)) {
-    const delegate = (client as any)[model[0].toLowerCase() + model.slice(1)];
+    const delegate = delegueDe(model);
     const schema = Prisma.dmmf.datamodel.models.find((m) => m.name === model)!;
     let cursor: string | undefined;
     counts[model] = 0;
     for (;;) {
       const rows = await delegate.findMany({ select: { id: true, ...Object.fromEntries(fields.map((name) => [name, true])) }, orderBy: { id: "asc" }, take: 250, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) });
       for (const row of rows) {
-        const clear: any = {};
+        const clear: Record<string, unknown> = {};
         for (const name of fields) {
           if (row[name] == null) continue;
           const json = schema.fields.find((f) => f.name === name)?.type === "Json";
-          const cipher = json ? row[name]?._encrypted : row[name];
+          const brut = row[name];
+          const cipher = json ? (typeof brut === "object" && brut !== null ? Reflect.get(brut, "_encrypted") : undefined) : brut;
           if (isEncrypted(cipher)) {
             decrypt(cipher, `${model}.${name}`);
             if (mode === "--rotate") clear[name] = decryptResult(model, { [name]: row[name] })[name];
@@ -42,7 +59,9 @@ try {
         if (mutate && Object.keys(clear).length) await delegate.update({ where: { id: row.id }, data: encryptData(model, clear) });
       }
       if (rows.length < 250) break;
-      cursor = rows.at(-1).id;
+      const dernier = rows.at(-1)?.id;
+      if (typeof dernier !== "string") break;
+      cursor = dernier;
     }
   }
   for (const folder of ["drivers", "merchants", "deliveries", "chauffeurs"]) {
@@ -84,21 +103,24 @@ try {
     if (!isEncrypted(content)) { counts.legacyBackups++; problems++; }
     if (mutate && (!isEncrypted(content) || mode === "--rotate")) await fs.writeFile(backup.filePath!, encrypt(clear, `backup:${backup.id}`), { mode: 0o600 });
   }
-  const checks = [{ delegate: client.courierDocument, field: "documentUrl" }, { delegate: client.organizationDocument, field: "documentUrl" }, { delegate: client.documentChauffeurDrive, field: "url" }] as const;
+  const checks: (() => Promise<(string | null)[]>)[] = [
+    async () => (await client.courierDocument.findMany({ select: { documentUrl: true } })).map((r) => r.documentUrl),
+    async () => (await client.organizationDocument.findMany({ select: { documentUrl: true } })).map((r) => r.documentUrl),
+    async () => (await client.documentChauffeurDrive.findMany({ select: { url: true } })).map((r) => r.url),
+  ];
   counts.externalOrMissingDocuments = 0;
-  for (const { delegate, field } of checks) {
-    const rows: any[] = await (delegate as any).findMany({ select: { [field]: true } });
-    for (const row of rows) {
-      const pathname = row[field]?.split("/uploads/")[1];
+  for (const lire of checks) {
+    for (const url of await lire()) {
+      const pathname = url?.split("/uploads/")[1];
       try { if (!pathname) throw new Error("external"); await readPrivate(pathname); }
       catch { counts.externalOrMissingDocuments++; problems++; }
     }
   }
   console.log(JSON.stringify({ mode, counters: counts, storageVerified: !mutate && problems === 0, next: mutate ? "Exécuter --check avant démarrage" : problems ? "Corriger les problèmes ; ne pas ouvrir au public" : "Stockage applicatif vérifié ; preuves infrastructure et juridiques encore requises" }, null, 2));
   if (!mutate && problems > 0) process.exitCode = 2;
-} catch (error: any) {
+} catch (error) {
   // Jamais le message : il peut contenir des valeurs. Seulement la nature de l'erreur.
-  const nature = [error?.name, error?.code].filter((v) => typeof v === "string" && /^[A-Za-z0-9_]{1,40}$/.test(v)).join(" ");
+  const nature = [error instanceof Error ? error.name : undefined, codeErreur(error)].filter((v) => typeof v === "string" && /^[A-Za-z0-9_]{1,40}$/.test(v)).join(" ");
   console.error(`Vérification/migration RGPD en échec (clé, base, antivirus ou fichier)${nature ? ` : ${nature}` : ""} ; aucune ouverture publique autorisée`);
   process.exitCode = 1;
 } finally { await client.$disconnect(); }

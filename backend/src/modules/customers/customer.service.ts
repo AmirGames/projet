@@ -28,7 +28,7 @@ interface CustomerData {
   status?: string;
 }
 
-export interface CreateCustomerData extends CustomerData {}
+export type CreateCustomerData = CustomerData;
 
 /** Seul ce que le commerçant sait du client se modifie depuis sa boutique. */
 export interface UpdateCustomerData {
@@ -198,7 +198,7 @@ export class CustomerService {
       create: { storeId, customerId, ...changements },
     });
 
-    const { storeEntries, ...fiche } = client;
+    const { storeEntries: _entrees, ...fiche } = client;
     return vueBoutique(fiche, entree);
   }
 
@@ -226,7 +226,7 @@ export class CustomerService {
       create: { storeId, customerId, status: "BLOCKED" },
     });
 
-    const { storeEntries, ...fiche } = client;
+    const { storeEntries: _entrees, ...fiche } = client;
     return vueBoutique(fiche, entree);
   }
 }

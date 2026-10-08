@@ -4,6 +4,7 @@ import { logger } from "../../config/logger";
 import { StoreService } from "./store.service";
 import { PlanService } from "../plans/plan.service";
 import { compteDuJeton } from "../auth/auth.middleware";
+import { entreeJson } from "../../utils/json";
 
 /**
  * Ouvrir une boutique de plus sur le modèle d'une autre.
@@ -100,8 +101,8 @@ export class StoreDuplicationService {
               legalName: source.legalName,
               vatNumber: source.vatNumber,
               registrationNumber: source.registrationNumber,
-              operatingHours: source.operatingHours as any,
-              pickupSlots: source.pickupSlots as any,
+              operatingHours: entreeJson(source.operatingHours),
+              pickupSlots: entreeJson(source.pickupSlots),
               acceptsDelivery: source.acceptsDelivery,
               acceptsPickup: source.acceptsPickup,
               deliveryCost: source.deliveryCost,
@@ -113,7 +114,7 @@ export class StoreDuplicationService {
             await tx.theme.create({
               data: {
                 storeId: store.id,
-                config: source.theme.config as any,
+                config: entreeJson(source.theme.config),
                 customCss: source.theme.customCss,
                 status: source.theme.status,
               },
@@ -178,7 +179,7 @@ export class StoreDuplicationService {
                 data: {
                   productId: copie.id,
                   name: o.name,
-                  choices: o.choices as any,
+                  choices: entreeJson(o.choices),
                   isRequired: o.isRequired,
                   pricingType: o.pricingType,
                   maxChoices: o.maxChoices,
@@ -195,7 +196,7 @@ export class StoreDuplicationService {
                   sku: v.sku,
                   label: v.label,
                   displayOrder: v.displayOrder,
-                  combination: remapperCles(v.combination, options) as any,
+                  combination: remapperCles(v.combination, options),
                   price: v.price,
                   stock: v.stock,
                   isAvailable: v.isAvailable,
@@ -268,7 +269,7 @@ export class StoreDuplicationService {
                 opacity: z.opacity,
                 baseFee: z.baseFee,
                 minOrder: z.minOrder,
-              })) as any,
+              })),
             });
           }
 
@@ -308,7 +309,7 @@ export class StoreDuplicationService {
                 storeId: store.id,
                 type: m.type,
                 name: m.name,
-                config: m.config as any,
+                config: entreeJson(m.config),
                 isDefault: m.isDefault,
                 isActive: m.isActive,
                 commissionPercent: m.commissionPercent,

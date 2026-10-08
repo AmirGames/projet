@@ -77,13 +77,26 @@ interface Localisation {
  */
 type Localisateur = (id: string) => Promise<Localisation | null>;
 
+const PROPRIETAIRE = { storeId: true, store: { select: { orgId: true } } } as const;
+
+type ModeleDeBoutique = "product" | "category" | "order" | "promotion" | "deliveryZone" | "review";
+
+/** Remonte d'une donnée à sa boutique et à son organisation. */
+function lireProprietaire(modele: ModeleDeBoutique, id: string) {
+  switch (modele) {
+    case "product": return db.product.findUnique({ where: { id }, select: PROPRIETAIRE });
+    case "category": return db.category.findUnique({ where: { id }, select: PROPRIETAIRE });
+    case "order": return db.order.findUnique({ where: { id }, select: PROPRIETAIRE });
+    case "promotion": return db.promotion.findUnique({ where: { id }, select: PROPRIETAIRE });
+    case "deliveryZone": return db.deliveryZone.findUnique({ where: { id }, select: PROPRIETAIRE });
+    case "review": return db.review.findUnique({ where: { id }, select: PROPRIETAIRE });
+  }
+}
+
 const parBoutique =
-  (modele: string, commande = false): Localisateur =>
+  (modele: ModeleDeBoutique, commande = false): Localisateur =>
   async (id) => {
-    const trouvee = await (db as any)[modele].findUnique({
-      where: { id },
-      select: { storeId: true, store: { select: { orgId: true } } },
-    });
+    const trouvee = await lireProprietaire(modele, id);
     if (!trouvee?.store?.orgId) return null;
     return { id, orgId: trouvee.store.orgId, storeId: trouvee.storeId, orderId: commande ? id : undefined };
   };

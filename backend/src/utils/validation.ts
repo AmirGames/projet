@@ -116,7 +116,7 @@ const ValidationSchemas = {
   }),
 };
 
-export const validatePagination = (req: any) => {
+export const validatePagination = (req: { query: Record<string, unknown> }) => {
   return ValidationSchemas.pagination.parse({
     page: req.query.page,
     limit: req.query.limit,

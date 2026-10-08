@@ -243,7 +243,7 @@ export class ReportsService {
     }
   }
 
-  static exportToCSV(data: any[], _filename: string): string {
+  static exportToCSV(data: Record<string, unknown>[], _filename: string): string {
     if (!data || data.length === 0) {
       return "";
     }

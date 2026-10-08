@@ -111,7 +111,7 @@ router.get("/export/:type", authMiddleware, async (req: Request, res: Response, 
 
     logger.info("Exporting report", { type, storeId });
 
-    let data: any[] = [];
+    let data: Record<string, unknown>[] = [];
     let filename = "";
 
     if (type === "sales") {
@@ -120,7 +120,7 @@ router.get("/export/:type", authMiddleware, async (req: Request, res: Response, 
         startDate,
         endDate,
       });
-      data = report.orders.map((o: any) => ({
+      data = report.orders.map((o) => ({
         ID: o.id,
         Date: new Date(o.createdAt).toISOString().split("T")[0],
         Customer: o.customerName,

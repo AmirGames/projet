@@ -8,16 +8,21 @@ import { ApiError } from "../../middleware/api-error";
  * Gestion des tickets de support, catégories, priorités, assignation d'agents.
  */
 
+import type { SupportMessage as SupportMessageRow, SupportTicket as SupportTicketRow } from "@prisma/client";
+
 export interface SupportTicket {
   id: string;
   ticketNumber: string;
-  category: "TECHNIQUE" | "PAIEMENT" | "INFRACTION" | "DOCUMENT" | "AUTRE";
-  priority: "BASSE" | "MOYENNE" | "HAUTE" | "CRITIQUE";
+  /** TECHNIQUE, PAIEMENT, INFRACTION, DOCUMENT ou AUTRE (colonne texte). */
+  category: string;
+  /** BASSE, MOYENNE, HAUTE ou CRITIQUE. */
+  priority: string;
   subject: string;
   description: string;
-  status: "OUVERT" | "EN_COURS" | "EN_ATTENTE_CLIENT" | "RESOLU" | "FERME";
+  /** OUVERT, EN_COURS, EN_ATTENTE_CLIENT, RESOLU ou FERME. */
+  status: string;
   reporterId: string;
-  reporterType: "CHAUFFEUR" | "PASSAGER" | "ADMIN";
+  reporterType: string;
   assignedTo?: string; // Agent de support ID
   createdAt: Date;
   updatedAt: Date;
@@ -29,7 +34,7 @@ export interface SupportMessage {
   id: string;
   ticketId: string;
   authorId: string;
-  authorType: "CHAUFFEUR" | "PASSAGER" | "AGENT" | "ADMIN";
+  authorType: string;
   message: string;
   attachmentUrl?: string;
   createdAt: Date;
@@ -170,10 +175,13 @@ export class ZupDriveSupportService {
     const ticket = await db.supportTicket.findFirst({ where: { id: data.ticketId, reporterId: data.userId } });
     if (!ticket) throw new ApiError(404, "Ticket non trouvé");
 
+    const authorType = (["CHAUFFEUR", "PASSAGER", "AGENT", "ADMIN"] as const).find((type) => type === ticket.reporterType);
+    if (!authorType) throw new ApiError(422, "Type d'auteur du ticket inconnu");
+
     return this.addMessage({
       ticketId: ticket.id,
       authorId: data.userId,
-      authorType: ticket.reporterType as SupportMessage["authorType"],
+      authorType,
       message: data.message,
       attachmentUrl: data.attachmentUrl,
     });
@@ -334,7 +342,7 @@ export class ZupDriveSupportService {
   /**
    * Formater un ticket pour la réponse.
    */
-  private static formatTicket(ticket: any): SupportTicket {
+  private static formatTicket(ticket: SupportTicketRow): SupportTicket {
     return {
       id: ticket.id,
       ticketNumber: ticket.ticketNumber,
@@ -356,7 +364,7 @@ export class ZupDriveSupportService {
   /**
    * Formater un message pour la réponse.
    */
-  private static formatMessage(message: any): SupportMessage {
+  private static formatMessage(message: SupportMessageRow): SupportMessage {
     return {
       id: message.id,
       ticketId: message.ticketId,

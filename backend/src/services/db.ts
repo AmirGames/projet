@@ -44,6 +44,10 @@ const prismaClientSingleton = () => {
  * L'appelant garde le dernier mot : une valeur qu'il fournit n'est pas
  * remplacée, et hors requête — tâche de fond, script — rien n'est ajouté.
  */
+/** Un objet simple (ligne, filtre) dont on ne suppose rien d'autre. */
+const estEnreg = (valeur: unknown): valeur is Record<string, unknown> =>
+  typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
+
 function garderLOrigine(client: PrismaClientBrut) {
   return client.$extends({
     query: {
@@ -55,12 +59,12 @@ function garderLOrigine(client: PrismaClientBrut) {
 
           if (concerne && creation) {
             const origine = origineActuelle();
-            const lignes = (args as any)?.data;
+            const lignes: unknown = Reflect.get(args, "data");
 
             const duree = dureeDeLaRequete();
 
-            const completer = (ligne: any) => {
-              if (!ligne || typeof ligne !== "object") return ligne;
+            const completer = (ligne: unknown) => {
+              if (!estEnreg(ligne)) return ligne;
               // Ces champs sont chiffrés au repos : ajoutés en clair ici, ils
               // seraient écrits tels quels et leur relecture échouerait en
               // production (« Migration requise »). Le chiffrement ignore ce
@@ -157,14 +161,14 @@ function annoncerLesCommandes(client: PrismaClientAvecOrigine) {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          const resultat: any = await query(args);
+          const resultat: unknown = await query(args);
 
           const action = ECRITURES[operation];
           if (!annonceurCommandes || !action) return resultat;
           if (model !== "Order" && model !== "OrderDelivery") return resultat;
 
           try {
-            const donnees = (args as any)?.data;
+            const donnees: unknown = Reflect.get(args, "data");
             if (
               model === "OrderDelivery" &&
               action === "modification" &&
@@ -178,8 +182,9 @@ function annoncerLesCommandes(client: PrismaClientAvecOrigine) {
               return resultat;
             }
 
-            const ou = (args as any)?.where || {};
-            const ligne = operation.endsWith("Many") ? null : resultat;
+            const filtre: unknown = Reflect.get(args, "where");
+            const ou = estEnreg(filtre) ? filtre : {};
+            const ligne = operation.endsWith("Many") || !estEnreg(resultat) ? null : resultat;
 
             const ecriture: EcritureCommande =
               model === "Order"

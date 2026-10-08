@@ -40,16 +40,22 @@ const ENCRYPTED_DEFAULTS: Record<string, Record<string, unknown>> = {
   SecurityEvent: { target: "", details: "" },
 };
 
-export function encryptData(model: string, data: any): any {
+/** Un objet quelconque (arguments Prisma, ligne lue), dont on ne suppose rien de plus. */
+type Enreg = Record<string, unknown>;
+const estEnreg = (valeur: unknown): valeur is Enreg => typeof valeur === "object" && valeur !== null && !Array.isArray(valeur);
+
+export function encryptData(model: string, data: Enreg): Enreg;
+export function encryptData(model: string, data: unknown): unknown;
+export function encryptData(model: string, data: unknown): unknown {
   if (Array.isArray(data)) return data.map((row) => encryptData(model, row));
-  if (!data || typeof data !== "object") return data;
-  const result = { ...data };
+  if (!estEnreg(data)) return data;
+  const result: Enreg = { ...data };
   for (const [name, value] of Object.entries(data)) {
     const schema = field(model, name);
     if (ENCRYPTED_FIELDS[model]?.includes(name) && value != null && value !== Prisma.DbNull && value !== Prisma.JsonNull && value !== Prisma.AnyNull) {
       // Déjà chiffré en amont (ex. origine de la requête) : ne pas rechiffrer.
       if (isEncrypted(value)) continue;
-      const scalar = schema?.type === "Json" ? value : typeof value === "object" && "set" in value ? (value as any).set : value;
+      const scalar = schema?.type === "Json" ? value : estEnreg(value) && "set" in value ? value.set : value;
       if (scalar == null) continue;
       const encoded = encrypt(JSON.stringify(scalar), `${model}.${name}`);
       result[name] = schema?.type === "Json" ? { _encrypted: encoded } : encoded;
@@ -60,40 +66,44 @@ export function encryptData(model: string, data: any): any {
   return result;
 }
 
-function createData(model: string, data: any): any {
+function createData(model: string, data: unknown): unknown {
   if (Array.isArray(data)) return data.map((row) => createData(model, row));
-  const values = { ...data };
+  const values: Enreg = estEnreg(data) ? { ...data } : {};
   for (const [name, fallback] of Object.entries(ENCRYPTED_DEFAULTS[model] || {})) if (values[name] === undefined) values[name] = fallback;
   return encryptData(model, values);
 }
 
-function transformNestedWrite(model: string, operations: any): any {
-  const result = { ...operations };
+function transformNestedWrite(model: string, operations: unknown): unknown {
+  if (!estEnreg(operations)) return operations;
+  const result: Enreg = { ...operations };
   for (const name of ["create", "update", "upsert", "createMany", "updateMany", "connectOrCreate"]) {
     if (!operations[name]) continue;
-    const transform = (value: any): any => {
+    const transform = (value: unknown): unknown => {
       if (Array.isArray(value)) return value.map(transform);
       if (name === "create") return createData(model, value);
-      const result = { ...value };
+      if (!estEnreg(value)) return value;
+      const copie: Enreg = { ...value };
       let wrapped = false;
       for (const key of ["data", "create", "update"]) {
-        if (value[key]) { result[key] = key === "create" || name === "createMany" ? createData(model, value[key]) : encryptData(model, value[key]); wrapped = true; }
+        if (value[key]) { copie[key] = key === "create" || name === "createMany" ? createData(model, value[key]) : encryptData(model, value[key]); wrapped = true; }
       }
-      return wrapped ? result : encryptData(model, value);
+      return wrapped ? copie : encryptData(model, value);
     };
     result[name] = transform(operations[name]);
   }
   return result;
 }
 
-export function decryptResult(model: string, data: any): any {
+export function decryptResult(model: string, data: Enreg): Enreg;
+export function decryptResult(model: string, data: unknown): unknown;
+export function decryptResult(model: string, data: unknown): unknown {
   if (Array.isArray(data)) return data.map((row) => decryptResult(model, row));
-  if (!data || typeof data !== "object") return data;
-  const result = { ...data };
+  if (!estEnreg(data)) return data;
+  const result: Enreg = { ...data };
   for (const [name, value] of Object.entries(data)) {
     const schema = field(model, name);
     if (ENCRYPTED_FIELDS[model]?.includes(name) && value != null) {
-      const encoded = schema?.type === "Json" ? (value as any)?._encrypted : value;
+      const encoded = schema?.type === "Json" ? (estEnreg(value) ? value._encrypted : undefined) : value;
       if (isEncrypted(encoded)) result[name] = JSON.parse(decrypt(encoded, `${model}.${name}`).toString("utf8"));
       else if (process.env.NODE_ENV === "production" && process.env.PRIVACY_ALLOW_LEGACY_READ !== "true") throw new Error(`Migration requise : ${model}.${name}`);
     } else if (schema?.kind === "object") result[name] = decryptResult(schema.type, value);
@@ -102,8 +112,8 @@ export function decryptResult(model: string, data: any): any {
 }
 
 /** Les recherches sur les champs chiffrés ne doivent jamais échouer silencieusement. */
-export function checkEncryptedQuery(model: string, args: any): void {
-  const visit = (value: any, currentModel: string) => {
+export function checkEncryptedQuery(model: string, args: Enreg): void {
+  const visit = (value: unknown, currentModel: string) => {
     if (Array.isArray(value)) { value.forEach((v) => visit(v, currentModel)); return; }
     if (!value || typeof value !== "object") return;
     for (const [name, child] of Object.entries(value)) {
@@ -114,15 +124,17 @@ export function checkEncryptedQuery(model: string, args: any): void {
   };
   visit(args.where, model); visit(args.orderBy, model); visit(args.having, model);
   visit(args._min, model); visit(args._max, model);
-  for (const name of args.by || []) if (ENCRYPTED_FIELDS[model]?.includes(name)) throw new Error("Regroupement sur donnée chiffrée interdit");
-  for (const name of args.distinct ? ([] as string[]).concat(args.distinct) : []) if (ENCRYPTED_FIELDS[model]?.includes(name)) throw new Error("Distinct sur donnée chiffrée interdit");
+  const regroupements = Array.isArray(args.by) ? args.by : [];
+  for (const name of regroupements) if (typeof name === "string" && ENCRYPTED_FIELDS[model]?.includes(name)) throw new Error("Regroupement sur donnée chiffrée interdit");
+  const distincts = Array.isArray(args.distinct) ? args.distinct : args.distinct ? [args.distinct] : [];
+  for (const name of distincts) if (typeof name === "string" && ENCRYPTED_FIELDS[model]?.includes(name)) throw new Error("Distinct sur donnée chiffrée interdit");
 }
 
 export const encryptionExtension = Prisma.defineExtension({
   name: "privacy-encryption",
   query: { $allModels: { async $allOperations({ model, operation, args, query }) {
     checkEncryptedQuery(model, args);
-    const input: any = { ...args };
+    const input: Enreg = { ...args };
     if (["create", "createMany", "createManyAndReturn"].includes(operation)) input.data = createData(model, input.data);
     if (["update", "updateMany", "updateManyAndReturn"].includes(operation)) input.data = encryptData(model, input.data);
     if (operation === "upsert") { input.create = createData(model, input.create); input.update = encryptData(model, input.update); }

@@ -216,9 +216,10 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
   // Les routes réelles sont montées ici : seule la base est simulée.
   const auth = express();
   auth.use(express.json());
-   
-  auth.use("/api/auth", require("../auth.routes").default);
-  auth.use(errorHandler);
+  beforeAll(async () => {
+    auth.use("/api/auth", (await import("../auth.routes")).default);
+    auth.use(errorHandler);
+  });
 
   beforeEach(() => {
     sessions = [];
@@ -310,7 +311,7 @@ it("changement de mot de passe : ferme toutes les sessions, sans remettre de jet
     const autre = await SsoService.connecter(fixture.id);
     const auth = express();
     auth.use(express.json());
-    auth.use("/api/auth", require("../auth.routes").default);
+    auth.use("/api/auth", (await import("../auth.routes")).default);
     auth.use(errorHandler);
     const response = await request(auth).post("/api/auth/change-password")
       .set("Authorization", `Bearer ${actuelle.accessToken}`)

@@ -5,6 +5,7 @@ import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
 import { DispatchService } from "../drivers/dispatch.service";
 import { codeErreur } from "../../utils/code-erreur";
+import type { DeliveryZone } from "@prisma/client";
 
 /**
  * Les zones de livraison d'une boutique.
@@ -86,7 +87,7 @@ const PALETTE = ["#f59e0b", "#3b82f6", "#22c55e", "#ec4899", "#a855f7", "#06b6d4
 
 const HEX_VALIDE = /^#[0-9a-fA-F]{6}$/;
 
-const lisible = (zone: any): ZoneLisible => ({
+const lisible = (zone: DeliveryZone): ZoneLisible => ({
   id: zone.id,
   name: zone.name,
   type: zone.type,
@@ -164,7 +165,7 @@ export class DeliveryZoneService {
         name: nom,
         type,
         radiusKm: type === "RADIUS" ? data.radiusKm : null,
-        polygon: type === "POLYGON" ? (data.polygon as any) : undefined,
+        polygon: type === "POLYGON" ? (data.polygon ?? undefined) : undefined,
         color: data.color || PALETTE[compte % PALETTE.length],
         opacity: data.opacity ?? 0.35,
         baseFee: data.baseFee,

@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
 import { db } from "../../services/db";
@@ -20,6 +22,24 @@ function formaterTaille(octets: number) {
   if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(1)} Ko`;
   if (octets < 1024 * 1024 * 1024) return `${(octets / 1024 / 1024).toFixed(1)} Mo`;
   return `${(octets / 1024 / 1024 / 1024).toFixed(2)} Go`;
+}
+
+const LIGNES = z.array(z.record(z.string(), z.unknown())).default([]);
+/** Le contenu d'une sauvegarde, tel que `backup` l'écrit : des listes de lignes par table. */
+const FORMAT_SAUVEGARDE = z.object({
+  organisations: LIGNES,
+  boutiques: LIGNES,
+  categories: LIGNES,
+  produits: LIGNES,
+  clients: LIGNES,
+});
+
+function parseJsonSecurise(texte: string): unknown {
+  try {
+    return JSON.parse(texte);
+  } catch {
+    return undefined;
+  }
 }
 
 export class BackupService {
@@ -184,15 +204,14 @@ export class BackupService {
     if (laterErasure) throw new ApiError(409, "Cette sauvegarde précède un effacement RGPD : restauration interdite sans réconciliation des effacements", "RESTORE_ERASURE_CONFLICT");
     const { contenu } = await this.read(id);
 
-    let donnees: any;
-    try {
-      donnees = JSON.parse(contenu);
-    } catch {
+    const analyse = FORMAT_SAUVEGARDE.safeParse(parseJsonSecurise(contenu));
+    if (!analyse.success) {
       throw new ApiError(422, "Fichier de sauvegarde illisible", "INVALID_BACKUP");
     }
+    const donnees = analyse.data;
 
-    const sansHorodatage = (lignes: any[]) =>
-      (lignes || []).map(({ createdAt, updatedAt, deletedAt, ...reste }) => reste);
+    const sansHorodatage = (lignes: Record<string, unknown>[]) =>
+      lignes.map(({ createdAt: _creeLe, updatedAt: _modifieLe, deletedAt: _supprimeLe, ...reste }) => reste);
 
     const resultats = {
       organisations: 0,
@@ -203,31 +222,31 @@ export class BackupService {
     };
 
     const orgs = await db.organization.createMany({
-      data: sansHorodatage(donnees.organisations),
+      data: sansHorodatage(donnees.organisations) as Prisma.OrganizationCreateManyInput[],
       skipDuplicates: true,
     });
     resultats.organisations = orgs.count;
 
     const boutiques = await db.store.createMany({
-      data: sansHorodatage(donnees.boutiques),
+      data: sansHorodatage(donnees.boutiques) as Prisma.StoreCreateManyInput[],
       skipDuplicates: true,
     });
     resultats.boutiques = boutiques.count;
 
     const categories = await db.category.createMany({
-      data: sansHorodatage(donnees.categories),
+      data: sansHorodatage(donnees.categories) as Prisma.CategoryCreateManyInput[],
       skipDuplicates: true,
     });
     resultats.categories = categories.count;
 
     const produits = await db.product.createMany({
-      data: sansHorodatage(donnees.produits),
+      data: sansHorodatage(donnees.produits) as Prisma.ProductCreateManyInput[],
       skipDuplicates: true,
     });
     resultats.produits = produits.count;
 
     const clients = await db.customer.createMany({
-      data: sansHorodatage(donnees.clients),
+      data: sansHorodatage(donnees.clients) as Prisma.CustomerCreateManyInput[],
       skipDuplicates: true,
     });
     resultats.clients = clients.count;

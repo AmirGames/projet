@@ -5,17 +5,20 @@ import { logger } from "../../config/logger";
 import { emitWebhook } from "../webhooks/webhook.service";
 import { emitOrgStatus, emitNotification } from "../realtime/socket";
 import { oublierStatut } from "./compte-restreint.middleware";
+import { enJson } from "../../utils/json";
 
 
 const HARD_DELETE_DELAY_DAYS = 60;
 const RESTORATION_WINDOW_DAYS = 180;
 
-function asRecords(value: unknown): Record<string, any>[] {
-  return Array.isArray(value) ? (value as Record<string, any>[]) : [];
+function asRecords(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter((ligne): ligne is Record<string, unknown> => typeof ligne === "object" && ligne !== null && !Array.isArray(ligne))
+    : [];
 }
 
-function withoutTimestamps(row: Record<string, any>) {
-  const { createdAt, updatedAt, deletedAt, ...rest } = row;
+function withoutTimestamps(row: Record<string, unknown>) {
+  const { createdAt: _creeLe, updatedAt: _modifieLe, deletedAt: _supprimeLe, ...rest } = row;
   return rest;
 }
 
@@ -180,9 +183,9 @@ export class MerchantClosureService {
         reason,
         closureDate,
         restorationDeadline,
-        organizationData: org as any,
-        storesData: org.stores as any,
-        productsData: { categories, products } as any,
+        organizationData: enJson(org),
+        storesData: enJson(org.stores),
+        productsData: enJson({ categories, products }),
         ordersData: Prisma.DbNull,
         customersData: Prisma.DbNull,
       },
@@ -190,9 +193,9 @@ export class MerchantClosureService {
         reason,
         closureDate,
         restorationDeadline,
-        organizationData: org as any,
-        storesData: org.stores as any,
-        productsData: { categories, products } as any,
+        organizationData: enJson(org),
+        storesData: enJson(org.stores),
+        productsData: enJson({ categories, products }),
         ordersData: Prisma.DbNull,
         customersData: Prisma.DbNull,
         isRestored: false,
@@ -401,20 +404,21 @@ export class MerchantClosureService {
     }
 
     await db.store.createMany({
-      data: stores.map((store) => ({ ...withoutTimestamps(store), orgId })) as any,
+      // L'archive est une copie de nos propres lignes : Prisma valide les colonnes à l'écriture.
+      data: stores.map((store) => ({ ...withoutTimestamps(store), orgId })) as Prisma.StoreCreateManyInput[],
       skipDuplicates: true,
     });
 
     if (categories.length > 0) {
       await db.category.createMany({
-        data: categories.map(withoutTimestamps) as any,
+        data: categories.map(withoutTimestamps) as Prisma.CategoryCreateManyInput[],
         skipDuplicates: true,
       });
     }
 
     if (products.length > 0) {
       await db.product.createMany({
-        data: products.map(withoutTimestamps) as any,
+        data: products.map(withoutTimestamps) as Prisma.ProductCreateManyInput[],
         skipDuplicates: true,
       });
     }

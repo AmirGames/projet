@@ -73,7 +73,7 @@ Principe : `--max-warnings` égale le nombre exact d'avertissements ; on le bais
 
 | Projet | Avant | Après |
 |---|---|---|
-| backend | 401 (386 réels) | **277** |
+| backend | 401 (386 réels) | **0** |
 | frontend | 0 | 0 |
 | mobile/customer | 25 | 24 |
 | mobile/delivery | 30 | 30 |
@@ -82,7 +82,7 @@ Principe : `--max-warnings` égale le nombre exact d'avertissements ; on le bais
 | mobile/zupdrive-driver | 37 | 29 |
 | mobile/zupdrive-passenger | 25 | 8 |
 
-Backend : 360 `no-explicit-any` au départ (tests compris). Traités : auth, paiements, commandes, reversements, journal d'audit. Il reste 277 avertissements, surtout dans `privacy`, `admin`, `stores`, `merchants`, `customers`, `zupdrive`, `marketing`, `superowner`, `catalog`, `drivers`, `delivery`. Un `any` subsiste volontairement dans `webhooks/webhook.service.ts` : `emit()` reçoit des charges utiles contenant des `Date`, non assignables à `Prisma.InputJsonObject` sans changer les 13 appelants.
+Backend : 386 avertissements au départ (360 `no-explicit-any`), **0** maintenant ; `--max-warnings 0` comme le frontend. Principes appliqués : types Prisma (`WhereInput`, `UpdateInput`, énumérations) ; entrées validées par Zod (statuts de commande, de campagne, de rapport ; réponses des fournisseurs d'adresses ; contenu de l'outbox et des sauvegardes) ; colonnes Json lues par `utils/json.ts` (`objetJson`, `listeJson`, `entreeJson`, `enJson`) ; erreurs Prisma par `utils/code-erreur.ts`. Deux assertions de type restent aux frontières de restauration (`merchant-closure.service.ts`, `backup.service.ts`) : le contenu vient d'une archive que nous avons écrite et Prisma valide les colonnes à l'écriture.
 
 Mobile : les avertissements restants sont des règles React Compiler (`react-hooks/set-state-in-effect`, `refs`, `immutability`, `preserve-manual-memoization`). Les corriger demande de réécrire des composants ; sans appareil ni test d'interface, ce n'est pas fait ici.
 
@@ -90,5 +90,8 @@ Mobile : les avertissements restants sont des règles React Compiler (`react-hoo
 
 - `GET /orders?status=…`, `GET /orders/status/:storeId?status=…` : un statut inconnu répond désormais **400** (validation Zod) au lieu d'une erreur Prisma 500. Valeurs : `PENDING`, `ACCEPTED`, `PREPARING`, `REJECTED`, `READY`, `COMPLETED` (+ `ALL` sur le premier).
 - Enregistrement d'une carte (`savePaymentMethod`) : le type Stripe `card` était converti en énumération Prisma par un `as any` ; « card » n'est pas une valeur de `PaymentMethodType`. Il est maintenant converti en `CREDIT_CARD`/`DEBIT_CARD` (selon `funding`), les autres moyens en `STRIPE`.
-- Journal de sécurité (`SecurityEventService.record`) : l'acteur lisait `req.actorEmail`, qu'aucun code ne renseigne (toujours « inconnu »). Il utilise maintenant `req.userId`.
+- Recherche de boutiques (`GET /api/client/stores/search`) : sans `city`, une clause `OR` vide annulait le filtre ; elle n'est plus ajoutée.
+- Rapports (`status`, `paymentStatus`) et campagnes marketing (`status`) : valeur inconnue → 400 au lieu d'une erreur Prisma.
+- `notification.service.ts` : `sendOrderNotification` et `sendDriverNotification` (aucun appelant, types hors énumération) supprimées.
+- Outbox : le contenu relu en base est validé par Zod avant d'être traité.
 - Webhook Stripe : l'aiguillage ZupDrive utilise désormais le type de l'événement (`Stripe.Event`) au lieu d'un `any` ; mêmes événements, même ordre.
