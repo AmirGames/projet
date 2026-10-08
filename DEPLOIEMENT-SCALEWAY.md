@@ -370,3 +370,22 @@ Il reste hors du réel :
 Il apparaît dans la liste des commerçants de la plateforme (organisation
 « Boulangerie Démo », slug `commerce-demo`). Pour le retirer : retirer
 `DEMO_MERCHANT_ENABLED`, puis le supprimer depuis l'espace plateforme.
+
+## Content-Security-Policy (CSP_MODE)
+
+Le site envoie une CSP à nonces (`frontend/lib/csp.ts`, posée par `proxy.ts`).
+`CSP_MODE` (serveur uniquement, `.env.production`) :
+
+| Valeur | Effet |
+|---|---|
+| `report-only` (défaut) | observation : rien n'est bloqué, les violations arrivent dans la page Monitoring (erreurs navigateur, message `CSP …`) |
+| `enforce` | la politique est appliquée |
+| `off` | plus d'en-tête CSP dynamique (retour arrière immédiat) |
+
+Passage à `enforce` : laisser tourner en `report-only` sur tous les domaines,
+dont un paiement Stripe de test et les pages à carte (suivi de livraison,
+zones, ZupDrive), jusqu'à ce qu'il ne reste que des violations d'extensions de
+navigateur. Ajouter toute origine légitime dans `construireCsp`, relancer
+`node scripts/verif-csp.mjs`, puis basculer et redémarrer le conteneur
+`frontend`. Les violations CSP ne comptent pas dans le seuil d'incident
+« erreurs navigateur ».

@@ -179,6 +179,13 @@ Trois particularités à connaître :
   par la règle `react-hooks/set-state-in-effect` ; ce hook nomme ce cas au lieu
   de le faire taire, et ses dépendances sont vérifiées comme celles d'un effet
   (voir `eslint.config.mjs`).
+- **La CSP** (`lib/csp.ts`, posée par `proxy.ts`) porte un nonce par requête ;
+  Next.js le met sur ses scripts tout seul. Un script en ligne ou une balise
+  `<Script>` faite à la main doit lire le nonce (`(await headers()).get('x-nonce')`),
+  sans quoi le navigateur le refuse. Toute nouvelle origine externe (script,
+  image, API, iframe) s'ajoute dans `construireCsp` avec son test. Mode par
+  `CSP_MODE` : `report-only` (défaut, observation), `enforce`, `off`. Vérifier
+  avec `node scripts/verif-csp.mjs`.
 - **`signalerErreur`** (`lib/erreurs.ts`) remplace `console.error` : elle ne
   journalise pas quand le navigateur quitte la page (les requêtes coupées par
   le départ du visiteur ne sont pas des pannes).

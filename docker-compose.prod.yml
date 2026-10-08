@@ -170,6 +170,8 @@ services:
       # directement, sans ressortir par Internet.
       API_INTERNAL_URL: http://backend:3001
       # Serveur uniquement ; jamais NEXT_PUBLIC. Même mapping/secret que l'API.
+      # Content-Security-Policy à nonces : report-only (observation), enforce ou off.
+      CSP_MODE: ${CSP_MODE:-report-only}
       ASSISTANT_HOSTS: ${ASSISTANT_HOSTS:-}
       ASSISTANT_GATEWAY_SECRET: ${ASSISTANT_GATEWAY_SECRET:-}
     depends_on:

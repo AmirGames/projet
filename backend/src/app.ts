@@ -185,6 +185,8 @@ export function createApp(): Express {
         source: texte(corps.source, 300),
         pile: texte(corps.pile, 4000),
         navigateur: texte(req.get("user-agent"), 300),
+        // Rapports de la CSP, relayés par le site (frontend/app/api/csp-report).
+        csp: corps.categorie === "csp",
       });
 
       return res.status(204).end();

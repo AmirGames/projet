@@ -35,9 +35,11 @@ const nextConfig = {
    * - Permissions-Policy : ni caméra ni micro (rien ne les utilise), position
    *   et paiement pour le site seul.
    *
-   * Pas encore de `script-src` : Next.js injecte des scripts en ligne, et une
-   * politique stricte demande des « nonces » (rendu dynamique de toutes les
-   * pages). C'est un chantier à part, à mesurer avant de le déclarer.
+   * Le `script-src` n'est pas ici : il demande un nonce différent à chaque
+   * requête, généré dans proxy.ts (lib/csp.ts). Il est d'abord envoyé en
+   * Content-Security-Policy-Report-Only (CSP_MODE), les violations arrivant sur
+   * /api/csp-report. Les directives ci-dessous restent appliquées dans tous les
+   * cas.
    */
   async headers() {
     return [
