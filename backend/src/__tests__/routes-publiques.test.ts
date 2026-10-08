@@ -82,6 +82,8 @@ export const ROUTES_PUBLIQUES: Record<string, string> = {
   "GET /api/client/stores/:id/zone-livraison": VITRINE,
   "GET /api/client/stores/:id/zones": VITRINE,
   "GET /api/client/service-fee": "frais de service affichés au panier",
+  "GET /api/client/promotions-region": "vitrine : promotions en cours des commerces de la région, sans donnée personnelle",
+  "GET /api/client/tendances": "vitrine : statistiques agrégées par région, publiées au-delà de 10 acheteurs distincts",
   "GET /api/client/stores/:id/payment-methods": VITRINE,
   "GET /api/client/stores/:id/menu": VITRINE,
   "GET /api/maps/nearby-stores": "vitrine, rayon et résultats bornés, limiteur dédié",
