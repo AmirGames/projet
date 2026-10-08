@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Ce qu'on doit au livreur, et ce qu'on lui a versé.
  *
@@ -55,7 +57,7 @@ export function MesVersements() {
 
   const charger = useCallback(async () => {
     try {
-      const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/drivers/payouts`, {
         headers: { Authorization: `Bearer ${token}` },
       });

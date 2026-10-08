@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
@@ -73,7 +75,7 @@ export default function PagesLegalesPage() {
     setChargement(true);
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/pages-legales`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
       const donnees = await reponse.json();
       if (!reponse.ok) {
@@ -128,7 +130,7 @@ export default function PagesLegalesPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify(brouillon),
       });

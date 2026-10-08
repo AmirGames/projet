@@ -1,10 +1,11 @@
+import { jetonAcces } from '@/lib/jeton-session';
 import { ENTETE_TRANSPORT, renouveler } from "./jeton-session";
 import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from "./suivi-commande";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 const getAuthHeaders = () => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+  const token = typeof window !== "undefined" ? jetonAcces() : null;
   return {
     "Content-Type": "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -233,7 +234,7 @@ export const api = {
   },
 
   deleteProduct: async (id: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    const token = typeof window !== "undefined" ? jetonAcces() : null;
     const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
       method: "DELETE",
       headers: {
@@ -245,7 +246,7 @@ export const api = {
   },
 
   deleteCategory: async (id: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    const token = typeof window !== "undefined" ? jetonAcces() : null;
     const response = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
       method: "DELETE",
       headers: {

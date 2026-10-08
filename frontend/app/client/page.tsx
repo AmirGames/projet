@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -104,7 +106,7 @@ export default function ClientHomePage() {
   const [favoris, setFavoris] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
     fetch(`${API_URL}/api/client/me/favorites`, { headers: { Authorization: `Bearer ${token}` } })
       .then((reponse) => (reponse.ok ? reponse.json() : null))
@@ -119,7 +121,7 @@ export default function ClientHomePage() {
   const basculerFavori = async (e: React.MouseEvent, storeId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/login');
       return;

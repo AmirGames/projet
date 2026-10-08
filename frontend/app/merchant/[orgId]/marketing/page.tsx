@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -56,7 +58,7 @@ export default function MarketingPage() {
   // Lancer une campagne : le bouton « Envoyer » était purement décoratif.
   const changerStatut = async (campagne: Campaign, statut: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(
         `${API_URL}/api/marketing/${storeId}/${campagne.id}/status`,
         {
@@ -93,7 +95,7 @@ export default function MarketingPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/marketing/${storeId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -126,7 +128,7 @@ export default function MarketingPage() {
   const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;
@@ -163,7 +165,7 @@ export default function MarketingPage() {
 
   const handleDeleteCampaign = async (campaignId: string) => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/marketing/${storeId}/${campaignId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

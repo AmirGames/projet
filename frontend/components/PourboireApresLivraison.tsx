@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
 
@@ -15,7 +17,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 /** La session du client, quand il est connecté : avec le jeton de suivi, elle ouvre la commande. */
 function entetesSession(): Record<string, string> {
   try {
-    const session = localStorage.getItem('accessToken');
+    const session = jetonAcces();
     return session ? { Authorization: `Bearer ${session}` } : {};
   } catch {
     return {};

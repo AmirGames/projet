@@ -42,7 +42,7 @@ L'inventaire CSV énumère aussi les données métier sans finalité personnelle
 
 Date de naissance du propriétaire, notes libres, `Staff`, invitations anciennes, destinataires marketing et charges utiles webhook doivent être revus fonction par fonction. Le dépôt ne prouve pas leurs usages réels en production. Aucun champ utilisé par un autre espace n'a été supprimé arbitrairement. Les finalités marketing, la collecte de casier et de justificatifs médicaux ne peuvent être validées sur la seule base d'une demande technique.
 
-Sur mobile, les sessions utilisent Expo SecureStore ; les paniers sont dans AsyncStorage. Le web intercepte les anciens accès aux jetons pour les garder en mémoire (`frontend/lib/jeton-session.ts`), et utilise un cookie refresh HttpOnly. Le carnet/adresse local et les caches doivent être vérifiés sur appareils réels après effacement, réinstallation et sauvegarde OS.
+Sur mobile, les sessions utilisent Expo SecureStore ; les paniers sont dans AsyncStorage. Le web garde le jeton d'accès uniquement en mémoire (module unique `frontend/lib/jeton-session.ts`, aucune clé de jeton dans `localStorage`, les anciennes clés sont purgées au chargement), et utilise un cookie refresh HttpOnly. Le carnet/adresse local et les caches doivent être vérifiés sur appareils réels après effacement, réinstallation et sauvegarde OS.
 
 ## Destinataires et sous-traitants à inscrire au registre
 

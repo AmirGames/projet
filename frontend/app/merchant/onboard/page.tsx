@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { slugify } from '@/lib/slug';
 import { useState, useEffect } from 'react';
@@ -111,7 +113,7 @@ export default function MerchantOnboardPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) {
         throw new Error('Pas de token');
       }

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, Users } from 'lucide-react';
@@ -61,7 +63,7 @@ export default function StaffPage() {
 
   const fetchStaff = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/staff?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -104,7 +106,7 @@ export default function StaffPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const payload = {
         storeId,
         ...formData,
@@ -141,7 +143,7 @@ export default function StaffPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/staff/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -162,7 +164,7 @@ export default function StaffPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/staff/${id}/status`, {
         method: 'PATCH',
         headers: {

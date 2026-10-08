@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Les factures Peppol.
  *
@@ -66,7 +68,7 @@ function moisPrecedent() {
 }
 
 function entete() {
-  return { Authorization: `Bearer ${localStorage.getItem('accessToken')}` };
+  return { Authorization: `Bearer ${jetonAcces()}` };
 }
 
 async function lireErreur(res: Response, defaut: string) {

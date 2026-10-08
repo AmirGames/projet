@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { ChevronDown, ChevronUp, Layers, Plus, Save, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -44,7 +46,7 @@ export function DeclinaisonsProduit({
   const [erreur, setErreur] = useState('');
   const [chargement, setChargement] = useState(false);
 
-  const jeton = () => localStorage.getItem('accessToken');
+  const jeton = () => jetonAcces();
 
   const charger = useCallback(async () => {
     try {

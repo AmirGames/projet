@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { useState, useCallback } from 'react';
@@ -78,7 +80,7 @@ export default function MerchantDetailPage() {
   // de choix, et un échec passager ne renvoie pas à la liste.
   const fetchMerchant = useCallback(async (silencieux = false) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -116,7 +118,7 @@ export default function MerchantDetailPage() {
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
         method: 'PATCH',
         headers: {
@@ -141,7 +143,7 @@ export default function MerchantDetailPage() {
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/suspend`, {
         method: 'POST',
         headers: {
@@ -168,7 +170,7 @@ export default function MerchantDetailPage() {
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/unsuspend`, {
         method: 'POST',
         headers: {
@@ -193,7 +195,7 @@ export default function MerchantDetailPage() {
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/close`, {
         method: 'POST',
         headers: {
@@ -220,7 +222,7 @@ export default function MerchantDetailPage() {
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/restore-from-backup`, {
         method: 'POST',
         headers: {

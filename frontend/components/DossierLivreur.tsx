@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Le dossier d'un livreur : ses pièces, et où en est leur examen.
  *
@@ -78,7 +80,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
   const charger = useCallback(async () => {
     try {
-      const token = localStorage.getItem('driverToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/drivers/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -132,7 +134,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
     setEnvoi(true);
 
     try {
-      const token = localStorage.getItem('driverToken');
+      const token = jetonAcces();
       let reponse: Response;
 
       if (modeUpload === 'file' && aEnvoyer) {

@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -11,7 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Appelle l'API avec la session ; lève le message d'erreur de l'API. */
 export async function appelerZupDrive<T>(chemin: string, init: RequestInit & { corps?: unknown } = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = typeof window !== 'undefined' ? jetonAcces() : null;
   const { corps, ...options } = init;
   const reponse = await fetch(`${API_URL}${chemin}`, {
     ...options,

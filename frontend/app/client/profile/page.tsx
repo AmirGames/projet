@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import { paysDuNavigateur } from '@/lib/pays-client';
@@ -44,7 +46,7 @@ export default function ProfilClientPage() {
   });
 
   const charger = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
 
     if (!token) {
       router.push('/login');
@@ -89,7 +91,7 @@ export default function ProfilClientPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/client/me`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Key, Plus, Copy, Trash2 } from 'lucide-react';
@@ -42,7 +44,7 @@ export default function ApiKeysPage() {
   const fetchApiKeys = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const query = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
@@ -77,7 +79,7 @@ export default function ApiKeysPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/api-keys`, {
         method: 'POST',
         headers: {
@@ -107,7 +109,7 @@ export default function ApiKeysPage() {
     if (!confirm(t('revokeConfirm'))) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/api-keys/${keyId}/revoke`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

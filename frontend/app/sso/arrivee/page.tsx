@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { accueilConnecte, cheminSur } from '@/lib/sso';
-import { ENTETE_TRANSPORT } from '@/lib/jeton-session';
+import { ENTETE_TRANSPORT, poserJeton } from '@/lib/jeton-session';
 
 
 /**
@@ -47,13 +47,11 @@ export default function ArriveeSso() {
         if (!reponse.ok) throw new Error(String(reponse.status));
 
         const session = await reponse.json();
-        localStorage.setItem('accessToken', session.accessToken);
+        poserJeton(session.accessToken);
         localStorage.setItem('isSuperOwner', session.user?.isSuperOwner ? 'true' : 'false');
         if (session.organization?.id) localStorage.setItem('currentOrgId', session.organization.id);
         if (session.driver?.id) {
-          // L'espace livreur lit le jeton sous sa propre clé.
           localStorage.setItem('currentDriverId', session.driver.id);
-          localStorage.setItem('driverToken', session.accessToken);
           localStorage.setItem('driverUser', JSON.stringify(session.user));
         }
         repartir();

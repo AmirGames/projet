@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -32,7 +34,7 @@ export default function CompteVersementLivreur({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('driverToken')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({ iban, accountHolder: titulaire }),
       });

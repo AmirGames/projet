@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { cleDeTentative, oublierTentative } from '@/lib/cle-tentative';
 import { signalerErreur } from '@/lib/erreurs';
 /**
@@ -234,7 +236,7 @@ export function TunnelCommande({
   // La case des conditions ne revient que si leur version a changé depuis la dernière acceptation.
   useEffect(() => {
     let annule = false;
-    lireEtatAcceptation(user ? localStorage.getItem('accessToken') : null).then((etat) => {
+    lireEtatAcceptation(user ? jetonAcces() : null).then((etat) => {
       if (annule || !etat) return;
       setVersionsConditions(etat.versions);
       setConditionsDejaAcceptees(etat.dejaAccepte);
@@ -249,7 +251,7 @@ export function TunnelCommande({
   useEffect(() => {
     if (!user) return;
 
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     let annule = false;
@@ -571,7 +573,7 @@ export function TunnelCommande({
 
       // Connecté, le jeton range la commande dans son historique : l'adresse
       // saisie seule ne suffit plus à la rattacher à un compte.
-      const jeton = user ? localStorage.getItem('accessToken') : null;
+      const jeton = user ? jetonAcces() : null;
       const corps = JSON.stringify(orderData);
       const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',

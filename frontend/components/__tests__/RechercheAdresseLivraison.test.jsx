@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { RechercheAdresseLivraison } from "../RechercheAdresseLivraison";
 import { enregistrerAdresseLivraison } from "@/lib/adresseLivraison";
+import { poserJeton, oublierJeton } from "@/lib/jeton-session";
 
 jest.mock("next-intl", () => ({ useTranslations: () => (cle) => cle }));
 jest.mock("@/components/AddressAutocomplete", () => ({
@@ -44,7 +45,7 @@ const ancienne = {
 
 beforeEach(() => {
   localStorage.clear();
-  localStorage.setItem("accessToken", "session");
+  poserJeton("session");
   Object.defineProperty(navigator, "geolocation", {
     configurable: true,
     value: {
@@ -105,7 +106,7 @@ test("les favoris du compte gardent leur nom et leur icône malgré un historiqu
 });
 
 test("affiche cinq adresses mémorisées après plusieurs sélections, même sans compte", () => {
-  localStorage.removeItem("accessToken");
+  oublierJeton();
   for (let i = 1; i <= 6; i++)
     enregistrerAdresseLivraison({
       ...adresse,
@@ -125,7 +126,7 @@ test("affiche cinq adresses mémorisées après plusieurs sélections, même san
 });
 
 test("la localisation affiche l’adresse complète et la précision, puis attend le choix du client", async () => {
-  localStorage.removeItem("accessToken");
+  oublierJeton();
   fetch.mockResolvedValue({
     ok: true,
     json: async () => ({ adresse, hasHouseNumber: true }),
@@ -157,7 +158,7 @@ const lireAdresse = () =>
   JSON.parse(localStorage.getItem("zupeat.adresseLivraison"));
 
 test("sans numéro, propose de corriger au lieu de retenir une adresse incomplète", async () => {
-  localStorage.removeItem("accessToken");
+  oublierJeton();
   fetch.mockResolvedValue({
     ok: true,
     json: async () => ({
@@ -181,7 +182,7 @@ test("sans numéro, propose de corriger au lieu de retenir une adresse incomplè
 });
 
 test("une panne de localisation garde l’adresse actuelle et laisse la recherche disponible", async () => {
-  localStorage.removeItem("accessToken");
+  oublierJeton();
   fetch.mockResolvedValue({ ok: false });
   const onChange = jest.fn();
   render(<RechercheAdresseLivraison adresse={adresse} onChange={onChange} />);
@@ -215,7 +216,7 @@ test("les anciennes commandes complètent les cinq adresses récentes sans repou
 });
 
 test("une ancienne demande GPS ne change pas l’adresse après fermeture et réouverture", async () => {
-  localStorage.removeItem("accessToken");
+  oublierJeton();
   let terminer;
   navigator.geolocation.getCurrentPosition.mockImplementation((success) => {
     terminer = success;
@@ -260,7 +261,7 @@ test("ouvre toutes les anciennes adresses, filtre sans tenir compte des accents 
 });
 
 test("un invité retrouve son adresse mémorisée et peut choisir une nouvelle suggestion", () => {
-  localStorage.removeItem("accessToken");
+  oublierJeton();
   const onChange = jest.fn();
   render(<RechercheAdresseLivraison adresse={adresse} onChange={onChange} />);
   fireEvent.click(screen.getByRole("button", { name: /deliverTo/ }));

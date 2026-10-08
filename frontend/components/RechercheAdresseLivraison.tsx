@@ -1,5 +1,7 @@
 "use client";
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -86,7 +88,7 @@ export function RechercheAdresseLivraison({
     );
     setAdresses(recentes);
     setErreur(false);
-    const token = localStorage.getItem("accessToken");
+    const token = jetonAcces();
     if (!token) {
       setChargement(false);
       return;

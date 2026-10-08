@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -33,7 +35,7 @@ export default function AccessLogsPage() {
 
   const fetchAccessLogs = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/admin/access-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });

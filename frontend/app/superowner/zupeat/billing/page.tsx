@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -105,7 +107,7 @@ export default function BillingPage() {
   const fetchBillings = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const query = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
@@ -157,7 +159,7 @@ export default function BillingPage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(
         `${API_URL}/api/superowner/billing/${billing.id}?period=${billing.period}`,
         { headers: { Authorization: `Bearer ${token}` } }

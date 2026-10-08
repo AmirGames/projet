@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { abonnerJeton, jetonAcces } from '@/lib/jeton-session';
 
 /**
  * Ce que seul le navigateur connaît — l'adresse de la page, le stockage
@@ -29,6 +30,11 @@ export function useStockageLocal(cle: string): string | null | undefined {
     },
     () => undefined
   );
+}
+
+/** Le jeton d'accès de cet onglet (en mémoire), `undefined` côté serveur. */
+export function useJetonAcces(): string | null | undefined {
+  return useSyncExternalStore<string | null | undefined>(abonnerJeton, jetonAcces, () => undefined);
 }
 
 /**

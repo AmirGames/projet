@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * ZupDrive Admin — Support System
  * Gestion des tickets de support, messages, résolution.
@@ -44,7 +46,7 @@ export default function SupportPage() {
       params.append('limit', '100');
 
       const response = await fetch(`${API_URL}/api/zupdrive/support/admin/tickets?${params}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
 
       if (!response.ok) throw new Error(t('loadError'));

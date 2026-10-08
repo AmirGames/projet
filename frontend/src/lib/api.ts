@@ -1,3 +1,4 @@
+import { adopterRefresh, jetonAcces, oublierJeton, poserJeton, renouveler } from '@/lib/jeton-session';
 /**
  * API Client for ZupOne Backend
  * Handles authentication, requests, and token management
@@ -92,7 +93,7 @@ class ApiClient {
    */
   private getAccessToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('accessToken');
+      return jetonAcces();
     }
     return null;
   }
@@ -100,10 +101,11 @@ class ApiClient {
   /**
    * Store tokens
    */
-  private storeTokens(accessToken: string, refreshToken: string) {
+  private storeTokens(accessToken: string, refreshToken?: string) {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      poserJeton(accessToken);
+      // Le renouvellement vit dans un cookie httpOnly : on ne garde pas le jeton.
+      void adopterRefresh(refreshToken);
     }
   }
 
@@ -112,8 +114,7 @@ class ApiClient {
    */
   clearTokens() {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      oublierJeton();
       localStorage.removeItem('user');
     }
   }
@@ -190,18 +191,11 @@ class ApiClient {
    * Refresh access token
    */
   async refreshToken(): Promise<AuthResponse> {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw { status: 401, message: 'No refresh token' } as ApiError;
+    const resultat = await renouveler();
+    if (!resultat.ok) {
+      throw { status: resultat.statut || 401, message: 'No refresh token' } as ApiError;
     }
-
-    const response = await this.request<AuthResponse>('/auth/refresh', {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    this.storeTokens(response.accessToken, response.refreshToken);
-    return response;
+    return resultat.donnees as AuthResponse;
   }
 
   /**

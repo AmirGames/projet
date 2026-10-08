@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { signalerErreur } from '@/lib/erreurs';
@@ -17,7 +19,7 @@ export default function SelecteurTheme() {
   const [selectionne, setSelectionne] = useState('dark');
 
   useEffectChargement(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     fetch(`${API_URL}/api/admin/config`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data?.selectedTheme && setSelectionne(data.selectedTheme))
@@ -28,7 +30,7 @@ export default function SelecteurTheme() {
     setSelectionne(themeId);
     applyTheme(getTheme(themeId));
     try {
-      await saveThemeToAPI(themeId, API_URL, localStorage.getItem('accessToken') || '');
+      await saveThemeToAPI(themeId, API_URL, jetonAcces() || '');
     } catch (error) {
       signalerErreur('Erreur lors de l\'enregistrement du thème :', error);
     }

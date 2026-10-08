@@ -1,5 +1,7 @@
 "use client";
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -40,7 +42,7 @@ export function MesAdressesClient() {
     try {
       const reponse = await fetch(`${API_URL}/api/client/me/addresses`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
       if (!reponse.ok) throw new Error(t("loadError"));
@@ -86,7 +88,7 @@ export function MesAdressesClient() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({ addresses: suivantes }),
       });

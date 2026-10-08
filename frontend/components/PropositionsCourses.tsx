@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, Timer } from 'lucide-react';
 import { connexionTempsReel } from '@/lib/temps-reel';
@@ -93,7 +95,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
   const { enLigne, gps, positionRecue, erreurPosition } = useSignalGps(surRetourReseau);
 
   useEffect(() => {
-    jeton.current = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
+    jeton.current = jetonAcces();
   }, []);
 
   const relever = useCallback(async () => {

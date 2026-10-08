@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -60,8 +62,7 @@ function chargerRoles(jeton: string): Promise<RolesCompte | null> {
 
 function lireJeton(): string | null {
   try {
-    // L'espace livreur range le même jeton de compte sous sa propre clé.
-    return localStorage.getItem('accessToken') || localStorage.getItem('driverToken');
+    return jetonAcces();
   } catch {
     return null;
   }
@@ -118,17 +119,12 @@ export function useEspacesAccessibles() {
 }
 
 /**
- * Prépare le stockage attendu par l'espace d'arrivée : chaque espace a été
- * écrit avec sa propre clé de session, alors qu'il s'agit du même compte.
+ * Prépare le stockage attendu par l'espace d'arrivée (le commerce courant).
  */
 export function preparerEspace(espace: Espace, premiereOrg: string | null) {
   try {
-    const jeton = lireJeton();
-    if (!jeton) return;
-    if (!localStorage.getItem('accessToken')) localStorage.setItem('accessToken', jeton);
-    if (espace === 'driver' && !localStorage.getItem('driverToken')) {
-      localStorage.setItem('driverToken', jeton);
-    }
+    // Un seul jeton pour tous les espaces : rien à recopier d'une clé à l'autre.
+    if (!jetonAcces()) return;
     if (espace === 'merchant' && premiereOrg && !localStorage.getItem('currentOrgId')) {
       localStorage.setItem('currentOrgId', premiereOrg);
     }

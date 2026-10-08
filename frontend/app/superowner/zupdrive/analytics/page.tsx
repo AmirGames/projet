@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * ZupDrive Admin — Analytics & Reports
  * Métriques de performance, tendances, analyses régionales.
@@ -62,10 +64,10 @@ export default function AnalyticsPage() {
 
       const [metricsRes, regionalRes] = await Promise.all([
         fetch(`${API_URL}/api/zupdrive/analytics/period?${params}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         }),
         fetch(`${API_URL}/api/zupdrive/analytics/regions?${params}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         }),
       ]);
 

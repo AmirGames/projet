@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export type Niveau = 'read' | 'write';
@@ -29,7 +30,7 @@ interface AccesParPlateforme {
  * Un membre qui n'a de rôle que sur l'une des deux voit ce qu'elle ouvre.
  */
 export async function chargerAcces(): Promise<AccesPlateforme> {
-  const token = localStorage.getItem('accessToken');
+  const token = jetonAcces();
   const res = await fetch(`${API_URL}/api/superowner/me/permissions/plateformes`, {
     headers: { Authorization: `Bearer ${token}` },
   });

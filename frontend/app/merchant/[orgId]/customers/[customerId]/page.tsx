@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -75,7 +77,7 @@ export default function FicheClientPage() {
     setErreur('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -107,7 +109,7 @@ export default function FicheClientPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -135,7 +137,7 @@ export default function FicheClientPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = bloque
         ? await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
             method: 'PUT',

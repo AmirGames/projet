@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * ZupDrive — la file de validation des dossiers chauffeurs (licence LVC).
  *
@@ -85,7 +87,7 @@ const COULEURS: Record<string, string> = {
   SUSPENDU: 'bg-red-100 text-red-700',
 };
 
-const jeton = () => localStorage.getItem('accessToken');
+const jeton = () => jetonAcces();
 const date = (valeur: string | null, locale: string) => (valeur ? new Date(valeur).toLocaleDateString(locale) : '—');
 
 export function FileChauffeurs({ idInitial }: { idInitial?: string }) {

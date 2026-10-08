@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Send } from 'lucide-react';
@@ -40,7 +42,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
 
   const fetchMessages = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}${basePath}/${ticketId}/messages`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -82,7 +84,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
 
     setSending(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}${basePath}/${ticketId}/messages`, {
         method: 'POST',
         headers: {

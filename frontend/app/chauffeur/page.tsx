@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -94,7 +96,7 @@ const PROFIL_VIDE: Profil = {
 };
 
 const entetes = (): Record<string, string> => {
-  const token = localStorage.getItem('accessToken');
+  const token = jetonAcces();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 

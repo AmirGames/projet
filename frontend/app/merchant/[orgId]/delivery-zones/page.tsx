@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -99,7 +101,7 @@ export default function DeliveryZonesPage() {
     if (!storeId) return;
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/stores/${storeId}`, {
         headers: jeton ? { Authorization: `Bearer ${jeton}` } : {},
       });
@@ -127,7 +129,7 @@ export default function DeliveryZonesPage() {
   const [livreursPlateforme, setLivreursPlateforme] = useState(false);
 
   useEffect(() => {
-    const jeton = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    const jeton = jetonAcces();
     if (!storeId || !jeton) return;
 
     fetch(`${API_URL}/api/store-settings/${storeId}`, { headers: { Authorization: `Bearer ${jeton}` } })
@@ -148,7 +150,7 @@ export default function DeliveryZonesPage() {
     setBoutique((actuelle) => (actuelle ? { ...actuelle, latitude, longitude } : actuelle));
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/stores/${storeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -213,7 +215,7 @@ export default function DeliveryZonesPage() {
 
   const fetchZones = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/delivery-zones?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -291,7 +293,7 @@ export default function DeliveryZonesPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const payload: Record<string, unknown> = {
         storeId,
         name: formData.name,
@@ -348,7 +350,7 @@ export default function DeliveryZonesPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/delivery-zones/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

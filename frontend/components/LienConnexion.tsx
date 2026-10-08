@@ -1,7 +1,7 @@
 'use client';
 
 import Link from '@/components/LienRegional';
-import { useStockageLocal } from '@/lib/navigateur';
+import { useJetonAcces } from '@/lib/navigateur';
 import { useTranslations } from 'next-intl';
 
 /**
@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl';
  */
 export function LienConnexion() {
   const t = useTranslations('enTeteClient');
-  const connecte = Boolean(useStockageLocal('accessToken'));
+  const connecte = Boolean(useJetonAcces());
   return (
     <Link
       href={connecte ? '/dashboard' : '/login'}

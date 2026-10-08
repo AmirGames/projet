@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * La fiche d'une boutique, vue par la plateforme.
  *
@@ -146,7 +148,7 @@ export default function FicheBoutiquePage() {
   const [motifFermeture, setMotifFermeture] = useState('');
   const [bascule, setBascule] = useState(false);
 
-  const jeton = () => localStorage.getItem('accessToken');
+  const jeton = () => jetonAcces();
 
   // silencieux : une relecture en direct ne remplace pas la fiche par la roue,
   // et ne touche pas au message affiché — une commande arrivée pendant une

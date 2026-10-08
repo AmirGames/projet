@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -116,7 +118,7 @@ export default function IncidentsLivraisonPage() {
   }, []);
 
   const charger = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
     try {
       const res = await fetch(`${API_URL}/api/superowner/delivery-incidents?etat=${etat}`, {
@@ -162,7 +164,7 @@ export default function IncidentsLivraisonPage() {
 
   const confirmer = async (incident: Incident) => {
     if (!geste) return;
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
     const depot = geste.type === 'valider' || geste.type === 'refuser';
     const url =

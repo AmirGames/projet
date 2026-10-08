@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Un panier par boutique.
  *
@@ -245,7 +247,7 @@ export interface PanierDistant {
 
 function jetonClient(): string | null {
   try {
-    return localStorage.getItem('accessToken');
+    return jetonAcces();
   } catch {
     return null;
   }

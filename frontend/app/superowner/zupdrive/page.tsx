@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * ZupDrive — le tableau de bord de la plateforme dans l'administration du
  * groupe (manager.zupone.com) : où en sont les dossiers des chauffeurs et les
@@ -55,7 +57,7 @@ interface Chiffres {
 
 /** La réponse complète : les compteurs et la pagination sont hors de `data`. */
 async function lire<T>(chemin: string): Promise<T> {
-  const token = localStorage.getItem('accessToken');
+  const token = jetonAcces();
   const reponse = await fetch(`${API_URL}/api/zupdrive/admin${chemin}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });

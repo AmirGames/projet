@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -51,7 +53,7 @@ export default function ConsolePage() {
 
     const charger = async () => {
       try {
-        const jeton = localStorage.getItem('accessToken');
+        const jeton = jetonAcces();
         const reponse = await fetch(`${API_URL}/api/superowner/console?apres=${dernierId.current}`, {
           headers: { Authorization: `Bearer ${jeton}` },
         });

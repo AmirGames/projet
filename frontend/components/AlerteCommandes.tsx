@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -74,7 +76,7 @@ export function AlerteCommandes({
   const charger = useCallback(async () => {
     if (toutesBoutiques ? !orgId : !storeId) return;
 
-    const jeton = localStorage.getItem('accessToken');
+    const jeton = jetonAcces();
     if (!jeton) return;
 
     try {

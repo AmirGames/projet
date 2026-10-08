@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -49,7 +51,7 @@ export default function CustomersPage() {
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;
@@ -89,7 +91,7 @@ export default function CustomersPage() {
   const handleDelete = async (customerId: string) => {
     try {
       setDeleting(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
 
       const response = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
         method: 'DELETE',
@@ -111,7 +113,7 @@ export default function CustomersPage() {
 
   const handleBlockCustomer = async (customerId: string) => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
 
       const response = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}/block`, {
         method: 'POST',

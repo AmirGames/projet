@@ -1,5 +1,7 @@
 'use client';
 
+
+import { abonnerJeton, jetonAcces } from '@/lib/jeton-session';
 import { useEffect, useSyncExternalStore } from 'react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { io, type Socket } from 'socket.io-client';
@@ -27,9 +29,7 @@ let relance: ReturnType<typeof setTimeout> | undefined;
 
 function jeton(): string | null {
   try {
-    // L'espace livreur a longtemps rangé sa session sous sa propre clé : une
-    // inscription de livreur ne remplit parfois que celle-là.
-    return localStorage.getItem('accessToken') || localStorage.getItem('driverToken');
+    return jetonAcces();
   } catch {
     return null;
   }
@@ -311,15 +311,9 @@ export function TempsReelProvider({ children }: { children: React.ReactNode }) {
     connexionTempsReel();
   }, [identite, isLoading]);
 
-  useEffect(() => {
-    const surStockage = (evenement: StorageEvent) => {
-      if (evenement.key === 'accessToken' || evenement.key === 'driverToken' || evenement.key === null) {
-        connexionTempsReel();
-      }
-    };
-    window.addEventListener('storage', surStockage);
-    return () => window.removeEventListener('storage', surStockage);
-  }, []);
+  // Le jeton de l'onglet change (connexion, renouvellement, déconnexion) : la
+  // connexion temps réel vérifie qu'elle porte toujours le bon.
+  useEffect(() => abonnerJeton(() => connexionTempsReel()), []);
 
   return <>{children}</>;
 }

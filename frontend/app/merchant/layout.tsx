@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces, oublierJeton } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useState } from 'react';
 import { fermerSessionPartout } from '@/lib/sso';
@@ -72,7 +74,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
 
   const charger = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const org = localStorage.getItem('currentOrgId');
 
       if (!token || !org) return;
@@ -106,8 +108,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
   const seDeconnecter = () => {
     // Ferme la session sur tous les domaines, puis l'efface d'ici.
     fermerSessionPartout();
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    oublierJeton();
     localStorage.removeItem('currentOrgId');
     router.push('/login');
   };

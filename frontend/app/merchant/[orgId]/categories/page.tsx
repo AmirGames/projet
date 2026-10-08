@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
@@ -140,7 +142,7 @@ export default function CategoriesPage() {
     if (!storeId) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
 
       const categoriesResponse = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -183,7 +185,7 @@ export default function CategoriesPage() {
 
       setIsReordering(true);
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = jetonAcces();
         const ordering = newOrder.map((cat, index) => ({
           id: cat.id,
           displayOrder: index,
@@ -219,7 +221,7 @@ export default function CategoriesPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
 
       if (editingCategory) {
         const response = await fetch(`${API_URL}/api/categories/${editingCategory.id}`, {
@@ -283,7 +285,7 @@ export default function CategoriesPage() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/categories/${categoryId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

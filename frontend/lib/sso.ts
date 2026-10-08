@@ -7,7 +7,7 @@ import {
   lienVersEspace,
   type EspaceHeberge,
 } from '@/lib/domaines';
-import { effacerCookieSession } from '@/lib/jeton-session';
+import { effacerCookieSession, jetonAcces } from '@/lib/jeton-session';
 
 /**
  * Connexion unique entre les domaines, côté navigateur.
@@ -137,7 +137,7 @@ export async function confierSessionCentrale(accessToken: string, destination: s
  */
 export function demanderSessionCentrale(suite: string): boolean {
   if (!SSO_ACTIF) return false;
-  if (lire('accessToken') || lire('driverToken')) return false;
+  if (jetonAcces()) return false;
   if (verifieRecemment()) return false;
 
   noter(DEJA_VERIFIE, String(Date.now()));
@@ -158,7 +158,7 @@ export function demanderSessionCentrale(suite: string): boolean {
  * Le stockage de ce domaine reste à vider par l'appelant, comme avant.
  */
 export async function fermerSessionPartout(): Promise<void> {
-  const jeton = lire('accessToken') || lire('driverToken');
+  const jeton = jetonAcces();
   // Déconnecté à dessein : ne pas se faire reconnecter aussitôt par zupone.com.
   noter(DEJA_VERIFIE, String(Date.now()));
   if (!jeton) return;

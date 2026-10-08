@@ -140,7 +140,7 @@ export default function MaPage() {
   const charger = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/ma-ressource`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -182,11 +182,14 @@ Trois particularités à connaître :
 - **`signalerErreur`** (`lib/erreurs.ts`) remplace `console.error` : elle ne
   journalise pas quand le navigateur quitte la page (les requêtes coupées par
   le départ du visiteur ne sont pas des pannes).
-- **Le jeton d'accès** se lit par `localStorage.getItem('accessToken')`.
-  Rassurez-vous : `lib/jeton-session.ts` redirige cette clé **vers la mémoire**
-  de l'onglet — rien n'est écrit sur le disque, et le jeton est renouvelé en
-  silence avant son expiration (15 minutes) grâce à un cookie `httpOnly`. Ne
-  stockez jamais un jeton ailleurs.
+- **Le jeton d'accès** passe uniquement par `lib/jeton-session.ts` :
+  `jetonAcces()` pour le lire, `poserJeton()` après une connexion,
+  `oublierJeton()` pour la fermer, `useJetonAcces()` (`lib/navigateur.ts`) pour
+  un rendu qui en dépend. Il ne vit qu'**en mémoire** de l'onglet : rien n'est
+  écrit dans `localStorage`, un rechargement le redemande au cookie `httpOnly`
+  (`POST /api/auth/refresh`) et il est renouvelé en silence avant son
+  expiration (15 minutes). N'écrivez ni ne lisez jamais `accessToken`,
+  `driverToken` ou `refreshToken` dans le stockage, et n'en gardez pas ailleurs.
 
 ---
 
@@ -267,11 +270,11 @@ par un collègue), branchez le temps réel : voir [I](#i-mettre-à-jour-un-écra
 
 ### C. Une page de l'espace livreur
 
-Sous `app/driver/`. L'espace livreur a **sa propre session** : le jeton est
-lu sous la clé `driverToken`, pas `accessToken`.
+Sous `app/driver/`. L'espace livreur a **sa propre authentification** côté
+API (`/api/drivers`), mais le même jeton d'accès que le reste du site.
 
 ```tsx
-const token = localStorage.getItem('driverToken');
+const token = jetonAcces();
 ```
 
 Le lien de navigation s'ajoute dans le tableau `navItems` de
@@ -401,7 +404,7 @@ L'adresse de base est `process.env.NEXT_PUBLIC_API_URL` (par défaut
 `http://localhost:3001`). Le motif habituel, avec le jeton :
 
 ```ts
-const token = localStorage.getItem('accessToken');
+const token = jetonAcces();
 const res = await fetch(`${API_URL}/api/…`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

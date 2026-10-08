@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { CheckCircle2, ChevronDown, Globe, HelpCircle, XCircle } from 'lucide-react';
@@ -70,7 +72,7 @@ export function DisponibiliteSite() {
   const charger = useCallback(async () => {
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/uptime`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
       const corps = await reponse.json();
       if (!reponse.ok) {

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * ZupDrive — la file de validation des sociétés (taxi, VTC) : leur dossier,
  * leurs véhicules et leurs pièces, leurs chauffeurs.
@@ -83,7 +85,7 @@ const COULEURS: Record<string, string> = {
   SUSPENDU: 'bg-red-100 text-red-700',
 };
 
-const jeton = () => localStorage.getItem('accessToken');
+const jeton = () => jetonAcces();
 const date = (valeur: string | null, locale: string) => (valeur ? new Date(valeur).toLocaleDateString(locale) : '—');
 
 /** Une nouvelle version de ce type attend l'examen : celle-ci reste en vigueur d'ici là. */

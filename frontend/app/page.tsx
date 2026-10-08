@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import Link from '@/components/LienRegional';
 import { accueilDe } from '@/lib/domaines';
@@ -16,7 +18,7 @@ export default function Home() {
 
   const fetchRoles = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) return;
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/me/roles`, {

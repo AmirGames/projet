@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Le dossier d'un commerçant, vu par la plateforme.
  *
@@ -100,7 +102,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
 
   const charger = useCallback(async () => {
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/superowner/organizations/${orgId}/profile`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
@@ -131,7 +133,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     setEnCours(piece.id);
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(
         `${API_URL}/api/superowner/organizations/${orgId}/documents/${piece.id}/expiry`,
         {
@@ -162,7 +164,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     setEnCours(piece.id);
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(
         `${API_URL}/api/superowner/organizations/${orgId}/documents/${piece.id}`,
         {
@@ -194,7 +196,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     setEnCours('commerce');
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/superowner/organizations/${orgId}/approve`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${jeton}` },
@@ -234,7 +236,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     setEnvoi(true);
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const formData = new FormData();
       formData.append('type', typePiece);
       formData.append('file', aEnvoyer, fichier.name);

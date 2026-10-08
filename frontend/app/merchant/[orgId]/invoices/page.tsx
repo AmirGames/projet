@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -53,7 +55,7 @@ export default function InvoicesPage() {
   const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;
@@ -86,7 +88,7 @@ export default function InvoicesPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
 
       const response = await fetch(`${API_URL}/api/invoices/${storeId}/stats/revenue`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -112,7 +114,7 @@ export default function InvoicesPage() {
 
   const handleDownloadInvoice = async (orderId: string, invoiceNumber: string) => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
 
       const response = await fetch(`${API_URL}/api/invoices/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },

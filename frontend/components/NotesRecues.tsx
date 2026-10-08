@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Ce que les clients ont dit des courses d'un livreur.
  *
@@ -39,7 +41,7 @@ export function NotesRecues() {
     (async () => {
       try {
         const reponse = await fetch(`${API_URL}/api/drivers/ratings`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         });
 
         if (reponse.ok) {

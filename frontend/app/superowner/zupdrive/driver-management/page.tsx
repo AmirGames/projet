@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * ZupDrive Admin — Driver Management
  * Liste des chauffeurs avec filtres, suspension, document validation, infractions.
@@ -50,7 +52,7 @@ export default function DriverManagementPage() {
       params.append('offset', offset.toString());
 
       const response = await fetch(`${API_URL}/api/zupdrive/admin/drivers?${params}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
 
       if (!response.ok) throw new Error(t('loadError'));
@@ -81,7 +83,7 @@ export default function DriverManagementPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({ reason }),
       });
@@ -102,7 +104,7 @@ export default function DriverManagementPage() {
       const response = await fetch(`${API_URL}/api/zupdrive/admin/drivers/${driverId}/reactivate`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 

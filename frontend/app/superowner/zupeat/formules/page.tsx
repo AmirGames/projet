@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Layers, Save, Plus, X, Users } from 'lucide-react';
@@ -42,7 +44,7 @@ export default function FormulesPage() {
   const charger = useCallback(async () => {
     setChargement(true);
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/superowner/plans`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
@@ -91,7 +93,7 @@ export default function FormulesPage() {
     setErreur('');
 
     try {
-      const jeton = localStorage.getItem('accessToken');
+      const jeton = jetonAcces();
       for (const code of codesModifies) {
         const brouillon = brouillons[code]!;
         const reponse = await fetch(`${API_URL}/api/superowner/plans/${code}`, {

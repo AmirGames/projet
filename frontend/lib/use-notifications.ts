@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import { useState, useEffect, useCallback } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
@@ -24,7 +25,7 @@ export function useNotifications() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {
@@ -57,7 +58,7 @@ export function useNotifications() {
   }, [t]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {
@@ -83,7 +84,7 @@ export function useNotifications() {
   }, [t]);
 
   const markAllAsRead = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {
@@ -124,7 +125,7 @@ export function useNotifications() {
   }, [fetchNotifications]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     // Filet de sécurité si la connexion temps réel est coupée (proxy, réseau

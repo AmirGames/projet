@@ -10,6 +10,7 @@
     "test:messages": "jest lib/__tests__/messages-parite.test.ts",
     "test:checkout": "jest app/checkout/__tests__/page.test.jsx --runInBand",
     "format": "prettier --write .",
+    "verif:session": "node scripts/verif-session-memoire.mjs",
     "verif:domaines": "node scripts/verif-domaines.mjs",
     "verif:menu": "node scripts/verif-menu-merchant.mjs",
     "verif:admin": "node scripts/verif-espace-administration.mjs",

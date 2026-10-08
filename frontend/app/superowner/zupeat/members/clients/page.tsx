@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -28,7 +30,7 @@ export default function ClientsPage() {
 
   const fetchClients = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/superowner/members/clients`, {
         headers: { Authorization: `Bearer ${token}` },
       });

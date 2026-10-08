@@ -1,6 +1,8 @@
 'use client';
 
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -119,7 +121,7 @@ export default function DetailCommandePage() {
     setErreur('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -163,7 +165,7 @@ export default function DetailCommandePage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

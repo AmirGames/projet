@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -63,7 +65,7 @@ export function CurrentStoreProvider({
 
     try {
       setError(null);
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

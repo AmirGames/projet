@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -41,7 +43,7 @@ export default function AdvancedSettingsPage() {
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/advanced-settings`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,7 +68,7 @@ export default function AdvancedSettingsPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const res = await fetch(`${API_URL}/api/superowner/advanced-settings`, {
         method: 'PUT',
         headers: {

@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 import { renouveler } from "./jeton-session";
 
 export type Service = "ONE" | "EAT" | "DRIVE";
@@ -72,7 +73,7 @@ export async function assistantRequest<T>(
   body?: unknown,
 ): Promise<T> {
   const run = async () => {
-    const token = localStorage.getItem("accessToken");
+    const token = jetonAcces();
     return fetch(`/api/assistant/${path}`, {
       method,
       cache: "no-store",
@@ -85,7 +86,7 @@ export async function assistantRequest<T>(
     });
   };
   let response = await run();
-  if (response.status === 401 && localStorage.getItem("accessToken")) {
+  if (response.status === 401 && jetonAcces()) {
     const renewed = await renouveler();
     if (renewed.ok) response = await run();
   }

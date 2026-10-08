@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useParams } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -29,10 +31,10 @@ export default function DriverDetailPage() {
     try {
       const [statsRes, infsRes] = await Promise.all([
         fetch(`${API_URL}/api/zupdrive/admin/drivers/${driverId}/stats`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         }),
         fetch(`${API_URL}/api/zupdrive/admin/drivers/${driverId}/infractions`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${jetonAcces()}` },
         }),
       ]);
 
@@ -60,7 +62,7 @@ export default function DriverDetailPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({ reason }),
       });
@@ -80,7 +82,7 @@ export default function DriverDetailPage() {
       const response = await fetch(`${API_URL}/api/zupdrive/admin/drivers/${driverId}/reactivate`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
       });
 

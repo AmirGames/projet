@@ -5,7 +5,7 @@ import React, { Suspense, createContext, use, useContext, useEffect, useState, u
 import { useRouter } from 'next/navigation';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { fermerSessionPartout } from '@/lib/sso';
-import { ENTETE_TRANSPORT, renouveler, sessionARetrouver, sessionPerdueAuDemarrage, sessionPrete } from '@/lib/jeton-session';
+import { ENTETE_TRANSPORT, renouveler, sessionARetrouver, sessionPerdueAuDemarrage, sessionPrete, jetonAcces, poserJeton, oublierJeton } from '@/lib/jeton-session';
 
 interface User {
   id: string;
@@ -37,8 +37,7 @@ export const RAISON_DECONNEXION = 'raisonDeconnexion';
 
 function oublierLaSession() {
   try {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    oublierJeton();
     localStorage.removeItem('storeId');
 
     /**
@@ -91,7 +90,10 @@ let attenteSession: Promise<void> | null = null;
  * soit prête.
  */
 function AttendreSession({ pret, children }: { pret: boolean; children: React.ReactNode }) {
-  if (!pret) {
+  // Une fois suspendu, on rappelle `use` à chaque rendu (la promesse est alors
+  // résolue, il rend aussitôt) : React refuse qu'un composant cesse d'appeler
+  // `use` après avoir suspendu.
+  if (!pret || attenteSession) {
     attenteSession ??= sessionPrete();
     use(attenteSession);
   }
@@ -125,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshAuth = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) {
         setUser(null);
         setIsLoading(false);
@@ -194,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const data = await response.json();
-    localStorage.setItem('accessToken', data.accessToken);
+    poserJeton(data.accessToken);
 
     // Store organization and driver info
     if (data.organization?.id) {

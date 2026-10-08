@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 /**
  * Les versements du lundi : commerçants et livreurs, en un seul fichier SEPA.
  *
@@ -72,7 +74,7 @@ export default function VersementsSepaPage() {
   const [erreur, setErreur] = useState('');
   const [occupe, setOccupe] = useState(false);
 
-  const entetes = () => ({ Authorization: `Bearer ${localStorage.getItem('accessToken')}` });
+  const entetes = () => ({ Authorization: `Bearer ${jetonAcces()}` });
 
   const charger = useCallback(async () => {
     setLotErreur('');

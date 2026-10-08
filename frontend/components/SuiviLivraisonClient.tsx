@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 /**
  * Suivi en temps réel de la livraison.
@@ -178,7 +180,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
 
   // Écouter les mises à jour WebSocket
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
 
     // Le serveur parle Socket.IO : un WebSocket brut n'y obtenait jamais de

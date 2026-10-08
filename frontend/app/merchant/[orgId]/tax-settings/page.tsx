@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 
 import { useCallback, useState } from 'react';
@@ -64,7 +66,7 @@ export default function TaxSettingsPage() {
     if (!storeId) return;
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       if (!token) { router.push('/login'); return; }
 
       const [rTaxes, rCats, rProd] = await Promise.all([
@@ -155,7 +157,7 @@ export default function TaxSettingsPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       const url = enEdition
         ? `${API_URL}/api/tax-settings/${storeId}/${enEdition.id}`
         : `${API_URL}/api/tax-settings/${storeId}`;
@@ -191,7 +193,7 @@ export default function TaxSettingsPage() {
   const supprimer = async (taxId: string) => {
     if (!confirm(t('confirmerSuppression'))) return;
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      const token = jetonAcces();
       const r = await fetch(`${API_URL}/api/tax-settings/${storeId}/${taxId}`, {
         method:  'DELETE',
         headers: { Authorization: `Bearer ${token}` },

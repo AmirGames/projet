@@ -1,3 +1,4 @@
+import { jetonAcces } from '@/lib/jeton-session';
 import { useMemo, useSyncExternalStore } from "react";
 
 /**
@@ -45,7 +46,7 @@ export function cleAdresse(adresse: AdresseLivraison): string {
 // Le jeton sert uniquement à ranger le cache local par compte, jamais à autoriser une requête.
 function cleHistorique(): string {
   try {
-    const jeton = localStorage.getItem("accessToken");
+    const jeton = jetonAcces();
     if (jeton) {
       const charge = jeton.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/");
       const userId = charge && JSON.parse(atob(charge)).userId;

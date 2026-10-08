@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -63,7 +65,7 @@ export default function CreateStorePage() {
 
   useEffect(() => {
     const checkOrgStatus = async () => {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) return;
 
       try {
@@ -119,7 +121,7 @@ export default function CreateStorePage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;

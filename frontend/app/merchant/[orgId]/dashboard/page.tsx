@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useParams, useRouter } from 'next/navigation';
@@ -90,7 +92,7 @@ export default function MerchantDashboard() {
   // « Chargement… » à chaque commande qui arrive.
   const fetchDashboardData = useCallback(
     async (silencieux = false) => {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) {
         router.push('/login');
         return;
@@ -151,7 +153,7 @@ export default function MerchantDashboard() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${jetonAcces()}`,
         },
         body: JSON.stringify({ isAvailable: true, storeId }),
       });

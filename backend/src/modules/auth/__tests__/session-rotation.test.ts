@@ -265,6 +265,45 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
     expect(cookie.split(";")[0]).not.toContain(refreshToken);
   });
 
+  it("accepte le refresh par cookie depuis chaque domaine du site (public, pro, livreur, groupe, vitrine, drive, chauffeur)", async () => {
+    // Les valeurs de deploy/env.production.example : FRONTEND_URL + ALLOWED_ORIGINS + SSO_ORIGIN.
+    process.env.FRONTEND_URL = "https://zupeat.com";
+    process.env.SSO_ORIGIN = "https://zupone.com";
+    process.env.ALLOWED_ORIGINS =
+      "https://manager.zupeat.com,https://delivery.zupeat.com,https://manager.zupone.com,https://zupone.com,https://zupdrive.com,https://driver.zupdrive.com";
+    try {
+      for (const origine of [
+        "https://zupeat.com",
+        "https://manager.zupeat.com",
+        "https://delivery.zupeat.com",
+        "https://manager.zupone.com",
+        "https://zupone.com",
+        "https://zupdrive.com",
+        "https://driver.zupdrive.com",
+      ]) {
+        const { refreshToken } = await SsoService.connecter("u1");
+        const res = await request(auth)
+          .post("/api/auth/refresh")
+          .set("Cookie", `zup_refresh=${refreshToken}`)
+          .set("Origin", origine);
+        expect({ origine, statut: res.status }).toEqual({ origine, statut: 200 });
+      }
+
+      // Un domaine voisin ou un faux sous-domaine n'est pas le site.
+      for (const origine of ["https://zupeat.com.evil.example", "https://evil-zupeat.com", "http://zupeat.com"]) {
+        const { refreshToken } = await SsoService.connecter("u1");
+        const res = await request(auth)
+          .post("/api/auth/refresh")
+          .set("Cookie", `zup_refresh=${refreshToken}`)
+          .set("Origin", origine);
+        expect({ origine, statut: res.status }).toEqual({ origine, statut: 403 });
+      }
+    } finally {
+      delete process.env.SSO_ORIGIN;
+      delete process.env.ALLOWED_ORIGINS;
+    }
+  });
+
   it("logout par cookie : ferme la session, efface le cookie, CSRF contrôlé", async () => {
     const { refreshToken, accessToken, sid } = await SsoService.connecter("u1");
 

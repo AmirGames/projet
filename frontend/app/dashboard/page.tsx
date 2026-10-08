@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -35,7 +37,7 @@ export default function DashboardPage() {
 
   const fetchRoles = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = jetonAcces();
       if (!token) return;
 
       const response = await fetch(`${API_URL}/api/auth/me/roles`, {

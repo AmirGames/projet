@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Flag, Star } from 'lucide-react';
@@ -50,7 +52,7 @@ export default function AvisSignalesPage() {
   const [enCours, setEnCours] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
     setChargement(true);
     try {
@@ -74,7 +76,7 @@ export default function AvisSignalesPage() {
   }, [charger]);
 
   const decider = async (id: string, decision: 'KEPT' | 'REMOVED') => {
-    const token = localStorage.getItem('accessToken');
+    const token = jetonAcces();
     if (!token) return;
     setEnCours(id);
     try {

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { connexionTempsReel } from '@/lib/temps-reel';
@@ -22,7 +24,7 @@ export default function SupportLivreurPage() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
 
-  const jeton = () => localStorage.getItem('driverToken');
+  const jeton = () => jetonAcces();
 
   const charger = useCallback(async () => {
     const token = jeton();

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { jetonAcces, oublierJeton } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -67,7 +69,7 @@ export default function DriverDashboard() {
   // silencieux : une relecture en direct qui échoue (réseau coupé un instant)
   // ne renvoie pas le livreur à la connexion ; la suivante corrigera.
   const loadDriverData = useCallback(async (silencieux = false) => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
       return;
@@ -92,7 +94,7 @@ export default function DriverDashboard() {
         // Pas de profil livreur (404) : ce jeton ne sert à rien ici. Le
         // garder ferait rebondir /driver/login (« déjà connecté ») vers
         // /driver, en boucle.
-        if (driverResponse.status === 404) localStorage.removeItem('driverToken');
+        if (driverResponse.status === 404) oublierJeton();
         throw new Error('Failed to load driver info');
       }
 
@@ -147,7 +149,7 @@ export default function DriverDashboard() {
   }, [loadDriverData]);
 
   const basculerDisponibilite = async () => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return;
 
     const nouvelEtat = !isOnline;
@@ -206,7 +208,7 @@ export default function DriverDashboard() {
   }, []);
 
   const handleAcceptDelivery = async (delivery: Delivery) => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) return;
 
     try {
@@ -230,7 +232,7 @@ export default function DriverDashboard() {
 
   // Vérifier le token avant de rien afficher
   useEffect(() => {
-    const token = localStorage.getItem('driverToken');
+    const token = jetonAcces();
     if (!token) {
       router.push('/driver/login');
     }
