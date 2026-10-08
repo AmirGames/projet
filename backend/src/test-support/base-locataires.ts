@@ -9,9 +9,9 @@
 export const ID = {
   orgA: "organisationa0000000000001",
   orgB: "organisationb0000000000002",
-  storeA1: "boutiquea1000000000000001",
-  storeA2: "boutiquea2000000000000002",
-  storeB1: "boutiqueb1000000000000003",
+  storeA1: "cboutiquea100000000000000",
+  storeA2: "cboutiquea200000000000000",
+  storeB1: "cboutiqueb100000000000000",
   staffA1: "personnela100000000000001",
   staffA2: "personnela200000000000002",
   staffB1: "personnelb100000000000003",
@@ -121,6 +121,10 @@ const surcharges: Record<string, Record<string, (args: any) => Promise<any>>> = 
       if (!personnel || !boutique || !boutiqueCorrespond(boutique, where.store)) throw erreurIntrouvable();
       return personnel;
     },
+    findMany: async ({ where }: any) => PERSONNEL.filter(p => {
+      const boutique = boutiqueDe(p.storeId)!;
+      return (!where?.storeId || where.storeId === p.storeId) && boutiqueCorrespond(boutique, where?.store);
+    }).map(p => ({ ...p, name: "Employé", store: { id: p.storeId, name: "Boutique" } })),
     create: async ({ data }: any) => ({ id: "nouveau", ...data }),
   },
   category: {
@@ -153,13 +157,16 @@ export const db: any = new Proxy({}, {
         get(_m, methode: string) {
           if (!methodes[methode]) {
             methodes[methode] = async (args: any) => {
-              if (ECRITURES.has(methode) && !TABLES_DE_TRACE.has(table)) ecritures.push(`${table}.${methode}`);
               const surcharge = surcharges[table]?.[methode];
-              if (surcharge) return surcharge(args);
-              if (methode === "findMany") return [];
-              if (methode === "count") return 0;
-              if (methode === "findUnique" || methode === "findFirst") return null;
-              return { id: "objet", ...(args?.data ?? {}) };
+              // Une écriture qui lève (filtre de périmètre, P2025) n'a rien modifié : elle ne compte pas.
+              let resultat: any;
+              if (surcharge) resultat = await surcharge(args);
+              else if (methode === "findMany") resultat = [];
+              else if (methode === "count") resultat = 0;
+              else if (methode === "findUnique" || methode === "findFirst") resultat = null;
+              else resultat = { id: "objet", ...(args?.data ?? {}) };
+              if (ECRITURES.has(methode) && !TABLES_DE_TRACE.has(table)) ecritures.push(`${table}.${methode}`);
+              return resultat;
             };
           }
           return methodes[methode];
