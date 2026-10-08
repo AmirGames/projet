@@ -1,6 +1,7 @@
 import { perimetreBoutiques, exigerBoutique, type Acteur } from "../auth/autorisation-boutique";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { codeErreur } from "../../utils/code-erreur";
 
 type StaffRole = "MANAGER" | "CASHIER" | "KITCHEN" | "DELIVERY" | "SUPPORT";
 
@@ -33,8 +34,8 @@ export class StaffService {
       });
 
       return staff;
-    } catch (error: any) {
-      if (error.code === "P2002") {
+    } catch (error) {
+      if (codeErreur(error) === "P2002") {
         throw new ApiError(409, "Email already exists for this store", "EMAIL_EXISTS");
       }
       throw error;
@@ -90,11 +91,11 @@ export class StaffService {
           ...(data.permissions && { permissions: data.permissions }),
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Staff member not found", "STAFF_NOT_FOUND");
       }
-      if (error.code === "P2002") {
+      if (codeErreur(error) === "P2002") {
         throw new ApiError(409, "Email already exists for this store", "EMAIL_EXISTS");
       }
       throw error;
@@ -108,8 +109,8 @@ export class StaffService {
         where: { id, store: scope },
         data: { status },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Staff member not found", "STAFF_NOT_FOUND");
       }
       throw error;
@@ -122,8 +123,8 @@ export class StaffService {
       return await db.staff.delete({
         where: { id, store: scope },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Staff member not found", "STAFF_NOT_FOUND");
       }
       throw error;

@@ -3,6 +3,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { logger } from "../../config/logger";
+import { codeErreur } from "../../utils/code-erreur";
 
 export class StoreService {
   static async create(data: {
@@ -89,8 +90,8 @@ export class StoreService {
       });
 
       return store;
-    } catch (error: any) {
-      if (error.code === "P2002") {
+    } catch (error) {
+      if (codeErreur(error) === "P2002") {
         throw new ApiError(409, "Store slug already exists in organization", "SLUG_EXISTS");
       }
       throw error;
@@ -214,8 +215,8 @@ export class StoreService {
           categories: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;
@@ -227,8 +228,8 @@ export class StoreService {
       return await db.store.delete({
         where: { id },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;
@@ -265,8 +266,8 @@ export class StoreService {
           categories: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;
@@ -300,8 +301,8 @@ export class StoreService {
           categories: true,
         },
       });
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;

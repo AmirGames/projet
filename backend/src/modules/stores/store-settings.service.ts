@@ -1,13 +1,20 @@
+import type { Prisma } from "@prisma/client";
 import { db } from "../../services/db";
 import { AddressService } from "../customers/address.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { verifierLaTva } from "../merchants/merchant-profile.service";
+import { codeErreur } from "../../utils/code-erreur";
 import {
   libelleDeLEtablissement,
   libelleDeLaCuisine,
   CODES_ETABLISSEMENT,
   CODES_CUISINE,
 } from "./store-type.service";
+
+/** Les réglages d'une boutique (colonne Json) : un objet, quoi qu'il y ait en base. */
+export function reglagesDe(settings: Prisma.JsonValue | null | undefined): Prisma.JsonObject {
+  return typeof settings === "object" && settings !== null && !Array.isArray(settings) ? settings : {};
+}
 
 export interface StoreSettingsData {
   name?: string;
@@ -213,8 +220,8 @@ export class StoreSettingsService {
       return position
         ? { ...relus, position: position.trouvee ? "recalculee" : "introuvable" }
         : relus;
-    } catch (error: any) {
-      if (error.code === "P2025") {
+    } catch (error) {
+      if (codeErreur(error) === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
       throw error;

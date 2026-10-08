@@ -73,7 +73,7 @@ Principe : `--max-warnings` égale le nombre exact d'avertissements ; on le bais
 
 | Projet | Avant | Après |
 |---|---|---|
-| backend | 401 (386 réels) | **299** |
+| backend | 401 (386 réels) | **277** |
 | frontend | 0 | 0 |
 | mobile/customer | 25 | 24 |
 | mobile/delivery | 30 | 30 |
@@ -82,7 +82,7 @@ Principe : `--max-warnings` égale le nombre exact d'avertissements ; on le bais
 | mobile/zupdrive-driver | 37 | 29 |
 | mobile/zupdrive-passenger | 25 | 8 |
 
-Backend : 360 `no-explicit-any` au départ (tests compris). Traités : auth, paiements, commandes, reversements, journal d'audit. Il reste 299 avertissements, surtout dans `privacy`, `admin`, `stores`, `merchants`, `customers`, `zupdrive`, `marketing`, `superowner`, `catalog`, `drivers`, `delivery`. Un `any` subsiste volontairement dans `webhooks/webhook.service.ts` : `emit()` reçoit des charges utiles contenant des `Date`, non assignables à `Prisma.InputJsonObject` sans changer les 13 appelants.
+Backend : 360 `no-explicit-any` au départ (tests compris). Traités : auth, paiements, commandes, reversements, journal d'audit. Il reste 277 avertissements, surtout dans `privacy`, `admin`, `stores`, `merchants`, `customers`, `zupdrive`, `marketing`, `superowner`, `catalog`, `drivers`, `delivery`. Un `any` subsiste volontairement dans `webhooks/webhook.service.ts` : `emit()` reçoit des charges utiles contenant des `Date`, non assignables à `Prisma.InputJsonObject` sans changer les 13 appelants.
 
 Mobile : les avertissements restants sont des règles React Compiler (`react-hooks/set-state-in-effect`, `refs`, `immutability`, `preserve-manual-memoization`). Les corriger demande de réécrire des composants ; sans appareil ni test d'interface, ce n'est pas fait ici.
 
