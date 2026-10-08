@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { apiFetch, setUnauthorizedHandler } from '../lib/api';
 import { clearSession, loadSession, saveSession, Session } from '../lib/session';
 import { registerForPush, unregisterPush } from '../lib/push';
 import { COLORS } from '../components/ui';
@@ -31,7 +31,7 @@ interface DriverProfile {
 interface Earnings {
   totalEarningsCentimes: number;
   pendingCentimes: number;
-  payouts: Array<{ id: string; amount: number; status: string; period: { start: string; end: string } }>;
+  payouts: { id: string; amount: number; status: string; period: { start: string; end: string } }[];
 }
 
 export default function ZupDriveDriverApp() {
@@ -39,15 +39,12 @@ export default function ZupDriveDriverApp() {
   const pushToken = useRef<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [tab, setTab] = useState<string>('home');
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [earnings, setEarnings] = useState<Earnings | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
   const token = session?.accessToken || '';
   const sessionRef = useRef(session);

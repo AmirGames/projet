@@ -123,7 +123,7 @@ export default function AdminApp() {
       }
       setBooting(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {
