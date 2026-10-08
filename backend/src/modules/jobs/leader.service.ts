@@ -24,10 +24,10 @@ import { logger } from "../../config/logger";
  */
 
 const NOM = "taches-de-fond";
-export const DUREE_BAIL_MS = Number(process.env.JOBS_LEASE_MS || 30_000);
+const DUREE_BAIL_MS = Number(process.env.JOBS_LEASE_MS || 30_000);
 const RENOUVELLEMENT_MS = Math.max(1000, Math.floor(DUREE_BAIL_MS / 3));
 
-export const identifiantInstance = `${hostname()}-${process.pid}-${randomBytes(3).toString("hex")}`;
+const identifiantInstance = `${hostname()}-${process.pid}-${randomBytes(3).toString("hex")}`;
 
 /** Prend ou renouvelle le bail. `true` si cette instance en est titulaire. */
 export async function prendreLeBail(

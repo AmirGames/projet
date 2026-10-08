@@ -35,7 +35,7 @@ const EMPREINTE_BCRYPT = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 export class ConfigurationSuperownerInvalide extends Error {}
 
 /** Le lien de définition du mot de passe du premier superowner : 48 h. */
-export const DUREE_INVITATION_SUPEROWNER_MS = 48 * 60 * 60 * 1000;
+const DUREE_INVITATION_SUPEROWNER_MS = 48 * 60 * 60 * 1000;
 
 export interface ParametresSuperowner {
   /**

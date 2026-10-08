@@ -76,7 +76,7 @@ export const libelleDeLaPiece = (type: string) => LIBELLES_PIECE[type as TypePie
  */
 export const TYPES_PIECE_SOCIETE: TypePiece[] = ["tva", "actionnaires"];
 export const TYPES_PIECE_VEHICULE: TypePiece[] = ["licence", "assurance", "controle_technique", "immatriculation"];
-export const TYPES_PIECE_CHAUFFEUR_SOCIETE: TypePiece[] = ["identite", "permis", "bestuurderspas", "casier_judiciaire"];
+const TYPES_PIECE_CHAUFFEUR_SOCIETE: TypePiece[] = ["identite", "permis", "bestuurderspas", "casier_judiciaire"];
 
 /** Les pièces exigées d'une société pour valider son dossier. */
 export const piecesExigeesSociete = (): TypePiece[] => ["tva"];

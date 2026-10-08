@@ -32,7 +32,7 @@ export async function enregistrerAcceptation(
 }
 
 /** Les documents à accepter pour commander. */
-export const DOCUMENTS_COMMANDE: DocumentLegal[] = ["cgv", "confidentialite"];
+const DOCUMENTS_COMMANDE: DocumentLegal[] = ["cgv", "confidentialite"];
 
 /** Les versions en vigueur, « cgv@v1 confidentialite@v2 ». */
 export function versionsEnVigueur(documents: DocumentLegal[] = DOCUMENTS_COMMANDE) {

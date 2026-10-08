@@ -124,7 +124,7 @@ function serieMinutes(nombre: number) {
 }
 
 /** Le bilan des N dernières minutes (la minute en cours comprise). */
-export function bilanFenetre(nombreMinutes: number) {
+function bilanFenetre(nombreMinutes: number) {
   const depuis = debutDeMinute(Date.now()) - (nombreMinutes - 1) * MINUTE;
   const retenues = minutes.filter((m) => m.debut >= depuis);
 

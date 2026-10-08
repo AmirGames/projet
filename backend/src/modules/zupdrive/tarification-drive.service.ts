@@ -22,8 +22,8 @@ import { MatchingAlgorithmService } from "./matching-algorithm.service";
  */
 
 /** Un trajet plus court n'a pas de sens pour une course (et plus long non plus). */
-export const DISTANCE_MIN_METRES = 300;
-export const DISTANCE_MAX_METRES = 200_000;
+const DISTANCE_MIN_METRES = 300;
+const DISTANCE_MAX_METRES = 200_000;
 
 export type { Point };
 
@@ -44,7 +44,7 @@ export function calculerPrix(tarif: Tarif, distanceMetres: number, dureeSecondes
 }
 
 /** Le prix avec surge multiplier optionnel (ex: 1.5 pour 50% de supplément). */
-export function calculerPrixAvecSurge(
+function calculerPrixAvecSurge(
   tarif: Tarif,
   distanceMetres: number,
   dureeSecondes: number,
@@ -75,7 +75,7 @@ export function regionDuCodePostal(codePostal: string | null | undefined): Regio
   return "FLANDRE";
 }
 
-export const tarifDe = (ligne: Tarif): Tarif => ({
+const tarifDe = (ligne: Tarif): Tarif => ({
   priseEnChargeCentimes: ligne.priseEnChargeCentimes,
   parKmCentimes: ligne.parKmCentimes,
   parMinuteCentimes: ligne.parMinuteCentimes,

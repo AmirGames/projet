@@ -42,7 +42,7 @@ export function genererJetonDeSuivi(): { jeton: string; empreinte: string } {
 }
 
 /** Deux empreintes égales, comparées en temps constant. */
-export function memeEmpreinte(attendue: string, fournie: string): boolean {
+function memeEmpreinte(attendue: string, fournie: string): boolean {
   const a = Buffer.from(attendue, "hex");
   const b = Buffer.from(fournie, "hex");
   if (a.length !== 32 || b.length !== 32) return false;
@@ -249,7 +249,7 @@ function montants(commande: Lue) {
 }
 
 /** La vue réduite, pour un visiteur qui présente le jeton de suivi. */
-export function vuePublique(commande: Lue) {
+function vuePublique(commande: Lue) {
   return {
     id: commande.id,
     storeId: commande.storeId,
@@ -274,7 +274,7 @@ export function vuePublique(commande: Lue) {
 }
 
 /** La vue complète, pour un appelant connecté et concerné. */
-export function vueComplete(commande: Lue, avecCode: boolean) {
+function vueComplete(commande: Lue, avecCode: boolean) {
   return {
     id: commande.id,
     storeId: commande.storeId,
@@ -354,7 +354,7 @@ interface Rattachement {
  */
 export type Acces = { vue: "complete"; avecCode: boolean; livreur: boolean } | { vue: "publique" } | null;
 
-export async function evaluerAcces(
+async function evaluerAcces(
   commande: Rattachement,
   appelant: Appelant,
   jeton: unknown,
@@ -410,7 +410,7 @@ export async function commandeVisible(id: string, appelant: Appelant, jeton?: un
 // ---------------------------------------------------------------------------
 
 /** ≈ 110 m : assez pour voir le livreur approcher, pas pour le pister. */
-export const arrondirPosition = (valeur: number | null | undefined) =>
+const arrondirPosition = (valeur: number | null | undefined) =>
   typeof valeur === "number" && Number.isFinite(valeur) ? Math.round(valeur * 1000) / 1000 : null;
 
 /** La position du livreur ne se montre qu'en route vers le client. */

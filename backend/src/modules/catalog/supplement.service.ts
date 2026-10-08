@@ -20,7 +20,7 @@ import { TaxService } from "./tax.service";
  * disponibles et que chaque groupe est respecté, puis en fait la somme.
  */
 
-export interface ChoixSupplement {
+interface ChoixSupplement {
   id: string;
   label: string;
   price: number;

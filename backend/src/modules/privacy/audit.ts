@@ -8,7 +8,7 @@ function auditKey() {
   return key;
 }
 export const actorHash = (id: string) => createHmac("sha256", auditKey()).update(`actor:${id}`).digest("hex");
-export function auditIntegrity(event: { id: string; actor: string; action: string; target: string; outcome: string; createdAt: Date }) {
+function auditIntegrity(event: { id: string; actor: string; action: string; target: string; outcome: string; createdAt: Date }) {
   return createHmac("sha256", auditKey()).update(JSON.stringify([event.id, event.actor, event.action, event.target, event.outcome, event.createdAt.toISOString()])).digest("hex");
 }
 /** Échec fermé : un accès sensible n'est pas délivré si sa trace ne peut pas être écrite. */

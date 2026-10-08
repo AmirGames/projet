@@ -3,7 +3,7 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { recordAudit } from "./audit";
 import { ApiError } from "../../middleware/errorHandler";
 
-export function sensitiveAction(method: string, path: string): string | null {
+function sensitiveAction(method: string, path: string): string | null {
   if (/\/privacy(?:\/|$)/.test(path) || /\/files(?:\/|$)/.test(path)) return null;
   if (method === "GET" && /(?:export|download|sepa|backups.*download|incident.*dossier)/i.test(path)) return "DATA_EXPORT";
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) return null;

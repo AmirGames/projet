@@ -11,12 +11,12 @@ const boutiquePublique = {
   org: { status: "ACTIVE", approvedAt: { not: null } },
 } satisfies Prisma.StoreWhereInput;
 
-export const produitPublic = {
+const produitPublic = {
   status: "ACTIVE", deletedAt: null, store: boutiquePublique,
 } satisfies Prisma.ProductWhereInput;
 
 /** Liste explicite : un nouveau champ de gestion ne devient jamais public par défaut. */
-export const champsProduitPublic = {
+const champsProduitPublic = {
   id: true, storeId: true, name: true, description: true, price: true,
   categoryId: true, isAvailable: true, displayOrder: true, variantLabel: true,
   allergens: true, allergensDeclared: true, containsAlcohol: true,

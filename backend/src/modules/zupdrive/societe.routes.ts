@@ -23,7 +23,7 @@ router.use(authMiddleware);
 const idSchema = z.string().min(1).max(64);
 const texte = (max: number) => z.string().trim().max(max).nullable().optional();
 
-export const profilSocieteSchema = z
+const profilSocieteSchema = z
   .object({
     raisonSociale: z.string().trim().min(2, "Indiquez la raison sociale").max(160).optional(),
     numeroEntreprise: texte(20),

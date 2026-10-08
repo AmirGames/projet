@@ -8,7 +8,7 @@
  * (une semaine locale ferait 167 ou 169 heures deux fois par an).
  */
 
-export const SEMAINE_MS = 7 * 24 * 60 * 60 * 1000;
+const SEMAINE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Lundi 00:00:00.000 UTC de la semaine qui contient `date`. */
 export function debutSemaineVersement(date: Date = new Date()): Date {

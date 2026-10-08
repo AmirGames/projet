@@ -25,7 +25,7 @@ import {
  */
 
 /** Le délai de prévenance avant l'expiration d'une pièce. */
-export const JOURS_AVANT_EXPIRATION = 30;
+const JOURS_AVANT_EXPIRATION = 30;
 
 const JOUR_MS = 24 * 3600 * 1000;
 

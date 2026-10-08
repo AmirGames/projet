@@ -21,7 +21,7 @@ import { cheminRelatif } from "../files/fichiers-prives.service";
  */
 
 /** Les états d'un livreur, et ce qu'ils autorisent. */
-export const ETATS_LIVREUR = ["PENDING", "ACTIVE", "REJECTED", "SUSPENDED", "INACTIVE"] as const;
+const ETATS_LIVREUR = ["PENDING", "ACTIVE", "REJECTED", "SUSPENDED", "INACTIVE"] as const;
 export type EtatLivreur = (typeof ETATS_LIVREUR)[number];
 
 /** Les pièces qu'un livreur peut déposer. */

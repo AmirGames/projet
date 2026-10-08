@@ -4,7 +4,7 @@ import { exigerPermission } from "../auth/permissions-plateforme.service";
 
 // Garde de l'espace : le superowner passe partout, un membre de l'équipe
 // selon les permissions de son groupe (voir permissions-plateforme.service).
-export const gardeEquipe = exigerPermission("superowner");
+const gardeEquipe = exigerPermission("superowner");
 
 export const isSuperOwner = (req: Request, res: Response, next: NextFunction) => {
   gardeEquipe(req, res, async (err?: unknown) => {

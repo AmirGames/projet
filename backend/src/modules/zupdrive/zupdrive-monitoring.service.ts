@@ -20,7 +20,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/api-error";
 import { lireCommissionPourcentage, repartirPrixCourse } from "./commission-drive";
 
-export type NotificationType =
+type NotificationType =
   | "COURSE_COMPLETED"        // Course terminée, revenus ajoutes
   | "EARNINGS_UPDATED"        // Mise à jour des revenus
   | "PAYOUT_REQUESTED"        // Payout demandé

@@ -7,7 +7,7 @@ import type { Compte } from "../auth/auth.middleware";
 import { summaryPdf, zip } from "./formats";
 
 const forbidden = /^(?:passwordHash|emailTokenHash|resetTokenHash|trackingTokenHash|stripeClientSecret|pushSubscription|jetonCentralHash|jtiHash|codeHash|token|integrity|deliveryCode)$/;
-export function cleanExport(value: any): any {
+function cleanExport(value: any): any {
   if (Array.isArray(value)) return value.map(cleanExport);
   if (value instanceof Date || !value || typeof value !== "object") return value;
   if (typeof value.toJSON === "function") return value.toJSON();

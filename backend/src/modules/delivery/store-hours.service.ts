@@ -17,7 +17,7 @@ import { MerchantApprovalService } from "../merchants/merchant-approval.service"
  */
 
 /** Une plage : un service. `close` avant `open` signifie « après minuit ». */
-export interface Plage {
+interface Plage {
   open: string; // HH:mm
   close: string; // HH:mm
 }
@@ -110,7 +110,7 @@ const DEFAULT_HOURS: OperatingHours = {
  * qu'une lecture tolérante suffit. Le nouveau format s'écrit dès la première
  * modification.
  */
-export function lireLeJour(brut: unknown): DayHours {
+function lireLeJour(brut: unknown): DayHours {
   const lu = (brut || {}) as Partial<DayHours> & { open?: string; close?: string };
 
   const plages = Array.isArray(lu.plages)
@@ -156,7 +156,7 @@ function lireLesHoraires(brut: unknown): OperatingHours {
  * de retrait : le client se verrait proposer 12 h 30 deux fois, et le
  * commerçant ne comprendrait pas pourquoi.
  */
-export function verifierLesPlages(plages: Plage[]): Plage[] {
+function verifierLesPlages(plages: Plage[]): Plage[] {
   if (plages.length === 0) {
     throw new ApiError(
       400,

@@ -17,7 +17,7 @@ import { origineCentrale } from "./sso.service";
  * `X-Refresh-Transport: cookie`) : sans lui, la réponse garde `refreshToken`
  * dans le corps, comme avant.
  */
-export const NOM_COOKIE_REFRESH = "zup_refresh";
+const NOM_COOKIE_REFRESH = "zup_refresh";
 const CHEMIN = "/api/auth";
 const SEPT_JOURS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -28,7 +28,7 @@ const options = () => ({
   path: CHEMIN,
 });
 
-export function veutLeCookie(req: Request): boolean {
+function veutLeCookie(req: Request): boolean {
   return req.get("x-refresh-transport") === "cookie";
 }
 

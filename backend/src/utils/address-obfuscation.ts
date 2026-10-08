@@ -42,7 +42,7 @@ export function obfusquerAdresse(latitude: number, longitude: number): Point {
  * Calcule la distance réelle entre deux points (pour vérifier que le livreur
  * est assez proche de l'adresse réelle avant de la lui montrer).
  */
-export function distanceReelleKm(
+function distanceReelleKm(
   lat1: number,
   lng1: number,
   lat2: number,

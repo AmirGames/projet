@@ -19,7 +19,7 @@ const TAILLE_CONSOLE = 2000;
 const lignesConsole: LigneConsole[] = [];
 let prochainId = 1;
 
-export function ajouterLigneConsole(niveau: string, message: string, meta?: Record<string, unknown>) {
+function ajouterLigneConsole(niveau: string, message: string, meta?: Record<string, unknown>) {
   let metaStr: string | undefined;
   if (meta && Object.keys(meta).length > 0) {
     try {

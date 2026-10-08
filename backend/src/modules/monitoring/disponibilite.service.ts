@@ -30,7 +30,7 @@ export interface Cible {
   url?: string;
 }
 
-export function cibles(): Cible[] {
+function cibles(): Cible[] {
   const liste: Cible[] = [{ cle: "api", libelle: "API et base de données" }];
 
   const site = process.env.UPTIME_SITE_URL || process.env.FRONTEND_URL;

@@ -28,7 +28,7 @@ import { privatePath } from "./private-storage";
  */
 
 export const DOSSIERS_PRIVES = ["drivers", "merchants", "deliveries", "chauffeurs"] as const;
-export type DossierPrive = (typeof DOSSIERS_PRIVES)[number];
+type DossierPrive = (typeof DOSSIERS_PRIVES)[number];
 
 /** Durée de vie d'une adresse signée. */
 export const DUREE_SIGNATURE_S = 300;
@@ -139,7 +139,7 @@ export function verifierDepot(url: string, deliveryId: string, maintenant = Date
   } catch { return null; }
 }
 
-export function signer(relatif: string, maintenant = Date.now(), identity = origineActuelle()) {
+function signer(relatif: string, maintenant = Date.now(), identity = origineActuelle()) {
   const exp = Math.floor(maintenant / 1000) + DUREE_SIGNATURE_S;
   const u = identity.userId || "", s = identity.sessionId || "";
   if (process.env.NODE_ENV === "production" && (!u || !s)) throw new Error("Session requise pour signer un document");

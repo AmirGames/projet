@@ -26,7 +26,7 @@ export const NOTE_MAX = 5;
 export const COMMENTAIRE_MAX = 500;
 export const DELAI_NOTE_MS = 7 * 24 * 3600 * 1000;
 /** À partir de cette note (incluse), l'équipe est prévenue. */
-export const SEUIL_ALERTE = 2;
+const SEUIL_ALERTE = 2;
 
 export type Auteur = "PASSAGER" | "CHAUFFEUR";
 

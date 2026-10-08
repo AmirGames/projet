@@ -37,7 +37,7 @@ import { SocieteDriveService } from "./societe-drive.service";
  * des 10 jours.
  */
 
-export const RELANCES_JOURS = [30, 10] as const;
+const RELANCES_JOURS = [30, 10] as const;
 const JOUR_MS = 24 * 3600 * 1000;
 
 /** Seules les pièces encore valables comptent : une pièce refusée est déjà à refaire. */

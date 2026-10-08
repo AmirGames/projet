@@ -67,7 +67,7 @@ export function partReglee(ttcCentimes: number, dejaRegleCentimes: number) {
 const CUSTOMIZATION_ID = "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0";
 const PROFILE_ID = "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0";
 
-export const enCentimes = (euros: number) => Math.round(euros * 100);
+const enCentimes = (euros: number) => Math.round(euros * 100);
 
 export function totaux(lignes: LigneFacture[], tauxTva: number): TotauxFacture {
   const htCentimes = lignes.reduce((somme, l) => somme + enCentimes(l.montantHt), 0);
@@ -79,7 +79,7 @@ const montant = (centimes: number) => (centimes / 100).toFixed(2);
 
 const jour = (date: Date) => date.toISOString().slice(0, 10);
 
-export function echapper(texte: string): string {
+function echapper(texte: string): string {
   return texte
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

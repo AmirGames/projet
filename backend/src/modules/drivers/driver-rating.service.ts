@@ -30,7 +30,7 @@ export const COMMENTAIRE_MAX = 500;
  * une transaction interrompue — et plus rien ne permet de la remettre d'aplomb.
  * Ici la vérité est dans les notes, et `Driver.rating` n'en est que le reflet.
  */
-export async function recalculerMoyenne(driverId: string) {
+async function recalculerMoyenne(driverId: string) {
   const bilan = await db.courierRating.aggregate({
     where: { driverId },
     _avg: { note: true },

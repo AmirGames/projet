@@ -22,7 +22,7 @@ import { DispatchService } from "../drivers/dispatch.service";
  * acceptait n'importe quel montant, de n'importe où.
  */
 
-export type ZoneType = "RADIUS" | "POLYGON";
+type ZoneType = "RADIUS" | "POLYGON";
 
 export interface DeliveryZoneData {
   storeId: string;
@@ -40,7 +40,7 @@ export interface DeliveryZoneData {
   isActive?: boolean;
 }
 
-export interface ZoneLisible {
+interface ZoneLisible {
   id: string;
   name: string;
   type: ZoneType;

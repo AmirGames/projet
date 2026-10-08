@@ -19,7 +19,7 @@ import { ZupDriveSupportService } from "./zupdrive-support.service";
  */
 
 /** Seul un trajet avec un chauffeur en route ou à bord a un sens pour une alerte. */
-export const STATUTS_SOS = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
+const STATUTS_SOS = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
 
 export interface PositionSos {
   latitude: number;

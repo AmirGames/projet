@@ -19,7 +19,7 @@ import { libelleDeLaPiece } from "./chauffeur-onboarding.service";
 export type Proprietaire = { chauffeurId: string } | { societeId: string } | { vehiculeId: string };
 
 /** La date d'expiration saisie, vérifiée : ni illisible, ni déjà passée. */
-export function dateExpirationDeposee(type: string, saisie: string | null | undefined): Date | null {
+function dateExpirationDeposee(type: string, saisie: string | null | undefined): Date | null {
   const expiration = saisie ? new Date(saisie) : null;
   if (expiration && Number.isNaN(expiration.getTime())) {
     throw new ApiError(400, "Date d'expiration invalide", "INVALID_EXPIRY_DATE");

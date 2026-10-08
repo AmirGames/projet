@@ -19,7 +19,7 @@ export interface NoteDuCommerce {
  * d'où « ★ 5 (0 avis) » sur une boutique qui avait pourtant des avis. On
  * calcule ici sur les avis publiés du commerce lui-même, sans ceux des plats.
  */
-export async function notesDesCommerces(storeIds: string[]): Promise<Map<string, NoteDuCommerce>> {
+async function notesDesCommerces(storeIds: string[]): Promise<Map<string, NoteDuCommerce>> {
   const notes = new Map<string, NoteDuCommerce>();
   if (storeIds.length === 0) return notes;
 

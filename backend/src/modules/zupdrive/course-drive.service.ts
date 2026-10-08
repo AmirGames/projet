@@ -37,11 +37,11 @@ export const DELAI_REPONSE_MS = 20_000;
 /** Au-delà, la recherche s'arrête et le passager est prévenu. */
 export const RECHERCHE_MAX_MS = 5 * 60_000;
 /** Une position plus ancienne ne dit plus où est le chauffeur. */
-export const POSITION_FRAICHE_MS = 2 * 60_000;
+const POSITION_FRAICHE_MS = 2 * 60_000;
 /** Distance maximale entre le chauffeur et le point de départ. */
-export const RAYON_KM = 15;
+const RAYON_KM = 15;
 
-export const STATUTS_ACTIFS = ["RECHERCHE", "ACCEPTEE", "ARRIVEE", "EN_COURS"];
+const STATUTS_ACTIFS = ["RECHERCHE", "ACCEPTEE", "ARRIVEE", "EN_COURS"];
 /** Une course qui a un chauffeur et n'est pas finie. */
 export const STATUTS_AVEC_CHAUFFEUR = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
 

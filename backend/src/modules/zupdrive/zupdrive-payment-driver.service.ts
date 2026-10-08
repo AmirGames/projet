@@ -27,14 +27,14 @@ import {
   type RepartitionPrixCourse,
 } from "./commission-drive";
 
-export type PaymentStatus =
+type PaymentStatus =
   | "PENDING"       // En attente de paiement passager
   | "COMPLETED"     // Paiement reçu
   | "DISPUTED"      // Litige en cours
   | "REFUNDED";     // Remboursé
 
 /** Statuts réels de DriverPayoutDrive (voir prisma/schema.prisma). */
-export type PayoutStatus = "PENDING" | "PROCESSED" | "FAILED" | "CANCELLED";
+type PayoutStatus = "PENDING" | "PROCESSED" | "FAILED" | "CANCELLED";
 
 // La règle de commission vit dans commission-drive.ts (partagée avec le paiement) ;
 // ré-exportée ici pour les appelants existants.
