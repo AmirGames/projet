@@ -1,10 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { db } from "../../services/db";
 import { authMiddleware } from "../auth/auth.middleware";
 import { exigerPermission } from "../auth/permissions-plateforme.service";
 import { journaliser } from "../superowner/shared";
-import { ChauffeurOnboardingService, STATUTS_CHAUFFEUR, piecesExigees } from "./chauffeur-onboarding.service";
+import { ChauffeurOnboardingService, STATUTS_CHAUFFEUR } from "./chauffeur-onboarding.service";
 import { presenterDossier } from "./chauffeur.routes";
 import { STATUTS_SOCIETE, SocieteDriveService } from "./societe-drive.service";
 import { presenterSociete } from "./societe.routes";
@@ -12,6 +11,7 @@ import { TarificationDriveService } from "./tarification-drive.service";
 import { NoteCourseDriveService } from "./note-course-drive.service";
 import { REGIONS } from "./chauffeur-onboarding.service";
 import { MatchingAlgorithmService } from "./matching-algorithm.service";
+import { ZupDriveAdminListesService } from "./zupdrive-admin-listes.service";
 
 /**
  * /api/zupdrive/admin — l'équipe ZupDrive examine les dossiers chauffeurs.
@@ -36,58 +36,7 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
       })
       .parse(req.query);
 
-    const where = query.statut === "ALL" ? {} : { statut: query.statut };
-
-    const [chauffeurs, total, parStatut] = await Promise.all([
-      db.chauffeurDrive.findMany({
-        where,
-        skip: query.offset,
-        take: query.limit,
-        include: {
-          user: { select: { email: true } },
-          documents: { where: { archiveeLe: null }, select: { type: true, statut: true } },
-          societe: { select: { id: true, raisonSociale: true } },
-        },
-        // Les dossiers soumis depuis le plus longtemps d'abord.
-        orderBy: [{ soumisLe: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
-      }),
-      db.chauffeurDrive.count({ where }),
-      db.chauffeurDrive.groupBy({ by: ["statut"], _count: true }),
-    ]);
-    const notes = await NoteCourseDriveService.moyennesChauffeurs(chauffeurs.map((c) => c.id));
-
-    res.json({
-      success: true,
-      data: chauffeurs.map((chauffeur) => {
-        const exigees = piecesExigees(chauffeur.region, { enSociete: Boolean(chauffeur.societeId) });
-        const validees = new Set(
-          chauffeur.documents.filter((piece) => piece.statut === "APPROVED").map((piece) => piece.type)
-        );
-        return {
-          id: chauffeur.id,
-          nomComplet: chauffeur.nomComplet,
-          email: chauffeur.user.email,
-          telephone: chauffeur.telephone,
-          region: chauffeur.region,
-          raisonSociale: chauffeur.raisonSociale,
-          vehiculePlaque: chauffeur.vehiculePlaque,
-          // Chauffeur d'une société : licence, assurance et véhicule sont les siens.
-          societe: chauffeur.societe ?? null,
-          statut: chauffeur.statut,
-          motifStatut: chauffeur.motifStatut,
-          soumisLe: chauffeur.soumisLe,
-          valideLe: chauffeur.valideLe,
-          piecesDeposees: chauffeur.documents.length,
-          piecesValidees: exigees.filter((type) => validees.has(type)).length,
-          piecesExigees: exigees.length,
-          // Nulle tant qu'aucun passager ne l'a noté.
-          note: notes.get(chauffeur.id) ?? { moyenne: null, avis: 0 },
-          createdAt: chauffeur.createdAt,
-        };
-      }),
-      counts: Object.fromEntries(parStatut.map((ligne) => [ligne.statut, ligne._count])),
-      pagination: { total, limit: query.limit, offset: query.offset },
-    });
+    res.json({ success: true, ...(await ZupDriveAdminListesService.chauffeurs(query)) });
   } catch (err) {
     next(err);
   }
@@ -97,11 +46,11 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
 router.get("/chauffeurs/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dossier = await ChauffeurOnboardingService.dossier(idSchema.parse(req.params.id));
-    const [user, note] = await Promise.all([
-      db.user.findUnique({ where: { id: dossier.userId }, select: { email: true } }),
+    const [email, note] = await Promise.all([
+      ZupDriveAdminListesService.emailDuCompte(dossier.userId),
       NoteCourseDriveService.moyenneChauffeur(dossier.id),
     ]);
-    res.json({ success: true, data: { ...presenterDossier(dossier), email: user?.email ?? null, note } });
+    res.json({ success: true, data: { ...presenterDossier(dossier), email, note } });
   } catch (err) {
     next(err);
   }
@@ -205,44 +154,7 @@ router.get("/societes", async (req: Request, res: Response, next: NextFunction) 
         offset: z.coerce.number().int().min(0).default(0),
       })
       .parse(req.query);
-    const where = query.statut === "ALL" ? {} : { statut: query.statut };
-
-    const [societes, total, parStatut] = await Promise.all([
-      db.societeDrive.findMany({
-        where,
-        skip: query.offset,
-        take: query.limit,
-        include: {
-          gerant: { select: { email: true } },
-          _count: { select: { chauffeurs: true } },
-          vehicules: { where: { retireLe: null }, select: { conforme: true } },
-        },
-        orderBy: [{ soumisLe: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
-      }),
-      db.societeDrive.count({ where }),
-      db.societeDrive.groupBy({ by: ["statut"], _count: true }),
-    ]);
-
-    res.json({
-      success: true,
-      data: societes.map((societe) => ({
-        id: societe.id,
-        raisonSociale: societe.raisonSociale,
-        numeroEntreprise: societe.numeroEntreprise,
-        region: societe.region,
-        telephone: societe.telephone,
-        email: societe.gerant.email,
-        statut: societe.statut,
-        motifStatut: societe.motifStatut,
-        soumisLe: societe.soumisLe,
-        chauffeurs: societe._count.chauffeurs,
-        vehicules: societe.vehicules.length,
-        vehiculesConformes: societe.vehicules.filter((v) => v.conforme).length,
-        createdAt: societe.createdAt,
-      })),
-      counts: Object.fromEntries(parStatut.map((ligne) => [ligne.statut, ligne._count])),
-      pagination: { total, limit: query.limit, offset: query.offset },
-    });
+    res.json({ success: true, ...(await ZupDriveAdminListesService.societes(query)) });
   } catch (err) {
     next(err);
   }
@@ -393,27 +305,7 @@ router.get("/courses", async (req: Request, res: Response, next: NextFunction) =
         offset: z.coerce.number().int().min(0).default(0),
       })
       .parse(req.query);
-    const where = query.statut === "ALL" ? {} : { statut: query.statut };
-    const [courses, total] = await Promise.all([
-      db.courseDrive.findMany({
-        where,
-        skip: query.offset,
-        take: query.limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          passager: { select: { email: true, name: true } },
-          chauffeur: { select: { id: true, nomComplet: true, vehiculePlaque: true } },
-          // Les commentaires ne sont lus que par l'équipe.
-          notes: { select: { auteur: true, note: true, commentaire: true } },
-        },
-      }),
-      db.courseDrive.count({ where }),
-    ]);
-    res.json({
-      success: true,
-      data: courses.map(c => Object.fromEntries(Object.entries(c).filter(([k]) => k !== 'cleIdempotence'))),
-      pagination: { total, limit: query.limit, offset: query.offset },
-    });
+    res.json({ success: true, ...(await ZupDriveAdminListesService.courses(query)) });
   } catch (err) {
     next(err);
   }
