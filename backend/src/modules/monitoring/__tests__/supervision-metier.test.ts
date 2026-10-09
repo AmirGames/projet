@@ -141,3 +141,9 @@ describe("mesurer", () => {
     expect((await mesurer(lundiMidi)).commandesNonReversees).toBe(3);
   });
 });
+
+it("alerte critique exploitable même sans identifiant de remboursement Stripe", () => {
+  expect(constatsDepuisMesures({ ...calme, remboursementsAReprendre: 1 })).toEqual([
+    expect.objectContaining({ cle: "metier:remboursements-a-reprendre", niveau: "CRITIQUE", detail: expect.stringContaining("/orders/refunds/review") }),
+  ]);
+});

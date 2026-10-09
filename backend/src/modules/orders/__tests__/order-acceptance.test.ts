@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const db: any = {
+  $transaction: jest.fn(async (fn: any) => fn(db)),
   order: {
     findUnique: jest.fn(),
     findUniqueOrThrow: jest.fn(),
@@ -30,6 +31,7 @@ jest.mock("../../notifications/notifier.service", () => ({
   Notifier: { pushLivreur: jest.fn(async () => true), pushClient: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
+jest.mock("../../payments/refund.service", () => ({ RefundService: { enregistrerPourCommande: jest.fn() } }));
 jest.mock("../../payments/payment.service", () => ({
   paymentService: { rembourserCommande: jest.fn(async () => null) },
 }));
@@ -239,7 +241,7 @@ describe("OrderAcceptanceService", () => {
       store: { name: "Chez Tamara", phone: null },
     });
     db.order.findUniqueOrThrow.mockResolvedValue({ ...base, status: "REJECTED", paymentStatus: "REFUNDED" });
-    (paymentService.rembourserCommande as unknown as jest.Mock<(...args: any[]) => any>).mockResolvedValueOnce({ id: "re_1", amount: 2350 });
+    (paymentService.rembourserCommande as unknown as jest.Mock<(...args: any[]) => any>).mockResolvedValueOnce({ id: "re_1", amount: 2350, status: "succeeded" });
 
     await OrderAcceptanceService.refuser("boutique-1", "cmd-1", "TOO_BUSY");
 

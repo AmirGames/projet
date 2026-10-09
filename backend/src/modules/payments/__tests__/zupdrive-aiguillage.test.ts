@@ -8,6 +8,7 @@ const SECRET = "whsec_test_secret";
 const vraiStripe = new Stripe("sk_test_factice");
 
 const db: any = {
+  refundOperation: { findFirst: jest.fn(async () => null) },
   $transaction: fn(),
   order: { findUnique: fn(), findMany: fn(), update: fn(), updateMany: fn() },
   payment: { findFirst: fn(), upsert: fn(), update: fn(), updateMany: fn() },
@@ -22,6 +23,7 @@ const stripe: any = {
   refunds: { create: fn(), retrieve: fn(), list: fn() },
   charges: { retrieve: fn() },
 };
+jest.mock("../refund.service", () => ({ RefundService: { reveiller: async () => false } }));
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../stripe", () => ({ stripe, STRIPE_CONFIG: { currency: "eur", webhookSecret: SECRET } }));
 jest.mock("../../marketing/promotion.service", () => ({ PromotionService: { libererUtilisation: fn() } }));

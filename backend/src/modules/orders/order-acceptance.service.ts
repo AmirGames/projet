@@ -1,3 +1,4 @@
+import { RefundService } from "../payments/refund.service";
 import { createHash } from "crypto";
 import { Outbox } from "../jobs/outbox.service";
 import { TYPE_EMAIL_SUIVI_COMMANDE } from "../notifications/outbox-handlers";
@@ -400,14 +401,18 @@ export class OrderAcceptanceService {
 
     const precision = note?.trim().slice(0, 300) || null;
 
-    const { count } = await db.order.updateMany({
-      where: { id: orderId, status: commande.status },
-      data: {
-        status: "REJECTED",
-        rejectedAt: new Date(),
-        rejectionReason: motif,
-        rejectionNote: precision,
-      },
+    const { count } = await db.$transaction(async (tx) => {
+      const refus = await tx.order.updateMany({
+        where: { id: orderId, status: commande.status },
+        data: {
+          status: "REJECTED",
+          rejectedAt: new Date(),
+          rejectionReason: motif,
+          rejectionNote: precision,
+        },
+      });
+      if (refus.count) await RefundService.enregistrerPourCommande(tx, orderId, `Commande refusée : ${motif}`);
+      return refus;
     });
 
     if (count === 0) {
@@ -431,7 +436,7 @@ export class OrderAcceptanceService {
     // commerçant y pense. Pas encore payée : l'intention est annulée. Un échec
     // chez Stripe n'annule pas le refus — il est noté, et le client prévenu
     // qu'il sera remboursé autrement.
-    let rembourse: { amount: number } | null = null;
+    let rembourse: { amount: number; status?: string } | null = null;
     let remboursementEchoue = false;
     try {
       rembourse = await paymentService.rembourserCommande(orderId, `Commande refusée : ${motif}`);
@@ -461,7 +466,7 @@ export class OrderAcceptanceService {
 
     let message = `Votre commande chez ${commande.store.name} est annulée : ${MOTIFS_DE_REFUS[motif]}.`;
     if (precision) message += ` Précision du restaurant : « ${precision} ».`;
-    if (rembourse) {
+    if (rembourse?.status === "succeeded") {
       message += ` Vous avez payé en ligne : ${euros(rembourse.amount / 100)} vous sont remboursés, ils apparaîtront sur votre compte sous 5 à 10 jours.`;
     } else if (remboursementEchoue || refusee.paymentStatus === "SUCCEEDED") {
       message += ` Vous avez payé en ligne : vous serez remboursé, contactez le restaurant en cas de question${

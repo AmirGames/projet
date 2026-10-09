@@ -44,6 +44,7 @@ export interface MesuresMetier {
   outbox: { enAttente: number; echecs: number; retardMs: number };
   webhooksBloques: number;
   remboursementsEnAttente: number;
+  remboursementsAReprendre?: number;
   /** Null : reversements non activés (PAYOUTS_START_DATE absente). */
   commandesNonReversees: number | null;
   /** Null : hors production, ou pas de contrôle. Sinon l'âge de la dernière sauvegarde complète. */
@@ -96,6 +97,14 @@ export function constatsDepuisMesures(m: MesuresMetier): ConstatMetier[] {
       niveau: "CRITIQUE",
       titre: "Événements Stripe non traités",
       detail: `${pluriel(m.webhooksBloques, "événement Stripe n'a", "événements Stripe n'ont")} pas pu être traité depuis plus de ${DELAIS_METIER.webhookBloque / MINUTE} min (paiement ou remboursement non pris en compte). Voir la table StripeEvent (lastError).`,
+    });
+  }
+
+  if ((m.remboursementsAReprendre ?? 0) > 0) {
+    constats.push({
+      cle: "metier:remboursements-a-reprendre", niveau: "CRITIQUE",
+      titre: "Commandes payées sans remboursement réussi",
+      detail: `${m.remboursementsAReprendre} cas à examiner, y compris sans identifiant Stripe. GET /api/superowner/orders/refunds/review ; vérifier lastError et l'historique, puis POST /api/superowner/orders/:id/refund/retry (permission billing). Voir docs/REMBOURSEMENTS-REPRISE.md.`,
     });
   }
 
@@ -160,7 +169,7 @@ export async function mesurer(maintenant = new Date()): Promise<MesuresMetier> {
 
   const enProduction = getEnv().NODE_ENV === "production";
 
-  const [commandesNonAnnoncees, outbox, webhooksBloques, remboursementsEnAttente, commandesNonReversees, derniereSauvegarde, pages] =
+  const [commandesNonAnnoncees, outbox, webhooksBloques, remboursementsEnAttente, remboursementsAReprendre, commandesNonReversees, derniereSauvegarde, pages] =
     await Promise.all([
       db.order.count({
         where: {
@@ -183,6 +192,11 @@ export async function mesurer(maintenant = new Date()): Promise<MesuresMetier> {
           updatedAt: { lt: avant(DELAIS_METIER.remboursementEnAttente) },
         },
       }),
+      db.payment.count({ where: { status: "SUCCEEDED", OR: [
+        { refundOperation: { is: { status: "ABANDONED" } } },
+        { order: { OR: [{ status: "REJECTED" }, { deletedAt: { not: null } }] },
+          OR: [{ refundOperation: { is: null } }, { refundOperation: { is: { status: { not: "SUCCEEDED" }, createdAt: { lt: avant(DELAIS_METIER.webhookBloque) } } } }] },
+      ] } }),
       // Seulement une fois les reversements activés, et après l'arrêté du lundi.
       debutReversements && maintenant >= finDeSemaineCloseLe
         ? db.order.count({
@@ -211,6 +225,7 @@ export async function mesurer(maintenant = new Date()): Promise<MesuresMetier> {
     outbox,
     webhooksBloques,
     remboursementsEnAttente,
+    remboursementsAReprendre,
     commandesNonReversees,
     ageSauvegardeMs:
       derniereSauvegarde === undefined

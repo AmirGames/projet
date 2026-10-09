@@ -60,8 +60,9 @@ jest.mock("../driver-approval.service", () => ({ DriverApprovalService: { ecarte
 jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
 jest.mock("../../files/fichiers-prives.service", () => ({ presenter: (v: string | null) => v }));
 jest.mock("../../orders/order-acceptance.service", () => ({ MOTIF_LIVRAISON_ECHOUEE: "DELIVERY_FAILED" }));
+jest.mock("../../payments/refund.service", () => ({ RefundService: { enregistrerPourCommande: jest.fn() } }));
 jest.mock("../../payments/payment.service", () => ({
-  paymentService: { rembourserCommande: jest.fn(async () => ({ id: "re_1" })) },
+  paymentService: { rembourserCommande: jest.fn(async () => ({ id: "re_1", status: "succeeded" })) },
 }));
 
 import {
