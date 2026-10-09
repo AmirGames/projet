@@ -215,3 +215,34 @@ et corrections des hooks React. Les dépendances sont alignées sur Expo SDK 57.
 Voir [le compte rendu du livreur](../mobile/apps/delivery/VALIDATION.md)
 pour la compilation native et les essais à réaliser. Ces corrections ne
 valident ni les autres applications mobiles ni les parcours du VPS.
+
+## Étape 02 — A03 remboursements durables
+
+**9 octobre 2026 — code `6e8139e8cf821690395c61692658f40cc499905e`.** Le paiement
+reçu après refus ou abandon inscrit son remboursement dans la transaction métier
+avant acquittement du webhook. Le worker PostgreSQL réconcilie Stripe hors
+transaction avec une clé persistante, et distingue création/pending de succès.
+Les reprises de worker, événements désordonnés, concurrence et réponses perdues
+sont couvertes par des tests avec PostgreSQL réel et Stripe simulé. La liste de
+revue et l'alerte incluent les commandes sans ID de remboursement ; la reprise
+est réservée aux droits billing write et auditée.
+
+| État | Date et environnement | SHA / preuve |
+|---|---|---|
+| Développé | 2026-10-09, branche `codex/a03-remboursements-durables` | `6e8139e8cf821690395c61692658f40cc499905e` ; [code/tests/migration](https://github.com/AmirGames/projet/commit/6e8139e8cf821690395c61692658f40cc499905e) |
+| Testé localement | 2026-10-09, cloud/Linux/PostgreSQL 16 | **3 004 réussis, 36 ignorés**, 165 suites passées / 3 ignorées ; paiements 101/101, A03/permissions 29/29, types/lint/build ; [preuves et limites](preuves-a03-2026-10-09.md) |
+| Proposé en PR | 2026-10-09 | [PR #202 en brouillon](https://github.com/AmirGames/projet/pull/202) ; CI déclenchée par la PR, résultat non attesté au moment de cette livraison |
+| Intégré | Non attesté | Aucun SHA d'intégration ; PR non fusionnée |
+| Déployé | Non exécuté | Aucun déploiement A03 ni migration VPS |
+| Validé en exploitation | Non exécuté | Stripe TEST externe, réception des alertes et VPS restent à valider |
+
+La migration additive inscrit les historiques en examen sans nouvel appel
+Stripe. Sa conservation des montants/états a été testée sur PostgreSQL ; le CLI
+natif Prisma migrate/diff reste bloqué localement par `binaries.prisma.sh` (HTTP
+403). Le build utilise le compilateur WASM installé, avec préchargement temporaire
+pour éviter le téléchargement anticipé. Le runner Stripe TEST et la procédure
+sont préparés, **non exécutés**, faute de configuration externe. Aucun mouvement
+LIVE, aucune fusion ou aucun déploiement réalisés. Voir le
+[guide de reprise/migration/API](REMBOURSEMENTS-REPRISE.md), le
+[README backend](../backend/README.md) et les [preuves datées](preuves-a03-2026-10-09.md).
+Les audits antérieurs restent des résultats historiques.

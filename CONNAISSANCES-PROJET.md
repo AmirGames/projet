@@ -881,11 +881,13 @@ Deux invariants à ne jamais casser :
   signature sur le corps brut) passe `paymentStatus` à `SUCCEEDED`, `FAILED`
   ou `REFUNDED` ; `/api/payments/confirm` relit aussi Stripe pour ne pas
   attendre le webhook. Un refus rembourse de lui-même (clé d'idempotence
-  `remboursement-<orderId>`), ou annule l'intention si rien n'est encore payé ;
-  un paiement arrivé après le refus repart aussitôt. Le reste — commande déjà
+  `a03-remboursement-<paymentId>`), ou annule l'intention si rien n'est encore payé ;
+  un paiement arrivé après le refus inscrit une demande durable, reprise par le
+  worker. Le reste — commande déjà
   prise par un livreur, litige — passe par le support :
   `POST /api/superowner/orders/:id/refund`. Un remboursement que Stripe
-  n'arrive pas à faire (`refund.failed`) remet la commande en `SUCCEEDED`.
+  n'arrive pas à faire laisse la commande payée et demande un examen avec alerte,
+  sans effacer un remboursement réussi après un événement ancien.
 - **Les frais de service ne sont jamais au commerçant.** Figés sur la
   commande (`Order.serviceFeeAmount`), ils sortent de l'assiette de sa
   commission, de son chiffre et de sa facture, et lui sont réclamés sur le
@@ -1195,3 +1197,12 @@ Elles se lisent dans le code existant, mais autant les dire.
   ce qui n'allait pas, ce qui change, ce que ça coûte.
 - **Chaque chantier apporte sa suite de vérifications**, et les suites
   existantes doivent rester vertes.
+
+## Référence A03 — 9 octobre 2026
+
+Le remboursement au refus/paiement tardif est une intention PostgreSQL committée
+avec l'état métier, puis exécutée et réconciliée par `RefundJobs`. Il n'est pas
+un simple effet d'outbox. Pending n'annonce pas un remboursement réussi ; les
+échecs techniques sont repris et les incohérences/historiques alertent. Voir
+[le guide de reprise et migration](docs/REMBOURSEMENTS-REPRISE.md) et
+[les preuves datées](docs/preuves-a03-2026-10-09.md).

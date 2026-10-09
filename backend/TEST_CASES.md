@@ -562,3 +562,17 @@ node -e "console.log(JSON.parse(Buffer.from(process.argv[1].split('.')[1], 'base
 
 **Test Status**: Ready for automated testing
 **Last Updated**: 2026-09-22
+
+## A03 — remboursements durables
+
+Suite `src/modules/payments/__tests__/refund.integration.test.ts` : PostgreSQL
+réel, Stripe simulé ; activée par `REFUND_INTEGRATION=true` sur base de test.
+Couvre les pannes avant réponse, réponse perdue après création, redémarrage,
+concurrence, bail perdu, paiement/refus concurrents, doublons, désordre,
+pending/failed, montants, pourboire, pagination, rollback et reprise auditée.
+Les permissions billing sont vérifiées dans `refund-admin.test.ts`.
+
+Migration historique : `node scripts/verification/refund-migration.mjs`.
+Stripe TEST avec webhooks signés réels : runner `scripts/security/audit-stripe-sandbox.mjs --run`,
+préparé mais non attesté par une suite avec mocks. Configuration et limites :
+[guide A03](../docs/REMBOURSEMENTS-REPRISE.md), [preuves](../docs/preuves-a03-2026-10-09.md).

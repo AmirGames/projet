@@ -1,5 +1,18 @@
 # Phase 15: Real-time Monitoring & Alerts 📊🔔
 
+## Supervision des remboursements ZupEat — A03 (9 octobre 2026)
+
+Les commandes payées après refus/abandon portent désormais une intention durable
+avant acquittement. Le worker réconcilie Stripe avec une clé persistante ; une
+création pending reste distincte d'une restitution réussie. La Vigie expose une
+alerte critique `metier:remboursements-a-reprendre`, y compris sans ID Stripe,
+avec revue et reprise autorisées/auditées par la permission billing.
+
+Voir le [guide actuel de comportement, API, migration et exploitation](REMBOURSEMENTS-REPRISE.md)
+et les [preuves datées](preuves-a03-2026-10-09.md). Les sections de phase ci-dessous
+restent historiques ; elles ne prouvent ni intégration ni déploiement d'A03.
+
+
 > **Document de phase, partiellement dépassé.** Les routes chauffeur (`/notifications`, `/metrics`, `/earnings-realtime`) sont bien sous `/api/zupdrive`. **`GET /ws` n'existe plus** (il renvoyait le jeton dans une URL) : le temps réel passe par Socket.IO. Les routes `/admin/*` demandent la permission d'équipe (sections `courses-drive` ou `chauffeurs`), pas le rôle `ADMIN_ZUPDRIVE`, et passent d'abord par le garde de `/api/zupdrive/admin` : superowner seul en pratique. Les gains sont calculés avec la règle de commission commune (`repartirPrixCourse`). La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
 
 **Status**: Real-time notifications, driver metrics, admin alerts, platform health monitoring

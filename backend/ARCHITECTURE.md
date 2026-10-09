@@ -57,7 +57,7 @@ d'importeurs) : aucun domaine n'en est propriétaire.
 | `stores` | boutiques, réglages, types de commerce, duplication, fiche vue par la plateforme |
 | `catalog` | catégories, produits (médias, SEO, étiquettes), déclinaisons, suppléments, taxes |
 | `orders` | commandes, acceptation, gestion, suivi, panier, pourboire, factures, jobs de délai de réponse |
-| `payments` | paiements, moyens de paiement, remboursement, client Stripe |
+| `payments` | paiements, moyens de paiement, registre durable `RefundOperation`, worker de remboursement et réconciliation Stripe, client Stripe |
 | `payouts` | reversements aux commerçants et versements aux livreurs, fichier SEPA |
 | `drivers` | livreurs, dispatch, tournées, preuve de livraison, notes, support livreurs |
 | `delivery` | mode de livraison et frais, zones de livraison, horaires d'ouverture |
@@ -434,3 +434,15 @@ npm test                # avec un .env complet et une base réelle
 - [ ] Les tests couvrent la règle métier ajoutée, et les chemins des `jest.mock`
       sont corrects
 - [ ] Aucun import ne crée de cycle entre modules
+
+## Remboursements financiers durables (A03)
+
+Le webhook payé, le refus et l'annulation métier inscrivent `RefundOperation`
+dans leur transaction. `RefundJobs` suit le leader existant et `Surveillance` ;
+il prend un bail SQL avec version, puis appelle Stripe hors transaction avec
+une clé stable. Une création n'est pas un succès financier : pending attend la
+réconciliation. `RefundOperationEvent` conserve l'historique ; les notifications
+restent dans l'outbox. Migration additive et cas historiques abandonnés avec alerte.
+
+API, permissions billing, reprises, fenêtre d'idempotence, conservation comptable
+et tests : [guide A03](../docs/REMBOURSEMENTS-REPRISE.md).

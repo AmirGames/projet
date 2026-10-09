@@ -1,5 +1,22 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 02 — A03 : remboursements durables (9 octobre 2026)
+
+Le remboursement d'un paiement reçu après refus ou abandon est enregistré dans
+la transaction métier avant acquittement du webhook. Un worker PostgreSQL le
+réconcilie et le reprend avec une clé Stripe persistante ; une création pending
+ne vaut pas remboursement réussi. La supervision inclut les cas sans ID Stripe,
+avec liste de revue et reprise réservées à la facturation habilitée.
+
+Migration additive et backfill des cas historiques **à examiner**, sans mouvement
+automatique. Configuration, API, tests et procédures :
+[guide de reprise](docs/REMBOURSEMENTS-REPRISE.md),
+[README backend](backend/README.md),
+[preuves datées](docs/preuves-a03-2026-10-09.md),
+[état développé/testé/intégré/déployé](docs/etat-projet.md#étape-02--a03-remboursements-durables).
+Cette livraison n'atteste ni déploiement ni validation Stripe LIVE.
+
+
 ## 📋 Vue d'ensemble
 
 **Zupone** est un groupe technologique belge spécialisé dans les solutions digitales pour la mobilité urbaine et la livraison de repas. Nous développons deux écosystèmes distincts :
