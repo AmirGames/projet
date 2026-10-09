@@ -47,7 +47,6 @@ decrire("A01/A02 — inscriptions atomiques sur PostgreSQL", () => {
   beforeEach(() => {
     process.env.REQUIRE_EMAIL_VERIFICATION = "true";
     process.env.ENABLE_EMAIL_VERIFICATION = "true";
-    jest.spyOn(AuthService, "hashPassword").mockResolvedValue("hash-test");
     jest.spyOn(SsoService, "connecter").mockResolvedValue({ accessToken: "interdit", refreshToken: "interdit" } as any);
     jest.spyOn(StoreService, "situer").mockResolvedValue({ latitude: 50.46, longitude: 4.86, countryCode: "BE" });
   });
@@ -126,7 +125,7 @@ decrire("A01/A02 — inscriptions atomiques sur PostgreSQL", () => {
 
   it("un compte existant ouvrant un commerce conserve son compte, sans organisation partielle", async () => {
     const body = commerce("devenir-echec");
-    const compte = await db.user.create({ data: { email: body.email, emailVerified: true, passwordHash: "hash-test" } });
+    const compte = await db.user.create({ data: { email: body.email, emailVerified: true, passwordHash: await AuthService.hashPassword(body.password) } });
     const original = StoreService.create;
     jest.spyOn(StoreService, "create").mockImplementationOnce(async (...args) => {
       await original.apply(StoreService, args);
