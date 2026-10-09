@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { RefundService } from "./refund.service";
 import { PaymentMethodType } from "@prisma/client";
 import { montantAEncaisser } from "../delivery/delivery-mode.service";
 import { PourboireService } from "../orders/pourboire.service";
@@ -186,6 +187,14 @@ export const paymentService = {
       }
     }
 
+    if (["charge.refunded", "refund.created", "refund.failed", "refund.updated"].includes(evenement.type)) {
+      const objet = evenement.data.object as Stripe.Refund | Stripe.Charge;
+      const intentionId = idIntention(objet.payment_intent);
+      if (intentionId && await RefundService.reveiller(intentionId)) return;
+      // Une opération réussie ne doit pas être écrasée par un événement ancien.
+      if (intentionId && await db.refundOperation.findFirst({ where: { paymentIntentId: intentionId } })) return;
+    }
+
     // Les remboursements d'une course ZupDrive : relus chez Stripe, jamais pris pour ceux d'une commande.
     if (evenement.type === "charge.refunded" || evenement.type === "refund.failed" || evenement.type === "refund.updated") {
       const intentionId = idIntention(evenement.data.object.payment_intent);
@@ -365,6 +374,7 @@ export const paymentService = {
         data: { paymentStatus: 'SUCCEEDED', paymentId: intention.id },
       });
       if (!count) return false;
+      const paiementPrecedent = await tx.payment.findUnique({ where: { orderId: commande.id } });
       await tx.payment.upsert({
         where: { orderId: commande.id },
         create: {
@@ -379,28 +389,19 @@ export const paymentService = {
           status: "SUCCEEDED",
           stripePaymentIntentId: intention.id,
           stripeStatus: intention.status,
-          paidAt,
+          paidAt: paiementPrecedent?.paidAt ?? paidAt,
         },
       });
 
+      const actuelle = await tx.order.findUniqueOrThrow({ where: { id: commande.id } });
+      if (actuelle.status === "REJECTED" || actuelle.deletedAt) {
+        await RefundService.enregistrerPourCommande(tx, commande.id, "Paiement reçu après refus ou abandon de commande");
+      }
       return true;
     });
     if (!enregistre) return commande;
 
     logger.info("Commande payée", { orderId: commande.id, paymentIntentId: intention.id });
-
-    // Payée alors qu'elle venait d'être refusée, ou abandonnée : l'argent
-    // repart aussitôt.
-    if (commande.status === "REJECTED" || commande.deletedAt) {
-      try {
-        await this.rembourserCommande(commande.id, "Paiement reçu après le refus de la commande");
-      } catch (err) {
-        logger.error("Remboursement impossible d'une commande payée après son refus", {
-          orderId: commande.id,
-          error: (err as Error).message,
-        });
-      }
-    }
 
     await this.transmettreAuCommercant(commande.id);
 
@@ -477,9 +478,13 @@ export const paymentService = {
           await this.annulerIntention(commande.paymentId);
         }
 
-        const { count } = await db.order.updateMany({
-          where: { id: commande.id, submittedAt: null, deletedAt: null },
-          data: { deletedAt: new Date() },
+        const { count } = await db.$transaction(async (tx) => {
+          const retiree = await tx.order.updateMany({
+            where: { id: commande.id, submittedAt: null, deletedAt: null, status: "PENDING" },
+            data: { deletedAt: new Date() },
+          });
+          if (retiree.count) await RefundService.enregistrerPourCommande(tx, commande.id, "Commande abandonnée");
+          return retiree;
         });
         // L'utilisation du code promo réservée à la création est rendue,
         // une seule fois : seul l'appel qui retire la commande la libère.
@@ -552,6 +557,9 @@ export const paymentService = {
       .reduce((somme: number, r: Stripe.Refund) => somme + r.amount, 0);
     const total = rendu >= charge.amount;
     await db.$transaction(async (tx) => {
+      await tx.order.updateMany({ where: { id: paiement.orderId }, data: { updatedAt: new Date() } });
+      const actuel = await tx.payment.findUniqueOrThrow({ where: { id: paiement.id } });
+      if (Math.round(Number(actuel.refundedAmount ?? 0) * 100) > rendu || actuel.status === "REFUNDED") return;
       await tx.order.update({
         where: { id: paiement.orderId },
         data: { paymentStatus: total ? "REFUNDED" : "SUCCEEDED" },
@@ -607,111 +615,23 @@ export const paymentService = {
     return paiement;
   },
 
-  /**
-   * Rend l'argent d'une commande refusée ou annulée.
-   *
-   * Payée : remboursée en entier. Pas encore payée : l'intention est annulée,
-   * pour que le client ne puisse plus régler une commande qui n'existe plus.
-   * La clé d'idempotence empêche un second remboursement si l'appel est rejoué.
-   *
-   * Renvoie le remboursement créé, ou null s'il n'y avait rien à rendre.
-   */
-  async rembourserCommande(orderId: string, raison: string) {
-    const commande = await db.order.findUnique({
-      where: { id: orderId },
-      include: { payments: true },
-    });
-    if (!commande) {
-      throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
-    }
-
-    const paiement = commande.payments[0];
-    const paymentIntentId = paiement?.stripePaymentIntentId || commande.paymentId;
-    if (!paymentIntentId) return null;
-
+  /** Intention durable d'abord, appel externe après le commit. */
+  async rembourserCommande(orderId: string, raison: string, adminId?: string) {
+    const commande = await db.order.findUnique({ where: { id: orderId }, include: { payments: true } });
+    if (!commande) throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
+    const intentionId = commande.payments[0]?.stripePaymentIntentId || commande.paymentId;
+    if (!intentionId) return null;
     if (commande.paymentStatus !== "SUCCEEDED") {
-      if (commande.paymentStatus === "PENDING" || commande.paymentStatus === "FAILED") {
-        await this.annulerIntention(paymentIntentId);
-      }
+      if (["PENDING", "FAILED"].includes(commande.paymentStatus)) await this.annulerIntention(intentionId);
       return null;
     }
-
-    // Un remboursement déjà demandé (en attente ou réussi) est repris, pas
-    // doublé. Seul un remboursement échoué ou annulé autorise une nouvelle
-    // demande, avec une autre clé d'idempotence.
-    let precedent: Stripe.Refund | null = null;
-    if (paiement?.stripeRefundId) {
-      try {
-        precedent = await stripe.refunds.retrieve(paiement.stripeRefundId);
-      } catch (err) {
-        logger.warn("Remboursement précédent illisible chez Stripe", { orderId, error: (err as Error).message });
-      }
-    }
-    const reprise = precedent && ["pending", "requires_action", "succeeded"].includes(precedent.status ?? "");
-
-    const remboursement: Stripe.Refund = reprise && precedent
-      ? precedent
-      : await stripe.refunds.create(
-          {
-            payment_intent: paymentIntentId,
-            reason: "requested_by_customer",
-            metadata: { orderId, raison: raison.slice(0, 500) },
-          },
-          { idempotencyKey: `remboursement-${orderId}${paiement?.stripeRefundId ? `-${paiement.stripeRefundId}` : ''}` }
-        );
-
-    if (remboursement.status === 'failed' || remboursement.status === 'canceled') {
-      await db.payment.updateMany({ where: { orderId }, data: { stripeRefundId: remboursement.id } });
-      throw new ApiError(502, 'Stripe n’a pas effectué le remboursement.', 'REFUND_FAILED');
-    }
-
-    // Demandé mais pas encore rendu : on garde la trace du remboursement, la
-    // commande reste « payée » jusqu'à la confirmation de Stripe
-    // (refund.updated / charge.refunded).
-    if (remboursement.status !== 'succeeded') {
-      await db.payment.updateMany({ where: { orderId }, data: { stripeRefundId: remboursement.id } });
-      logger.info("Remboursement demandé, en attente de confirmation Stripe", {
-        orderId,
-        refundId: remboursement.id,
-        statut: remboursement.status,
-      });
-      return remboursement;
-    }
-
-    const refundedAt = new Date();
-    await db.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: orderId },
-        data: { paymentStatus: "REFUNDED" },
-      });
-
-      await tx.payment.upsert({
-        where: { orderId },
-        create: {
-          orderId,
-          amount: montantAEncaisser(commande),
-          status: "REFUNDED",
-          stripePaymentIntentId: paymentIntentId,
-          stripeRefundId: remboursement.id,
-          refundedAmount: remboursement.amount / 100,
-          refundedAt,
-        },
-        update: {
-          status: "REFUNDED",
-          stripeRefundId: remboursement.id,
-          refundedAmount: remboursement.amount / 100,
-          refundedAt,
-        },
-      });
-    });
-
-    logger.info("Commande remboursée", {
-      orderId,
-      refundId: remboursement.id,
-      montant: remboursement.amount / 100,
-      raison,
-    });
-    return remboursement;
+    const operation = await RefundService.demander(orderId, raison, adminId);
+    if (!operation) return null;
+    // Une panne ne perd plus la demande : le worker la reprend en base.
+    await RefundService.traiterLesDus(1, new Date(), operation.id);
+    const actuelle = await db.refundOperation.findUniqueOrThrow({ where: { id: operation.id } });
+    return { id: actuelle.stripeRefundId, operationId: actuelle.id, amount: actuelle.amountCents,
+      status: actuelle.status === "SUCCEEDED" ? "succeeded" : "pending", operationStatus: actuelle.status };
   },
 
   async annulerIntention(paymentIntentId: string) {

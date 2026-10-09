@@ -1,3 +1,4 @@
+import { RefundJobs } from "./modules/payments/refund.jobs";
 import 'dotenv/config';
 import http from 'http';
 import { loadEnv } from "./config/env";
@@ -87,6 +88,7 @@ const start = async () => {
       OrderJobs.start();
       PrivacyJobs.start();
       OutboxJobs.start();
+      RefundJobs.start();
 
       // Après les tâches : la vigie les surveille dès son premier passage.
       Vigie.demarrer();
@@ -106,6 +108,7 @@ const start = async () => {
       PrivacyJobs.stop();
       DriverJobs.stop();
       OutboxJobs.stop();
+      RefundJobs.stop();
       Vigie.arreter();
       Disponibilite.arreter();
     };

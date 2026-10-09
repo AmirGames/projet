@@ -16,7 +16,7 @@ Les documents privés passent par Multer → signature réelle / MIME / extensio
 | `CourierDocument`, `OrganizationDocument`, `DocumentChauffeurDrive` | Vérifier aptitude, assurance et statut professionnel | Obligation légale précise ou contrat proportionné | Titulaire / gérant et sections habilitées | Pendant relation et validité ; versions remplacées/refusées 30 j ; effacement à la clôture |
 | Permis médical / `casier_judiciaire`, associés (`actionnaires`) | Exigence régionale alléguée, non démontrée dans le dépôt | **Articles 9/10 : fondement légal et garanties à établir avant collecte réelle** | Équipe habilitée DRIVE uniquement | Durée sectorielle à faire valider ; ne pas conserver par défaut un dossier complet au-delà du besoin |
 | IBAN, BIC, titulaire `Organization` / `Courier` | Reversements SEPA | Contrat | Titulaire (IBAN masqué) ; personnel de paiement habilité | Jusqu'au dernier versement ; banque conserve ses propres preuves |
-| `Payment`, `CourierTip`, relevés, `Invoice`, `PlatformInvoice` | Encaissement, remboursements, comptabilité, Peppol | Contrat ; obligation comptable | Titulaire ; facturation habilitée | 10 ans proposés, puis purge ; exceptions ciblées |
+| `Payment`, `RefundOperation`, `RefundOperationEvent`, `CourierTip`, relevés, `Invoice`, `PlatformInvoice` | Encaissement, remboursements, comptabilité, Peppol | Contrat ; obligation comptable | Titulaire ; facturation habilitée | 10 ans proposés, puis purge ; exceptions ciblées |
 | Identité légale / TVA / BCE des sociétés | Facturer et respecter obligations professionnelles | Obligation légale / contrat | Gérant ; facturation | Durée comptable ; numéros publics distingués des numéros de permis privés |
 | `MerchantTicket`, messages support | Résoudre demandes et incidents | Contrat ; intérêt légitime | Parties et support habilité | 2 ans après résolution ; gel ciblé si litige |
 | `PrivacyAuditEvent`, `SystemAuditLog`, `SecurityEvent` | Traçabilité, détection et investigation | Intérêt légitime, avec analyse de mise en balance | Personnel sécurité habilité | Audit 180 j ; événements techniques 90 j |
@@ -47,3 +47,9 @@ Sur mobile, les sessions utilisent Expo SecureStore ; les paniers sont dans Asyn
 ## Destinataires et sous-traitants à inscrire au registre
 
 Hébergeur/VPS et sauvegardes ; Stripe ; banque SEPA ; SMTP ; fournisseur SMS ; Expo, Apple/Google/Web Push ; Cloudinary pour visuels et anciennes pièces ; Access Point Peppol ; fournisseurs de géocodage/cartographie/OSRM ; destinations webhook et éventuels services de surveillance. Répertorier pays de stockage, transferts, sous-traitants ultérieurs, contrats article 28, garanties de transfert et délais de suppression. La présence d'un module ne prouve pas son activation réelle.
+
+Remboursements A03 (9 octobre 2026) : la demande et son historique portent des
+identifiants financiers, montant/devise, motif et codes d'erreur. Accès limité
+à la facturation habilitée ; aucun secret/réponse SDK dans le journal. Ils suivent
+la conservation comptable du paiement et sa purge avec la commande. Voir
+[la procédure](../REMBOURSEMENTS-REPRISE.md).

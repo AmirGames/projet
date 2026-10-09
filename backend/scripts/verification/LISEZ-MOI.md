@@ -213,3 +213,14 @@ Deux règles qui font la valeur de ces scripts :
   pas que la donnée a été écrite. Relisez-la.
 - **Le troisième argument sert au diagnostic.** Il n'est affiché qu'en cas
   d'échec : mettez-y ce qui vous manquerait pour comprendre.
+
+## A03 — migration et reprise de remboursement (9 octobre 2026)
+
+Sur `DATABASE_URL` de test dédiée, `node scripts/verification/refund-migration.mjs`
+vérifie la migration additive sur des cas historiques dans un schéma temporaire
+avec rollback, sans appel Stripe. `REFUND_INTEGRATION=true npm test` active les
+transactions financières PostgreSQL avec Stripe simulé. Le runner externe
+`scripts/security/audit-stripe-sandbox.mjs --run` exige la configuration et le
+CLI Stripe TEST ; il couvre aussi les pannes avant appel et après restitution.
+Voir [le guide de reprise](../../../docs/REMBOURSEMENTS-REPRISE.md) et
+[les preuves datées](../../../docs/preuves-a03-2026-10-09.md).

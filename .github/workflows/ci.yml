@@ -79,7 +79,11 @@ jobs:
       - name: Lint
         run: npm run lint
       - name: Tests
+        env:
+          REFUND_INTEGRATION: "true"
         run: npm test
+      - name: Migration remboursement historique (PostgreSQL)
+        run: node scripts/verification/refund-migration.mjs
       # Bases dédiées : ces suites créent et suppriment leurs propres lignes.
       - name: Bases dédiées (RGPD, assistant)
         run: |

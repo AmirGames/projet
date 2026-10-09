@@ -1,5 +1,18 @@
 # Phase 14: Payment Integration & Driver Payouts 💰
 
+## Référence actuelle ZupEat — A03 (9 octobre 2026)
+
+Les commandes payées après refus/abandon portent désormais une intention durable
+avant acquittement. Le worker réconcilie Stripe avec une clé persistante ; une
+création pending reste distincte d'une restitution réussie. La Vigie expose une
+alerte critique `metier:remboursements-a-reprendre`, y compris sans ID Stripe,
+avec revue et reprise autorisées/auditées par la permission billing.
+
+Voir le [guide actuel de comportement, API, migration et exploitation](REMBOURSEMENTS-REPRISE.md)
+et les [preuves datées](preuves-a03-2026-10-09.md). Les sections de phase ci-dessous
+restent historiques ; elles ne prouvent ni intégration ni déploiement d'A03.
+
+
 > **Document de phase, partiellement dépassé.** Les routes décrites ici sont montées sous **`/api/zupdrive/finance`** (ex. `/api/zupdrive/finance/earnings`, `/payouts/request`, `/admin/payouts/:id/process`) ; le paiement d'une course est sous `/api/zupdrive/payment`. La commission n'est pas « 20-30 % » : c'est `PlatformSettingsDrive` (20 par défaut), `round(prix × pct / 100)`, **figée sur le paiement à sa création**. Le paiement est confirmé par le webhook Stripe, et le versement du chauffeur n'est créé qu'une fois la course terminée et payée. La semaine des lots va du lundi 00:00 UTC au lundi suivant. Traiter un versement et changer la commission sont réservés au superowner et journalisés. Une course payée qui n'aboutit pas (annulée, sans chauffeur) est remboursée automatiquement en totalité ; statuts `REFUND_REQUESTED`, `REFUNDED`, `REFUND_FAILED`. La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
 
 **Status**: Payments from passengers + Automatic weekly payouts to drivers via SEPA

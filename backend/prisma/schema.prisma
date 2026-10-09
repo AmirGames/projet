@@ -1256,6 +1256,7 @@ model Payment {
   /// commerçant. La différence avec refundedAmount reste à corriger au
   /// prochain relevé (ligne 310), jamais en retouchant un relevé passé.
   refundAccountedAmount Decimal @default(0) @db.Decimal(10, 2)
+  refundOperation RefundOperation?
 
   // Relations
   order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -4046,4 +4047,49 @@ model ProviderIntegration {
   @@index([provider])
   @@index([active])
   @@index([type])
+}
+
+/// Intention financière durable, distincte de l'outbox de notifications.
+enum RefundOperationStatus {
+  REQUESTED
+  PROCESSING
+  WAITING_STRIPE
+  RETRY
+  SUCCEEDED
+  ABANDONED
+}
+
+model RefundOperation {
+  id String @id @default(cuid())
+  paymentId String @unique
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  paymentIntentId String
+  amountCents Int
+  currency String
+  reason String
+  idempotencyKey String @unique
+  status RefundOperationStatus @default(REQUESTED)
+  stripeRefundId String? @unique
+  attempts Int @default(0)
+  version Int @default(0)
+  firstCallAt DateTime?
+  nextAttemptAt DateTime @default(now())
+  lockedUntil DateTime?
+  lastError String?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  history RefundOperationEvent[]
+  @@index([status, nextAttemptAt])
+}
+
+/// Journal conservé ; un worker dont le bail est perdu ne peut plus écrire.
+model RefundOperationEvent {
+  id String @id @default(cuid())
+  operationId String
+  operation RefundOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  status RefundOperationStatus
+  code String?
+  createdAt DateTime @default(now())
+  @@index([operationId, createdAt])
 }

@@ -187,6 +187,29 @@ try {
   await evenement('charge.refunded', secondCharge, 200);
   check('statut final paiement du rollback', (await prisma.payment.findUnique({ where: { orderId: rollback.id } })).status, 'REFUNDED');
   check('statut final commande du rollback', (await prisma.order.findUnique({ where: { id: rollback.id } })).paymentStatus, 'REFUNDED');
+  // A03 : paiement après refus, avec panne avant appel ou perte de réponse.
+  // Le worker réel du serveur TEST reprend son registre PostgreSQL.
+  for (const panne of ['before', 'after']) {
+    const tardive = await creerCommande(store.id, `a03-${panne}`);
+    await prisma.order.update({ where: { id: tardive.id }, data: { tipAmount: 1 } });
+    const tardivePi = await intention(tardive);
+    await prisma.order.update({ where: { id: tardive.id }, data: { status: 'REJECTED' } });
+    check(`A03 injection ${panne}`, (await call('POST', `/audit/refund-fault/${panne}`)).status, 204);
+    const encaissement = await stripe.paymentIntents.confirm(tardivePi, { payment_method: 'pm_card_visa' });
+    check(`A03 montant commande et pourboire ${panne}`, encaissement.amount_received, 300);
+    const event = await evenement('payment_intent.succeeded', tardivePi, 200);
+    const operation = await attendre(`A03 remboursement durable ${panne}`,
+      () => prisma.refundOperation.findFirst({ where: { paymentIntentId: tardivePi }, include: { history: true } }),
+      o => o?.status === 'SUCCEEDED', 90000);
+    check(`A03 panne inscrite puis reprise ${panne}`, operation.history.some(e => e.status === 'RETRY' && e.code === 'STRIPE_OR_DATABASE_UNAVAILABLE'), true);
+    check(`A03 un seul remboursement Stripe ${panne}`, (await stripe.refunds.list({ payment_intent: tardivePi })).data.length, 1);
+    check(`A03 restitution intégrale ${panne}`, (await stripe.refunds.retrieve(operation.stripeRefundId)).amount, 300);
+    check(`A03 rejeu signé ${panne}`, (await call('POST', `/audit/replay/${event.id}`)).status, 200);
+    const finale = await prisma.order.findUnique({ where: { id: tardive.id } });
+    check(`A03 refus conservé ${panne}`, finale.status, 'REJECTED');
+    check(`A03 aucune transmission commerçant ${panne}`, finale.submittedAt, null);
+    check(`A03 remboursement confirmé ${panne}`, finale.paymentStatus, 'REFUNDED');
+  }
   report.stripeObjects = [...intentions];
 } catch (error) {
   // Ni message Stripe brut, ni paramètres SQL, ni secrets dans les sorties.

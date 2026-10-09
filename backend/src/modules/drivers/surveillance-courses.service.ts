@@ -1,3 +1,4 @@
+import { RefundService } from "../payments/refund.service";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
@@ -927,6 +928,8 @@ export class SurveillanceCoursesService {
         data: { status: "REJECTED", rejectedAt: maintenant, rejectionReason: MOTIF_LIVRAISON_ECHOUEE, rejectionNote: null },
       });
 
+      if (options.rembourser) await RefundService.enregistrerPourCommande(tx, course.orderId, `Livraison échouée : ${options.motif}`);
+
       const resolution = "Course déclarée échouée par la plateforme";
       await tx.deliveryIncident.createMany({
         data: [
@@ -1049,7 +1052,7 @@ export class SurveillanceCoursesService {
       if (commande?.paymentStatus !== "SUCCEEDED") return "SANS_PAIEMENT_EN_LIGNE";
 
       const remboursement = await paymentService.rembourserCommande(orderId, `Livraison échouée : ${motif}`);
-      return remboursement ? "REMBOURSEE" : "SANS_PAIEMENT_EN_LIGNE";
+      return remboursement?.status === "succeeded" ? "REMBOURSEE" : "ECHEC";
     } catch (err) {
       logger.error("Livraison échouée : remboursement impossible", {
         orderId,
