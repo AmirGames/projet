@@ -57,8 +57,14 @@ const payloadEmailSuiviCommande = z.object({
 });
 const payloadEmailNotificationZupDrive = z.object({ logId: z.string() });
 const payloadEmailAlerteZupDrive = z.object({ notificationId: z.string() });
+const payloadEmailConfirmation = z.object({ userId: z.string() });
 
 export function declarerGestionnairesOutbox() {
+  Outbox.declarer("auth.confirmation_email", async (payload) => {
+    const { userId } = payloadEmailConfirmation.parse(payload);
+    const { envoyerConfirmationDuCompte } = await import("../auth/auth-confirmation.service");
+    return envoyerConfirmationDuCompte(userId);
+  });
   Outbox.declarer(TYPE_ANNONCE_COMMANDE, (payload) => annoncerCommande(payloadAnnonceCommande.parse(payload)));
   Outbox.declarer(TYPE_EMAIL_SUIVI_COMMANDE, (payload) => {
     const { commande, contenu } = payloadEmailSuiviCommande.parse(payload);

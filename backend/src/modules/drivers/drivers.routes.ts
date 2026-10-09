@@ -12,6 +12,7 @@ import { DriverAvailabilityService } from "./driver-availability.service";
 import { DispatchService } from "./dispatch.service";
 import { DriverAccountService } from "./driver-account.service";
 import { livreurConnecte } from "./driver-ownership.service";
+import { REPONSE_INSCRIPTION_A_CONFIRMER } from "../auth/auth-inscription.service";
 
 // Compte du livreur : inscription, profil, revenus, disponibilité, versements.
 // Le dossier, les notifications et le support sont dans drivers.dossier.routes.ts,
@@ -34,8 +35,12 @@ router.post("/register", limiterInscriptions, async (req: Request, res: Response
   try {
     const body = inscriptionSchema.parse(req.body);
     const inscrit = await DriverAccountService.inscrire(req, body);
-
-    res.status(201).json({ message: "Inscription réussie", ...inscrit });
+    if (inscrit.aConfirmer) {
+      res.status(202).json(REPONSE_INSCRIPTION_A_CONFIRMER);
+      return;
+    }
+    const { accessToken, refreshToken, driver } = inscrit;
+    res.status(201).json({ message: "Inscription réussie", accessToken, refreshToken, driver });
   } catch (err) {
     next(err);
   }

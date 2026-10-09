@@ -5,7 +5,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "./auth.middleware";
 import { limiterInscriptions } from "../../middleware/throttle";
 import { champAcceptation } from "../legal/acceptation-conditions.service";
-import { AuthInscriptionService } from "./auth-inscription.service";
+import { AuthInscriptionService, REPONSE_INSCRIPTION_A_CONFIRMER } from "./auth-inscription.service";
 
 // Devenir commerçant ou livreur, et inscription d'un commerçant.
 // Monté sur /api/auth (voir app.ts).
@@ -121,8 +121,12 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
 
     const body = schema.parse(req.body);
 
-    const { accessToken, refreshToken, user, organization, store } =
-      await AuthInscriptionService.inscrireCommercant(req, body);
+    const inscrit = await AuthInscriptionService.inscrireCommercant(req, body);
+    if (inscrit.aConfirmer) {
+      res.status(202).json(REPONSE_INSCRIPTION_A_CONFIRMER);
+      return;
+    }
+    const { accessToken, refreshToken, user, organization, store } = inscrit;
 
     res.status(201).json({
       message: "Inscription réussie et boutique créée!",

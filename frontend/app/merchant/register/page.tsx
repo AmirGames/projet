@@ -44,6 +44,7 @@ interface FormErrors {
 
 export default function MerchantRegisterPage() {
   const t = useTranslations('merchantAuth');
+  const tConfirmation = useTranslations('auth.signup');
   const tMdp = useTranslations('motDePasse');
   const tConditions = useTranslations('acceptationConditions');
   const tPays = useTranslations('pays');
@@ -52,6 +53,7 @@ export default function MerchantRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [aConfirmer, setAConfirmer] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [apiError, setApiError] = useState('');
@@ -206,6 +208,14 @@ export default function MerchantRegisterPage() {
         return;
       }
 
+      if (data.emailVerificationRequired) {
+        setAConfirmer(true);
+        setSuccessMessage(tConfirmation('checkEmail'));
+        setSubmitted(true);
+        setFormData(previous => ({ ...previous, password: '', confirmPassword: '' }));
+        return;
+      }
+
       setSuccessMessage(t('inscriptionReussie'));
       setSubmitted(true);
 
@@ -246,11 +256,12 @@ export default function MerchantRegisterPage() {
 
         {/* Success Message */}
         {submitted && successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3" role="status">
             <CheckCircle size={24} className="text-green-600" />
             <div>
               <p className="font-semibold text-green-600">{t('inscription.succes')}</p>
               <p className="text-green-600/80 text-sm">{successMessage}</p>
+              {aConfirmer && <a href="/login" className="underline">{t('inscription.seConnecter')}</a>}
             </div>
           </div>
         )}
@@ -267,7 +278,7 @@ export default function MerchantRegisterPage() {
         )}
 
         {/* Registration Form */}
-        <div className="bg-white border border-gray-200 rounded-lg p-8">
+        {!aConfirmer && <div className="bg-white border border-gray-200 rounded-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Section 1: Information Commerciale */}
             <div>
@@ -616,7 +627,7 @@ export default function MerchantRegisterPage() {
               </a>
             </p>
           </form>
-        </div>
+        </div>}
 
         {/* Info Box */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">

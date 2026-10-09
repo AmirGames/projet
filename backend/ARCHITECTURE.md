@@ -340,9 +340,13 @@ doublon d'un même effet. Livraison « au moins une fois » : à réserver aux e
 un doublon vaut mieux qu'une perte (un e-mail), jamais à une opération financière.
 Pour un nouveau type : le déclarer dans `notifications/outbox-handlers.ts`.
 **Jamais de secret dans le `payload`** (jeton de réinitialisation, lien de
-connexion, mot de passe) : il resterait en clair en base jusqu'à la purge. C'est
-pourquoi les e-mails de compte n'y passent pas ; l'e-mail de suivi de commande y
-passe parce que son lien de suivi est créé au moment de l'envoi, pas stocké.
+connexion, mot de passe) : il resterait en clair en base jusqu'à la purge.
+L'e-mail de confirmation n'y stocke que `userId` : le worker génère le lien,
+enregistre son empreinte sur le compte puis envoie le message. Une panne SMTP
+remonte au worker ; sa reprise crée un nouveau lien valable 24 h. Les comptes
+déjà confirmés ou désactivés sont ignorés. Le compte, sa preuve d'acceptation et
+l'intention d'envoi sont créés dans la même transaction. L'e-mail de suivi de
+commande crée également son lien au moment de l'envoi, sans le stocker.
 Le retard et les abandons de l'outbox alimentent le contrôle « Notifications » de
 la santé de la plateforme.
 Aujourd'hui, l'e-mail de suivi de commande (`prevenirLeClient`) l'utilise ; la

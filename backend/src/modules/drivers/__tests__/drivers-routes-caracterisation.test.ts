@@ -8,7 +8,7 @@
  * routes ni du service qui porte la logique : seuls la base (`db`) et les
  * services externes au découpage sont simulés.
  */
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import express from "express";
 import request from "supertest";
 
@@ -25,7 +25,9 @@ const db: any = {
   membership: model("count", "findFirst"),
   pushDevice: model("deleteMany"),
   store: model("findUnique"),
+  outboxMessage: model("create"),
 };
+db.$transaction = jest.fn(async (fn: any) => fn(db));
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/env", () => ({ getEnv: () => ({ NODE_ENV: "test", JWT_SECRET: "a".repeat(40), API_URL: "https://api.test", FRONTEND_URL: "https://test", LOG_LEVEL: "error" }) }));
 jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
@@ -71,6 +73,11 @@ app.use((error: any, _req: any, res: any, _next: any) => res.status(error.status
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0]);
 const PDF = Buffer.from("%PDF-1.4\n");
 const alice = (r: request.Test) => r.set("Authorization", "Bearer alice");
+const verificationInitiale = process.env.REQUIRE_EMAIL_VERIFICATION;
+afterEach(() => {
+  if (verificationInitiale === undefined) delete process.env.REQUIRE_EMAIL_VERIFICATION;
+  else process.env.REQUIRE_EMAIL_VERIFICATION = verificationInitiale;
+});
 
 const livreur = {
   id: "driver-alice", userId: "alice", email: "alice@test.fr", name: "Alice", status: "ACTIVE", statusReason: null,
@@ -174,6 +181,32 @@ describe("POST /register", () => {
     expect(r.body).toEqual({ message: "Inscription réussie", accessToken: "at", refreshToken: "rt", driver: { id: "d1", name: "Alice", email: "a@test.fr" } });
     expect(db.user.create).toHaveBeenCalledWith({ data: { email: "a@test.fr", name: "Alice", passwordHash: "hash" } });
     expect(db.courier.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: "u1", vehicleType: "bike", phone: "0612345678" }) });
+  });
+  it("confirmation exigée : 202 et e-mail durable, sans jetons ni session", async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = "true";
+    db.user.findUnique.mockResolvedValue(null);
+    db.courier.findUnique.mockResolvedValue(null);
+    db.user.create.mockResolvedValue({ id: "u1", email: "a@test.fr", name: "Alice" });
+    db.courier.create.mockResolvedValue({ id: "d1", name: "Alice", email: "a@test.fr" });
+    const r = await request(app).post("/api/drivers/register").send(corps);
+    expect(r.status).toBe(202);
+    expect(r.body.emailVerificationRequired).toBe(true);
+    expect(r.body.accessToken).toBeUndefined();
+    expect(r.body.refreshToken).toBeUndefined();
+    expect(r.body.driver).toBeUndefined();
+    expect(db.outboxMessage.create).toHaveBeenCalledWith({ data: { type: "auth.confirmation_email", payload: { userId: "u1" }, dedupeKey: undefined } });
+    expect(SsoService.connecter).not.toHaveBeenCalled();
+  });
+  it("confirmation exigée : adresse déjà inscrite, aucune création ni session", async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = "true";
+    db.user.findUnique.mockResolvedValue({ id: "u1", emailVerified: true, status: "ACTIVE" });
+    db.courier.findUnique.mockResolvedValue(null);
+    const r = await request(app).post("/api/drivers/register").send(corps);
+    expect(r.status).toBe(202);
+    expect(r.body.emailVerificationRequired).toBe(true);
+    expect(db.user.create).not.toHaveBeenCalled();
+    expect(db.courier.create).not.toHaveBeenCalled();
+    expect(SsoService.connecter).not.toHaveBeenCalled();
   });
 });
 
