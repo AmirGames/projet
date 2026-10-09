@@ -731,6 +731,7 @@
     "dontService": "incl. {montant} service fees"
   },
   "superownerPayouts": {
+    "inBatch": "Included in a bank batch: manage the batch from SEPA payouts.",
     "title": "Driver Payouts",
     "subtitle": "A delivered delivery is owed until a statement covers it.",
     "restAmount": "Amount Owed",

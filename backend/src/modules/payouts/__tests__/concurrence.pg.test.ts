@@ -67,13 +67,14 @@ async function commandeTerminee(storeId: string, n: number) {
 }
 
 const organisations: string[] = [];
+const lotsCrees = new Set<string>();
 
 afterAll(async () => {
   // La base de test est partagée entre passages : on retire ce qu'on a créé.
   const releves = await db.merchantPayout.findMany({ where: { orgId: { in: organisations } }, select: { id: true, batchId: true } });
   await db.order.deleteMany({ where: { store: { orgId: { in: organisations } } } });
   await db.merchantPayout.deleteMany({ where: { id: { in: releves.map((r) => r.id) } } });
-  await db.payoutBatch.deleteMany({ where: { id: { in: releves.map((r) => r.batchId).filter((b): b is string => !!b) } } });
+  await db.payoutBatch.deleteMany({ where: { id: { in: [...lotsCrees, ...releves.map((r) => r.batchId).filter((b): b is string => !!b)] } } });
   await db.store.deleteMany({ where: { orgId: { in: organisations } } });
   await db.organization.deleteMany({ where: { id: { in: organisations } } });
   await db.$disconnect();
@@ -122,6 +123,7 @@ describe("C-09 : deux préparations simultanées de lot", () => {
     // entrer dans l'un ou l'autre lot, mais notre relevé n'est que dans un seul.
     const lots = await db.payoutBatch.findMany({ where: { merchantPayouts: { some: { id: releve.id } } } });
     expect(lots).toHaveLength(1);
+    lotsCrees.add(lots[0].id);
     expect(resultats.filter((r) => r.status === "fulfilled").length).toBeGreaterThanOrEqual(1);
 
     await PayoutBatchService.annuler(lots[0].id, "admin-a", "test");

@@ -6,6 +6,12 @@ d'exploitation ; il s'applique aussi à un VPS compatible chez un autre
 hébergeur. Les validations connues et celles restant à faire sont dans
 [docs/etat-projet.md](docs/etat-projet.md).
 
+Pour A04, préparer le [diagnostic en lecture seule et le rapprochement des
+versements](docs/VERSEMENTS-CONCURRENCE.md) avant réouverture. Aucune migration
+A04 ; éviter des instances backend anciennes et nouvelles simultanées pendant
+des mutations de versements. L'intégration, le déploiement et le rapprochement
+bancaire ne sont attestés que par le registre et leurs preuves respectives.
+
 Toute la plateforme tient sur **un seul VPS** (offre `VPS-START-2-M`), dans
 Docker :
 

@@ -1,4 +1,5 @@
-import { db } from "../../services/db";
+import { Prisma } from "@prisma/client";
+import { db, ClientTransaction } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitNotification } from "../realtime/socket";
@@ -88,6 +89,22 @@ function dansLaPeriode(bornes: { debut?: Date; fin?: Date }) {
       { payoutHoldReleasedAt: intervalle },
     ],
   };
+}
+
+/** Même verrou de ligne que le rattachement au lot : état ET lot attendus. */
+async function changerReleveLibre(tx: ClientTransaction, id: string, data: Prisma.CourierPayoutUpdateManyMutationInput) {
+  const { count } = await tx.courierPayout.updateMany({
+    where: { id, status: "PENDING", batchId: null }, data,
+  });
+  const releve = await tx.courierPayout.findUnique({ where: { id } });
+  if (!releve) throw new ApiError(404, "Relevé introuvable", "PAYOUT_NOT_FOUND");
+  if (count !== 1) {
+    if (releve.status === "PAID") throw new ApiError(409, "Ce relevé est déjà versé. Actualisez son état.", "ALREADY_PAID");
+    if (releve.status === "CANCELLED") throw new ApiError(409, "Ce relevé a été annulé. Actualisez son état.", "PAYOUT_CANCELLED");
+    if (releve.batchId) throw new ApiError(409, "Ce relevé fait partie d'un lot bancaire : traitez le lot.", "PAYOUT_IN_BATCH");
+    throw new ApiError(409, "Le relevé a changé. Actualisez son état avant de réessayer.", "PAYOUT_STATE_CONFLICT");
+  }
+  return releve;
 }
 
 export class DriverPayoutService {
@@ -276,32 +293,35 @@ export class DriverPayoutService {
       throw new ApiError(400, "La fin de période précède son début", "INVALID_PERIOD");
     }
 
-    const livreur = await db.courier.findUnique({ where: { id: driverId } });
+    const { releve, nombrePourboires } = await db.$transaction(async (tx) => {
+      const livreur = await tx.courier.findUnique({ where: { id: driverId } });
 
-    if (!livreur) {
-      throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
-    }
+      if (!livreur) {
+        throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
+      }
 
-    const [courses, pourboires] = await Promise.all([
-      this.coursesDues(driverId, { debut: periodStart, fin: periodEnd }),
-      this.pourboiresDus(driverId, { debut: periodStart, fin: periodEnd }),
-    ]);
+      const [courses, pourboires] = await Promise.all([
+        tx.orderDelivery.findMany({
+          where: { driverId, ...COURSES_A_PAYER, ...dansLaPeriode({ debut: periodStart, fin: periodEnd }) },
+          include: { order: { select: { feesAmount: true } } },
+        }),
+        tx.courierTip.findMany({ where: { driverId, status: "PAID", payoutId: null, paidAt: { gte: periodStart, lt: periodEnd } } }),
+      ]);
 
-    if (courses.length === 0 && pourboires.length === 0) {
-      throw new ApiError(
-        400,
-        "Aucune course à payer sur cette période : rien à arrêter",
-        "NOTHING_TO_PAY"
+      if (courses.length === 0 && pourboires.length === 0) {
+        throw new ApiError(
+          400,
+          "Aucune course à payer sur cette période : rien à arrêter",
+          "NOTHING_TO_PAY"
+        );
+      }
+
+      const montant = Number(
+        (courses.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires)).toFixed(2)
       );
-    }
 
-    const montant = Number(
-      (courses.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires)).toFixed(2)
-    );
-
-    // La création du relevé et le rattachement des courses vont ensemble : un
-    // relevé sans ses courses laisserait celles-ci payables une seconde fois.
-    const releve = await db.$transaction(async (tx) => {
+      // La création du relevé et le rattachement des courses vont ensemble : un
+      // relevé sans ses courses laisserait celles-ci payables une seconde fois.
       const cree = await tx.courierPayout.create({
         data: {
           driverId,
@@ -314,26 +334,30 @@ export class DriverPayoutService {
         },
       });
 
-      await tx.orderDelivery.updateMany({
-        where: { id: { in: courses.map((course) => course.id) } },
+      const prises = await tx.orderDelivery.updateMany({
+        where: { id: { in: courses.map((course) => course.id) }, driverId, ...COURSES_A_PAYER },
         data: { payoutId: cree.id },
       });
       // Les pourboires aussi : sans ce lien, ils seraient versés deux fois.
-      await tx.courierTip.updateMany({
-        where: { id: { in: pourboires.map((pourboire) => pourboire.id) } },
+      const tipsPris = await tx.courierTip.updateMany({
+        where: { id: { in: pourboires.map((pourboire) => pourboire.id) }, driverId, status: "PAID", payoutId: null },
         data: { payoutId: cree.id },
       });
 
-      return cree;
+      if (prises.count !== courses.length || tipsPris.count !== pourboires.length) {
+        throw new ApiError(409, "Des gains ont changé pendant l'arrêté. Actualisez la période.", "PAYOUT_EARNINGS_CONFLICT");
+      }
+      return { releve: cree, nombrePourboires: pourboires.length };
     });
 
+    const montant = Number(releve.amount);
     logger.info("Driver payout drawn up", { driverId, payoutId: releve.id, montant });
 
     await this.prevenir(
       driverId,
       "Votre relevé est arrêté",
-      `${courses.length} course${courses.length > 1 ? "s" : ""}${
-        pourboires.length ? ` et ${pourboires.length} pourboire${pourboires.length > 1 ? "s" : ""}` : ""
+      `${releve.deliveryCount} course${releve.deliveryCount > 1 ? "s" : ""}${
+        nombrePourboires ? ` et ${nombrePourboires} pourboire${nombrePourboires > 1 ? "s" : ""}` : ""
       } pour ${montant.toFixed(2)} €. Le versement suit.`
     );
 
@@ -398,30 +422,6 @@ export class DriverPayoutService {
     versement: { method: string; reference?: string; note?: string },
     adminId: string
   ) {
-    const releve = await db.courierPayout.findUnique({ where: { id: payoutId } });
-
-    if (!releve) {
-      throw new ApiError(404, "Relevé introuvable", "PAYOUT_NOT_FOUND");
-    }
-
-    if (releve.status === "PAID") {
-      throw new ApiError(400, "Ce relevé est déjà versé", "ALREADY_PAID");
-    }
-
-    if (releve.status === "CANCELLED") {
-      throw new ApiError(400, "Ce relevé a été annulé", "PAYOUT_CANCELLED");
-    }
-
-    // Porté par un lot bancaire actif : il se règle avec le lot (confirmation
-    // ou refus de la banque), jamais à part — le virement partirait deux fois.
-    if (releve.batchId) {
-      throw new ApiError(
-        409,
-        "Ce relevé fait partie d'un lot bancaire en cours : traitez le lot.",
-        "PAYOUT_IN_BATCH"
-      );
-    }
-
     if (!MOYENS_VERSEMENT.includes(versement.method as (typeof MOYENS_VERSEMENT)[number])) {
       throw new ApiError(
         400,
@@ -430,24 +430,21 @@ export class DriverPayoutService {
       );
     }
 
-    const paye = await db.courierPayout.update({
-      where: { id: payoutId },
-      data: {
+    const paye = await db.$transaction((tx) => changerReleveLibre(tx, payoutId, {
         status: "PAID",
         method: versement.method,
         reference: versement.reference?.trim() || null,
         note: versement.note?.trim() || null,
         paidAt: new Date(),
         paidBy: adminId,
-      },
-    });
+    }));
 
     logger.info("Driver payout paid", { payoutId, adminId });
 
     await this.prevenir(
-      releve.driverId,
+      paye.driverId,
       "Versement effectué",
-      `${Number(releve.amount).toFixed(2)} € par ${libelleDuMoyen(versement.method).toLowerCase()}${
+      `${Number(paye.amount).toFixed(2)} € par ${libelleDuMoyen(versement.method).toLowerCase()}${
         versement.reference ? ` (${versement.reference})` : ""
       }.`
     );
@@ -460,35 +457,14 @@ export class DriverPayoutService {
    * au prochain arrêté.
    */
   static async annuler(payoutId: string, raison: string) {
-    const releve = await db.courierPayout.findUnique({ where: { id: payoutId } });
-
-    if (!releve) {
-      throw new ApiError(404, "Relevé introuvable", "PAYOUT_NOT_FOUND");
-    }
-
-    // Annuler un versement déjà parti ne le ferait pas revenir : la course
-    // redeviendrait due alors qu'elle a été payée.
-    if (releve.status === "PAID") {
-      throw new ApiError(
-        400,
-        "Un relevé déjà versé ne s'annule pas : l'argent est parti",
-        "ALREADY_PAID"
-      );
-    }
-
-    if (releve.batchId) {
-      throw new ApiError(
-        409,
-        "Ce relevé fait partie d'un lot bancaire en cours : traitez le lot.",
-        "PAYOUT_IN_BATCH"
-      );
-    }
-
     if (!raison.trim()) {
       throw new ApiError(400, "Dites pourquoi ce relevé est annulé", "MISSING_REASON");
     }
 
     return db.$transaction(async (tx) => {
+      // Prendre le relevé AVANT de libérer ses gains. Un paiement ou lot
+      // concurrent fait échouer cette mutation, donc aucune ligne n'est libérée.
+      const releve = await changerReleveLibre(tx, payoutId, { status: "CANCELLED", note: raison.trim() });
       await tx.orderDelivery.updateMany({
         where: { payoutId },
         data: { payoutId: null },
@@ -498,10 +474,7 @@ export class DriverPayoutService {
         data: { payoutId: null },
       });
 
-      return tx.courierPayout.update({
-        where: { id: payoutId },
-        data: { status: "CANCELLED", note: raison.trim() },
-      });
+      return releve;
     });
   }
 
@@ -543,6 +516,7 @@ export class DriverPayoutService {
         deliveryCount: releve.deliveryCount,
         amount: Number(releve.amount),
         status: releve.status,
+        batchId: releve.batchId,
         method: releve.method,
         methodLibelle: libelleDuMoyen(releve.method),
         reference: releve.reference,

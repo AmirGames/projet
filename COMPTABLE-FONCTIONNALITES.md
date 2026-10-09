@@ -84,9 +84,9 @@ passée : changer la formule d'un commerçant ne réécrit pas l'historique.
 | Relevé de reversement hebdomadaire commerçant, ligne par ligne (codes 100, 110, 120, 200, 230, 240, 300) | ✅ | `MerchantPayout`, `utils/reversement.ts` |
 | Report d'un solde négatif sur le relevé suivant | ✅ | `MerchantPayout.status = CARRIED` |
 | Relevé de versement livreur (gains + pourboires après livraison) | ✅ | `CourierPayout`, `CourierTip` |
-| Fichier de virements SEPA `pain.001.001.03`, IBAN contrôlés, bénéficiaires invalides écartés | ✅ | `GET /versements/sepa.xml`, `/superowner/versements` |
-| Marquer un lot « versé » avec référence ; annuler un relevé non versé | ✅ | `POST /versements/payer`, `/payouts/:id/cancel` |
-| Une course ne peut pas être payée deux fois | ✅ | `OrderDelivery.payoutId` |
+| Fichier SEPA `pain.001.001.03`, IBAN/montants figés et empreinte conservée | Développé ; voir preuves A04 | `GET /versements/lots/:id/sepa.xml`, `/superowner/zupeat/versements` |
+| Confirmer un lot avec référence ; annuler un relevé libre non versé | Développé ; voir preuves A04 | `POST /versements/lots/:id/confirmer`, `/payouts/:id/cancel` |
+| Exclusion entre paiement, annulation et rattachement au lot ; gains payés conservés | Développé ; validation PostgreSQL dans le registre | [Guide et rapprochement A04](docs/VERSEMENTS-CONCURRENCE.md), [preuves](docs/preuves-a04-2026-10-09.md) |
 | Remboursement Stripe (automatique au refus, manuel par la plateforme) | ✅ | `POST /orders/:id/refund` |
 | Facturation mensuelle de la commission (commandes d'avant `PAYOUTS_START_DATE`) | 🟡 | `/superowner/billing` |
 | Rapports financiers 12 mois | 🟡 | `/superowner/financial-reports` : à vérifier qu'il utilise la commission figée et non le taux global de la config |

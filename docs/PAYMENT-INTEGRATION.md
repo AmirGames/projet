@@ -1,5 +1,13 @@
 # Phase 14: Payment Integration & Driver Payouts 💰
 
+## Référence actuelle ZupEat — A04 (9 octobre 2026)
+
+Pour les relevés des **livreurs** et les lots bancaires ZupEat, consulter le
+[guide de concurrence, API et rapprochement](VERSEMENTS-CONCURRENCE.md) et les
+[preuves datées](preuves-a04-2026-10-09.md). Paiement manuel, annulation et lot
+s'excluent transactionnellement ; IBAN, montants et exports restent figés.
+Le texte de phase ZupDrive ci-dessous conserve son rôle historique.
+
 ## Référence actuelle ZupEat — A03 (9 octobre 2026)
 
 Les commandes payées après refus/abandon portent désormais une intention durable
