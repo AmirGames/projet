@@ -30,6 +30,7 @@ interface Releve {
   deliveryCount: number;
   amount: number;
   status: string;
+  batchId: string | null;
   methodLibelle: string;
   reference: string | null;
   paidAt: string | null;
@@ -148,6 +149,10 @@ export default function VersementsPage() {
 
       if (!reponse.ok) {
         setErreur(lu?.error || t('actionFailed'));
+        if (reponse.status === 409) {
+          setVersement(null);
+          await charger(true);
+        }
         return false;
       }
 
@@ -368,7 +373,10 @@ export default function VersementsPage() {
                 <div className="text-right">
                   <p className="text-2xl font-bold text-gray-900">{euro(releve.amount)}</p>
 
-                  {releve.status === 'PENDING' && (
+                  {releve.status === 'PENDING' && releve.batchId && (
+                    <p className="text-sm text-gray-500 mt-2">{t('inBatch')}</p>
+                  )}
+                  {releve.status === 'PENDING' && !releve.batchId && (
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() =>
@@ -391,7 +399,7 @@ export default function VersementsPage() {
                 </div>
               </div>
 
-              {versement?.id === releve.id && (
+              {versement?.id === releve.id && releve.status === 'PENDING' && !releve.batchId && (
                 <div className="border-t border-gray-200 mt-4 pt-4 space-y-3">
                   <div className="flex flex-wrap items-end gap-3">
                     <div>

@@ -1,5 +1,21 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 03 — A04 : concurrence des versements (9 octobre 2026)
+
+Un paiement manuel, une annulation et la préparation d'un lot revendiquent le
+même relevé sous état et rattachement attendus. Le perdant reçoit une erreur
+métier 409 ; l'interface relit l'état. Une annulation ne libère jamais les gains
+d'un relevé payé ou porté par un lot. Confirmation et refus contrôlent toutes
+les lignes et montants figés, avec rollback complet en cas d'écart.
+
+Aucune migration ou variable serveur A04 ; courses PostgreSQL réelles activées
+par `PAYOUT_INTEGRATION=true`. Diagnostic en lecture seule et procédure de
+rapprochement préparés, aucun virement réel. Voir le
+[guide API/tests/exploitation](docs/VERSEMENTS-CONCURRENCE.md), les README
+[backend](backend/README.md) et [frontend](frontend/README.md), les
+[preuves datées](docs/preuves-a04-2026-10-09.md) et le
+[registre de livraison](docs/etat-projet.md#étape-03--a04-concurrence-des-versements).
+
 ## Étape 02 — A03 : remboursements durables (9 octobre 2026)
 
 Le remboursement d'un paiement reçu après refus ou abandon est enregistré dans

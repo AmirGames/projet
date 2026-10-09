@@ -137,7 +137,10 @@ export default function VersementsSepaPage() {
         body: JSON.stringify(corps ?? {}),
       });
       const lu = await rep.json().catch(() => ({}));
-      if (!rep.ok) throw new Error(lu?.error || lu?.message || t('actionImpossible'));
+      if (!rep.ok) {
+        if (rep.status === 409) await charger();
+        throw new Error(lu?.error || lu?.message || t('actionImpossible'));
+      }
       setMotDePasse('');
       await charger();
     } catch (e) {
@@ -154,7 +157,10 @@ export default function VersementsSepaPage() {
     try {
       const rep = await fetch(`${API_URL}/api/superowner/versements/lots`, { method: 'POST', headers: entetes() });
       const lu = await rep.json().catch(() => ({}));
-      if (!rep.ok) throw new Error(lu?.error || lu?.message || t('preparerImpossible'));
+      if (!rep.ok) {
+        if (rep.status === 409) await charger();
+        throw new Error(lu?.error || lu?.message || t('preparerImpossible'));
+      }
       setMessage(t('lotPrepare'));
       await charger();
     } catch (e) {

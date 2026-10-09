@@ -349,8 +349,11 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   commission est retenue sur le reversement de la semaine
 - **Versements SEPA** (`/superowner/versements`) : relevés commerçants
   (`MerchantPayout`) et livreurs de la semaine, fichier `pain.001.001.03`
-  unique, IBAN contrôlés, bénéficiaires invalides écartés, « marquer le lot
-  versé »
+  figé par lot, IBAN contrôlés, bénéficiaires invalides écartés. Préparer →
+  approuver → exporter → transmettre → confirmer/refuser. A04 protège chaque
+  relevé sous état et lot attendus, et conserve ses gains s'il est payé.
+  [Contrats et rapprochement](docs/VERSEMENTS-CONCURRENCE.md),
+  [preuves du 9 octobre](docs/preuves-a04-2026-10-09.md).
 - **Pièces** : notification à chaque dépôt (`notifierPlateforme`),
   prévisualisation (le type réel est lu dans les premiers octets, les anciens
   `.bin` compris), **correction de la date d'expiration** d'une pièce

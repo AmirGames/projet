@@ -1,10 +1,10 @@
 # État du projet et travail restant
 
-Mis à jour le **4 octobre 2026**. Ce document rassemble l'état connu du dépôt,
+Mis à jour le **9 octobre 2026**. Ce document rassemble l'état connu du dépôt,
 les résultats consignés dans les audits et les confirmations de l'opérateur.
-Cette mise à jour documentaire n'a pas relancé les suites métier/API/navigateur
-ni interrogé le VPS. Les contrôles locaux de documentation et mobiles sont
-consignés en fin de fichier.
+Les validations A04 du 9 octobre figurent en fin de fichier ; les résultats des
+audits antérieurs conservent leur date et leur périmètre. Le VPS n'a pas été
+interrogé pendant A04. Les contrôles locaux sont consignés avec leurs limites.
 Un déploiement annoncé ne prouve pas à lui seul le commit actif du serveur.
 
 ## Bloc prioritaire — Phase 0 sécurité
@@ -232,7 +232,7 @@ est réservée aux droits billing write et auditée.
 | Développé | 2026-10-09, branche `codex/a03-remboursements-durables` | `6e8139e8cf821690395c61692658f40cc499905e` ; [code/tests/migration](https://github.com/AmirGames/projet/commit/6e8139e8cf821690395c61692658f40cc499905e) |
 | Testé localement | 2026-10-09, cloud/Linux/PostgreSQL 16 | **3 004 réussis, 36 ignorés**, 165 suites passées / 3 ignorées ; paiements 101/101, A03/permissions 29/29, types/lint/build ; [preuves et limites](preuves-a03-2026-10-09.md) |
 | Proposé en PR | 2026-10-09 | [PR #202 en brouillon](https://github.com/AmirGames/projet/pull/202) ; CI déclenchée par la PR, résultat non attesté au moment de cette livraison |
-| Intégré | Non attesté | Aucun SHA d'intégration ; PR non fusionnée |
+| Intégré | 2026-10-09, branche principale | `564f63dbba5c2c9fe3b6a8b5865d98139b84e9b1`, fusion de [PR #202](https://github.com/AmirGames/projet/pull/202), constatée au départ A04 |
 | Déployé | Non exécuté | Aucun déploiement A03 ni migration VPS |
 | Validé en exploitation | Non exécuté | Stripe TEST externe, réception des alertes et VPS restent à valider |
 
@@ -246,3 +246,28 @@ LIVE, aucune fusion ou aucun déploiement réalisés. Voir le
 [guide de reprise/migration/API](REMBOURSEMENTS-REPRISE.md), le
 [README backend](../backend/README.md) et les [preuves datées](preuves-a03-2026-10-09.md).
 Les audits antérieurs restent des résultats historiques.
+
+## Étape 03 — A04 concurrence des versements
+
+Paiement manuel, annulation du relevé et préparation du lot revendiquent le
+relevé sous `PENDING` et lot nul, avec exactement une ligne modifiée. L'annulation
+protège le relevé et la libération de ses courses/pourboires ensemble. Confirmation,
+refus et abandon contrôlent toutes les lignes et montants de la copie bancaire ;
+un conflit annule la transaction complète. L'interface relit les états après 409.
+Diagnostic en lecture seule et rapprochement historique préparés.
+
+| État | Date et environnement | SHA / preuve |
+|---|---|---|
+| Développé | 2026-10-09, Windows, branche dédiée A04 | SHA de livraison à consigner après commit ; [code et comportement](VERSEMENTS-CONCURRENCE.md) |
+| Testé localement | 2026-10-09, PostgreSQL 18 isolé, `a04_final_test` | Versements **40/40**, dont A04 **16/16** ; backend **3 004 réussis / 52 ignorés** ; frontend **200/200** ; types/lint/build backend et frontend ; [preuves et limites](preuves-a04-2026-10-09.md) |
+| CI / PR | À consigner lors de l'ouverture | Tests A04 ajoutés sur PostgreSQL 16, base `payouts_test` ; aucun résultat CI supposé réussi |
+| Intégré | Non exécuté | Aucun SHA d'intégration A04 |
+| Déployé | Non exécuté | Aucun déploiement A04 ; aucune migration propre à cette étape |
+| Validé en exploitation | Non exécuté | Accès de lecture VPS et pièces bancaires nécessaires au rapprochement des historiques |
+
+La PR A03 #202 est intégrée au SHA de départ `564f63db` ; aucune dépendance
+A04 non intégrée identifiée. Aucun virement réel, fusion ou déploiement réalisés.
+Les cases de priorités ci-dessus restent des demandes, pas des preuves.
+Consulter le [guide API/configuration/tests/exploitation et rapprochement](VERSEMENTS-CONCURRENCE.md),
+les README [backend](../backend/README.md) / [frontend](../frontend/README.md) et
+les [preuves datées](preuves-a04-2026-10-09.md). Les audits précédents sont conservés.

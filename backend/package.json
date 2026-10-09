@@ -24,6 +24,7 @@
     "knip": "knip --no-progress",
     "verif": "node scripts/verification/tout.mjs",
     "privacy:inventory": "node --import tsx scripts/privacy-inventory.ts",
+    "payouts:diagnostic": "tsx scripts/diagnostic-versements.ts",
     "test:assistant": "jest src/modules/assistant/__tests__ --runInBand",
     "test:assistant:integration": "node scripts/verification/assistant-database.mjs",
     "assistant:check-local": "tsx src/cli/assistant-local.ts"

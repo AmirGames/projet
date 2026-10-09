@@ -58,7 +58,7 @@ d'importeurs) : aucun domaine n'en est propriétaire.
 | `catalog` | catégories, produits (médias, SEO, étiquettes), déclinaisons, suppléments, taxes |
 | `orders` | commandes, acceptation, gestion, suivi, panier, pourboire, factures, jobs de délai de réponse |
 | `payments` | paiements, moyens de paiement, registre durable `RefundOperation`, worker de remboursement et réconciliation Stripe, client Stripe |
-| `payouts` | reversements aux commerçants et versements aux livreurs, fichier SEPA |
+| `payouts` | reversements aux commerçants et versements aux livreurs, lots et fichier SEPA figés ; mutations conditionnelles état/lot/montant et diagnostic en lecture seule ([A04](../docs/VERSEMENTS-CONCURRENCE.md)) |
 | `drivers` | livreurs, dispatch, tournées, preuve de livraison, notes, support livreurs |
 | `delivery` | mode de livraison et frais, zones de livraison, horaires d'ouverture |
 | `customers` | clients, adresses, fiche client, API côté client final (`/api/client`) |

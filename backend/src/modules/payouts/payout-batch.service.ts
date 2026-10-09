@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { db } from "../../services/db";
+import { db, ClientTransaction } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { getEnv } from "../../config/env";
@@ -32,13 +32,47 @@ interface LigneDuLot extends VirementSepa {
 
 const ACTIFS = ["PREPARED", "APPROVED", "EXPORTED", "SUBMITTED"] as const;
 
-async function charger(id: string) {
-  const lot = await db.payoutBatch.findUnique({ where: { id } });
+async function charger(id: string, client: Pick<typeof db, "payoutBatch"> = db) {
+  const lot = await client.payoutBatch.findUnique({ where: { id } });
   if (!lot) throw new ApiError(404, "Lot introuvable", "BATCH_NOT_FOUND");
   return lot;
 }
 
 const lignes = (lot: { itemsJson: unknown }) => (lot.itemsJson as LigneDuLot[]) || [];
+
+type MutationReleve = { batchId?: string | null; status?: string; method?: string; reference?: string; paidAt?: Date; paidBy?: string };
+
+/** Une ligne figée, un état attendu, exactement une ligne modifiée. */
+async function muterLigne(tx: ClientTransaction, ligne: LigneDuLot, batchId: string | null, data: MutationReleve, code: string) {
+  const where = { id: ligne.payoutId, status: "PENDING", batchId, amount: ligne.montant };
+  const resultat = ligne.kind === "livreur"
+    ? await tx.courierPayout.updateMany({ where, data })
+    : await tx.merchantPayout.updateMany({ where, data });
+  if (resultat.count !== 1) throw new ApiError(409, "Un relevé a changé : actualisez le lot et examinez le rapprochement.", code);
+}
+
+/** Aucune clôture partielle ni relevé supplémentaire absent de l'export. */
+async function muterLesLignes(tx: ClientTransaction, lot: Awaited<ReturnType<typeof charger>>, data: MutationReleve) {
+  const items = lignes(lot);
+  if (!Array.isArray(items) || items.some((l) => !l || !["livreur", "commercant"].includes(l.kind) || !l.payoutId)) {
+    throw new ApiError(409, "Le contenu du lot nécessite un rapprochement.", "BATCH_CONTENT_CONFLICT");
+  }
+  const commercants = items.filter((l) => l.kind === "commercant").length;
+  const livreurs = items.filter((l) => l.kind === "livreur").length;
+  if (items.length === 0 || items.length !== lot.itemCount ||
+      commercants + livreurs !== items.length ||
+      new Set(items.map((l) => `${l.kind}:${l.payoutId}`)).size !== items.length ||
+      items.some((l) => !Number.isFinite(l.montant) || l.montant <= 0) ||
+      Math.round(items.reduce((s, l) => s + l.montant * 100, 0)) !== Math.round(Number(lot.total) * 100) ||
+      await tx.merchantPayout.count({ where: { batchId: lot.id } }) !== commercants ||
+      await tx.courierPayout.count({ where: { batchId: lot.id } }) !== livreurs) {
+    throw new ApiError(409, "Le lot et ses relevés sont incohérents : un rapprochement est nécessaire.", "BATCH_CONTENT_CONFLICT");
+  }
+  for (const ligne of [...items].sort((a, b) => `${a.kind}:${a.payoutId}`.localeCompare(`${b.kind}:${b.payoutId}`))) {
+    await muterLigne(tx, ligne, lot.id, data, "BATCH_CONTENT_CONFLICT");
+  }
+  return { commercants, livreurs };
+}
 
 /** Transition conditionnelle : l'état lu doit encore être celui de la base. */
 async function passer(id: string, de: string[], data: Record<string, unknown>) {
@@ -123,24 +157,8 @@ export class PayoutBatchService {
 
       // Rattachement conditionnel : « pas encore dans un lot ». Un nombre de
       // lignes différent signifie qu'un relevé a bougé : tout est annulé.
-      const commercants = aPayer.filter((v) => v.kind === "commercant").map((v) => v.payoutId);
-      const livreurs = aPayer.filter((v) => v.kind === "livreur").map((v) => v.payoutId);
-      const rattaches = [
-        commercants.length
-          ? await tx.merchantPayout.updateMany({
-              where: { id: { in: commercants }, status: "PENDING", batchId: null },
-              data: { batchId: lot.id },
-            })
-          : { count: 0 },
-        livreurs.length
-          ? await tx.courierPayout.updateMany({
-              where: { id: { in: livreurs }, status: "PENDING", batchId: null },
-              data: { batchId: lot.id },
-            })
-          : { count: 0 },
-      ];
-      if (rattaches[0].count !== commercants.length || rattaches[1].count !== livreurs.length) {
-        throw new ApiError(409, "Un relevé a changé pendant la préparation du lot.", "BATCH_CONFLICT");
+      for (const ligne of [...aPayer].sort((a, b) => `${a.kind}:${a.payoutId}`.localeCompare(`${b.kind}:${b.payoutId}`))) {
+        await muterLigne(tx, ligne, null, { batchId: lot.id }, "BATCH_CONFLICT");
       }
 
       logger.info("Lot bancaire préparé", { lotId: lot.id, nombre: aPayer.length, total });
@@ -198,13 +216,14 @@ export class PayoutBatchService {
 
   /** La banque a exécuté le lot : seuls ses relevés passent à « versé ». */
   static async confirmer(id: string, adminId: string, bankReference?: string) {
-    const lot = await charger(id);
     const resultat = await db.$transaction(async (tx) => {
       const { count } = await tx.payoutBatch.updateMany({
         where: { id, status: { in: ["EXPORTED", "SUBMITTED"] } },
         data: { status: "CONFIRMED", closedBy: adminId, closedAt: new Date(), bankReference: bankReference?.trim() || null },
       });
       if (count !== 1) throw new ApiError(409, "Le lot n'est plus dans l'état attendu.", "BATCH_STATE_CONFLICT");
+
+      const lot = await charger(id, tx);
 
       const versement = {
         status: "PAID",
@@ -213,15 +232,7 @@ export class PayoutBatchService {
         paidAt: new Date(),
         paidBy: adminId,
       };
-      const commercants = await tx.merchantPayout.updateMany({
-        where: { batchId: id, status: "PENDING" },
-        data: versement,
-      });
-      const livreurs = await tx.courierPayout.updateMany({
-        where: { batchId: id, status: "PENDING" },
-        data: versement,
-      });
-      return { commercants: commercants.count, livreurs: livreurs.count };
+      return muterLesLignes(tx, lot, versement);
     });
 
     // Les notifications ne remplacent pas l'état : après la validation.
@@ -252,8 +263,8 @@ export class PayoutBatchService {
         data: { status: vers, closedBy: adminId, closedAt: new Date(), note: note?.slice(0, 500) || null },
       });
       if (count !== 1) throw new ApiError(409, "Le lot n'est plus dans l'état attendu.", "BATCH_STATE_CONFLICT");
-      await tx.merchantPayout.updateMany({ where: { batchId: id, status: "PENDING" }, data: { batchId: null } });
-      await tx.courierPayout.updateMany({ where: { batchId: id, status: "PENDING" }, data: { batchId: null } });
+      const lot = await charger(id, tx);
+      await muterLesLignes(tx, lot, { batchId: null });
     });
   }
 

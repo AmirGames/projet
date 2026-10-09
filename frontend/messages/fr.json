@@ -731,6 +731,7 @@
     "dontService": "dont {montant} de frais de service"
   },
   "superownerPayouts": {
+    "inBatch": "Inclus dans un lot bancaire : traiter le lot depuis les versements SEPA.",
     "title": "Versements aux livreurs",
     "subtitle": "Une course livrée est due tant qu'aucun relevé ne la porte.",
     "restAmount": "Reste à devoir",

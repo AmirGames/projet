@@ -6,6 +6,13 @@ Ne pas les exécuter sur la base du VPS en exploitation. Les résultats datés,
 les audits ciblés et le travail restant figurent dans
 [l'état du projet](../../../docs/etat-projet.md).
 
+Pour A04 : `PAYOUT_INTEGRATION=true npx jest src/modules/payouts/__tests__ --runInBand`
+sur une base PostgreSQL dédiée. Les courses attendent les verrous réels et
+contrôlent paiements, annulations, clôtures et rejeux. Le diagnostic
+`npm run payouts:diagnostic` est imposé en lecture seule ; voir les
+[contrats et la procédure de rapprochement](../../../docs/VERSEMENTS-CONCURRENCE.md)
+et les [preuves datées](../../../docs/preuves-a04-2026-10-09.md).
+
 Ces scripts interrogent une **vraie API branchée sur une vraie base**. Ils
 attrapent ce qu'une relecture laisse passer : un champ mal nommé, une route qui
 répond `200` sans rien faire, un montant divisé par cent, une permission qui ne

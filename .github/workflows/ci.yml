@@ -84,6 +84,15 @@ jobs:
         run: npm test
       - name: Migration remboursement historique (PostgreSQL)
         run: node scripts/verification/refund-migration.mjs
+      - name: Base dédiée A04
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE payouts_test"
+          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/payouts_test?schema=public" npx prisma migrate deploy
+      - name: Concurrence versements A04 (PostgreSQL)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/payouts_test?schema=public
+          PAYOUT_INTEGRATION: "true"
+        run: npx jest src/modules/payouts/__tests__/payout-concurrence.pg.test.ts --runInBand
       # Bases dédiées : ces suites créent et suppriment leurs propres lignes.
       - name: Bases dédiées (RGPD, assistant)
         run: |

@@ -248,7 +248,7 @@ const rebelote = await post(
   { method: 'CASH' },
   TP
 );
-check('le second versement est refusé', rebelote.status === 400, `statut ${rebelote.status}`);
+check('le second versement est refusé', rebelote.status === 409, `statut ${rebelote.status}`);
 check(
   'et dit que c’est déjà versé',
   /déjà versé/i.test((await j(rebelote))?.error || ''),
@@ -261,7 +261,7 @@ const annulationTardive = await post(
   { raison: 'Erreur' },
   TP
 );
-check('l’annulation est refusée', annulationTardive.status === 400, `statut ${annulationTardive.status}`);
+check('l’annulation est refusée', annulationTardive.status === 409, `statut ${annulationTardive.status}`);
 check(
   'et rappelle que l’argent est parti',
   /argent est parti/i.test((await j(annulationTardive))?.error || ''),

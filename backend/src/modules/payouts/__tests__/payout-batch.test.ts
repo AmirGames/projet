@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const tx: any = {
   $executeRaw: jest.fn(),
-  merchantPayout: { findMany: jest.fn(), updateMany: jest.fn() },
-  courierPayout: { findMany: jest.fn(), updateMany: jest.fn() },
-  payoutBatch: { create: jest.fn(), updateMany: jest.fn() },
+  merchantPayout: { findMany: jest.fn(), updateMany: jest.fn(), count: jest.fn() },
+  courierPayout: { findMany: jest.fn(), updateMany: jest.fn(), count: jest.fn() },
+  payoutBatch: { create: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn() },
 };
 const db: any = {
   ...tx,
@@ -81,7 +81,7 @@ describe("préparation d'un lot", () => {
     tx.merchantPayout.updateMany.mockResolvedValue({ count: 1 });
     const { ecartes } = await PayoutBatchService.preparer("admin-1");
     expect(ecartes.map((e) => e.id)).toEqual(["mp-2"]);
-    expect(tx.merchantPayout.updateMany.mock.calls[0][0].where.id.in).toEqual(["mp-1"]);
+    expect(tx.merchantPayout.updateMany.mock.calls[0][0].where.id).toEqual("mp-1");
   });
 });
 
@@ -150,6 +150,14 @@ describe("export du fichier SEPA", () => {
 });
 
 describe("clôture du lot", () => {
+  beforeEach(() => {
+    tx.payoutBatch.findUnique.mockResolvedValue({ id: "lot-1", reference: "REF", itemCount: 2, total: 160.5,
+      itemsJson: [{ kind: "commercant", payoutId: "mp-1", montant: 120.5 }, { kind: "livreur", payoutId: "cp-1", montant: 40 }] });
+    tx.merchantPayout.count.mockResolvedValue(1);
+    tx.courierPayout.count.mockResolvedValue(1);
+    tx.merchantPayout.updateMany.mockResolvedValue({ count: 1 });
+    tx.courierPayout.updateMany.mockResolvedValue({ count: 1 });
+  });
   it("confirmer ne marque versés que les relevés du lot", async () => {
     db.payoutBatch.findUnique.mockResolvedValue({ id: "lot-1", reference: "REF" });
     tx.payoutBatch.updateMany.mockResolvedValue({ count: 1 });
@@ -158,8 +166,8 @@ describe("clôture du lot", () => {
     db.merchantPayout.findMany.mockResolvedValue([]);
 
     expect(await PayoutBatchService.confirmer("lot-1", "admin-1", "BANQUE-42")).toEqual({ commercants: 1, livreurs: 1 });
-    expect(tx.merchantPayout.updateMany.mock.calls[0][0].where).toEqual({ batchId: "lot-1", status: "PENDING" });
-    expect(tx.courierPayout.updateMany.mock.calls[0][0].where).toEqual({ batchId: "lot-1", status: "PENDING" });
+    expect(tx.merchantPayout.updateMany.mock.calls[0][0].where).toEqual({ id: "mp-1", amount: 120.5, batchId: "lot-1", status: "PENDING" });
+    expect(tx.courierPayout.updateMany.mock.calls[0][0].where).toEqual({ id: "cp-1", amount: 40, batchId: "lot-1", status: "PENDING" });
     expect(tx.payoutBatch.updateMany.mock.calls[0][0].where.status.in).toEqual(["EXPORTED", "SUBMITTED"]);
   });
 
@@ -173,8 +181,8 @@ describe("clôture du lot", () => {
   it("un refus de la banque libère les relevés, qui redeviennent proposables", async () => {
     tx.payoutBatch.updateMany.mockResolvedValue({ count: 1 });
     await PayoutBatchService.rejeter("lot-1", "admin-1", "fichier refusé");
-    expect(tx.merchantPayout.updateMany).toHaveBeenCalledWith({ where: { batchId: "lot-1", status: "PENDING" }, data: { batchId: null } });
-    expect(tx.courierPayout.updateMany).toHaveBeenCalledWith({ where: { batchId: "lot-1", status: "PENDING" }, data: { batchId: null } });
+    expect(tx.merchantPayout.updateMany).toHaveBeenCalledWith({ where: { id: "mp-1", amount: 120.5, batchId: "lot-1", status: "PENDING" }, data: { batchId: null } });
+    expect(tx.courierPayout.updateMany).toHaveBeenCalledWith({ where: { id: "cp-1", amount: 40, batchId: "lot-1", status: "PENDING" }, data: { batchId: null } });
   });
 
   it("annuler n'est possible qu'avant l'export", async () => {

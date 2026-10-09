@@ -4,6 +4,11 @@ Le frontend est une application **Next.js 16** (routeur `app/`), **React 19**,
 **TypeScript**, **Tailwind 3** et **next-intl** pour les traductions. Elle
 parle à l'API REST du backend (`backend/`, voir `backend/ARCHITECTURE.md`).
 
+Les écrans de versements relisent les états après conflit 409 et affichent le
+rattachement au lot avant de proposer une action individuelle. La protection
+transactionnelle est dans le backend ; voir le [guide A04](../docs/VERSEMENTS-CONCURRENCE.md)
+et le [README frontend](README.md).
+
 > ⚠️ **Ce n'est pas le Next.js de vos habitudes.** `frontend/AGENTS.md` prévient
 > que cette version a des changements incompatibles (par exemple `middleware.ts`
 > s'appelle ici `proxy.ts`). Avant d'écrire du code qui touche au routage, aux
