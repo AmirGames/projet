@@ -12,6 +12,8 @@ import { DispatchService, STATUTS_EN_COURSE } from "./dispatch.service";
 import { piecesAttendues } from "./driver-approval.service";
 import { DriverAvailabilityService } from "./driver-availability.service";
 import { DriverSupportService } from "./driver-support.service";
+import { confirmationExigee, confirmationAEnvoyer, envoyerConfirmation } from "../auth/auth-confirmation.service";
+import { codeErreur } from "../../utils/code-erreur";
 
 export type InscriptionLivreur = {
   name: string;
@@ -52,38 +54,56 @@ export const DriverAccountService = {
     ]);
 
     if (compteExistant || livreurExistant) {
+      if (confirmationExigee()) {
+        await AuthService.hashPassword(body.password);
+        if (compteExistant && !compteExistant.emailVerified && compteExistant.status === "ACTIVE") {
+          await envoyerConfirmation(compteExistant);
+        }
+        return { aConfirmer: true as const };
+      }
       throw new ApiError(409, "Cette adresse e-mail est déjà utilisée", "EMAIL_EXISTS");
     }
 
     const passwordHash = await AuthService.hashPassword(body.password);
 
-    const utilisateur = await db.user.create({
-      data: { email: body.email, name: body.name, passwordHash },
-    });
-
-    await enregistrerAcceptation(req, {
-      email: utilisateur.email,
-      userId: utilisateur.id,
-      documents: ["cgu", "conditions-livreurs", "confidentialite"],
-    });
-
-    const livreur = await db.courier.create({
-      data: {
-        userId: utilisateur.id,
-        name: body.name,
-        email: body.email,
-        phone: body.phone,
-        vehicleType: body.vehicleType,
-        vehiclePlate: body.vehiclePlate,
-        licensePlate: body.vehiclePlate,
-      },
-    });
+    let creation;
+    try {
+      creation = await db.$transaction(async (tx) => {
+        const utilisateur = await tx.user.create({
+          data: { email: body.email, name: body.name, passwordHash },
+        });
+        await enregistrerAcceptation(req, {
+          email: utilisateur.email,
+          userId: utilisateur.id,
+          documents: ["cgu", "conditions-livreurs", "confidentialite"],
+        }, tx);
+        const livreur = await tx.courier.create({
+          data: {
+            userId: utilisateur.id,
+            name: body.name,
+            email: body.email,
+            phone: body.phone,
+            vehicleType: body.vehicleType,
+            vehiclePlate: body.vehiclePlate,
+            licensePlate: body.vehiclePlate,
+          },
+        });
+        if (confirmationAEnvoyer()) await envoyerConfirmation(utilisateur, tx);
+        return { utilisateur, livreur };
+      });
+    } catch (err) {
+      if (codeErreur(err) !== "P2002") throw err;
+      if (confirmationExigee()) return { aConfirmer: true as const };
+      throw new ApiError(409, "Cette adresse e-mail est déjà utilisée", "EMAIL_EXISTS");
+    }
+    const { utilisateur, livreur } = creation;
+    if (confirmationExigee()) return { aConfirmer: true as const };
 
     // Un livreur n'appartient à aucune organisation : le jeton ne porte donc
     // ni orgId ni boutique.
     const { accessToken, refreshToken } = await SsoService.connecter(utilisateur.id);
 
-    return { accessToken, refreshToken, driver: { id: livreur.id, name: livreur.name, email: livreur.email } };
+    return { aConfirmer: false as const, accessToken, refreshToken, driver: { id: livreur.id, name: livreur.name, email: livreur.email } };
   },
 
   /** Revenus du livreur : totaux par période, pourboires, dernières courses. */

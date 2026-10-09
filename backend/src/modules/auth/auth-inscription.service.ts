@@ -8,7 +8,8 @@ import { UserService } from "./user.service";
 import { enregistrerAcceptation } from "../legal/acceptation-conditions.service";
 import { StoreService } from "../stores/store.service";
 import { normaliserGenre } from "../stores/store-type.service";
-import { confirmationExigee, envoyerConfirmation } from "./auth-confirmation.service";
+import { confirmationExigee, confirmationAEnvoyer, envoyerConfirmation } from "./auth-confirmation.service";
+import { codeErreur } from "../../utils/code-erreur";
 
 /** La même réponse pour toute inscription quand la confirmation est exigée. */
 export const REPONSE_INSCRIPTION_A_CONFIRMER = {
@@ -68,9 +69,7 @@ export const AuthInscriptionService = {
         // Même coût qu'une vraie inscription : le temps ne dit rien non plus.
         await AuthService.hashPassword(body.password);
         if (!compteExistant.emailVerified && compteExistant.status === "ACTIVE") {
-          void envoyerConfirmation(compteExistant).catch((err) =>
-            logger.warn("Confirmation d'adresse non renvoyée", { error: err instanceof Error ? err.message : err })
-          );
+          await envoyerConfirmation(compteExistant);
         }
         return { aConfirmer: true as const };
       }
@@ -84,51 +83,27 @@ export const AuthInscriptionService = {
     // deux superowners. Le superowner se crée hors de l'API, avec
     // `npm run create-superowner` (src/cli/create-superowner.ts).
     const passwordHash = await AuthService.hashPassword(body.password);
-    const user = await db.user.create({
-      data: {
-        email: body.email,
-        name: body.name,
-        passwordHash,
-      },
-    });
-
-    await enregistrerAcceptation(req, { email: user.email, userId: user.id, documents: ["cgu", "cgv", "confidentialite"] });
-
-    // Le lien de confirmation part à l'inscription. Il ne bloque la connexion
-    // que si la confirmation est exigée (voir confirmationExigee) ; dans tous
-    // les cas, il est nécessaire pour retrouver une fiche client invité.
-    // Le courriel part sans faire attendre la réponse : l'aller-retour avec le
-    // serveur SMTP représentait l'essentiel de la durée de l'inscription.
-    if (process.env.ENABLE_EMAIL_VERIFICATION !== "false") {
-      void envoyerConfirmation(user).catch((err) =>
-        logger.warn("Confirmation d'adresse non préparée", {
-          email: user.email,
-          error: err instanceof Error ? err.message : err,
-        })
-      );
-    }
-
-    /**
-     * La fiche client du compte.
-     *
-     * Une commande passée sans compte a pu créer une fiche à cette adresse,
-     * unique elle aussi : on n'en crée pas une deuxième. On ne la rattache pas
-     * non plus : s'inscrire ne prouve pas qu'on possède l'adresse, et la fiche
-     * porte les commandes, adresses et codes de remise de celui qui a commandé.
-     * Elle rejoint le compte à la confirmation de l'adresse (/verify-email).
-     *
-     * La réponse ne dit rien de la fiche : qu'elle diffère selon qu'une fiche
-     * existait révélerait qu'on a commandé avec cette adresse.
-     */
-    const ficheExistante = await db.customer.findUnique({ where: { email: user.email }, select: { id: true } });
-    if (!ficheExistante) {
-      await db.customer.create({
-        data: {
-          userId: user.id,
-          name: body.name || user.email.split("@")[0],
-          email: user.email,
-        },
+    let user;
+    try {
+      user = await db.$transaction(async (tx) => {
+        const compte = await tx.user.create({ data: { email: body.email, name: body.name, passwordHash } });
+        await enregistrerAcceptation(req, {
+          email: compte.email, userId: compte.id, documents: ["cgu", "cgv", "confidentialite"],
+        }, tx);
+        // Ne jamais rattacher une fiche invitée avant la preuve de l'adresse.
+        // ON CONFLICT évite aussi la course avec une commande invitée simultanée.
+        await tx.customer.createMany({
+          data: { userId: compte.id, name: body.name || compte.email.split("@")[0], email: compte.email },
+          skipDuplicates: true,
+        });
+        if (confirmationAEnvoyer()) await envoyerConfirmation(compte, tx);
+        return compte;
       });
+    } catch (err) {
+      if (codeErreur(err) !== "P2002" || !(await db.user.findUnique({ where: { email: body.email } }))) throw err;
+      // L'autre inscription a gagné et préparé son e-mail dans sa transaction.
+      if (confirmationExigee()) return { aConfirmer: true as const };
+      throw new ApiError(409, "Cet email est déjà utilisé", "EMAIL_EXISTS");
     }
 
     // Confirmation exigée : aucune session avant d'avoir prouvé qu'on possède
@@ -152,6 +127,7 @@ export const AuthInscriptionService = {
     }
 
     const user = await UserService.getUserById(userId);
+    const businessType = genre.businessType;
 
     // Check if slug already exists
     const existingOrg = await db.organization.findUnique({
@@ -162,67 +138,79 @@ export const AuthInscriptionService = {
       throw new ApiError(400, "Cette URL est déjà utilisée", "SLUG_EXISTS");
     }
 
-    // Create organization
-    // Le commerce attend la validation de la plateforme (`approvedAt` vide) :
-    // il prépare sa boutique, il ne l'ouvre pas encore.
-    const organization = await db.organization.create({
-      data: {
-        name: body.businessName,
-        email: user.email,
-        slug: body.storeSlug,
-        tier: "FREE",
-        plan: "STARTER",
-        status: "ACTIVE",
-        // La plateforme elle-même n'a personne pour la valider.
-        approvedAt: user.isSuperOwner ? new Date() : null,
-      },
-    });
+    const situation = await StoreService.situer(body);
+    let creation;
+    try {
+      creation = await db.$transaction(async (tx) => {
+        // Create organization
+        // Le commerce attend la validation de la plateforme (`approvedAt` vide) :
+        // il prépare sa boutique, il ne l'ouvre pas encore.
+        const organization = await tx.organization.create({
+          data: {
+            name: body.businessName,
+            email: user.email,
+            slug: body.storeSlug,
+            tier: "FREE",
+            plan: "STARTER",
+            status: "ACTIVE",
+            // La plateforme elle-même n'a personne pour la valider.
+            approvedAt: user.isSuperOwner ? new Date() : null,
+          },
+        });
 
-    // Create membership
-    await db.membership.create({
-      data: {
-        userId,
-        orgId: organization.id,
-        role: "ADMIN",
-        storeIds: [],
-      },
-    });
+        // Create membership
+        await tx.membership.create({
+          data: {
+            userId,
+            orgId: organization.id,
+            role: "ADMIN",
+            storeIds: [],
+          },
+        });
 
-    /**
-     * La boutique passe par la même création que POST /api/stores.
-     *
-     * Créée ici à la main, elle naissait sans coordonnées — invisible de ses
-     * zones de livraison et de l'attribution des courses — et son genre partait
-     * dans les réglages au lieu du champ `businessType` que lit la recherche.
-     */
-    const store = await StoreService.create({
-      orgId: organization.id,
-      name: body.storeName,
-      slug: body.storeSlug,
-      address: body.address,
-      city: body.city,
-      postalCode: body.postalCode,
-      phone: body.phone,
-      email: user.email,
-      description: body.description,
-      latitude: body.latitude,
-      longitude: body.longitude,
-      businessType: genre.businessType,
-      cuisineType: genre.cuisineType ?? undefined,
-    });
-
-    // Update membership with store ID
-    await db.membership.update({
-      where: {
-        userId_orgId: {
-          userId,
+        /**
+         * La boutique passe par la même création que POST /api/stores.
+         *
+         * Créée ici à la main, elle naissait sans coordonnées — invisible de ses
+         * zones de livraison et de l'attribution des courses — et son genre partait
+         * dans les réglages au lieu du champ `businessType` que lit la recherche.
+         */
+        const store = await StoreService.create({
           orgId: organization.id,
-        },
-      },
-      data: {
-        storeIds: [store.id],
-      },
-    });
+          name: body.storeName,
+          slug: body.storeSlug,
+          address: body.address,
+          city: body.city,
+          postalCode: body.postalCode,
+          phone: body.phone,
+          email: user.email,
+          description: body.description,
+          latitude: body.latitude,
+          longitude: body.longitude,
+          businessType,
+          cuisineType: genre.cuisineType ?? undefined,
+        }, { client: tx, situation });
+
+        // Update membership with store ID
+        await tx.membership.update({
+          where: {
+            userId_orgId: {
+              userId,
+              orgId: organization.id,
+            },
+          },
+          data: {
+            storeIds: [store.id],
+          },
+        });
+
+        return { organization, store };
+      });
+    } catch (err) {
+      if (codeErreur(err) === "P2002") throw new ApiError(409, "Cette URL est déjà utilisée", "SLUG_EXISTS");
+      throw err;
+    }
+    const { organization, store } = creation;
 
     logger.info("User became merchant", {
       userId,
@@ -291,6 +279,7 @@ export const AuthInscriptionService = {
     if (!genre.businessType) {
       throw new ApiError(400, "Type de commerce inconnu", "INVALID_BUSINESS_TYPE");
     }
+    const businessType = genre.businessType;
 
     logger.info("Merchant registration attempt", { email: body.email, businessName: body.businessName });
 
@@ -300,6 +289,11 @@ export const AuthInscriptionService = {
     });
 
     if (existingUser) {
+      if (confirmationExigee()) {
+        await AuthService.hashPassword(body.password);
+        if (!existingUser.emailVerified && existingUser.status === "ACTIVE") await envoyerConfirmation(existingUser);
+        return { aConfirmer: true as const };
+      }
       throw new ApiError(400, "Cet email est déjà utilisé", "EMAIL_EXISTS");
     }
 
@@ -314,81 +308,99 @@ export const AuthInscriptionService = {
 
     // Hash password
     const passwordHash = await AuthService.hashPassword(body.password);
+    const situation = await StoreService.situer(body);
+    let creation;
+    try {
+      creation = await db.$transaction(async (tx) => {
 
-    // Aucun droit sur la plateforme à l'inscription (voir inscrireClient).
-    const user = await db.user.create({
-      data: {
-        email: body.email,
-        name: body.businessName,
-        passwordHash,
-        emailVerified: false,
-        status: "ACTIVE",
-      },
-    });
+        // Aucun droit sur la plateforme à l'inscription (voir inscrireClient).
+        const user = await tx.user.create({
+          data: {
+            email: body.email,
+            name: body.businessName,
+            passwordHash,
+            emailVerified: false,
+            status: "ACTIVE",
+          },
+        });
 
-    await enregistrerAcceptation(req, {
-      email: user.email,
-      userId: user.id,
-      documents: ["cgu", "conditions-commercants", "confidentialite"],
-    });
-
-    // Create organization
-    // Le commerce attend la validation de la plateforme (`approvedAt` vide) :
-    // il prépare sa boutique, il ne l'ouvre pas encore.
-    const organization = await db.organization.create({
-      data: {
-        name: body.businessName,
-        email: body.email,
-        slug: body.storeSlug,
-        tier: "FREE",
-        plan: "STARTER",
-        status: "ACTIVE",
-        ...(body.country && { billingCountry: body.country === "BE" ? "Belgique" : "France" }),
-        approvedAt: null,
-      },
-    });
-
-    // Create membership
-    await db.membership.create({
-      data: {
-        userId: user.id,
-        orgId: organization.id,
-        role: "ADMIN",
-        storeIds: [],
-      },
-    });
-
-    // La même création que POST /api/stores : située, et genrée dans le
-    // champ `businessType` que lit la recherche.
-    const store = await StoreService.create({
-      orgId: organization.id,
-      name: body.storeName,
-      slug: body.storeSlug,
-      address: body.address,
-      city: body.city,
-      postalCode: body.postalCode,
-      phone: body.phone,
-      email: body.email,
-      description: body.description,
-      latitude: body.latitude,
-      longitude: body.longitude,
-      businessType: genre.businessType,
-      cuisineType: genre.cuisineType ?? undefined,
-      ...(body.website && { settings: { website: body.website } }),
-    });
-
-    // Update membership with store ID
-    await db.membership.update({
-      where: {
-        userId_orgId: {
+        await enregistrerAcceptation(req, {
+          email: user.email,
           userId: user.id,
+          documents: ["cgu", "conditions-commercants", "confidentialite"],
+        }, tx);
+
+        // Create organization
+        // Le commerce attend la validation de la plateforme (`approvedAt` vide) :
+        // il prépare sa boutique, il ne l'ouvre pas encore.
+        const organization = await tx.organization.create({
+          data: {
+            name: body.businessName,
+            email: body.email,
+            slug: body.storeSlug,
+            tier: "FREE",
+            plan: "STARTER",
+            status: "ACTIVE",
+            ...(body.country && { billingCountry: body.country === "BE" ? "Belgique" : "France" }),
+            approvedAt: null,
+          },
+        });
+
+        // Create membership
+        await tx.membership.create({
+          data: {
+            userId: user.id,
+            orgId: organization.id,
+            role: "ADMIN",
+            storeIds: [],
+          },
+        });
+
+        // La même création que POST /api/stores : située, et genrée dans le
+        // champ `businessType` que lit la recherche.
+        const store = await StoreService.create({
           orgId: organization.id,
-        },
-      },
-      data: {
-        storeIds: [store.id],
-      },
-    });
+          name: body.storeName,
+          slug: body.storeSlug,
+          address: body.address,
+          city: body.city,
+          postalCode: body.postalCode,
+          phone: body.phone,
+          email: body.email,
+          description: body.description,
+          latitude: body.latitude,
+          longitude: body.longitude,
+          businessType,
+          cuisineType: genre.cuisineType ?? undefined,
+          ...(body.website && { settings: { website: body.website } }),
+        }, { client: tx, situation });
+
+        // Update membership with store ID
+        await tx.membership.update({
+          where: {
+            userId_orgId: {
+              userId: user.id,
+              orgId: organization.id,
+            },
+          },
+          data: {
+            storeIds: [store.id],
+          },
+        });
+
+        if (confirmationAEnvoyer()) await envoyerConfirmation(user, tx);
+        return { user, organization, store };
+      });
+    } catch (err) {
+      if (codeErreur(err) !== "P2002") throw err;
+      if (await db.user.findUnique({ where: { email: body.email } })) {
+        if (confirmationExigee()) return { aConfirmer: true as const };
+        throw new ApiError(400, "Cet email est déjà utilisé", "EMAIL_EXISTS");
+      }
+      throw new ApiError(409, "Cette URL est déjà utilisée", "SLUG_EXISTS");
+    }
+    const { user, organization, store } = creation;
+    if (confirmationExigee()) return { aConfirmer: true as const };
 
     // Une session par connexion : les jetons la portent, et la fermer les
     // invalide sur tous les domaines (voir sso.service.ts).
@@ -400,6 +412,6 @@ export const AuthInscriptionService = {
       storeId: store.id,
     });
 
-    return { accessToken, refreshToken, user, organization, store };
+    return { aConfirmer: false as const, accessToken, refreshToken, user, organization, store };
   },
 };

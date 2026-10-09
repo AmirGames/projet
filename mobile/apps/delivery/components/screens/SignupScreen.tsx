@@ -63,6 +63,7 @@ export default function SignupScreen({
   const [accepted, setAccepted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [confirmationPending, setConfirmationPending] = useState(false);
 
   const motorise = vehicleType !== 'bike';
 
@@ -97,6 +98,11 @@ export default function SignupScreen({
         setError(detail || data?.error || data?.message || 'L’inscription n’a pas abouti.');
         return;
       }
+      if (data.emailVerificationRequired) {
+        setConfirmationPending(true);
+        setPassword('');
+        return;
+      }
       onSignedUp({ accessToken: data.accessToken, refreshToken: data.refreshToken, email: email.trim().toLowerCase() });
     } catch {
       setError('Impossible de joindre le serveur. Vérifiez votre connexion.');
@@ -110,6 +116,21 @@ export default function SignupScreen({
       {libelle}
     </Text>
   );
+
+  if (confirmationPending) {
+    return (
+      <View style={styles.content}>
+        <Text style={styles.title}>Vérifiez votre e-mail</Text>
+        <Text style={styles.subtitle}>
+          Si cette adresse peut être inscrite, un e-mail de confirmation va vous être envoyé.
+          Ouvrez son lien, puis revenez vous connecter pour compléter votre dossier.
+        </Text>
+        <TouchableOpacity onPress={onCancel}>
+          <Text style={styles.link}>Retour à la connexion</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

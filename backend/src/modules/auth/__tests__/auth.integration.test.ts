@@ -16,6 +16,7 @@ type Compte = Record<string, any> & { id: string; email: string };
 
 const users: Compte[] = [];
 const customers: Fiche[] = [];
+const messages: any[] = [];
 let suivant = 0;
 const nouvelId = (prefixe: string) => `${prefixe}-${++suivant}`;
 
@@ -28,13 +29,18 @@ const db: any = {
     findMany: jest.fn(async () => []),
     count: jest.fn(async () => users.length),
     create: jest.fn(async ({ data }: any) => {
-      const compte = { id: nouvelId("user"), emailVerified: false, passwordHash: null, ...data };
+      const compte = { id: nouvelId("user"), status: "ACTIVE", emailVerified: false, passwordHash: null, ...data };
       users.push(compte);
       return compte;
     }),
     update: jest.fn(async ({ where, data }: any) => {
       const compte = users.find((u) => correspond(u, where))!;
       return Object.assign(compte, data);
+    }),
+    updateMany: jest.fn(async ({ where, data }: any) => {
+      const lignes = users.filter((u) => correspond(u, where));
+      lignes.forEach((u) => Object.assign(u, data));
+      return { count: lignes.length };
     }),
   },
   customer: {
@@ -45,6 +51,11 @@ const db: any = {
       customers.push(fiche);
       return fiche;
     }),
+    createMany: jest.fn(async ({ data }: any) => {
+      if (customers.some((c) => c.email === data.email)) return { count: 0 };
+      await db.customer.create({ data });
+      return { count: 1 };
+    }),
     update: jest.fn(async ({ where, data }: any) => Object.assign(customers.find((c) => correspond(c, where))!, data)),
     updateMany: jest.fn(async ({ where, data }: any) => {
       const lignes = customers.filter((c) => correspond(c, where));
@@ -52,7 +63,14 @@ const db: any = {
       return { count: lignes.length };
     }),
   },
+  outboxMessage: {
+    create: jest.fn(async ({ data }: any) => {
+      messages.push(data);
+      return data;
+    }),
+  },
 };
+db.$transaction = jest.fn(async (fn: any) => fn(db));
 
 const sendEmailVerification = jest.fn(async (..._args: any[]) => undefined);
 const recordSecurityEvent = jest.fn(async (..._args: any[]) => undefined);
@@ -101,6 +119,7 @@ import authMotDePasseRouter from "../auth.motdepasse.routes";
 import { errorHandler } from "../../../middleware/errorHandler";
 import { AuthService } from "../auth.service";
 import { ficheClientDuCompte } from "../../customers/fiche-client.service";
+import { envoyerConfirmationDuCompte } from "../auth-confirmation.service";
 
 const app = express();
 app.use(express.json());
@@ -117,8 +136,8 @@ const inscrire = (email: string) =>
 
 /** Le jeton du dernier lien de confirmation envoyé. */
 async function jetonDeConfirmation() {
-  // L'envoi part sans être attendu par la route.
-  await new Promise((r) => setImmediate(r));
+  // Simule le passage du worker après le commit de l'inscription.
+  await envoyerConfirmationDuCompte(messages.at(-1).payload.userId);
   const lien = String(sendEmailVerification.mock.calls.at(-1)?.[2]);
   return new URL(lien).searchParams.get("jeton")!;
 }
@@ -134,6 +153,7 @@ const ancienEnv = { ...process.env };
 beforeEach(() => {
   users.length = 0;
   customers.length = 0;
+  messages.length = 0;
   jest.clearAllMocks();
   delete process.env.ENABLE_EMAIL_VERIFICATION;
   delete process.env.REQUIRE_EMAIL_VERIFICATION;

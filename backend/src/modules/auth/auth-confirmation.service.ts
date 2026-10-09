@@ -1,9 +1,12 @@
-import { db } from "../../services/db";
+import { db, type ClientTransaction } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { EmailService } from "../notifications/email.service";
 import { AccountTokenService, DUREE_CONFIRMATION_MS } from "./account-token.service";
 import { rattacherFicheInvite } from "../customers/fiche-client.service";
+import { Outbox } from "../jobs/outbox.service";
+
+export const TYPE_EMAIL_CONFIRMATION = "auth.confirmation_email";
 
 /**
  * Faut-il une adresse confirmée pour se connecter ?
@@ -18,6 +21,9 @@ export function confirmationExigee() {
   return valeur === "true";
 }
 
+/** Une exigence de confirmation implique toujours la préparation de son e-mail. */
+export const confirmationAEnvoyer = () => confirmationExigee() || process.env.ENABLE_EMAIL_VERIFICATION !== "false";
+
 /**
  * Adresse du site pour les liens envoyés par courriel. Les pages visées sont
  * communes à tous les domaines, n'importe lequel convient donc.
@@ -26,33 +32,33 @@ export const adresseDuSite = () =>
   (process.env.SITE_URL || process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
 
 /**
- * Enregistre un lien de confirmation et le fait partir, sans jamais faire
- * échouer ni ralentir l'appelant.
- *
- * Seul le jeton est attendu : il doit exister en base avant que le lien
- * puisse être cliqué. L'envoi, lui, part sans être attendu — un serveur de
- * courriel injoignable retenait la réponse de l'inscription de longues
- * secondes, et le visiteur qui réessayait tombait sur « adresse déjà
- * utilisée » alors que son compte venait d'être créé.
+ * Enregistre l'intention d'envoi avec le compte. Aucun jeton ni lien de
+ * connexion dans l'outbox : le worker les crée au moment de l'envoi.
  */
-export async function envoyerConfirmation(user: { id: string; email: string; name: string | null }) {
-  const { jeton, empreinte, expireLe } = AccountTokenService.emettre(DUREE_CONFIRMATION_MS);
+export async function envoyerConfirmation(
+  user: { id: string },
+  client: Pick<ClientTransaction, "outboxMessage"> = db
+) {
+  await Outbox.enregistrer(TYPE_EMAIL_CONFIRMATION, { userId: user.id }, { tx: client });
+}
 
-  await db.user.update({
-    where: { id: user.id },
+/** Une panne SMTP remonte au worker, qui reprend l'envoi avec un nouveau lien. */
+export async function envoyerConfirmationDuCompte(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, emailVerified: true, status: true },
+  });
+  if (!user || user.emailVerified || user.status !== "ACTIVE") return;
+
+  const { jeton, empreinte, expireLe } = AccountTokenService.emettre(DUREE_CONFIRMATION_MS);
+  const { count } = await db.user.updateMany({
+    where: { id: user.id, email: user.email, emailVerified: false, status: "ACTIVE" },
     data: { emailTokenHash: empreinte, emailTokenExpiresAt: expireLe },
   });
+  if (count !== 1) return;
 
   const lien = `${adresseDuSite()}/verifier-email?jeton=${jeton}`;
-
-  EmailService.sendEmailVerification(user.email, user.name, lien).catch((err) => {
-    // Un serveur de courriel indisponible ne doit pas empêcher l'inscription :
-    // le message peut être redemandé plus tard.
-    logger.warn("Envoi de la confirmation d'adresse impossible", {
-      email: user.email,
-      error: err instanceof Error ? err.message : err,
-    });
-  });
+  await EmailService.sendEmailVerification(user.email, user.name, lien);
 }
 
 /** Confirmation d'adresse (lien reçu) et renvoi du lien. */

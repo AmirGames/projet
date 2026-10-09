@@ -20,6 +20,7 @@ const db: any = {
   organization: model("findUnique", "create"),
   membership: model("create", "update"),
   sessionConnexion: model("updateMany"),
+  outboxMessage: model("create"),
 };
 db.$transaction = jest.fn(async (fn: any) => fn(db));
 
@@ -60,7 +61,10 @@ jest.mock("../../legal/acceptation-conditions.service", () => {
 jest.mock("../compte-connecte", () => ({ compteConnecte: jest.fn(async (id: string) => ({ user: { id } })) }));
 jest.mock("../../customers/fiche-client.service", () => ({ rattacherFicheInvite: jest.fn(async () => undefined) }));
 jest.mock("../../stores/store.service", () => ({
-  StoreService: { create: jest.fn(async (d: any) => ({ id: "store-1", name: d.name, slug: d.slug })) },
+  StoreService: {
+    create: jest.fn(async (d: any) => ({ id: "store-1", name: d.name, slug: d.slug })),
+    situer: jest.fn(async () => ({ latitude: 50.4, longitude: 4.8, countryCode: "BE" })),
+  },
 }));
 jest.mock("../auth.middleware", () => ({
   authMiddleware: (req: any, res: any, next: any) => {
@@ -223,7 +227,7 @@ describe("POST /me/become-merchant", () => {
       data: { name: "Chez Test", email: "alice@test.fr", slug: "chez-test", tier: "FREE", plan: "STARTER", status: "ACTIVE", approvedAt: null },
     });
     expect(db.membership.create).toHaveBeenCalledWith({ data: { userId: "user-alice", orgId: "org-9", role: "ADMIN", storeIds: [] } });
-    expect(StoreService.create).toHaveBeenCalledWith(expect.objectContaining({ orgId: "org-9", slug: "chez-test", email: "alice@test.fr", businessType: expect.any(String) }));
+    expect(StoreService.create).toHaveBeenCalledWith(expect.objectContaining({ orgId: "org-9", slug: "chez-test", email: "alice@test.fr", businessType: expect.any(String) }), expect.objectContaining({ client: db }));
     expect(db.membership.update).toHaveBeenCalledWith({ where: { userId_orgId: { userId: "user-alice", orgId: "org-9" } }, data: { storeIds: ["store-1"] } });
   });
   it("un super-propriétaire voit son commerce approuvé d'office", async () => {
@@ -304,13 +308,49 @@ describe("POST /merchant-register", () => {
       organizationId: "o9",
     });
     expect(db.user.create).toHaveBeenCalledWith({ data: { email: "pro@test.fr", name: "Chez Test", passwordHash: "hash", emailVerified: false, status: "ACTIVE" } });
-    expect(enregistrerAcceptation).toHaveBeenCalledWith(expect.anything(), { email: "pro@test.fr", userId: "u9", documents: ["cgu", "conditions-commercants", "confidentialite"] });
+    expect(enregistrerAcceptation).toHaveBeenCalledWith(expect.anything(), { email: "pro@test.fr", userId: "u9", documents: ["cgu", "conditions-commercants", "confidentialite"] }, db);
     expect(db.organization.create).toHaveBeenCalledWith({
       data: { name: "Chez Test", email: "pro@test.fr", slug: "chez-test", tier: "FREE", plan: "STARTER", status: "ACTIVE", billingCountry: "Belgique", approvedAt: null },
     });
-    expect(StoreService.create).toHaveBeenCalledWith(expect.objectContaining({ settings: { website: "https://chez.test" } }));
+    expect(StoreService.create).toHaveBeenCalledWith(expect.objectContaining({ settings: { website: "https://chez.test" } }), expect.objectContaining({ client: db }));
     expect(db.membership.update).toHaveBeenCalledWith({ where: { userId_orgId: { userId: "u9", orgId: "o9" } }, data: { storeIds: ["store-1"] } });
     expect(SsoService.connecter).toHaveBeenCalledWith("u9");
+  });
+  it("confirmation exigée : crée le commerce et programme l'e-mail, sans session", async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = "true";
+    process.env.ENABLE_EMAIL_VERIFICATION = "false";
+    db.user.findUnique.mockResolvedValue(null);
+    db.organization.findUnique.mockResolvedValue(null);
+    db.user.create.mockResolvedValue({ id: "u9", email: "pro@test.fr", name: "Chez Test" });
+    db.organization.create.mockResolvedValue({ id: "o9", name: "Chez Test", slug: "chez-test" });
+    const r = await request(app).post("/api/auth/merchant-register").send(corps);
+    expect(r.status).toBe(202);
+    expect(r.body).toEqual(expect.objectContaining({ emailVerificationRequired: true }));
+    expect(r.body.accessToken).toBeUndefined();
+    expect(r.body.refreshToken).toBeUndefined();
+    expect(r.body.organizationId).toBeUndefined();
+    expect(db.outboxMessage.create).toHaveBeenCalledWith({ data: { type: "auth.confirmation_email", payload: { userId: "u9" }, dedupeKey: undefined } });
+    expect(SsoService.connecter).not.toHaveBeenCalled();
+    delete process.env.ENABLE_EMAIL_VERIFICATION;
+  });
+  it("confirmation exigée : la même réponse pour une adresse déjà inscrite, sans modifier ses droits", async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = "true";
+    db.user.findUnique.mockResolvedValue({ id: "existant", status: "ACTIVE", emailVerified: true });
+    const r = await request(app).post("/api/auth/merchant-register").send(corps);
+    expect(r.status).toBe(202);
+    expect(r.body.emailVerificationRequired).toBe(true);
+    expect(db.user.create).not.toHaveBeenCalled();
+    expect(db.organization.create).not.toHaveBeenCalled();
+    expect(SsoService.connecter).not.toHaveBeenCalled();
+  });
+  it("conflit concurrent d'adresse : réponse métier après rollback", async () => {
+    db.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: "concurrent" });
+    db.organization.findUnique.mockResolvedValue(null);
+    db.user.create.mockRejectedValueOnce({ code: "P2002" });
+    const r = await request(app).post("/api/auth/merchant-register").send(corps);
+    expect(r.status).toBe(400);
+    expect(r.body.code).toBe("EMAIL_EXISTS");
+    expect(SsoService.connecter).not.toHaveBeenCalled();
   });
 });
 
@@ -470,9 +510,9 @@ describe("POST /resend-verification", () => {
     r = await request(app).post("/api/auth/resend-verification").send({ email: "X@test.fr" });
     expect(r.status).toBe(200);
     expect(r.body).toEqual(GENERIQUE);
-    expect(db.user.update).toHaveBeenCalledWith({ where: { id: "u" }, data: { emailTokenHash: expect.any(String), emailTokenExpiresAt: expect.any(Date) } });
-    await attendre();
-    expect(sendEmailVerification).toHaveBeenCalledWith("x@test.fr", "X", expect.stringContaining("/verifier-email?jeton="));
+    expect(db.outboxMessage.create).toHaveBeenCalledWith({ data: { type: "auth.confirmation_email", payload: { userId: "u" }, dedupeKey: undefined } });
+    expect(db.user.update).not.toHaveBeenCalled();
+    expect(sendEmailVerification).not.toHaveBeenCalled();
     expect(db.user.findUnique).toHaveBeenLastCalledWith({ where: { email: "x@test.fr" }, select: { id: true, email: true, name: true, emailVerified: true, status: true } });
   });
   it("connecté : précis (déjà confirmée / nouveau lien / compte introuvable)", async () => {
@@ -483,7 +523,7 @@ describe("POST /resend-verification", () => {
     db.user.findUnique.mockResolvedValueOnce({ id: "user-alice", email: "alice@test.fr", name: "A", emailVerified: false, status: "ACTIVE" });
     r = await envoyer();
     expect(r.body).toEqual({ message: "Un nouveau lien vient de vous être envoyé.", emailVerified: false });
-    expect(db.user.update).toHaveBeenCalledTimes(1);
+    expect(db.outboxMessage.create).toHaveBeenCalledTimes(1);
     db.user.findUnique.mockResolvedValueOnce(null);
     r = await envoyer();
     expect(r.status).toBe(404);

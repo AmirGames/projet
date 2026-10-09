@@ -27,6 +27,7 @@ const VEHICULES = [
 
 export default function InscriptionLivreurPage() {
   const t = useTranslations('driverAuth');
+  const tConfirmation = useTranslations('auth.signup');
   const tMdp = useTranslations('motDePasse');
   const tConditions = useTranslations('acceptationConditions');
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function InscriptionLivreurPage() {
   const [erreur, setErreur] = useState('');
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [envoi, setEnvoi] = useState(false);
+  const [aConfirmer, setAConfirmer] = useState(false);
 
   // Rediriger vers onboard si connecté
   useEffect(() => {
@@ -82,6 +84,12 @@ export default function InscriptionLivreurPage() {
         return;
       }
 
+      if (donnees.emailVerificationRequired) {
+        setAConfirmer(true);
+        setFormulaire(previous => ({ ...previous, password: '' }));
+        return;
+      }
+
       poserJeton(donnees.accessToken);
       // Le jeton de renouvellement devient un cookie httpOnly, il n'est pas gardé.
       await adopterRefresh(donnees.refreshToken);
@@ -111,7 +119,13 @@ export default function InscriptionLivreurPage() {
           <p className="text-gray-500 mt-2">{t('inscription.sousTitre')}</p>
         </div>
 
-        <form onSubmit={soumettre} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        {aConfirmer && (
+          <div className="bg-green-50 border border-green-200 text-green-900 p-4 rounded-lg mb-4" role="status">
+            {tConfirmation('checkEmail')}
+          </div>
+        )}
+
+        {!aConfirmer && <form onSubmit={soumettre} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           {erreur && (
             <div className="bg-red-100 border border-red-500/50 rounded-lg p-3 text-red-600 text-sm">
               {erreur}
@@ -226,7 +240,7 @@ export default function InscriptionLivreurPage() {
           >
             {envoi ? t('inscription.creation') : t('inscription.creer')}
           </button>
-        </form>
+        </form>}
 
         <p className="text-gray-500 text-center text-sm mt-6">
           {t('inscription.dejaInscrit')}{' '}

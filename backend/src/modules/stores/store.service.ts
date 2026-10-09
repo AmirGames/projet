@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { db } from "../../services/db";
+import { db, type ClientTransaction } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { logger } from "../../config/logger";
@@ -33,6 +33,33 @@ export interface UpdateStoreData {
 }
 
 export class StoreService {
+  /** Résout l'adresse avant les écritures, notamment avant une transaction d'inscription. */
+  static async situer(data: {
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    latitude?: number;
+    longitude?: number;
+  }) {
+    let { latitude, longitude } = data;
+    let countryCode = paysDeLAdresse(data);
+
+    if (latitude == null || longitude == null) {
+      const texte = [data.address, data.postalCode, data.city].filter(Boolean).join(" ");
+      if (texte.trim().length >= 3) {
+        const situation = await AddressService.situer(texte);
+        countryCode = paysDeLAdresse(data, situation.adresse);
+        if (situation.point) {
+          latitude = situation.point.latitude;
+          longitude = situation.point.longitude;
+        } else {
+          logger.warn("Store created without coordinates", { texte });
+        }
+      }
+    }
+    return { latitude, longitude, countryCode };
+  }
+
   static async create(data: {
     orgId: string;
     name: string;
@@ -49,7 +76,10 @@ export class StoreService {
     cuisineType?: string;
     /** Réglages de départ : le site web saisi à l'inscription, par exemple. */
     settings?: Record<string, unknown>;
-  }) {
+  }, options: {
+    client?: Pick<ClientTransaction, "organization" | "store">;
+    situation?: Awaited<ReturnType<typeof StoreService.situer>>;
+  } = {}) {
     /**
      * Une boutique naît située.
      *
@@ -62,33 +92,17 @@ export class StoreService {
      * ne doit pas empêcher d'ouvrir un commerce. La fiche de la plateforme
      * signale alors la boutique comme non située.
      */
-    let { latitude, longitude } = data;
-    let countryCode = paysDeLAdresse(data);
-
-    if (latitude == null || longitude == null) {
-      const texte = [data.address, data.postalCode, data.city].filter(Boolean).join(" ");
-
-      if (texte.trim().length >= 3) {
-        const situation = await AddressService.situer(texte);
-        countryCode = paysDeLAdresse(data, situation.adresse);
-
-        if (situation.point) {
-          latitude = situation.point.latitude;
-          longitude = situation.point.longitude;
-        } else {
-          logger.warn("Store created without coordinates", { slug: data.slug, texte });
-        }
-      }
-    }
+    const { latitude, longitude, countryCode } = options.situation ?? await this.situer(data);
+    const client = options.client ?? db;
 
     // Une nouvelle boutique d'un commerce pas encore validé naît fermée.
-    const org = await db.organization.findUnique({
+    const org = await client.organization.findUnique({
       where: { id: data.orgId },
       select: { approvedAt: true },
     });
 
     try {
-      const store = await db.store.create({
+      const store = await client.store.create({
         data: {
           orgId: data.orgId,
           // Les trois taux de TVA belges, préajoutés : le commerçant n'a qu'à
