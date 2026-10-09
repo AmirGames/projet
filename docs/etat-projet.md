@@ -260,7 +260,7 @@ Diagnostic en lecture seule et rapprochement historique préparés.
 |---|---|---|
 | Développé | 2026-10-09, Windows, branche dédiée A04 | `6c25dac0271e65ff0db29427bb37898a6b8bcfc7` ; [commit code/tests](https://github.com/AmirGames/projet/commit/6c25dac0271e65ff0db29427bb37898a6b8bcfc7), [comportement](VERSEMENTS-CONCURRENCE.md) |
 | Testé localement | 2026-10-09, PostgreSQL 18 isolé, `a04_final_test` | Versements **40/40**, dont A04 **16/16** ; backend **3 004 réussis / 52 ignorés** ; frontend **200/200** ; types/lint/build backend et frontend ; [preuves et limites](preuves-a04-2026-10-09.md) |
-| CI / PR | 2026-10-09, PR ouverte | [PR #203](https://github.com/AmirGames/projet/pull/203) ; [contrôles déclenchés](https://github.com/AmirGames/projet/pull/203/checks), A04 sur PostgreSQL 16 et `payouts_test` ; résultat distant pas encore attesté |
+| CI / PR | 2026-10-09, Ubuntu / PostgreSQL 16, PR ouverte | **9 jobs réussis** au SHA `44008e82a9c0e7a064c527b9c3a661921bbfd7df` : backend, frontend, 6 applications mobiles, E2E ; A04 **16/16** sur `payouts_test`, parcours navigateur versements **37/37** ; [CI #196](https://github.com/AmirGames/projet/actions/runs/37979276245), [PR #203](https://github.com/AmirGames/projet/pull/203) |
 | Intégré | Non exécuté | Aucun SHA d'intégration A04 |
 | Déployé | Non exécuté | Aucun déploiement A04 ; aucune migration propre à cette étape |
 | Validé en exploitation | Non exécuté | Accès de lecture VPS et pièces bancaires nécessaires au rapprochement des historiques |
