@@ -4,7 +4,7 @@
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 10 octobre 2026 | branche `claude/awesome-ride-m9lci8-a10`, base `abd2d1e` ; SHA du commit A10 à renseigner | [code et contrat](LIENS-COMPTE-A10.md) |
+| Développé | 10 octobre 2026 | branche `claude/awesome-ride-m9lci8-a10`, commit `acd9b600d345d7968f4b24b7ecc0cbe69bd92fbe` ; base `abd2d1e` | [code et contrat](LIENS-COMPTE-A10.md) |
 | Testé | 10 octobre 2026 | Windows local, PostgreSQL `a10_test` isolé et migré | [commandes et résultats](preuves-a10-2026-10-10.md) : 2 987 tests backend passés, 91 ignorés ; types, lint, build passés |
 | Intégré | non | aucun SHA de fusion | PR à créer |
 | Déployé | non | aucun environnement confirmé | aucune preuve |
