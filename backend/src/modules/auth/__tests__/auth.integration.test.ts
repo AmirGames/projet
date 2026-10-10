@@ -21,7 +21,10 @@ let suivant = 0;
 const nouvelId = (prefixe: string) => `${prefixe}-${++suivant}`;
 
 const correspond = (ligne: Record<string, any>, where: Record<string, any>) =>
-  Object.entries(where).every(([cle, valeur]) => ligne[cle] === valeur);
+  Object.entries(where).every(([cle, valeur]) =>
+    valeur && typeof valeur === "object" && "gt" in valeur
+      ? ligne[cle] instanceof Date && ligne[cle].getTime() > (valeur.gt as Date).getTime()
+      : ligne[cle] === valeur);
 
 const db: any = {
   user: {

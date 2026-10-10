@@ -136,7 +136,7 @@ await page.click('button[type="submit"]');
 await page.waitForTimeout(2000);
 check(
   'le même lien est refusé la seconde fois',
-  /n'est plus valable|valable/i.test(await page.locator('body').innerText()),
+  /Ce lien a expiré ou a déjà été utilisé/i.test(await page.locator('body').innerText()),
   (await page.locator('body').innerText()).slice(0, 150)
 );
 

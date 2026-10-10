@@ -1,5 +1,15 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 05 — A10 : liens de compte à usage unique (10 octobre 2026)
+
+Les liens de reset et de confirmation sont consommés par mutation conditionnelle
+sur leur empreinte et leur expiration. Le reset révoque les sessions dans la même
+transaction ; la confirmation rattache la fiche invitée dans sa transaction.
+Une réémission invalide le lien précédent. Aucune migration ni variable nouvelle.
+Voir le [contrat API, les commandes et l'exploitation](docs/LIENS-COMPTE-A10.md)
+et le [registre des preuves](docs/etat-projet.md). Le déploiement et la
+validation en exploitation restent à établir.
+
 ## Étape 04 — A05 : seconde authentification (10 octobre 2026)
 
 Les comptes superowner/équipe EAT et DRIVE utilisent TOTP ; les gardes API et

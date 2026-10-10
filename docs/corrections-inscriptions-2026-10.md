@@ -44,6 +44,11 @@ l'adresse, comme précédemment.
 
 ## Confirmation durable
 
+Depuis A10, la confirmation consomme l'empreinte sous condition d'expiration,
+d'adresse, d'état actif et de compte non confirmé. Le rattachement de la fiche
+invitée partage cette transaction ; un échec permet de reprendre le même lien.
+Voir [les contrats et tests A10](LIENS-COMPTE-A10.md).
+
 Le message `auth.confirmation_email` de l'outbox contient uniquement `userId`.
 Le worker relit le compte actif et non confirmé, génère le lien, stocke son
 empreinte et attend le résultat SMTP. Un échec est repris par le worker

@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const model = (...methods: string[]) => Object.fromEntries(methods.map((m) => [m, jest.fn()]));
 const db: any = {
-  user: model("findUnique", "create", "update"),
+  user: model("findUnique", "create", "update", "updateMany"),
   customer: model("findUnique", "create"),
   courier: model("findUnique", "create"),
   organization: model("findUnique", "create"),
@@ -112,6 +112,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   for (const m of Object.values(db)) if (m && typeof m === "object") for (const f of Object.values(m as any)) (f as any).mockReset?.();
   db.$transaction.mockImplementation(async (fn: any) => fn(db));
+  db.user.updateMany.mockResolvedValue({ count: 1 });
   delete process.env.REQUIRE_EMAIL_VERIFICATION;
   process.env.NODE_ENV = "test";
   jest.spyOn(AuthService, "hashPassword").mockResolvedValue("hash" as any);
@@ -365,19 +366,19 @@ describe("POST /forgot-password", () => {
     db.user.findUnique.mockResolvedValueOnce({ id: "u", email: "u@test.fr", name: "U", status: "SUSPENDED" });
     r = await request(app).post("/api/auth/forgot-password").send({ email: "u@test.fr" });
     expect(r.body).toEqual(attendu);
-    expect(db.user.update).not.toHaveBeenCalled();
+    expect(db.user.updateMany).not.toHaveBeenCalled();
     expect(sendPasswordReset).not.toHaveBeenCalled();
   });
   it("compte actif : empreinte du jeton enregistrée, lien envoyé, évènement de sécurité", async () => {
     db.user.findUnique.mockResolvedValue({ id: "u", email: "u@test.fr", name: "U", status: "ACTIVE" });
     const r = await request(app).post("/api/auth/forgot-password").send({ email: "u@test.fr" });
     expect(r.status).toBe(200);
-    expect(db.user.update).toHaveBeenCalledWith({ where: { id: "u" }, data: { resetTokenHash: expect.any(String), resetTokenExpiresAt: expect.any(Date) } });
+    expect(db.user.updateMany).toHaveBeenCalledWith({ where: { id: "u", email: "u@test.fr", status: "ACTIVE" }, data: { resetTokenHash: expect.any(String), resetTokenExpiresAt: expect.any(Date) } });
     await attendre();
     const lien = String(sendPasswordReset.mock.calls[0][2]);
     const jeton = new URL(lien).searchParams.get("jeton")!;
     expect(lien).toContain("/reinitialiser?jeton=");
-    expect((db.user.update.mock.calls[0][0] as any).data.resetTokenHash).toBe(AccountTokenService.empreinte(jeton));
+    expect((db.user.updateMany.mock.calls[0][0] as any).data.resetTokenHash).toBe(AccountTokenService.empreinte(jeton));
     expect(recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ action: "PASSWORD_RESET_REQUESTED", actor: "u@test.fr", severity: "LOW" }));
   });
   it("e-mail invalide → 400", async () => {
@@ -417,15 +418,15 @@ describe("POST /reset-password", () => {
     expect(r.status).toBe(200);
     expect(r.body).toEqual({ message: "Mot de passe modifié. Vous pouvez vous connecter." });
     expect(db.$transaction).toHaveBeenCalledTimes(1);
-    expect(db.user.update).toHaveBeenCalledWith({
-      where: { id: "u" },
+    expect(db.user.updateMany).toHaveBeenCalledWith({
+      where: { id: "u", email: "u@test.fr", status: "ACTIVE", resetTokenHash: AccountTokenService.empreinte(jeton), resetTokenExpiresAt: { gt: expect.any(Date) } },
       data: {
         passwordHash: "hash", passwordChangedAt: expect.any(Date), resetTokenHash: null, resetTokenExpiresAt: null,
         emailVerified: true, emailTokenHash: null, emailTokenExpiresAt: null,
       },
     });
     expect(db.sessionConnexion.updateMany).toHaveBeenCalledWith({ where: { userId: "u", revokedAt: null }, data: { revokedAt: expect.any(Date) } });
-    expect(rattacherFicheInvite).toHaveBeenCalledWith(expect.objectContaining({ id: "u" }));
+    expect(rattacherFicheInvite).toHaveBeenCalledWith(expect.objectContaining({ id: "u" }), db);
     expect(recordSecurityEvent).toHaveBeenCalledWith(expect.objectContaining({ action: "PASSWORD_RESET", severity: "HIGH" }));
   });
 });
@@ -489,8 +490,8 @@ describe("POST /verify-email", () => {
     const r = await envoyer();
     expect(r.status).toBe(200);
     expect(r.body).toEqual({ message: "Adresse confirmée.", email: "u@test.fr" });
-    expect(db.user.update).toHaveBeenCalledWith({ where: { id: "u" }, data: { emailVerified: true, emailTokenHash: null, emailTokenExpiresAt: null } });
-    expect(rattacherFicheInvite).toHaveBeenCalledWith(expect.objectContaining({ id: "u" }));
+    expect(db.user.updateMany).toHaveBeenCalledWith({ where: { id: "u", email: "u@test.fr", status: "ACTIVE", emailVerified: false, emailTokenHash: AccountTokenService.empreinte(jeton), emailTokenExpiresAt: { gt: expect.any(Date) } }, data: { emailVerified: true, emailTokenHash: null, emailTokenExpiresAt: null } });
+    expect(rattacherFicheInvite).toHaveBeenCalledWith(expect.objectContaining({ id: "u" }), db);
   });
 });
 

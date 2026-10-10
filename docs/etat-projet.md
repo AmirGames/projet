@@ -1,5 +1,18 @@
 # État du projet et travail restant
 
+## Étape 05 — A10 : liens de compte (10 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 10 octobre 2026 | branche `claude/awesome-ride-m9lci8-a10`, commit `acd9b600d345d7968f4b24b7ecc0cbe69bd92fbe` ; base `abd2d1e` | [code et contrat](LIENS-COMPTE-A10.md) |
+| Testé | 10 octobre 2026 | Windows local, PostgreSQL `a10_test` isolé et migré | [commandes et résultats](preuves-a10-2026-10-10.md) : 2 987 tests backend passés, 91 ignorés ; types, lint, build passés |
+| Intégré | non | aucun SHA de fusion | PR à créer |
+| Déployé | non | aucun environnement confirmé | aucune preuve |
+| Validé en exploitation | non | aucun environnement confirmé | aucune preuve |
+
+La demande A10 ne constitue pas une preuve de réussite. Les audits précédents
+conservent leur date et leur périmètre.
+
 Mis à jour le **10 octobre 2026**. Ce document rassemble l'état connu du dépôt,
 les résultats consignés dans les audits et les confirmations de l'opérateur.
 Les validations A04 du 9 octobre et A05 du 10 octobre figurent en fin de

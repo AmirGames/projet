@@ -62,7 +62,7 @@ d'importeurs) : aucun domaine n'en est propriétaire.
 
 | Module | Ce qu'il contient |
 |---|---|
-| `auth` | connexion, SSO, jetons, comptes, permissions de l'équipe, **middleware `authMiddleware`**, cloisonnement (« chacun chez soi »), clés d'API, journal de sécurité |
+| `auth` | connexion, SSO, jetons, comptes, permissions de l'équipe, **middleware `authMiddleware`**, cloisonnement (« chacun chez soi »), clés d'API, journal de sécurité ; consommation conditionnelle des liens de compte et effets transactionnels ([A10](../docs/LIENS-COMPTE-A10.md)) |
 | `merchants` | commerçants (organisations), équipe (`staff`), dossier et validation, clôture, compte démo, **middlewares `compte-restreint` et `compte-demo`** |
 | `stores` | boutiques, réglages, types de commerce, duplication, fiche vue par la plateforme |
 | `catalog` | catégories, produits (médias, SEO, étiquettes), déclinaisons, suppléments, taxes |

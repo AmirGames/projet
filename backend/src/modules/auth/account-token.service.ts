@@ -55,6 +55,6 @@ export class AccountTokenService {
   }
 
   static expire(date: Date | null): boolean {
-    return !date || date.getTime() < Date.now();
+    return !date || date.getTime() <= Date.now();
   }
 }
