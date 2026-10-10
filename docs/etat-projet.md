@@ -2,8 +2,9 @@
 
 Mis à jour le **10 octobre 2026**. Ce document rassemble l'état connu du dépôt,
 les résultats consignés dans les audits et les confirmations de l'opérateur.
-Les validations A04 du 9 octobre figurent en fin de fichier ; les résultats des
-audits antérieurs conservent leur date et leur périmètre. Le VPS n'a pas été
+Les validations A04 du 9 octobre et A05 du 10 octobre figurent en fin de
+fichier ; les résultats des audits antérieurs conservent leur date et leur
+périmètre. Le VPS n'a pas été
 interrogé pendant A04. Les contrôles locaux sont consignés avec leurs limites.
 Un déploiement annoncé ne prouve pas à lui seul le commit actif du serveur.
 
@@ -284,7 +285,7 @@ La base A04 est intégrée (PR 203, `e66cd0e3f676b7e06c2d783dc53e71f780b41128`).
 |---|---|
 | Développé | 10 octobre 2026, branche locale A05 ; SHA et PR dans les [preuves datées](preuves-a05-2026-10-10.md) |
 | Testé | Local Windows / PostgreSQL 18 : 17 tests MFA, 204 frontend, types/lint/builds et parcours web/admin Expo ; détails et limites dans les preuves |
-| CI | À consulter dans les preuves ; aucune réussite distante présumée |
+| CI | 10 octobre 2026, code `7a2fe706`, [10/10 jobs réussis](https://github.com/AmirGames/projet/actions/runs/38038362129), dont MFA PostgreSQL et navigateur web/admin Expo ; détails dans les preuves |
 | Intégré | Non fusionné |
 | Déployé | Non déployé, migration et configuration VPS non exécutées |
 | Validé en exploitation | Non : enrôlement nominatif, secours, domaines réels et appareils Android/iOS à exercer |
