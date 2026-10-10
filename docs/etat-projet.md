@@ -1,6 +1,6 @@
 # État du projet et travail restant
 
-Mis à jour le **9 octobre 2026**. Ce document rassemble l'état connu du dépôt,
+Mis à jour le **10 octobre 2026**. Ce document rassemble l'état connu du dépôt,
 les résultats consignés dans les audits et les confirmations de l'opérateur.
 Les validations A04 du 9 octobre figurent en fin de fichier ; les résultats des
 audits antérieurs conservent leur date et leur périmètre. Le VPS n'a pas été
@@ -271,3 +271,24 @@ Les cases de priorités ci-dessus restent des demandes, pas des preuves.
 Consulter le [guide API/configuration/tests/exploitation et rapprochement](VERSEMENTS-CONCURRENCE.md),
 les README [backend](../backend/README.md) / [frontend](../frontend/README.md) et
 les [preuves datées](preuves-a04-2026-10-09.md). Les audits précédents sont conservés.
+
+## Étape 04 — A05 MFA des comptes privilégiés
+
+Le 10 octobre 2026 : MFA TOTP des superowners et équipes administratives EAT/DRIVE,
+contrôle serveur de session et fraîcheur de cinq minutes pour actions sensibles,
+interfaces web/admin Expo, récupération atomique et secours opérateur tracé.
+Le guide [MFA](MFA.md) détaille périmètre, contrats, migration et exploitation.
+La base A04 est intégrée (PR 203, `e66cd0e3f676b7e06c2d783dc53e71f780b41128`).
+
+| État A05 | Date, environnement et preuve |
+|---|---|
+| Développé | 10 octobre 2026, branche locale A05 ; SHA et PR dans les [preuves datées](preuves-a05-2026-10-10.md) |
+| Testé | Local Windows / PostgreSQL 18 : 17 tests MFA, 204 frontend, types/lint/builds et parcours web/admin Expo ; détails et limites dans les preuves |
+| CI | À consulter dans les preuves ; aucune réussite distante présumée |
+| Intégré | Non fusionné |
+| Déployé | Non déployé, migration et configuration VPS non exécutées |
+| Validé en exploitation | Non : enrôlement nominatif, secours, domaines réels et appareils Android/iOS à exercer |
+
+Le mode préparatoire `enrollment` n'est pas l'obligation MFA : activer `enforced`
+sur toutes les instances seulement après préparation documentée des titulaires
+et du secours. Les audits historiques ci-dessus conservent leur date.

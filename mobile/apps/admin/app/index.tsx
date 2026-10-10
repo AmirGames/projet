@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, ApiError, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
+import { API_URL, ApiError, apiFetch, setMfaRequiredHandler, setUnauthorizedHandler, setSessionRenewedHandler } from '../lib/api';
+import MfaScreen from '../components/MfaScreen';
 import { chargerPermissions, MesPermissions, peutLire, peutModifier } from '../lib/permissions';
 import { clearSession, loadSession, saveSession, Session } from '../lib/session';
 import { COLORS, ScreenHeader } from '../components/ui';
@@ -67,6 +68,7 @@ export default function AdminApp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
   const sessionRef = useDerniereValeur(session);
 
   const handleLogout = useCallback(() => {
@@ -76,6 +78,7 @@ export default function AdminApp() {
     clearSession();
     setSession(null);
     setPermissions(null);
+    setMfaRequired(false);
     setPassword('');
     setOnglet('dashboard');
   }, [sessionRef]);
@@ -83,6 +86,10 @@ export default function AdminApp() {
   /** Ouvre la session si le compte appartient à l'équipe d'administration. */
   const ouvrir = async (next: Session): Promise<boolean> => {
     try {
+      const mfa = await apiFetch<{ required: boolean; verified: boolean; recovery: boolean }>('/api/auth/mfa', next.accessToken);
+      if (mfa.required && (!mfa.verified || mfa.recovery)) {
+        await saveSession(next); setSession(next); setMfaRequired(true); return true;
+      }
       const perms = await chargerPermissions(next.accessToken);
       await saveSession(next);
       setPermissions(perms);
@@ -104,6 +111,7 @@ export default function AdminApp() {
 
   // Démarrage : on reprend la session enregistrée et on renouvelle le jeton.
   useEffect(() => {
+    setMfaRequiredHandler(() => setMfaRequired(true));
     (async () => {
       const stored = await loadSession();
       if (stored?.refreshToken) {
@@ -134,6 +142,7 @@ export default function AdminApp() {
     // La session renouvelée en cours d'usage : l'écran garde le jeton valable.
     setSessionRenewedHandler((renewed) => setSession(renewed));
     return () => {
+      setMfaRequiredHandler(null);
       setUnauthorizedHandler(null);
       setSessionRenewedHandler(null);
     };
@@ -167,6 +176,8 @@ export default function AdminApp() {
       </View>
     );
   }
+
+  if (session && mfaRequired) return <MfaScreen token={session.accessToken} onLogout={handleLogout} onDone={() => { setMfaRequired(false); void ouvrir(session).catch(() => setMfaRequired(true)); }} />;
 
   if (!session || !permissions) {
     return (
@@ -222,7 +233,7 @@ export default function AdminApp() {
         )}
         {courant.id === 'payouts' && <PayoutsScreen token={token} modifiable={peutModifier(permissions, 'payouts')} />}
         {courant.id === 'team' && <TeamScreen token={token} monId={session.userId} />}
-        {courant.id === 'account' && <AccountScreen email={email} permissions={permissions} onLogout={handleLogout} />}
+        {courant.id === 'account' && <AccountScreen email={email} permissions={permissions} onLogout={handleLogout} onMfa={() => setMfaRequired(true)} />}
       </View>
       <SafeAreaView edges={['bottom']} style={styles.tabBar}>
         {visibles.map((o) => (

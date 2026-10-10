@@ -1,5 +1,18 @@
 # Backend ZupEat / ZupDrive
 
+## MFA des comptes privilégiés (A05)
+
+`/api/auth/mfa` gère TOTP via otplib 13.5.0 ; les gardes HTTP et Socket.IO
+vérifient `SessionConnexion.mfaVerifiedAt/mfaVersion`. Migration `0068_mfa`,
+secrets AES-GCM dans `MfaFactor` et récupération SHA256 à usage unique.
+Enrôlement progressif `MFA_MODE=enrollment`, puis obligation `enforced` ;
+les mutations privilégiées et lectures financières sensibles exigent cinq minutes.
+`npm run mfa:operator -- inventory|recover …` / `node dist/mfa-operator.js …`
+préparent le roster et le secours à deux opérateurs avec ticket.
+Ne pas enlever une clé AES encore référencée par un facteur.
+[Guide API/configuration/migration/exploitation](../docs/MFA.md),
+[tests et preuves](../docs/preuves-a05-2026-10-10.md).
+
 Monolithe modulaire Express/TypeScript, PostgreSQL/Prisma. Les règles et commandes
 communes figurent dans [l'architecture](ARCHITECTURE.md) et le [CLAUDE racine](../CLAUDE.md).
 

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 
 const mockRouter = { replace: jest.fn(), push: jest.fn() };
+jest.mock('@/components/MfaGate', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock('next/navigation', () => ({ useRouter: () => mockRouter }));
 
 const mockSession = {

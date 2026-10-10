@@ -1,5 +1,13 @@
 # Cartographie et minimisation
 
+Authentification A05 : `MfaFactor` conserve exclusivement les secrets TOTP
+chiffrés (AAD par utilisateur), empreintes de récupération et compteurs anti-abus.
+`SessionConnexion` conserve date/version/type de preuve. Ces secrets ne sont
+jamais inclus dans les réponses utilisateur ordinaires. La relation au compte
+est supprimée en cascade ; une révocation efface les secrets/codes sans enlever
+les événements de sécurité. Les sauvegardes et clés suivent la procédure
+de [MFA et récupération opérateur](../MFA.md).
+
 ## Périmètre et flux
 
 Le backend Express et Prisma concentre les traitements. PostgreSQL stocke les comptes et les opérations ; Redis relaie les événements et limiteurs ; Socket.IO diffuse commandes et positions ; le frontend Next et les applications Expo consomment ces API. L'identité est commune aux espaces client, livreur, commerçant, équipe et chauffeur. Une suppression d'un espace ne supprime pas implicitement les autres.

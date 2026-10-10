@@ -1,5 +1,19 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 04 — A05 : seconde authentification (10 octobre 2026)
+
+Les comptes superowner/équipe EAT et DRIVE utilisent TOTP ; les gardes API et
+temps réel contrôlent la session SSO, et les actions administratives/financières
+sensibles exigent une preuve de cinq minutes. Les interfaces web et admin Expo
+permettent inscription, rotation, révocation et récupération à usage unique.
+Migration additive `0068_mfa`, trousseau AES existant, `MFA_MODE=enrollment`
+avant couverture nominative puis `enforced` sur toutes les instances.
+Le mode préparatoire n'atteste pas une obligation MFA pour les non-enrôlés.
+Voir [guide et contrats API](docs/MFA.md), [preuves datées](docs/preuves-a05-2026-10-10.md)
+et [registre](docs/etat-projet.md#étape-04--a05-mfa-des-comptes-privilégiés).
+Développement/tests locaux consignés ; intégration, déploiement et validation
+en exploitation sont des états distincts. Aucune fusion ni opération d'argent réel.
+
 ## Étape 03 — A04 : concurrence des versements (9 octobre 2026)
 
 Un paiement manuel, une annulation et la préparation d'un lot revendiquent le

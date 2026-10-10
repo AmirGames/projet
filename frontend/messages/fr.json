@@ -6517,5 +6517,22 @@
   "themeSombre": {
     "clair": "Passer au thème clair",
     "sombre": "Passer au thème sombre"
+  },
+  "mfa": {
+    "title": "Seconde authentification",
+    "description": "Confirmez un code de votre application indépendante. Recommencez ensuite l’action interrompue.",
+    "recoverNotice": "La récupération a fermé les autres sessions. Remplacez le facteur pour retrouver vos accès.",
+    "code": "Code TOTP ou de récupération",
+    "password": "Mot de passe actuel",
+    "verify": "Confirmer le code TOTP",
+    "recover": "Utiliser un code de récupération",
+    "enroll": "Inscrire le facteur",
+    "rotate": "Remplacer le facteur",
+    "revoke": "Révoquer",
+    "revokeConfirm": "Révoquer le facteur ferme toutes les sessions et exige un nouvel enrôlement. Continuer ?",
+    "saveCodes": "Conservez ces dix codes hors de cet appareil. Ils ne seront plus affichés.",
+    "saved": "Codes conservés",
+    "secretNotice": "Ajoutez manuellement cette clé : ZupOne, TOTP, SHA1, 6 chiffres, 30 secondes.",
+    "error": "Impossible de confirmer le facteur."
   }
 }

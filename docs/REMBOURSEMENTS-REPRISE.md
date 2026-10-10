@@ -1,5 +1,10 @@
 # Remboursements ZupEat durables — A03
 
+Depuis A05, les opérations humaines de facturation/reprise exigent également
+la [MFA récente du compte privilégié](MFA.md). Un refus MFA précède tout effet
+métier ; confirmer, relire l'état puis relancer explicitement. Le worker et
+les clés d'idempotence durables restent indépendants des sessions humaines.
+
 Référence actuelle au **9 octobre 2026**. Voir les [preuves datées](preuves-a03-2026-10-09.md)
 et le [registre du projet](etat-projet.md#étape-02--a03-remboursements-durables).
 Les audits précédents restent des preuves historiques, sans valider cette version.

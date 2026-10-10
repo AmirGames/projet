@@ -6517,5 +6517,22 @@
   "themeSombre": {
     "clair": "Switch to light theme",
     "sombre": "Switch to dark theme"
+  },
+  "mfa": {
+    "title": "Second authentication factor",
+    "description": "Confirm a code from your independent authenticator app. Then retry the interrupted action.",
+    "recoverNotice": "Recovery closed the other sessions. Replace the factor to regain access.",
+    "code": "TOTP or recovery code",
+    "password": "Current password",
+    "verify": "Confirm TOTP code",
+    "recover": "Use a recovery code",
+    "enroll": "Enroll factor",
+    "rotate": "Replace factor",
+    "revoke": "Revoke",
+    "revokeConfirm": "Revoking closes all sessions and requires enrollment again. Continue?",
+    "saveCodes": "Keep these ten codes off this device. They will not be shown again.",
+    "saved": "Codes saved",
+    "secretNotice": "Add this key manually: ZupOne, TOTP, SHA1, 6 digits, 30 seconds.",
+    "error": "Unable to confirm the factor."
   }
 }

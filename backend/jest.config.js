@@ -1,5 +1,7 @@
 export default {
   preset: 'ts-jest',
+  transform: { '^.+\\.tsx?$': 'ts-jest', '^.+\\.js$': '<rootDir>/jest.esm-transform.cjs' },
+  transformIgnorePatterns: ['/node_modules/(?!@otplib/|@noble/hashes/|@scure/base/)'],
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   setupFiles: ['<rootDir>/jest.setup-env.cjs'],

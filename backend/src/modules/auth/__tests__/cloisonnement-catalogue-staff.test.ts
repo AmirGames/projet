@@ -56,7 +56,7 @@ function project(value: any, args: any): any {
   }));
 }
 
-const db: any = { user: { findUnique: jest.fn() }, membership: { findMany: jest.fn() }, $transaction: jest.fn() };
+const db: any = { mfaFactor: { findUnique: jest.fn(async () => null) }, user: { findUnique: jest.fn() }, membership: { findMany: jest.fn() }, $transaction: jest.fn() };
 for (const model of ["store", "organization", "staff", "product", "category", "productVariant", "productMedia"]) {
   db[model] = {};
   for (const method of ["findUnique", "findFirst", "findMany", "count", "update", "updateMany", "create", "delete"]) db[model][method] = jest.fn();

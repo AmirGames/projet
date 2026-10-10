@@ -47,6 +47,7 @@ const avecDocuments = (chauffeur: Ligne | undefined, include?: Ligne) =>
     : chauffeur ?? null;
 
 const db: any = {
+  mfaFactor: { findUnique: jest.fn(async () => null) },
   privacyAuditEvent: { create: jest.fn(async () => ({})) },
   $transaction: jest.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
   // Aucune course ici : aucun chauffeur n'a encore de note.

@@ -5,6 +5,7 @@ import { db } from "../../services/db";
 import { SsoService } from "./sso.service";
 import type { Acces } from "./permissions-plateforme.service";
 import { lierIdentite } from "./origine";
+import { exigerMfa } from "./mfa.service";
 
 /** Ce que le jeton ne dit pas : le compte existe-t-il encore, et qu'est-il. */
 export interface Compte {
@@ -144,6 +145,14 @@ async function authentifier(req: Request) {
   // orgId, storeIds, and role are no longer in JWT; routes must load them from DB
   req.user = payload;
   req.compte = compte;
+  if (compte.isSuperOwner || compte.isSystemAdmin) {
+    // Ces seuls chemins permettent de terminer une connexion avant le second facteur.
+    const chemin = req.originalUrl.split("?")[0].replace(/\/+$/, "");
+    const preparation = /^\/api\/auth\/mfa(?:\/(begin|confirm|verify|recover|revoke))?$/.test(chemin) ||
+      ["/api/auth/me", "/api/auth/me/roles"].includes(chemin);
+    const lectureSensible = /\/(billing|payouts|payout-batches|exports|api-keys|webhooks|financial-reports|payments)(\/|$)/.test(chemin);
+    if (!preparation) await exigerMfa(compte.id, payload.sid, lectureSensible || !["GET", "HEAD", "OPTIONS"].includes(req.method));
+  }
   lierIdentite(payload.userId, payload.sid);
 }
 

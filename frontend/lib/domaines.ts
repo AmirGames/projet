@@ -118,7 +118,7 @@ const CHEMINS: Partial<Record<EspaceHeberge, string[]>> = {
  * Rangée côté commerçant, elle envoyait un client inscrit depuis le domaine
  * public sur le domaine professionnel, où sa session restait enfermée.
  */
-const SEGMENTS_COMMUNS = ['login', 'signup', 'mot-de-passe-oublie', 'reinitialiser', 'verifier-email', 'dashboard'];
+const SEGMENTS_COMMUNS = ['login', 'signup', 'mot-de-passe-oublie', 'reinitialiser', 'verifier-email', 'dashboard', 'mfa'];
 
 /** Accueil propre à chaque domaine. */
 export const ACCUEIL: Record<EspaceHeberge, string> = {

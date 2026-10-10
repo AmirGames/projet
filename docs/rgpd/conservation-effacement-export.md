@@ -1,5 +1,10 @@
 # Conservation, effacement et portabilité
 
+Les facteurs A05 sont effacés lors de la demande et de l'exécution d'effacement,
+même lorsque le compte pseudonymisé subsiste pour son historique financier.
+Les exports usuels n'incluent pas les secrets/codes MFA. Les traces de sécurité
+suivent leur rétention existante ; voir [guide MFA](../MFA.md).
+
 ## Politique initiale et automatisation
 
 Les durées sont des paramètres de politique dans `retention.service.ts`. La tâche `PrivacyJobs`, démarrée avec l'API, passe au démarrage et chaque heure, sous verrou PostgreSQL distribué. Ses résultats et erreurs apparaissent dans la surveillance existante ; un effacement encore en attente après 30 jours fait échouer la tâche et doit être pris en charge par le DPO.

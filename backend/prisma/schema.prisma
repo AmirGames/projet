@@ -114,6 +114,7 @@ model User {
   ticketMessages TicketMessage[]
   pushDevices   PushDevice[]
   sessionsConnexion SessionConnexion[]
+  mfaFactor MfaFactor?
   assistantConversations AssistantConversation[]
 
   createdAt DateTime @default(now())
@@ -2758,10 +2759,29 @@ model SessionConnexion {
   createdAt        DateTime  @default(now())
   expiresAt        DateTime
   revokedAt        DateTime?
+  mfaVerifiedAt    DateTime?
+  mfaVersion       Int?
+  mfaRecovery      Boolean @default(false)
   codes            CodeConnexion[]
   refreshs         JetonRafraichissement[]
 
   @@index([userId])
+}
+
+/// Secrets chiffrés explicitement ; aucune inclusion dans les réponses utilisateur.
+model MfaFactor {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secretCipher String?
+  enabled Boolean @default(false)
+  version Int @default(0)
+  lastStep Int @default(-1)
+  recoveryHashes String[]
+  pendingCipher String?
+  pendingSession String?
+  pendingExpiresAt DateTime?
+  failures Int @default(0)
+  lockedUntil DateTime?
 }
 
 /// Un jeton de renouvellement émis pour une session.

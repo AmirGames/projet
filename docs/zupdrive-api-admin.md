@@ -1,5 +1,11 @@
 # ZupDrive — routes d'administration, support et supervision
 
+Les gardes communes imposent désormais la [MFA A05](MFA.md) aux comptes
+superowner/équipe DRIVE. Les mutations administratives et financières exigent
+un TOTP de cinq minutes ; le transfert SSO ne rajeunit pas cette preuve.
+Un code de récupération ne permet que le remplacement du facteur. Les sections
+et autorisations DRIVE demeurent nécessaires : une MFA EAT n'ajoute aucun droit DRIVE.
+
 Référence des routeurs ZupDrive montés par `backend/src/modules/zupdrive/zupdrive-montage.ts`
 (ordre de montage, préfixes) et des garde-fous qui les protègent. Les routes chauffeur, société,
 courses et paiement de base sont décrites dans `docs/zupdrive.md`.

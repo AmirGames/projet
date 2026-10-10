@@ -30,6 +30,14 @@ export function MaintenanceGate() {
     window.fetch = async (...args) => {
       try {
         const reponse = await originel(...args);
+        if (reponse.status === 403) {
+          try {
+            const donnees = await reponse.clone().json();
+            if (['MFA_REQUIRED', 'MFA_ENROLLMENT_REQUIRED', 'MFA_RECENT_REQUIRED', 'MFA_ROTATION_REQUIRED'].includes(donnees?.code)) {
+              window.dispatchEvent(new Event('mfa-required'));
+            }
+          } catch { /* Le refus d'origine reste transmis à l'appelant. */ }
+        }
 
         if (reponse.status === 503) {
           // Le corps ne peut être lu qu'une fois : on travaille sur une copie

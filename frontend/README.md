@@ -1,5 +1,18 @@
 # Site ZupEat / ZupOne / ZupDrive
 
+## MFA administration (A05)
+
+Le contexte de compte affiche `MfaGate` avant les pages privilégiées.
+`/mfa` est disponible sur chaque domaine : inscription manuelle TOTP, codes de
+récupération affichés une fois, rotation et révocation. Le relais existant
+`/api/auth/*` transmet les opérations POST au backend sous bearer ; aucun
+secret n'entre dans une URL ou le stockage navigateur. Un refus MFA récente
+interrompt la page ; confirmer puis relire/recommencer l'action explicitement.
+Le serveur reste la frontière de sécurité et relit la preuve de la session SSO.
+Tests `components/__tests__/MfaGate.test.tsx`, runner réel
+`node scripts/verif-mfa.mjs` avec base dédiée et export admin Expo ;
+[guide](../docs/MFA.md), [preuves et limites](../docs/preuves-a05-2026-10-10.md).
+
 Application Next.js 16, React 19. Lire [AGENTS.md](AGENTS.md) et
 [l'architecture](ARCHITECTURE.md) avant modification.
 
