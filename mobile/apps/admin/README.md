@@ -1,5 +1,7 @@
 # ZupOne Admin (mobile)
 
+Le renouvellement utilise une seule requête partagée, un `requestId` par opération et la reprise bornée serveur après réponse perdue. Les coupures et conflits temporaires ne déconnectent pas; le refus définitif invalide la session. Voir [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+
 Application Expo de l'équipe d'administration : superowner et membres de l'équipe (SuperAdmin, Administrateur, Support, groupes personnalisés).
 
 - Connexion par `/api/auth/login` ; seuls les comptes `isSuperOwner` ou `isSystemAdmin` sont acceptés.

@@ -1,5 +1,10 @@
 # Architecture du backend
 
+La rotation de refresh A09 reste dans `modules/auth/sso.service.ts`. La
+consommation, la preuve de reprise et le successeur sont atomiques sous verrou
+PostgreSQL; la reprise de 10 secondes requiert la même clé de requête, dont
+seule l'empreinte est stockée. Voir le [contrat et l'exploitation](../docs/ROTATION-SESSIONS-A09.md).
+
 La MFA A05 reste dans `modules/auth` : service transactionnel `mfa.service`,
 routes `mfa.routes` et secours OS `mfa-operator.service`/CLI. Les gardes communes
 `authMiddleware`, `exigerPermission` et `compteSocket` relisent la preuve

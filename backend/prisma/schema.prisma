@@ -2796,10 +2796,17 @@ model JetonRafraichissement {
   session   SessionConnexion @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   usedAt    DateTime?
+  /// Empreinte d'une clé d'idempotence créée pour une requête de rotation.
+  repriseHash String?
+  /// jti aléatoire du successeur; permet de resign-er sans stocker le JWT.
+  successeurJti String?
+  repriseExpiresAt DateTime?
+  repriseUsedAt DateTime?
   createdAt DateTime         @default(now())
 
   @@index([sessionId])
   @@index([expiresAt])
+  @@index([repriseExpiresAt])
 }
 
 /// Un code à usage unique qui fait passer une session d'un domaine à l'autre.

@@ -19,7 +19,8 @@ export interface DependancesRenouvellement<S extends SessionRenouvelable> {
   charger: () => Promise<S | null>;
   enregistrer: (session: S) => Promise<unknown>;
   /** POST /api/auth/refresh avec le jeton de renouvellement. */
-  appeler: (refreshToken: string) => Promise<{ ok: boolean; status: number; json: () => Promise<any> }>;
+  appeler: (refreshToken: string, requestId: string) => Promise<{ ok: boolean; status: number; json: () => Promise<any> }>;
+  creerRequestId?: () => string;
   surRenouvelee?: (session: S) => void;
   attendre?: (ms: number) => Promise<void>;
 }
@@ -27,6 +28,12 @@ export interface DependancesRenouvellement<S extends SessionRenouvelable> {
 export function creerRenouvellement<S extends SessionRenouvelable>(deps: DependancesRenouvellement<S>) {
   const attendre = deps.attendre ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   let enCours: Promise<Renouvellement> | null = null;
+  const requestId = deps.creerRequestId ?? (() => {
+    const aleatoire = new Uint8Array(24);
+    if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(aleatoire);
+    else throw new Error('Générateur aléatoire cryptographique indisponible');
+    return Array.from(aleatoire, (octet) => octet.toString(16).padStart(2, '0')).join('');
+  });
 
   async function faire(staleToken?: string): Promise<Renouvellement> {
     const stored = await deps.charger();
@@ -34,10 +41,12 @@ export function creerRenouvellement<S extends SessionRenouvelable>(deps: Dependa
     // Un autre appel (ou l'arrière-plan) a déjà renouvelé : son jeton est le bon.
     if (staleToken && stored.accessToken !== staleToken) return { token: stored.accessToken };
 
+    let cle: string;
+    try { cle = requestId(); } catch { return { transient: true }; }
     for (let essai = 0; essai < 2; essai++) {
       let reponse;
       try {
-        reponse = await deps.appeler(stored.refreshToken);
+        reponse = await deps.appeler(stored.refreshToken, cle);
       } catch {
         // Réseau coupé : ce n'est pas une session expirée, on ne déconnecte pas.
         return { transient: true };
@@ -54,10 +63,9 @@ export function creerRenouvellement<S extends SessionRenouvelable>(deps: Dependa
         return { token: renouvelee.accessToken };
       }
       if (reponse.status === 409 && data?.code === 'REFRESH_CONCURRENT') {
-        // Un autre processus renouvelle : on attend son résultat, enregistré en session.
+        // Même opération et même clé : reprise bornée, sans déconnexion.
+        if (essai > 0) return { transient: true };
         await attendre(1500);
-        const relue = await deps.charger();
-        if (relue && relue.accessToken !== stored.accessToken) return { token: relue.accessToken };
         continue;
       }
       if (reponse.status === 401 || reponse.status === 403) return { expired: true };

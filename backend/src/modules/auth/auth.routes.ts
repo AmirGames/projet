@@ -91,7 +91,8 @@ router.post("/refresh", limiterAuthParIp, async (req: Request, res: Response, ne
 
     // Rotation : le jeton présenté est consommé, un nouveau est émis. Un jeton
     // déjà consommé ferme la session entière (voir SsoService.renouveler).
-    const { decoded, sid, refreshToken } = await SsoService.renouveler(body.refreshToken);
+    const cleReprise = req.get("X-Refresh-Request") || body.requestId;
+    const { decoded, sid, refreshToken } = await SsoService.renouveler(body.refreshToken, cleReprise);
 
     // Le compte a pu disparaître depuis la signature du jeton — base remise à
     // zéro, utilisateur supprimé. Ce n'est pas une ressource introuvable mais

@@ -80,3 +80,12 @@ Les tests A03 d'intégration sont ignorés sans `REFUND_INTEGRATION=true` ; la C
 active sur PostgreSQL de test. Le runner externe n'accepte pas de clé LIVE.
 Un résultat local ne prouve ni intégration dans la branche principale, ni
 migration/déploiement, ni bon acheminement des alertes en exploitation.
+# Rotation A09
+
+Le refresh est consommé et son successeur écrit atomiquement sous verrou
+PostgreSQL. Le navigateur transmet `X-Refresh-Request` (et le corps mobile
+`requestId`), preuve aléatoire réutilisée pour un retry après perte de réponse.
+Reprise limitée à 10 secondes; une autre preuve rejouée révoque la session.
+Migration additive `20261010120000_atomic_refresh_rotation`; appliquer avec
+`npx prisma migrate deploy`. Contrat, codes API, précautions et tests :
+[ROTATION-SESSIONS-A09](../docs/ROTATION-SESSIONS-A09.md).

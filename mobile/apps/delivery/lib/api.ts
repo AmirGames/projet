@@ -60,11 +60,11 @@ export function setSessionRenewedHandler(handler: ((session: Session) => void) |
 const renouvellement = creerRenouvellement<Session>({
   charger: loadSession,
   enregistrer: saveSession,
-  appeler: (refreshToken) =>
+  appeler: (refreshToken, requestId) =>
     netFetch(`${API_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({ refreshToken, requestId }),
     }),
   surRenouvelee: (session) => onSessionRenewed?.(session),
 });

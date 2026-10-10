@@ -1,5 +1,7 @@
 # ZupDrive — application passager
 
+Le renouvellement mobile est partagé, transmet un `requestId` lié à une seule opération et reprend une réponse perdue pendant au plus 10 secondes. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+
 Application mobile du **passager** ZupDrive (VTC) : il commande un trajet à prix fixe, le suit, l'annule, le paie par carte et note son chauffeur. Ce n'est pas l'app livreur de ZupEat (`../delivery`) ni l'app client ZupEat (`../customer`).
 
 Règles, écrans et routes : voir [`CLAUDE.md`](./CLAUDE.md) et [`docs/zupdrive.md`](../../../docs/zupdrive.md).

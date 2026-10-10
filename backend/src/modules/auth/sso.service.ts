@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { db } from "../../services/db";
+import { db, type ClientTransaction } from "../../services/db";
 import { AuthService } from "./auth.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { originesAutorisees } from "./origines-autorisees";
@@ -31,11 +31,11 @@ const DUREE_CODE_MS = 1 * MINUTE;
 /** Celle des jetons de renouvellement : au-delà, il faut se reconnecter. */
 const DUREE_SESSION_MS = 7 * 24 * 60 * MINUTE;
 /**
- * Deux renouvellements presque simultanés (deux onglets, une tâche de fond et
- * l'application) présentent le même jeton : le second n'est pas un vol. Dans
- * ce délai, il est refusé sans fermer la session.
+ * Fenêtre de reprise d'une demande identique dont la réponse a été perdue.
+ * L'identifiant de requête est aléatoire, lié au refresh parent et ne peut
+ * restituer que le même successeur, sans secret conservé en clair.
  */
-const TOLERANCE_CONCURRENCE_MS = 10 * 1000;
+const TOLERANCE_REPRISE_MS = 10 * 1000;
 
 const empreinte = (valeur: string) => crypto.createHash("sha256").update(valeur).digest("hex");
 const aleatoire = () => crypto.randomBytes(32).toString("base64url");
@@ -83,28 +83,30 @@ export const SsoService = {
    * Émet un jeton de renouvellement pour la session : son identifiant (jti) est
    * enregistré, haché, pour pouvoir le consommer une seule fois.
    */
-  async emettreRefresh(userId: string, sid: string): Promise<string> {
+  async emettreRefresh(userId: string, sid: string, client: typeof db | ClientTransaction = db, expiresAt?: Date): Promise<string> {
     const jti = crypto.randomUUID();
-    await db.jetonRafraichissement.create({
-      data: { jtiHash: empreinte(jti), sessionId: sid, expiresAt: new Date(Date.now() + DUREE_SESSION_MS) },
+    const expiration = expiresAt ?? new Date(Date.now() + DUREE_SESSION_MS);
+    await client.jetonRafraichissement.create({
+      data: { jtiHash: empreinte(jti), sessionId: sid, expiresAt: expiration },
     });
 
-    // Au passage, les jetons périmés : la table ne garde que ce qui peut servir.
-    db.jetonRafraichissement
+    // Nettoyage hors transaction seulement : ne pas lancer un DELETE concurrent
+    // sur le même client transactionnel après la création du successeur.
+    if (client === db) client.jetonRafraichissement
       .deleteMany({ where: { expiresAt: { lt: new Date() } } })
       .catch(() => undefined);
 
-    return AuthService.generateRefreshToken(userId, sid, jti);
+    return AuthService.generateRefreshToken(userId, sid, jti, expiration);
   },
 
   /**
    * Consomme un jeton de renouvellement et en émet un nouveau (rotation).
    *
-   * - Jeton inconnu de la session ou déjà consommé : il a été copié — la
-   *   session entière est fermée (détection de réutilisation).
+   * - Un refresh consommé n'est repris que par la même preuve pendant 10 s ;
+   *   tout autre rejeu ferme la session entière.
    * - Jeton sans `jti` : refusé ; les anciens jetons nécessitent une connexion.
    */
-  async renouveler(refreshToken: string) {
+  async renouveler(refreshToken: string, cleReprise?: string) {
     const invalide = () =>
       new ApiError(401, "Votre session n'est plus valable. Reconnectez-vous.", "SESSION_INVALIDE");
 
@@ -117,54 +119,74 @@ export const SsoService = {
     }
     const sid = decoded.sid;
 
-    if (!(await this.sessionActive(sid))) throw invalide();
-
     if (decoded.jti) {
-      const ligne = await db.jetonRafraichissement.findUnique({
-        where: { jtiHash: empreinte(decoded.jti) },
-        select: { id: true, sessionId: true, usedAt: true, expiresAt: true },
-      });
-      if (
-        ligne &&
-        ligne.sessionId === sid &&
-        ligne.usedAt &&
-        Date.now() - ligne.usedAt.getTime() < TOLERANCE_CONCURRENCE_MS
-      ) {
-        throw new ApiError(409, "Renouvellement déjà en cours. Réessayez.", "REFRESH_CONCURRENT");
+      if (!cleReprise || cleReprise.length < 16 || cleReprise.length > 128) {
+        throw new ApiError(400, "Clé de reprise requise.", "REFRESH_CLE_REQUISE");
       }
-      // Marqué consommé seulement s'il ne l'était pas : deux renouvellements
-      // simultanés du même jeton, un seul passe — l'autre est une réutilisation.
-      const { count } =
-        ligne && ligne.sessionId === sid && !ligne.usedAt && ligne.expiresAt > new Date()
-          ? await db.jetonRafraichissement.updateMany({
-              where: { id: ligne.id, usedAt: null },
-              data: { usedAt: new Date() },
-            })
-          : { count: 0 };
-      if (count !== 1) {
-        // Deux renouvellements vraiment simultanés lisent tous deux le jeton
-        // « non consommé » : le perdant ne l'a pas volé, il est arrivé à
-        // quelques millisecondes du gagnant. On relit : consommé à l'instant,
-        // c'est une concurrence (409, la session reste ouverte) ; sinon,
-        // c'est une réutilisation d'un jeton plus ancien, la session est fermée.
-        const relue = ligne && ligne.sessionId === sid
-          ? await db.jetonRafraichissement.findUnique({
-              where: { jtiHash: empreinte(decoded.jti) },
-              select: { usedAt: true },
-            })
-          : null;
-        if (relue?.usedAt && Date.now() - relue.usedAt.getTime() < TOLERANCE_CONCURRENCE_MS) {
-          throw new ApiError(409, "Renouvellement déjà en cours. Réessayez.", "REFRESH_CONCURRENT");
+      const empreinteCle = empreinte(cleReprise);
+      let resultat: { kind: "invalid" } | { kind: "replay"; successeurJti: string; expiresAt: Date } | { kind: "rotated"; refreshToken: string };
+      try {
+        resultat = await db.$transaction(async (tx) => {
+          // Verrouiller la session sérialise aussi les refresh différents de la
+          // même session : une seule rotation peut produire un successeur actif.
+          const sessions = await tx.$queryRaw<Array<{ id: string; userId: string; revokedAt: Date | null; expiresAt: Date }>>`
+            SELECT "id", "userId", "revokedAt", "expiresAt" FROM "SessionConnexion" WHERE "id" = ${sid} FOR UPDATE
+          `;
+          const session = sessions[0];
+          if (!session || session.revokedAt || session.expiresAt <= new Date()) throw invalide();
+          if (!(await tx.user.findUnique({ where: { id: decoded.userId }, select: { id: true } }))) throw invalide();
+          const ligne = await tx.jetonRafraichissement.findUnique({
+            where: { jtiHash: empreinte(decoded.jti!) },
+            select: { id: true, sessionId: true, usedAt: true, expiresAt: true, repriseHash: true, successeurJti: true, repriseExpiresAt: true, repriseUsedAt: true },
+          });
+          const maintenant = new Date();
+          if (!ligne || ligne.sessionId !== sid || ligne.expiresAt <= maintenant) return { kind: "invalid" as const };
+          if (ligne.usedAt) {
+            if (ligne.repriseHash === empreinteCle && ligne.repriseExpiresAt && ligne.repriseExpiresAt > maintenant && ligne.successeurJti) {
+              const successeur = await tx.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(ligne.successeurJti) }, select: { expiresAt: true } });
+              if (successeur && successeur.expiresAt > maintenant) {
+                await tx.jetonRafraichissement.updateMany({ where: { id: ligne.id, repriseUsedAt: null, repriseHash: empreinteCle, repriseExpiresAt: { gt: maintenant } }, data: { repriseUsedAt: maintenant } });
+                return { kind: "replay" as const, successeurJti: ligne.successeurJti, expiresAt: successeur.expiresAt };
+              }
+            }
+            await tx.sessionConnexion.updateMany({ where: { id: sid, revokedAt: null }, data: { revokedAt: maintenant } });
+            return { kind: "invalid" as const };
+          }
+
+          const nouveauJti = crypto.randomUUID();
+          const expirationSuccesseur = new Date(Math.min(session.expiresAt.getTime(), maintenant.getTime() + DUREE_SESSION_MS));
+          const nouveauToken = AuthService.generateRefreshToken(decoded.userId, sid, nouveauJti, expirationSuccesseur);
+          const consomme = await tx.jetonRafraichissement.updateMany({
+            where: { id: ligne.id, usedAt: null, expiresAt: { gt: maintenant } },
+            data: { usedAt: maintenant, repriseHash: empreinteCle, successeurJti: nouveauJti, repriseExpiresAt: new Date(maintenant.getTime() + TOLERANCE_REPRISE_MS) },
+          });
+          if (consomme.count !== 1) throw new Error("REFRESH_TRANSACTION_CONFLICT");
+          await tx.jetonRafraichissement.create({ data: { jtiHash: empreinte(nouveauJti), sessionId: sid, expiresAt: expirationSuccesseur } });
+          return { kind: "rotated" as const, refreshToken: nouveauToken };
+        }, { isolationLevel: "ReadCommitted" });
+      } catch (erreur) {
+        // Un autre processus peut gagner pendant le verrouillage ou sur un
+        // conflit de sérialisation : il ne faut jamais révoquer la session.
+        const relue = await db.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(decoded.jti) }, select: { sessionId: true, usedAt: true, repriseHash: true, successeurJti: true, repriseExpiresAt: true, repriseUsedAt: true } });
+        if (relue?.sessionId === sid && relue.usedAt && relue.repriseHash === empreinteCle && relue.repriseExpiresAt && relue.repriseExpiresAt > new Date() && relue.successeurJti) {
+          const successeur = await db.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(relue.successeurJti) }, select: { expiresAt: true } });
+          if (successeur?.expiresAt && successeur.expiresAt > new Date()) {
+            await db.jetonRafraichissement.updateMany({ where: { jtiHash: empreinte(decoded.jti), repriseUsedAt: null, repriseHash: empreinteCle, repriseExpiresAt: { gt: new Date() } }, data: { repriseUsedAt: new Date() } });
+            return { decoded, sid, refreshToken: AuthService.generateRefreshToken(decoded.userId, sid, relue.successeurJti, successeur.expiresAt) };
+          }
         }
-        await this.fermer(sid);
-        throw invalide();
+        if (erreur instanceof Error && erreur.message === "REFRESH_TRANSACTION_CONFLICT") {
+          throw new ApiError(409, "Une rotation est en cours. Réessayez avec la même clé de demande.", "REFRESH_CONCURRENT");
+        }
+        throw erreur;
       }
+      if (resultat.kind === "invalid") throw invalide();
+      if (resultat.kind === "replay") return { decoded, sid, refreshToken: AuthService.generateRefreshToken(decoded.userId, sid, resultat.successeurJti, resultat.expiresAt) };
+      return { decoded, sid, refreshToken: resultat.refreshToken };
     } else {
       await this.fermer(sid);
       throw invalide();
     }
-
-    return { decoded, sid, refreshToken: await this.emettreRefresh(decoded.userId, sid) };
   },
 
   /** Le temps réel contourne le cache pour les révocations sur une autre instance. */

@@ -58,14 +58,16 @@ export class AuthService {
   /**
    * Generate refresh token (JWT)
    */
-  static generateRefreshToken(userId: string, sid?: string, jti?: string): string {
+  static generateRefreshToken(userId: string, sid?: string, jti?: string, expiresAt?: Date): string {
     const env = getEnv();
     const charge: Record<string, string> = { userId };
     if (sid) charge.sid = sid;
     if (jti) charge.jti = jti;
+    const options: jwt.SignOptions = expiresAt
+      ? { algorithm: "HS256", expiresIn: Math.max(1, Math.floor((expiresAt.getTime() - Date.now()) / 1000)) }
+      : { algorithm: "HS256", expiresIn: env.JWT_REFRESH_EXPIRES_IN };
     const token = jwt.sign(charge, env.JWT_REFRESH_SECRET, {
-      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
-      algorithm: "HS256",
+      ...options,
     });
     return token;
   }

@@ -11,6 +11,8 @@ et les prochaines étapes.
 
 ## Fonctionnalités présentes
 
+Le renouvellement de session est partagé entre requêtes; il transmet une clé de reprise aléatoire et ne déconnecte pas sur une coupure réseau. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+
 - Tableau de bord et commandes, détail et actions sur leur état.
 - Choix de boutique pour un compte possédant plusieurs commerces.
 - Catalogue, édition des produits et suppléments.

@@ -5,6 +5,8 @@ applications commerçant (`../merchant`) et livreur (`../delivery`) : même
 connexion, même barre du bas (Menu · Accueil · Paniers · Commande en cours),
 même tiroir latéral, mêmes composants (`components/ui.tsx`).
 
+Le renouvellement mobile est partagé entre les appels authentifiés. Il transmet un `requestId` réutilisé sur retry; la reprise serveur dure au plus 10 secondes. Une erreur réseau garde la session. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+
 ## Ce que fait l'application
 
 - **Connexion ou création de compte** (tout compte peut commander : la fiche
@@ -47,6 +49,8 @@ la vitrine ouverte dans celui du commerce. Une notification push prévient
 application fermée (commande acceptée ou annulée, étapes de la livraison,
 livreur proche) ; la toucher ouvre la commande.
 
+Le renouvellement mobile est partagé entre les appels authentifiés. Il transmet un `requestId` réutilisé sur retry; la reprise serveur dure au plus 10 secondes. Une erreur réseau garde la session. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+
 ## Lancer
 
 ```bash
@@ -63,6 +67,8 @@ Le projet EAS doit être configuré (`npx eas-cli@latest init`).
 
 Sans clé publique Stripe côté serveur (`STRIPE_PUBLISHABLE_KEY`) alors que le
 paiement en ligne est actif, l'application ne propose que les espèces.
+
+Le renouvellement mobile est partagé entre les appels authentifiés. Il transmet un `requestId` réutilisé sur retry; la reprise serveur dure au plus 10 secondes. Une erreur réseau garde la session. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
 
 ## Organisation
 

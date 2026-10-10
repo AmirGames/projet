@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import express from "express";
 import request from "supertest";
@@ -8,14 +9,25 @@ import request from "supertest";
  */
 
 type Session = { id: string; userId: string; revokedAt: Date | null; expiresAt: Date };
-type Jeton = { id: string; jtiHash: string; sessionId: string; usedAt: Date | null; expiresAt: Date };
+type Jeton = { id: string; jtiHash: string; sessionId: string; usedAt: Date | null; expiresAt: Date; repriseHash?: string | null; successeurJti?: string | null; repriseExpiresAt?: Date | null; repriseUsedAt?: Date | null };
 
 let sessions: Session[] = [];
 let jetons: Jeton[] = [];
 let n = 0;
+let erreurCreation: Error | null = null;
 
+const transactionClient: any = {
+  $queryRaw: async () => sessions.map((s) => ({ ...s })),
+  sessionConnexion: undefined,
+  jetonRafraichissement: undefined,
+  user: undefined,
+};
 const db: any = {
-  $transaction: jest.fn(async (action: any) => action(db)),
+  $transaction: jest.fn(async (action: any) => {
+    const snapshots = { sessions: structuredClone(sessions), jetons: structuredClone(jetons) };
+    try { return await action(transactionClient); }
+    catch (error) { sessions = snapshots.sessions; jetons = snapshots.jetons; throw error; }
+  }),
   sessionConnexion: {
     create: jest.fn(async ({ data }: any) => {
       const s = { id: `sess-${++n}`, revokedAt: null, ...data };
@@ -32,6 +44,7 @@ const db: any = {
   },
   jetonRafraichissement: {
     create: jest.fn(async ({ data }: any) => {
+      if (erreurCreation) { const erreur = erreurCreation; erreurCreation = null; throw erreur; }
       jetons.push({ id: `jt-${++n}`, usedAt: null, ...data });
     }),
     // Un instantané, comme la base : une lecture ne voit pas les écritures qui suivent.
@@ -40,7 +53,7 @@ const db: any = {
       return trouve ? { ...trouve } : null;
     }),
     updateMany: jest.fn(async ({ where, data }: any) => {
-      const l = jetons.filter((j) => j.id === where.id && !j.usedAt);
+      const l = jetons.filter((j) => j.id === where.id && !j.usedAt && (!where.expiresAt?.gt || j.expiresAt > where.expiresAt.gt));
       l.forEach((j) => Object.assign(j, data));
       return { count: l.length };
     }),
@@ -58,6 +71,7 @@ const db: any = {
     })),
   },
 };
+Object.assign(transactionClient, db);
 
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../services/db", () => ({ db }));
@@ -85,70 +99,96 @@ describe("rotation des jetons de renouvellement", () => {
   beforeEach(() => {
     sessions = [];
     jetons = [];
+    erreurCreation = null;
     process.env.NODE_ENV = "test";
   });
 
   it("émet un nouveau refresh à chaque renouvellement et consomme l'ancien", async () => {
     const { refreshToken: r1, sid } = await SsoService.connecter("u1");
-    const { refreshToken: r2, sid: sid2 } = await SsoService.renouveler(r1);
+    const { refreshToken: r2, sid: sid2 } = await SsoService.renouveler(r1, "request-rotation-0001");
 
     expect(sid2).toBe(sid);
     expect(r2).not.toBe(r1);
     expect(AuthService.verifyRefreshToken(r2).jti).not.toBe(AuthService.verifyRefreshToken(r1).jti);
 
     // Le nouveau jeton tourne à son tour.
-    const { refreshToken: r3 } = await SsoService.renouveler(r2);
+    const { refreshToken: r3 } = await SsoService.renouveler(r2, "request-rotation-0002");
     expect(r3).toBeTruthy();
     expect(sessions[0].revokedAt).toBeNull();
   });
 
   it("révoque la session si un ancien refresh est présenté (après la tolérance)", async () => {
-    const { refreshToken: r1, sid, accessToken } = await SsoService.connecter("u1");
-    const { refreshToken: r2 } = await SsoService.renouveler(r1);
+    const initial = await SsoService.connecter("u1");
+    const r1 = initial.refreshToken;
+    const sid = initial.sid;
+    const accessToken = initial.accessToken;
+    const r2 = (await SsoService.renouveler(r1, "request-rotation-0001")).refreshToken;
+    const jti = AuthService.verifyRefreshToken(r1).jti!;
+    const ancien = jetons.find((j) => j.jtiHash === crypto.createHash('sha256').update(jti).digest('hex'))!;
+    ancien.repriseExpiresAt = new Date(Date.now() - 60_000);
 
-    // Le jeton a été consommé il y a une minute : ce n'est plus une concurrence.
-    jetons.forEach((j) => j.usedAt && (j.usedAt = new Date(Date.now() - 60_000)));
-
-    expect(await code(SsoService.renouveler(r1))).toBe("SESSION_INVALIDE");
+    expect(await code(SsoService.renouveler(r1, "request-rotation-0009"))).toBe("SESSION_INVALIDE");
     expect(sessions.find((s) => s.id === sid)!.revokedAt).not.toBeNull();
 
     // Le jeton légitime le plus récent et l'access token meurent avec la session.
-    expect(await code(SsoService.renouveler(r2))).toBe("SESSION_INVALIDE");
+    expect(await code(SsoService.renouveler(r2, "request-rotation-0010"))).toBe("SESSION_INVALIDE");
     const res = await request(app).get("/protege").set("Authorization", `Bearer ${accessToken}`);
     expect(res.status).toBe(401);
     expect(res.body.code).toBe("SESSION_INVALIDE");
   });
 
-  it("refuse sans révoquer un renouvellement concurrent (même jeton, quelques ms d'écart)", async () => {
-    const { refreshToken: r1, sid } = await SsoService.connecter("u1");
-    await SsoService.renouveler(r1);
+  it("la même clé reprend le même successeur, une autre clé est un rejeu révoquant", async () => {
+    const { refreshToken } = await SsoService.connecter("u1");
+    const rotation = await SsoService.renouveler(refreshToken, "request-reprise-0001");
+    const successeursAvant = jetons.filter((j) => !j.usedAt).length;
+    const reprise = await SsoService.renouveler(refreshToken, "request-reprise-0001");
+    expect(reprise.refreshToken).toBe(rotation.refreshToken);
+    expect(jetons.filter((j) => !j.usedAt)).toHaveLength(successeursAvant);
+    expect((await SsoService.renouveler(refreshToken, "request-reprise-0001")).refreshToken).toBe(rotation.refreshToken);
+    expect(await code(SsoService.renouveler(refreshToken, "request-autre-cle-0001"))).toBe("SESSION_INVALIDE");
+  });
 
-    expect(await code(SsoService.renouveler(r1))).toBe("REFRESH_CONCURRENT");
+  it("une erreur après consommation annule aussi le successeur", async () => {
+    const { refreshToken, sid } = await SsoService.connecter("u1");
+    erreurCreation = new Error("écriture successeur impossible");
+    await expect(SsoService.renouveler(refreshToken, "request-rollback-0001")).rejects.toThrow("écriture successeur impossible");
+    const parent = jetons[0];
+    expect(parent.usedAt).toBeNull();
     expect(sessions.find((s) => s.id === sid)!.revokedAt).toBeNull();
   });
 
-  it("deux renouvellements réellement simultanés : un seul passe, la session reste ouverte (C-22)", async () => {
+  it("refuse sans révoquer un renouvellement concurrent (même jeton, quelques ms d'écart)", async () => {
+    const { refreshToken: r1, sid } = await SsoService.connecter("u1");
+    await SsoService.renouveler(r1, "request-rotation-0001");
+
+    expect((await SsoService.renouveler(r1, "request-rotation-0001")).refreshToken).toBeTruthy();
+    expect(sessions.find((s) => s.id === sid)!.revokedAt).toBeNull();
+  });
+
+  it("deux renouvellements réellement simultanés avec même preuve : même successeur", async () => {
     const { refreshToken: r1, sid } = await SsoService.connecter("u1");
 
-    const [a, b] = await Promise.allSettled([SsoService.renouveler(r1), SsoService.renouveler(r1)]);
-    const reussis = [a, b].filter((r) => r.status === "fulfilled");
-    const refuses = [a, b].filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    let libérer!: () => void;
+    const attente = new Promise<void>((resolve) => { libérer = resolve; });
+    let prêts = 0;
+    const appel = async () => { prêts++; if (prêts === 2) libérer(); await attente; return SsoService.renouveler(r1, "request-rotation-0001"); };
+    const [a, b] = await Promise.all([appel(), appel()]);
+    const reussis = [a, b];
 
-    expect(reussis).toHaveLength(1);
-    expect(refuses).toHaveLength(1);
-    expect(refuses[0].reason.code).toBe("REFRESH_CONCURRENT");
+    expect(reussis).toHaveLength(2);
+    expect(reussis[0].refreshToken).toBe(reussis[1].refreshToken);
     expect(sessions.find((s) => s.id === sid)!.revokedAt).toBeNull();
 
     // Le jeton gagnant reste utilisable : la session n'a pas été fermée.
-    const { refreshToken: r2 } = (reussis[0] as PromiseFulfilledResult<{ refreshToken: string }>).value;
-    expect((await SsoService.renouveler(r2)).refreshToken).toBeTruthy();
+    const { refreshToken: r2 } = reussis[0];
+    expect((await SsoService.renouveler(r2, "request-rotation-0002")).refreshToken).toBeTruthy();
   });
 
   it("un jeton consommé depuis longtemps puis rejoué ferme toujours la session (vol)", async () => {
     const { refreshToken: r1, sid } = await SsoService.connecter("u1");
-    await SsoService.renouveler(r1);
-    jetons.forEach((j) => j.usedAt && (j.usedAt = new Date(Date.now() - 60_000)));
-    expect(await code(SsoService.renouveler(r1))).toBe("SESSION_INVALIDE");
+    await SsoService.renouveler(r1, "request-rotation-0001");
+    jetons.forEach((j) => j.usedAt && (j.repriseExpiresAt = new Date(Date.now() - 60_000)));
+    expect(await code(SsoService.renouveler(r1, "request-rotation-0009"))).toBe("SESSION_INVALIDE");
     expect(sessions.find((s) => s.id === sid)!.revokedAt).not.toBeNull();
   });
 
@@ -161,7 +201,7 @@ describe("rotation des jetons de renouvellement", () => {
 
     const apres = await request(app).get("/protege").set("Authorization", `Bearer ${accessToken}`);
     expect(apres.status).toBe(401);
-    expect(await code(SsoService.renouveler(refreshToken))).toBe("SESSION_INVALIDE");
+    expect(await code(SsoService.renouveler(refreshToken, "request-rotation-0011"))).toBe("SESSION_INVALIDE");
   });
 
   it("REST et temps réel relisent une révocation externe sans cache", async () => {
@@ -190,7 +230,7 @@ describe("jetons sans session (sid)", () => {
 
   it("refuse en production un refresh sans sid", async () => {
     process.env.NODE_ENV = "production";
-    expect(await code(SsoService.renouveler(AuthService.generateRefreshToken("u1")))).toBe("SESSION_INVALIDE");
+    expect(await code(SsoService.renouveler(AuthService.generateRefreshToken("u1"), "request-rotation-0012"))).toBe("SESSION_INVALIDE");
   });
 
   it("l'accepte hors production (compatibilité des anciens jetons)", async () => {
@@ -207,7 +247,7 @@ describe("jetons sans session (sid)", () => {
     // Un refresh antérieur à la rotation : sid, pas de jti. La session a déjà
     // émis un jeton roté (connecter) : il est refusé et la session se ferme.
     const ancien = AuthService.generateRefreshToken("u1", sid);
-    expect(await code(SsoService.renouveler(ancien))).toBe("SESSION_INVALIDE");
+    expect(await code(SsoService.renouveler(ancien, "request-rotation-0004"))).toBe("SESSION_INVALIDE");
     expect(sessions[0].revokedAt).not.toBeNull();
   });
 });
@@ -323,7 +363,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
     expect(cookieDe(ok)).toMatch(/zup_refresh=;/);
 
     expect((await request(app).get("/protege").set("Authorization", `Bearer ${accessToken}`)).status).toBe(401);
-    expect(await code(SsoService.renouveler(refreshToken))).toBe("SESSION_INVALIDE");
+    expect(await code(SsoService.renouveler(refreshToken, "request-rotation-0013"))).toBe("SESSION_INVALIDE");
   });
 
   it("le mobile garde le refresh dans le corps (rotation comprise)", async () => {
@@ -364,6 +404,6 @@ it("changement de mot de passe : ferme toutes les sessions, sans remettre de jet
     expect(await SsoService.sessionActive(actuelle.sid)).toBe(false);
     expect(await SsoService.sessionActive(autre.sid)).toBe(false);
     expect((await request(app).get("/protege").set("Authorization", `Bearer ${actuelle.accessToken}`)).status).toBe(401);
-    expect(await code(SsoService.renouveler(autre.refreshToken))).toBe("SESSION_INVALIDE");
+    expect(await code(SsoService.renouveler(autre.refreshToken, "request-rotation-0005"))).toBe("SESSION_INVALIDE");
   } finally { db.user.findUnique.mockImplementation(original); }
 });

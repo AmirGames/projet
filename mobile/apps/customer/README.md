@@ -47,6 +47,10 @@ la vitrine ouverte dans celui du commerce. Une notification push prévient
 application fermée (commande acceptée ou annulée, étapes de la livraison,
 livreur proche) ; la toucher ouvre la commande.
 
+## Renouvellement de session A09
+
+Les appels 401 partagent une opération de renouvellement à la fois. POST /api/auth/refresh envoie le refresh SecureStore et un equestId aléatoire; une perte de réponse est reprise avec la même clé dans la fenêtre serveur de 10 secondes. Les erreurs réseau et 409 persistant gardent la session, un 401 SESSION_INVALIDE la termine. Détails : [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+
 ## Lancer
 
 ```bash

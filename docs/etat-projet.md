@@ -1,5 +1,27 @@
 # État du projet et travail restant
 
+## Étape 06 — A09 : rotation atomique des sessions (10 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 10 octobre 2026 | branche courante `claude/awesome-ride-m9lci8`, base `5c51fddd4882e7f720a201b620cb0ad915ee9b0e` ; aucun commit A09 | [contrat A09](ROTATION-SESSIONS-A09.md), code et migration locale |
+| Testé | 10 octobre 2026, partiel | Windows local; mobile delivery 9/9; typecheck/lint delivery et admin; typecheck/lint frontend; Prisma validate | PostgreSQL non joint (`localhost:5432` fermé); Jest backend/web bloqué par `EPERM realpath`; Prisma generate bloqué par `EPERM realpath`; voir ci-dessous |
+| Intégré | non | aucun SHA de fusion | PR non créée (branche dédiée refusée par permission Git) |
+| Déployé | non | aucun environnement confirmé | aucune preuve |
+| Validé en exploitation | non | aucun environnement confirmé | aucune preuve |
+
+La demande A09 ne constitue pas une preuve de réussite. Les audits datés
+restent conservés comme historique. `npx prisma migrate deploy` a échoué sans
+appliquer la migration, car PostgreSQL `saas_dev` n'était pas joignable. Le
+test PostgreSQL attend une base dont le nom contient `test`; le port local
+était fermé. La suite Jest backend échoue avant découverte des tests par
+`EPERM realpath` du répertoire temporaire Windows. `prisma generate` échoue par
+`EPERM realpath` sur le chemin `@prisma/client`; le typecheck backend reflète
+donc le client ancien et signale uniquement les nouveaux champs absents.
+L'accès au dépôt Git refuse la création d'une branche dédiée; `gh` est absent
+ou non authentifié, donc aucune PR n'a été créée. Voir les commandes et limites
+dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.md).
+
 ## Étape 05 — A10 : liens de compte (10 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |

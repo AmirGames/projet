@@ -33,6 +33,7 @@ const CANAL = 'zup-session';
 const VERROU = 'zup-refresh';
 /** Renouveler cette avance avant l'échéance. */
 const AVANCE_MS = 60 * 1000;
+const DELAI_REPRISE_MS = 1000;
 
 export const ENTETE_TRANSPORT = { 'X-Refresh-Transport': 'cookie' } as const;
 
@@ -155,18 +156,20 @@ export function oublierJeton(prevenir = true): void {
  * deux onglets qui l'enverraient en même temps passeraient pour un vol.
  */
 export async function renouveler(ancien?: string): Promise<{ ok: boolean; donnees?: any; statut?: number }> {
+  const demandeAleatoire = new Uint8Array(32);
+  crypto.getRandomValues(demandeAleatoire);
+  const requestId = Array.from(demandeAleatoire, (octet) => octet.toString(16).padStart(2, '0')).join('');
   const appel = async () => {
     for (let essai = 0; essai < 2; essai++) {
       try {
         const reponse = await fetch('/api/auth/refresh', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...ENTETE_TRANSPORT },
-          body: JSON.stringify(ancien ? { refreshToken: ancien } : {}),
+          headers: { 'Content-Type': 'application/json', ...ENTETE_TRANSPORT, 'X-Refresh-Request': requestId },
+          body: JSON.stringify(ancien ? { refreshToken: ancien, requestId } : { requestId }),
           credentials: 'same-origin',
         });
         if (reponse.status === 409 && essai === 0) {
-          // Un autre onglet renouvelle au même instant : son cookie sera prêt.
-          await new Promise((r) => setTimeout(r, 1000));
+          await new Promise((r) => setTimeout(r, DELAI_REPRISE_MS));
           continue;
         }
         const donnees = await reponse.json().catch(() => ({}));
@@ -177,6 +180,12 @@ export async function renouveler(ancien?: string): Promise<{ ok: boolean; donnee
         }
         return { ok: false, donnees, statut: reponse.status };
       } catch {
+        if (essai === 0) {
+          // Le serveur a pu committer avant la perte de réponse : réutiliser
+          // exactement la même preuve permet de récupérer son successeur.
+          await new Promise((r) => setTimeout(r, DELAI_REPRISE_MS));
+          continue;
+        }
         return { ok: false, statut: 0 };
       }
     }

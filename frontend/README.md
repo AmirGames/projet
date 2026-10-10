@@ -48,3 +48,10 @@ Les tests `app/superowner/zupeat/payouts/__tests__/conflit.test.jsx` contrôlent
 le masquage des actions et la relecture après 409. Les
 [preuves datées](../docs/preuves-a04-2026-10-09.md) distinguent composants, builds,
 CI et exploitation ; les tests de composants ne prouvent pas un parcours navigateur.
+# Renouvellement A09
+
+Le renouvellement web sérialise les onglets avec Web Locks quand disponible et
+porte une clé aléatoire de demande. Le serveur peut restituer le même
+successeur après une réponse perdue pendant 10 secondes. Le client ne boucle
+pas sur 409 et ne ferme la session que sur un refus définitif. Voir le
+[contrat A09](../docs/ROTATION-SESSIONS-A09.md).

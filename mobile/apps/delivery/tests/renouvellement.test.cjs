@@ -5,16 +5,18 @@ const { creerRenouvellement } = require('../lib/renouvellement.ts');
 /** Une « base » de session et un serveur qui fait tourner le jeton de renouvellement. */
 function monde({ serveur } = {}) {
   const etat = { session: { accessToken: 'A0', refreshToken: 'R0' }, appels: 0, enregistrements: [] };
-  const rotation = async (refreshToken) => {
+  const operations = new Map();
+  const rotation = async (refreshToken, requestId) => {
     etat.appels += 1;
     await new Promise((r) => setTimeout(r, 5));
-    if (serveur) return serveur(refreshToken, etat);
+    if (serveur) return serveur(refreshToken, etat, requestId);
     // Le serveur : un jeton de renouvellement ne sert qu'une fois.
     if (refreshToken !== etat.session.refreshToken) {
       return { ok: false, status: 401, json: async () => ({ code: 'SESSION_INVALIDE' }) };
     }
-    const n = etat.appels;
-    return { ok: true, status: 200, json: async () => ({ accessToken: `A${n}`, refreshToken: `R${n}` }) };
+    if (!operations.has(requestId)) operations.set(requestId, { accessToken: `A${operations.size + 1}`, refreshToken: `R${operations.size + 1}` });
+    const result = operations.get(requestId);
+    return { ok: true, status: 200, json: async () => ({ ...result }) };
   };
   const renouvellement = creerRenouvellement({
     charger: async () => ({ ...etat.session }),
@@ -31,6 +33,27 @@ test('dix appels refusés en même temps : un seul renouvellement, tous reçoive
   assert.equal(etat.appels, 1);
   assert.ok(resultats.every((r) => r.token === 'A1'));
   assert.equal(etat.session.refreshToken, 'R1');
+});
+
+test('réponse perdue : rejoue la même clé et récupère le même successeur', async () => {
+  const keys = [];
+  const state = { accessToken: 'A0', refreshToken: 'R0' };
+  let calls = 0;
+  const renewal = creerRenouvellement({
+    charger: async () => ({ ...state }),
+    enregistrer: async (s) => Object.assign(state, s),
+    creerRequestId: () => 'request-reprise-0001',
+    appeler: async (_token, key) => {
+      keys.push(key);
+      calls++;
+      if (calls === 1) throw new Error('réponse réseau perdue');
+      return { ok: true, status: 200, json: async () => ({ accessToken: 'A1', refreshToken: 'R1' }) };
+    },
+  });
+  assert.deepEqual(await renewal.renouveler('A0'), { transient: true });
+  // En situation réelle l'API a committé ; le second appel reprend la même clé.
+  assert.deepEqual(await renewal.renouveler('A0'), { token: 'A1' });
+  assert.deepEqual(keys, ['request-reprise-0001', 'request-reprise-0001']);
 });
 
 test('le jeton neuf est enregistré avant d’être rendu', async () => {

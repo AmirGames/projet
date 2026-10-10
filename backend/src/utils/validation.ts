@@ -88,6 +88,7 @@ const ValidationSchemas = {
 
   refreshTokenSchema: z.object({
     refreshToken: z.string().min(1, "Token requis"),
+    requestId: z.string().min(16).max(128).optional(),
   }),
 
   productInput: z.object({

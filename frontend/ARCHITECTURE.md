@@ -8,6 +8,11 @@ Seule l'API décide des droits et de la fraîcheur ; les clés et codes restent
 dans l'état mémoire du panneau et ne sont jamais mis dans les jetons ou URLs.
 [Contrats, enrôlement, récupération et limites](../docs/MFA.md).
 
+Le renouvellement web passe par une clé aléatoire par demande, transmise à
+`POST /api/auth/refresh` avec le cookie HttpOnly. Web Locks sérialise les
+onglets quand le navigateur le permet; la reprise serveur reste limitée à dix
+secondes et à la même clé. Voir le [contrat A09](../docs/ROTATION-SESSIONS-A09.md).
+
 Le frontend est une application **Next.js 16** (routeur `app/`), **React 19**,
 **TypeScript**, **Tailwind 3** et **next-intl** pour les traductions. Elle
 parle à l'API REST du backend (`backend/`, voir `backend/ARCHITECTURE.md`).

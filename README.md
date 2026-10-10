@@ -1,5 +1,14 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 06 — A09 : rotation atomique et reprenable des sessions (10 octobre 2026)
+
+Le refresh parent est consommé et son successeur est créé dans une transaction
+PostgreSQL. Une réponse perdue se reprend dix secondes avec la même clé de
+demande; seul son hash et le `jti` du successeur sont stockés. Voir le
+[contrat API, migration, exploitation et limites](docs/ROTATION-SESSIONS-A09.md)
+et le [registre des preuves](docs/etat-projet.md#étape-06--a09-rotation-atomique-des-sessions).
+Déploiement et validation en exploitation non établis.
+
 ## Étape 05 — A10 : liens de compte à usage unique (10 octobre 2026)
 
 Les liens de reset et de confirmation sont consommés par mutation conditionnelle
