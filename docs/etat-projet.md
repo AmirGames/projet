@@ -4,23 +4,21 @@
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 10 octobre 2026 | branche courante `claude/awesome-ride-m9lci8`, base `5c51fddd4882e7f720a201b620cb0ad915ee9b0e` ; aucun commit A09 | [contrat A09](ROTATION-SESSIONS-A09.md), code et migration locale |
-| Testé | 10 octobre 2026, partiel | Windows local; mobile delivery 9/9; typecheck/lint delivery et admin; typecheck/lint frontend; Prisma validate | PostgreSQL non joint (`localhost:5432` fermé); Jest backend/web bloqué par `EPERM realpath`; Prisma generate bloqué par `EPERM realpath`; voir ci-dessous |
-| Intégré | non | aucun SHA de fusion | PR non créée (branche dédiée refusée par permission Git) |
+| Développé | 10 octobre 2026 | PR #209, branche `claude/awesome-ride-m9lci8-a09-refresh-ci`, correctif `4a69a161175fb6e591821955bcaaca4780c06cae` sur la base A09 `1405a3da` | [contrat A09](ROTATION-SESSIONS-A09.md), code et migration |
+| Testé | 10 octobre 2026, partiel | CI du commit `1405a3da` : build backend, migration et build frontend réussis, parcours navigateur échoué ; correctif ciblé : route auth 40/40, typecheck/lint frontend et lint backend réussis | [job E2E en échec](https://github.com/AmirGames/projet/actions/runs/38085740711/job/114311729021) ; le test Jest du relais n'a pas pu démarrer localement (chargement binding natif SWC impossible sous Windows) |
+| Intégré | non | aucun SHA de fusion vérifié | [PR #209 ouverte](https://github.com/AmirGames/projet/pull/209) ; aucune preuve d'intégration |
 | Déployé | non | aucun environnement confirmé | aucune preuve |
 | Validé en exploitation | non | aucun environnement confirmé | aucune preuve |
 
-La demande A09 ne constitue pas une preuve de réussite. Les audits datés
-restent conservés comme historique. `npx prisma migrate deploy` a échoué sans
-appliquer la migration, car PostgreSQL `saas_dev` n'était pas joignable. Le
-test PostgreSQL attend une base dont le nom contient `test`; le port local
-était fermé. La suite Jest backend échoue avant découverte des tests par
-`EPERM realpath` du répertoire temporaire Windows. `prisma generate` échoue par
-`EPERM realpath` sur le chemin `@prisma/client`; le typecheck backend reflète
-donc le client ancien et signale uniquement les nouveaux champs absents.
-L'accès au dépôt Git refuse la création d'une branche dédiée; `gh` est absent
-ou non authentifié, donc aucune PR n'a été créée. Voir les commandes et limites
-dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.md).
+La demande A09 et un build vert ne constituent pas une preuve de parcours réussi.
+La CI de `1405a3da` a échoué sur plusieurs scénarios navigateur dont les
+connexions, car le relais web filtrait `X-Refresh-Request`; le correctif de la branche PR #209 transmet l'en-tête et conserve
+`requestId` lors de la validation du corps (commit `4a69a161`). Le test PostgreSQL attend une base dont le nom
+contient `test` ; elle n'a pas été exécutée localement. Le test Jest frontend
+du relais est ajouté, mais son exécution locale reste bloquée par le binding
+natif SWC ; le contrôle backend ciblé, les types/lint frontend et le lint backend
+passent. Le job CI doit être relancé sur le correctif avant de conclure. Voir
+les commandes et limites dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.md).
 
 ## Étape 05 — A10 : liens de compte (10 octobre 2026)
 

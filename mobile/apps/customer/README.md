@@ -49,7 +49,7 @@ livreur proche) ; la toucher ouvre la commande.
 
 ## Renouvellement de session A09
 
-Les appels 401 partagent une opération de renouvellement à la fois. POST /api/auth/refresh envoie le refresh SecureStore et un equestId aléatoire; une perte de réponse est reprise avec la même clé dans la fenêtre serveur de 10 secondes. Les erreurs réseau et 409 persistant gardent la session, un 401 SESSION_INVALIDE la termine. Détails : [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+Les appels 401 partagent une opération de renouvellement à la fois. `POST /api/auth/refresh` envoie le refresh SecureStore et un `requestId` aléatoire cryptographique. Après une réponse perdue, le client réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Les erreurs réseau et les 409 persistants gardent la session ; un 401/403 définitif la termine. Tests ciblés : `npm test -- --runInBand lib/__tests__/renouvellement.test.ts`. Détails : [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
 
 ## Lancer
 

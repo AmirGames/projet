@@ -37,23 +37,25 @@ test('dix appels refusés en même temps : un seul renouvellement, tous reçoive
 
 test('réponse perdue : rejoue la même clé et récupère le même successeur', async () => {
   const keys = [];
-  const state = { accessToken: 'A0', refreshToken: 'R0' };
-  let calls = 0;
+  let session = { accessToken: 'A0', refreshToken: 'R0' };
+  let successeur = null;
   const renewal = creerRenouvellement({
-    charger: async () => ({ ...state }),
-    enregistrer: async (s) => Object.assign(state, s),
+    charger: async () => ({ ...session }),
+    enregistrer: async (s) => Object.assign(session, s),
     creerRequestId: () => 'request-reprise-0001',
     appeler: async (_token, key) => {
       keys.push(key);
-      calls++;
-      if (calls === 1) throw new Error('réponse réseau perdue');
-      return { ok: true, status: 200, json: async () => ({ accessToken: 'A1', refreshToken: 'R1' }) };
+      if (!successeur) {
+        successeur = { accessToken: 'A1', refreshToken: 'R1' }; // transaction committée
+        throw new Error('réponse réseau perdue après commit');
+      }
+      return { ok: true, status: 200, json: async () => successeur };
     },
+    attendre: async () => undefined,
   });
-  assert.deepEqual(await renewal.renouveler('A0'), { transient: true });
-  // En situation réelle l'API a committé ; le second appel reprend la même clé.
   assert.deepEqual(await renewal.renouveler('A0'), { token: 'A1' });
   assert.deepEqual(keys, ['request-reprise-0001', 'request-reprise-0001']);
+  assert.deepEqual(session, { accessToken: 'A1', refreshToken: 'R1' });
 });
 
 test('le jeton neuf est enregistré avant d’être rendu', async () => {
