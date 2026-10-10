@@ -30,6 +30,8 @@ export class ApiError extends Error {
 }
 
 let onUnauthorized: (() => void) | null = null;
+let onMfaRequired: (() => void) | null = null;
+export function setMfaRequiredHandler(handler: (() => void) | null) { onMfaRequired = handler; }
 
 /** Appelé quand le serveur refuse le jeton : la session est à refaire. */
 export function setUnauthorizedHandler(handler: (() => void) | null) {
@@ -81,6 +83,7 @@ export async function apiFetch<T = any>(
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (['MFA_REQUIRED', 'MFA_ENROLLMENT_REQUIRED', 'MFA_RECENT_REQUIRED', 'MFA_ROTATION_REQUIRED'].includes(data?.code)) onMfaRequired?.();
     // MISSING_ORG est un 401 du serveur pour une requête incomplète, pas une
     // session expirée : il ne doit pas déconnecter.
     if (response.status === 401 && data?.code !== 'MISSING_ORG') {

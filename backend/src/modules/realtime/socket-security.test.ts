@@ -10,6 +10,7 @@ import {
 } from './socket';
 
 jest.mock('../../services/db', () => ({ db: {
+  mfaFactor: { findUnique: jest.fn(async () => null) },
   user: { findUnique: jest.fn() }, order: { findUnique: jest.fn() },
   membership: { findFirst: jest.fn(), findMany: jest.fn() },
   store: { findUnique: jest.fn() }, platformRole: { findUnique: jest.fn() },

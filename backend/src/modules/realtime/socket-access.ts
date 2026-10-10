@@ -3,6 +3,7 @@ import { SsoService } from '../auth/sso.service';
 import type { JwtPayload } from '../auth/auth.service';
 import { membreVoitBoutique } from '../auth/autorisation-boutique';
 import { nettoyerPermissions } from '../auth/permissions-plateforme.service';
+import { exigerMfa } from '../auth/mfa.service';
 
 /** Lu sans cache : une connexion ouverte ne conserve pas des droits retirés. */
 export async function compteSocket(jeton: JwtPayload | undefined) {
@@ -20,6 +21,9 @@ export async function compteSocket(jeton: JwtPayload | undefined) {
   if (!compte || (compte.status && compte.status !== 'ACTIVE')) return null;
   if (compte.passwordChangedAt &&
       (jeton.iat === undefined || jeton.iat < Math.floor(compte.passwordChangedAt.getTime() / 1000))) return null;
+  if (compte.isSuperOwner || compte.isSystemAdmin) {
+    try { await exigerMfa(compte.id, jeton.sid); } catch { return null; }
+  }
   return compte;
 }
 

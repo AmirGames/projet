@@ -4,11 +4,12 @@ import { API_URL } from '../../lib/api';
 import { MesPermissions } from '../../lib/permissions';
 import { Card, COLORS, Row, ui } from '../ui';
 
-export default function AccountScreen({ email, permissions, onLogout }: { email: string; permissions: MesPermissions; onLogout: () => void }) {
+export default function AccountScreen({ email, permissions, onLogout, onMfa }: { email: string; permissions: MesPermissions; onLogout: () => void; onMfa: () => void }) {
   const sections = Object.entries(permissions.permissions);
   return (
     <ScrollView contentContainerStyle={ui.content}>
       <Card title="Compte">
+        <TouchableOpacity onPress={onMfa} style={ui.retry}><Text style={ui.retryText}>Gérer la seconde authentification</Text></TouchableOpacity>
         <Row label="Adresse" value={email} />
         <Row label="Rôle" value={permissions.isSuperOwner ? 'Superowner' : permissions.roleLabel || permissions.role} />
         <Row label="Serveur" value={API_URL} last />

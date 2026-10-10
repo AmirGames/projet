@@ -9,6 +9,7 @@ const COMPTES: Record<string, any> = {
   owner: { isSuperOwner: true, isSystemAdmin: true },
 };
 const db: any = {
+  mfaFactor: { findUnique: jest.fn(async () => null) },
   user: { findUnique: jest.fn() },
   privacyLegalHold: { upsert: jest.fn() },
 };

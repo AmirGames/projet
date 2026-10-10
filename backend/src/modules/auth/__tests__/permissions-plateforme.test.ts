@@ -9,6 +9,8 @@ const db: any = {
 };
 
 jest.mock("../../../services/db", () => ({ db }));
+// Les permissions restent indépendantes de la preuve, testée sur PostgreSQL dans mfa.pg.
+jest.mock("../mfa.service", () => ({ exigerMfa: jest.fn(async () => undefined) }));
 jest.mock("../../../config/logger", () => ({ logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() } }));
 
 import {

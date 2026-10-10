@@ -1,5 +1,15 @@
 # Architecture du backend
 
+La MFA A05 reste dans `modules/auth` : service transactionnel `mfa.service`,
+routes `mfa.routes` et secours OS `mfa-operator.service`/CLI. Les gardes communes
+`authMiddleware`, `exigerPermission` et `compteSocket` relisent la preuve
+PostgreSQL ; elles gardent leurs contrôles de rôle et de cloisonnement.
+Le modèle `MfaFactor` conserve des enveloppes chiffrées explicites liées au
+compte, distinctes des champs personnels déchiffrés automatiquement. Les
+mutations MFA et événements de sécurité sont committés ensemble, sans secret.
+Les échecs de vérification sont retournés après commit du compteur anti-abus.
+Voir [contrats, migration, récupération et exploitation](../docs/MFA.md).
+
 Le backend est rangé **par domaine** (commandes, livreurs, paiements…) et non par
 type de fichier. Tout ce qui concerne un sujet — routes, services, jobs,
 middlewares, tests — vit dans un seul dossier : `src/modules/<domaine>/`.

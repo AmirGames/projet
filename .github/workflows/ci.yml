@@ -37,6 +37,79 @@ permissions:
   contents: read
 
 jobs:
+  mfa-e2e:
+    name: MFA A05 (web et admin Expo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mfa_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/mfa_test?schema=public
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:3001
+      API_INTERNAL_URL: http://127.0.0.1:3001
+      EXPO_PUBLIC_API_URL: http://127.0.0.1:3001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            mobile/apps/admin/package-lock.json
+      - run: npm ci && npx prisma generate && npx prisma migrate deploy
+        working-directory: backend
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: npm ci --ignore-scripts --no-audit --no-fund && npx expo export --platform web --output-dir ../../../.tmp/a05-admin-web
+        working-directory: mobile/apps/admin
+      - name: Navigateur
+        working-directory: frontend
+        run: |
+          npm i --no-save --package-lock=false --no-audit --no-fund playwright@1.64.0
+          npx playwright install --with-deps chromium
+      - name: API MFA et export admin isolés (sans workers)
+        working-directory: backend
+        env:
+          MFA_MODE: enforced
+          ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3302
+          SSO_ORIGIN: ""
+          DATA_ENCRYPTION_KEYS: '{"mfaTest":"YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE="}'
+          DATA_ENCRYPTION_ACTIVE_KEY: mfaTest
+        run: |
+          nohup node --env-file=.env.test --import tsx scripts/verification/mfa-test-server.ts > "$RUNNER_TEMP/mfa-api.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:3001/health > /dev/null && exit 0
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/mfa-api.log"; exit 1
+      - name: Site et parcours MFA réels
+        working-directory: frontend
+        run: |
+          nohup npx next start -p 3000 > "$RUNNER_TEMP/mfa-site.log" 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:3000/login > /dev/null && break
+            sleep 1
+          done
+          node scripts/verif-mfa.mjs
+      - name: Journaux de diagnostic
+        if: failure()
+        run: |
+          tail -n 100 "$RUNNER_TEMP/mfa-api.log" || true
+          tail -n 100 "$RUNNER_TEMP/mfa-site.log" || true
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
@@ -88,6 +161,15 @@ jobs:
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE payouts_test"
           DATABASE_URL="postgresql://postgres:postgres@localhost:5432/payouts_test?schema=public" npx prisma migrate deploy
+      - name: Base dédiée MFA A05
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE mfa_test"
+          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mfa_test?schema=public" npx prisma migrate deploy
+      - name: MFA et récupération concurrente A05 (PostgreSQL)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mfa_test?schema=public
+          MFA_INTEGRATION: "true"
+        run: npx jest src/modules/auth/__tests__/mfa.pg.test.ts --runInBand
       - name: Concurrence versements A04 (PostgreSQL)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/payouts_test?schema=public

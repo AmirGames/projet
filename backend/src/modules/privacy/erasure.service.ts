@@ -31,6 +31,7 @@ export async function requestErasure(userId: string) {
     await tx.privacyErasureRequest.upsert({ where: { userId }, create: { userId }, update: {} });
     await tx.user.update({ where: { id: userId }, data: { status: "DELETION_PENDING", resetTokenHash: null, emailTokenHash: null } });
     await tx.sessionConnexion.deleteMany({ where: { userId } });
+    await tx.mfaFactor.deleteMany({ where: { userId } });
     await tx.pushDevice.deleteMany({ where: { userId } });
     await tx.accesEquipe.deleteMany({ where: { userId } });
     if (user.driver) await tx.courier.update({ where: { id: user.driver.id }, data: { status: "INACTIVE", isOnline: false, isAvailable: false, suppressionDemandeeLe: new Date(), latitude: null, longitude: null, pushSubscription: Prisma.DbNull } });
@@ -57,6 +58,7 @@ export async function completeErasure(userId: string): Promise<{ status: string 
   const documents = [...(user.driver?.documents || []).filter((d) => !holds("CourierDocument").includes(d.id)).map((d) => d.documentUrl), ...(user.chauffeurDrive?.documents || []).filter((d) => !holds("DocumentChauffeurDrive").includes(d.id)).map((d) => d.url), ...owned.flatMap((o) => o.documents.filter((d) => !holds("OrganizationDocument").includes(d.id)).map((d) => d.documentUrl)), ...(user.societeDrive?.documents || []).filter((d) => !holds("DocumentChauffeurDrive").includes(d.id)).map((d) => d.url), ...(user.societeDrive?.vehicules || []).flatMap((v) => v.documents.filter((d) => !holds("DocumentChauffeurDrive").includes(d.id)).map((d) => d.url))];
   for (const url of documents) { const relative = cheminRelatif(url); if (relative) await removePrivate(relative); }
   await db.$transaction(async (tx) => {
+    await tx.mfaFactor.deleteMany({ where: { userId } });
     const customers = await tx.customer.findMany({ where: { OR: [{ userId }, ...(user.emailVerified ? [{ email: user.email, userId: null }] : [])] }, select: { id: true } });
     for (const customer of customers) {
       const orders = await tx.order.findMany({ where: { customerId: customer.id }, select: { id: true } });

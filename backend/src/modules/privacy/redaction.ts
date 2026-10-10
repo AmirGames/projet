@@ -1,5 +1,5 @@
 import { codeErreur } from "../../utils/code-erreur";
-const sensitive = /password|secret|token|authorization|cookie|iban|bic|accountHolder|email|phone|telephone|address|adresse|latitude|longitude|(?:^|_)lat$|(?:^|_)lng$|documentUrl|fileName|filename|body|search|savedAddresses|ownerFirstName|ownerLastName|ownerBirthDate|reason|motif|stack|changes/i;
+const sensitive = /password|secret|token|cipher|recovery|^code$|otp|authorization|cookie|iban|bic|accountHolder|email|phone|telephone|address|adresse|latitude|longitude|(?:^|_)lat$|(?:^|_)lng$|documentUrl|fileName|filename|body|search|savedAddresses|ownerFirstName|ownerLastName|ownerBirthDate|reason|motif|stack|changes/i;
 export function redact(value: string, depth?: number): string;
 export function redact(value: Record<string, unknown>, depth?: number): Record<string, unknown>;
 export function redact(value: unknown, depth?: number): unknown;

@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import mfaRouter from "./mfa.routes";
 import { champAcceptation } from "../legal/acceptation-conditions.service";
 import { signupSchema, loginSchema, refreshTokenSchema } from "../../utils/validation";
 import { AuthService } from "./auth.service";
@@ -218,4 +219,5 @@ router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next
   }
 });
 
+router.use("/mfa", mfaRouter);
 export default router;

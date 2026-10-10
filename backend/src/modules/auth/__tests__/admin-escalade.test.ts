@@ -3,6 +3,7 @@ import express from "express";
 import request from "supertest";
 
 const db: any = {
+  mfaFactor: { findUnique: jest.fn(async () => null) },
   user: { findUnique: jest.fn(), update: jest.fn() },
   platformRole: { findMany: jest.fn(), createMany: jest.fn() },
   systemAuditLog: { create: jest.fn() },

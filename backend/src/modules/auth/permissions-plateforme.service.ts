@@ -4,6 +4,7 @@ import { Plateforme } from "@prisma/client";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { cheminDecode } from "../../utils/chemin";
+import { exigerMfa } from "./mfa.service";
 
 /**
  * Qui, dans l'équipe du groupe, peut faire quoi, plateforme par plateforme.
@@ -363,13 +364,17 @@ export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
       const compte = req.compte;
-      if (compte?.isSuperOwner) return next();
+      const section = sectionFixe ?? sectionDeLaRoute(routeur, req.path, req.method);
+      const lecture = req.method === "GET" || req.method === "HEAD";
+      const sensible = !lecture || !!section && ["billing", "payouts", "exports", "financial-reports", "api-keys", "webhooks", "system-config", "advanced-settings"].includes(section);
+      if (compte?.isSuperOwner) {
+        await exigerMfa(compte.id, req.user?.sid, sensible);
+        return next();
+      }
 
       // Un routeur dont les chemins n'entrent pas dans ROUTES nomme sa section.
-      const section = sectionFixe ?? sectionDeLaRoute(routeur, req.path, req.method);
       const permissions = await PermissionsPlateforme.permissionsDu(compte?.acces[plateforme], plateforme);
       const niveau = section ? permissions[section] : undefined;
-      const lecture = req.method === "GET" || req.method === "HEAD";
 
       if (!compte?.isSystemAdmin || !niveau || (!lecture && niveau !== "write")) {
         throw new ApiError(
@@ -381,6 +386,7 @@ export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT
         );
       }
 
+      await exigerMfa(compte.id, req.user?.sid, sensible);
       if (!permissions.billing) {
         const json = _res.json.bind(_res);
         _res.json = (corps) => json(filtrerDonneesFinancieres(corps));

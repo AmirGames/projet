@@ -113,6 +113,7 @@ describe("requestErasure : révocation immédiate de l'accès", () => {
     const premiereMiseAJour = de("user", "update")[0].args;
     expect(premiereMiseAJour).toEqual({ where: { id: "alice" }, data: { status: "DELETION_PENDING", resetTokenHash: null, emailTokenHash: null } });
     expect(de("sessionConnexion", "deleteMany")[0].args).toEqual({ where: { userId: "alice" } });
+    expect(de("mfaFactor", "deleteMany")[0].args).toEqual({ where: { userId: "alice" } });
     expect(de("pushDevice", "deleteMany")[0].args).toEqual({ where: { userId: "alice" } });
     expect(de("accesEquipe", "deleteMany")[0].args).toEqual({ where: { userId: "alice" } });
     expect(oublierCompte).toHaveBeenCalledWith("alice");
@@ -146,6 +147,7 @@ describe("completeErasure : anonymisation sans perte comptable", () => {
       resetTokenHash: null, resetTokenExpiresAt: null, emailTokenHash: null, emailTokenExpiresAt: null,
     });
     expect(data.passwordHash).toBe("mot-de-passe-efface");
+    expect(de("mfaFactor", "deleteMany")[0].args).toEqual({ where: { userId: "alice" } });
     expect(JSON.stringify(data)).not.toContain("alice@exemple.test");
   });
 

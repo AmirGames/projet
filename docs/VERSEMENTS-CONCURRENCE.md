@@ -1,5 +1,11 @@
 # Relevés livreurs et lots bancaires — A04
 
+Depuis A05, accès financier sensible et mutations de relevés/lots exigent
+la [MFA récente du compte privilégié](MFA.md), y compris depuis l'app admin.
+La MFA complète les gardes de permissions et les revendications atomiques A04.
+Un refus exige confirmation du facteur puis relecture/reprise explicite, sans
+rejouer automatiquement une confirmation bancaire.
+
 Référence actuelle ZupEat, 9 octobre 2026. Voir le [registre de livraison](etat-projet.md#étape-03--a04-concurrence-des-versements)
 et les [preuves datées](preuves-a04-2026-10-09.md). ZupDrive conserve ses services distincts.
 

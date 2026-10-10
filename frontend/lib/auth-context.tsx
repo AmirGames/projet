@@ -1,6 +1,7 @@
 'use client';
 
 import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
+import MfaGate from '@/components/MfaGate';
 import React, { Suspense, createContext, use, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -229,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       <Suspense fallback={null}>
-        <AttendreSession pret={sessionOk}>{children}</AttendreSession>
+        <AttendreSession pret={sessionOk}>{user?.isSuperOwner || user?.isSystemAdmin ? <MfaGate key={user.id}>{children}</MfaGate> : children}</AttendreSession>
       </Suspense>
     </AuthContext.Provider>
   );

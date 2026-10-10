@@ -9,7 +9,7 @@ jest.mock("../refund.service", () => ({
 }));
 jest.mock("../payment.service", () => ({ paymentService: {} }));
 jest.mock("../../../services/db", () => ({
-  db: { user: { findUnique: async () => ({ email: "admin@example.test" }) } },
+  db: { mfaFactor: { findUnique: async () => null }, user: { findUnique: async () => ({ email: "admin@example.test" }) } },
 }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },

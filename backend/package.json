@@ -7,8 +7,9 @@
   "scripts": {
     "predev": "prisma migrate deploy && prisma generate",
     "dev": "tsx watch src/server.ts",
-    "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/server.js && esbuild src/cli/create-superowner.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/create-superowner.js && esbuild src/cli/privacy-storage.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/privacy-storage.js",
+    "build": "prisma generate && tsc --noEmit && esbuild src/server.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/server.js && esbuild src/cli/create-superowner.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/create-superowner.js && esbuild src/cli/privacy-storage.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/privacy-storage.js && esbuild src/cli/mfa-operator.ts --bundle --platform=node --target=node20 --format=esm --packages=external --sourcemap --outfile=dist/mfa-operator.js",
     "create-superowner": "tsx src/cli/create-superowner.ts",
+    "mfa:operator": "tsx src/cli/mfa-operator.ts",
     "privacy:check": "tsx src/cli/privacy-storage.ts --check",
     "privacy:migrate": "tsx src/cli/privacy-storage.ts --apply",
     "privacy:rotate": "tsx src/cli/privacy-storage.ts --rotate",
@@ -42,6 +43,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
     "nodemailer": "^10.0.9",
+    "otplib": "13.5.0",
     "prisma": "^7.10.0",
     "redis": "^6.2.1",
     "socket.io": "^4.7.2",

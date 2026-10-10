@@ -1,5 +1,13 @@
 # Guide du frontend
 
+La MFA des comptes d'équipe/superowner est rendue par `components/MfaGate`
+dans le contexte de session. La page commune `/mfa` permet la gestion du facteur.
+`MaintenanceGate` relaie les refus de preuve MFA au contexte sans rejouer la
+mutation. Le relais `/api/auth/*` existant préserve bearer/cookies et no-store.
+Seule l'API décide des droits et de la fraîcheur ; les clés et codes restent
+dans l'état mémoire du panneau et ne sont jamais mis dans les jetons ou URLs.
+[Contrats, enrôlement, récupération et limites](../docs/MFA.md).
+
 Le frontend est une application **Next.js 16** (routeur `app/`), **React 19**,
 **TypeScript**, **Tailwind 3** et **next-intl** pour les traductions. Elle
 parle à l'API REST du backend (`backend/`, voir `backend/ARCHITECTURE.md`).
