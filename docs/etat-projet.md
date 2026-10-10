@@ -18,6 +18,7 @@ signés restent ouvertes. Aucune nouvelle fonctionnalité métier ni ouverture
 à grande échelle avant validation complète. Voir
 [les corrections, preuves et blocages](phase-0-securite.md).
 
+
 ## Ce qui existe
 
 - **ZupEat** : catalogue, commande avec ou sans compte, paiement Stripe,
