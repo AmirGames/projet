@@ -286,7 +286,7 @@ La base A04 est intégrée (PR 203, `e66cd0e3f676b7e06c2d783dc53e71f780b41128`).
 | Développé | 10 octobre 2026, branche locale A05 ; SHA et PR dans les [preuves datées](preuves-a05-2026-10-10.md) |
 | Testé | Local Windows / PostgreSQL 18 : 17 tests MFA, 204 frontend, types/lint/builds et parcours web/admin Expo ; détails et limites dans les preuves |
 | CI | 10 octobre 2026, code `7a2fe706`, [10/10 jobs réussis](https://github.com/AmirGames/projet/actions/runs/38038362129), dont MFA PostgreSQL et navigateur web/admin Expo ; détails dans les preuves |
-| Intégré | Non fusionné |
+| Intégré | 10 octobre 2026, [PR #204](https://github.com/AmirGames/projet/pull/204) fusionnée dans `claude/awesome-ride-m9lci8` sous `54592aeb5a5f31f87e15ab6131068de28609f4c4` ; complément de preuves en PR de suivi |
 | Déployé | Non déployé, migration et configuration VPS non exécutées |
 | Validé en exploitation | Non : enrôlement nominatif, secours, domaines réels et appareils Android/iOS à exercer |
 

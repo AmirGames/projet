@@ -11,8 +11,9 @@ avant couverture nominative puis `enforced` sur toutes les instances.
 Le mode préparatoire n'atteste pas une obligation MFA pour les non-enrôlés.
 Voir [guide et contrats API](docs/MFA.md), [preuves datées](docs/preuves-a05-2026-10-10.md)
 et [registre](docs/etat-projet.md#étape-04--a05-mfa-des-comptes-privilégiés).
-Développement/tests locaux consignés ; intégration, déploiement et validation
-en exploitation sont des états distincts. Aucune fusion ni opération d'argent réel.
+Développement/tests locaux et CI consignés ; la [PR #204](https://github.com/AmirGames/projet/pull/204)
+a été intégrée le 10 octobre. Déploiement et validation en exploitation restent
+des états distincts. Aucune opération d'argent réel n'a été exécutée ici.
 
 ## Étape 03 — A04 : concurrence des versements (9 octobre 2026)
 
