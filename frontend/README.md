@@ -1,5 +1,14 @@
 # Site ZupEat / ZupOne / ZupDrive
 
+## Liens de compte A10
+
+Les pages `/reinitialiser` et `/verifier-email` affichent les erreurs métier
+de l'API lorsqu'un lien est expiré, réémis ou déjà utilisé. Le backend décide
+seul de la consommation et du rattachement des données invitées ; aucun état
+local du navigateur ne fait foi. Contrat des routes, configuration, tests et
+exploitation : [guide A10](../docs/LIENS-COMPTE-A10.md). Aucune variable ni
+migration frontend nouvelle.
+
 ## MFA administration (A05)
 
 Le contexte de compte affiche `MfaGate` avant les pages privilégiées.

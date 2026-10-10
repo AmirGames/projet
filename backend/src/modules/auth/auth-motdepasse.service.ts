@@ -38,10 +38,11 @@ export const AuthMotDePasseService = {
       DUREE_REINITIALISATION_MS
     );
 
-    await db.user.update({
-      where: { id: user.id },
+    const { count } = await db.user.updateMany({
+      where: { id: user.id, email: user.email, status: "ACTIVE" },
       data: { resetTokenHash: empreinte, resetTokenExpiresAt: expireLe },
     });
+    if (count !== 1) return reponse;
 
     const lien = `${adresseDuSite()}/reinitialiser?jeton=${jeton}`;
 
@@ -83,7 +84,7 @@ export const AuthMotDePasseService = {
 
     const lienInvalide = new ApiError(
       400,
-      "Ce lien n'est plus valable. Demandez-en un nouveau.",
+      "Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.",
       "INVALID_RESET_TOKEN"
     );
 
@@ -102,8 +103,12 @@ export const AuthMotDePasseService = {
     const passwordHash = await AuthService.hashPassword(password);
 
     await db.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: user.id },
+      const { count } = await tx.user.updateMany({
+        where: {
+          id: user.id, email: user.email, status: "ACTIVE",
+          resetTokenHash: AccountTokenService.empreinte(jetonRecu),
+          resetTokenExpiresAt: { gt: new Date() },
+        },
         data: {
           passwordHash,
           // Quelqu'un d'autre avait peut-être le mot de passe : ses sessions
@@ -118,13 +123,12 @@ export const AuthMotDePasseService = {
           emailTokenExpiresAt: null,
         },
       });
+      if (count !== 1) throw lienInvalide;
       await tx.sessionConnexion.updateMany({
         where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() },
       });
+      await rattacherFicheInvite(user, tx);
     });
-
-    // L'adresse étant prouvée, la fiche client invité rejoint le compte.
-    await rattacherFicheInvite(user);
 
     await SecurityEventService.record({
       action: "PASSWORD_RESET",

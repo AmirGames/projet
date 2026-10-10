@@ -67,13 +67,13 @@ export const AuthConfirmationService = {
   async verifier(jetonRecu: string) {
     const user = await db.user.findUnique({
       where: { emailTokenHash: AccountTokenService.empreinte(jetonRecu) },
-      select: { id: true, email: true, emailTokenHash: true, emailTokenExpiresAt: true },
+      select: { id: true, email: true, emailVerified: true, status: true, emailTokenHash: true, emailTokenExpiresAt: true },
     });
 
     if (!user || !AccountTokenService.correspond(jetonRecu, user.emailTokenHash)) {
       throw new ApiError(
         400,
-        "Ce lien de confirmation n'est pas valable.",
+        "Ce lien de confirmation a expiré ou a déjà été utilisé. Demandez-en un nouveau.",
         "INVALID_EMAIL_TOKEN"
       );
     }
@@ -86,16 +86,22 @@ export const AuthConfirmationService = {
       );
     }
 
-    await db.user.update({
-      where: { id: user.id },
-      data: { emailVerified: true, emailTokenHash: null, emailTokenExpiresAt: null },
+    await db.$transaction(async (tx) => {
+      const { count } = await tx.user.updateMany({
+        where: {
+          id: user.id, email: user.email, status: "ACTIVE", emailVerified: false,
+          emailTokenHash: AccountTokenService.empreinte(jetonRecu),
+          emailTokenExpiresAt: { gt: new Date() },
+        },
+        data: { emailVerified: true, emailTokenHash: null, emailTokenExpiresAt: null },
+      });
+      if (count !== 1) {
+        throw new ApiError(400, "Ce lien de confirmation a expiré ou a déjà été utilisé. Demandez-en un nouveau.", "INVALID_EMAIL_TOKEN");
+      }
+      await rattacherFicheInvite(user, tx);
     });
 
     logger.info("Adresse confirmée", { userId: user.id });
-
-    // L'adresse est prouvée : la fiche client née d'une commande sans compte
-    // rejoint maintenant le compte.
-    await rattacherFicheInvite(user);
 
     return { message: "Adresse confirmée.", email: user.email };
   },

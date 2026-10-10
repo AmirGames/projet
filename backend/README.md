@@ -1,5 +1,14 @@
 # Backend ZupEat / ZupDrive
 
+## A10 — liens de compte
+
+Reset et confirmation exigent une mutation PostgreSQL d'exactement une ligne
+avec empreinte et expiration encore valides. Leurs effets métier sont atomiques,
+y compris révocation des sessions et rattachement de la fiche invitée.
+[Contrats API, configuration, tests et exploitation](../docs/LIENS-COMPTE-A10.md).
+Aucune migration ni nouvelle variable ; la validation PostgreSQL demande une
+base de test dédiée migrée.
+
 ## MFA des comptes privilégiés (A05)
 
 `/api/auth/mfa` gère TOTP via otplib 13.5.0 ; les gardes HTTP et Socket.IO

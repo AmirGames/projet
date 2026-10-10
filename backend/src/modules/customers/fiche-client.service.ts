@@ -1,6 +1,5 @@
-import { db } from "../../services/db";
+import { db, type ClientTransaction } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { logger } from "../../config/logger";
 
 /**
  * La fiche client d'un compte, et les fiches « invité ».
@@ -22,25 +21,21 @@ import { logger } from "../../config/logger";
  * compte n'a pas déjà sa propre fiche. À n'appeler qu'une fois l'adresse
  * prouvée.
  */
-export async function rattacherFicheInvite(user: { id: string; email: string }) {
-  const dejaLiee = await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } });
+export async function rattacherFicheInvite(user: { id: string; email: string }, client: Pick<ClientTransaction, "customer"> = db) {
+  const dejaLiee = await client.customer.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (dejaLiee) return false;
 
-  const fiche = await db.customer.findUnique({
+  const fiche = await client.customer.findUnique({
     where: { email: user.email },
     select: { id: true, userId: true, deletedAt: true },
   });
   if (!fiche || fiche.userId || fiche.deletedAt) return false;
 
   // La condition sur `userId` protège d'un rattachement concurrent.
-  const { count } = await db.customer.updateMany({
-    where: { id: fiche.id, userId: null },
+  const { count } = await client.customer.updateMany({
+    where: { id: fiche.id, email: user.email, userId: null, deletedAt: null },
     data: { userId: user.id },
   });
-
-  if (count > 0) {
-    logger.info("Fiche client invité rattachée au compte", { userId: user.id, customerId: fiche.id });
-  }
 
   return count > 0;
 }
