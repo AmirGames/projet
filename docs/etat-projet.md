@@ -13,12 +13,12 @@
 La demande A09 et un build vert ne constituent pas une preuve de parcours réussi.
 La CI de `1405a3da` a échoué sur plusieurs scénarios navigateur dont les
 connexions, car le relais web filtrait `X-Refresh-Request`; le correctif de la branche PR #209 transmet l'en-tête et conserve
-`requestId` lors de la validation du corps (commit `4a69a161`). Le test PostgreSQL attend une base dont le nom contient `test` ; elle
-n'a pas été exécutée localement. Le test Jest frontend du relais est ajouté,
-mais son exécution locale reste bloquée par le binding natif SWC ; le contrôle
-backend ciblé, les types/lint frontend et le lint backend passent. Le job CI
-doit être relancé sur le correctif avant de conclure. Voir les commandes et
-limites dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.md).
+`requestId` lors de la validation du corps (commit `4a69a161`). Le test PostgreSQL attend une base dont le nom
+contient `test` ; elle n'a pas été exécutée localement. Le test Jest frontend
+du relais est ajouté, mais son exécution locale reste bloquée par le binding
+natif SWC ; le contrôle backend ciblé, les types/lint frontend et le lint backend
+passent. Le job CI doit être relancé sur le correctif avant de conclure. Voir
+les commandes et limites dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.md).
 
 ## Étape 05 — A10 : liens de compte (10 octobre 2026)
 
