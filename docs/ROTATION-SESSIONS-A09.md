@@ -44,9 +44,13 @@ refresh.
 Le web utilise Web Locks quand disponibles, un `requestId` par opération et
 deux essais maximum. Il ne déconnecte que sur `401/403` définitif; panne réseau
 et `409` persistant gardent la session locale. Chaque application Expo partage
-le renouvellement en mémoire, persiste le nouveau couple avant de le retourner,
-attend une fois sur `409`, et ne ferme pas la session pour les erreurs
-transitoires. Le SecureStore existant reste le seul stockage mobile des jetons.
+le renouvellement en mémoire et utilise un `requestId` cryptographique. Après
+une coupure survenue après le commit serveur, elle réessaie une fois le même
+refresh avec la même clé pour récupérer le successeur; après `409`, elle relit
+le SecureStore et ne reprend qu'une fois avec la même clé si nécessaire. Un
+refus 401/403 définitif termine la session, les erreurs transitoires non. Le
+nouveau couple est persisté avant d'être rendu; SecureStore reste le seul
+stockage mobile des jetons.
 
 ## Exploitation et limites
 
@@ -64,7 +68,12 @@ Commandes ciblées :
 cd backend && npx prisma generate
 cd backend && npx jest src/modules/auth/__tests__/session-rotation.test.ts --runInBand
 cd backend && npx jest src/modules/auth/__tests__/rotation-refresh.pg.test.ts --runInBand
+cd mobile/apps/customer && npm test -- --runInBand lib/__tests__/renouvellement.test.ts
+cd mobile/apps/merchant && npm test -- --runInBand lib/__tests__/renouvellement.test.ts
 cd mobile/apps/delivery && npm run test:session
+cd mobile/apps/admin && npm test -- --runInBand lib/__tests__/renouvellement.test.ts
+cd mobile/apps/zupdrive-driver && npm test -- --runInBand lib/__tests__/renouvellement.test.ts
+cd mobile/apps/zupdrive-passenger && npm test -- --runInBand lib/__tests__/renouvellement.test.ts
 cd frontend && npx jest lib/__tests__/jeton-session.test.ts --runInBand
 cd frontend && npx jest lib/__tests__/relais-api.test.ts --runInBand
 ```

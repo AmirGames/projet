@@ -11,7 +11,7 @@ et les prochaines étapes.
 
 ## Fonctionnalités présentes
 
-Le renouvellement de session est partagé entre requêtes; il transmet une clé de reprise aléatoire et ne déconnecte pas sur une coupure réseau. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+Le renouvellement de session est partagé entre requêtes et transmet un `requestId` aléatoire cryptographique. Après une réponse perdue, il réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Une panne réseau ou un 409 persistant ne déconnecte pas ; seul un refus 401/403 définitif termine la session. Tests ciblés : `npm test -- --runInBand lib/__tests__/renouvellement.test.ts`. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
 
 - Tableau de bord et commandes, détail et actions sur leur état.
 - Choix de boutique pour un compte possédant plusieurs commerces.

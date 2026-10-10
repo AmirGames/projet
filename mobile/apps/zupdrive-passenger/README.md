@@ -1,6 +1,6 @@
 # ZupDrive — application passager
 
-Le renouvellement mobile est partagé, transmet un `requestId` lié à une seule opération et reprend une réponse perdue pendant au plus 10 secondes. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+Le renouvellement mobile est partagé et transmet un `requestId` aléatoire cryptographique par opération. Après une réponse perdue, il réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Une panne réseau ou un 409 persistant ne déconnecte pas ; seul un refus 401/403 définitif termine la session. Tests ciblés : `npm test -- --runInBand lib/__tests__/renouvellement.test.ts`. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
 
 Application mobile du **passager** ZupDrive (VTC) : il commande un trajet à prix fixe, le suit, l'annule, le paie par carte et note son chauffeur. Ce n'est pas l'app livreur de ZupEat (`../delivery`) ni l'app client ZupEat (`../customer`).
 

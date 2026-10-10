@@ -1,6 +1,6 @@
 # ZupEat Livreur
 
-Le renouvellement automatique est sérialisé et reprenable après perte de réponse pendant 10 secondes avec la même clé de demande. Les erreurs réseau gardent la session SecureStore; seul un refus définitif déconnecte. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md) et `npm run test:session`.
+Le renouvellement automatique est sérialisé et transmet un `requestId` aléatoire cryptographique. Après une réponse perdue, il réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Une panne réseau ou un 409 persistant ne déconnecte pas ; seul un refus 401/403 définitif termine la session. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md) et `npm run test:session`.
 
 Application mobile du livreur, construite sur le même modèle que l'application
 commerçant (`../merchant`) : même connexion, même barre du bas (Menu · Accueil ·

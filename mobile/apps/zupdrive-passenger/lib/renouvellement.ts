@@ -28,6 +28,7 @@ export interface DependancesRenouvellement<S extends SessionRenouvelable> {
 export function creerRenouvellement<S extends SessionRenouvelable>(deps: DependancesRenouvellement<S>) {
   const attendre = deps.attendre ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   let enCours: Promise<Renouvellement> | null = null;
+  const DELAI_REPRISE_MS = 1000;
   const requestId = deps.creerRequestId ?? (() => {
     const aleatoire = new Uint8Array(24);
     if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(aleatoire);
@@ -48,7 +49,12 @@ export function creerRenouvellement<S extends SessionRenouvelable>(deps: Dependa
       try {
         reponse = await deps.appeler(stored.refreshToken, cle);
       } catch {
-        // Réseau coupé : ce n'est pas une session expirée, on ne déconnecte pas.
+        // L'API a pu committer avant la perte de réponse : réessayer avec la
+        // même preuve récupère uniquement le successeur de cette demande.
+        if (essai === 0) {
+          await attendre(DELAI_REPRISE_MS);
+          continue;
+        }
         return { transient: true };
       }
       const data = await reponse.json().catch(() => ({}));
@@ -63,9 +69,12 @@ export function creerRenouvellement<S extends SessionRenouvelable>(deps: Dependa
         return { token: renouvelee.accessToken };
       }
       if (reponse.status === 409 && data?.code === 'REFRESH_CONCURRENT') {
-        // Même opération et même clé : reprise bornée, sans déconnexion.
-        if (essai > 0) return { transient: true };
+        // Une autre opération peut avoir enregistré son résultat dans le
+        // SecureStore ; sinon reprendre la même demande une seule fois.
         await attendre(1500);
+        const relue = await deps.charger();
+        if (relue && relue.accessToken !== stored.accessToken) return { token: relue.accessToken };
+        if (essai > 0) return { transient: true };
         continue;
       }
       if (reponse.status === 401 || reponse.status === 403) return { expired: true };

@@ -1,6 +1,6 @@
 # ZupOne Admin (mobile)
 
-Le renouvellement utilise une seule requête partagée, un `requestId` par opération et la reprise bornée serveur après réponse perdue. Les coupures et conflits temporaires ne déconnectent pas; le refus définitif invalide la session. Voir [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+Le renouvellement utilise une seule requête partagée et un `requestId` aléatoire cryptographique par opération. Après une réponse perdue, il réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Une panne réseau ou un 409 persistant ne déconnecte pas ; seul un refus 401/403 définitif termine la session. Voir [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
 
 Application Expo de l'équipe d'administration : superowner et membres de l'équipe (SuperAdmin, Administrateur, Support, groupes personnalisés).
 
