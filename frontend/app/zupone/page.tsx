@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
  * lib/domaines.ts).
  *
  * Elle présente les plateformes et renvoie chacun là où il agit : le client
- * vers ZupEat, le commerçant, le livreur et le chauffeur vers la page qui les
- * recrute, sur leur propre domaine. Rien ne s'y passe derrière une connexion.
+ * vers ZupEat et les métiers actuellement ouverts, sur leur propre domaine.
+ * Rien ne s'y passe derrière une connexion.
  */
 export default async function VitrineZupOne() {
   const t = await getTranslations('vitrineZupone');
@@ -41,16 +41,6 @@ export default async function VitrineZupOne() {
       lien: accueilDe('public'),
       action: t('eatAction'),
       disponible: true,
-    },
-    {
-      nom: 'ZupDrive',
-      marque: 'zupdrive',
-      emoji: '🚗',
-      etat: t('comingSoon'),
-      texte: t('driveText'),
-      lien: accueilDe('drive'),
-      action: t('driveAction'),
-      disponible: false,
     },
   ];
 
@@ -76,15 +66,6 @@ export default async function VitrineZupOne() {
       texte: t('courierText'),
       lien: lienVersEspace('livreur', '/devenir-livreur'),
       action: t('courierAction'),
-    },
-    {
-      icone: '🚗',
-      marque: 'zupdrive',
-      titre: t('driverTitle'),
-      texte: t('driverText'),
-      lien: lienVersEspace('drive', '/devenir-chauffeur'),
-      action: t('driverAction'),
-      bientot: true,
     },
   ];
 

@@ -19,7 +19,7 @@ export default function PiedDeGroupe() {
         <div>
           <h4 className="mb-3 text-lg font-bold">ZupOne</h4>
           <p className="mb-3 text-gray-600">{t('groupe')}</p>
-          {/* Le retour au site du groupe, depuis ZupEat comme depuis ZupDrive. */}
+          {/* Le retour au site du groupe depuis les plateformes publiques. */}
           <Link href={accueilDe('vitrine')} className="mb-3 block font-semibold text-gray-900 hover:underline">
             zupone.com →
           </Link>
@@ -31,9 +31,6 @@ export default function PiedDeGroupe() {
           <h4 className="mb-3 text-lg font-bold">{t('plateformes')}</h4>
           <Link href={accueilDe('public')} className="mb-2 block text-gray-600 hover:text-gray-900">
             ZupEat
-          </Link>
-          <Link href={accueilDe('drive')} className="mb-2 block text-gray-600 hover:text-gray-900">
-            ZupDrive
           </Link>
           <Link href={lienVersEspace('groupe', '/superowner')} className="mb-2 block text-gray-600 hover:text-gray-900">
             {t('espaceEquipe')}

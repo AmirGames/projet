@@ -3748,13 +3748,13 @@
   },
   "vitrineZupone": {
     "metaTitle": "ZupOne — Des services de proximité, un seul compte",
-    "metaDescription": "ZupOne réunit ZupEat, pour commander chez les commerces de votre quartier, et ZupDrive, le transport avec chauffeur à venir.",
+    "metaDescription": "ZupOne développe Zupeat, la plateforme de commande et de livraison des commerces de votre quartier.",
     "navPlatforms": "Nos plateformes",
     "navJoin": "Nous rejoindre",
     "navOrder": "Commander",
     "badge": "Le groupe ZupOne",
     "heroTitle": "Des services de proximité, un seul compte",
-    "heroText": "ZupOne réunit des plateformes qui relient les habitants d'un quartier à ceux qui y travaillent : commerçants, livreurs et, bientôt, chauffeurs.",
+    "heroText": "ZupOne développe Zupeat, une plateforme qui relie les habitants d'un quartier aux commerçants et livreurs proches.",
     "available": "Disponible",
     "comingSoon": "Bientôt disponible",
     "eatText": "Commandez chez les restaurants et les commerces de votre quartier, livrés par des livreurs proches ou à retirer sur place.",
@@ -4252,7 +4252,7 @@
     "unitPrice": "{n} × {prix}"
   },
   "piedDeGroupe": {
-    "groupe": "Le groupe derrière ZupEat et ZupDrive.",
+    "groupe": "Le groupe derrière Zupeat.",
     "plateformes": "Plateformes",
     "espaceEquipe": "Espace équipe",
     "legal": "Informations légales",

@@ -52,6 +52,10 @@ Cette livraison n'atteste ni déploiement ni validation Stripe LIVE.
 
 **Zupone** est un groupe technologique belge spécialisé dans les solutions digitales pour la mobilité urbaine et la livraison de repas. Nous développons deux écosystèmes distincts :
 
+> **Statut ZupDrive — en standby.** Le projet reste en pause tant que Zupeat
+> n'est pas opérationnel, stable et générateur de revenus. Sa reprise sera
+> réévaluée lorsque ces conditions seront réunies.
+
 1. **Zupeat** : Livraison de repas (restaurants → clients via livreurs)
 2. **ZupDrive** : Transport de passagers (type Uber/Bolt)
 

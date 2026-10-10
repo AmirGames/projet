@@ -3748,13 +3748,13 @@
   },
   "vitrineZupone": {
     "metaTitle": "ZupOne — Local services, one account",
-    "metaDescription": "ZupOne brings together ZupEat, to order from the shops in your neighbourhood, and ZupDrive, the upcoming ride service with a driver.",
+    "metaDescription": "ZupOne is developing Zupeat, the ordering and delivery platform for local businesses.",
     "navPlatforms": "Our platforms",
     "navJoin": "Join us",
     "navOrder": "Order",
     "badge": "The ZupOne group",
     "heroTitle": "Local services, one account",
-    "heroText": "ZupOne brings together platforms that connect the people of a neighbourhood with those who work there: merchants, couriers and, soon, drivers.",
+    "heroText": "ZupOne is developing Zupeat, a platform connecting local residents with nearby merchants and couriers.",
     "available": "Available",
     "comingSoon": "Coming soon",
     "eatText": "Order from the restaurants and shops in your neighbourhood, delivered by nearby couriers or ready for pickup.",
@@ -4252,7 +4252,7 @@
     "unitPrice": "{n} × {prix}"
   },
   "piedDeGroupe": {
-    "groupe": "The group behind ZupEat and ZupDrive.",
+    "groupe": "The group behind Zupeat.",
     "plateformes": "Platforms",
     "espaceEquipe": "Team area",
     "legal": "Legal information",
