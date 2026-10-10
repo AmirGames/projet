@@ -27,6 +27,9 @@ db.$transaction = jest.fn(async (fn: any) => fn(db));
 const sendEmailVerification = jest.fn(async (..._a: any[]) => undefined);
 const sendPasswordReset = jest.fn(async (..._a: any[]) => undefined);
 const recordSecurityEvent = jest.fn(async (..._a: any[]) => undefined);
+const renouvelerRefresh = jest.fn(async (..._a: any[]) => ({
+  decoded: { userId: "user-alice", iat: 1 }, sid: "sid-1", refreshToken: "refresh-neuf",
+}));
 
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() } }));
@@ -45,6 +48,7 @@ jest.mock("../sso.service", () => ({
   SsoService: {
     connecter: jest.fn(async () => ({ accessToken: "acces", refreshToken: "renouvellement" })),
     emettreRefresh: jest.fn(async () => "refresh-neuf"),
+    renouveler: (...args: any[]) => renouvelerRefresh(...args),
   },
 }));
 jest.mock("../security-event.service", () => ({ SecurityEventService: { record: (...a: any[]) => recordSecurityEvent(...a) } }));
@@ -153,6 +157,21 @@ describe("POST /signup, /login, /logout, /refresh : cas hors tests existants", (
   it("refresh sans jeton → 400", async () => {
     const r = await request(app).post("/api/auth/refresh").send({});
     expect(r.status).toBe(400);
+  });
+  it("transmet la clé de reprise d’en-tête au service de rotation", async () => {
+    const r = await request(app).post("/api/auth/refresh")
+      .set("X-Refresh-Request", "preuve-de-reprise-aleatoire-1234")
+      .send({ refreshToken: "refresh-present" });
+    expect(renouvelerRefresh).toHaveBeenCalledWith("refresh-present", "preuve-de-reprise-aleatoire-1234");
+    expect(r.status).toBe(401); // le mock de compte n'a pas de compte ; la preuve arrive bien au service.
+  });
+  it("conserve la clé de reprise fournie dans le corps", async () => {
+    const r = await request(app).post("/api/auth/refresh").send({
+      refreshToken: "refresh-present",
+      requestId: "preuve-de-reprise-aleatoire-1234",
+    });
+    expect(renouvelerRefresh).toHaveBeenCalledWith("refresh-present", "preuve-de-reprise-aleatoire-1234");
+    expect(r.status).toBe(401);
   });
 });
 

@@ -25,6 +25,7 @@ const TRANSMIS = [
   'user-agent',
   'accept-language',
   'x-refresh-transport',
+  'x-refresh-request',
 ];
 
 /** L'adresse du visiteur : la dernière que le proxy de tête (Caddy) a ajoutée. */

@@ -87,7 +87,10 @@ router.post("/refresh", limiterAuthParIp, async (req: Request, res: Response, ne
     // cookie, la requête part toute seule : l'origine doit être un domaine du site.
     const duCookie = !req.body?.refreshToken && lireCookieRefresh(req);
     if (duCookie) exigerOrigine(req);
-    const body = refreshTokenSchema.parse({ refreshToken: req.body?.refreshToken ?? duCookie });
+    const body = refreshTokenSchema.parse({
+      refreshToken: req.body?.refreshToken ?? duCookie,
+      requestId: req.body?.requestId,
+    });
 
     // Rotation : le jeton présenté est consommé, un nouveau est émis. Un jeton
     // déjà consommé ferme la session entière (voir SsoService.renouveler).
