@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { jetonAcces, oublierJeton } from '@/lib/jeton-session';
+import { jetonAcces } from '@/lib/jeton-session';
+import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type State = { enabled: boolean; required: boolean; verified: boolean; recent: boolean; recovery: boolean };
 export async function mfaRequest(action = '', body?: unknown) {
@@ -19,6 +21,8 @@ export async function mfaRequest(action = '', body?: unknown) {
 
 export function MfaPanel({ onDone }: { onDone?: () => void }) {
   const t = useTranslations('mfa');
+  const { logout } = useAuth();
+  const router = useRouter();
   const [state, setState] = useState<State | null>(null);
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -34,7 +38,7 @@ export function MfaPanel({ onDone }: { onDone?: () => void }) {
       setCode(''); setPassword('');
       if (data.secret) setSecret(data.secret);
       if (data.recoveryCodes) { setCodes(data.recoveryCodes); setSecret(''); }
-      if (action === 'revoke') { oublierJeton(); window.location.assign('/login'); return; }
+      if (action === 'revoke') { logout(); router.push('/login'); return; }
       const current = await mfaRequest(); setState(current);
       if (action === 'verify' && current.verified && !current.recovery) onDone?.();
     } catch (e) { setError(e instanceof Error ? e.message : t('error')); }

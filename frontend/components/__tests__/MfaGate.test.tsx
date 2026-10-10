@@ -3,6 +3,7 @@ import '@testing-library/jest-dom';
 import MfaGate, { MfaPanel } from '../MfaGate';
 jest.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn() }) }));
+jest.mock('@/lib/auth-context', () => ({ useAuth: () => ({ logout: jest.fn() }) }));
 jest.mock('@/lib/jeton-session', () => ({ jetonAcces: () => 'session-test' }));
 let state: { enabled: boolean; required: boolean; verified: boolean; recent: boolean; recovery: boolean };
 let calls: string[];
