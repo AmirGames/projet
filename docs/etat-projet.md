@@ -4,17 +4,16 @@
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 10 octobre 2026 | branche `claude/awesome-ride-m9lci8`, commit distant `1405a3da5c1039fdd28b0c30c31f2b3d3b688e34`, correctif du relais web en cours | [contrat A09](ROTATION-SESSIONS-A09.md), code et migration |
+| Développé | 10 octobre 2026 | PR #209, branche `claude/awesome-ride-m9lci8-a09-refresh-ci`, correctif `4a69a161175fb6e591821955bcaaca4780c06cae` sur la base A09 `1405a3da` | [contrat A09](ROTATION-SESSIONS-A09.md), code et migration |
 | Testé | 10 octobre 2026, partiel | CI du commit `1405a3da` : build backend, migration et build frontend réussis, parcours navigateur échoué ; correctif ciblé : route auth 40/40, typecheck/lint frontend et lint backend réussis | [job E2E en échec](https://github.com/AmirGames/projet/actions/runs/38085740711/job/114311729021) ; le test Jest du relais n'a pas pu démarrer localement (chargement binding natif SWC impossible sous Windows) |
-| Intégré | non confirmé | aucun SHA de fusion vérifié | aucune preuve d'intégration |
+| Intégré | non | aucun SHA de fusion vérifié | [PR #209 ouverte](https://github.com/AmirGames/projet/pull/209) ; aucune preuve d'intégration |
 | Déployé | non | aucun environnement confirmé | aucune preuve |
 | Validé en exploitation | non | aucun environnement confirmé | aucune preuve |
 
 La demande A09 et un build vert ne constituent pas une preuve de parcours réussi.
 La CI de `1405a3da` a échoué sur plusieurs scénarios navigateur dont les
-connexions, car le relais web filtrait `X-Refresh-Request`; les correctifs
-locaux transmettent l'en-tête et conservent `requestId` lors de la validation
-du corps. Le test PostgreSQL attend une base dont le nom contient `test` ; elle
+connexions, car le relais web filtrait `X-Refresh-Request`; le correctif de la branche PR #209 transmet l'en-tête et conserve
+`requestId` lors de la validation du corps (commit `4a69a161`). Le test PostgreSQL attend une base dont le nom contient `test` ; elle
 n'a pas été exécutée localement. Le test Jest frontend du relais est ajouté,
 mais son exécution locale reste bloquée par le binding natif SWC ; le contrôle
 backend ciblé, les types/lint frontend et le lint backend passent. Le job CI
