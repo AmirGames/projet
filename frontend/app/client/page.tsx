@@ -306,30 +306,31 @@ export default function ClientHomePage() {
       <title>{`${t('titreOnglet')} — ZupEat`}</title>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
-        <RechercheAdresseLivraison
-          adresse={adresse}
-          onChange={(choisie) => {
-            setAdresse(choisie);
-            chargerPour(choisie);
-          }}
-        />
         {/* L'accroche : un grand aplat chaleureux, et l'adresse au centre du
             jeu — sans elle, ni frais ni délais justes. */}
         <section className="relative isolate overflow-hidden rounded-[2rem] bg-[#FFF6EC] px-6 py-9 text-black sm:px-10 md:px-14 md:py-14">
           <div className="grid items-center gap-8 md:grid-cols-[1.05fr_.95fr] md:gap-12">
             <div className="relative z-10 max-w-2xl">
-              <p className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">Les belles adresses autour de vous</p>
+              <p className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('heroEyebrow')}</p>
               <h1 className="text-4xl font-black leading-[.98] tracking-[-.06em] sm:text-5xl md:text-6xl">{t('heroTitle')}</h1>
               <p className="mt-5 max-w-xl text-base leading-7 text-neutral-700 md:text-lg">{t('heroSubtitle')}</p>
               <p className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-neutral-700">
                 <Check size={17} className="rounded-full bg-[#FF7A00] p-0.5 text-black" />{t('heroOrderWithoutAccount')}
               </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="#commerces" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#FF7A00] px-6 text-sm font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">Trouver un commerce <ArrowRight size={17} /></Link>
-                <Link href="/restaurants" className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/15 bg-white px-6 text-sm font-bold text-black transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">Voir toutes les boutiques</Link>
+              <div className="mt-7 flex max-w-xl flex-col gap-3 sm:flex-row sm:items-start">
+                <RechercheAdresseLivraison
+                  adresse={adresse}
+                  onChange={(choisie) => {
+                    setAdresse(choisie);
+                    chargerPour(choisie);
+                  }}
+                  className="mb-0 min-h-14 flex-1 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm transition hover:border-black/20 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                />
+                <Link href="#commerces" className="inline-flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#FF7A00] px-6 text-sm font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">{t('heroAction')} <ArrowRight size={17} /></Link>
               </div>
+              <Link href="/restaurants" className="mt-3 inline-flex rounded-sm text-sm font-semibold text-neutral-700 underline underline-offset-4 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">{t('seeAll')}</Link>
             </div>
-            <div aria-label="Une sélection de commerces locaux" className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div aria-label={t('heroImageLabel')} className="grid grid-cols-2 gap-3 sm:gap-4">
               {['boulangerie', 'primeur', 'fromagerie', 'fleuriste'].map((famille, index) => {
                 const visuel = visuelDeCommerce(famille);
                 return <div key={famille} className={`overflow-hidden rounded-3xl bg-white shadow-sm ${index % 2 === 1 ? 'translate-y-5' : ''}`}><img src={visuel.src} alt={visuel.alt} className="aspect-[1.12] w-full object-cover" loading="eager" /></div>;
@@ -373,7 +374,7 @@ export default function ClientHomePage() {
                         aria-hidden="true"
                         className={`flex h-16 w-16 items-center justify-center rounded-full text-3xl leading-none transition ${
                           choisie
-                            ? 'bg-orange-100 ring-2 ring-orange-500 scale-105'
+                          ? 'bg-[#FF7A00] ring-2 ring-black/10 scale-105'
                             : 'bg-gray-100 group-hover:bg-orange-50 group-hover:scale-105'
                         }`}
                       >
@@ -415,7 +416,7 @@ export default function ClientHomePage() {
                 aria-pressed={actif}
                 onClick={() => basculerFiltre(cle)}
                 className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  actif ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  actif ? 'bg-[#FF7A00] text-black' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
               >
                 <Icone size={15} className={actif && cle === 'mieuxNotes' ? 'fill-white' : ''} />
@@ -502,16 +503,16 @@ export default function ClientHomePage() {
         )}
       </div>
       <section className="mx-auto mt-4 max-w-7xl px-5 py-12 md:px-8 md:py-16">
-        <p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">Simple comme bonjour</p>
-        <h2 className="mt-2 text-3xl font-black tracking-[-.045em] md:text-4xl">Comment ça marche</h2>
+        <p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('howEyebrow')}</p>
+        <h2 className="mt-2 text-3xl font-black tracking-[-.045em] md:text-4xl">{t('howTitle')}</h2>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {[['01', 'Choisissez une adresse', 'Indiquez où vous souhaitez recevoir votre commande.'], ['02', 'Trouvez votre commerce', 'Parcourez les boutiques et leurs produits disponibles.'], ['03', 'Savourez vos trouvailles', 'Suivez votre commande jusqu’à sa livraison.']].map(([numero, titre, texte]) => <article key={numero} className="rounded-3xl border border-neutral-200 p-6"><span className="grid size-10 place-items-center rounded-2xl bg-[#FF7A00] text-sm font-black text-black">{numero}</span><h3 className="mt-5 text-xl font-bold tracking-tight">{titre}</h3><p className="mt-2 text-sm leading-6 text-neutral-600">{texte}</p></article>)}
+          {[1, 2, 3].map((numero) => <article key={numero} className="rounded-3xl border border-neutral-200 p-6"><span className="grid size-10 place-items-center rounded-2xl bg-[#FF7A00] text-sm font-black text-black">{String(numero).padStart(2, '0')}</span><h3 className="mt-5 text-xl font-bold tracking-tight">{t(`howStep${numero}Title`)}</h3><p className="mt-2 text-sm leading-6 text-neutral-600">{t(`howStep${numero}Description`)}</p></article>)}
         </div>
       </section>
       <section className="mx-auto grid max-w-7xl gap-4 px-5 pb-12 md:grid-cols-2 md:px-8 md:pb-16">
-        {[{ titre: 'Vous livrez ?', texte: 'Rejoignez le réseau ZupEat et livrez les commerces près de chez vous.', href: '/devenir-livreur', image: '/images/shops-redesign/primeur.webp' }, { titre: 'Vous êtes commerçant ?', texte: 'Faites découvrir votre boutique aux clients de votre quartier.', href: '/devenir-commercant', image: '/images/shops-redesign/boulangerie.webp' }].map((carte) => <Link key={carte.href} href={carte.href} className="group relative min-h-64 overflow-hidden rounded-[2rem] bg-neutral-900 p-7 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 md:p-9"><img src={carte.image} alt="" className="absolute inset-0 size-full object-cover opacity-35 transition duration-500 group-hover:scale-[1.03]" loading="lazy"/><div className="relative max-w-md"><h2 className="text-2xl font-black tracking-tight md:text-3xl">{carte.titre}</h2><p className="mt-3 text-sm leading-6 text-white/90">{carte.texte}</p><span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#FF7A00] px-5 py-3 text-sm font-bold text-black">En savoir plus <ArrowRight size={16}/></span></div></Link>)}
+        {[{ href: '/devenir-livreur', image: '/images/shops-redesign/primeur.webp', title: 'partnerDriverTitle', description: 'partnerDriverDescription' }, { href: '/devenir-commercant', image: '/images/shops-redesign/boulangerie.webp', title: 'partnerMerchantTitle', description: 'partnerMerchantDescription' }].map((carte) => <Link key={carte.href} href={carte.href} className="group relative min-h-64 overflow-hidden rounded-[2rem] bg-neutral-900 p-7 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 md:p-9"><img src={carte.image} alt="" className="absolute inset-0 size-full object-cover opacity-35 transition duration-500 group-hover:scale-[1.03]" loading="lazy"/><div className="relative max-w-md"><h2 className="text-2xl font-black tracking-tight md:text-3xl">{t(carte.title)}</h2><p className="mt-3 text-sm leading-6 text-white/90">{t(carte.description)}</p><span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#FF7A00] px-5 py-3 text-sm font-bold text-black">{t('partnerAction')} <ArrowRight size={16}/></span></div></Link>)}
       </section>
-      {stores.some((store) => (store.totalRatings || 0) > 0 && store.rating != null) && <section className="bg-neutral-50 py-12 md:py-16"><div className="mx-auto max-w-7xl px-5 md:px-8"><p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">Avis vérifiés</p><h2 className="mt-2 text-3xl font-black tracking-[-.045em]">Les commerces appréciés près de vous</h2><p className="mt-2 max-w-2xl text-sm text-neutral-600">Notes et nombre d’avis publiés issus des retours clients.</p><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{stores.filter((store) => (store.totalRatings || 0) > 0 && store.rating != null).sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3).map((store) => <Link key={store.id} href={`/store/${store.slug}`} className="rounded-3xl bg-white p-6 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"><div className="flex items-center gap-2 text-lg font-black"><Star className="size-5 fill-[#FF7A00] text-[#FF7A00]"/>{note(store.rating!)}<span className="text-xs font-medium text-neutral-500">({store.totalRatings} avis)</span></div><h3 className="mt-3 font-bold">{store.name}</h3><p className="mt-1 text-sm text-neutral-600">{store.genreLibelle || 'Commerce de proximité'}</p></Link>)}</div></div></section>}
+      {stores.some((store) => (store.totalRatings || 0) > 0 && store.rating != null) && <section className="bg-neutral-50 py-12 md:py-16"><div className="mx-auto max-w-7xl px-5 md:px-8"><p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('reviewsEyebrow')}</p><h2 className="mt-2 text-3xl font-black tracking-[-.045em]">{t('reviewsTitle')}</h2><p className="mt-2 max-w-2xl text-sm text-neutral-600">{t('reviewsDescription')}</p><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{stores.filter((store) => (store.totalRatings || 0) > 0 && store.rating != null).sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3).map((store) => <Link key={store.id} href={`/store/${store.slug}`} className="rounded-3xl bg-white p-6 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"><div className="flex items-center gap-2 text-lg font-black"><Star className="size-5 fill-[#FF7A00] text-[#FF7A00]"/>{note(store.rating!)}<span className="text-xs font-medium text-neutral-500">({store.totalRatings} {t('reviews')}</span></div><h3 className="mt-3 font-bold">{store.name}</h3><p className="mt-1 text-sm text-neutral-600">{store.genreLibelle || t('localShop')}</p></Link>)}</div></div></section>}
     </div>
   );
 }
@@ -648,7 +649,7 @@ function CarteCommerce({
 
         {/* Ce qui fait cliquer : la livraison offerte, en étiquette. */}
         {!ferme && livraisonOfferte(store) && (
-          <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+                <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-[#FF7A00] px-2.5 py-1 text-xs font-bold text-black shadow-sm">
             <Bike size={13} />
             {t('filterFreeDelivery')}
           </span>
@@ -722,3 +723,4 @@ function GrilleEnChargement() {
     </div>
   );
 }
+

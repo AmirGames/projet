@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { alternatesRegionales } from '@/lib/seo-regional';
+import { MarketplaceFooter } from '@/components/client/MarketplaceFooter';
 
 // Côté serveur, l'API peut avoir une autre adresse que celle vue du navigateur.
 const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -31,5 +32,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default function LayoutVitrine({ children }: { children: React.ReactNode }) {
-  return children;
+  return <>{children}<MarketplaceFooter /></>;
 }
+

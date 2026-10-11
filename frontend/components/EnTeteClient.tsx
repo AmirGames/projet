@@ -40,7 +40,7 @@ export function EnTeteClient() {
 
   const navItems = [
     { href: '/client', label: t('nav.accueil'), icon: Home },
-    { href: '/restaurants', label: 'Boutiques', icon: Store },
+    { href: '/restaurants', label: t('nav.boutiques'), icon: Store },
     { href: '/client/favorites', label: t('nav.favoris'), icon: Heart },
     { href: '/client/orders', label: t('nav.commandes'), icon: ShoppingCart },
     { href: '/client/profile', label: t('nav.profil'), icon: User },
@@ -61,7 +61,10 @@ export function EnTeteClient() {
             <PaniersAccueil />
             <LanguageSwitcher clair />
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? t('fermerMenu') : t('ouvrirMenu')}
+              aria-expanded={mobileMenuOpen}
               className="p-2 text-gray-900 hover:bg-gray-100 rounded-lg"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -79,6 +82,7 @@ export function EnTeteClient() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                   className={`flex items-center gap-3 px-4 py-3 transition ${
                     isActive(item.href)
                       ? 'bg-gray-100 text-gray-900 font-semibold'
@@ -129,6 +133,7 @@ export function EnTeteClient() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
                     isActive(item.href)
                       ? 'bg-white text-gray-900 shadow-xs'
@@ -167,3 +172,4 @@ export function EnTeteClient() {
     </>
   );
 }
+

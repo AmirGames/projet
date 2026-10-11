@@ -44,9 +44,11 @@ const cle = cleAdresse;
 export function RechercheAdresseLivraison({
   adresse,
   onChange,
+  className,
 }: {
   adresse: AdresseLivraison | null | undefined;
   onChange: (adresse: AdresseLivraison) => void;
+  className?: string;
 }) {
   const t = useTranslations("deliveryAddress");
   const tf = useTranslations("savedAddresses");
@@ -216,7 +218,7 @@ export function RechercheAdresseLivraison({
         onClick={ouvrir}
         aria-haspopup="dialog"
         aria-expanded={ouvert}
-        className="mb-5 flex w-full items-center gap-3 rounded-full border border-gray-200 bg-gray-50 px-5 py-4 text-left text-gray-900 transition-colors hover:bg-gray-100 focus-visible:outline-orange-500"
+        className={className || "mb-5 flex w-full items-center gap-3 rounded-full border border-gray-200 bg-gray-50 px-5 py-4 text-left text-gray-900 transition-colors hover:bg-gray-100 focus-visible:outline-orange-500"}
       >
         <Search size={22} className="shrink-0 text-orange-600" />
         <span className="min-w-0 flex-1 truncate">
@@ -417,3 +419,4 @@ export function RechercheAdresseLivraison({
     </>
   );
 }
+

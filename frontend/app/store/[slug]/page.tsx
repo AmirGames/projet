@@ -51,6 +51,9 @@ interface Store {
   enAttenteDeValidation?: boolean;
   /** Le logo que le commerçant a déposé depuis ses paramètres. */
   settings?: { logo?: string | null; banner?: string | null } | null;
+  /** Moyenne réelle des avis publiés sur la boutique. */
+  averageRating?: number | string | null;
+  reviewCount?: number;
   createdAt: string;
 }
 
@@ -413,6 +416,8 @@ export default function StorefrontPage() {
                     enAttenteDeValidation: menuData.data.enAttenteDeValidation === true,
                     genreLibelle: menuData.data.genreLibelle ?? actuelle.genreLibelle ?? null,
                     famille: menuData.data.famille ?? actuelle.famille ?? null,
+                    averageRating: menuData.data.averageRating ?? null,
+                    reviewCount: Number(menuData.data.reviewCount) || 0,
                   }
                 : actuelle
             );
@@ -719,6 +724,12 @@ export default function StorefrontPage() {
 
       {/* La bannière et l'identité du commerce. */}
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
+        <nav aria-label={t('breadcrumbs')} className="mb-4 flex items-center gap-2 text-sm text-neutral-500">
+          <Link href="/client" className="rounded-sm transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">{t('breadcrumbHome')}</Link>
+          <span aria-hidden="true">/</span>
+          <Link href="/restaurants" className="rounded-sm transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">{t('breadcrumbShops')}</Link>
+          {store.genreLibelle && <><span aria-hidden="true">/</span><span>{store.genreLibelle}</span></>}
+        </nav>
         {/* La photo de couverture du commerçant ; à défaut, l'illustration de
             sa catégorie (une pizza pour une pizzeria). */}
         <div className="relative h-48 overflow-hidden rounded-[2rem] bg-neutral-100 md:h-80">
@@ -758,7 +769,7 @@ export default function StorefrontPage() {
               <ShoppingBag size={18} />
               {t('cart')}
               {nombreArticles > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-600 px-1 text-xs font-bold text-white">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FF7A00] px-1 text-xs font-bold text-black">
                   {nombreArticles > 99 ? '99+' : nombreArticles}
                 </span>
               )}
@@ -767,6 +778,19 @@ export default function StorefrontPage() {
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-600">
             {store.genreLibelle && <span>{store.genreLibelle}</span>}
             {store.genreLibelle && <span aria-hidden="true">·</span>}
+            {store.reviewCount != null && store.reviewCount > 0 && store.averageRating != null && (
+              <>
+                <span className="inline-flex items-center gap-1 font-semibold text-gray-900" aria-label={t('storeRating', {
+                  rating: Number(store.averageRating).toLocaleString(locale, { maximumFractionDigits: 1 }),
+                  count: store.reviewCount,
+                })}>
+                  <Star size={15} aria-hidden="true" className="fill-[#FF7A00] text-[#FF7A00]" />
+                  {Number(store.averageRating).toLocaleString(locale, { maximumFractionDigits: 1 })}
+                  <span className="font-normal text-gray-500">({store.reviewCount})</span>
+                </span>
+                <span aria-hidden="true">·</span>
+              </>
+            )}
             <span
               className={`inline-flex items-center gap-1.5 font-semibold ${
                 store.isOpenNow === false ? 'text-red-600' : 'text-green-700'
@@ -875,8 +899,8 @@ export default function StorefrontPage() {
                       .getElementById(`categorie-${encodeURIComponent(categorie.id)}`)
                       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    active ? 'bg-gray-900 text-white hover:text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] ${
+                    active ? 'bg-[#FF7A00] text-black' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   {categorie.name}
@@ -1164,7 +1188,7 @@ export default function StorefrontPage() {
                   }}
                   disabled={bloque}
                   aria-label={t('addNamed', { name: product.name })}
-                  className="flex-1 rounded-full bg-orange-600 py-3.5 font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                  className="flex-1 rounded-full bg-[#FF7A00] py-3.5 font-bold text-black transition hover:bg-[#E66E00] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
                 >
                   {!product.isAvailable
                     ? t('soldOut')
@@ -1197,10 +1221,10 @@ export default function StorefrontPage() {
           <button
             type="button"
             onClick={() => setShowCart(true)}
-            className="flex w-full items-center justify-between gap-3 rounded-full bg-gray-900 py-3 pl-3 pr-6 text-white shadow-2xl transition hover:bg-gray-800"
+            className="flex w-full items-center justify-between gap-3 rounded-full bg-[#FF7A00] py-3 pl-3 pr-6 text-black shadow-2xl transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           >
             <span className="flex items-center gap-3">
-              <span className="flex h-10 min-w-10 items-center justify-center rounded-full bg-orange-600 px-2 font-bold">
+              <span className="flex h-10 min-w-10 items-center justify-center rounded-full bg-white px-2 font-bold text-black">
                 {nombreArticles > 99 ? '99+' : nombreArticles}
               </span>
               <span className="font-bold">{t('viewCart')}</span>
@@ -1355,7 +1379,7 @@ export default function StorefrontPage() {
                   // panier y est déjà, enregistré sous cette boutique.
                   onClick={() => router.push(`/checkout?boutique=${store.id}`)}
                   disabled={commandeBloquee}
-                  className="mt-3 w-full rounded-full bg-orange-600 py-4 text-base font-bold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-3 w-full rounded-full bg-[#FF7A00] py-4 text-base font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t('checkout', { total: euro(cartTotal + (fraisConnus ?? 0) + fraisDeService) })}
                 </button>
@@ -1452,3 +1476,4 @@ function CartePlat({
     </div>
   );
 }
+
