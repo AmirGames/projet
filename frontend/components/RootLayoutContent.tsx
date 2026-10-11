@@ -12,6 +12,7 @@ import { separerRegion } from '@/i18n/chemins-regionaux';
 import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 import AssistantWidget from './assistant/AssistantWidget';
+import type { EspaceHeberge } from '@/lib/domaines';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -80,8 +81,10 @@ function estUnEspaceDeTravail(pathname: string | null): boolean {
 
 export default function RootLayoutContent({
   children,
+  espaceHote,
 }: {
   children: React.ReactNode;
+  espaceHote: EspaceHeberge | null;
 }) {
   const t = useTranslations('rootLayoutContent');
   const pathname = usePathname();
@@ -128,7 +131,7 @@ export default function RootLayoutContent({
   return (
     <>
       <SynchroPaniers />
-      {!hideNavbar && <Navbar />}
+      {!hideNavbar && <Navbar espaceHote={espaceHote} />}
       {children}
       {!sansPied && <PiedDeGroupe />}
       {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && <AssistantWidget />}

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from '@/components/LienRegional';
-import { accueilDe } from '@/lib/domaines';
+import { accueilDe, type EspaceHeberge } from '@/lib/domaines';
 import { usePathname, useRouter } from 'next/navigation';
 import { MARQUES } from '@/lib/marques';
 import { useTranslations } from 'next-intl';
@@ -11,15 +11,21 @@ import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
-export default function Navbar() {
+export default function Navbar({ espaceHote }: { espaceHote: EspaceHeberge | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const t = useTranslations('nav');
-  // Le dossier et les trajets du chauffeur sont ZupDrive, pas ZupEat.
-  const estZupDrive = /^(\/[a-z]{2}-[a-z]{2})?\/(chauffeur|trajet)(\/|$)/i.test(pathname ?? '');
-  const marque = MARQUES[estZupDrive ? 'zupdrive' : 'zupeat'];
+  // Les pages de compte sont partagées, mais leur marque suit le domaine demandé.
+  const estZupOne = espaceHote === 'groupe' || espaceHote === 'vitrine';
+  const estZupDrive = espaceHote === 'drive' || espaceHote === 'chauffeur' || /^(\/[a-z]{2}-[a-z]{2})?\/(chauffeur|trajet)(\/|$)/i.test(pathname ?? '');
+  const marque = MARQUES[estZupOne ? 'zupone' : estZupDrive ? 'zupdrive' : 'zupeat'];
+  const accueilMarque = estZupOne
+    ? accueilDe('vitrine')
+    : estZupDrive
+      ? accueilDe('drive')
+      : accueilDe('public');
 
   const handleLogout = () => {
     logout();
@@ -31,7 +37,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 text-gray-900 hover:no-underline">
+          <Link href={accueilMarque} className="flex items-center gap-2 text-gray-900 hover:no-underline">
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm ${marque.logo}`}>
               Z
             </div>

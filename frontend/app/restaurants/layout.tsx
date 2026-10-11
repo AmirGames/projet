@@ -9,5 +9,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <><EnTeteClient />{children}<MarketplaceFooter /></>;
+  return (
+    <div className="min-h-screen bg-white text-neutral-900">
+      <EnTeteClient />
+      {children}
+      <MarketplaceFooter />
+    </div>
+  );
 }

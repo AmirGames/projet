@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { TempsReelProvider } from "@/lib/temps-reel";
 import RootLayoutContent from "@/components/RootLayoutContent";
 import { MaintenanceGate } from "@/components/MaintenanceGate";
+import { espaceDuDomaine } from "@/lib/domaines";
 import "./globals.css";
 
 /**
@@ -38,12 +39,15 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const entetes = await headers();
+  const hote = entetes.get("x-forwarded-host") || entetes.get("host") || "";
+  const espaceHote = espaceDuDomaine(hote);
 
   // La région de l'adresse (/be-fr/…) prime ; sinon celle choisie
   // auparavant, tant qu'elle parle la langue affichée.
   const deCookie = trouverRegion((await cookies()).get(NOM_COOKIE_REGION)?.value);
   const region =
-    trouverRegion((await headers()).get(ENTETE_REGION) ?? undefined) ??
+    trouverRegion(entetes.get(ENTETE_REGION) ?? undefined) ??
     (deCookie?.langue === locale ? deCookie : undefined);
 
   return (
@@ -57,7 +61,7 @@ export default async function RootLayout({
             <AuthProvider>
               <TempsReelProvider>
                 <MaintenanceGate />
-                <RootLayoutContent>{children}</RootLayoutContent>
+                <RootLayoutContent espaceHote={espaceHote}>{children}</RootLayoutContent>
               </TempsReelProvider>
             </AuthProvider>
           </RegionProvider>
