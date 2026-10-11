@@ -126,7 +126,8 @@ export default function RootLayoutContent({
                      aSaPropreNavigation(chemin);
 
   const sansPied = chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin) ||
-    chemin === '/client' || chemin === '/restaurants';
+    chemin === '/client' || chemin?.startsWith('/client/') || chemin === '/restaurants' ||
+    (chemin?.startsWith('/store/') && chemin !== '/store/new');
 
   return (
     <>
