@@ -182,7 +182,7 @@ titre('La liste des commerces est accessible');
 // /restaurants est désormais le vrai catalogue, dans la même région que le
 // reste du site. Elle ne doit pas repartir vers /client.
 await page.goto(`${SITE}/restaurants`);
-await page.getByRole('heading', { name: 'Toutes les boutiques' }).waitFor({ timeout: 15000 });
+await page.getByRole('heading', { level: 1, name: 'Toutes les boutiques' }).waitFor({ timeout: 15000 });
 const cheminBoutiques = sansRegion(new URL(page.url()).pathname);
 check('elle reste sur la route des boutiques', cheminBoutiques === '/restaurants', page.url());
 check(
