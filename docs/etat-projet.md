@@ -6,7 +6,8 @@
 |---|---|---|---|
 | Développé | 11 octobre 2026 | branche dédiée A13, base `b73707d39abf56241aa06e0fcef14d104aaab9f8` | [contrat HTTP, matrice, CI, exclusions et procédures](CONTRATS-API-A13.md) |
 | Testé localement | 11 octobre 2026, partiel | Windows, Node 24.21/npm 12, contenu A13 basé sur `b73707d39abf56241aa06e0fcef14d104aaab9f8` | Contrats/paiement **51/51**, couverture route/service mesurée et seuils satisfaits; backend build/typecheck/lint réussis; Delivery tests **16/16**, types/lint réussis; YAML et liens vérifiés |
-| Testé CI | 11 octobre 2026, GitHub Actions / Ubuntu / PostgreSQL 16 | SHA `76aa688ef81c34ffa1f113d955923bc789be70f0`, 11 jobs réussis | [run #38156637420](https://github.com/AmirGames/projet/actions/runs/38156637420) : backend, couverture, PostgreSQL dédié, E2E, MFA et six jobs mobiles |
+| Testé CI | 11 octobre 2026, GitHub Actions / Ubuntu / PostgreSQL 16 | SHA `76aa688ef81c34ffa1f113d955923bc789be70f0`, 11 jobs réussis | [run #38156637420](https://github.com/AmirGames/projet/actions/runs/38156637420) : backend, couverture, PostgreSQL dédié, E2E, MFA, six jobs mobiles (types/lint) |
+| À valider en CI | 11 octobre 2026 | Ajout des scripts Jest Customer/Merchant dans la matrice mobile A13 après ce run | Le nouveau SHA attend son propre passage CI avant de revendiquer ces deux suites |
 | Non exécuté localement / externe | 11 octobre 2026 | Pas de PostgreSQL/Docker local; Jest/types Customer/Merchant incomplets localement; aucune configuration Stripe TEST ou appareil disponible | Les suites PostgreSQL passent en CI; Stripe TEST/3DS interactif et essais sur appareil restent non exécutés |
 | Intégré | Non vérifié | SHA d'intégration absent | Aucune preuve |
 | Déployé | Non exécuté | Aucun environnement A13 confirmé | Aucune preuve |

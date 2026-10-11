@@ -12,8 +12,9 @@
 # Deux suites d'intégration (RGPD, assistant) ne s'exécutent que si on le leur
 # demande : elles écrivent beaucoup et exigent une base à elles. Elles tournent
 # ici chacune sur sa base dédiée, migrée comme les autres. Les six
-# applications mobiles ont leur propre job : types, lint, et les tests Node
-# de l'application livreur. Un job de bout en bout (E2E) démarre l'API et le
+# applications mobiles ont leur propre job : types/lint pour toutes, tests
+# Jest pour Customer et Merchant, tests Node pour Delivery et ZupDrive Passenger.
+# Un job de bout en bout (E2E) démarre l'API et le
 # site pour de vrai et rejoue un sous-ensemble stable des parcours navigateur
 # de frontend/scripts/verif-*.mjs.
 #
@@ -312,6 +313,12 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: Tests (application client)
+        if: matrix.app == 'customer'
+        run: npm test -- --runInBand
+      - name: Tests (application commerçant)
+        if: matrix.app == 'merchant'
+        run: npm test -- --runInBand
       - name: Tests (application livreur)
         if: matrix.app == 'delivery'
         run: npm run test:alerts && npm run test:session

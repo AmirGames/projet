@@ -53,7 +53,8 @@ fichiers ferment leur client Prisma dans `afterAll`. Le job Backend existant
 exécute les contrats simulés et A03 contre PostgreSQL; les jobs A04/MFA
 gardent leurs bases dédiées. Le job E2E garde Stripe désactivé et son service
 d'adresse simulé. Les jobs mobiles font types/lint sur les six apps; seuls
-Delivery et ZupDrive Passenger lancent aussi leurs scripts de test déclarés.
+Customer et Merchant lancent aussi leurs tests Jest, Delivery lance ses tests
+Node d'alertes/session, et ZupDrive Passenger lance sa suite Jest.
 
 ### Mesure et seuil de couverture critique
 
@@ -85,6 +86,10 @@ npx jest src/modules/auth/__tests__/account-links.pg.test.ts --runInBand
 npx jest src/modules/auth/__tests__/rotation-refresh.pg.test.ts --runInBand
 npx jest src/modules/drivers/__tests__/acceptation-concurrente.pg.test.ts --runInBand
 ```
+
+Depuis chaque app mobile : `npm ci && npm test -- --runInBand` pour Customer et
+Merchant; `npm run test:alerts && npm run test:session` pour Delivery. La CI
+appelle ces commandes dans le matrix mobile, en plus du typecheck et du lint.
 
 L'intégration remboursement exige `REFUND_INTEGRATION=true`; les tests
 PostgreSQL exigent une base dédiée migrée. Ne jamais utiliser une base de
@@ -132,8 +137,9 @@ ajoutée avec un prérequis explicite.
 |---|---|---|---|
 | Développé | 2026-10-11 | branche dédiée A13, base `b73707d39abf56241aa06e0fcef14d104aaab9f8` | test HTTP paiement, job PostgreSQL de cycle de vie, présent contrat et procédure |
 | Testé localement | 2026-10-11, Windows, Node 24.21/npm 12 | Contenu de la branche basé sur `b73707d39abf56241aa06e0fcef14d104aaab9f8` | Contrat + paiement 51/51 et seuils de couverture atteints; backend build/typecheck/lint; Delivery tests 16/16, typecheck/lint; YAML et liens vérifiés |
-| Testé CI | 2026-10-11, GitHub Actions / Ubuntu / PostgreSQL 16 | SHA `76aa688ef81c34ffa1f113d955923bc789be70f0`, 11 jobs réussis | [run CI #38156637420](https://github.com/AmirGames/projet/actions/runs/38156637420) : backend complet/couverture, A01/A02/A09 et acceptation concurrente PostgreSQL, A04/A05, frontend, E2E, 6 apps mobiles |
-| Non exécuté | 2026-10-11 | Aucune clé/URL publique Stripe TEST ni appareils de validation disponibles | Stripe TEST/3DS interactif et essais Customer/Merchant/Delivery sur appareil restent non exécutés; ce ne sont pas des validations simulées |
+| Testé CI | 2026-10-11, GitHub Actions / Ubuntu / PostgreSQL 16 | SHA `76aa688ef81c34ffa1f113d955923bc789be70f0`, 11 jobs réussis | [run CI #38156637420](https://github.com/AmirGames/projet/actions/runs/38156637420) : backend complet/couverture, A01/A02/A09 et acceptation concurrente PostgreSQL, A04/A05, frontend, E2E, 6 jobs mobiles (types/lint; suites Delivery et ZupDrive Passenger) |
+| À valider en CI | 2026-10-11 | Job matrix mis à jour sur cette branche pour ajouter Customer/Merchant Jest | Le run #38156637420 précède ces deux étapes; attendre la CI du nouveau SHA pour valider les deux suites |
+| Non exécuté localement/externe | 2026-10-11 | Tests Customer/Merchant non installés dans le `node_modules` local; aucune configuration Stripe TEST ni appareils disponibles | Stripe TEST/3DS interactif et essais physiques restent non exécutés, et ne sont pas présentés comme simulés |
 | Intégré | Non vérifié | SHA de fusion absent | aucune preuve |
 | Déployé | Non exécuté | aucun environnement A13 confirmé | aucune preuve |
 | Validé en exploitation | Non exécuté | aucun essai de staging/production A13 confirmé | aucune preuve |
