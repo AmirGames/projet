@@ -36,7 +36,7 @@ describe('relais des demandes de renouvellement', () => {
 
   it('transmet la preuve de reprise à l’API', async () => {
     (globalThis as any).Headers = mockEntetesTest;
-    const fetchApi = jest.fn().mockResolvedValue(
+    const fetchApi = jest.fn<typeof fetch>().mockResolvedValue(
       { body: null, status: 200, headers: { get: (name: string) => name === 'content-type' ? 'application/json' : null, getSetCookie: () => [] } } as unknown as Response,
     );
     (globalThis as any).fetch = fetchApi;
