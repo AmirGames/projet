@@ -18,7 +18,7 @@ let erreurCreation: Error | null = null;
 let transactionEnCours: Promise<void> = Promise.resolve();
 
 const transactionClient: any = {
-  $queryRaw: async () => sessions.map((s) => ({ ...s })),
+  $queryRaw: async (_requete: TemplateStringsArray, sid: string) => sessions.filter((s) => s.id === sid).map((s) => ({ ...s })),
   sessionConnexion: undefined,
   jetonRafraichissement: undefined,
   user: undefined,
