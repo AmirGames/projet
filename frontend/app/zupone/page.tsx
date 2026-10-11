@@ -5,7 +5,7 @@ import { accueilDe, lienVersEspace } from '@/lib/domaines';
 import { MARQUES, type Marque } from '@/lib/marques';
 import { EnTeteMarque } from '@/components/EnTeteMarque';
 import { FooterZupOne } from '@/components/FooterZupOne';
-import { NomMarque } from '@/components/NomMarque';
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('vitrineZupone');
