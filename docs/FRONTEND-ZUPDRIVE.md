@@ -2,6 +2,8 @@
 
 > **Document de phase, partiellement dépassé.** Pages et URL d'API : `/notifications`, `/metrics`, `/earnings-realtime` sous `/api/zupdrive` ; support sous `/api/zupdrive/support/admin/...`, notifications `/api/zupdrive/notifications/admin/...`, webhooks `/api/zupdrive/webhooks/admin/...`, conformité `/api/zupdrive/compliance/admin/...`. Rapports programmés : `/api/zupdrive/reporting/admin/scheduled`. La page `configuration` règle la commission (`/api/zupdrive/finance/admin/settings/commission`) ; les tarifs ont leur page. L'exemple WebSocket `/api/zupdrive/ws` ne fonctionne plus. La référence à jour est [`zupdrive-api-admin.md`](./zupdrive-api-admin.md).
 
+L’application native chauffeur `mobile/apps/zupdrive-driver` est distincte de ce tableau de bord web. Son état A06 et ses routes sont documentés dans [`zupdrive.md`](./zupdrive.md) et son [guide de validation mobile](./validation-mobile-zupdrive-driver.md). Elle reste **hors périmètre du pilote** avant validation de bout en bout sur appareil avec PostgreSQL de test.
+
 **Status**: Complete driver and admin dashboards with real-time monitoring
 
 ## Project Structure

@@ -10,7 +10,7 @@ jest.mock('expo-secure-store', () => ({
 jest.mock('expo-constants', () => ({ __esModule: true, default: {} }));
 
 
-const CLE_SESSION = 'zupeat.customer.session';
+const CLE_SESSION = 'zupdrive.driver.session';
 const reponse = (statut: number, corps: unknown = {}) =>
   Promise.resolve({ ok: statut >= 200 && statut < 300, status: statut, json: async () => corps } as Response);
 let fetchMock: jest.Mock;
@@ -84,7 +84,7 @@ describe('apiFetch : 401 et renouvellement de la session', () => {
       .mockReturnValueOnce(reponse(200, { ok: true }));
     await expect(apiFetch('/api/orders', 'A0')).resolves.toEqual({ ok: true });
     expect(appels('/api/auth/refresh')).toHaveLength(1);
-    expect(JSON.parse(appels('/api/auth/refresh')[0][1].body)).toEqual({ refreshToken: 'R0' });
+    expect(JSON.parse(appels('/api/auth/refresh')[0][1].body)).toMatchObject({ refreshToken: 'R0', requestId: expect.stringMatching(/^[a-f0-9]{48}$/) });
     expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe('Bearer A1');
   });
 
@@ -135,7 +135,7 @@ describe('apiFetch : 401 et renouvellement de la session', () => {
   it('réseau coupé pendant le renouvellement : l\'appel échoue mais la session est conservée', async () => {
     const dehors = jest.fn();
     setUnauthorizedHandler(dehors);
-    fetchMock.mockReturnValueOnce(reponse(401)).mockRejectedValueOnce(new TypeError('Network request failed'));
+    fetchMock.mockReturnValueOnce(reponse(401)).mockRejectedValue(new TypeError('Network request failed'));
     await expect(apiFetch('/api/orders', 'A0')).rejects.toMatchObject({ status: 401 });
     expect(dehors).not.toHaveBeenCalled();
     expect(mockStockage.get(CLE_SESSION)).toContain('R0');

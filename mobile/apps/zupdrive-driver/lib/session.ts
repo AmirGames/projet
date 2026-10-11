@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
-const SESSION_KEY = 'zupeat.customer.session';
-const ADDRESS_KEY = 'zupeat.customer.address';
+const SESSION_KEY = 'zupdrive.driver.session';
+const ADDRESS_KEY = 'zupdrive.driver.address';
 
 export interface Session {
   accessToken: string;

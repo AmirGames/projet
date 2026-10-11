@@ -1,5 +1,18 @@
 # État du projet et travail restant
 
+## Étape 08 — A06 : contrat de l’application chauffeur ZupDrive (11 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 11 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a06-zupdrive-driver`, commit `15f53d14d4c10ac709b168296e4241ce0c4ea381`, base `db38c1cdfe62dfa46a8933fc6d8d1eb43116b544` | `mobile/apps/zupdrive-driver/lib/chauffeur.ts`, écran `app/index.tsx`, test d’URLs, [README mobile](../mobile/apps/zupdrive-driver/README.md). Dépendance rotation auth A09 intégrée par [PR #209](https://github.com/AmirGames/projet/pull/209), merge `6fdb546c8bbbe9af61de00777051f17b9a81e5aa` |
+| Testé localement | 11 octobre 2026 | SHA `15f53d14d4c10ac709b168296e4241ce0c4ea381`, Windows, Node 24.21/npm 12, Expo `~57.0.25` | Mobile : typecheck, lint, export Expo web et Jest **49/49** ; test montage routeur **4/4** ; intégration PostgreSQL tentée mais échec d’authentification à la base `.env.test` (25 cas bloqués) |
+| Testé en CI | En attente | Contrôle de statut du 11 octobre sur le head PR `28246c45187f08930d600de04824a8a9725b0d8b` | Aucun statut CI n’était publié au relevé ; [PR A06](https://github.com/AmirGames/projet/pull/212) |
+| Intégré | Non | PR #212 ouverte, aucun SHA de fusion | [PR A06](https://github.com/AmirGames/projet/pull/212) |
+| Déployé | Non | Aucun environnement A06 confirmé | Aucune preuve |
+| Validé en exploitation | Non | Aucun appareil/backend réel de test observé | Aucune preuve |
+
+L’ancien OTP fictif, l’historique passager utilisé par le chauffeur et l’URL d’acceptation inexistante sont remplacés par l’auth commune, le tableau chauffeur et l’acceptation par ID de proposition. Les états non validés bloquent la disponibilité. Les appels chauffeur, étapes, position au premier plan, revenus et tests d’URL sont documentés dans le [contrat mobile](../mobile/apps/zupdrive-driver/README.md). Le dossier, l’acceptation concurrente et les droits restent à prouver contre PostgreSQL : l’accès `.env.test` configuré a répondu par échec d’authentification et aucun secret n’a été modifié. L’essai sur appareil/émulateur reste à faire selon le guide ; l’app est **hors périmètre du pilote** jusque-là. Il n’y a pas de migration pour A06.
+
 ## Étape 07 — A13 : contrats API, parcours et CI (11 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |
@@ -26,7 +39,7 @@ TEST/3DS. Voir les suites exclues, commandes et procédure externe dans
 |---|---|---|---|
 | Développé | 10 octobre 2026 | PR #209, branche `claude/awesome-ride-m9lci8-a09-refresh-ci`, correctif `4a69a161175fb6e591821955bcaaca4780c06cae` sur la base A09 `1405a3da` | [contrat A09](ROTATION-SESSIONS-A09.md), code et migration |
 | Testé | 10 octobre 2026, partiel | CI du commit `1405a3da` : build backend, migration et build frontend réussis, parcours navigateur échoué ; correctif ciblé : route auth 40/40, typecheck/lint frontend et lint backend réussis | [job E2E en échec](https://github.com/AmirGames/projet/actions/runs/38085740711/job/114311729021) ; le test Jest du relais n'a pas pu démarrer localement (chargement binding natif SWC impossible sous Windows) |
-| Intégré | non | aucun SHA de fusion vérifié | [PR #209 ouverte](https://github.com/AmirGames/projet/pull/209) ; aucune preuve d'intégration |
+| Intégré | 11 octobre 2026 | Merge `6fdb546c8bbbe9af61de00777051f17b9a81e5aa` | [PR #209 fusionnée](https://github.com/AmirGames/projet/pull/209) |
 | Déployé | non | aucun environnement confirmé | aucune preuve |
 | Validé en exploitation | non | aucun environnement confirmé | aucune preuve |
 
@@ -38,7 +51,7 @@ contient `test` ; elle n'a pas été exécutée localement. Le test Jest fronten
 du relais est ajouté, mais son exécution locale reste bloquée par le binding
 natif SWC ; le contrôle backend ciblé, les types/lint frontend et le lint backend
 passent. Le job CI doit être relancé sur le correctif avant de conclure. Voir
-les commandes et limites dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.md).
+les commandes et limites dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.md). Mise à jour du registre au 11 octobre : la PR #209 a été fusionnée au SHA `6fdb546c8bbbe9af61de00777051f17b9a81e5aa`; elle satisfait la dépendance d’auth commune utilisée par A06. L’audit daté des échecs CI initiaux est conservé.
 
 ## Étape 05 — A10 : liens de compte (10 octobre 2026)
 

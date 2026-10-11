@@ -39,11 +39,11 @@ describe('session : jetons dans le stockage sécurisé', () => {
   it('écrit uniquement dans le SecureStore, sous une clé propre à l\'application', async () => {
     await saveSession(session);
     expect(mockSecureStore.setItemAsync).toHaveBeenCalledTimes(1);
-    expect(mockSecureStore.setItemAsync).toHaveBeenCalledWith('zupeat.customer.session', JSON.stringify(session));
+    expect(mockSecureStore.setItemAsync).toHaveBeenCalledWith('zupdrive.driver.session', JSON.stringify(session));
   });
 
   it('une valeur corrompue est ignorée : pas de plantage, pas de session', async () => {
-    mockStockage.set('zupeat.customer.session', '{pas du json');
+    mockStockage.set('zupdrive.driver.session', '{pas du json');
     await expect(loadSession()).resolves.toBeNull();
   });
 
@@ -65,7 +65,7 @@ describe('session : jetons dans le stockage sécurisé', () => {
   it('la déconnexion efface la session', async () => {
     await saveSession(session);
     await clearSession();
-    expect(mockSecureStore.deleteItemAsync).toHaveBeenCalledWith('zupeat.customer.session');
+    expect(mockSecureStore.deleteItemAsync).toHaveBeenCalledWith('zupdrive.driver.session');
     await expect(loadSession()).resolves.toBeNull();
   });
 

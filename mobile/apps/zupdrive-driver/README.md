@@ -1,23 +1,42 @@
-# ZupDrive Driver
+# ZupDrive Driver — application chauffeur
 
-Application Expo du chauffeur ZupDrive (transport de personnes). Ce rôle est distinct du livreur ZupEat de `mobile/apps/delivery`.
+Application Expo/React Native du chauffeur (transport de personnes), séparée du livreur ZupEat. **Statut pilote : hors périmètre** jusqu’à validation complète sur un appareil ou émulateur contre un backend réel de test. Les écrans et contrats sont développés, mais ce dépôt ne contient pas de preuve d’un tel parcours.
 
-## Session et rotation A09
+## Parcours et API
 
-La session est conservée dans SecureStore. Les appels 401 partagent une rotation en mémoire, qui envoie un `requestId` aléatoire cryptographique au `POST /api/auth/refresh`. Après une réponse perdue, l'app réessaie une fois avec le même refresh et la même clé, dans la fenêtre de reprise serveur de 10 secondes. Les erreurs réseau et les 409 persistants ne déconnectent pas ; un refus 401/403 définitif termine la session. Le nouveau couple est enregistré dans SecureStore avant d'être rendu. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
+La connexion passe par le compte commun ZupOne : `POST /api/auth/login` avec `{ email, password }`, puis les requêtes authentifiées portent `Authorization: Bearer <accessToken>`. La session est conservée dans SecureStore sous une clé propre à cette application (`zupdrive.driver.session`). Les 401 renouvellent la session via `POST /api/auth/refresh` selon [A09](../../../docs/ROTATION-SESSIONS-A09.md) ; une panne réseau ne déconnecte pas l’utilisateur. Un refus définitif du renouvellement efface la session et demande une nouvelle connexion.
 
-Test ciblé : `npm test -- --runInBand lib/__tests__/renouvellement.test.ts`.
+| Usage | Contrat serveur |
+|---|---|
+| Lire le dossier du compte connecté | `GET /api/zupdrive/chauffeur/me` → `{ success, data: dossier \| null }` |
+| Tableau chauffeur, proposition, course courante, historique chauffeur | `GET /api/zupdrive/chauffeur/me/courses` |
+| Disponibilité | `POST /api/zupdrive/chauffeur/me/disponibilite` avec `{ enLigne: boolean }` |
+| Position GPS | `POST /api/zupdrive/chauffeur/me/position` avec `{ latitude, longitude }` |
+| Accepter/refuser | `POST /api/zupdrive/chauffeur/me/propositions/:id/accepter` ou `/refuser` ; `:id` est l’ID de proposition |
+| Étapes | `POST /api/zupdrive/chauffeur/me/courses/:id/arrive`, `/demarrer`, `/terminer` |
+| Revenus chauffeur | `GET /api/zupdrive/payment/earnings` |
 
-## Développement
+Le tableau ne demande jamais l’historique passager. Le serveur dérive le chauffeur du jeton, n’expose au chauffeur que ses propres courses et renvoie 404 pour une ressource qui ne lui appartient pas. L’acceptation est atomique : un concurrent perd avec une erreur métier 409 et l’app recharge le tableau. Une proposition qui a expiré est désactivée si son échéance est connue, puis l’état est relu après le refus du serveur. Le statut du dossier doit être `VALIDE` côté dossier et tableau avant que l’app autorise la mise en ligne ou l’acceptation. Les états non validés, refusés et suspendus sont affichés.
+
+Le backend expire une proposition après 20 secondes. En ligne et au premier plan, l’app relit le tableau toutes les 4 secondes et envoie la position toutes les 15 secondes (`expo-location`, permission uniquement « pendant l’utilisation »). Le suivi en arrière-plan et les notifications push de propositions ne sont pas implémentés ni éprouvés ; le chauffeur doit garder l’app ouverte pour rester visible au matching. Les commandes de course suivent l’ordre `ACCEPTEE → ARRIVEE → EN_COURS → TERMINEE`. Les erreurs réseau laissent la session en place et proposent une nouvelle lecture. Les montants sont des centimes entiers et les versements sont lus sans créer de mouvement financier.
+
+## Développement et contrôles
+
+Expo déclaré : `~57.0.25` dans `package.json` et `package-lock.json`. Dépendances natives locales à installer via `npm ci` avant lancement. Documentation Expo consultée pour la version majeure : [SDK 57](https://docs.expo.dev/versions/v57.0.0/).
 
 ```bash
 npm ci
-npm start
 npm run typecheck
 npm run lint
-npm test
+npm test -- --runInBand lib/__tests__/chauffeur.test.ts
+npm test -- --runInBand lib/__tests__/api.test.ts lib/__tests__/renouvellement.test.ts
+npm start
 ```
 
-`EXPO_PUBLIC_API_URL` permet de choisir l'API ; sinon l'app utilise le serveur de développement associé à Metro. Les builds natives passent par Expo/EAS ; Expo Go ne remplace pas un build de développement pour les modules natifs.
+`EXPO_PUBLIC_API_URL` configure le backend ; en développement, l’app déduit l’hôte Metro et le port 3001. Ne pas utiliser `localhost` depuis un téléphone physique. Aucun nouveau modèle Prisma ni migration n’est requis.
 
-Architecture des écrans et routes métier : [CLAUDE.md](./CLAUDE.md). Règles Expo : [AGENTS.md](./AGENTS.md).
+## Validation externe encore requise
+
+Suivre [le guide de validation mobile chauffeur](../../../docs/validation-mobile-zupdrive-driver.md) : PostgreSQL de test migré, connexion réelle, dossier non validé puis validé, disponibilité et position, proposition, acceptation par deux chauffeurs, course terminée, droits de lecture passager et essai sur appareil/émulateur. L’app demeure **hors périmètre du pilote** tant que ces preuves ne sont pas inscrites dans `docs/etat-projet.md`. Aucun résultat de test backend réel, appareil, intégration, déploiement ou exploitation n’est revendiqué par ce changement.
+
+Architecture mobile : `app/index.tsx`, `lib/chauffeur.ts`, `lib/api.ts`, `lib/session.ts`. Voir aussi [`docs/zupdrive.md`](../../../docs/zupdrive.md) et [`docs/zupdrive-api-admin.md`](../../../docs/zupdrive-api-admin.md).

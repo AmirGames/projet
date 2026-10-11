@@ -1,62 +1,22 @@
-# ZupDrive Driver App
+# Application chauffeur ZupDrive — règles de travail
 
-Application **Expo/React Native** pour chauffeurs ZupDrive.
+Application Expo/React Native du chauffeur VTC, distincte du livreur ZupEat. L’app est actuellement hors périmètre du pilote tant que le parcours réel décrit dans [`docs/validation-mobile-zupdrive-driver.md`](../../../docs/validation-mobile-zupdrive-driver.md) n’est pas exécuté et prouvé.
 
-> Voir `AGENTS.md` pour les guidelines Expo générales.
+## Contrats en vigueur
 
-## Architecture
+- Authentification commune ZupOne : `POST /api/auth/login` (`email`, `password`) et rotation commune `/api/auth/refresh`. Pas d’OTP chauffeur séparé.
+- Dossier : `GET /api/zupdrive/chauffeur/me` ; les courses chauffeur sont `GET /api/zupdrive/chauffeur/me/courses`.
+- Disponibilité/position : `POST /api/zupdrive/chauffeur/me/disponibilite` (`enLigne`) et `/me/position` (`latitude`, `longitude`).
+- Proposition : `POST /api/zupdrive/chauffeur/me/propositions/:id/accepter|refuser`, où `id` est l’identifiant de proposition.
+- Étapes : `POST /api/zupdrive/chauffeur/me/courses/:id/arrive|demarrer|terminer`.
+- Revenus : `GET /api/zupdrive/payment/earnings`.
 
-- `app/` — Expo Router screens
-- `components/screens/` — Écrans métier (dashboard, courses, profil)
-- `components/ui/` — Composants réutilisables
-- `lib/` — Logique (API, auth, real-time, géolocalisation)
-- `assets/` — Images et logos ZupDrive
+Les routeurs actuels sont `backend/src/modules/zupdrive/chauffeur.routes.ts`, `course-drive.routes.ts` et `zupdrive-montage.ts`. Ces fichiers font foi si les contrats évoluent. Tester les chemins HTTP exacts, les rôles et le cloisonnement ; une compilation TypeScript seule ne suffit pas.
 
-## Écrans Principaux
+## Sécurité et état
 
-1. **HomeScreen** — Dashboard chauffeur
-   - Courses en attente d'acceptation
-   - Cours en cours / terminées
-   - Revenus du jour / semaine
+Toujours dériver le chauffeur de la session commune ; ne jamais demander les courses passager depuis l’application chauffeur. Le backend est la frontière d’autorisation. Ne rendre disponibles les contrôles de conduite qu’avec un dossier `VALIDE`. Traiter un 409 d’acceptation comme une concurrence métier : relire le tableau et afficher l’état réel. Une proposition expirée est refusée par le backend. Les pannes réseau ne doivent pas effacer la session ni fabriquer un succès ; un 401 définitif de renouvellement ramène à la connexion.
 
-2. **CourseScreen** — Détail d'une course
-   - Passager et destination
-   - GPS du passager et du chauffeur
-   - ETA automatique
-   - Chat en temps réel
+## Expo
 
-3. **ProfileScreen** — Profil chauffeur
-   - Données personnelles
-   - Véhicule et documents
-   - IBAN bancaire
-   - Ratings
-
-4. **EarningsScreen** — Revenus et paiements
-   - Courses complétées (prix + commission)
-   - Solde hebdomadaire
-   - Historique versements
-
-## Dépendances Clés
-
-- `expo-router` — routing
-- `expo-location` — GPS (permission + tracking)
-- `expo-notifications` — push notifications
-- `socket.io-client` — real-time
-- `@stripe/stripe-react-native` — paiements
-
-## API Endpoints
-
-```
-POST /api/zupdrive/chauffeur/auth/otp — login par OTP
-POST /api/zupdrive/courses/:id/accept — accepter course
-POST /api/zupdrive/courses/:id/location — envoyer position GPS
-PATCH /api/zupdrive/courses/:id — changer statut
-GET /api/zupdrive/payment/earnings — revenus chauffeur
-```
-
-## Real-Time (Socket.io)
-
-- `course-status` — changement état course
-- `eta-update` — ETA mis à jour
-- `driver-location` — position réceptionnée
-- `chat-message` — messages passager
+Lire `AGENTS.md` avant tout changement Expo. Expo est en SDK 57 (`package.json` : `~57.0.25`) ; consulter les [docs versionnées SDK 57](https://docs.expo.dev/versions/v57.0.0/) avant d’utiliser ou modifier une API Expo. Installer avec `npm ci`, contrôler `npm run typecheck`, `npm run lint` et les tests Jest de contrats d’URL.
