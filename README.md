@@ -8,9 +8,11 @@ pour les courses d'inscription A01/A02, liens A10, rotation A09 et acceptation
 de livraison concurrente. Les tests simulés, intégrations PostgreSQL, essais
 Stripe TEST/3DS externes et essais sur appareil sont distingués dans le
 [contrat, la matrice de parcours et les procédures A13](docs/CONTRATS-API-A13.md).
-Un test simulé ne prouve pas l'exécution du 3DS Stripe ni un essai mobile.
-L'état A13 est encore à compléter après exécution de la CI sur le SHA livré;
-aucune intégration, livraison ou validation en exploitation n'est affirmée.
+Le run CI du SHA `76aa688ef81c34ffa1f113d955923bc789be70f0` a réussi ses 11 jobs
+([preuve](https://github.com/AmirGames/projet/actions/runs/38156637420)). Un test
+simulé ne prouve pas l'exécution du 3DS Stripe ni un essai mobile. Stripe TEST/
+3DS et les appareils restent à valider; aucune intégration, livraison ou
+validation en exploitation n'est affirmée.
 
 ## Étape 06 — A09 : rotation atomique et reprenable des sessions (10 octobre 2026)
 

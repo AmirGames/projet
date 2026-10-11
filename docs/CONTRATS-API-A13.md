@@ -132,7 +132,8 @@ ajoutée avec un prérequis explicite.
 |---|---|---|---|
 | Développé | 2026-10-11 | branche dédiée A13, base `b73707d39abf56241aa06e0fcef14d104aaab9f8` | test HTTP paiement, job PostgreSQL de cycle de vie, présent contrat et procédure |
 | Testé localement | 2026-10-11, Windows, Node 24.21/npm 12 | Contenu de la branche basé sur `b73707d39abf56241aa06e0fcef14d104aaab9f8` | Contrat + paiement 51/51 et seuils de couverture atteints; backend build/typecheck/lint; Delivery tests 16/16, typecheck/lint; YAML et liens vérifiés |
-| Non exécuté | 2026-10-11 | Aucun PostgreSQL/Docker local; Jest/types Customer/Merchant manquants; Stripe et appareils non configurés | Suites PostgreSQL, tests Customer/Merchant, Stripe TEST/3DS, appareils et CI GitHub restent non exécutés |
+| Testé CI | 2026-10-11, GitHub Actions / Ubuntu / PostgreSQL 16 | SHA `76aa688ef81c34ffa1f113d955923bc789be70f0`, 11 jobs réussis | [run CI #38156637420](https://github.com/AmirGames/projet/actions/runs/38156637420) : backend complet/couverture, A01/A02/A09 et acceptation concurrente PostgreSQL, A04/A05, frontend, E2E, 6 apps mobiles |
+| Non exécuté | 2026-10-11 | Aucune clé/URL publique Stripe TEST ni appareils de validation disponibles | Stripe TEST/3DS interactif et essais Customer/Merchant/Delivery sur appareil restent non exécutés; ce ne sont pas des validations simulées |
 | Intégré | Non vérifié | SHA de fusion absent | aucune preuve |
 | Déployé | Non exécuté | aucun environnement A13 confirmé | aucune preuve |
 | Validé en exploitation | Non exécuté | aucun essai de staging/production A13 confirmé | aucune preuve |
