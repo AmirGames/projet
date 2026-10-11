@@ -18,6 +18,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const ESPACES_AVEC_NAVIGATION = [
   '/superowner',
   '/client',
+  '/restaurants',
   // Vitrines et pages « Devenir … » : elles portent leur propre en-tête, la
   // navbar s'empilait par-dessus.
   '/zupone',
@@ -121,7 +122,8 @@ export default function RootLayoutContent({
                      chemin?.startsWith('/impression') ||
                      aSaPropreNavigation(chemin);
 
-  const sansPied = chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin);
+  const sansPied = chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin) ||
+    chemin === '/client' || chemin === '/restaurants';
 
   return (
     <>

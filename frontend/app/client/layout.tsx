@@ -1,7 +1,12 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { BandeauCommandeEnCours } from '@/components/BandeauCommandeEnCours';
 import { EnTeteClient } from '@/components/EnTeteClient';
+import { MarketplaceFooter } from '@/components/client/MarketplaceFooter';
+
+export const metadata: Metadata = {
+  title: 'Commerces de proximité, livrés chez vous — ZupEat',
+  description: 'Découvrez les commerces et artisans près de chez vous et faites-vous livrer avec ZupEat.',
+};
 
 export default function ClientLayout({
   children,
@@ -22,6 +27,7 @@ export default function ClientLayout({
       <BandeauCommandeEnCours />
 
       <main>{children}</main>
+      <MarketplaceFooter />
     </div>
   );
 }

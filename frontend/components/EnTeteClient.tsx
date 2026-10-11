@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, ShoppingCart, Heart, User, Menu, X, LogOut, LogIn } from 'lucide-react';
+import { Home, ShoppingCart, Heart, User, Menu, X, LogOut, LogIn, Store } from 'lucide-react';
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PaniersAccueil } from '@/components/PaniersAccueil';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslations } from 'next-intl';
+import { LogoClient } from '@/components/client/LogoClient';
 
 /**
  * L'en-tête blanc du parcours client : logo, onglets (accueil, favoris,
@@ -39,6 +40,7 @@ export function EnTeteClient() {
 
   const navItems = [
     { href: '/client', label: t('nav.accueil'), icon: Home },
+    { href: '/restaurants', label: 'Boutiques', icon: Store },
     { href: '/client/favorites', label: t('nav.favoris'), icon: Heart },
     { href: '/client/orders', label: t('nav.commandes'), icon: ShoppingCart },
     { href: '/client/profile', label: t('nav.profil'), icon: User },
@@ -52,10 +54,7 @@ export function EnTeteClient() {
       <nav className="md:hidden bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
         <div className="flex items-center justify-between p-4">
           <SelecteurEspace actuel="client" href="/client" clair className="gap-2 -ml-2 px-2 py-1">
-            <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
-              Z
-            </div>
-            <span className="font-extrabold tracking-tight text-gray-900">ZupEat</span>
+            <LogoClient />
           </SelecteurEspace>
 
           <div className="flex items-center gap-2">
@@ -120,10 +119,7 @@ export function EnTeteClient() {
       <nav className="hidden md:block bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <SelecteurEspace actuel="client" href="/client" clair className="gap-2 -ml-2 px-2 py-1">
-            <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
-              Z
-            </div>
-            <span className="font-extrabold tracking-tight text-gray-900 text-xl">ZupEat</span>
+            <LogoClient />
           </SelecteurEspace>
 
           <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">

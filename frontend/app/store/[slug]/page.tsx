@@ -12,7 +12,6 @@ import { MapPin, Phone, Clock, Star, X, Bike, Plus, Minus, Check, Trash2, Shoppi
 import { euro } from '@/lib/format';
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
 import { EnTeteClient } from '@/components/EnTeteClient';
-import { IllustrationFamille } from '@/components/IllustrationFamille';
 import { visuelDeFamille } from '@/lib/visuels-familles';
 import { useAdresseLivraisonEnregistree, type AdresseLivraison } from '@/lib/adresseLivraison';
 import { useParametreAdresse } from '@/lib/navigateur';
@@ -26,6 +25,7 @@ import {
   type SupplementPanier,
 } from '@/lib/paniers';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { visuelDeCommerce } from '@/lib/visuel-commerce';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -721,11 +721,11 @@ export default function StorefrontPage() {
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
         {/* La photo de couverture du commerçant ; à défaut, l'illustration de
             sa catégorie (une pizza pour une pizzeria). */}
-        <div className="relative h-36 md:h-64 overflow-hidden rounded-3xl bg-linear-to-br from-orange-500 via-orange-600 to-red-600">
+        <div className="relative h-48 overflow-hidden rounded-[2rem] bg-neutral-100 md:h-80">
           {store.settings?.banner ? (
             <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <IllustrationFamille famille={store.famille} grande />
+            <img src={visuelDeCommerce(store.famille).src} alt={visuelDeCommerce(store.famille).alt} className="absolute inset-0 h-full w-full object-cover" />
           )}
         </div>
 

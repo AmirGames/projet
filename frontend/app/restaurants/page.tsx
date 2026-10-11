@@ -1,5 +1,4 @@
-import { permanentRedirect } from 'next/navigation';
-import { accueilDe } from '@/lib/domaines';
+import { MarketplaceDirectory } from '@/components/client/MarketplaceDirectory';
 
 /**
  * Ancienne liste des commerces, devenue une simple redirection.
@@ -12,6 +11,6 @@ import { accueilDe } from '@/lib/domaines';
  * Les anciens liens (/fr-fr/restaurants, favoris, moteurs de recherche)
  * mènent désormais à l'accueil public.
  */
-export default function AncienneListeCommerces() {
-  permanentRedirect(accueilDe('public'));
+export default function ListeDesCommerces() {
+  return <MarketplaceDirectory />;
 }

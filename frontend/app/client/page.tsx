@@ -9,7 +9,7 @@ import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag } from 'lucide-react';
+import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag, ArrowRight } from 'lucide-react';
 
 import { RechercheAdresseLivraison } from '@/components/RechercheAdresseLivraison';
 import {
@@ -20,8 +20,8 @@ import {
 
 import { euro } from '@/lib/format';
 import { visuelDeFamille } from '@/lib/visuels-familles';
-import { IllustrationFamille } from '@/components/IllustrationFamille';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { visuelDeCommerce } from '@/lib/visuel-commerce';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -315,28 +315,26 @@ export default function ClientHomePage() {
         />
         {/* L'accroche : un grand aplat chaleureux, et l'adresse au centre du
             jeu — sans elle, ni frais ni délais justes. */}
-        <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-orange-500 via-orange-600 to-red-600 px-6 py-10 md:px-12 md:py-14 text-white">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 hidden select-none lg:grid grid-cols-3 gap-x-10 gap-y-8 text-7xl rotate-6"
-          >
-            <span className="drop-shadow-xl">🍕</span>
-            <span className="drop-shadow-xl">🍔</span>
-            <span className="drop-shadow-xl">🥗</span>
-            <span className="drop-shadow-xl">🍣</span>
-            <span className="drop-shadow-xl">🥐</span>
-            <span className="drop-shadow-xl">🌮</span>
-          </div>
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-white/10" />
-
-          <div className="relative max-w-2xl">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05]">{t('heroTitle')}</h1>
-            <p className="mt-4 text-lg md:text-xl text-orange-50/90">{t('heroSubtitle')}</p>
-
-            <p className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-white/90">
-              <Check size={16} className="rounded-full bg-white/20 p-0.5" />
-              {t('heroOrderWithoutAccount')}
-            </p>
+        <section className="relative isolate overflow-hidden rounded-[2rem] bg-[#FFF6EC] px-6 py-9 text-black sm:px-10 md:px-14 md:py-14">
+          <div className="grid items-center gap-8 md:grid-cols-[1.05fr_.95fr] md:gap-12">
+            <div className="relative z-10 max-w-2xl">
+              <p className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">Les belles adresses autour de vous</p>
+              <h1 className="text-4xl font-black leading-[.98] tracking-[-.06em] sm:text-5xl md:text-6xl">{t('heroTitle')}</h1>
+              <p className="mt-5 max-w-xl text-base leading-7 text-neutral-700 md:text-lg">{t('heroSubtitle')}</p>
+              <p className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-neutral-700">
+                <Check size={17} className="rounded-full bg-[#FF7A00] p-0.5 text-black" />{t('heroOrderWithoutAccount')}
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link href="#commerces" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#FF7A00] px-6 text-sm font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">Trouver un commerce <ArrowRight size={17} /></Link>
+                <Link href="/restaurants" className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/15 bg-white px-6 text-sm font-bold text-black transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">Voir toutes les boutiques</Link>
+              </div>
+            </div>
+            <div aria-label="Une sélection de commerces locaux" className="grid grid-cols-2 gap-3 sm:gap-4">
+              {['boulangerie', 'primeur', 'fromagerie', 'fleuriste'].map((famille, index) => {
+                const visuel = visuelDeCommerce(famille);
+                return <div key={famille} className={`overflow-hidden rounded-3xl bg-white shadow-sm ${index % 2 === 1 ? 'translate-y-5' : ''}`}><img src={visuel.src} alt={visuel.alt} className="aspect-[1.12] w-full object-cover" loading="eager" /></div>;
+              })}
+            </div>
           </div>
         </section>
 
@@ -452,7 +450,7 @@ export default function ClientHomePage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
+        <div id="commerces" className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
         {loading ? (
           <GrilleEnChargement />
         ) : filteredStores.length === 0 ? (
@@ -503,6 +501,17 @@ export default function ClientHomePage() {
           </div>
         )}
       </div>
+      <section className="mx-auto mt-4 max-w-7xl px-5 py-12 md:px-8 md:py-16">
+        <p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">Simple comme bonjour</p>
+        <h2 className="mt-2 text-3xl font-black tracking-[-.045em] md:text-4xl">Comment ça marche</h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {[['01', 'Choisissez une adresse', 'Indiquez où vous souhaitez recevoir votre commande.'], ['02', 'Trouvez votre commerce', 'Parcourez les boutiques et leurs produits disponibles.'], ['03', 'Savourez vos trouvailles', 'Suivez votre commande jusqu’à sa livraison.']].map(([numero, titre, texte]) => <article key={numero} className="rounded-3xl border border-neutral-200 p-6"><span className="grid size-10 place-items-center rounded-2xl bg-[#FF7A00] text-sm font-black text-black">{numero}</span><h3 className="mt-5 text-xl font-bold tracking-tight">{titre}</h3><p className="mt-2 text-sm leading-6 text-neutral-600">{texte}</p></article>)}
+        </div>
+      </section>
+      <section className="mx-auto grid max-w-7xl gap-4 px-5 pb-12 md:grid-cols-2 md:px-8 md:pb-16">
+        {[{ titre: 'Vous livrez ?', texte: 'Rejoignez le réseau ZupEat et livrez les commerces près de chez vous.', href: '/devenir-livreur', image: '/images/shops-redesign/primeur.webp' }, { titre: 'Vous êtes commerçant ?', texte: 'Faites découvrir votre boutique aux clients de votre quartier.', href: '/devenir-commercant', image: '/images/shops-redesign/boulangerie.webp' }].map((carte) => <Link key={carte.href} href={carte.href} className="group relative min-h-64 overflow-hidden rounded-[2rem] bg-neutral-900 p-7 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 md:p-9"><img src={carte.image} alt="" className="absolute inset-0 size-full object-cover opacity-35 transition duration-500 group-hover:scale-[1.03]" loading="lazy"/><div className="relative max-w-md"><h2 className="text-2xl font-black tracking-tight md:text-3xl">{carte.titre}</h2><p className="mt-3 text-sm leading-6 text-white/90">{carte.texte}</p><span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#FF7A00] px-5 py-3 text-sm font-bold text-black">En savoir plus <ArrowRight size={16}/></span></div></Link>)}
+      </section>
+      {stores.some((store) => (store.totalRatings || 0) > 0 && store.rating != null) && <section className="bg-neutral-50 py-12 md:py-16"><div className="mx-auto max-w-7xl px-5 md:px-8"><p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">Avis vérifiés</p><h2 className="mt-2 text-3xl font-black tracking-[-.045em]">Les commerces appréciés près de vous</h2><p className="mt-2 max-w-2xl text-sm text-neutral-600">Notes et nombre d’avis publiés issus des retours clients.</p><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{stores.filter((store) => (store.totalRatings || 0) > 0 && store.rating != null).sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3).map((store) => <Link key={store.id} href={`/store/${store.slug}`} className="rounded-3xl bg-white p-6 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"><div className="flex items-center gap-2 text-lg font-black"><Star className="size-5 fill-[#FF7A00] text-[#FF7A00]"/>{note(store.rating!)}<span className="text-xs font-medium text-neutral-500">({store.totalRatings} avis)</span></div><h3 className="mt-3 font-bold">{store.name}</h3><p className="mt-1 text-sm text-neutral-600">{store.genreLibelle || 'Commerce de proximité'}</p></Link>)}</div></div></section>}
     </div>
   );
 }
@@ -616,9 +625,7 @@ function CarteCommerce({
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-105">
-            <IllustrationFamille famille={store.famille} />
-          </div>
+          <img src={visuelDeCommerce(store.famille).src} alt={visuelDeCommerce(store.famille).alt} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
         )}
         {(store.settings?.logo || store.settings?.banner) && (
           <div className="absolute bottom-3 left-3">
