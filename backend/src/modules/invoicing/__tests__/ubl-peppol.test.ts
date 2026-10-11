@@ -41,6 +41,13 @@ describe("facture UBL", () => {
     expect(t).toEqual({ htCentimes: 30, tvaCentimes: 6, ttcCentimes: 36 });
   });
 
+  it("refuse les entrées invalides au lieu de produire des montants UBL trompeurs", () => {
+    expect(() => totaux([], 21)).toThrow("lignes");
+    expect(() => totaux([{ libelle: "x", montantHt: Number.NaN }], 21)).toThrow("lignes");
+    expect(() => totaux([{ libelle: "x", montantHt: -1 }], 21)).toThrow("lignes");
+    expect(() => totaux([{ libelle: "x", montantHt: 1 }], 101)).toThrow("TVA");
+  });
+
   it("produit un document Peppol BIS 3.0 cohérent", () => {
     const xml = genererUbl({
       numero: "ZE-2026-000001",

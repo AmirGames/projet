@@ -1,5 +1,6 @@
 import { getEnv } from "../../config/env";
 import { IdentifiantPeppol } from "./peppol-id";
+import { ApiError } from "../../middleware/errorHandler";
 
 /**
  * Ce qu'il faut pour remettre une facture à un Access Point Peppol.
@@ -10,6 +11,8 @@ import { IdentifiantPeppol } from "./peppol-id";
  */
 export interface TransportPeppol {
   nom: string;
+  /** Refuse l'envoi si les identifiants ou options du fournisseur manquent. */
+  verifierConfiguration?(): void;
   envoyer(facture: {
     numero: string;
     xml: string;
@@ -22,8 +25,24 @@ export interface TransportPeppol {
 const transports: Record<string, TransportPeppol> = {};
 
 /** Le transport configuré, ou null : les factures se téléchargent alors à la main. */
-export function transportPeppol(): TransportPeppol | null {
-  const choisi = getEnv().PEPPOL_PROVIDER?.trim().toLowerCase();
+export function selectionnerTransportPeppol(
+  fournisseur: string | undefined,
+  transportsDisponibles: Record<string, TransportPeppol> = transports
+): TransportPeppol | null {
+  const choisi = fournisseur?.trim().toLowerCase();
   if (!choisi) return null;
-  return transports[choisi] ?? null;
+  const transport = transportsDisponibles[choisi];
+  if (!transport) {
+    throw new ApiError(503, `Fournisseur Peppol inconnu : « ${choisi} ». Aucun envoi n'a été effectué.`, "PEPPOL_PROVIDER_UNKNOWN");
+  }
+  try {
+    transport.verifierConfiguration?.();
+  } catch {
+    throw new ApiError(503, `Configuration du fournisseur Peppol « ${choisi} » incomplète. Aucun envoi n'a été effectué.`, "PEPPOL_PROVIDER_INCOMPLETE");
+  }
+  return transport;
+}
+
+export function transportPeppol(): TransportPeppol | null {
+  return selectionnerTransportPeppol(getEnv().PEPPOL_PROVIDER);
 }

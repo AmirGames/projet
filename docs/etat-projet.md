@@ -1,5 +1,26 @@
 # État du projet et travail restant
 
+## Étape 10 — A07 : facturation structurée et pages légales (12 octobre 2026)
+
+Le code de génération UBL existant ne suffit pas à attester le transport ou la
+conformité réelle. A07 rend le choix d'un fournisseur explicite : sans
+`PEPPOL_PROVIDER`, pas d'envoi ; une valeur inconnue est refusée. Les données
+UBL vides, non finies, négatives ou avec un taux de TVA hors bornes sont
+refusées. Il n'existe toujours pas d'adaptateur fournisseur ni de réception,
+d'accusés, de rapprochement ou de reprise automatique en sandbox. Les sources
+officielles Belgique/France et les opérations requises figurent dans le
+[guide A07](FACTURATION-STRUCTUREE-A07.md). Les pages publiques et versions
+acceptées n'ont pas été accessibles/attestées ; les données opérateur et l'avis
+du comptable sont à obtenir avant publication et ouverture.
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a07-facturation-structuree`, base `0dad7379e89128ee143a226341e46b6ed2bb005c`, SHA final après commit | Refus fournisseur inconnu/incomplet ; entrées UBL gardées ; guide A07 |
+| Testé localement | 12 octobre 2026 | Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Jest facturation 12/12 et droits/journalisation 177/177 ; typecheck, lint, build backend réussis. Sandbox/réception externe et validation EN 16931 non exécutées. |
+| Intégré | Non | PR à créer | Aucune |
+| Déployé | Non | Aucun environnement confirmé | Aucune |
+| Validé en exploitation | Non | Fournisseur/opérateur/sandbox indisponibles | Aucune ; essais externes bloqués |
+
 ## Étape 08 — A06 : contrat de l’application chauffeur ZupDrive (11 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |

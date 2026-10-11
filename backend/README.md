@@ -1,5 +1,14 @@
 # Backend ZupEat / ZupDrive
 
+## A07 — Facturation structurée
+
+Les factures plateforme enregistrent XML UBL et instantané des parties, mais
+aucun Access Point n'est configuré et aucun adaptateur externe n'est livré.
+`PEPPOL_PROVIDER` vide garde l'envoi désactivé ; une valeur inconnue échoue
+explicitement. L'API factures reste réservée au superowner. La réception et les
+accusés asynchrones ne sont pas implémentés. Contrats, contrôles, exploitation,
+preuves réglementaires et blocages : [guide A07](../docs/FACTURATION-STRUCTUREE-A07.md).
+
 ## A11 — Webhooks sortants ZupDrive
 
 Le worker PostgreSQL, la signature HMAC-SHA256, les reprises bornées, l'inspection
