@@ -14,7 +14,7 @@ class mockEntetesTest {
   append(nom: string, valeur: string): void { this.set(nom, this.get(nom) ? this.get(nom) + ', ' + valeur : valeur); }
 }
 
-jest.mock('next/server', () => ({
+jest.doMock('next/server', () => ({
   NextResponse: class {
     body: unknown;
     status: number;
@@ -23,7 +23,7 @@ jest.mock('next/server', () => ({
     static json(body: unknown, init: { status: number }) { return { body, status: init.status }; }
   },
 }));
-import { relayer } from '../relais-api';
+const { relayer } = require('../relais-api') as typeof import('../relais-api');
 
 describe('relais des demandes de renouvellement', () => {
   const HeadersInitial = (globalThis as any).Headers;
