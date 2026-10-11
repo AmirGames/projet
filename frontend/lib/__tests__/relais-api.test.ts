@@ -27,16 +27,19 @@ const { relayer } = require('../relais-api') as typeof import('../relais-api');
 
 describe('relais des demandes de renouvellement', () => {
   const HeadersInitial = (globalThis as any).Headers;
+  const fetchInitial = (globalThis as any).fetch;
   afterEach(() => {
     jest.restoreAllMocks();
     (globalThis as any).Headers = HeadersInitial;
+    (globalThis as any).fetch = fetchInitial;
   });
 
   it('transmet la preuve de reprise à l’API', async () => {
     (globalThis as any).Headers = mockEntetesTest;
-    const fetchApi = jest.spyOn(global, 'fetch').mockResolvedValue(
+    const fetchApi = jest.fn().mockResolvedValue(
       { body: null, status: 200, headers: { get: (name: string) => name === 'content-type' ? 'application/json' : null, getSetCookie: () => [] } } as unknown as Response,
     );
+    (globalThis as any).fetch = fetchApi;
     const demande = {
       nextUrl: new URL('http://localhost:3000/api/auth/refresh'),
       method: 'POST',
