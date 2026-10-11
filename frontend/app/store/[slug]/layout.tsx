@@ -32,11 +32,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default function LayoutVitrine({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-white text-neutral-900">
-      {children}
-      <MarketplaceFooter />
-    </div>
-  );
+  return <>{children}<MarketplaceFooter /></>;
 }
 

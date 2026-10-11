@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import Link from '@/components/LienRegional';
 import { accueilDe, lienVersEspace } from '@/lib/domaines';
 import { EMAIL_CONTACT, PAGES_LEGALES } from '@/lib/editeur';
+import { NomMarque } from './NomMarque';
 
 /**
  * Le pied de page commun à tout le site : le groupe ZupOne, ses plateformes
@@ -17,7 +18,7 @@ export default function PiedDeGroupe() {
     <footer className="border-t border-gray-200 bg-gray-50 px-6 py-16 text-left text-gray-900 md:px-10">
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-10 md:grid-cols-3">
         <div>
-          <h4 className="mb-3 text-lg font-bold">ZupOne</h4>
+          <h4 className="mb-3 text-lg font-bold"><NomMarque marque="zupone" /></h4>
           <p className="mb-3 text-gray-600">{t('groupe')}</p>
           {/* Le retour au site du groupe depuis les plateformes publiques. */}
           <Link href={accueilDe('vitrine')} className="mb-3 block font-semibold text-gray-900 hover:underline">
@@ -30,7 +31,7 @@ export default function PiedDeGroupe() {
         <div>
           <h4 className="mb-3 text-lg font-bold">{t('plateformes')}</h4>
           <Link href={accueilDe('public')} className="mb-2 block text-gray-600 hover:text-gray-900">
-            ZupEat
+            <NomMarque marque="zupeat" />
           </Link>
           <Link href={lienVersEspace('groupe', '/superowner')} className="mb-2 block text-gray-600 hover:text-gray-900">
             {t('espaceEquipe')}

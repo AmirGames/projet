@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
 import { useEffectChargement } from "@/lib/use-effect-chargement";
 import { useTranslations } from 'next-intl';
+import { NomMarque } from '@/components/NomMarque';
 
 export default function Home() {
   const t = useTranslations('accueilPro');
@@ -51,8 +52,8 @@ export default function Home() {
     <div className="min-h-screen bg-white text-slate-900">
       {/* HEADER */}
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 md:px-10">
-        <Link href="/" className="text-2xl font-black text-primary md:text-3xl">
-          ZupEat
+        <Link href="/" className="text-2xl font-black text-black md:text-3xl">
+          <NomMarque marque="zupeat" />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

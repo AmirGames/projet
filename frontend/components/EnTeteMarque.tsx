@@ -1,6 +1,7 @@
 import Link from '@/components/LienRegional';
 
 import { MARQUES, type Marque } from '@/lib/marques';
+import { NomMarque } from './NomMarque';
 
 /**
  * L'en-tête blanc des vitrines du groupe (ZupOne, ZupDrive, pages « Devenir
@@ -29,7 +30,7 @@ export function EnTeteMarque({
           >
             Z
           </span>
-          <span className="text-xl font-extrabold tracking-tight">{theme.nom}</span>
+          <NomMarque marque={marque} className="text-xl font-extrabold tracking-tight" />
         </Link>
         {children && <div className="flex min-w-0 items-center gap-2 md:gap-4">{children}</div>}
       </div>

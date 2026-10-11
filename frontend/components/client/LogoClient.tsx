@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { NomMarque } from '@/components/NomMarque';
 
 /** Wordmark ZupEat sans reprendre l'identité visuelle d'une autre plateforme. */
 export function LogoClient({ compact = false }: { compact?: boolean }) {
@@ -7,7 +8,7 @@ export function LogoClient({ compact = false }: { compact?: boolean }) {
       <span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-[#FF7A00] text-base font-black text-black shadow-sm">
         Z
       </span>
-      {!compact && <span className="text-xl font-black tracking-[-0.06em] text-black">ZupEat</span>}
+      {!compact && <NomMarque marque="zupeat" className="text-xl font-black tracking-[-0.06em] text-black" />}
     </span>
   );
 }
