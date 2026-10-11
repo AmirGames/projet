@@ -347,7 +347,6 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
         const res = await request(auth)
           .post("/api/auth/refresh")
           .set("Cookie", `zup_refresh=${refreshToken}`)
-          .set("X-Refresh-Request", "c".repeat(64))
           .set("Origin", origine);
         expect({ origine, statut: res.status }).toEqual({ origine, statut: 403 });
       }
