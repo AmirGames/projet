@@ -89,7 +89,8 @@ describe('renouveler : le jeton d\'accès expire, la session se renouvelle', () 
     fetchMock.mockReturnValue(reponse(200, { accessToken: 'neuf.jeton.ok', user: { id: 'u1' } }));
     const resultat = await renouveler();
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/refresh', expect.objectContaining({
-      method: 'POST', credentials: 'same-origin', body: '{}',
+      method: 'POST', credentials: 'same-origin',
+      body: expect.stringMatching(/^\{"requestId":"[a-f0-9]{64}"\}$/),
       headers: expect.objectContaining({ 'X-Refresh-Transport': 'cookie' }),
     }));
     expect(resultat).toMatchObject({ ok: true, statut: 200 });
@@ -101,7 +102,9 @@ describe('renouveler : le jeton d\'accès expire, la session se renouvelle', () 
     const { renouveler } = charger();
     fetchMock.mockReturnValue(reponse(200, { accessToken: 'a.b.c' }));
     await renouveler('refresh-d-inscription');
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ refreshToken: 'refresh-d-inscription' });
+    const corps = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(corps).toMatchObject({ refreshToken: 'refresh-d-inscription' });
+    expect(corps.requestId).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it.each([401, 403])('un refus %s met fin à la session : jeton et indice oubliés', async statut => {
@@ -128,7 +131,9 @@ describe('renouveler : le jeton d\'accès expire, la session se renouvelle', () 
     const { renouveler, poserJeton, jetonAcces } = charger();
     poserJeton('jeton.encore.bon');
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
-    await expect(renouveler()).resolves.toEqual({ ok: false, statut: 0 });
+    const tentative = renouveler();
+    await jest.advanceTimersByTimeAsync(1000);
+    await expect(tentative).resolves.toEqual({ ok: false, statut: 0 });
     expect(jetonAcces()).toBe('jeton.encore.bon');
   });
 
@@ -217,7 +222,9 @@ describe('démarrage : retrouver la session après un rechargement', () => {
   it('API injoignable : l\'indice est gardé pour réessayer au prochain chargement', async () => {
     fetchMock.mockRejectedValue(new TypeError('réseau'));
     const { sessionPrete, sessionPerdueAuDemarrage } = charger(() => localStorage.setItem('sessionOuverte', '1'));
-    await sessionPrete();
+    const tentative = sessionPrete();
+    await jest.advanceTimersByTimeAsync(1000);
+    await tentative;
     expect(sessionPerdueAuDemarrage()).toBe(false);
     expect(localStorage.getItem('sessionOuverte')).toBe('1');
   });
@@ -239,6 +246,8 @@ describe('fermeture et adoption', () => {
     await adopterRefresh(undefined);
     expect(fetchMock).not.toHaveBeenCalled();
     await adopterRefresh('refresh-inscription');
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ refreshToken: 'refresh-inscription' });
+    const corps = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(corps).toMatchObject({ refreshToken: 'refresh-inscription' });
+    expect(corps.requestId).toMatch(/^[a-f0-9]{64}$/);
   });
 });

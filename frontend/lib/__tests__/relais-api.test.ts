@@ -1,32 +1,56 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { NextRequest } from 'next/server';
-import { relayer } from '../relais-api';
+
+class mockEntetesTest {
+  private readonly valeurs = new Map<string, string>();
+  constructor(initial?: HeadersInit) {
+    if (initial && Symbol.iterator in Object(initial)) {
+      for (const [nom, valeur] of initial as [string, string][]) this.set(nom, valeur);
+    } else if (initial && typeof initial === 'object') {
+      for (const [nom, valeur] of Object.entries(initial)) this.set(nom, valeur);
+    }
+  }
+  get(nom: string): string | null { return this.valeurs.get(nom.toLowerCase()) ?? null; }
+  set(nom: string, valeur: string): void { this.valeurs.set(nom.toLowerCase(), valeur); }
+  append(nom: string, valeur: string): void { this.set(nom, this.get(nom) ? this.get(nom) + ', ' + valeur : valeur); }
+}
+
+jest.doMock('next/server', () => ({
+  NextResponse: class {
+    body: unknown;
+    status: number;
+    headers = new mockEntetesTest();
+    constructor(body: unknown, init: { status: number }) { this.body = body; this.status = init.status; }
+    static json(body: unknown, init: { status: number }) { return { body, status: init.status }; }
+  },
+}));
+const { relayer } = require('../relais-api') as typeof import('../relais-api');
 
 describe('relais des demandes de renouvellement', () => {
+  const HeadersInitial = (globalThis as any).Headers;
+  const fetchInitial = (globalThis as any).fetch;
   afterEach(() => {
     jest.restoreAllMocks();
+    (globalThis as any).Headers = HeadersInitial;
+    (globalThis as any).fetch = fetchInitial;
   });
 
   it('transmet la preuve de reprise à l’API', async () => {
-    const fetchApi = jest.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ accessToken: 'acces-neuf' }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      }),
+    (globalThis as any).Headers = mockEntetesTest;
+    const fetchApi = jest.fn<typeof fetch>().mockResolvedValue(
+      { body: null, status: 200, headers: { get: (name: string) => name === 'content-type' ? 'application/json' : null, getSetCookie: () => [] } } as unknown as Response,
     );
-    const demande = new NextRequest('http://localhost:3000/api/auth/refresh', {
+    (globalThis as any).fetch = fetchApi;
+    const demande = {
+      nextUrl: new URL('http://localhost:3000/api/auth/refresh'),
       method: 'POST',
-      headers: {
-        host: 'localhost:3000',
-        'content-type': 'application/json',
-        'x-refresh-request': 'preuve-de-reprise-aleatoire-1234',
-      },
-      body: JSON.stringify({ requestId: 'preuve-de-reprise-aleatoire-1234' }),
-    });
+      headers: { get: (name: string) => ({ host: 'localhost:3000', 'content-type': 'application/json', 'x-refresh-request': 'preuve-de-reprise-aleatoire-1234' })[name.toLowerCase()] ?? null },
+      arrayBuffer: async () => new ArrayBuffer(0),
+    } as any;
 
     await relayer(demande, 'auth', ['refresh']);
 
     const options = fetchApi.mock.calls[0][1];
-    expect(new Headers(options?.headers).get('x-refresh-request')).toBe('preuve-de-reprise-aleatoire-1234');
+    const entetes = options?.headers as unknown as mockEntetesTest;
+    expect(entetes.get('x-refresh-request')).toBe('preuve-de-reprise-aleatoire-1234');
   });
 });
