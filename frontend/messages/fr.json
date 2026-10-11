@@ -3295,8 +3295,8 @@
   "merchantAuth": {
     "myStores": "Ma Boutique",
     "inscription": {
-      "titre": "Inscrivez votre Commerçant",
-      "sousTitre": "Créez votre compte et lancez votre site de commande en 5 minutes",
+      "titre": "Inscrivez votre commerce",
+      "sousTitre": "Créez votre dossier commerçant en quelques minutes",
       "succes": "Succès!",
       "erreur": "Erreur",
       "infosCommerciales": "Informations Commerciales",
@@ -3326,8 +3326,8 @@
       "creation": "Création en cours...",
       "dejaInscrit": "Déjà inscrit?",
       "seConnecter": "Se connecter",
-      "creer": "Créer mon Compte & Ma Boutique",
-      "apres": "ℹ️ <b>Après inscription :</b> Votre boutique en ligne sera créée automatiquement et accessible depuis votre tableau de bord. Vous pourrez immédiatement ajouter des produits et commencer à recevoir des commandes.",
+      "creer": "Créer mon compte et ma boutique",
+      "apres": "ℹ️ <b>Après inscription :</b> Votre boutique sera créée automatiquement et accessible depuis votre tableau de bord. Vous pourrez immédiatement ajouter des produits et commencer à recevoir des commandes une fois celle-ci validée.",
       "erreurs": {
         "entreprise": "Le nom de l'entreprise est requis",
         "email": "L'email est requis",
