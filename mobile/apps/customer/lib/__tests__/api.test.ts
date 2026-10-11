@@ -69,8 +69,7 @@ describe('apiFetch : appel nominal', () => {
     const dehors = jest.fn();
     setUnauthorizedHandler(dehors);
     fetchMock.mockRejectedValue(new TypeError('Network request failed'));
-    await expect(apiFetch('/api/orders', 'A0')).rejects.toMatchObject({ status: 401 });
-    expect(fetchMock).toHaveBeenCalledTimes(3); // appel protégé + deux reprises idempotentes
+    await expect(apiFetch('/api/orders', 'A0')).rejects.toThrow('Network request failed');
     expect(dehors).not.toHaveBeenCalled();
   });
 });
@@ -137,7 +136,8 @@ describe('apiFetch : 401 et renouvellement de la session', () => {
     const dehors = jest.fn();
     setUnauthorizedHandler(dehors);
     fetchMock.mockReturnValueOnce(reponse(401)).mockRejectedValue(new TypeError('Network request failed'));
-    await expect(apiFetch('/api/orders', 'A0')).rejects.toThrow('Network request failed');
+    await expect(apiFetch('/api/orders', 'A0')).rejects.toMatchObject({ status: 401 });
+    expect(fetchMock).toHaveBeenCalledTimes(3); // appel protégé + deux reprises idempotentes
     expect(dehors).not.toHaveBeenCalled();
     expect(mockStockage.get(CLE_SESSION)).toContain('R0');
   });
