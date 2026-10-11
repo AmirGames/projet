@@ -69,8 +69,8 @@ Les textes de départ contiennent des champs inconnus entre crochets dans les me
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a07-facturation-structuree`, base `0dad7379e89128ee143a226341e46b6ed2bb005c` ; SHA final à établir après commit | Refus configuration fournisseur inconnue/incomplète ; garde des entrées UBL ; procédures ci-dessus |
-| Testé localement | 12 octobre 2026 | Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Tests facturation 12/12 ; tests autorisation/journal superowner 177/177 ; typecheck, lint et build backend réussis. Aucun test de schéma EN 16931 ni accès externe. |
+| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a07-facturation-structuree`, commit code `d6c9480a`, base `0dad7379e89128ee143a226341e46b6ed2bb005c` | Refus configuration fournisseur inconnue/incomplète ; garde des entrées UBL ; procédures ci-dessus |
+| Testé localement | 12 octobre 2026 | SHA code `d6c9480a`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Tests facturation 12/12 ; tests autorisation/journal superowner 177/177 ; typecheck, lint et build backend réussis. Aucun test de schéma EN 16931 ni accès externe. |
 | Intégré | Non | PR à créer | Aucune preuve |
 | Déployé | Non | Aucun environnement confirmé | Aucune preuve |
 | Validé en exploitation | Non | Fournisseur, accès sandbox et opérateur inconnus | Aucune preuve ; essais externes bloqués |
