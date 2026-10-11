@@ -1,5 +1,14 @@
 # Phase 15: Real-time Monitoring & Alerts 📊🔔
 
+## Webhooks sortants ZupDrive (A11)
+
+Le worker annonce sa tâche `zupdrive-webhooks` à la surveillance existante.
+Les erreurs sont journalisées par identifiant de livraison, endpoint, essai et
+code HTTP ; ni secret, corps de réponse ni payload ne sont journalisés. Les
+échecs terminaux restent visibles dans `GET /api/zupdrive/webhooks/admin/deliveries`
+et peuvent être repris par un superowner. Le flag serveur est fermé par défaut.
+Le contrat et les limites figurent dans [WEBHOOKS-ZUPDRIVE-A11.md](WEBHOOKS-ZUPDRIVE-A11.md).
+
 ## Supervision des remboursements ZupEat — A03 (9 octobre 2026)
 
 Les commandes payées après refus/abandon portent désormais une intention durable

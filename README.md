@@ -23,6 +23,13 @@ demande; seul son hash et le `jti` du successeur sont stockés. Voir le
 et le [registre des preuves](docs/etat-projet.md#étape-06--a09-rotation-atomique-des-sessions).
 Déploiement et validation en exploitation non établis.
 
+## A11 — webhooks sortants ZupDrive
+
+Le worker durable, la signature HMAC et les reprises sont décrits dans le
+[contrat et la procédure de reprise](docs/WEBHOOKS-ZUPDRIVE-A11.md). Le flag
+`ZUPDRIVE_WEBHOOKS_ENABLED` reste désactivé : aucune transition métier ZupDrive
+n'émet encore ces événements. Aucun déploiement ni essai réel n'est revendiqué.
+
 ## Étape 05 — A10 : liens de compte à usage unique (10 octobre 2026)
 
 Les liens de reset et de confirmation sont consommés par mutation conditionnelle

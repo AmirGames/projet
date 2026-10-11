@@ -64,6 +64,8 @@ const envSchema = z.object({
   OSRM_API_URL: z.string().url().optional(),
   // Secret partagé avec le fournisseur d'envoi : signe les accusés de notification ZupDrive (HMAC-SHA256).
   ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET: z.string().min(32, 'Secret du webhook de notifications ZupDrive : au moins 32 caractères').optional(),
+  // Sorties ZupDrive désactivées jusqu'au branchement transactionnel des événements métier.
+  ZUPDRIVE_WEBHOOKS_ENABLED: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
   // ZupDrive : tant que la course n'est pas payée en ligne, aucun chauffeur ne la reçoit (elle expire sans
   // chauffeur comme les autres après RECHERCHE_MAX_MS). Faux par défaut : à activer quand l'écran de paiement est en ligne.
   ZUPDRIVE_PAIEMENT_OBLIGATOIRE: z.string().default("false").transform((v) => v === "true"),

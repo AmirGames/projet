@@ -1,5 +1,10 @@
 # Webhooks ZupEat
 
+Ce document décrit le transport de ZupEat. Pour les webhooks sortants ZupDrive,
+consulter le [contrat A11](docs/WEBHOOKS-ZUPDRIVE-A11.md) : worker durable,
+signature, SSRF à chaque tentative et reprise superowner. Ils restent désactivés
+tant qu'aucune transition métier ne les émet atomiquement.
+
 Un webhook prévient **votre** serveur de ce qui se passe sur la plateforme :
 une commande arrive, un ticket s'ouvre, un commerçant est suspendu. Vous
 enregistrez une adresse, vous choisissez des événements, et ZupEat vous envoie

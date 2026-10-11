@@ -19,7 +19,7 @@ const booleenQuery = z
 
 const filtresLivraisonsSchema = z.object({
   webhookId: z.string().optional(),
-  status: z.string().optional(),
+  status: z.enum(["PENDING", "PROCESSING", "SENT", "FAILED", "DELIVERY_FAILED"]).optional(),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
 });
@@ -79,6 +79,16 @@ router.get(
   }
 );
 
+router.post("/admin/deliveries/:deliveryId/retry", ...adminAuth, async (req, res, next) => {
+  try {
+    const id = idSchema.parse(req.params.deliveryId);
+    const reprise = await ZupDriveWebhooksService.reprendreLivraison(id);
+    if (!reprise) { res.status(409).json({ code: "DELIVERY_NOT_RETRYABLE" }); return; }
+    await journaliser(req, "ZUPDRIVE_RETRY_WEBHOOK_DELIVERY", id);
+    res.status(202).json({ success: true, status: "PENDING" });
+  } catch (error) { next(error); }
+});
+
 /**
  * PATCH /api/zupdrive/admin/webhooks/endpoints/:endpointId
  * Mettre à jour un endpoint de webhook
@@ -104,6 +114,15 @@ router.patch(
     }
   }
 );
+
+router.post("/admin/endpoints/:endpointId/rotate-secret", ...adminAuth, async (req, res, next) => {
+  try {
+    const id = idSchema.parse(req.params.endpointId);
+    const secret = await ZupDriveWebhooksService.rotateWebhookSecret(id);
+    await journaliser(req, "ZUPDRIVE_ROTATE_WEBHOOK_SECRET", id);
+    res.json({ secret });
+  } catch (error) { next(error); }
+});
 
 /**
  * DELETE /api/zupdrive/admin/webhooks/endpoints/:endpointId
