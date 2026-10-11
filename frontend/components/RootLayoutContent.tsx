@@ -127,6 +127,7 @@ export default function RootLayoutContent({
 
   const espaceZupEat = espaceHote === 'public' || espaceHote === 'pro' || espaceHote === 'livreur';
   const sansPied = espaceZupEat || chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin) ||
+    espaceHote === 'vitrine' || chemin === '/zupone' ||
     chemin === '/client' || chemin?.startsWith('/client/') || chemin === '/restaurants' ||
     (chemin?.startsWith('/store/') && chemin !== '/store/new');
 

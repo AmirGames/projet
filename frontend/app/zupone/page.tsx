@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { accueilDe, lienVersEspace } from '@/lib/domaines';
 import { MARQUES, type Marque } from '@/lib/marques';
 import { EnTeteMarque } from '@/components/EnTeteMarque';
+import { FooterZupOne } from '@/components/FooterZupOne';
 import { NomMarque } from '@/components/NomMarque';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -199,18 +200,7 @@ export default async function VitrineZupOne() {
         </div>
       </section>
       </main>
-      <footer className="border-t border-neutral-200 bg-[#F7F6F4]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 text-sm text-neutral-600 sm:flex-row sm:items-center sm:justify-between md:px-8">
-          <Link href="/zupone" className="inline-flex items-center gap-2 rounded-lg font-black text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
-            <span aria-hidden="true" className="grid size-8 place-items-center rounded-xl bg-black text-xs text-white">Z</span><NomMarque marque="zupone" />
-          </Link>
-          <p>{t('footerCopyright', { year: new Date().getFullYear() })}</p>
-          <nav aria-label={t('footerLegal')} className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link href="/mentions-legales" className="rounded-sm hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">{t('footerLegalNotice')}</Link>
-            <Link href="/confidentialite" className="rounded-sm hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">{t('footerPrivacy')}</Link>
-          </nav>
-        </div>
-      </footer>
+      <FooterZupOne />
     </div>
   );
 }
