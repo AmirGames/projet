@@ -178,11 +178,18 @@ check('aucun lien vers /store nu', !liens.includes('/store'), JSON.stringify(lie
 check('il mène à la liste des commerces', liens.includes('/client'), JSON.stringify(liens));
 check('et plus à l’ancienne liste', !liens.includes('/restaurants'), JSON.stringify(liens));
 
-titre('L’ancienne liste des commerces redirige');
-// Elle doublait l'accueil client en moins bien ; ses anciens liens y mènent.
+titre('La liste des commerces est accessible');
+// /restaurants est désormais le vrai catalogue, dans la même région que le
+// reste du site. Elle ne doit pas repartir vers /client.
 await page.goto(`${SITE}/restaurants`);
-await page.waitForURL((url) => url.pathname === '/client', { timeout: 15000 });
-check('elle mène à l’accueil client', new URL(page.url()).pathname === '/client', page.url());
+await page.getByRole('heading', { name: 'Les bonnes adresses, tout près de vous.' }).waitFor({ timeout: 15000 });
+const cheminBoutiques = sansRegion(new URL(page.url()).pathname);
+check('elle reste sur la route des boutiques', cheminBoutiques === '/restaurants', page.url());
+check(
+  'elle propose une recherche accessible',
+  await page.getByRole('textbox', { name: 'Rechercher une boutique' }).count() === 1,
+  await texte()
+);
 
 titre('La liste des commerces mène à la vitrine unique');
 await page.goto(`${SITE}/client`);
