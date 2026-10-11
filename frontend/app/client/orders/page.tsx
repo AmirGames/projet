@@ -142,18 +142,18 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="pt-4">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
+        <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
+          <Link href="/client" className="mb-4 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-neutral-600 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
             <ArrowLeft size={20} />
             {t('back')}
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+          <h1 className="text-3xl font-black tracking-tight text-gray-900 md:text-4xl">{t('title')}</h1>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="mx-auto max-w-7xl px-5 pb-16 md:px-8">
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label={t('title')}>
           {(
             [
               { value: 'all', key: 'all' },
@@ -164,10 +164,12 @@ export default function OrdersPage() {
             <button
               key={tab.value}
               onClick={() => setFilter(tab.value)}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
+              type="button"
+              aria-pressed={filter === tab.value}
+              className={`rounded-full px-5 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 ${
                 filter === tab.value
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-white text-gray-500 hover:bg-gray-100'
+                  ? 'bg-[#FF7A00] text-black'
+                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
               }`}
             >
               {t(tab.key)}
@@ -180,7 +182,7 @@ export default function OrdersPage() {
             <p className="text-gray-900 text-lg">{t('loading')}</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-20 bg-white ring-1 ring-gray-200 rounded-lg">
+          <div className="rounded-3xl border border-neutral-200 bg-neutral-50 px-6 py-16 text-center">
             <p className="text-gray-900 text-xl mb-4">{t('noOrders')}</p>
             <Link href="/client" className="text-orange-500 hover:text-orange-600">
               {t('startSearching')}
@@ -199,7 +201,7 @@ export default function OrdersPage() {
                   href={`/client/orders/${order.id}`}
                   className="block"
                 >
-                  <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4 hover:bg-gray-100 hover:shadow-lg transition cursor-pointer">
+                  <div className="rounded-3xl border border-neutral-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-lg">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <p className="text-gray-900 font-bold text-lg">
@@ -223,7 +225,7 @@ export default function OrdersPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-gray-500 text-sm mb-1">{t('amount')}</p>
-                        <p className="text-orange-600 font-bold text-lg">
+                          <p className="text-[#A94F00] font-bold text-lg">
                           {euro(order.totalAmount)}
                         </p>
                       </div>
@@ -251,7 +253,7 @@ export default function OrdersPage() {
                           type="button"
                           onClick={(e) => commanderANouveau(e, order)}
                           disabled={reprise?.orderId === order.id && !reprise.message}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-sm font-semibold transition"
+                          className="flex items-center gap-2 rounded-full bg-[#FF7A00] px-4 py-2.5 text-sm font-bold text-black transition hover:bg-[#E66E00] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
                         >
                           <RotateCcw size={16} />
                           {reprise?.orderId === order.id && !reprise.message ? t('reordering') : t('reorder')}
@@ -286,3 +288,4 @@ export default function OrdersPage() {
     </div>
   );
 }
+

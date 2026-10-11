@@ -197,7 +197,7 @@ export default function OrderTrackingPage() {
       <div className="min-h-screen bg-white">
         <header className="pt-4">
           <div className="max-w-7xl mx-auto px-4 py-4">
-            <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-600">
+            <Link href="/client/orders" className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-neutral-600 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
               <ArrowLeft size={20} />
               {t('retour')}
             </Link>
@@ -244,7 +244,7 @@ export default function OrderTrackingPage() {
       {/* Header */}
       <header className="pt-4">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
+          <Link href="/client/orders" className="mb-4 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-neutral-600 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
             <ArrowLeft size={20} />
             {t('retour')}
           </Link>
@@ -287,7 +287,7 @@ export default function OrderTrackingPage() {
                 </div>
                 <Link
                   href={`/client/orders/${orderId}/review`}
-                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-3 rounded-lg text-center transition"
+                  className="rounded-full bg-[#FF7A00] px-5 py-3 text-center font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
                 >
                   {t('reviewPromptButton')}
                 </Link>
@@ -365,7 +365,7 @@ export default function OrderTrackingPage() {
                     <div key={status} className="flex items-center gap-4">
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                          completed ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'
+                          completed ? 'bg-[#FF7A00] text-black' : 'bg-gray-100 text-gray-500'
                         }`}
                       >
                         {index + 1}
@@ -479,3 +479,4 @@ export default function OrderTrackingPage() {
     </div>
   );
 }
+

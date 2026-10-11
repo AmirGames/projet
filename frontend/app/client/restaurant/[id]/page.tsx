@@ -49,8 +49,8 @@ export default function AncienneVitrineClient() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-6">
         <div className="text-center">
-          <p className="text-white font-semibold mb-2">{t('notFound')}</p>
-          <Link href="/client" className="text-orange-500 hover:underline">
+          <p className="mb-2 font-semibold text-gray-900">{t('notFound')}</p>
+          <Link href="/client" className="font-semibold text-[#A94F00] underline underline-offset-4 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
             {t('seeAll')}
           </Link>
         </div>
@@ -60,7 +60,8 @@ export default function AncienneVitrineClient() {
 
   return (
     <div className="min-h-[50vh] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600" />
+      <div role="status" aria-label={t('loading')} className="size-10 animate-spin rounded-full border-2 border-neutral-200 border-b-[#FF7A00]" />
     </div>
   );
 }
+

@@ -3,9 +3,10 @@ import { getTranslations } from 'next-intl/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('titresPages');
-  return { title: `${t('connexion')} — ZupEat` };
+  return { title: `${t('connexion')} — ZupOne` };
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return children;
 }
+

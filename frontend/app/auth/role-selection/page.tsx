@@ -11,6 +11,7 @@ import { useTypesDeCommerce } from "@/lib/types-commerce";
 import Link from "next/link";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { useTranslations } from 'next-intl';
+import { LogoZupOne } from '@/components/auth/LogoZupOne';
 
 interface Roles {
   customer: {
@@ -141,13 +142,14 @@ export default function RoleSelectionPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-[#F7F7F6] flex items-center justify-center"><div className="text-gray-900">{tr('chargement')}</div></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-[#FAF9F7]"><div role="status" className="text-gray-900">{tr('chargement')}</div></div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F6] p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">
+    <div className="min-h-screen bg-[#FAF9F7] px-4 py-8 sm:px-6 md:py-12">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 text-center"><LogoZupOne /></div>
+        <h1 className="mb-2 text-center text-3xl font-black tracking-tight text-gray-900 md:text-4xl">
           {tr('titre')}
         </h1>
         <p className="text-gray-500 text-center mb-8">
@@ -155,15 +157,15 @@ export default function RoleSelectionPage() {
         </p>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-8">
+          <div role="alert" className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">
             {error}
           </div>
         )}
 
         {roles && (
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid gap-5 md:grid-cols-3">
             {/* Customer Role */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
               <div className="flex items-center mb-4">
                 <div
                   className={`w-4 h-4 rounded-full mr-3 ${
@@ -189,7 +191,7 @@ export default function RoleSelectionPage() {
             </div>
 
             {/* Merchant Role */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
               <div className="flex items-center mb-4">
                 <div
                   className={`w-4 h-4 rounded-full mr-3 ${
@@ -251,7 +253,7 @@ export default function RoleSelectionPage() {
             </div>
 
             {/* Driver Role */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
               <div className="flex items-center mb-4">
                 <div
                   className={`w-4 h-4 rounded-full mr-3 ${
@@ -282,7 +284,7 @@ export default function RoleSelectionPage() {
                 className={`w-full font-bold py-2 px-4 rounded-lg ${
                   roles.driver.active
                     ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                    : "bg-orange-600 hover:bg-orange-700 text-white"
+                    : "bg-[#FF7A00] hover:bg-[#E66E00] text-black"
                 }`}
               >
                 {roles.driver.active ? tr('candidature') : tr('devenirLivreur')}
@@ -293,7 +295,7 @@ export default function RoleSelectionPage() {
 
         {/* Merchant Form */}
         {showMerchantForm && (
-          <div className="mt-8 bg-white rounded-lg p-6 border border-gray-200">
+          <div className="mt-8 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
               {tr('creerBoutique')}
             </h3>
@@ -535,7 +537,7 @@ export default function RoleSelectionPage() {
               </div>
               <button
                 type="submit"
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg"
+                className="w-full rounded-full bg-[#FF7A00] px-4 py-3 font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
               >
                 {tr('postuler')}
               </button>
@@ -555,3 +557,4 @@ export default function RoleSelectionPage() {
     </div>
   );
 }
+

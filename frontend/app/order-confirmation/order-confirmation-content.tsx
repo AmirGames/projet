@@ -13,8 +13,8 @@ export default function OrderConfirmationContent() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <EnTeteClient />
-      <div className="max-w-2xl mx-auto p-6 pt-12">
-        <div className="bg-white p-8 rounded-3xl text-center shadow-xs ring-1 ring-gray-200">
+        <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-14">
+        <div className="rounded-[2rem] border border-neutral-200 bg-white p-7 text-center shadow-sm md:p-10">
           {/* Success Icon */}
           <div className="text-6xl mb-6">🕒</div>
 
@@ -46,7 +46,7 @@ export default function OrderConfirmationContent() {
             {orderId && (
               <Link
                 href={`/track?commande=${orderId}`}
-                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-full"
+                className="rounded-full bg-[#FF7A00] px-6 py-3 font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
               >
                 {t('suivre')}
               </Link>
@@ -69,3 +69,4 @@ export default function OrderConfirmationContent() {
     </div>
   );
 }
+

@@ -256,9 +256,9 @@ export default function TrackOrderPage() {
   const currentStatusIndex = order ? getStatusIndex(order.status) : -1;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-white text-gray-900">
       <EnTeteClient />
-      <div className="max-w-4xl mx-auto space-y-8 p-6">
+      <div className="mx-auto max-w-4xl space-y-8 px-5 py-8 md:px-8 md:py-10">
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{t('titre')}</h1>
@@ -266,8 +266,8 @@ export default function TrackOrderPage() {
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex gap-3">
+        <form onSubmit={handleSearch} className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm md:p-7">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 text-gray-500" size={20} />
               <input
@@ -275,13 +275,14 @@ export default function TrackOrderPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('placeholder')}
-                className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-3 text-gray-900 focus:outline-hidden focus:border-orange-500 placeholder-gray-400"
+                aria-label={t('placeholder')}
+                className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-900 placeholder-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-3 bg-orange-600 hover:bg-orange-700 rounded-full text-white font-semibold transition-colors disabled:opacity-50"
+              className="rounded-full bg-[#FF7A00] px-8 py-3 font-bold text-black transition-colors hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
             >
               {loading ? t('recherche') : t('rechercher')}
             </button>
@@ -300,7 +301,7 @@ export default function TrackOrderPage() {
         {order && (
           <div className="space-y-6">
             {/* Order Header */}
-            <div className="bg-linear-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
+            <div className="rounded-3xl border border-orange-200 bg-[#FFF6EC] p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-500 text-sm mb-1">{t('numero')}</p>
@@ -335,7 +336,7 @@ export default function TrackOrderPage() {
                           <div
                             className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-colors ${
                               isCompleted
-                                ? 'bg-orange-600 text-white'
+                                ? 'bg-[#FF7A00] text-black'
                                 : 'bg-gray-100 text-gray-500'
                             } ${isCurrent ? 'ring-2 ring-orange-600 ring-offset-2 ring-offset-white' : ''}`}
                           >
@@ -344,7 +345,7 @@ export default function TrackOrderPage() {
                           {index < statusSteps.length - 1 && (
                             <div
                               className={`w-1 h-12 mt-2 ${
-                                isCompleted ? 'bg-orange-600' : 'bg-gray-100'
+                                isCompleted ? 'bg-[#FF7A00]' : 'bg-gray-100'
                               }`}
                             />
                           )}
@@ -629,3 +630,4 @@ export default function TrackOrderPage() {
     </div>
   );
 }
+

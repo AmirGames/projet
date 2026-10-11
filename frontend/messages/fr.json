@@ -3797,7 +3797,16 @@
     "courierAction": "Devenir livreur",
     "driverTitle": "Chauffeur VTC",
     "driverText": "Faites-vous connaître dès maintenant pour conduire avec ZupDrive à son ouverture.",
-    "driverAction": "Devenir chauffeur"
+    "driverAction": "Devenir chauffeur",
+    "heroVisualLabel": "Des commerces locaux partenaires",
+    "bakeryAlt": "Pain frais dans une boulangerie de quartier",
+    "grocerAlt": "Fruits et légumes frais chez un primeur local",
+    "cheeseAlt": "Sélection de fromages chez un artisan",
+    "pizzeriaAlt": "Pizza préparée par un commerce local",
+    "footerCopyright": "© {year} ZupOne. Tous droits réservés.",
+    "footerLegal": "Informations légales",
+    "footerLegalNotice": "Mentions légales",
+    "footerPrivacy": "Confidentialité"
   },
   "chauffeurDrive": {
     "titre": "Mon dossier chauffeur ZupDrive",

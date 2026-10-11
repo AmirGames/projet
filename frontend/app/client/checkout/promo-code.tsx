@@ -95,7 +95,7 @@ export function PromoCode({ storeId, orderAmount, onApply }: PromoCodeProps) {
           <button
             onClick={handleApply}
             disabled={loading || !code.trim()}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-700 text-white rounded-lg transition font-medium"
+            className="rounded-full bg-[#FF7A00] px-5 py-2.5 font-bold text-black transition hover:bg-[#E66E00] disabled:bg-gray-700 disabled:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           >
             {loading ? 'Vérif...' : 'Appliquer'}
           </button>
@@ -111,3 +111,4 @@ export function PromoCode({ storeId, orderAmount, onApply }: PromoCodeProps) {
     </div>
   );
 }
+

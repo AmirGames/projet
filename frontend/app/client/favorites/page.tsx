@@ -95,18 +95,18 @@ export default function FavoritesPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="pt-4">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
+        <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
+          <Link href="/client" className="mb-4 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-neutral-600 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
             <ArrowLeft size={20} />
             {t('back')}
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+          <h1 className="text-3xl font-black tracking-tight text-gray-900 md:text-4xl">{t('title')}</h1>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="mx-auto max-w-7xl px-5 pb-16 md:px-8">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-800">
+          <div role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">
             {error}
           </div>
         )}
@@ -116,10 +116,10 @@ export default function FavoritesPage() {
             <p className="text-gray-900 text-lg">{t('loading')}</p>
           </div>
         ) : favorites.length === 0 ? (
-          <div className="text-center py-20 bg-white ring-1 ring-gray-200 rounded-lg">
-            <Heart size={48} className="mx-auto text-gray-400 mb-4" />
+          <div className="rounded-3xl border border-neutral-200 bg-neutral-50 px-6 py-16 text-center">
+            <Heart size={48} className="mx-auto mb-4 text-[#FF7A00]" />
             <p className="text-gray-900 text-xl mb-4">{t('noFavorites')}</p>
-            <Link href="/client" className="text-orange-500 hover:text-orange-600">
+              <Link href="/client" className="font-bold text-[#A94F00] underline underline-offset-4 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
               {t('discoverRestaurants')}
             </Link>
           </div>
@@ -128,13 +128,13 @@ export default function FavoritesPage() {
             {favorites.map(favorite => {
               const store = favorite.store;
               return (
-                <div key={favorite.id} className="bg-white ring-1 ring-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
+                <article key={favorite.id} className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                   {/* Comme sur l'accueil : la photo de couverture, ou l'illustration
                       de la catégorie ; le logo en pastille, ou l'emoji de la
                       catégorie sur une photo. */}
-                  <div className="relative h-40 overflow-hidden bg-gray-100">
+                  <div className="relative aspect-[1.8] overflow-hidden bg-gray-100">
                     {store.settings?.banner ? (
-                      <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                      <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     ) : (
                       <IllustrationFamille famille={store.famille} />
                     )}
@@ -155,13 +155,15 @@ export default function FavoritesPage() {
                     )}
                   </div>
 
-                  <div className="p-4">
+                  <div className="p-5">
                     {/* Name & Remove Button */}
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-bold text-gray-900 flex-1">{store.name}</h3>
                       <button
                         onClick={() => removeFavorite(store.id)}
-                        className="text-red-500 hover:text-red-600 p-1"
+                        type="button"
+                        aria-label={`${t('removeFavorite')} — ${store.name}`}
+                        className="rounded-full p-2 text-neutral-500 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -206,13 +208,11 @@ export default function FavoritesPage() {
                     </div>
 
                     {/* CTA Button */}
-                    <Link href={`/store/${store.slug}`} className="w-full block">
-                      <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition">
+                    <Link href={`/store/${store.slug}`} className="block w-full rounded-full bg-[#FF7A00] py-3 text-center font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">
                         {t('viewMenu')}
-                      </button>
                     </Link>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
@@ -221,3 +221,4 @@ export default function FavoritesPage() {
     </div>
   );
 }
+

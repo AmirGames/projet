@@ -636,8 +636,8 @@ export function TunnelCommande({
   };
 
   const champ =
-    'w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-hidden focus:border-red-500';
-  const carte = 'bg-white border border-gray-200 rounded-2xl';
+    'w-full bg-white border border-gray-300 rounded-2xl px-4 py-3 text-gray-900 transition focus:outline-none focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20';
+  const carte = 'bg-white border border-neutral-200 rounded-3xl shadow-sm';
   const boutonModifier =
     'shrink-0 rounded-full bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-semibold transition-colors';
 
@@ -650,7 +650,7 @@ export function TunnelCommande({
   const adresseComplete = Boolean(checkoutForm.deliveryAddress && checkoutForm.deliveryCity);
 
   const alerte = checkoutError ? (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+    <div role="alert" className="bg-red-50 border border-red-200 rounded-2xl p-4 flex gap-3">
       <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
       <p className="text-red-600 text-sm">{checkoutError}</p>
     </div>
@@ -1369,7 +1369,7 @@ export function TunnelCommande({
               sousLeMinimum ||
               (enLivraison && livraison?.livrable === false)
             }
-            className="w-full py-4 bg-orange-600 hover:bg-orange-700 rounded-full text-lg text-white font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-full bg-[#FF7A00] py-4 text-lg font-bold text-black transition-colors hover:bg-[#E66E00] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           >
             {submitting
               ? t('traitement')
@@ -1411,3 +1411,4 @@ function EnTeteBoutique({ boutique, adresse }: { boutique: BoutiqueCommandee; ad
     </>
   );
 }
+

@@ -3797,7 +3797,16 @@
     "courierAction": "Become a courier",
     "driverTitle": "Ride-hailing driver",
     "driverText": "Register your interest now to drive with ZupDrive when it opens.",
-    "driverAction": "Become a driver"
+    "driverAction": "Become a driver",
+    "heroVisualLabel": "Local partner shops",
+    "bakeryAlt": "Fresh bread from a neighbourhood bakery",
+    "grocerAlt": "Fresh fruit and vegetables from a local grocer",
+    "cheeseAlt": "A selection of cheeses from a local artisan",
+    "pizzeriaAlt": "Pizza prepared by a local shop",
+    "footerCopyright": "© {year} ZupOne. All rights reserved.",
+    "footerLegal": "Legal information",
+    "footerLegalNotice": "Legal notice",
+    "footerPrivacy": "Privacy"
   },
   "chauffeurDrive": {
     "titre": "My ZupDrive driver application",

@@ -35,11 +35,11 @@ export const MARQUES: Record<Marque, ThemeMarque> = {
   },
   zupeat: {
     nom: 'ZupEat',
-    logo: 'bg-orange-600 text-white',
-    bandeau: 'bg-linear-to-br from-orange-500 via-orange-600 to-red-600',
-    bouton: 'bg-orange-600 text-white hover:bg-orange-700',
-    teinte: 'bg-orange-50 text-orange-700',
-    accent: 'text-orange-600',
+    logo: 'bg-[#FF7A00] text-black',
+    bandeau: 'bg-linear-to-br from-[#FF7A00] via-[#F16E00] to-[#E66E00]',
+    bouton: 'bg-[#FF7A00] text-black hover:bg-[#E66E00]',
+    teinte: 'bg-orange-50 text-orange-900',
+    accent: 'text-[#B94F00]',
   },
   zupdrive: {
     nom: 'ZupDrive',
@@ -56,3 +56,4 @@ export function marqueDuNom(nom: string | undefined): Marque {
   const trouvee = (Object.keys(MARQUES) as Marque[]).find((cle) => MARQUES[cle].nom === nom);
   return trouvee ?? 'zupeat';
 }
+

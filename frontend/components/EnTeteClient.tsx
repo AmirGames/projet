@@ -65,7 +65,7 @@ export function EnTeteClient() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? t('fermerMenu') : t('ouvrirMenu')}
               aria-expanded={mobileMenuOpen}
-              className="p-2 text-gray-900 hover:bg-gray-100 rounded-lg"
+              className="rounded-xl p-2 text-gray-900 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -83,9 +83,9 @@ export function EnTeteClient() {
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`flex items-center gap-3 px-4 py-3 transition ${
+                  className={`flex items-center gap-3 px-4 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF7A00] ${
                     isActive(item.href)
-                      ? 'bg-gray-100 text-gray-900 font-semibold'
+                      ? 'bg-[#FFF0E0] text-[#7C3500] font-bold'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -109,7 +109,7 @@ export function EnTeteClient() {
               <Link
                 href="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex w-full items-center gap-3 px-4 py-3 font-semibold text-orange-600 hover:bg-orange-50 transition"
+                className="flex w-full items-center gap-3 px-4 py-3 font-semibold text-[#A94F00] transition hover:bg-[#FFF6EC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF7A00]"
               >
                 <LogIn size={20} />
                 {t('connexion')}
@@ -134,9 +134,9 @@ export function EnTeteClient() {
                   key={item.href}
                   href={item.href}
                   aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 ${
                     isActive(item.href)
-                      ? 'bg-white text-gray-900 shadow-xs'
+                      ? 'bg-[#FF7A00] text-black shadow-xs'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >

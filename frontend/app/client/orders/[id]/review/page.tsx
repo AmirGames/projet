@@ -349,7 +349,7 @@ export default function ReviewPage() {
               onClick={() => setExpressMode(!expressMode)}
               className={`px-4 py-2 rounded-lg font-semibold transition whitespace-nowrap ml-4 ${
                 expressMode
-                  ? 'bg-orange-600 text-white hover:bg-orange-700'
+                  ? 'bg-[#FF7A00] text-black hover:bg-[#E66E00]'
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
@@ -523,7 +523,7 @@ export default function ReviewPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
+                className="w-full rounded-full bg-[#FF7A00] py-3 font-bold text-black transition hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
               >
                 {submitting ? t('submitting') : expressMode ? t('submitExpress') : t('submitReview')}
               </button>
@@ -538,3 +538,4 @@ export default function ReviewPage() {
     </div>
   );
 }
+

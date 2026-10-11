@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslations } from 'next-intl';
+import { LogoZupOne } from '@/components/auth/LogoZupOne';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -53,8 +54,9 @@ export default function MotDePasseOublie() {
   // le profil, pas par un lien envoyé par e-mail.
   if (!isLoading && isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10 text-center space-y-4">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-5 py-10">
+        <div className="w-full max-w-md space-y-4 rounded-[2rem] border border-black/5 bg-white p-7 text-center shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] md:p-10">
+          <LogoZupOne />
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('connecte')}</h1>
           <p className="text-slate-600">{t('changerDepuisProfil')}</p>
           <Link href="/" className="inline-block mt-2 font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
@@ -66,8 +68,9 @@ export default function MotDePasseOublie() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10">
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-5 py-10">
+      <div className="w-full max-w-md rounded-[2rem] border border-black/5 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] md:p-10">
+        <LogoZupOne />
         {envoye ? (
           <div className="text-center space-y-4">
             <MailCheck size={48} className="mx-auto text-gray-900" />
@@ -107,7 +110,7 @@ export default function MotDePasseOublie() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
                   placeholder={t('exempleEmail')}
                   required
                   autoFocus
@@ -117,7 +120,7 @@ export default function MotDePasseOublie() {
               <button
                 type="submit"
                 disabled={envoiEnCours}
-                className="w-full rounded-full bg-gray-900 px-4 py-3.5 font-bold text-white transition hover:bg-gray-800 disabled:opacity-50"
+                className="w-full rounded-full bg-[#FF7A00] px-4 py-3.5 font-bold text-black transition hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
               >
                 {envoiEnCours ? t('envoi') : t('envoyer')}
               </button>
@@ -134,3 +137,4 @@ export default function MotDePasseOublie() {
     </div>
   );
 }
+

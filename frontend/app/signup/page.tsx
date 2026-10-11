@@ -14,6 +14,7 @@ import { confierSessionCentrale } from "@/lib/sso";
 import Link from "next/link";
 import { SelecteurPays } from "@/components/SelecteurPays";
 import { usePays } from "@/lib/pays-client";
+import { LogoZupOne } from '@/components/auth/LogoZupOne';
 
 export default function SignupPage() {
   const t = useTranslations('auth.signup');
@@ -84,8 +85,9 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10">
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-5 py-10 sm:px-6">
+      <div className="w-full max-w-md rounded-[2rem] border border-black/5 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] md:p-10">
+        <LogoZupOne />
         <h1 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-gray-900">
           {t("title")}
         </h1>
@@ -108,41 +110,44 @@ export default function SignupPage() {
             <SelecteurPays
               pays={pays}
               onChange={setPays}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700">{t("name")}</label>
+            <label htmlFor="signup-name" className="mb-1.5 block text-sm font-semibold text-gray-700">{t("name")}</label>
             <input
+              id="signup-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               placeholder={t("name")}
               required
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700">{t("email")}</label>
+            <label htmlFor="signup-email" className="mb-1.5 block text-sm font-semibold text-gray-700">{t("email")}</label>
             <input
+              id="signup-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               placeholder={t('emailPlaceholder')}
               required
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700">{t("password")}</label>
+            <label htmlFor="signup-password" className="mb-1.5 block text-sm font-semibold text-gray-700">{t("password")}</label>
             <input
+              id="signup-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               placeholder="••••••••"
               autoComplete="new-password"
               required
@@ -151,12 +156,13 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-gray-700">{t("confirmPassword")}</label>
+            <label htmlFor="signup-password-confirm" className="mb-1.5 block text-sm font-semibold text-gray-700">{t("confirmPassword")}</label>
             <input
+              id="signup-password-confirm"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-gray-900/10"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               placeholder="••••••••"
               required
             />
@@ -175,7 +181,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading || !conditionsAcceptees}
-            className="w-full rounded-full bg-gray-900 px-4 py-3.5 font-bold text-white transition hover:bg-gray-800 disabled:opacity-50"
+            className="w-full rounded-full bg-[#FF7A00] px-4 py-3.5 font-bold text-black transition hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           >
             {loading ? t("registering") : t("submit")}
           </button>
@@ -193,3 +199,4 @@ export default function SignupPage() {
     </div>
   );
 }
+

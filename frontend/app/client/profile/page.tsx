@@ -134,10 +134,10 @@ export default function ProfilClientPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 px-5 py-8 md:px-8 md:py-10">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <User size={28} className="text-orange-500" />
+        <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-gray-900 md:text-4xl">
+          <span className="grid size-12 place-items-center rounded-2xl bg-[#FFF0E0]"><User size={25} className="text-[#A94F00]" /></span>
           {t('title')}
         </h1>
         {profil && (
@@ -148,7 +148,7 @@ export default function ProfilClientPage() {
       </div>
 
       {erreur && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 text-gray-700">
+        <div role="alert" className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-gray-700">
           {erreur}
         </div>
       )}
@@ -156,14 +156,14 @@ export default function ProfilClientPage() {
       {profil && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-gray-500 text-sm">{t('ordersPlaced')}</p>
                 <ShoppingBag size={20} className="text-blue-500" />
               </div>
               <p className="text-3xl font-bold text-gray-900">{profil.totalOrders}</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-gray-500 text-sm">{t('totalSpent')}</p>
                 <Wallet size={20} className="text-green-500" />
@@ -172,7 +172,7 @@ export default function ProfilClientPage() {
             </div>
           </div>
 
-          <form onSubmit={enregistrer} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+          <form onSubmit={enregistrer} className="space-y-5 rounded-3xl border border-neutral-200 bg-white p-6 md:p-8">
             <h2 className="text-lg font-bold text-gray-900">{t('myInfo')}</h2>
 
             {message && (
@@ -197,7 +197,7 @@ export default function ProfilClientPage() {
                 required
                 minLength={2}
                 {...champ('name')}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+                className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               />
             </div>
 
@@ -206,7 +206,7 @@ export default function ProfilClientPage() {
               <input
                 type="tel"
                 {...champ('phone')}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+                className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               />
             </div>
 
@@ -224,7 +224,7 @@ export default function ProfilClientPage() {
                     postalCode: adresse.postalCode || formulaire.postalCode,
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+                className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               />
             </div>
 
@@ -234,7 +234,7 @@ export default function ProfilClientPage() {
                 <input
                   type="text"
                   {...champ('postalCode')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -242,7 +242,7 @@ export default function ProfilClientPage() {
                 <input
                   type="text"
                   {...champ('city')}
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+                  className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
                 />
               </div>
             </div>
@@ -250,7 +250,7 @@ export default function ProfilClientPage() {
             <button
               type="submit"
               disabled={enregistrement}
-              className="flex items-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium text-white transition-colors"
+              className="flex items-center gap-2 rounded-full bg-[#FF7A00] px-6 py-3 font-bold text-black transition-colors hover:bg-[#E66E00] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
             >
               <Save size={16} /> {t('save')}
             </button>
@@ -263,3 +263,4 @@ export default function ProfilClientPage() {
     </div>
   );
 }
+

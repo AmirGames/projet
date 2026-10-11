@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { useTranslations } from 'next-intl';
+import { LogoZupOne } from '@/components/auth/LogoZupOne';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -56,7 +57,7 @@ function Confirmation() {
   if (etat === 'en-cours') {
     return (
       <div className="text-center space-y-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto" />
+        <div role="status" aria-label={t('enCours')} className="mx-auto size-10 animate-spin rounded-full border-2 border-neutral-200 border-b-[#FF7A00]" />
         <p className="text-slate-600">{t('enCours')}</p>
       </div>
     );
@@ -77,7 +78,7 @@ function Confirmation() {
         )}
         <Link
           href="/login"
-          className="inline-block rounded-full bg-gray-900 px-6 py-3 font-bold text-white transition hover:bg-gray-800 hover:no-underline"
+          className="inline-flex rounded-full bg-[#FF7A00] px-6 py-3 font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 hover:no-underline"
         >
           {t('seConnecter')}
         </Link>
@@ -103,8 +104,9 @@ function Confirmation() {
 export default function VerifierEmail() {
   const t = useTranslations('verifierEmail');
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xs ring-1 ring-gray-200 md:p-10">
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-5 py-10">
+      <div className="w-full max-w-md rounded-[2rem] border border-black/5 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] md:p-10">
+        <LogoZupOne />
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
         <Suspense fallback={<p className="text-center text-slate-600">{t('chargement')}</p>}>
           <Confirmation />
@@ -113,3 +115,4 @@ export default function VerifierEmail() {
     </div>
   );
 }
+
