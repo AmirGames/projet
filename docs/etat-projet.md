@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Développé | 11 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a06-zupdrive-driver`, commit `15f53d14d4c10ac709b168296e4241ce0c4ea381`, base `db38c1cdfe62dfa46a8933fc6d8d1eb43116b544` | `mobile/apps/zupdrive-driver/lib/chauffeur.ts`, écran `app/index.tsx`, test d’URLs, [README mobile](../mobile/apps/zupdrive-driver/README.md). Dépendance rotation auth A09 intégrée par [PR #209](https://github.com/AmirGames/projet/pull/209), merge `6fdb546c8bbbe9af61de00777051f17b9a81e5aa` |
 | Testé localement | 11 octobre 2026 | SHA `15f53d14d4c10ac709b168296e4241ce0c4ea381`, Windows, Node 24.21/npm 12, Expo `~57.0.25` | Mobile : typecheck, lint, export Expo web et Jest **49/49** ; test montage routeur **4/4** ; intégration PostgreSQL tentée mais échec d’authentification à la base `.env.test` (25 cas bloqués) |
-| Testé en CI | En attente | PR #212, head `7fb7c70daad44ec950692ced092c4d4bb3fec04a` | Aucun statut CI disponible au relevé ; [PR A06](https://github.com/AmirGames/projet/pull/212) |
+| Testé en CI | En attente | Contrôle de statut du 11 octobre sur le head PR `28246c45187f08930d600de04824a8a9725b0d8b` | Aucun statut CI n’était publié au relevé ; [PR A06](https://github.com/AmirGames/projet/pull/212) |
 | Intégré | Non | PR #212 ouverte, aucun SHA de fusion | [PR A06](https://github.com/AmirGames/projet/pull/212) |
 | Déployé | Non | Aucun environnement A06 confirmé | Aucune preuve |
 | Validé en exploitation | Non | Aucun appareil/backend réel de test observé | Aucune preuve |
