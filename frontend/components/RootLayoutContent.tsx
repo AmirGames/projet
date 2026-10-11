@@ -27,6 +27,10 @@ const ESPACES_AVEC_NAVIGATION = [
   '/devenir-commercant',
   '/devenir-livreur',
   '/devenir-chauffeur',
+  // Les formulaires de recrutement ont leur propre en-tête de marque.
+  '/merchant/register',
+  '/driver/login',
+  '/driver/signup',
   // Le passage éclair de la connexion unique.
   '/sso',
   // Le parcours client après la vitrine : il porte l'en-tête client.
@@ -141,3 +145,4 @@ export default function RootLayoutContent({
     </>
   );
 }
+
