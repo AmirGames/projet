@@ -2581,19 +2581,26 @@ model WebhookDeliveryDrive {
   id           String          @id @default(cuid())
   webhookId    String
   eventId      String
-  status       String          @default("PENDING") // PENDING, SENT, FAILED, DELIVERY_FAILED
+  status       String          @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
   statusCode   Int?
   responseBody String?
   errorMessage String?
   attempt      Int             @default(1)
+  nextAttemptAt DateTime       @default(now())
+  lockedUntil   DateTime?
+  maxAttempts   Int             @default(6)
   sentAt       DateTime?
   failedAt     DateTime?
   createdAt    DateTime        @default(now())
 
   endpoint     WebhookEndpoint @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event        WebhookEvent    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
+  @@unique([webhookId, eventId])
   @@index([webhookId])
   @@index([status])
+  @@index([nextAttemptAt])
+  @@index([lockedUntil])
   @@index([createdAt])
 }
 
@@ -4053,6 +4060,7 @@ model WebhookEvent {
   retryCount   Int       @default(0)
   lastError    String?
   createdAt    DateTime  @default(now())
+  deliveries   WebhookDeliveryDrive[]
 
   @@index([eventType])
   @@index([resourceId])

@@ -12,6 +12,24 @@
 | Validé en exploitation | Non | Aucun appareil/backend réel de test observé | Aucune preuve |
 
 L’ancien OTP fictif, l’historique passager utilisé par le chauffeur et l’URL d’acceptation inexistante sont remplacés par l’auth commune, le tableau chauffeur et l’acceptation par ID de proposition. Les états non validés bloquent la disponibilité. Les appels chauffeur, étapes, position au premier plan, revenus et tests d’URL sont documentés dans le [contrat mobile](../mobile/apps/zupdrive-driver/README.md). Le dossier, l’acceptation concurrente et les droits restent à prouver contre PostgreSQL : l’accès `.env.test` configuré a répondu par échec d’authentification et aucun secret n’a été modifié. L’essai sur appareil/émulateur reste à faire selon le guide ; l’app est **hors périmètre du pilote** jusque-là. Il n’y a pas de migration pour A06.
+## Étape 09 — A11 : exécution des webhooks sortants ZupDrive (11 octobre 2026)
+
+Le transport persistant, la signature, le worker supervisé, l'inspection et la
+reprise autorisée sont développés. Les intentions sont créées avec l'événement
+dans une transaction et la prise PostgreSQL est atomique. Aucun service métier
+ZupDrive ne déclenche aujourd'hui ces événements : `ZUPDRIVE_WEBHOOKS_ENABLED`
+reste donc `false`, l'intégration est hors périmètre fonctionnel et aucun succès
+en production n'est annoncé. Les tests et leur état réel figurent dans le
+[contrat A11](WEBHOOKS-ZUPDRIVE-A11.md).
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 11 octobre 2026 | branche `claude/awesome-ride-m9lci8-a11-drive-webhooks`, SHA `633f3afd52b38b76d595213a0fa434c8abd84c02` | Service, migration et procédure A11 |
+| Testé localement | 11 octobre 2026 | SHA `633f3afd52b38b76d595213a0fa434c8abd84c02`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | 63/63 tests ciblés ; Prisma validate, TypeScript, lint et build backend réussis |
+| CI GitHub | 11 octobre 2026, run courant en attente | [#38176898421](https://github.com/AmirGames/projet/actions/runs/38176898421), head `6c256ebeb9e7f995beb82d3d67fa5aa0fd96df0a` | Le run précédent #38176640071 a été annulé après la mise à jour documentaire ; aucune validation CI finale revendiquée |
+| Intégré | Non intégré | PR #215 ouverte | [PR A11](https://github.com/AmirGames/projet/pull/215) |
+| Déployé | Non déployé | VPS inchangé | Aucune |
+| Validé en exploitation | Non validé ; flag désactivé | Aucun environnement de recette | Aucune |
 
 ## Étape 07 — A13 : contrats API, parcours et CI (11 octobre 2026)
 

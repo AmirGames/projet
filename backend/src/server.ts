@@ -16,6 +16,7 @@ import { DispatchJobs } from "./modules/drivers/dispatch.jobs";
 import { OrderJobs } from "./modules/orders/order.jobs";
 import { DriverJobs } from "./modules/drivers/driver.jobs";
 import { WebhookJobs } from "./modules/webhooks/webhook.jobs";
+import { ZupDriveWebhookJobs } from "./modules/zupdrive/zupdrive-webhooks.jobs";
 import { MerchantJobs } from "./modules/merchants/merchant.jobs";
 import { ChauffeurJobs } from "./modules/zupdrive/chauffeur.jobs";
 import { CourseDriveJobs } from "./modules/zupdrive/course-drive.jobs";
@@ -79,6 +80,7 @@ const start = async () => {
       DispatchJobs.start();
       DriverJobs.start();
       WebhookJobs.start();
+      ZupDriveWebhookJobs.start();
       MerchantJobs.start();
       ChauffeurJobs.start();
       CourseDriveJobs.start();
@@ -98,6 +100,7 @@ const start = async () => {
       ClosureJobs.stopJobs();
       DispatchJobs.stop();
       WebhookJobs.stop();
+      ZupDriveWebhookJobs.stop();
       MerchantJobs.stop();
       ChauffeurJobs.stop();
       CourseDriveJobs.stop();

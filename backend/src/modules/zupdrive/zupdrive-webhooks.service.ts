@@ -5,12 +5,12 @@ import type {
   WebhookEndpoint as WebhookEndpointRow,
   WebhookEvent as WebhookEventRow,
 } from "@prisma/client";
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/api-error";
-import { encrypt } from "../privacy/crypto";
-import { destinationWebhook } from "../webhooks/webhook-destination";
+import { decrypt, encrypt } from "../privacy/crypto";
+import { destinationWebhook, posterWebhook } from "../webhooks/webhook-destination";
 
 /**
  * Webhooks & Integrations pour ZupDrive.
@@ -56,11 +56,13 @@ export interface WebhookDelivery {
   id: string;
   webhookId: string;
   eventId: string;
-  status: "PENDING" | "SENT" | "FAILED" | "DELIVERY_FAILED";
+  status: "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "DELIVERY_FAILED";
   statusCode?: number;
-  responseBody?: string;
   errorMessage?: string;
   attempt: number;
+  maxAttempts: number;
+  nextAttemptAt?: Date;
+  lockedUntil?: Date;
   sentAt?: Date;
   failedAt?: Date;
   createdAt: Date;
@@ -154,6 +156,16 @@ export class ZupDriveWebhooksService {
     logger.info(`Webhook endpoint ${endpointId} updated`);
   }
 
+  static async rotateWebhookSecret(endpointId: string): Promise<string> {
+    const secret = this.generateWebhookSecret();
+    const result = await db.webhookEndpoint.updateMany({
+      where: { id: endpointId },
+      data: { secret: encrypt(secret, CONTEXTE_SECRET_ENDPOINT) },
+    });
+    if (result.count !== 1) throw new ApiError(404, "Endpoint introuvable", "WEBHOOK_ENDPOINT_NOT_FOUND");
+    return secret;
+  }
+
   /**
    * Supprimer un endpoint de webhook.
    */
@@ -176,8 +188,8 @@ export class ZupDriveWebhooksService {
     resourceId: string;
     data: Record<string, unknown>;
   }): Promise<WebhookEvent> {
-    const event = await db.webhookEvent.create({
-      data: {
+    const event = await db.$transaction(async (tx) => {
+      const event = await tx.webhookEvent.create({ data: {
         eventType: data.eventType,
         resourceType: data.resourceType,
         resourceId: data.resourceId,
@@ -185,43 +197,98 @@ export class ZupDriveWebhooksService {
         timestamp: new Date(),
         delivered: false,
         retryCount: 0,
-      },
-    });
+      } });
 
-    // Déclencher les livraisons pour les endpoints intéressés
-    const endpoints = await db.webhookEndpoint.findMany({
-      where: { active: true },
-    });
+      // Déclencher les livraisons pour les endpoints intéressés
+      const endpoints = await tx.webhookEndpoint.findMany({ where: { active: true } });
 
-    const matchingEndpoints = endpoints.filter((e) => {
-      const events = JSON.parse(e.events || "[]");
-      return events.includes(data.eventType) || events.includes("*");
-    });
+      const matchingEndpoints = endpoints.filter((e) => {
+        const events = JSON.parse(e.events || "[]");
+        return events.includes(data.eventType) || events.includes("*");
+      });
 
-    for (const endpoint of matchingEndpoints) {
-      await this.scheduleWebhookDelivery(endpoint.id, event.id);
-    }
+      if (matchingEndpoints.length) await tx.webhookDeliveryDrive.createMany({
+        data: matchingEndpoints.map((endpoint) => {
+          let maxRetries = 5;
+          try { maxRetries = Number(JSON.parse(endpoint.retryPolicy || "{}").maxRetries ?? 5); } catch { /* défaut borné */ }
+          return { webhookId: endpoint.id, eventId: event.id, status: "PENDING", attempt: 0, maxAttempts: Math.min(11, Math.max(1, maxRetries + 1)), nextAttemptAt: new Date() };
+        }),
+        skipDuplicates: true,
+      });
+      return event;
+    });
 
     logger.info(`Webhook event triggered: ${data.eventType}`);
     return this.formatWebhookEvent(event);
   }
 
-  /**
-   * Planifier une livraison de webhook.
-   */
-  private static async scheduleWebhookDelivery(webhookId: string, eventId: string): Promise<void> {
-    const delivery = await db.webhookDeliveryDrive.create({
-      data: {
-        webhookId,
-        eventId,
-        status: "PENDING",
-        attempt: 1,
-      },
+  // Les envois restent désactivés par défaut jusqu'au rattachement des événements
+  // aux transitions métier ZupDrive et à leur validation en production.
+  static async traiterLesLivraisonsDues(limite = 20, maintenant = new Date()): Promise<number> {
+    if (process.env.ZUPDRIVE_WEBHOOKS_ENABLED !== "true") return 0;
+    const dus = await db.webhookDeliveryDrive.findMany({
+      where: { OR: [{ status: "PENDING", nextAttemptAt: { lte: maintenant } }, { status: "PROCESSING", lockedUntil: { lt: maintenant } }] },
+      orderBy: { nextAttemptAt: "asc" }, take: limite, include: { endpoint: true, event: true },
     });
+    let envoyes = 0;
+    for (const livraison of dus) {
+      const claim = await db.webhookDeliveryDrive.updateMany({
+        where: { id: livraison.id, status: livraison.status, attempt: livraison.attempt },
+        data: { status: "PROCESSING", attempt: livraison.attempt + 1, lockedUntil: new Date(maintenant.getTime() + 60_000) },
+      });
+      if (claim.count !== 1) continue;
+      const attempt = livraison.attempt + 1;
+      let statusCode: number | null = null;
+      let errorMessage: string | null = null;
+      let retryable = true;
+      try {
+        if (!livraison.endpoint.active) throw Object.assign(new Error("Endpoint désactivé"), { permanent: true });
+        // Résolution DNS, protocole et IP publique revérifiés à chaque tentative; posterWebhook épingle l'IP et ne suit pas les redirections.
+        await destinationWebhook(livraison.endpoint.url);
+        const secret = decrypt(livraison.endpoint.secret, CONTEXTE_SECRET_ENDPOINT).toString("utf8");
+        const body = JSON.stringify({ id: livraison.id, event: livraison.event.eventType, version: "2026-10-11", sentAt: livraison.event.timestamp.toISOString(), attempt, data: { ...JSON.parse(livraison.event.data || "{}"), resourceType: livraison.event.resourceType, resourceId: livraison.event.resourceId } });
+        const signature = createHmac("sha256", secret).update(body).digest("hex");
+        const response = await posterWebhook(livraison.endpoint.url, { "Content-Type": "application/json", "X-Webhook-Event": livraison.event.eventType, "X-Webhook-Version": "2026-10-11", "X-Webhook-Id": livraison.id, "X-Webhook-Attempt": String(attempt), "X-Webhook-Signature": `sha256=${signature}` }, body);
+        statusCode = response.status;
+        if (response.ok) {
+          await db.webhookDeliveryDrive.update({ where: { id: livraison.id }, data: { status: "SENT", statusCode, sentAt: new Date(), failedAt: null, errorMessage: null, lockedUntil: null } });
+          await this.actualiserEvenement(livraison.eventId);
+          envoyes++;
+          continue;
+        }
+        retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+        errorMessage = `Réponse HTTP ${response.status}`;
+      } catch (error) {
+        retryable = !(error && typeof error === "object" && ("permanent" in error || ("code" in error && error.code === "WEBHOOK_DESTINATION_FORBIDDEN")));
+        errorMessage = error && typeof error === "object" && "code" in error && error.code === "WEBHOOK_DESTINATION_FORBIDDEN"
+          ? "Destination webhook interdite"
+          : "Échec réseau, DNS ou délai dépassé";
+      }
+      const terminal = !retryable || attempt >= livraison.maxAttempts;
+      let delay = 1_000 * 2 ** (attempt - 1);
+      try { const policy = JSON.parse(livraison.endpoint.retryPolicy || "{}"); delay = Number(policy.initialDelayMs ?? 1_000) * Number(policy.backoffMultiplier ?? 2) ** (attempt - 1); } catch { /* défaut */ }
+      delay = Math.min(3_600_000, Math.max(1_000, delay));
+      await db.webhookDeliveryDrive.update({ where: { id: livraison.id }, data: { status: terminal ? "FAILED" : "PENDING", statusCode, errorMessage, failedAt: terminal ? new Date() : null, lockedUntil: null, nextAttemptAt: terminal ? new Date(8640000000000000) : new Date(maintenant.getTime() + delay) } });
+      await db.webhookEvent.update({ where: { id: livraison.eventId }, data: { retryCount: { increment: 1 }, lastError: errorMessage, nextRetryAt: terminal ? null : new Date(maintenant.getTime() + delay) } });
+      if (terminal) logger.error("Livraison webhook ZupDrive abandonnée", { deliveryId: livraison.id, endpointId: livraison.webhookId, attempt, statusCode, error: errorMessage });
+      else logger.warn("Livraison webhook ZupDrive à réessayer", { deliveryId: livraison.id, endpointId: livraison.webhookId, attempt, statusCode });
+    }
+    return envoyes;
+  }
 
-    // TODO: Ajouter à une queue de jobs (Bull, RabbitMQ, etc)
-    // Pour l'instant, marquer pour livraison immédiate
-    logger.info(`Webhook delivery scheduled: ${delivery.id}`);
+  private static async actualiserEvenement(eventId: string) {
+    const lignes = await db.webhookDeliveryDrive.findMany({ where: { eventId }, select: { status: true } });
+    if (lignes.length && lignes.every((ligne) => ligne.status === "SENT")) {
+      await db.webhookEvent.update({ where: { id: eventId }, data: { delivered: true, deliveredAt: new Date(), nextRetryAt: null, lastError: null } });
+    }
+  }
+
+  static async reprendreLivraison(id: string): Promise<boolean> {
+    const resultat = await db.webhookDeliveryDrive.updateMany({
+      where: { id, status: "FAILED", endpoint: { is: { active: true } } },
+      data: { status: "PENDING", attempt: 0, errorMessage: null, statusCode: null, failedAt: null, nextAttemptAt: new Date(), lockedUntil: null },
+    });
+    return resultat.count === 1;
   }
 
   /**
@@ -396,9 +463,11 @@ export class ZupDriveWebhooksService {
       eventId: delivery.eventId,
       status: delivery.status as WebhookDelivery["status"],
       statusCode: delivery.statusCode || undefined,
-      responseBody: delivery.responseBody || undefined,
       errorMessage: delivery.errorMessage || undefined,
       attempt: delivery.attempt,
+      maxAttempts: delivery.maxAttempts,
+      nextAttemptAt: delivery.nextAttemptAt,
+      lockedUntil: delivery.lockedUntil || undefined,
       sentAt: delivery.sentAt || undefined,
       failedAt: delivery.failedAt || undefined,
       createdAt: delivery.createdAt,

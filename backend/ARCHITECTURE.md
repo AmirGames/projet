@@ -1,5 +1,11 @@
 # Architecture du backend
 
+Les livraisons ZupDrive utilisent `WebhookDeliveryDrive` comme file durable
+distincte des webhooks ZupEat. Le worker partage le transport HTTPS épinglé et
+les contrôles SSRF du module `webhooks`; son activation est fermée par défaut.
+Le schéma, le bail, les limites et le statut d'intégration sont décrits dans le
+[contrat A11](../docs/WEBHOOKS-ZUPDRIVE-A11.md).
+
 La rotation de refresh A09 reste dans `modules/auth/sso.service.ts`. La
 consommation, la preuve de reprise et le successeur sont atomiques sous verrou
 PostgreSQL; la reprise de 10 secondes requiert la même clé de requête, dont

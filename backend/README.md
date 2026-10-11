@@ -1,5 +1,14 @@
 # Backend ZupEat / ZupDrive
 
+## A11 — Webhooks sortants ZupDrive
+
+Le worker PostgreSQL, la signature HMAC-SHA256, les reprises bornées, l'inspection
+et la reprise superowner sont implémentés. `ZUPDRIVE_WEBHOOKS_ENABLED` vaut
+`false` par défaut : les services métier n'émettent pas encore ces événements,
+donc l'intégration n'est pas annoncée comme fonctionnelle. Migration additive
+`20261011100000_durable_zupdrive_webhooks`. Voir le [contrat, l'API, les tests
+et la procédure d'exploitation](../docs/WEBHOOKS-ZUPDRIVE-A11.md).
+
 ## A10 — liens de compte
 
 Reset et confirmation exigent une mutation PostgreSQL d'exactement une ligne

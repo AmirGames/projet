@@ -3,9 +3,10 @@ import express from "express";
 import request from "supertest";
 
 const db: any = {
-  webhookEndpoint: { create: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn(), delete: jest.fn() },
-  webhookEvent: { create: jest.fn() },
-  webhookDeliveryDrive: { create: jest.fn() },
+  $transaction: jest.fn(async (callback: any) => callback(db)),
+  webhookEndpoint: { create: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn() },
+  webhookEvent: { create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+  webhookDeliveryDrive: { create: jest.fn(), createMany: jest.fn(), findMany: jest.fn(), count: jest.fn(), updateMany: jest.fn() },
   providerIntegration: { create: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() },
 };
 const journaliser: any = jest.fn(async () => undefined);
@@ -47,6 +48,7 @@ beforeEach(() => {
   db.webhookEndpoint.findUnique.mockResolvedValue({ id: "w1" });
   db.webhookEndpoint.findMany.mockResolvedValue([ligneEndpoint()]);
   db.webhookEndpoint.update.mockResolvedValue({});
+  db.webhookEndpoint.updateMany.mockResolvedValue({ count: 1 });
   db.webhookEndpoint.delete.mockResolvedValue({});
   db.providerIntegration.create.mockImplementation(async ({ data }: any) => ({ id: "p1", createdAt: new Date(), updatedAt: new Date(), ...data }));
   db.providerIntegration.findUnique.mockResolvedValue({ id: "p1" });
@@ -56,7 +58,7 @@ beforeEach(() => {
 
 describe("webhooks ZupDrive : superowner uniquement", () => {
   it.each([
-    ["get", "/admin/endpoints"], ["post", "/admin/endpoints"], ["delete", "/admin/endpoints/w1"], ["post", "/admin/providers"], ["post", "/admin/events"],
+    ["get", "/admin/endpoints"], ["post", "/admin/endpoints"], ["delete", "/admin/endpoints/w1"], ["post", "/admin/providers"], ["post", "/admin/events"], ["post", "/admin/deliveries/d1/retry"],
   ] as const)("sans jeton, %s %s : 401", async (m, url) => {
     expect((await (request(app) as any)[m](`/api/zupdrive/webhooks${url}`).send({})).status).toBe(401);
   });
@@ -99,6 +101,14 @@ describe("endpoints : destination publique, secret chiffré", () => {
     const res = await request(app).get("/api/zupdrive/webhooks/admin/endpoints").set(owner);
     expect(res.status).toBe(200);
     expect(res.body[0]).not.toHaveProperty("secret");
+  });
+
+  it("ne révèle un secret que lors d'une rotation superowner et ne le journalise pas", async () => {
+    const res = await request(app).post("/api/zupdrive/webhooks/admin/endpoints/w1/rotate-secret").set(owner);
+    expect(res.status).toBe(200);
+    expect(res.body.secret).toMatch(/^[0-9a-f]{64}$/);
+    expect(db.webhookEndpoint.updateMany.mock.calls[0][0].data.secret).toMatch(/^zupenc:v1:/);
+    expect(JSON.stringify(detailsJournal())).not.toContain(res.body.secret);
   });
 
   it("modifier vers une destination privée est refusé ; endpoint inconnu : 404", async () => {
