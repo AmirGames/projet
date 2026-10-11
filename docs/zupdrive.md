@@ -286,8 +286,8 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 | Passager | `POST /api/zupdrive/payment/intent` | Payer la course (page de suivi, carte Stripe) ; voir [`zupdrive-api-admin.md`](./zupdrive-api-admin.md) |
 | Chauffeur | `GET /api/zupdrive/chauffeur/me/courses` | En ligne ?, proposition ouverte, course, historique |
 | Chauffeur | `GET …/me/stats`, `GET …/me/infractions` | Mes statistiques, mes infractions |
-| Chauffeur | `POST …/me/disponibilite`, `POST …/me/position` | En ligne / hors ligne, position |
-| Chauffeur | `POST …/me/propositions/:id/(accepter\|refuser)` | Répondre à une proposition |
+| Chauffeur | `POST …/me/disponibilite`, `POST …/me/position` | En ligne / hors ligne, position (éligibilité basée sur position fraîche) |
+| Chauffeur | `POST …/me/propositions/:id/(accepter\|refuser)` | Répondre avec l’ID de proposition, distinct de l’ID de course ; acceptation transactionnelle, un gagnant en cas de concurrence |
 | Chauffeur | `POST …/me/courses/:id/(arrive\|demarrer\|terminer\|annuler)` | Étapes |
 | Équipe (`courses-drive`) | `GET/PUT /api/zupdrive/admin/tarifs[/:region]`, `GET /api/zupdrive/admin/courses` | Tarifs, liste des courses |
 
@@ -296,6 +296,14 @@ La section de permissions **`courses-drive`** (« Courses et tarifs ») est nouv
 ### Vérifications
 - `backend/src/modules/zupdrive/__tests__/course-drive.integration.test.ts` : 18 tests contre PostgreSQL (`set -a; . ./.env; set +a; npx jest …`).
 - `frontend/scripts/verif-zupdrive-courses.mjs` : une course de bout en bout dans trois navigateurs (équipe, chauffeur, passager). Seule la recherche d'adresses, qui dépend d'un service externe, y est simulée.
+
+### App mobile chauffeur — A06 (11 octobre 2026)
+
+L’application mobile utilise le login commun `POST /api/auth/login` (e-mail/mot de passe) et le renouvellement de session commun `/api/auth/refresh` ; aucun OTP chauffeur spécifique n’existe. Son tableau est `GET /api/zupdrive/chauffeur/me/courses`, jamais l’historique passager `GET /api/zupdrive/courses`. Le dossier vient de `/chauffeur/me`, les propositions sont acceptées par ID de proposition dans `/chauffeur/me/propositions/:id/accepter`, les étapes sont `/chauffeur/me/courses/:id/{arrive,demarrer,terminer}`, et les revenus chauffeur sont `GET /api/zupdrive/payment/earnings`.
+
+La disponibilité est refusée par l’API tant que le dossier, la société (le cas échéant) et le véhicule ne sont pas prêts. L’app masque ses actions si le dossier n’est pas `VALIDE`, relit le tableau pendant qu’elle est en ligne et partage sa position toutes les 15 secondes au premier plan seulement. Une proposition dure 20 secondes. Le serveur garantit l’acceptation concurrente dans une transaction ; un 409 côté perdant n’est pas un succès. Les données de proposition ne comprennent que le prénom, les coordonnées du trajet et la moyenne du passager ; le cloisonnement reste vérifié côté serveur.
+
+Le parcours natif réel, les droits avec PostgreSQL et le cas de deux chauffeurs ne sont pas attestés par une compilation ou par les tests d’URL. L’app reste **hors périmètre du pilote** jusqu’aux preuves du [guide mobile chauffeur](./validation-mobile-zupdrive-driver.md) et à leur inscription dans [`etat-projet.md`](./etat-projet.md).
 
 ### Notes
 

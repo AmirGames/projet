@@ -1,377 +1,172 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, FlatList } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiFetch, setUnauthorizedHandler } from '../lib/api';
+import * as Location from 'expo-location';
+import { apiFetch, setSessionRenewedHandler, setUnauthorizedHandler } from '../lib/api';
 import { clearSession, loadSession, saveSession, Session } from '../lib/session';
-import { registerForPush, unregisterPush } from '../lib/push';
-import { COLORS } from '../components/ui';
+import { avancerCourse, changerDisponibilite, DossierChauffeur, enregistrerPosition, lireDossier, lireRevenus, lireTableau, repondreProposition, RevenusChauffeur, TableauChauffeur } from '../lib/chauffeur';
 
-// ZupDrive Driver App - Main navigation
-// Screens: Dashboard (courses), Course details, Earnings, Profile
-
-interface Course {
-  id: string;
-  passengerId: string;
-  departAddress: string;
-  arriveeAddress: string;
-  prixCentimes: number;
-  status: 'RECHERCHE' | 'ACCEPTEE' | 'EN_COURS' | 'TERMINEE' | 'ANNULEE';
-  createdAt: string;
-}
-
-interface DriverProfile {
-  id: string;
-  nomComplet: string;
-  rating: number;
-  totalCourses: number;
-  status: 'VALIDE' | 'SUSPENDU';
-}
-
-interface Earnings {
-  totalEarningsCentimes: number;
-  pendingCentimes: number;
-  payouts: { id: string; amount: number; status: string; period: { start: string; end: string } }[];
-}
+type Onglet = 'courses' | 'revenus' | 'profil';
+const libelleStatut: Record<string, string> = {
+  BROUILLON: 'Dossier à compléter', SOUMIS: 'Dossier en validation', VALIDE: 'Dossier validé',
+  REFUSE: 'Dossier refusé — corrections requises', SUSPENDU: 'Compte suspendu',
+  ACCEPTEE: 'Course acceptée', ARRIVEE: 'Arrivé au départ', EN_COURS: 'Course en cours',
+  TERMINEE: 'Terminée', ANNULEE: 'Annulée',
+};
+const messageErreur = (e: unknown) => e instanceof Error ? e.message : 'Connexion réseau impossible. Vérifiez votre connexion puis réessayez.';
 
 export default function ZupDriveDriverApp() {
-  const [booting, setBooting] = useState(true);
-  const pushToken = useRef<string | null>(null);
+  const [pret, setPret] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [tab, setTab] = useState<string>('home');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<DriverProfile | null>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [earnings, setEarnings] = useState<Earnings | null>(null);
+  const [dossier, setDossier] = useState<DossierChauffeur | null>(null);
+  const [tableau, setTableau] = useState<TableauChauffeur | null>(null);
+  const [revenus, setRevenus] = useState<RevenusChauffeur | null>(null);
+  const [onglet, setOnglet] = useState<Onglet>('courses');
+  const [email, setEmail] = useState('');
+  const [motDePasse, setMotDePasse] = useState('');
+  const [chargement, setChargement] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const accessToken = session?.accessToken;
 
-  const token = session?.accessToken || '';
-
-  const fetchProfile = useCallback(async (token: string) => {
+  const charger = useCallback(async (token: string) => {
+    setErreur('');
     try {
-      const res = await apiFetch('/api/zupdrive/chauffeur/me', token);
-      setProfile(res.data);
-    } catch (e) {
-      logger.warn('Failed to fetch profile', e);
-    }
+      const [profil, courses] = await Promise.all([lireDossier(token), lireTableau(token)]);
+      setDossier(profil);
+      setTableau(courses);
+    } catch (e) { setErreur(messageErreur(e)); }
   }, []);
 
-  const fetchCourses = useCallback(async (token: string) => {
-    try {
-      const res = await apiFetch('/api/zupdrive/courses', token);
-      setCourses(res.data || []);
-    } catch (e) {
-      logger.warn('Failed to fetch courses', e);
-    }
-  }, []);
-
-  const fetchEarnings = useCallback(async (token: string) => {
-    try {
-      const res = await apiFetch('/api/zupdrive/payment/earnings', token);
-      setEarnings(res.data);
-    } catch (e) {
-      logger.warn('Failed to fetch earnings', e);
-    }
-  }, []);
-
-  // Boot: restore session if exists
   useEffect(() => {
-    (async () => {
+    let vivant = true;
+    loadSession().then((saved) => { if (vivant && saved?.accessToken) { setSession(saved); void charger(saved.accessToken); } })
+      .finally(() => { if (vivant) setPret(true); });
+    setSessionRenewedHandler(setSession);
+    setUnauthorizedHandler(() => { void clearSession(); setSession(null); setDossier(null); setTableau(null); setErreur('Session expirée. Reconnectez-vous.'); });
+    return () => { vivant = false; setSessionRenewedHandler(null); setUnauthorizedHandler(null); };
+  }, [charger]);
+
+  // Le backend expire les propositions après 20 s ; relire le tableau pendant
+  // que le chauffeur est en ligne. Les positions sont envoyées au premier plan.
+  useEffect(() => {
+    if (!accessToken || !tableau?.enLigne) return;
+    const rafraichir = setInterval(() => { void charger(accessToken); }, 4000);
+    const positionner = setInterval(async () => {
       try {
-        const savedSession = await loadSession();
-        if (savedSession) {
-          setSession(savedSession);
-          await fetchProfile(savedSession.accessToken);
-          await fetchCourses(savedSession.accessToken);
-          await fetchEarnings(savedSession.accessToken);
-        }
-      } catch (e) {
-        logger.warn('Boot session restore failed', e);
-      } finally {
-        setBooting(false);
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        await enregistrerPosition(accessToken, location.coords.latitude, location.coords.longitude);
+      } catch (e) { setErreur(messageErreur(e)); }
+    }, 15000);
+    return () => { clearInterval(rafraichir); clearInterval(positionner); };
+  }, [accessToken, tableau?.enLigne, charger]);
+
+  const connecter = async () => {
+    setChargement(true); setErreur('');
+    try {
+      const res = await apiFetch<{ accessToken: string; refreshToken: string; user?: { email?: string } }>('/api/auth/login', null, {
+        method: 'POST', body: { email: email.trim(), password: motDePasse },
+      });
+      if (!res.accessToken || !res.refreshToken) throw new Error('Réponse de connexion incomplète');
+      const next = { accessToken: res.accessToken, refreshToken: res.refreshToken, email: res.user?.email ?? email.trim() };
+      await saveSession(next); setSession(next); await charger(next.accessToken);
+    } catch (e) { setErreur(messageErreur(e)); }
+    finally { setChargement(false); }
+  };
+
+  const action = async (operation: () => Promise<TableauChauffeur>) => {
+    if (!session) return;
+    setChargement(true); setErreur('');
+    try { setTableau(await operation()); }
+    catch (e) { const msg = messageErreur(e); setErreur(msg); Alert.alert('Action non effectuée', msg); await charger(session.accessToken); }
+    finally { setChargement(false); }
+  };
+
+  const changerEtatDispo = async () => {
+    if (!session || !tableau) return;
+    await action(async () => {
+      const enLigne = !tableau.enLigne;
+      if (enLigne) {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (permission.status !== 'granted') throw new Error('Autorisez la localisation pour passer en ligne.');
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        await enregistrerPosition(session.accessToken, location.coords.latitude, location.coords.longitude);
       }
-    })();
-  }, [fetchProfile, fetchCourses, fetchEarnings]);
-
-  // Handle unauthorized: clear session and go back to login
-  useEffect(() => {
-    setUnauthorizedHandler(async () => {
-      await clearSession();
-      setSession(null);
-      setTab('home');
+      return changerDisponibilite(session.accessToken, enLigne);
     });
-  }, []);
-
-  const handleLogin = async () => {
-    if (!phone || !otp) {
-      Alert.alert('Erreur', 'Veuillez entrer votre téléphone et le code OTP');
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await apiFetch('/api/zupdrive/chauffeur/auth/otp', null, {
-        method: 'POST',
-        body: { phone, otp },
-      });
-      const newSession: Session = {
-        accessToken: res.data.accessToken,
-        refreshToken: res.data.refreshToken,
-        // La connexion se fait par téléphone + code : le serveur ne renvoie pas toujours de courriel.
-        email: res.data.email ?? '',
-      };
-      await saveSession(newSession);
-      setSession(newSession);
-      await fetchProfile(newSession.accessToken);
-      await fetchCourses(newSession.accessToken);
-      await fetchEarnings(newSession.accessToken);
-      const push = await registerForPush(newSession.accessToken);
-      pushToken.current = push.status === 'enabled' ? push.token : null;
-    } catch (e: any) {
-      Alert.alert('Erreur', e.message || 'Authentification échouée');
-    } finally {
-      setLoading(false);
-    }
   };
 
-  const handleLogout = () => {
-    Alert.alert('Déconnexion', 'Êtes-vous sûr ?', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Oui',
-        style: 'destructive',
-        onPress: async () => {
-          if (session && pushToken.current) {
-            await unregisterPush(session.accessToken, pushToken.current);
-            pushToken.current = null;
-          }
-          await clearSession();
-          setSession(null);
-          setProfile(null);
-          setCourses([]);
-          setTab('home');
-        },
-      },
-    ]);
+  const deconnecter = async () => { await clearSession(); setSession(null); setDossier(null); setTableau(null); setRevenus(null); };
+
+  const afficherRevenus = async () => {
+    if (!session) return;
+    setOnglet('revenus'); setChargement(true); setErreur('');
+    try { setRevenus(await lireRevenus(session.accessToken)); }
+    catch (e) { setErreur(messageErreur(e)); }
+    finally { setChargement(false); }
   };
 
-  const acceptCourse = async (courseId: string) => {
-    try {
-      await apiFetch(`/api/zupdrive/courses/${courseId}/accept`, token, {
-        method: 'POST',
-      });
-      Alert.alert('Succès', 'Course acceptée');
-      await fetchCourses(token);
-    } catch (e: any) {
-      Alert.alert('Erreur', e.message || 'Impossible d\'accepter la course');
-    }
+  const accepter = async () => {
+    const id = tableau?.proposition?.id;
+    if (id) await action(() => repondreProposition(session!.accessToken, id));
   };
 
-  if (booting) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </SafeAreaView>
-    );
-  }
+  if (!pret) return <SafeAreaView style={s.center}><ActivityIndicator /></SafeAreaView>;
+  if (!session) return <SafeAreaView style={s.page}><StatusBar style="dark" /><View style={s.form}>
+    <Text style={s.title}>ZupDrive Chauffeur</Text><Text style={s.muted}>Connexion à votre compte ZupOne</Text>
+    <TextInput autoCapitalize="none" keyboardType="email-address" placeholder="Adresse e-mail" value={email} onChangeText={setEmail} style={s.input} />
+    <TextInput secureTextEntry placeholder="Mot de passe" value={motDePasse} onChangeText={setMotDePasse} style={s.input} />
+    {erreur ? <Text accessibilityRole="alert" style={s.error}>{erreur}</Text> : null}
+    <Bouton titre={chargement ? 'Connexion…' : 'Se connecter'} onPress={connecter} disabled={chargement || !email.trim() || !motDePasse} />
+  </View></SafeAreaView>;
 
-  if (!session) {
-    // Login screen
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="dark" />
-        <ScrollView contentContainerStyle={styles.loginContainer}>
-          <Text style={styles.title}>ZupDrive Chauffeur</Text>
-
-          <View style={styles.input}>
-            <Text style={styles.label}>Téléphone</Text>
-            <TextInput
-              placeholder="+32 4XX XXX XXX"
-              value={phone}
-              onChangeText={setPhone}
-              editable={!loading}
-              style={styles.textInput}
-            />
-          </View>
-
-          <View style={styles.input}>
-            <Text style={styles.label}>Code OTP</Text>
-            <TextInput
-              placeholder="123456"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
-              editable={!loading}
-              style={styles.textInput}
-            />
-          </View>
-
-          <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Se connecter</Text>
-            )}
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // Main app
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {tab === 'home' && '📍 Courses'}
-          {tab === 'earnings' && '💰 Revenus'}
-          {tab === 'profile' && '👤 Profil'}
-        </Text>
-        {profile && <Text style={styles.headerSubtitle}>{profile.nomComplet}</Text>}
-      </View>
-
-      {/* Content */}
-      {tab === 'home' && (
-        <FlatList
-          data={courses.filter((c) => ['RECHERCHE', 'ACCEPTEE'].includes(c.status))}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.courseCard}>
-              <Text style={styles.courseFrom}>{item.departAddress}</Text>
-              <Text style={styles.courseTo}>→ {item.arriveeAddress}</Text>
-              <View style={styles.courseFooter}>
-                <Text style={styles.coursePrice}>€{(item.prixCentimes / 100).toFixed(2)}</Text>
-                <TouchableOpacity
-                  style={styles.acceptButton}
-                  onPress={() => acceptCourse(item.id)}
-                  disabled={item.status === 'ACCEPTEE'}
-                >
-                  <Text style={styles.acceptButtonText}>
-                    {item.status === 'ACCEPTEE' ? '✓ Acceptée' : 'Accepter'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          ListEmptyComponent={<Text style={styles.emptyText}>Pas de courses disponibles</Text>}
-          contentContainerStyle={styles.content}
-        />
-      )}
-
-      {tab === 'earnings' && earnings && (
-        <ScrollView style={styles.content}>
-          <View style={styles.earningsCard}>
-            <Text style={styles.earningsLabel}>Revenus totaux</Text>
-            <Text style={styles.earningsAmount}>€{(earnings.totalEarningsCentimes / 100).toFixed(2)}</Text>
-            <Text style={styles.earningsPending}>En attente: €{(earnings.pendingCentimes / 100).toFixed(2)}</Text>
-          </View>
-          {earnings.payouts.map((p) => (
-            <View key={p.id} style={styles.payoutCard}>
-              <Text style={styles.payoutLabel}>{p.period.start} → {p.period.end}</Text>
-              <Text style={styles.payoutAmount}>€{(p.amount / 100).toFixed(2)}</Text>
-              <Text style={styles.payoutStatus}>{p.status}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-
-      {tab === 'profile' && profile && (
-        <ScrollView style={styles.content}>
-          <View style={styles.profileCard}>
-            <Text style={styles.profileName}>{profile.nomComplet}</Text>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileLabel}>Rating</Text>
-              <Text style={styles.profileValue}>⭐ {profile.rating.toFixed(1)}</Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileLabel}>Courses complétées</Text>
-              <Text style={styles.profileValue}>{profile.totalCourses}</Text>
-            </View>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileLabel}>Status</Text>
-              <Text style={styles.profileValue}>{profile.status === 'VALIDE' ? '✓ Validé' : '⚠️ Suspendu'}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Se déconnecter</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
-
-      {/* Tab navigation */}
-      <View style={styles.tabBar}>
-        {['home', 'earnings', 'profile'].map((t) => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.tabItem, tab === t && styles.tabItemActive]}
-            onPress={() => setTab(t)}
-          >
-            <Text style={[styles.tabLabel, tab === t && styles.tabLabelActive]}>
-              {t === 'home' && '📍'}
-              {t === 'earnings' && '💰'}
-              {t === 'profile' && '👤'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </SafeAreaView>
-  );
+  const autorise = dossier?.statut === 'VALIDE' && tableau?.statut === 'VALIDE';
+  const course = tableau?.course;
+  const proposition = tableau?.proposition;
+  return <SafeAreaView style={s.page}><StatusBar style="dark" />
+    <View style={s.header}><Text style={s.title}>ZupDrive Chauffeur</Text><Text style={s.muted}>{dossier?.nomComplet || session.email}</Text></View>
+    <View style={s.tabs}><OngletBouton titre="Courses" actif={onglet === 'courses'} onPress={() => setOnglet('courses')} /><OngletBouton titre="Revenus" actif={onglet === 'revenus'} onPress={afficherRevenus} /><OngletBouton titre="Profil" actif={onglet === 'profil'} onPress={() => setOnglet('profil')} /></View>
+    <ScrollView contentContainerStyle={s.content}>
+      {erreur ? <View style={s.notice}><Text style={s.error}>{erreur}</Text><Bouton titre="Réessayer" onPress={() => void charger(session.accessToken)} /></View> : null}
+      {onglet === 'courses' && <>
+        {!autorise && <View style={s.notice}><Text style={s.heading}>{dossier ? libelleStatut[dossier.statut] : 'Aucun dossier chauffeur'}</Text>
+          <Text style={s.body}>{dossier?.motifStatut || (dossier?.statut === 'SOUMIS' ? 'Vous pourrez vous mettre en ligne dès validation par l’équipe ZupDrive.' : 'Complétez ou faites valider votre dossier chauffeur avant de recevoir des courses.')}</Text></View>}
+        {autorise && <Bouton titre={tableau?.enLigne ? 'Passer hors ligne' : 'Passer en ligne'} onPress={() => void changerEtatDispo()} disabled={chargement} />}
+        {proposition && <View style={s.card}><Text style={s.heading}>Nouvelle proposition</Text><Text>{proposition.course.departAdresse} → {proposition.course.arriveeAdresse}</Text><Text>{proposition.course.passager || 'Passager'} · {(proposition.course.prixCentimes / 100).toFixed(2)} {proposition.course.devise}</Text><Text style={s.muted}>Expire à {new Date(proposition.expireA).toLocaleTimeString()}</Text><Bouton titre="Accepter la proposition" onPress={accepter} disabled={!autorise || chargement} /></View>}
+        {course && <View style={s.card}><Text style={s.heading}>{libelleStatut[course.statut]}</Text><Text>{course.passager || 'Passager'} · {course.departAdresse} → {course.arriveeAdresse}</Text>
+          {course.statut === 'ACCEPTEE' && <Bouton titre="Je suis arrivé" onPress={() => void action(() => avancerCourse(session.accessToken, course.id, 'arrive'))} />}
+          {course.statut === 'ARRIVEE' && <Bouton titre="Démarrer la course" onPress={() => void action(() => avancerCourse(session.accessToken, course.id, 'demarrer'))} />}
+          {course.statut === 'EN_COURS' && <Bouton titre="Terminer la course" onPress={() => void action(() => avancerCourse(session.accessToken, course.id, 'terminer'))} />}
+        </View>}
+        {!course && !proposition && <Text style={s.muted}>{tableau?.enLigne ? 'En attente de proposition. Actualisez pour récupérer le dernier état.' : 'Vous êtes hors ligne.'}</Text>}
+        <Bouton titre="Actualiser" onPress={() => void charger(session.accessToken)} />
+        {!!tableau?.historique.length && <View style={s.card}><Text style={s.heading}>Mes courses récentes</Text>{tableau.historique.map(c => <Text key={c.id} style={s.body}>{libelleStatut[c.statut]} · {c.departAdresse} → {c.arriveeAdresse}</Text>)}</View>}
+      </>}
+      {onglet === 'revenus' && <View style={s.card}><Text style={s.heading}>Revenus et versements</Text>{revenus ? <>
+        <Text style={s.body}>Total enregistré : {((Number(revenus.totalEarningsCentimes) || 0) / 100).toFixed(2)} €</Text>
+        <Text style={s.body}>En attente : {((Number(revenus.pendingCentimes) || 0) / 100).toFixed(2)} €</Text>
+        {revenus.payouts.map(p => <Text key={p.id} style={s.body}>{new Date(p.period.start).toLocaleDateString()} → {new Date(p.period.end).toLocaleDateString()} · {(p.amount / 100).toFixed(2)} € · {p.status}</Text>)}
+      </> : <Bouton titre="Charger les revenus" onPress={afficherRevenus} />}</View>}
+      {onglet === 'profil' && <View style={s.card}><Text style={s.heading}>Dossier chauffeur</Text><Text>{dossier?.nomComplet || 'Aucun dossier'}</Text><Text>{dossier ? libelleStatut[dossier.statut] : 'À créer'}</Text><Text>{session.email}</Text><Bouton titre="Se déconnecter" onPress={() => void deconnecter()} /></View>}
+    </ScrollView>
+  </SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  loginContainer: { paddingHorizontal: 20, paddingVertical: 40, justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: '#1F2937' },
-  input: { marginBottom: 15 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 5, color: '#374151' },
-  textInput: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
-  button: { backgroundColor: '#1F2937', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 20 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+function Bouton({ titre, onPress, disabled }: { titre: string; onPress: () => void; disabled?: boolean }) {
+  return <TouchableOpacity accessibilityRole="button" onPress={onPress} disabled={disabled} style={[s.button, disabled && s.disabled]}><Text style={s.buttonText}>{titre}</Text></TouchableOpacity>;
+}
+function OngletBouton({ titre, actif, onPress }: { titre: string; actif: boolean; onPress: () => void }) {
+  return <TouchableOpacity accessibilityRole="tab" accessibilityState={{ selected: actif }} onPress={onPress} style={s.tab}><Text style={actif ? s.tabActive : s.muted}>{titre}</Text></TouchableOpacity>;
+}
 
-  header: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937' },
-  headerSubtitle: { fontSize: 12, color: '#6B7280', marginTop: 4 },
-
-  content: { flex: 1, paddingHorizontal: 16, paddingVertical: 12 },
-  courseCard: { backgroundColor: '#F9FAFB', borderRadius: 8, padding: 12, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: '#0369A1' },
-  courseFrom: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-  courseTo: { fontSize: 13, color: '#6B7280', marginTop: 4 },
-  courseFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  coursePrice: { fontSize: 14, fontWeight: 'bold', color: '#0369A1' },
-  acceptButton: { backgroundColor: '#0369A1', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  acceptButtonText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  emptyText: { textAlign: 'center', color: '#9CA3AF', marginTop: 40 },
-
-  earningsCard: { backgroundColor: '#1F2937', borderRadius: 12, padding: 20, marginBottom: 16 },
-  earningsLabel: { fontSize: 12, color: '#D1D5DB' },
-  earningsAmount: { fontSize: 32, fontWeight: 'bold', color: '#10B981', marginTop: 8 },
-  earningsPending: { fontSize: 12, color: '#9CA3AF', marginTop: 8 },
-  payoutCard: { backgroundColor: '#F9FAFB', borderRadius: 8, padding: 12, marginBottom: 8 },
-  payoutLabel: { fontSize: 12, color: '#6B7280' },
-  payoutAmount: { fontSize: 16, fontWeight: 'bold', color: '#1F2937', marginTop: 4 },
-  payoutStatus: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
-
-  profileCard: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, marginBottom: 16 },
-  profileName: { fontSize: 18, fontWeight: 'bold', color: '#1F2937' },
-  profileStat: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  profileLabel: { fontSize: 13, color: '#6B7280' },
-  profileValue: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-  logoutButton: { backgroundColor: '#EF4444', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  logoutButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-
-  tabBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#E5E7EB', backgroundColor: '#fff' },
-  tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-  tabItemActive: { borderTopWidth: 3, borderTopColor: '#1F2937' },
-  tabLabel: { fontSize: 20 },
-  tabLabelActive: { fontSize: 22 },
+const s = StyleSheet.create({
+  page: { flex: 1, backgroundColor: '#fff' }, center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  form: { flex: 1, justifyContent: 'center', padding: 24 }, header: { padding: 18, borderBottomWidth: 1, borderColor: '#e5e7eb' },
+  title: { fontSize: 23, fontWeight: '700', color: '#102a43' }, muted: { color: '#64748b', marginTop: 6 },
+  input: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 13, marginTop: 14, fontSize: 16 },
+  button: { backgroundColor: '#145da0', borderRadius: 8, padding: 13, alignItems: 'center', marginTop: 12 },
+  disabled: { opacity: 0.5 }, buttonText: { color: 'white', fontWeight: '700' }, tabs: { flexDirection: 'row', borderBottomWidth: 1, borderColor: '#e5e7eb' },
+  tab: { flex: 1, padding: 14, alignItems: 'center' }, tabActive: { color: '#145da0', fontWeight: '700' }, content: { padding: 16, gap: 12 },
+  card: { borderWidth: 1, borderColor: '#dbe3ea', borderRadius: 10, padding: 14, gap: 8 }, notice: { backgroundColor: '#eff6ff', padding: 14, borderRadius: 8, gap: 8 },
+  heading: { fontSize: 17, fontWeight: '700', color: '#102a43' }, body: { color: '#334155', marginTop: 5 }, error: { color: '#b42318', marginTop: 8 },
 });
-
-// Simple logger
-const logger = {
-  warn: (msg: string, e?: any) => console.warn(msg, e),
-  info: (msg: string, data?: any) => console.log(msg, data),
-};

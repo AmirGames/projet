@@ -229,6 +229,8 @@ L'**application Zupeat Driver** est l'application native Android accessible à *
 ### Description
 **ZupDrive** est le projet émergent du groupe Zupone. Il s'agit d'une **plateforme de transport urbain de passagers** (VTC - Véhicules de Transport avec Chauffeur), similaire à Uber ou Bolt. Les clients demandent un trajet, les chauffeurs acceptent et les conduisent d'un point A à un point B.
 
+L’application mobile chauffeur utilise l’authentification commune ZupOne et les routes chauffeur `/api/zupdrive/chauffeur/me/*` (tableau, disponibilité, propositions, étapes) ainsi que `/api/zupdrive/payment/earnings`. Le parcours est en cours de correction A06 et demeure **hors périmètre du pilote** jusqu’à validation avec PostgreSQL de test et un appareil/émulateur connecté ; voir [l’état A06](docs/etat-projet.md) et le [guide de validation](docs/validation-mobile-zupdrive-driver.md).
+
 ### Modèle de Fonctionnement
 - 👤 **Clients** : Téléchargent l'app, demandent un trajet (point A → point B)
 - 🚕 **Chauffeurs** : Reçoivent les demandes de trajet et acceptent les courses
