@@ -41,6 +41,21 @@ describe("facture UBL", () => {
     expect(t).toEqual({ htCentimes: 30, tvaCentimes: 6, ttcCentimes: 36 });
   });
 
+  it.each([[6, 600], [12, 1200], [21, 2100]])("calcule le taux configuré de %i %% sur un exemple de 100 EUR HT", (taux, tva) => {
+    expect(totaux([{ libelle: "Service", montantHt: 100 }], taux)).toEqual({
+      htCentimes: 10000,
+      tvaCentimes: tva,
+      ttcCentimes: 10000 + tva,
+    });
+  });
+
+  it("refuse les entrées invalides au lieu de produire des montants UBL trompeurs", () => {
+    expect(() => totaux([], 21)).toThrow("lignes");
+    expect(() => totaux([{ libelle: "x", montantHt: Number.NaN }], 21)).toThrow("lignes");
+    expect(() => totaux([{ libelle: "x", montantHt: -1 }], 21)).toThrow("lignes");
+    expect(() => totaux([{ libelle: "x", montantHt: 1 }], 101)).toThrow("TVA");
+  });
+
   it("produit un document Peppol BIS 3.0 cohérent", () => {
     const xml = genererUbl({
       numero: "ZE-2026-000001",
@@ -53,6 +68,7 @@ describe("facture UBL", () => {
     });
 
     expect(xml).toContain("urn:fdc:peppol.eu:2017:poacc:billing:3.0");
+    expect(xml).toContain('currencyID="EUR"');
     expect(xml).toContain("<cbc:ID>ZE-2026-000001</cbc:ID>");
     expect(xml).toContain("<cbc:IssueDate>2026-09-01</cbc:IssueDate>");
     expect(xml).toContain('<cbc:EndpointID schemeID="0208">0123456789</cbc:EndpointID>');

@@ -70,6 +70,12 @@ const PROFILE_ID = "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0";
 const enCentimes = (euros: number) => Math.round(euros * 100);
 
 export function totaux(lignes: LigneFacture[], tauxTva: number): TotauxFacture {
+  if (!Number.isFinite(tauxTva) || tauxTva < 0 || tauxTva > 100) {
+    throw new Error("Taux de TVA invalide");
+  }
+  if (!lignes.length || lignes.some((ligne) => !Number.isFinite(ligne.montantHt) || ligne.montantHt < 0)) {
+    throw new Error("La facture doit avoir des lignes dont les montants HT sont finis et positifs ou nuls");
+  }
   const htCentimes = lignes.reduce((somme, l) => somme + enCentimes(l.montantHt), 0);
   const tvaCentimes = Math.round((htCentimes * tauxTva) / 100);
   return { htCentimes, tvaCentimes, ttcCentimes: htCentimes + tvaCentimes };

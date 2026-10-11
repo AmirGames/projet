@@ -54,8 +54,8 @@ const envSchema = z.object({
   // montants hors taxe, la TVA s'y ajoute. Vrai : la TVA y est incluse — ce qui
   // est retenu sur un reversement est alors tout ce que le commerçant doit.
   PLATFORM_AMOUNTS_INCLUDE_VAT: z.string().default("false").transform((v) => v === "true"),
-  // Le fournisseur d'Access Point Peppol. Vide : les factures sont générées mais
-  // s'envoient à la main (téléchargement du XML).
+  // Nom exact d'un adaptateur Peppol enregistré. Vide : aucun envoi externe ;
+  // valeur inconnue : refus explicite. Aucun adaptateur réel n'est enregistré A07.
   PEPPOL_PROVIDER: z.string().optional(),
   // Itinéraire des courses ZupDrive (distance et durée du devis) :
   // « estimation » (défaut, sans service externe) ou « osrm » (OSRM_API_URL,

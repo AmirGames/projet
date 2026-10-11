@@ -1,6 +1,6 @@
 # Registre de lancement — conformité UE
 
-Mis à jour le 8 octobre 2026. Chaque ligne doit avoir un responsable, une date et une preuve avant l'ouverture publique. Aucune ligne n'est cochée par le code : seuls l'exploitant, le DPO ou un conseil peuvent les clore.
+Mis à jour le 12 octobre 2026. Chaque ligne doit avoir un responsable, une date et une preuve avant l'ouverture publique. Aucune ligne n'est cochée par le code : seuls l'exploitant, le DPO ou un conseil peuvent les clore. Historique antérieur conservé.
 
 ## Livré dans le dépôt
 
@@ -11,6 +11,7 @@ Mis à jour le 8 octobre 2026. Chaque ligne doit avoir un responsable, une date 
 | Signalement de contenu, point de contact | DSA 2022/2065 art. 11, 12, 16, 17 | Procédure et point de contact dans les mentions légales. |
 | Déclaration des revenus | DAC7 (UE) 2021/514 | Clauses de collecte dans les conditions commerçants et livreurs. |
 | Accessibilité | Directive (UE) 2019/882 | Page `/accessibilite` (état « partiellement conforme »). |
+| Facturation structurée A07 | Belgique : obligation B2B structurée depuis le 01.01.2026, exceptions à valider | UBL généré en code ; transport Access Point et réception non intégrés ; aucune conformité réelle affirmée. [Guide A07](FACTURATION-STRUCTUREE-A07.md). |
 
 ## Reste à faire — hors code
 
@@ -24,7 +25,7 @@ Mis à jour le 8 octobre 2026. Chaque ligne doit avoir un responsable, une date 
 | 6 | Valider ou arrêter la collecte casier / médecine / associés (art. 9 et 10 RGPD) | | | |
 | 7 | Déclaration DAC7 : procédure annuelle auprès de l'administration fiscale | | | |
 | 8 | Audit d'accessibilité RGAA / WCAG 2.1 AA, puis mise à jour de `/accessibilite` | | | |
-| 9 | Facturation électronique B2B (factures plateforme → commerçants) | | | |
+| 9 | Facturation électronique B2B (factures plateforme → commerçants) : confirmer opérateur/pays/statut TVA, choisir et intégrer Access Point, tester en sandbox et conserver preuves | Exploitant + comptable | 12 octobre 2026 : ouvert | [Guide et validations A07](FACTURATION-STRUCTUREE-A07.md) ; aucune preuve de transport réel |
 | 10 | Fiches de stores : confidentialité, suppression de compte, déclaration de collecte | | | |
 
 ## Contrat d'API modifié (additif, non cassant)

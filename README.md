@@ -1,5 +1,17 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 10 — A07 : facturation structurée et preuves légales (12 octobre 2026)
+
+Le transport réel n'est pas activé : aucun opérateur/fournisseur ni données
+d'identité attestées n'ont été communiqués. Le dépôt garde un point d'adaptation
+Peppol, refuse maintenant les fournisseurs inconnus et les entrées UBL
+manifestement invalides, sans présenter XML ou génération comme conformité.
+Les essais Access Point, la réception/rapprochement et la preuve des pages
+publiées restent bloqués. Obligations officielles datées, différences Belgique/
+France, API, configuration, exploitation et validations à obtenir :
+[guide A07](docs/FACTURATION-STRUCTUREE-A07.md). Les déploiements et validations
+en exploitation ne sont pas établis.
+
 ## Étape 07 — A13 : contrats API et preuves de parcours (11 octobre 2026)
 
 Les contrats HTTP paiement sont figés par tests de routes (droits client/invité,
