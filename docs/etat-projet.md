@@ -15,8 +15,8 @@ du comptable sont à obtenir avant publication et ouverture.
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a07-facturation-structuree`, commit code `d6c9480a`, base `0dad7379e89128ee143a226341e46b6ed2bb005c` | Refus fournisseur inconnu/incomplet ; entrées UBL gardées ; guide A07 |
-| Testé localement | 12 octobre 2026 | SHA code `d6c9480a`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Jest facturation 12/12 et droits/journalisation 177/177 ; typecheck, lint, build backend réussis. Sandbox/réception externe et validation EN 16931 non exécutées. |
+| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a07-facturation-structuree`, commit code `d6c9480a92a1ea1ce1a577e609fb1be040efc765`, base `0dad7379e89128ee143a226341e46b6ed2bb005c` | Refus fournisseur inconnu/incomplet ; entrées UBL gardées ; guide A07 |
+| Testé localement | 12 octobre 2026 | SHA code `d6c9480a92a1ea1ce1a577e609fb1be040efc765`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Jest facturation 12/12 et droits/journalisation 177/177 ; typecheck, lint, build backend réussis. Sandbox/réception externe et validation EN 16931 non exécutées. |
 | CI GitHub | 12 octobre 2026 | Head observé `7bc79199993f6082759c878cf240c132275cbf27` | Run [38179656367](https://github.com/AmirGames/projet/actions/runs/38179656367) en attente lors de la vérification. |
 | Intégré | Non | PR #216 ouverte le 12 octobre 2026, base `claude/awesome-ride-m9lci8` | [PR A07](https://github.com/AmirGames/projet/pull/216), non fusionnée |
 | Déployé | Non | Aucun environnement confirmé | Aucune |
