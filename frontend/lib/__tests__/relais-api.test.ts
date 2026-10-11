@@ -47,6 +47,7 @@ describe('relais des demandes de renouvellement', () => {
     await relayer(demande, 'auth', ['refresh']);
 
     const options = fetchApi.mock.calls[0][1];
-    expect(options?.headers.get('x-refresh-request')).toBe('preuve-de-reprise-aleatoire-1234');
+    const entetes = new mockEntetesTest(options?.headers);
+    expect(entetes.get('x-refresh-request')).toBe('preuve-de-reprise-aleatoire-1234');
   });
 });
