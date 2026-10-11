@@ -1,5 +1,11 @@
 # Vérifications
 
+Les contrats HTTP de paiement, tests de routes, bases PostgreSQL dédiées et
+procédure externe Stripe TEST/3DS A13 sont dans
+[`docs/CONTRATS-API-A13.md`](../../../docs/CONTRATS-API-A13.md). Les scripts
+avec services factices et les tests Stripe simulés ne sont pas des essais
+externes réussis.
+
 **Suivi au 4 octobre 2026 :** le site est déployé, mais ces suites générales
 restent destinées à une **base de test dédiée qu'elles réinitialisent**.
 Ne pas les exécuter sur la base du VPS en exploitation. Les résultats datés,
@@ -231,3 +237,4 @@ transactions financières PostgreSQL avec Stripe simulé. Le runner externe
 CLI Stripe TEST ; il couvre aussi les pannes avant appel et après restitution.
 Voir [le guide de reprise](../../../docs/REMBOURSEMENTS-REPRISE.md) et
 [les preuves datées](../../../docs/preuves-a03-2026-10-09.md).
+

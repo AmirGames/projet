@@ -1,5 +1,11 @@
 # ZupEat — application commerçant
 
+Les contrats paiement/commande et la matrice des permissions A13 sont dans le
+[contrat API](../../../docs/CONTRATS-API-A13.md). Le client mobile ne confirme
+pas lui-même un paiement : l'API transmet la commande au commerçant après
+confirmation serveur. La CI valide types, lint et les tests Jest de cette app;
+elle ne remplace pas un essai d'acceptation de commande sur appareil.
+
 Application Expo du commerçant, cliente de l'API ZupOne/ZupEat. La connexion
 exige un compte rattaché à un commerce ; les autorisations et les règles métier
 restent contrôlées par le serveur.
@@ -54,3 +60,4 @@ npx tsc --noEmit
 Le [guide de publication livreur](../delivery/PUBLICATION.md) décrit les étapes
 pour cette autre application ; ses identifiants, autorisations et justificatifs
 ne doivent pas être repris tels quels pour l'application commerçant.
+

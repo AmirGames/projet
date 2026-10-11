@@ -265,7 +265,7 @@ describe("rembourserCommande", () => {
 });
 
 describe("createPaymentIntent", () => {
-  it.each(['processing', 'requires_capture', 'succeeded'])("ne crée aucun second paiement pendant %s", async (status) => {
+  it.each(['processing', 'requires_capture', 'succeeded', 'requires_action'])("ne crée aucun second paiement pendant %s", async (status) => {
     db.order.findUnique.mockResolvedValue(commande());
     stripe.paymentIntents.retrieve.mockResolvedValue(intention({ status }));
     expect((await paymentService.createPaymentIntent('cmd-1')).id).toBe('pi_1');
@@ -311,6 +311,17 @@ describe("createPaymentIntent", () => {
 
     expect(resultat.id).toBe("pi_1");
     expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it("une authentification 3DS en attente ne confirme pas le paiement", async () => {
+    jest.spyOn(paymentService, "intentionDeLaCommande").mockResolvedValue(true);
+    stripe.paymentIntents.retrieve.mockResolvedValue(intention({ status: "requires_action" }));
+
+    const resultat = await paymentService.confirmPayment("cmd-1", "pi_1");
+
+    expect(resultat.status).toBe("requires_action");
+    expect(db.order.update).not.toHaveBeenCalled();
+    expect(db.payment.upsert).not.toHaveBeenCalled();
   });
 
   it("refuse de faire payer une commande déjà payée", async () => {
@@ -493,3 +504,4 @@ describe("annonce au commerçant après encaissement (C-10)", () => {
     await expect(paymentService.transmettreAuCommercant("cmd-1")).rejects.toThrow("base coupée");
   });
 });
+

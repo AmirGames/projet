@@ -1,5 +1,25 @@
 # État du projet et travail restant
 
+## Étape 07 — A13 : contrats API, parcours et CI (11 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 11 octobre 2026 | branche dédiée A13, base `b73707d39abf56241aa06e0fcef14d104aaab9f8` | [contrat HTTP, matrice, CI, exclusions et procédures](CONTRATS-API-A13.md) |
+| Testé localement | 11 octobre 2026, partiel | Windows, Node 24.21/npm 12, contenu A13 basé sur `b73707d39abf56241aa06e0fcef14d104aaab9f8` | Contrats/paiement **51/51**, couverture route/service mesurée et seuils satisfaits; backend build/typecheck/lint réussis; Delivery tests **16/16**, types/lint réussis; YAML et liens vérifiés |
+| Testé CI | 11 octobre 2026, GitHub Actions / Ubuntu / PostgreSQL 16 | SHA `bb3c3d2b9e221e6216920e8afd5ab923368ae2c8`, 11 jobs réussis | [run #38158760374](https://github.com/AmirGames/projet/actions/runs/38158760374) : backend/tests/couverture/build, PostgreSQL dédié, E2E, MFA, types/lint sur six apps et tests Customer/Merchant/Delivery/ZupDrive Passenger |
+| Tests locaux non exécutables | 11 octobre 2026, Windows | Jest/types Customer/Merchant absents localement; aucun PostgreSQL/Docker local | Les suites concernées passent dans la CI ci-dessus; aucun succès local n'est revendiqué |
+| Non exécuté localement / externe | 11 octobre 2026 | Pas de PostgreSQL/Docker local; Jest/types Customer/Merchant incomplets localement; aucune configuration Stripe TEST ou appareil disponible | Les suites PostgreSQL passent en CI; Stripe TEST/3DS interactif et essais sur appareil restent non exécutés |
+| Intégré | Non vérifié | SHA d'intégration absent | Aucune preuve |
+| Déployé | Non exécuté | Aucun environnement A13 confirmé | Aucune preuve |
+| Validé en exploitation | Non exécuté | Stripe TEST externe, 3DS et appareils restent à exécuter | Aucune preuve |
+
+La CI ajoute un PostgreSQL dédié au cycle des inscriptions, liens,
+renouvellements et à une concurrence de livraison. Le run GitHub du SHA
+`bb3c3d2b9e221e6216920e8afd5ab923368ae2c8` a réussi ses 11 jobs. Le test HTTP de paiement et le scénario
+`requires_action` sont simulés; ils ne constituent pas une preuve Stripe
+TEST/3DS. Voir les suites exclues, commandes et procédure externe dans
+[CONTRATS-API-A13.md](CONTRATS-API-A13.md).
+
 ## Étape 06 — A09 : rotation atomique des sessions (10 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |
@@ -327,3 +347,4 @@ La base A04 est intégrée (PR 203, `e66cd0e3f676b7e06c2d783dc53e71f780b41128`).
 Le mode préparatoire `enrollment` n'est pas l'obligation MFA : activer `enforced`
 sur toutes les instances seulement après préparation documentée des titulaires
 et du secours. Les audits historiques ci-dessus conservent leur date.
+

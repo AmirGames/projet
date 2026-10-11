@@ -1,5 +1,19 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 07 — A13 : contrats API et preuves de parcours (11 octobre 2026)
+
+Les contrats HTTP paiement sont figés par tests de routes (droits client/invité,
+statuts, réponse `requires_action`). La CI ajoute une base PostgreSQL dédiée
+pour les courses d'inscription A01/A02, liens A10, rotation A09 et acceptation
+de livraison concurrente. Les tests simulés, intégrations PostgreSQL, essais
+Stripe TEST/3DS externes et essais sur appareil sont distingués dans le
+[contrat, la matrice de parcours et les procédures A13](docs/CONTRATS-API-A13.md).
+La CI du SHA `bb3c3d2b9e221e6216920e8afd5ab923368ae2c8` a réussi ses 11 jobs
+([preuve](https://github.com/AmirGames/projet/actions/runs/38158760374)), dont
+les tests Jest Customer/Merchant, les intégrations PostgreSQL dédiées et E2E.
+Le run ne couvre pas Stripe distant avec 3DS ni les appareils physiques. Aucune
+intégration, livraison ou validation en exploitation n'est affirmée.
+
 ## Étape 06 — A09 : rotation atomique et reprenable des sessions (10 octobre 2026)
 
 Le refresh parent est consommé et son successeur est créé dans une transaction
@@ -386,3 +400,4 @@ Les deux écosystèmes partagent la même infra backend/tech mais ont des modèl
 
 **Dernière mise à jour** : Octobre 2026  
 **Version** : 1.0
+
