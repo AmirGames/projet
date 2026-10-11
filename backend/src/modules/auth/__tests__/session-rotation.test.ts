@@ -151,9 +151,11 @@ describe("rotation des jetons de renouvellement", () => {
     const rotation = await SsoService.renouveler(refreshToken, "request-reprise-0001");
     const successeursAvant = jetons.filter((j) => !j.usedAt).length;
     const reprise = await SsoService.renouveler(refreshToken, "request-reprise-0001");
-    expect(reprise.refreshToken).toBe(rotation.refreshToken);
+    const jtiSuccesseur = AuthService.verifyRefreshToken(rotation.refreshToken).jti;
+    expect(AuthService.verifyRefreshToken(reprise.refreshToken).jti).toBe(jtiSuccesseur);
     expect(jetons.filter((j) => !j.usedAt)).toHaveLength(successeursAvant);
-    expect((await SsoService.renouveler(refreshToken, "request-reprise-0001")).refreshToken).toBe(rotation.refreshToken);
+    const repriseEncore = await SsoService.renouveler(refreshToken, "request-reprise-0001");
+    expect(AuthService.verifyRefreshToken(repriseEncore.refreshToken).jti).toBe(jtiSuccesseur);
     expect(await code(SsoService.renouveler(refreshToken, "request-autre-cle-0001"))).toBe("SESSION_INVALIDE");
   });
 
@@ -185,7 +187,10 @@ describe("rotation des jetons de renouvellement", () => {
     const reussis = [a, b];
 
     expect(reussis).toHaveLength(2);
-    expect(reussis[0].refreshToken).toBe(reussis[1].refreshToken);
+    const jetonA = AuthService.verifyRefreshToken(reussis[0].refreshToken);
+    const jetonB = AuthService.verifyRefreshToken(reussis[1].refreshToken);
+    expect(jetonA.jti).toBe(jetonB.jti);
+    expect(jetonA.sid).toBe(jetonB.sid);
     expect(sessions.find((s) => s.id === sid)!.revokedAt).toBeNull();
 
     // Le jeton gagnant reste utilisable : la session n'a pas été fermée.
