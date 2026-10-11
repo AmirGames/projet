@@ -15,6 +15,7 @@ let sessions: Session[] = [];
 let jetons: Jeton[] = [];
 let n = 0;
 let erreurCreation: Error | null = null;
+let transactionEnCours: Promise<void> = Promise.resolve();
 
 const transactionClient: any = {
   $queryRaw: async () => sessions.map((s) => ({ ...s })),
@@ -24,9 +25,16 @@ const transactionClient: any = {
 };
 const db: any = {
   $transaction: jest.fn(async (action: any) => {
+    // Simule le verrou FOR UPDATE de PostgreSQL : une seconde rotation de la
+    // même session observe le parent déjà consommé après le commit initial.
+    let liberer!: () => void;
+    const precedent = transactionEnCours;
+    transactionEnCours = new Promise<void>((resolve) => { liberer = resolve; });
+    await precedent;
     const snapshots = { sessions: structuredClone(sessions), jetons: structuredClone(jetons) };
     try { return await action(transactionClient); }
     catch (error) { sessions = snapshots.sessions; jetons = snapshots.jetons; throw error; }
+    finally { liberer(); }
   }),
   sessionConnexion: {
     create: jest.fn(async ({ data }: any) => {
@@ -100,6 +108,7 @@ describe("rotation des jetons de renouvellement", () => {
     sessions = [];
     jetons = [];
     erreurCreation = null;
+    transactionEnCours = Promise.resolve();
     process.env.NODE_ENV = "test";
   });
 
@@ -294,6 +303,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
     const res = await request(auth)
       .post("/api/auth/refresh")
       .set("Cookie", `zup_refresh=${refreshToken}`)
+      .set("X-Refresh-Request", "a".repeat(64))
       .set("Origin", "https://zupone.com");
 
     expect(res.status).toBe(200);
@@ -326,6 +336,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
         const res = await request(auth)
           .post("/api/auth/refresh")
           .set("Cookie", `zup_refresh=${refreshToken}`)
+          .set("X-Refresh-Request", "b".repeat(64))
           .set("Origin", origine);
         expect({ origine, statut: res.status }).toEqual({ origine, statut: 200 });
       }
@@ -336,6 +347,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
         const res = await request(auth)
           .post("/api/auth/refresh")
           .set("Cookie", `zup_refresh=${refreshToken}`)
+          .set("X-Refresh-Request", "c".repeat(64))
           .set("Origin", origine);
         expect({ origine, statut: res.status }).toEqual({ origine, statut: 403 });
       }
@@ -368,7 +380,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
 
   it("le mobile garde le refresh dans le corps (rotation comprise)", async () => {
     const { refreshToken } = await SsoService.connecter("u1");
-    const res = await request(auth).post("/api/auth/refresh").send({ refreshToken });
+    const res = await request(auth).post("/api/auth/refresh").send({ refreshToken, requestId: "d".repeat(64) });
     expect(res.status).toBe(200);
     expect(res.body.refreshToken).toBeTruthy();
     expect(res.body.refreshToken).not.toBe(refreshToken);

@@ -89,7 +89,8 @@ describe('renouveler : le jeton d\'accès expire, la session se renouvelle', () 
     fetchMock.mockReturnValue(reponse(200, { accessToken: 'neuf.jeton.ok', user: { id: 'u1' } }));
     const resultat = await renouveler();
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/refresh', expect.objectContaining({
-      method: 'POST', credentials: 'same-origin', body: '{}',
+      method: 'POST', credentials: 'same-origin',
+      body: expect.stringMatching(/^\{"requestId":"[a-f0-9]{64}"\}$/),
       headers: expect.objectContaining({ 'X-Refresh-Transport': 'cookie' }),
     }));
     expect(resultat).toMatchObject({ ok: true, statut: 200 });
