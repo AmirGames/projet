@@ -1,5 +1,10 @@
 # Plan de tests E2E — identité unifiée, rôles et validations
 
+> Complément A13 : les contrats HTTP de paiement, les suites automatisées
+> réutilisées, les exclusions CI et la procédure Stripe TEST/3DS sont dans
+> [`docs/CONTRATS-API-A13.md`](docs/CONTRATS-API-A13.md). Un scénario local avec
+> Stripe désactivé ou simulé n'est pas une validation de paiement externe.
+
 **Mis à jour** : 4 octobre 2026 (scénarios historiques du 27 septembre ; première version : 22 septembre)
 **Environnement du plan** : local ou environnement de test isolé
 
@@ -760,3 +765,4 @@ PHASE 8 — SUPPRESSION
 
 BILAN : __ / 29 réussis — anomalies : …
 ```
+

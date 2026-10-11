@@ -1,5 +1,11 @@
 # Vérifications du site
 
+Pour les contrats paiement, les rôles autorisés, les tests API associés et la
+distinction entre E2E simulé et Stripe TEST/3DS externe, voir
+[`docs/CONTRATS-API-A13.md`](../../docs/CONTRATS-API-A13.md). Le job navigateur
+CI coupe Stripe et ne prouve donc pas le traitement d'une carte ou d'un
+challenge 3DS réel.
+
 **Suivi au 4 octobre 2026 :** le site est déployé. Ces suites restent des
 parcours sur un environnement de test dédié ; certaines préparent leurs
 données en réinitialisant la base. Le passage historique du 2 octobre
@@ -195,3 +201,4 @@ située, sa zone reste inconnue et la course n'est proposée à personne — les
 suites échouent sans que rien ne soit cassé. Le faux service du dépôt suffit,
 et évite de dépendre d'Internet : c'est le terminal 0 ci-dessus, et les deux
 variables `ADDRESS_API_URL` et `PHOTON_API_URL` de l'API.
+

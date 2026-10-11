@@ -1,5 +1,17 @@
 # 🧪 Test Cases - Unified Identity Authentication
 
+## Étape A13 — contrats de paiement et parcours ouverts
+
+Le contrat HTTP `/api/payments` (payloads, réponses, statuts et permissions) et
+la matrice client/commerçant/livreur/administrateur sont décrits dans
+[`docs/CONTRATS-API-A13.md`](../docs/CONTRATS-API-A13.md). Le test
+`src/modules/payments/__tests__/payment-routes-caracterisation.test.ts` couvre
+config, création d'intention, confirmation, cloisonnement client/invité et
+`requires_action`. Ce dernier est simulé : il ne prouve pas un challenge 3DS
+réel. La procédure Stripe TEST/3DS et ses prérequis sont dans le même document.
+Les tests A01/A02/A09 et la concurrence de livraison utilisent la base
+PostgreSQL dédiée par le workflow CI.
+
 ## Quick Start
 
 ```bash
@@ -576,3 +588,4 @@ Migration historique : `node scripts/verification/refund-migration.mjs`.
 Stripe TEST avec webhooks signés réels : runner `scripts/security/audit-stripe-sandbox.mjs --run`,
 préparé mais non attesté par une suite avec mocks. Configuration et limites :
 [guide A03](../docs/REMBOURSEMENTS-REPRISE.md), [preuves](../docs/preuves-a03-2026-10-09.md).
+

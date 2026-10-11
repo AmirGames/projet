@@ -1,5 +1,11 @@
 # ZupEat Livreur
 
+Les risques de transition, preuve de livraison, gains et contrats API couverts
+par A13 sont détaillés dans le [contrat et la matrice](../../../docs/CONTRATS-API-A13.md).
+Le job PostgreSQL CI exerce la concurrence d'acceptation; les tests Node
+livreur couvrent alertes et reprise de session. Aucun de ces contrôles ne vaut
+essai GPS, push ou preuve photo sur appareil physique.
+
 Le renouvellement automatique est sérialisé et transmet un `requestId` aléatoire cryptographique. Après une réponse perdue, il réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Une panne réseau ou un 409 persistant ne déconnecte pas ; seul un refus 401/403 définitif termine la session. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md) et `npm run test:session`.
 
 Application mobile du livreur, construite sur le même modèle que l'application
@@ -216,3 +222,4 @@ lib/offlineStore.ts        course et accueil gardés sur le téléphone
 lib/push.ts                notifications push (app « delivery »)
 lib/realtime.ts            abonnement aux événements, écran par écran
 ```
+

@@ -1,5 +1,23 @@
 # État du projet et travail restant
 
+## Étape 07 — A13 : contrats API, parcours et CI (11 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 11 octobre 2026 | branche dédiée A13, base `b73707d39abf56241aa06e0fcef14d104aaab9f8` | [contrat HTTP, matrice, CI, exclusions et procédures](CONTRATS-API-A13.md) |
+| Testé localement | 11 octobre 2026, partiel | Windows, Node 24.21/npm 12, contenu A13 basé sur `b73707d39abf56241aa06e0fcef14d104aaab9f8` | Contrats/paiement **51/51**, couverture route/service mesurée et seuils satisfaits; backend build/typecheck/lint réussis; Delivery tests **16/16**, types/lint réussis; YAML et liens vérifiés |
+| Non exécuté localement | 11 octobre 2026 | PostgreSQL/Docker indisponibles; Customer/Merchant Jest et types incomplets dans `node_modules`; accès réseau à GitHub initialement indisponible | Courses PostgreSQL, tests Customer/Merchant, Stripe TEST/3DS, appareils et workflow CI ne sont pas revendiqués réussis |
+| Intégré | Non vérifié | SHA d'intégration absent | Aucune preuve |
+| Déployé | Non exécuté | Aucun environnement A13 confirmé | Aucune preuve |
+| Validé en exploitation | Non exécuté | Stripe TEST externe, 3DS et appareils restent à exécuter | Aucune preuve |
+
+La CI ajoute un PostgreSQL dédié au cycle des inscriptions, liens,
+renouvellements et à une concurrence de livraison. Le test HTTP de paiement
+et le scénario `requires_action` sont simulés; ils ne constituent pas une
+preuve Stripe TEST/3DS. La CI GitHub doit encore être exécutée sur le SHA
+final. Voir les suites exclues, commandes et procédure externe dans
+[CONTRATS-API-A13.md](CONTRATS-API-A13.md).
+
 ## Étape 06 — A09 : rotation atomique des sessions (10 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |
@@ -327,3 +345,4 @@ La base A04 est intégrée (PR 203, `e66cd0e3f676b7e06c2d783dc53e71f780b41128`).
 Le mode préparatoire `enrollment` n'est pas l'obligation MFA : activer `enforced`
 sur toutes les instances seulement après préparation documentée des titulaires
 et du secours. Les audits historiques ci-dessus conservent leur date.
+

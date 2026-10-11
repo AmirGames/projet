@@ -37,6 +37,52 @@ permissions:
   contents: read
 
 jobs:
+  lifecycle-postgres:
+    name: Auth A01/A02/A09 et concurrence sur PostgreSQL dédié
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lifecycle_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/lifecycle_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - name: Générer Prisma et appliquer toutes les migrations
+        run: npx prisma generate && npx prisma migrate deploy
+        working-directory: backend
+      # Chaque fichier a sa propre invocation : plusieurs suites déconnectent
+      # volontairement leur client Prisma dans afterAll.
+      - name: Inscriptions atomiques A01/A02 (PostgreSQL)
+        run: npx jest src/modules/auth/__tests__/inscriptions-atomiques.pg.test.ts --runInBand
+        working-directory: backend
+      - name: Confirmation et reprise des liens A10 (PostgreSQL)
+        run: npx jest src/modules/auth/__tests__/account-links.pg.test.ts --runInBand
+        working-directory: backend
+      - name: Rotation reprenable A09 (PostgreSQL)
+        run: npx jest src/modules/auth/__tests__/rotation-refresh.pg.test.ts --runInBand
+        working-directory: backend
+      - name: Acceptation de course concurrente (PostgreSQL)
+        run: npx jest src/modules/drivers/__tests__/acceptation-concurrente.pg.test.ts --runInBand
+        working-directory: backend
+
   mfa-e2e:
     name: MFA A05 (web et admin Expo)
     runs-on: ubuntu-latest
@@ -155,6 +201,16 @@ jobs:
         env:
           REFUND_INTEGRATION: "true"
         run: npm test
+      - name: Contrats de paiement, couverture critique et handles
+        run: >-
+          npx jest src/modules/payments/__tests__/payment-routes-caracterisation.test.ts
+          src/modules/payments/__tests__/payment.test.ts --runInBand --detectOpenHandles
+          --no-forceExit --coverage
+          --collectCoverageFrom=src/modules/payments/payment.routes.ts
+          --collectCoverageFrom=src/modules/payments/payment.service.ts
+          --coverageReporters=text
+          --coverageThreshold='{"./src/modules/payments/payment.routes.ts":{"statements":70,"branches":55,"functions":70,"lines":70},"./src/modules/payments/payment.service.ts":{"statements":70,"branches":60,"functions":70,"lines":75}}'
+        working-directory: backend
       - name: Migration remboursement historique (PostgreSQL)
         run: node scripts/verification/refund-migration.mjs
       - name: Base dédiée A04
@@ -415,3 +471,4 @@ jobs:
         if: failure()
         run: |
           for f in api site adresses; do echo "=== $f"; tail -n 100 "$RUNNER_TEMP/$f.log" || true; done
+

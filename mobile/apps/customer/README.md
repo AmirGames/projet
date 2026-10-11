@@ -1,5 +1,12 @@
 # ZupEat — application client
 
+Les contrats paiement partagés par le site et les apps (création, confirmation,
+état, permissions invité/connecté, refus et 3DS) ainsi que les limites des
+preuves A13 sont consignés dans le [contrat API A13](../../../docs/CONTRATS-API-A13.md).
+`requires_action` est un état d'authentification en cours, pas un paiement
+réussi; seul l'état relu auprès de l'API/webhook fait foi. Les tests de session
+de cette app sont unitaires; ils ne simulent pas un appareil ou un paiement.
+
 Application mobile du client, construite sur le même modèle que les
 applications commerçant (`../merchant`) et livreur (`../delivery`) : même
 connexion, même barre du bas (Menu · Accueil · Paniers · Commande en cours),
@@ -87,3 +94,4 @@ lib/useCustomerRealtime.ts connexion temps réel et salons des commandes
 lib/push.ts                notifications push (app « customer »)
 lib/realtime.ts            abonnement aux événements et aux salons, écran par écran
 ```
+
