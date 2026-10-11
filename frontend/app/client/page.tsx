@@ -502,7 +502,7 @@ export default function ClientHomePage() {
           </div>
         )}
       </div>
-      <section className="mx-auto mt-4 max-w-7xl px-5 py-12 md:px-8 md:py-16">
+      <section id="comment-ca-marche" className="mx-auto mt-4 max-w-7xl scroll-mt-20 px-5 py-12 md:px-8 md:py-16">
         <p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('howEyebrow')}</p>
         <h2 className="mt-2 text-3xl font-black tracking-[-.045em] md:text-4xl">{t('howTitle')}</h2>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
