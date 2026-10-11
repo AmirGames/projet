@@ -185,9 +185,11 @@ await page.goto(`${SITE}/restaurants`);
 await page.getByRole('heading', { level: 1, name: 'Toutes les boutiques' }).waitFor({ timeout: 15000 });
 const cheminBoutiques = sansRegion(new URL(page.url()).pathname);
 check('elle reste sur la route des boutiques', cheminBoutiques === '/restaurants', page.url());
+const rechercheBoutiques = page.getByRole('searchbox', { name: 'Rechercher une boutique ou un produit' });
+await rechercheBoutiques.waitFor({ state: 'visible', timeout: 15000 });
 check(
   'elle propose une recherche accessible',
-  await page.getByRole('textbox', { name: 'Rechercher une boutique ou un produit' }).count() === 1,
+  await rechercheBoutiques.count() === 1,
   await texte()
 );
 
