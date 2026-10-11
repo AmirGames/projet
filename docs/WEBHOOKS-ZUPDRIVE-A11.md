@@ -93,8 +93,8 @@ PostgreSQL et un serveur récepteur contrôlé restent requis avant activation.
 
 | Étape | Date (Europe/Brussels) | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 11 octobre 2026 | Branche A11 locale ; SHA de commit à renseigner | Code, migration et tests ciblés ci-dessus |
-| Testé localement | 11 octobre 2026 | Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | 63/63 tests ciblés ; Prisma validate, TypeScript, lint et build réussis |
-| Intégré | Non intégré | À confirmer après PR | Aucune |
+| Développé | 11 octobre 2026 | branche `claude/awesome-ride-m9lci8-a11-drive-webhooks`, SHA `633f3afd52b38b76d595213a0fa434c8abd84c02` | Code, migration et tests ciblés ci-dessus |
+| Testé localement | 11 octobre 2026 | SHA `633f3afd52b38b76d595213a0fa434c8abd84c02`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | 63/63 tests ciblés ; Prisma validate, TypeScript, lint et build réussis |
+| Intégré | Non intégré | PR #215 ouverte | [PR A11](https://github.com/AmirGames/projet/pull/215) |
 | Déployé | Non déployé | VPS non modifié | Aucune |
 | Validé en exploitation | Non validé ; flag désactivé | Aucun environnement de recette externe disponible | Aucune |

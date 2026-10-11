@@ -24,8 +24,8 @@ en production n'est annoncé. Les tests et leur état réel figurent dans le
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 11 octobre 2026 | Branche A11, SHA à confirmer après rebase | Service, migration et procédure A11 |
-| Testé localement | 11 octobre 2026 | Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | 63/63 tests ciblés ; Prisma validate, TypeScript, lint et build backend réussis |
+| Développé | 11 octobre 2026 | branche `claude/awesome-ride-m9lci8-a11-drive-webhooks`, SHA `633f3afd52b38b76d595213a0fa434c8abd84c02` | Service, migration et procédure A11 |
+| Testé localement | 11 octobre 2026 | SHA `633f3afd52b38b76d595213a0fa434c8abd84c02`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | 63/63 tests ciblés ; Prisma validate, TypeScript, lint et build backend réussis |
 | Intégré | Non intégré | PR #215 ouverte | [PR A11](https://github.com/AmirGames/projet/pull/215) |
 | Déployé | Non déployé | VPS inchangé | Aucune |
 | Validé en exploitation | Non validé ; flag désactivé | Aucun environnement de recette | Aucune |
