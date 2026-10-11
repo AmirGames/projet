@@ -124,7 +124,7 @@ export const SsoService = {
         throw new ApiError(400, "Clé de reprise requise.", "REFRESH_CLE_REQUISE");
       }
       const empreinteCle = empreinte(cleReprise);
-      let resultat: { kind: "invalid" } | { kind: "replay"; successeurJti: string; expiresAt: Date } | { kind: "rotated"; refreshToken: string };
+      let resultat: { kind: "invalid" } | { kind: "replay"; successeurJti: string; expiresAt: Date; issuedAt: number } | { kind: "rotated"; refreshToken: string };
       try {
         resultat = await db.$transaction(async (tx) => {
           // Verrouiller la session sérialise aussi les refresh différents de la
@@ -143,10 +143,10 @@ export const SsoService = {
           if (!ligne || ligne.sessionId !== sid || ligne.expiresAt <= maintenant) return { kind: "invalid" as const };
           if (ligne.usedAt) {
             if (ligne.repriseHash === empreinteCle && ligne.repriseExpiresAt && ligne.repriseExpiresAt > maintenant && ligne.successeurJti) {
-              const successeur = await tx.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(ligne.successeurJti) }, select: { expiresAt: true } });
+              const successeur = await tx.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(ligne.successeurJti) }, select: { expiresAt: true, createdAt: true } });
               if (successeur && successeur.expiresAt > maintenant) {
                 await tx.jetonRafraichissement.updateMany({ where: { id: ligne.id, repriseUsedAt: null, repriseHash: empreinteCle, repriseExpiresAt: { gt: maintenant } }, data: { repriseUsedAt: maintenant } });
-                return { kind: "replay" as const, successeurJti: ligne.successeurJti, expiresAt: successeur.expiresAt };
+                return { kind: "replay" as const, successeurJti: ligne.successeurJti, expiresAt: successeur.expiresAt, issuedAt: Math.floor(successeur.createdAt.getTime() / 1000) };
               }
             }
             await tx.sessionConnexion.updateMany({ where: { id: sid, revokedAt: null }, data: { revokedAt: maintenant } });
@@ -155,13 +155,15 @@ export const SsoService = {
 
           const nouveauJti = crypto.randomUUID();
           const expirationSuccesseur = new Date(Math.min(session.expiresAt.getTime(), maintenant.getTime() + DUREE_SESSION_MS));
-          const nouveauToken = AuthService.generateRefreshToken(decoded.userId, sid, nouveauJti, expirationSuccesseur);
+          const issuedAt = Math.floor(maintenant.getTime() / 1000);
+          const creeLe = new Date(issuedAt * 1000);
+          const nouveauToken = AuthService.generateRefreshToken(decoded.userId, sid, nouveauJti, expirationSuccesseur, issuedAt);
           const consomme = await tx.jetonRafraichissement.updateMany({
             where: { id: ligne.id, usedAt: null, expiresAt: { gt: maintenant } },
             data: { usedAt: maintenant, repriseHash: empreinteCle, successeurJti: nouveauJti, repriseExpiresAt: new Date(maintenant.getTime() + TOLERANCE_REPRISE_MS) },
           });
           if (consomme.count !== 1) throw new Error("REFRESH_TRANSACTION_CONFLICT");
-          await tx.jetonRafraichissement.create({ data: { jtiHash: empreinte(nouveauJti), sessionId: sid, expiresAt: expirationSuccesseur } });
+          await tx.jetonRafraichissement.create({ data: { jtiHash: empreinte(nouveauJti), sessionId: sid, expiresAt: expirationSuccesseur, createdAt: creeLe } });
           return { kind: "rotated" as const, refreshToken: nouveauToken };
         }, { isolationLevel: "ReadCommitted" });
       } catch (erreur) {
@@ -169,10 +171,10 @@ export const SsoService = {
         // conflit de sérialisation : il ne faut jamais révoquer la session.
         const relue = await db.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(decoded.jti) }, select: { sessionId: true, usedAt: true, repriseHash: true, successeurJti: true, repriseExpiresAt: true, repriseUsedAt: true } });
         if (relue?.sessionId === sid && relue.usedAt && relue.repriseHash === empreinteCle && relue.repriseExpiresAt && relue.repriseExpiresAt > new Date() && relue.successeurJti) {
-          const successeur = await db.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(relue.successeurJti) }, select: { expiresAt: true } });
+          const successeur = await db.jetonRafraichissement.findUnique({ where: { jtiHash: empreinte(relue.successeurJti) }, select: { expiresAt: true, createdAt: true } });
           if (successeur?.expiresAt && successeur.expiresAt > new Date()) {
             await db.jetonRafraichissement.updateMany({ where: { jtiHash: empreinte(decoded.jti), repriseUsedAt: null, repriseHash: empreinteCle, repriseExpiresAt: { gt: new Date() } }, data: { repriseUsedAt: new Date() } });
-            return { decoded, sid, refreshToken: AuthService.generateRefreshToken(decoded.userId, sid, relue.successeurJti, successeur.expiresAt) };
+            return { decoded, sid, refreshToken: AuthService.generateRefreshToken(decoded.userId, sid, relue.successeurJti, successeur.expiresAt, Math.floor(successeur.createdAt.getTime() / 1000)) };
           }
         }
         if (erreur instanceof Error && erreur.message === "REFRESH_TRANSACTION_CONFLICT") {
@@ -181,7 +183,7 @@ export const SsoService = {
         throw erreur;
       }
       if (resultat.kind === "invalid") throw invalide();
-      if (resultat.kind === "replay") return { decoded, sid, refreshToken: AuthService.generateRefreshToken(decoded.userId, sid, resultat.successeurJti, resultat.expiresAt) };
+      if (resultat.kind === "replay") return { decoded, sid, refreshToken: AuthService.generateRefreshToken(decoded.userId, sid, resultat.successeurJti, resultat.expiresAt, resultat.issuedAt) };
       return { decoded, sid, refreshToken: resultat.refreshToken };
     } else {
       await this.fermer(sid);

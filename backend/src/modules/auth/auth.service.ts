@@ -56,13 +56,19 @@ export class AuthService {
   }
 
   /**
-   * Generate refresh token (JWT)
+   * Generate refresh token (JWT). A fixed issue time makes a replayed
+   * idempotent rotation reproduce the exact same signed token.
    */
-  static generateRefreshToken(userId: string, sid?: string, jti?: string, expiresAt?: Date): string {
+  static generateRefreshToken(userId: string, sid?: string, jti?: string, expiresAt?: Date, issuedAt?: number): string {
     const env = getEnv();
     const charge: Record<string, string> = { userId };
     if (sid) charge.sid = sid;
     if (jti) charge.jti = jti;
+    if (expiresAt && issuedAt !== undefined) {
+      return jwt.sign({ ...charge, iat: issuedAt, exp: Math.floor(expiresAt.getTime() / 1000) }, env.JWT_REFRESH_SECRET, {
+        algorithm: "HS256",
+      });
+    }
     const options: jwt.SignOptions = expiresAt
       ? { algorithm: "HS256", expiresIn: Math.max(1, Math.floor((expiresAt.getTime() - Date.now()) / 1000)) }
       : { algorithm: "HS256", expiresIn: env.JWT_REFRESH_EXPIRES_IN };
