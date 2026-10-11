@@ -137,4 +137,3 @@ ajoutée avec un prérequis explicite.
 | Déployé | Non exécuté | aucun environnement A13 confirmé | aucune preuve |
 | Validé en exploitation | Non exécuté | aucun essai de staging/production A13 confirmé | aucune preuve |
 
-
