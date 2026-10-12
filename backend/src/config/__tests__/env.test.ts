@@ -52,6 +52,12 @@ describe("configuration des capacités", () => {
     expect(envSchema.safeParse({ ...base(), SMTP_HOST: "smtp.example", EMAIL_FROM: "noreply@example.com", SMTP_USER: "user" }).success).toBe(false);
   });
 
+  it("refuse les dépendances absentes d'OSRM, de l'assistant réel et des webhooks activés", () => {
+    expect(envSchema.safeParse({ ...base(), ROUTING_PROVIDER: "osrm" }).success).toBe(false);
+    expect(envSchema.safeParse({ ...base(), ASSISTANT_MODE: "real", ASSISTANT_PROVIDER: "openai" }).success).toBe(false);
+    expect(envSchema.safeParse({ ...base(), ZUPDRIVE_WEBHOOKS_ENABLED: "true" }).success).toBe(false);
+  });
+
   it("exige les deux URLs SQL distinctes en production", () => {
     const resultat = envSchema.safeParse({ ...base(), NODE_ENV: "production", REDIS_URL: "redis://localhost:6379", DATABASE_URL_APP: base().DATABASE_URL, DATABASE_URL_MIGRATION: base().DATABASE_URL });
     expect(resultat.success).toBe(false);

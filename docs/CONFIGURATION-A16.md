@@ -35,6 +35,12 @@ défauts locaux de Mailpit ; si un relais est configuré, le port doit être val
 ensemble. La vérification SMTP au démarrage est informative : une panne du relais
 dégrade le courrier, elle ne rend pas les commandes indisponibles.
 
+Une activation de `ROUTING_PROVIDER=osrm` exige maintenant `OSRM_API_URL` ;
+`ASSISTANT_MODE=real` exige le modèle et les secrets du fournisseur choisi ;
+`ZUPDRIVE_WEBHOOKS_ENABLED=true` exige son secret de signature. Sans ces choix,
+le routage reste en estimation, l'assistant suit son mode non réel et les
+webhooks sortants restent désactivés.
+
 Les clés d'accès et de renouvellement JWT doivent être distinctes. En production,
 la configuration de chiffrement RGPD, secrets de signature/audit, ClamAV et
 validation de migration restent exigés par `assertPrivacyConfiguration()`.

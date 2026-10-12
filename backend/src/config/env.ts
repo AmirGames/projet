@@ -96,6 +96,13 @@ export const envSchema = z.object({
   if (config.NODE_ENV === 'production' && config.ASSISTANT_MODE === 'simulation') {
     contexte.addIssue({ code: 'custom', path: ['ASSISTANT_MODE'], message: 'La simulation est interdite en production' });
   }
+  if (config.ASSISTANT_MODE === "real") {
+    if (config.ASSISTANT_PROVIDER === "openai" && !config.ASSISTANT_OPENAI_KEY) contexte.addIssue({ code: "custom", path: ["ASSISTANT_OPENAI_KEY"], message: "ASSISTANT_OPENAI_KEY requis en mode assistant réel avec OpenAI" });
+    if (config.ASSISTANT_PROVIDER === "openai" && !config.ASSISTANT_OPENAI_MODEL) contexte.addIssue({ code: "custom", path: ["ASSISTANT_OPENAI_MODEL"], message: "ASSISTANT_OPENAI_MODEL requis en mode assistant réel avec OpenAI" });
+    if (config.ASSISTANT_PROVIDER === "ollama" && !config.ASSISTANT_OLLAMA_MODEL) contexte.addIssue({ code: "custom", path: ["ASSISTANT_OLLAMA_MODEL"], message: "ASSISTANT_OLLAMA_MODEL requis en mode assistant réel avec Ollama" });
+  }
+  if (config.ROUTING_PROVIDER === "osrm" && !config.OSRM_API_URL) contexte.addIssue({ code: "custom", path: ["OSRM_API_URL"], message: "OSRM_API_URL requis quand ROUTING_PROVIDER=osrm" });
+  if (config.ZUPDRIVE_WEBHOOKS_ENABLED && !config.ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET) contexte.addIssue({ code: "custom", path: ["ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET"], message: "Secret requis quand les webhooks sortants ZupDrive sont activés" });
   if (config.JWT_SECRET === config.JWT_REFRESH_SECRET) {
     contexte.addIssue({ code: "custom", path: ["JWT_REFRESH_SECRET"], message: "Les secrets access et refresh doivent être distincts" });
   }
