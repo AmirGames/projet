@@ -4492,7 +4492,11 @@
     "footerLegal": "Mentions légales",
     "footerTagline": "Les belles adresses de votre quartier, livrées avec soin ou prêtes à emporter.",
     "footerLabel": "Pied de page ZupEat",
-    "footerCopyright": "© {year} ZupEat. Tous droits réservés."
+    "footerCopyright": "© {year} ZupEat. Tous droits réservés.",
+    "connexionLivreur": "Connexion livreur",
+    "dossierLivreur": "Créer mon dossier livreur",
+    "conditionsLivreurs": "Conditions livreurs",
+    "footerTaglineLivreur": "Les courses des commerces de votre quartier, selon vos disponibilités."
   },
   "suiviCommande": {
     "saisirNumero": "Veuillez entrer votre numéro de commande",
@@ -4703,7 +4707,9 @@
     "pret": "Prêt à commencer ?",
     "enContinuant": "En continuant, vous acceptez les",
     "informationsPour": "Informations pour : {drapeau} {pays}",
-    "ilVousFaut": "Ce qu'il vous faut en {pays}"
+    "ilVousFaut": "Ce qu'il vous faut en {pays}",
+    "connexionLivreur": "Connexion livreur",
+    "contacterSupport": "Contacter le support"
   },
   "pays": {
     "BE": "Belgique",
