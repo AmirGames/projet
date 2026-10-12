@@ -17,6 +17,7 @@ jest.mock("../../../config/logger", () => ({
 }));
 jest.mock("../../../config/env", () => ({
   getEnv: () => ({
+    DATABASE_URL: process.env.DATABASE_URL,
     SEPA_DEBTOR_NAME: "Test A04",
     SEPA_DEBTOR_IBAN: "BE68539007547034",
   }),
