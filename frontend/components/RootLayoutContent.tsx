@@ -134,6 +134,9 @@ export default function RootLayoutContent({
     espaceHote === 'vitrine' || chemin === '/zupone' ||
     chemin === '/client' || chemin?.startsWith('/client/') || chemin === '/restaurants' ||
     (chemin?.startsWith('/store/') && chemin !== '/store/new');
+  // L'accueil du domaine commerçant porte son identité ZupEat ; le chatbot
+  // ZupOne ajoutait une seconde marque au bas de cette page.
+  const masquerAssistant = espaceHote === 'pro' && chemin === '/';
 
   return (
     <>
@@ -141,7 +144,7 @@ export default function RootLayoutContent({
       {!hideNavbar && <Navbar espaceHote={espaceHote} />}
       {children}
       {!sansPied && <PiedDeGroupe />}
-      {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && <AssistantWidget />}
+      {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && !masquerAssistant && <AssistantWidget />}
     </>
   );
 }
