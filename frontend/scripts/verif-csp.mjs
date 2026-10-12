@@ -17,7 +17,7 @@
 import { chromium } from 'playwright';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
-const PAGES = ['/', '/login', '/signup', '/client', '/driver/login', '/mot-de-passe-oublie', '/devenir-livreur'];
+const PAGES = ['/', '/login', '/signup', '/client', '/checkout', '/driver/login', '/mot-de-passe-oublie', '/devenir-livreur'];
 
 let ok = 0;
 const echecs = [];
@@ -58,6 +58,9 @@ for (const chemin of PAGES) {
   check(`${chemin} : directives fixes conservées`, /frame-ancestors/.test(reponse.headers.get('content-security-policy') || '') || /frame-ancestors/.test(dynamique));
 }
 check('un nonce différent à chaque requête', nonces.size === PAGES.length, `${nonces.size}/${PAGES.length}`);
+const cspCheckout = await fetch(`${SITE}/checkout`).then((r) => lirePolitique(r).dynamique || '');
+check('checkout : CSP autorise l’iframe Stripe 3DS', /frame-src[^;]*https:\/\/\*\.stripe\.com/.test(cspCheckout));
+check('checkout : CSP autorise les appels Stripe 3DS', /connect-src[^;]*https:\/\/\*\.stripe\.network/.test(cspCheckout));
 
 const api = await fetch(`${SITE}/api/health`);
 check('/api/health : sans politique dynamique', !lirePolitique(api).dynamique);

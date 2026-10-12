@@ -1,20 +1,27 @@
 import Stripe from "stripe";
-import { logger } from "../../config/logger";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripeActif = process.env.ENABLE_STRIPE === "true";
 
-if (!stripeSecretKey) {
-  logger.error("STRIPE_SECRET_KEY not set in environment variables");
+function clientDesactive(): Stripe {
+  const refuser = () => {
+    throw new Error("Stripe est désactivé ou incomplet : vérifiez ENABLE_STRIPE et ses trois secrets");
+  };
+  const proxy = new Proxy(refuser, {
+    get: () => proxy,
+    apply: refuser,
+  });
+  return proxy as unknown as Stripe;
 }
 
-// La bibliothèque refuse une clé vide dès la construction, ce qui arrêtait
-// l'API entière quand Stripe n'est pas encore configuré (ENABLE_STRIPE=false).
-// Une clé factice la laisse démarrer : seuls les appels à Stripe échouent.
-export const stripe = new Stripe(stripeSecretKey || "sk_non_configuree", {
-  apiVersion: "2026-08-26.dahlia",
-});
+// Pas de clé factice : le mode désactivé n'instancie jamais Stripe et toute
+// tentative d'appel échoue explicitement. loadEnv() refuse les clés manquantes
+// ou incohérentes si ENABLE_STRIPE=true.
+export const stripe: Stripe = stripeActif && stripeSecretKey
+  ? new Stripe(stripeSecretKey, { apiVersion: "2026-08-26.dahlia" })
+  : clientDesactive();
 
 export const STRIPE_CONFIG = {
   currency: "eur",
-  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+  webhookSecret: stripeActif ? process.env.STRIPE_WEBHOOK_SECRET || "" : "",
 };

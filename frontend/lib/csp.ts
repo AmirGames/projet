@@ -45,6 +45,12 @@ export const ADRESSE_RAPPORTS_CSP = '/api/csp-report';
 
 export function modeCsp(valeur: string | undefined = process.env.CSP_MODE): ModeCsp {
   const mode = (valeur || '').trim().toLowerCase();
+  // En production, `off` ne doit jamais retirer la politique complète : les
+  // directives fixes de next.config.js sont une défense complémentaire.
+  if (mode === 'off' && process.env.NODE_ENV === 'production') return 'enforce';
+  if (mode && !['report-only', 'enforce', 'off'].includes(mode) && process.env.NODE_ENV === 'production') {
+    throw new Error('CSP_MODE doit valoir report-only, enforce ou off');
+  }
   return mode === 'enforce' || mode === 'off' ? mode : 'report-only';
 }
 
@@ -106,11 +112,13 @@ export function construireCsp({
       ...(origineApi ? [origineApi] : []),
       ...(origineWs ? [origineWs] : []),
       'https://api.stripe.com',
+      'https://*.stripe.com',
       'https://m.stripe.network',
+      'https://*.stripe.network',
       'https://r.stripe.com',
     ],
     // blob: pour l'aperçu PDF des pièces justificatives.
-    'frame-src': ["'self'", 'blob:', 'https://js.stripe.com', 'https://hooks.stripe.com', 'https://m.stripe.network'],
+    'frame-src': ["'self'", 'blob:', 'https://js.stripe.com', 'https://hooks.stripe.com', 'https://*.stripe.com', 'https://m.stripe.network', 'https://*.stripe.network'],
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],
     'media-src': ["'self'", 'blob:', ...(origineApi ? [origineApi] : [])],

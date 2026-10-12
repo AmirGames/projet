@@ -1,5 +1,11 @@
 # ZupEat Livreur
 
+Cette app est Expo / React Native ; les alertes plein écran/sonnerie utilisent
+un module Expo natif Android et ne sont donc pas des écrans Android Kotlin
+autonomes. Voir la [validation datée](VALIDATION.md) pour séparer code, APK,
+push confirmée et essais restant sur appareil. Le relevé général des capacités
+est dans [l'état du projet](../../../docs/etat-projet.md).
+
 ## Dépendances — audit A12
 
 Le lockfile du 12 octobre 2026 conserve 33 avis de production (1 critique,

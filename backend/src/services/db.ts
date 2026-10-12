@@ -2,6 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { encryptionExtension } from "../modules/privacy/encrypted-fields";
 import { encrypt } from "../modules/privacy/crypto";
+import { getEnv } from "../config/env";
 
 import { dureeDeLaRequete, origineActuelle } from "../modules/auth/origine";
 
@@ -19,7 +20,7 @@ const journaliserLesRequetes = process.env.PRISMA_LOG_QUERIES === "true";
 
 const prismaClientSingleton = () => {
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+    adapter: new PrismaPg({ connectionString: getEnv().DATABASE_URL }),
     // Le carnet personnel ne doit pas sortir avec les fiches client des commerçants ou les avis.
     omit: { customer: { savedAddresses: true } },
     log: [

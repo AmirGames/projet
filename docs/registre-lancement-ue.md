@@ -1,5 +1,10 @@
 # Registre de lancement — conformité UE
 
+Registre spécialisé des actions conformité. Le statut des lots de livraison
+techniques (SHA, tests, intégration, déploiement, exploitation) est tenu dans
+[docs/etat-projet.md](etat-projet.md) ; une entrée vide ci-dessous ne constitue
+pas une preuve.
+
 Mis à jour le 12 octobre 2026. Chaque ligne doit avoir un responsable, une date et une preuve avant l'ouverture publique. Aucune ligne n'est cochée par le code : seuls l'exploitant, le DPO ou un conseil peuvent les clore. Historique antérieur conservé.
 
 ## Livré dans le dépôt

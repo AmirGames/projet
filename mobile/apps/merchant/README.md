@@ -1,5 +1,10 @@
 # ZupEat — application commerçant
 
+Application Expo / React Native cliente de l'API REST centrale. Pour l'état
+courant du backend, les rôles de base et les limites des intégrations, consulter
+[CONFIGURATION-A16](../../../docs/CONFIGURATION-A16.md) et le
+[registre courant](../../../docs/etat-projet.md).
+
 ## Rapports A15
 
 Les rapports ventes utilisent les dates envoyées par l'écran statistiques et

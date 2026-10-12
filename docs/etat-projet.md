@@ -1,5 +1,31 @@
 # État du projet et travail restant
 
+## État courant — 12 octobre 2026
+
+La dernière étape de préparation documentée est A16 (voir son registre ci-dessous) ;
+le dépôt est sur la branche de travail courante et le SHA de base avant rebase est
+`02111181197407ed8cc0829c90fab008d6eaa874`. Les registres A01–A15 restent datés
+comme historique et ne valent pas état du serveur aujourd'hui. Les états
+« développé », « testé », « intégré », « déployé » et « validé en exploitation »
+sont indépendants. Le [registre spécialisé de lancement UE](registre-lancement-ue.md)
+reste la liste de conformité et ne constitue pas une preuve à lui seul.
+
+## Étape 15 — A16 : configuration et documentation
+
+| État | Date, SHA, environnement | Preuve |
+|---|---|---|
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a16-config-docs`, base `32b6251c` (PR A15 #221 intégrée) | Validations backend, sonde SQL en lecture seule, CSP progressive, corrections README et guide [CONFIGURATION-A16](CONFIGURATION-A16.md) |
+| Testé localement | 12 octobre 2026, Windows, Node 24.21.0, npm 12.0.2, Prisma 7.10.0, Next.js 16.4.0 | Backend config/Stripe **8/8**; TypeScript, lint ciblé et build backend réussis; frontend TypeScript et lint ciblé réussis; assertions CSP exécutées par Node; vérification des liens Markdown réussie. Jest frontend et build frontend bloqués par le binding natif SWC manquant. Base PostgreSQL, navigateur live et Stripe TEST/3DS indisponibles. |
+| Intégré | Non établi | Aucun SHA de fusion |
+| Déployé | Non exécuté | Aucune instance de production modifiée |
+| Validé en exploitation | Non exécuté | Sonde SQL sur base isolée et Stripe TEST/3DS réel non disponibles pendant la préparation |
+
+Le checkout de départ contenait des modifications locales préexistantes de tests
+frontend ; elles sont préservées dans leur checkout et exclues du commit A16.
+La branche A15 était intégrée (PR #221) avant l'ouverture de cette PR. Aucun
+correctif A16 antérieur n'est une dépendance identifiée. Voir le
+[guide A16](CONFIGURATION-A16.md). Les dates des audits précédents sont conservées.
+
 ## Étape 14 — A15 : rapports bornés et coûts de lecture (12 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |
