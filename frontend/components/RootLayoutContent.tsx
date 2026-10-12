@@ -12,6 +12,7 @@ import { separerRegion } from '@/i18n/chemins-regionaux';
 import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 import AssistantWidget from './assistant/AssistantWidget';
+import { FooterZupEatPro } from './FooterZupEatPro';
 import type { EspaceHeberge } from '@/lib/domaines';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -136,7 +137,10 @@ export default function RootLayoutContent({
     (chemin?.startsWith('/store/') && chemin !== '/store/new');
   // L'accueil du domaine commerçant porte son identité ZupEat ; le chatbot
   // ZupOne ajoutait une seconde marque au bas de cette page.
-  const masquerAssistant = espaceHote === 'pro' && chemin === '/';
+  const afficherPiedLivreur = espaceHote === 'livreur' && [
+    '/', '/devenir-livreur', '/driver/login', '/driver/signup',
+  ].includes(chemin ?? '');
+  const masquerAssistant = (espaceHote === 'pro' && chemin === '/') || espaceHote === 'livreur';
 
   return (
     <>
@@ -144,6 +148,7 @@ export default function RootLayoutContent({
       {!hideNavbar && <Navbar espaceHote={espaceHote} />}
       {children}
       {!sansPied && <PiedDeGroupe />}
+      {afficherPiedLivreur && <FooterZupEatPro mode="livreur" />}
       {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && !masquerAssistant && <AssistantWidget />}
     </>
   );
