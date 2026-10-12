@@ -5972,6 +5972,25 @@
     "aucuneBoutique": "No shop given: add ?storeId=... to the address.",
     "chargementImpossible": "Unable to load the document"
   },
+  "accueilZupdrive": {
+    "sujetPrevenir": "I would like to hear when ZupDrive launches",
+    "prix": "Know your fare upfront",
+    "prixTexte": "See your ride price before confirming your booking.",
+    "pros": "Professional drivers",
+    "prosTexte": "Carefully selected drivers to help you travel with confidence.",
+    "compte": "One account",
+    "compteTexte": "Access the group’s services with your ZupOne account.",
+    "commanderZupeat": "Order on ZupEat",
+    "devenirChauffeur": "Become a driver",
+    "bientot": "Coming to your city soon",
+    "titre": "Your rides, made simple.",
+    "texte": "ZupDrive is preparing a new private hire service: easy booking, an upfront fare and ride updates from your phone.",
+    "jeSuisChauffeur": "I’m a driver",
+    "prevenir": "Notify me at launch",
+    "enAttendant": "ZupDrive is coming soon",
+    "enAttendantTexte": "Are you a professional driver? Leave us your email address to hear when the service opens.",
+    "decouvrir": "Discover ZupEat shops"
+  },
   "footerZupdrive": {
     "label": "ZupDrive footer",
     "description": "ZupDrive is preparing its private hire service.",
