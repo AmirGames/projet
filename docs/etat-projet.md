@@ -14,8 +14,8 @@ reste la liste de conformité et ne constitue pas une preuve à lui seul.
 
 | État | Date, SHA, environnement | Preuve |
 |---|---|---|
-| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a16-config-docs`, commit `7ba6fab46a1129508cb1a66541e5e809a54c44ee`, base `32b6251c65dacf2ffd2a3d48797edab49eb17b90` (PR A15 #221 intégrée) | Validations backend, sonde SQL en lecture seule, CSP progressive, corrections README et guide [CONFIGURATION-A16](CONFIGURATION-A16.md) |
-| Testé localement | 12 octobre 2026, Windows, sur le code du commit `7ba6fab46a1129508cb1a66541e5e809a54c44ee`, Node 24.21.0, npm 12.0.2, Prisma 7.10.0, Next.js 16.4.0 | Backend config/Stripe **8/8**; TypeScript, lint complet backend et build réussis; frontend TypeScript et lint ciblé réussis; assertions CSP exécutées par Node; vérification des liens Markdown réussie. Jest frontend et build frontend bloqués par le binding natif SWC manquant. Base PostgreSQL, navigateur live et Stripe TEST/3DS indisponibles. |
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a16-config-docs`, commit `81c7e8c13622afc2f6fc494f18e7bb2ceaf869c5`, base `32b6251c65dacf2ffd2a3d48797edab49eb17b90` (PR A15 #221 intégrée) | Validations backend, sonde SQL en lecture seule, CSP progressive, corrections README et guide [CONFIGURATION-A16](CONFIGURATION-A16.md) |
+| Testé localement | 12 octobre 2026, Windows, sur le code du commit `81c7e8c13622afc2f6fc494f18e7bb2ceaf869c5`, Node 24.21.0, npm 12.0.2, Prisma 7.10.0, Next.js 16.4.0 | Backend config/Stripe/dépendances activées **9/9**; TypeScript, lint complet backend et build réussis; frontend TypeScript et lint ciblé réussis; assertions CSP exécutées par Node; vérification des liens Markdown réussie. Jest frontend et build frontend bloqués par le binding natif SWC manquant. Base PostgreSQL, navigateur live et Stripe TEST/3DS indisponibles. |
 | Intégré | Non établi | Aucun SHA de fusion |
 | Déployé | Non exécuté | Aucune instance de production modifiée |
 | Validé en exploitation | Non exécuté | Sonde SQL sur base isolée et Stripe TEST/3DS réel non disponibles pendant la préparation |
