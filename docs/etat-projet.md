@@ -431,3 +431,24 @@ Le mode préparatoire `enrollment` n'est pas l'obligation MFA : activer `enforce
 sur toutes les instances seulement après préparation documentée des titulaires
 et du secours. Les audits historiques ci-dessus conservent leur date.
 
+## Étape 12 — A14 : indicateurs de santé représentatifs (12 octobre 2026)
+
+La liveness ne dépend que du processus. La readiness générale vérifie PostgreSQL
+et Redis en production, avec états publics expurgés; ClamAV est un état propre au
+dépôt de documents, qui reste refusé en absence d'antivirus. SMTP et les services
+externes ne retirent pas la readiness. Les délais, cache, matrice, seuils et
+procédures sont dans [DEPENDANCES-SANTE](DEPENDANCES-SANTE.md).
+
+| État | Date, SHA, environnement | Preuve |
+|---|---|---|
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a14-health`, base `0dad7379e89128ee143a226341e46b6ed2bb005c`, Windows local | Contrats liveness/readiness, contrôles Redis/ClamAV, retrait des dépendances Redis/ClamAV au démarrage du backend; fichiers de la branche de travail |
+| Testé localement | 12 octobre 2026, Windows, Node 24.21.0, npm 12.0.2, Prisma 7.10.0 | Tests ciblés **11/11**, TypeScript, lint et build backend réussis; Docker daemon absent, donc coupures PostgreSQL/Redis/SMTP sur instance isolée et réception d'alertes non éprouvées |
+| Intégré | Non | Aucun SHA de fusion |
+| Déployé | Non | Aucun déploiement ni migration A14 |
+| Validé en exploitation | Non | Aucune instance isolée avec coupures des quatre dépendances; aucune réception d'alerte vérifiée |
+
+Le poste contient d'autres modifications frontend préexistantes, conservées sans
+modification par A14. La branche locale de départ était 48 commits derrière son
+remote au début du travail; aucune PR précédente non intégrée n'a été traitée
+comme une dépendance A14. La PR et la CI distante restent à établir.
+

@@ -222,8 +222,17 @@ certificats. Suivre :
 Vérifier :
 
 ```bash
-curl https://api.zupeat.com/health/ready    # {"status":"ok","pret":true,…}
+curl -i https://api.zupeat.com/health       # liveness: 200 si le processus répond
+curl -i https://api.zupeat.com/health/ready # 200 base + Redis prêts; 503 sinon
 ```
+
+Le healthcheck Docker du backend utilise `/health` (liveness), jamais la
+readiness : une panne de Redis, ClamAV ou SMTP n'entraîne pas de redémarrage en
+boucle. Le backend peut démarrer même si Redis ou ClamAV est momentanément
+indisponible; migrations PostgreSQL restent un préalable. Les routes protégées
+qui ont besoin des quotas Redis et les dépôts qui exigent ClamAV échouent en
+mode fermé. Pour la matrice, les contrats et les procédures de reprise, voir
+[DEPENDANCES-SANTE](docs/DEPENDANCES-SANTE.md).
 
 puis ouvrez `https://zupeat.com`.
 

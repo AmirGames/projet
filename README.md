@@ -25,6 +25,14 @@ France, API, configuration, exploitation et validations à obtenir :
 [guide A07](docs/FACTURATION-STRUCTUREE-A07.md). Les déploiements et validations
 en exploitation ne sont pas établis.
 
+## Santé et dépendances (A14)
+
+`/health` mesure la vie du processus; `/health/ready` vérifie PostgreSQL et Redis
+en production, sans exposer d'erreur d'infrastructure. ClamAV bloque uniquement
+les dépôts de documents, et SMTP/les fournisseurs externes dégradent leurs
+fonctions sans retirer le trafic général. Matrice, contrats, alertes et reprises :
+[dépendances et santé](docs/DEPENDANCES-SANTE.md).
+
 ## Étape 07 — A13 : contrats API et preuves de parcours (11 octobre 2026)
 
 Les contrats HTTP paiement sont figés par tests de routes (droits client/invité,

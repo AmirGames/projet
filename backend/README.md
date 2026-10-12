@@ -20,6 +20,21 @@ explicitement. L'API factures reste réservée au superowner. La réception et l
 accusés asynchrones ne sont pas implémentés. Contrats, contrôles, exploitation,
 preuves réglementaires et blocages : [guide A07](../docs/FACTURATION-STRUCTUREE-A07.md).
 
+## Santé des dépendances (A14)
+
+`GET /health` est la liveness sans dépendance. `GET /health/ready` requiert
+PostgreSQL et, en production, Redis; 503 indique que le trafic général ne peut
+pas être garanti. La réponse reste générique et n'inclut aucun détail réseau.
+ClamAV indisponible bloque les dépôts en refus sûr sans rendre l'API
+indisponible; SMTP et les fournisseurs externes restent des capacités
+dégradées. Matrice, délais/cache, reprises et limites des alertes :
+[DEPENDANCES-SANTE](../docs/DEPENDANCES-SANTE.md).
+
+```bash
+npx jest src/modules/monitoring/__tests__/sondes.test.ts --runInBand
+npx jest src/modules/files/__tests__/antivirus.test.ts --runInBand
+```
+
 ## A11 — Webhooks sortants ZupDrive
 
 Le worker PostgreSQL, la signature HMAC-SHA256, les reprises bornées, l'inspection

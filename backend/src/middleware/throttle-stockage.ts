@@ -101,3 +101,10 @@ export function stockageRedis(): StockageRedis | null {
 
   return redis && redis.pret() ? redis.stockage : null;
 }
+
+/** État du Redis des quotas, y compris avant la première requête limitée. */
+export function etatRedisCadence(): { configure: boolean; pret: boolean } {
+  const configure = Boolean(process.env.REDIS_URL) && process.env.NODE_ENV !== "test";
+  if (configure) stockageRedis();
+  return { configure, pret: Boolean(redis?.pret()) };
+}

@@ -32,7 +32,7 @@ const SUIVI = "session du client ou jeton de suivi, vérifiés dans le handler (
 export const ROUTES_PUBLIQUES: Record<string, string> = {
   // ── Santé et supervision
   "GET /health": "sonde de vie",
-  "GET /health/ready": "sonde de disponibilité (base)",
+  "GET /health/ready": "sonde générale (PostgreSQL et Redis en production), états fonctionnels expurgés",
   "POST /api/monitoring/client-errors": "erreurs du navigateur, limitées par IP, texte borné",
 
   // ── Ouvrir ou fermer une session
