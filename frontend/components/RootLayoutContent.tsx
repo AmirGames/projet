@@ -13,6 +13,7 @@ import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 import AssistantWidget from './assistant/AssistantWidget';
 import { FooterZupEatPro } from './FooterZupEatPro';
+import { FooterZupDrive } from './FooterZupDrive';
 import type { EspaceHeberge } from '@/lib/domaines';
 import { PAGES_LEGALES } from '@/lib/editeur';
 
@@ -127,13 +128,14 @@ export default function RootLayoutContent({
   // quelle, /fr-fr n'était reconnue par aucune règle, et la navbar s'empilait
   // au-dessus de celle de l'espace client.
   const chemin = pathname ? separerRegion(pathname).reste : pathname;
+  const pageMarketingDrive = chemin === '/zupdrive' || chemin === '/devenir-chauffeur';
   const hideNavbar = chemin === '/' ||
                      chemin?.startsWith('/impression') ||
                      aSaPropreNavigation(chemin);
 
   const espaceZupEat = espaceHote === 'public' || espaceHote === 'pro' || espaceHote === 'livreur';
   const sansPied = espaceZupEat || chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin) ||
-    espaceHote === 'vitrine' || chemin === '/zupone' ||
+    espaceHote === 'vitrine' || espaceHote === 'drive' || pageMarketingDrive || chemin === '/zupone' ||
     chemin === '/client' || chemin?.startsWith('/client/') || chemin === '/restaurants' ||
     (chemin?.startsWith('/store/') && chemin !== '/store/new');
   // L'accueil du domaine commerçant porte son identité ZupEat ; le chatbot
@@ -145,7 +147,10 @@ export default function RootLayoutContent({
   const afficherPiedCommercant = espaceHote === 'pro' && [
     '/devenir-commercant', '/merchant/register', ...pagesLegales,
   ].includes(chemin ?? '');
-  const masquerAssistant = (espaceHote === 'pro' && chemin === '/') || espaceHote === 'livreur';
+  const afficherPiedDrive = (espaceHote === 'drive' || pageMarketingDrive) && [
+    '/', '/zupdrive', '/devenir-chauffeur', ...pagesLegales,
+  ].includes(chemin ?? '');
+  const masquerAssistant = (espaceHote === 'pro' && chemin === '/') || espaceHote === 'livreur' || espaceHote === 'drive' || pageMarketingDrive;
 
   return (
     <>
@@ -155,6 +160,7 @@ export default function RootLayoutContent({
       {!sansPied && <PiedDeGroupe />}
       {afficherPiedLivreur && <FooterZupEatPro mode="livreur" />}
       {afficherPiedCommercant && <FooterZupEatPro mode="pro" />}
+      {afficherPiedDrive && <FooterZupDrive />}
       {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && !masquerAssistant && <AssistantWidget />}
     </>
   );

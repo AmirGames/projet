@@ -5969,6 +5969,17 @@
     "aucuneBoutique": "No shop given: add ?storeId=... to the address.",
     "chargementImpossible": "Unable to load the document"
   },
+  "footerZupdrive": {
+    "label": "ZupDrive footer",
+    "description": "ZupDrive is preparing its private hire service.",
+    "discover": "Discover",
+    "zupeat": "Order on ZupEat",
+    "drivers": "For drivers",
+    "becomeDriver": "Become a driver",
+    "driverSpace": "Driver space",
+    "contact": "Contact the team",
+    "copyright": "© {year} ZupDrive. All rights reserved."
+  },
   "accueilZupdrive": {
     "sujetPrevenir": "Let me know when ZupDrive opens",
     "prix": "Price known in advance",

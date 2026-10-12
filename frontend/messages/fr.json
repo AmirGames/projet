@@ -5969,6 +5969,17 @@
     "aucuneBoutique": "Aucune boutique indiquée : ajoutez ?storeId=... à l'adresse.",
     "chargementImpossible": "Impossible de charger le document"
   },
+  "footerZupdrive": {
+    "label": "Pied de page ZupDrive",
+    "description": "ZupDrive prépare son service de transport de personnes avec chauffeur.",
+    "discover": "Découvrir",
+    "zupeat": "Commander sur ZupEat",
+    "drivers": "Pour les chauffeurs",
+    "becomeDriver": "Devenir chauffeur",
+    "driverSpace": "Espace chauffeur",
+    "contact": "Contacter l’équipe",
+    "copyright": "© {year} ZupDrive. Tous droits réservés."
+  },
   "accueilZupdrive": {
     "sujetPrevenir": "Prévenez-moi de l’ouverture de ZupDrive",
     "prix": "Prix connu à l’avance",
