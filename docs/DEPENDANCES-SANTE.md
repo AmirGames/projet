@@ -25,9 +25,9 @@ elle ne constitue pas une validation de réception client.
 - Le dépôt demeure fermé si ClamAV est absent/injoignable. Un état fonctionnel
   `depotDocuments: indisponible` est disponible dans la readiness publique; le
   diagnostic détaillé reste dans la surveillance superowner.
-- Les durées maximales sont 3 s pour PostgreSQL, 1,5 s pour ClamAV et 5 s pour
-  SMTP. ClamAV est mis en cache 30 s, SMTP 5 min. Redis est lu via l'état du
-  client de quotas, sans commande supplémentaire ni coût fournisseur.
+- Les durées maximales sont 3 s pour PostgreSQL, 1,5 s pour ClamAV, 1 s pour
+  Redis et 5 s pour SMTP. ClamAV est mis en cache 30 s, Redis 2 s et SMTP 5 min.
+  Le `PING` Redis passe par le client de quotas déjà ouvert.
 
 ## Alertes et limites de preuve
 

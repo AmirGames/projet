@@ -15,7 +15,7 @@ jest.mock("../surveillance.service", () => ({
 }));
 jest.mock("../disponibilite.service", () => ({ Disponibilite: {} }));
 jest.mock("../supervision-metier.service", () => ({ controlesMetier: jest.fn() }));
-jest.mock("../../../middleware/throttle-stockage", () => ({ etatRedisCadence: () => redis }));
+jest.mock("../../../middleware/throttle-stockage", () => ({ verifierRedisCadence: async () => redis }));
 
 import { Vigie } from "../vigie.service";
 

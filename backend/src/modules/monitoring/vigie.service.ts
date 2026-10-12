@@ -7,7 +7,7 @@ import { EmailService } from "../notifications/email.service";
 import { Notifier } from "../notifications/notifier.service";
 import { Surveillance, resumeErreur } from "./surveillance.service";
 import { Disponibilite } from "./disponibilite.service";
-import { etatRedisCadence } from "../../middleware/throttle-stockage";
+import { verifierRedisCadence } from "../../middleware/throttle-stockage";
 import { sonderClamav } from "./sondes.service";
 
 /**
@@ -161,10 +161,10 @@ async function verifierClamav(): Promise<Dependance> {
   return dependance;
 }
 
-function verifierConfigurations(): Dependance[] {
+async function verifierConfigurations(): Promise<Dependance[]> {
   const maintenant = new Date().toISOString();
   const { redis } = etatTempsReel();
-  const redisCadence = etatRedisCadence();
+  const redisCadence = await verifierRedisCadence();
   const canaux = Notifier.canaux;
   const stripeActif = process.env.ENABLE_STRIPE !== "false";
 
@@ -453,7 +453,7 @@ async function passer() {
 
   try {
     const [base, smtp, clamav] = await Promise.all([verifierBase(), verifierSmtp(), verifierClamav()]);
-    dependances = [base, smtp, clamav, ...verifierConfigurations()];
+    dependances = [base, smtp, clamav, ...(await verifierConfigurations())];
 
     // Les contrôles métier lisent la base : une panne de lecture ne doit pas
     // masquer les autres constats (la base en panne est déjà signalée plus haut).
@@ -545,8 +545,7 @@ export const Vigie = {
    * (obligatoire en production) répondent, 503 sinon. Les détails restent privés.
    */
   async pret() {
-    const [base, clamav] = await Promise.all([verifierBase(), verifierClamav()]);
-    const redis = etatRedisCadence();
+    const [base, clamav, redis] = await Promise.all([verifierBase(), verifierClamav(), verifierRedisCadence()]);
     const production = process.env.NODE_ENV === "production";
     const redisOk = !production || (redis.configure && redis.pret);
     const processus = Surveillance.processus();
