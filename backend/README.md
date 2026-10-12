@@ -1,5 +1,25 @@
 # Backend ZupEat / ZupDrive
 
+## Dépendances A12
+
+`backend/package.json` épingle par overrides les dépendances transitives du
+CLI `prisma@7.10.0` à `mysql2 ^3.23.1` et `deepmerge-ts ^8.0.0`. Le lockfile
+résout actuellement `3.24.5` et `8.0.2`. Cela corrige les avis
+[mysql2 auth](https://github.com/advisories/GHSA-3f6p-5ww8-9rcr),
+[mysql2 inflate](https://github.com/advisories/GHSA-rgwj-5xj2-c3m3) et
+[deepmerge-ts](https://github.com/advisories/GHSA-ggr8-5vv4-36mx); Prisma,
+PostgreSQL, son adaptateur, le schéma et les contrats HTTP ne changent pas.
+L’image applicative inclut encore le CLI pour le service `migrate`; les
+précautions et la revue des overrides au 12 novembre 2026 sont dans
+[l’audit A12](../docs/AUDIT-DEPENDANCES.md).
+
+```bash
+npm ci
+npm run prisma:generate
+npm audit --omit=dev --audit-level=high
+npm run lint && npm run build
+```
+
 ## A08 — états des sauvegardes et exports partiels
 
 `Backup.status=COMPLETED` pour `base-*` signifie que la copie distante chiffrée

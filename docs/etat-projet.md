@@ -454,3 +454,20 @@ remote au début du travail; aucune PR précédente non intégrée n'a été tra
 comme une dépendance A14. La PR #218 est ouverte. CI distante, intégration,
 déploiement et validation en exploitation demeurent des états distincts.
 
+## Étape 13 — A12 : audit et correction des dépendances (12 octobre 2026)
+
+| État | Date / SHA | Environnement et preuve |
+|---|---|---|
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a12-dependances`; SHA du commit à renseigner | Worktree isolé à partir du tronc `adb811805afe38ffe7a4dc6b90406bfe8b618708`; overrides et lockfile backend |
+| Testé localement | 12 octobre 2026, SHA du commit à renseigner | Node 24.21.0/npm 12.0.2; `npm ci`, génération Prisma 7.10.0, lint et build réussis; simulation `npm ci --omit=dev` et audit runtime à zéro; `prisma --version` confirme 7.10.0. Jest lancé mais échoue faute d’identifiants PostgreSQL valides (`(not available)`). |
+| Intégré | Non établi | PR ciblée à ouvrir; aucun commit intégré au tronc |
+| Déployé | Non | Aucun déploiement effectué |
+| Validé en exploitation | Non | Aucune instance de production ni image exécutée |
+
+La migration sur base vide, la mise à niveau d’une base de test, le scan et
+l’exécution de l’image production attendent PostgreSQL et le démon Docker; aucun
+résultat n’est déclaré pour ces contrôles. Les 6 lockfiles mobiles conservent
+des alertes de production, suivies à part avec échéance de revue. Voir
+[l’inventaire détaillé, chemins et limites A12](AUDIT-DEPENDANCES.md). Il n’y a
+pas de changement d’API, de schéma, de permission ou de configuration métier.
+

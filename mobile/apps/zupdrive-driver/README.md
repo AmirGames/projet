@@ -1,5 +1,12 @@
 # ZupDrive Driver — application chauffeur
 
+## Dépendances — audit A12
+
+Le lockfile du 12 octobre 2026 conserve 47 avis de production (1 critique,
+30 hautes, 16 modérées). La présence dans Expo ne prouve pas à elle seule un
+chemin exploitable. Voir la qualification, les commandes et la revue du
+12 novembre 2026 dans [l’audit A12](../../../docs/AUDIT-DEPENDANCES.md).
+
 Application Expo/React Native du chauffeur (transport de personnes), séparée du livreur ZupEat. **Statut pilote : hors périmètre** jusqu’à validation complète sur un appareil ou émulateur contre un backend réel de test. Les écrans et contrats sont développés, mais ce dépôt ne contient pas de preuve d’un tel parcours.
 
 ## Parcours et API
