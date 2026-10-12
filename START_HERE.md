@@ -4,6 +4,14 @@
 **Repository:** https://github.com/AmirGames/projet (branch: claude/awesome-ride-m9lci8)  
 **Analysis Version:** 1.0
 
+> **Index historique daté du 7 octobre 2026.** Les pourcentages, risques,
+> nombres de tests et recommandations ci-dessous sont l'analyse de cette date,
+> pas l'état courant. Pour les preuves, SHA, environnement et état déployé,
+> commencer par [docs/etat-projet.md](docs/etat-projet.md), le
+> [registre de lancement UE](docs/registre-lancement-ue.md) et
+> [README.md](README.md). La configuration actuelle et ses limites sont dans
+> [A16](docs/CONFIGURATION-A16.md).
+
 ---
 
 ## 📋 Quick Navigation

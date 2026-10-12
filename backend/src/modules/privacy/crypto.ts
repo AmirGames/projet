@@ -1,4 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { accessSync, constants, mkdirSync } from "node:fs";
+import { isAbsolute } from "node:path";
 
 const PREFIX = "zupenc:v1:";
 const testKey = randomBytes(32);
@@ -60,6 +62,14 @@ export function assertPrivacyConfiguration() {
       if ([process.env.JWT_SECRET, process.env.JWT_REFRESH_SECRET].includes(process.env[name])) throw new Error(`${name} doit être indépendant des secrets JWT`);
     }
     if (!process.env.CLAMAV_HOST) throw new Error("CLAMAV_HOST requis : aucun dépôt sans antivirus");
+    const stockagePrive = process.env.PRIVATE_DOCUMENTS_DIR;
+    if (!stockagePrive || !isAbsolute(stockagePrive)) throw new Error("PRIVATE_DOCUMENTS_DIR doit être un chemin absolu en production");
+    try {
+      mkdirSync(stockagePrive, { recursive: true, mode: 0o700 });
+      accessSync(stockagePrive, constants.W_OK);
+    } catch {
+      throw new Error("PRIVATE_DOCUMENTS_DIR doit exister ou pouvoir être créé et rester inscriptible par l'API");
+    }
     if (process.env.PRIVACY_MIGRATION_VERIFIED !== "true") throw new Error("Migration RGPD et vérification du stockage requises avant démarrage (voir docs/rgpd)");
     if (process.env.PRISMA_LOG_QUERIES === "true") throw new Error("Journalisation SQL interdite en production");
   }

@@ -3,7 +3,11 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : **4 octobre 2026**. Le site est déployé sur un VPS,
+Contexte historique rédigé le **4 octobre 2026** ; les descriptions et validations
+ci-dessous ne sont pas le registre courant. Le suivi courant daté, avec SHA,
+environnement et états distincts, est dans [docs/etat-projet.md](docs/etat-projet.md)
+et le [registre spécialisé de lancement UE](docs/registre-lancement-ue.md).
+Le site était déclaré déployé sur un VPS,
 la vitrine ZupOne et les parcours ZupDrive V1 existent. Les audits de sécurité
 du 3 octobre et la validation manuelle Stripe TEST du 4 octobre complètent les
 résultats historiques de vérification. Le remboursement sur le VPS et le mode
@@ -102,7 +106,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Adresses** | BAN pour la France + Photon pour la Belgique (`ADDRESS_PROVIDER=ban+photon`) |
 | **Paiement** | Stripe — intention liée à la commande, webhook signé, remboursement au refus |
 | **Virements** | Fichier SEPA `pain.001.001.03` généré chaque semaine, importé à la main dans la banque |
-| **Notifications** | Web Push (VAPID), SMS Twilio, push Expo pour les applications — chacun facultatif |
+| **Notifications** | Courriels SMTP (Nodemailer/Mailpit en local), Web Push VAPID et push mobiles selon configuration. SMS/Twilio n'est pas implémenté ; Firebase/FCM n'est pas une intégration générique commune à toutes les apps. |
 | **Mobile** | Expo (React Native) : `mobile/apps/customer`, `merchant`, `delivery`, `admin` |
 
 ```

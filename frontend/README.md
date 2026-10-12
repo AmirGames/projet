@@ -1,5 +1,10 @@
 # Site ZupEat / ZupOne / ZupDrive
 
+La politique CSP à nonce passe de `report-only` à `enforce` après revue des
+rapports et essais checkout Stripe/3DS ; `off` est ramené à `enforce` en
+production. Pour les directives et les commandes, voir
+[CONFIGURATION-A16](../docs/CONFIGURATION-A16.md).
+
 ## A15 — Rapports commerçant
 
 Les rapports utilisent une période par défaut de 90 jours (366 jours maximum).

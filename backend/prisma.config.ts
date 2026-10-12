@@ -9,6 +9,10 @@ export default defineConfig({
   datasource: {
     // Pas env() : il échoue sans la variable, alors que `prisma generate`
     // (build, image Docker) n'a pas besoin de la base.
-    url: process.env.DATABASE_URL,
+    // En production les migrations doivent utiliser le rôle propriétaire,
+    // explicitement fourni. Aucun repli sur les identifiants applicatifs.
+    url: process.env.NODE_ENV === "production"
+      ? process.env.DATABASE_URL_MIGRATION
+      : process.env.DATABASE_URL_MIGRATION || process.env.DATABASE_URL,
   },
 });

@@ -21,6 +21,13 @@ même tiroir latéral, mêmes composants (`components/ui.tsx`).
 
 ## Ce que fait l'application
 
+Le paiement par carte est via Stripe ; espèces sont autorisées uniquement si le
+commerce les active et pour le retrait. La présence des valeurs `PAYPAL`,
+`APPLE_PAY` ou `GOOGLE_PAY` dans certains enums d'administration n'est pas un
+adaptateur d'encaissement : aucun connecteur PayPal n'est fourni. La politique
+CSP web et son exigence 3DS sont décrites dans
+[CONFIGURATION-A16](../../../docs/CONFIGURATION-A16.md).
+
 - **Connexion ou création de compte** (tout compte peut commander : la fiche
   client naît à la première visite). La création exige un mot de passe de
   8 caractères avec chiffre, minuscule et majuscule, et l'acceptation des

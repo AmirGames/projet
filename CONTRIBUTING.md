@@ -15,15 +15,22 @@ Merci de vouloir contribuer à Zupone ! Ce guide te montre comment participer au
 
 ## Code de Conduite
 
-Voir [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) pour les règles de conduite attendues.
+Les contributions doivent rester respectueuses, constructives et centrées sur le travail.
 
 ---
 
 ## Comment Commencer
 
+Les versions de runtime réellement testées et les commandes courantes sont
+documentées dans [docs/SETUP.md](docs/SETUP.md) et les README de chaque app.
+La configuration de production, les rôles PostgreSQL séparés et la progression
+CSP sont décrits dans [A16](docs/CONFIGURATION-A16.md) ; ne recopiez pas des
+secrets du modèle dans Git.
+
 ### Prérequis
 
-- **Node.js** 18+ et npm 9+
+- **Node.js** 20.19+ et npm (backend Prisma 7) ; vérifier aussi les contraintes
+  propres à chaque application mobile
 - **Docker** (pour PostgreSQL et Redis)
 - **Git**
 

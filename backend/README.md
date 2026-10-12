@@ -1,5 +1,12 @@
 # Backend ZupEat / ZupDrive
 
+En production, l'API se connecte par `DATABASE_URL_APP`, et les migrations
+par `DATABASE_URL_MIGRATION`; la configuration refuse leur absence. Contrôler
+le rôle réellement ouvert, sans écriture, avec `npm run db:role` après
+`npm run build`, sur une base isolée. `ENABLE_STRIPE=false` est le défaut ; son
+activation exige les clés secrète/publique correspondantes et le secret webhook.
+Voir le [guide A16](../docs/CONFIGURATION-A16.md) pour les contrats et limites.
+
 ## A15 — Rapports bornés
 
 `GET /api/reports/{sales,revenue,products/:storeId,customers/:storeId}` accepte

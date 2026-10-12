@@ -207,7 +207,7 @@ Trois particularités à connaître :
   `<Script>` faite à la main doit lire le nonce (`(await headers()).get('x-nonce')`),
   sans quoi le navigateur le refuse. Toute nouvelle origine externe (script,
   image, API, iframe) s'ajoute dans `construireCsp` avec son test. Mode par
-  `CSP_MODE` : `report-only` (défaut, observation), `enforce`, `off`. Vérifier
+  `CSP_MODE` : `report-only` (défaut, observation), `enforce`, `off` (en production, `off` est forcé à `enforce`). Vérifier
   avec `node scripts/verif-csp.mjs`.
 - **`signalerErreur`** (`lib/erreurs.ts`) remplace `console.error` : elle ne
   journalise pas quand le navigateur quitte la page (les requêtes coupées par
