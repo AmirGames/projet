@@ -70,9 +70,9 @@ chaque dossier d’application.
 
 | État | Date / SHA | Preuve |
 |---|---|---|
-| Développé | 12 octobre 2026, branche A12; SHA final à inscrire après commit | Overrides backend, lockfile et documentation |
-| Testé localement | 12 octobre 2026, SHA final à inscrire après commit | `npm ci`, `npm run prisma:generate`, `npm run lint`, `npm run build`, puis `npm ci --omit=dev`, `npm audit --omit=dev` (0) et `npx prisma --version` (7.10.0). Jest échoue faute d’identifiants PostgreSQL valides. |
-| Intégré | Non | PR à créer; aucune fusion revendiquée |
+| Développé | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d), branche A12 | Overrides backend, lockfile et documentation |
+| Testé localement | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d) | `npm ci`, `npm run prisma:generate`, `npm run lint`, `npm run build`, puis `npm ci --omit=dev`, `npm audit --omit=dev` (0) et `npx prisma --version` (7.10.0). Jest échoue faute d’identifiants PostgreSQL valides. |
+| Intégré | Non | [PR #219 ouverte](https://github.com/AmirGames/projet/pull/219), non fusionnée |
 | Déployé | Non | Aucun accès ni déploiement de production |
 | Validé en exploitation | Non | Aucun essai sur instance réelle |
 

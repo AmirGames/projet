@@ -458,9 +458,9 @@ déploiement et validation en exploitation demeurent des états distincts.
 
 | État | Date / SHA | Environnement et preuve |
 |---|---|---|
-| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a12-dependances`; SHA du commit à renseigner | Worktree isolé à partir du tronc `adb811805afe38ffe7a4dc6b90406bfe8b618708`; overrides et lockfile backend |
-| Testé localement | 12 octobre 2026, SHA du commit à renseigner | Node 24.21.0/npm 12.0.2; `npm ci`, génération Prisma 7.10.0, lint et build réussis; simulation `npm ci --omit=dev` et audit runtime à zéro; `prisma --version` confirme 7.10.0. Jest lancé mais échoue faute d’identifiants PostgreSQL valides (`(not available)`). |
-| Intégré | Non établi | PR ciblée à ouvrir; aucun commit intégré au tronc |
+| Développé | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d), branche `claude/awesome-ride-m9lci8-a12-dependances` | Worktree isolé à partir du tronc `adb811805afe38ffe7a4dc6b90406bfe8b618708`; overrides et lockfile backend |
+| Testé localement | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d) | Node 24.21.0/npm 12.0.2; `npm ci`, génération Prisma 7.10.0, lint et build réussis; simulation `npm ci --omit=dev` et audit runtime à zéro; `prisma --version` confirme 7.10.0. Jest lancé mais échoue faute d’identifiants PostgreSQL valides (`(not available)`). |
+| Intégré | Non | [PR #219 ouverte](https://github.com/AmirGames/projet/pull/219), non fusionnée |
 | Déployé | Non | Aucun déploiement effectué |
 | Validé en exploitation | Non | Aucune instance de production ni image exécutée |
 
