@@ -9,6 +9,7 @@ jest.mock('next-intl', () => ({
   ),
 }));
 jest.mock('@/lib/auth-context', () => ({ useAuth: () => ({ user: null, isLoading: false }) }));
+jest.mock('@/lib/navigateur', () => ({ useJetonAcces: () => null }));
 jest.mock('@/lib/pays-client', () => ({ usePays: () => ['BE', jest.fn()] }));
 jest.mock('@/lib/types-commerce', () => ({ useTypesDeCommerce: () => ({ etablissements: [{ code: 'restaurant', libelle: 'Restaurant' }], cuisines: [] }) }));
 jest.mock('@/lib/jeton-session', () => ({ poserJeton: jest.fn(), adopterRefresh: jest.fn() }));
