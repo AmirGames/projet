@@ -151,4 +151,3 @@ relevé bancaire et comptabilité, sans supprimer d'écriture. Pour un virement,
 documenter bénéficiaire, montant/devise, lot, référence SEPA et double contrôle.
 Ces paramètres sont actuellement **à fournir et confirmer** ; aucun mouvement
 LIVE ou bancaire n'a été déclenché.
-
