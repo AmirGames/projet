@@ -1,5 +1,13 @@
 # Site ZupEat / ZupOne / ZupDrive
 
+## A08 — état des sauvegardes
+
+L'écran Superowner « Gestion des données » précise que sa dernière copie
+complète vérifiée est distante. Il distingue les entrées `LOCAL_ONLY` et
+`REMOTE_FAILED`, et n'offre ses actions de téléchargement/restauration que sur
+les exports partiels `export-partiel-*`. Les archives serveur `base-*` ne sont
+pas restaurables par ces routes API ; suivre le [guide A08](../docs/SAUVEGARDES-RESTAURATION-A08.md).
+
 ## Liens de compte A10
 
 Les pages `/reinitialiser` et `/verifier-email` affichent les erreurs métier

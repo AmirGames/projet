@@ -63,7 +63,14 @@ describe("constatsDepuisMesures", () => {
     expect(constatsDepuisMesures({ ...calme, ageSauvegardeMs: "aucune" })[0].cle).toBe("metier:sauvegarde");
     const vieille = constatsDepuisMesures({ ...calme, ageSauvegardeMs: 3 * 24 * 3_600_000 })[0];
     expect(vieille.cle).toBe("metier:sauvegarde");
-    expect(vieille.detail).toContain("3 jours");
+    expect(vieille.detail).toContain("72 h");
+    expect(vieille.detail).toContain("journalctl -u zup-sauvegarde.service");
+  });
+
+  it("alerte à l'expiration du RPO de 24 h, sans alerter avant", () => {
+    expect(constatsDepuisMesures({ ...calme, ageSauvegardeMs: 23 * 3_600_000 })).toEqual([]);
+    const [constat] = constatsDepuisMesures({ ...calme, ageSauvegardeMs: 25 * 3_600_000 });
+    expect(constat).toMatchObject({ cle: "metier:sauvegarde", niveau: "ATTENTION" });
   });
 });
 

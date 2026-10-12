@@ -1,5 +1,16 @@
 # Backend ZupEat / ZupDrive
 
+## A08 — états des sauvegardes et exports partiels
+
+`Backup.status=COMPLETED` pour `base-*` signifie que la copie distante chiffrée
+a été vérifiée par SHA-256 et publiée avec son manifeste. `LOCAL_ONLY` et
+`REMOTE_FAILED` n'alimentent pas le contrôle de santé. Les routes
+`/api/superowner/backups` restent limitées aux exports partiels `export-partiel-*` ;
+elles refusent la lecture, restauration et suppression des archives serveur
+avec `409 BACKUP_MANAGED_EXTERNALLY`. Les archives complètes se restaurent avec
+`deploy/zup.sh restore-test` dans une base dédiée isolée. Voir le
+[contrat et la procédure A08](../docs/SAUVEGARDES-RESTAURATION-A08.md).
+
 ## A07 — Facturation structurée
 
 Les factures plateforme enregistrent XML UBL et instantané des parties, mais

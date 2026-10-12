@@ -1,5 +1,35 @@
 # État du projet et travail restant
 
+## Étape 11 — A08 : sauvegardes distantes et restauration (12 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a08-backup-restore`, base `18e2503e2e792323c9e74445b89baa8d60900fe4` | Script, contrats de statuts, seuil santé, protections API/UI et [procédure A08](SAUVEGARDES-RESTAURATION-A08.md) |
+| Testé localement | 12 octobre 2026 | Windows, Node `24.21.0`, npm `12.0.2`, backend Prisma `7.10.0`, Jest `30.5.2`, frontend Next `16.4.0` | Backend A08 + Vigie **24/24** ; tests contractuels Bash avec doubles **7 cas (5 injections)** ; bash -n, TypeScript backend/frontend, lint backend/frontend ciblé et build backend réussis. Build frontend bloqué avant compilation : binding SWC natif Windows absent. Voir les limites ci-dessous. |
+| Intégré | Non | Aucun SHA de fusion | Aucun lien |
+| Déployé | Non | Aucun accès serveur accordé dans cette session | Aucune preuve |
+| Validé en exploitation | Non | Bucket/identité de restauration/base isolée non accessibles | Aucune preuve ; consulter les prérequis dans la procédure A08 |
+
+Le commit `COMPLETED` n'est écrit qu'après copie distante vérifiée des deux
+archives et publication du manifeste. Une absence de destination ou une erreur
+retourne un code non nul en politique production, conserve le local en
+`REMOTE_FAILED` et laisse la sauvegarde hors du contrôle de santé. Le mode
+explicitement local conserve `LOCAL_ONLY`. Le contrôle de fraîcheur est à 24 h
+(RPO de travail), en panne au-delà de 48 h. La cible RTO de 8 h est provisoire
+et non mesurée. Aucun exercice sur une base de test ou contrôle applicatif
+restauré n'a pu être exécuté ici. Le RPO/RTO doit être approuvé et réévalué
+après mesures réelles.
+
+Les sept cas mockés couvrent destination absente, mode local explicite,
+transfert interrompu, erreur de lecture rclone, objet tronqué, publication
+distante valide et archive age corrompue ; ils ne contactent aucun fournisseur et ne remplacent pas un test
+age/rclone réel. `rclone` et `age` sont absents localement ; aucun serveur,
+bucket ou PostgreSQL isolé n'est connecté. Le build frontend `next build` n'a
+pas démarré, car `@swc/core` ne trouve pas son binding `swc.win32-x64-msvc.node`
+et sa cache native locale échoue au contrôle ACL. Aucun test d'intégration
+distante, restauration réelle, CI A08, intégration, déploiement ou validation
+en exploitation n'est revendiqué.
+
 ## Étape 10 — A07 : facturation structurée et pages légales (12 octobre 2026)
 
 Le code de génération UBL existant ne suffit pas à attester le transport ou la

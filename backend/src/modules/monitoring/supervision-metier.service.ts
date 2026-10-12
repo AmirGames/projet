@@ -35,8 +35,8 @@ export const DELAIS_METIER = {
   remboursementEnAttente: 3 * JOUR,
   /** Les relevés s'arrêtent le lundi 00 h 00 ; on laisse 12 h avant de s'inquiéter. */
   releveManquant: 12 * HEURE,
-  /** Sauvegarde nocturne attendue. */
-  sauvegarde: 2 * JOUR,
+  /** RPO de travail : alerter après 24 h sans copie distante vérifiée. */
+  sauvegarde: JOUR,
 };
 
 export interface MesuresMetier {
@@ -130,15 +130,15 @@ export function constatsDepuisMesures(m: MesuresMetier): ConstatMetier[] {
     constats.push({
       cle: "metier:sauvegarde",
       niveau: "ATTENTION",
-      titre: "Aucune sauvegarde complète enregistrée",
+      titre: "Aucune copie distante complète vérifiée",
       detail: "Planifiez `deploy/zup.sh backup` sur le serveur (voir DEPLOIEMENT-SCALEWAY.md).",
     });
   } else if (typeof m.ageSauvegardeMs === "number" && m.ageSauvegardeMs > DELAIS_METIER.sauvegarde) {
     constats.push({
       cle: "metier:sauvegarde",
       niveau: "ATTENTION",
-      titre: "Sauvegarde complète trop ancienne",
-      detail: `La dernière date de ${Math.floor(m.ageSauvegardeMs / JOUR)} jours : la sauvegarde nocturne ne passe plus (voir ~/sauvegardes.log sur le serveur).`,
+      titre: "Copie distante complète trop ancienne",
+      detail: `La dernière copie distante complète date de ${Math.floor(m.ageSauvegardeMs / HEURE)} h : contrôlez le timer avec systemctl status zup-sauvegarde.timer et les transferts avec journalctl -u zup-sauvegarde.service --since yesterday.`,
     });
   }
 
