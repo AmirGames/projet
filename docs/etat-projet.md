@@ -431,3 +431,26 @@ Le mode préparatoire `enrollment` n'est pas l'obligation MFA : activer `enforce
 sur toutes les instances seulement après préparation documentée des titulaires
 et du secours. Les audits historiques ci-dessus conservent leur date.
 
+## Étape 12 — A14 : indicateurs de santé représentatifs (12 octobre 2026)
+
+La liveness ne dépend que du processus. La readiness générale vérifie PostgreSQL
+et Redis en production, avec états publics expurgés; ClamAV est un état propre au
+dépôt de documents, qui reste refusé en absence d'antivirus. SMTP et les services
+externes ne retirent pas la readiness. Les délais, cache, matrice, seuils et
+procédures sont dans [DEPENDANCES-SANTE](DEPENDANCES-SANTE.md).
+
+| État | Date, SHA, environnement | Preuve |
+|---|---|---|
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a14-health`, commit `55a7d90113d814c7a23f3aac400317a9110dafe0`, base `b303ac0b2a45ee224216b479089bc083e94ae0c2` | Contrats liveness/readiness, sondes PostgreSQL/Redis PING/ClamAV, retrait des dépendances Redis/ClamAV au démarrage du backend; [commit code A14](https://github.com/AmirGames/projet/commit/55a7d90113d814c7a23f3aac400317a9110dafe0) |
+| Testé localement | 12 octobre 2026, Windows, Node 24.21.0, npm 12.0.2, Prisma 7.10.0 | Tests ciblés **11/11**, routes publiques **5/5**, TypeScript, lint et build backend réussis sur le commit code; Docker daemon absent, donc coupures PostgreSQL/Redis/SMTP sur instance isolée et réception d'alertes non éprouvées |
+| CI / PR | 12 octobre 2026, GitHub | [PR #218](https://github.com/AmirGames/projet/pull/218), branche synchronisée avec base à la création; aucun statut CI publié au relevé |
+| Intégré | Non | Aucun SHA de fusion |
+| Déployé | Non | Aucun déploiement ni migration A14 |
+| Validé en exploitation | Non | Aucune instance isolée avec coupures des quatre dépendances; aucune réception d'alerte vérifiée |
+
+Le poste contient d'autres modifications frontend préexistantes, conservées sans
+modification par A14. La branche locale de départ était 48 commits derrière son
+remote au début du travail; aucune PR précédente non intégrée n'a été traitée
+comme une dépendance A14. La PR #218 est ouverte. CI distante, intégration,
+déploiement et validation en exploitation demeurent des états distincts.
+

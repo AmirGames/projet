@@ -150,9 +150,8 @@ export function createApp(): Express {
     res.json({ status: "ok", revision: revisionDuBuild(), timestamp: new Date().toISOString() });
   });
 
-  // Prêt : le serveur peut réellement servir (la base répond). C'est l'adresse
-  // à donner à une sonde externe (UptimeRobot, Better Stack, répartiteur de
-  // charge) : 503 dès que la base est injoignable.
+  // Prêt : le serveur a sa base et, en production, le Redis requis par les
+  // protections partagées. Les états fonctionnels publics restent expurgés.
   app.get("/health/ready", async (_req, res) => {
     const etat = await Vigie.pret();
     res.status(etat.pret ? 200 : 503).json({

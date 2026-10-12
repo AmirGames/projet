@@ -70,8 +70,9 @@ export class StockageRedis implements Stockage {
   }
 }
 
-let redis: { pret: () => boolean; stockage: StockageRedis } | null = null;
+let redis: { pret: () => boolean; stockage: StockageRedis; ping: () => Promise<string> } | null = null;
 let tente = false;
+let derniereSonde: { instant: number; pret: boolean } | null = null;
 
 /** Le stockage Redis, ou null (REDIS_URL absent, connexion pas prête). */
 export function stockageRedis(): StockageRedis | null {
@@ -96,8 +97,29 @@ export function stockageRedis(): StockageRedis | null {
       signale = false;
     });
     client.connect().catch(() => undefined);
-    redis = { pret: () => client.isReady, stockage: new StockageRedis(client) };
+    redis = { pret: () => client.isReady, stockage: new StockageRedis(client), ping: () => client.ping() };
   }
 
   return redis && redis.pret() ? redis.stockage : null;
+}
+
+/** État du Redis des quotas, y compris avant la première requête limitée. */
+export async function verifierRedisCadence(): Promise<{ configure: boolean; pret: boolean }> {
+  const configure = Boolean(process.env.REDIS_URL) && process.env.NODE_ENV !== "test";
+  if (!configure) return { configure: false, pret: false };
+  stockageRedis();
+  if (!redis?.pret()) return { configure: true, pret: false };
+  if (derniereSonde && Date.now() - derniereSonde.instant < 2000) return { configure: true, pret: derniereSonde.pret };
+  let pret = false;
+  try {
+    const reponse = await Promise.race([
+      redis.ping(),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Redis probe timeout")), 1000)),
+    ]);
+    pret = reponse === "PONG";
+  } catch {
+    pret = false;
+  }
+  derniereSonde = { instant: Date.now(), pret };
+  return { configure: true, pret };
 }
