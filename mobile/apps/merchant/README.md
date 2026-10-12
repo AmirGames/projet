@@ -1,5 +1,12 @@
 # ZupEat — application commerçant
 
+## Rapports A15
+
+Les rapports ventes utilisent les dates envoyées par l'écran statistiques et
+reçoivent au plus 100 commandes par page; les totaux API couvrent toute la
+période. Période maximale : 366 jours. Les erreurs 400 de date/pagination
+doivent être présentées comme filtres à corriger. Voir le [contrat A15](../../../docs/RAPPORTS-A15.md).
+
 ## Dépendances — audit A12
 
 Le lockfile du 12 octobre 2026 conserve 46 avis de production (1 critique,

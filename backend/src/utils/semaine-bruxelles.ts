@@ -34,6 +34,18 @@ function minuitBruxelles(annee: number, mois: number, jour: number) {
   return new Date(approx.getTime() - decalageMinutes(premier) * 60000);
 }
 
+/** Le minuit local de Bruxelles qui contient cet instant. */
+export function debutDeJourBruxelles(instant = new Date()) {
+  const local = new Date(instant.getTime() + decalageMinutes(instant) * 60000);
+  return minuitBruxelles(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate());
+}
+
+/** Le premier jour du mois local de Bruxelles qui contient cet instant. */
+export function debutDeMoisBruxelles(instant = new Date()) {
+  const local = new Date(instant.getTime() + decalageMinutes(instant) * 60000);
+  return minuitBruxelles(local.getUTCFullYear(), local.getUTCMonth(), 1);
+}
+
 /** Le lundi 00 h 00 (Bruxelles) de la semaine qui contient cet instant. */
 export function debutDeSemaine(instant = new Date()) {
   const local = new Date(instant.getTime() + decalageMinutes(instant) * 60000);

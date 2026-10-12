@@ -59,6 +59,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('sales');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [reportError, setReportError] = useState('');
 
   const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -67,23 +68,41 @@ export default function ReportsPage() {
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [productOffset, setProductOffset] = useState(0);
+  const [customerOffset, setCustomerOffset] = useState(0);
+  const [productHasMore, setProductHasMore] = useState(false);
+  const [customerHasMore, setCustomerHasMore] = useState(false);
 
 
 
   const fetchAllReports = useCallback(async () => {
     setLoading(true);
+    setReportError('');
     try {
       const token = jetonAcces();
       const params = new URLSearchParams({ storeId });
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
+      const productParams = new URLSearchParams(params);
+      productParams.set('limit', '50');
+      productParams.set('offset', String(productOffset));
+      const customerParams = new URLSearchParams(params);
+      customerParams.set('limit', '50');
+      customerParams.set('offset', String(customerOffset));
 
       const [salesRes, revenueRes, productsRes, customersRes] = await Promise.all([
         fetch(`${API_URL}/api/reports/sales?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_URL}/api/reports/revenue?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/api/reports/products/${storeId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/api/reports/customers/${storeId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/reports/products/${storeId}?${productParams}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/reports/customers/${storeId}?${customerParams}`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
+
+      for (const response of [salesRes, revenueRes, productsRes, customersRes]) {
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.message || body.error || `HTTP ${response.status}`);
+        }
+      }
 
       if (salesRes.ok) setSalesReport(await salesRes.json());
       if (revenueRes.ok) {
@@ -93,17 +112,20 @@ export default function ReportsPage() {
       if (productsRes.ok) {
         const data = await productsRes.json();
         setProducts(data.products || []);
+        setProductHasMore(Boolean(data.pagination?.hasMore));
       }
       if (customersRes.ok) {
         const data = await customersRes.json();
         setCustomers(data.customers || []);
+        setCustomerHasMore(Boolean(data.pagination?.hasMore));
       }
     } catch (error) {
+      setReportError(error instanceof Error ? error.message : 'Impossible de charger les rapports');
       signalerErreur('Error fetching reports:', error);
     } finally {
       setLoading(false);
     }
-  }, [endDate, startDate, storeId]);
+  }, [customerOffset, endDate, productOffset, startDate, storeId]);
 
   useEffectChargement(() => {
     if (storeId) {
@@ -113,6 +135,7 @@ export default function ReportsPage() {
 
   const handleExport = async (type: string) => {
     setExporting(true);
+    setReportError('');
     try {
       const token = jetonAcces();
       const params = new URLSearchParams({ storeId });
@@ -122,6 +145,11 @@ export default function ReportsPage() {
       const response = await fetch(`${API_URL}/api/reports/export/${type}?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `HTTP ${response.status}`);
+      }
 
       if (response.ok) {
         const blob = await response.blob();
@@ -135,6 +163,7 @@ export default function ReportsPage() {
         document.body.removeChild(a);
       }
     } catch (error) {
+      setReportError(error instanceof Error ? error.message : 'Impossible d’exporter ce rapport');
       signalerErreur('Error exporting report:', error);
     } finally {
       setExporting(false);
@@ -161,6 +190,8 @@ export default function ReportsPage() {
           <p className="text-gray-500 mt-2">{t('sousTitre')}</p>
         </div>
 
+        {reportError && <div role="alert" className="mt-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-800">{reportError}</div>}
+
         {/* Filters */}
         <div className="mt-6 bg-white rounded-lg p-4 border border-gray-200 flex gap-4 items-end">
           <div>
@@ -168,7 +199,7 @@ export default function ReportsPage() {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => { setStartDate(e.target.value); setProductOffset(0); setCustomerOffset(0); }}
               className="px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
             />
           </div>
@@ -177,7 +208,7 @@ export default function ReportsPage() {
             <input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => { setEndDate(e.target.value); setProductOffset(0); setCustomerOffset(0); }}
               className="px-3 py-2 bg-gray-100 text-gray-900 rounded-sm border border-gray-300 focus:border-amber-500 focus:outline-hidden"
             />
           </div>
@@ -340,6 +371,8 @@ export default function ReportsPage() {
               <Download size={20} />
               {t('exporter')}
             </button>
+            {productOffset > 0 && <button onClick={() => setProductOffset((offset) => Math.max(0, offset - 50))} className="mt-4 rounded-lg border px-4 py-2">{t('paginationPrev')}</button>}
+            {productHasMore && <button onClick={() => setProductOffset((offset) => offset + 50)} className="ml-2 mt-4 rounded-lg border px-4 py-2">{t('paginationNext')}</button>}
           </div>
         )}
 
@@ -382,6 +415,8 @@ export default function ReportsPage() {
               <Download size={20} />
               {t('exporter')}
             </button>
+            {customerOffset > 0 && <button onClick={() => setCustomerOffset((offset) => Math.max(0, offset - 50))} className="mt-4 rounded-lg border px-4 py-2">{t('paginationPrev')}</button>}
+            {customerHasMore && <button onClick={() => setCustomerOffset((offset) => offset + 50)} className="ml-2 mt-4 rounded-lg border px-4 py-2">{t('paginationNext')}</button>}
           </div>
         )}
       </div>

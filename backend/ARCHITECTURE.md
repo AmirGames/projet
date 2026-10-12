@@ -1,5 +1,10 @@
 # Architecture du backend
 
+Les rapports de boutique et les revenus livreurs bornent les lignes exposées,
+agrègent les montants et groupes dans PostgreSQL, et conservent le middleware
+de cloisonnement sans cache d'autorisation. API, limites et protocole de mesure
+sont décrits dans le [contrat A15](../docs/RAPPORTS-A15.md).
+
 Les livraisons ZupDrive utilisent `WebhookDeliveryDrive` comme file durable
 distincte des webhooks ZupEat. Le worker partage le transport HTTPS épinglé et
 les contrôles SSRF du module `webhooks`; son activation est fermée par défaut.

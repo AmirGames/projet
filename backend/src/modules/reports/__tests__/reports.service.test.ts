@@ -1,5 +1,5 @@
 jest.mock("../../../services/db", () => ({
-  db: { order: { findMany: jest.fn() }, product: { findMany: jest.fn() } },
+  db: { order: { findMany: jest.fn(), groupBy: jest.fn() }, product: { findMany: jest.fn() }, $queryRaw: jest.fn() },
 }));
 
 import { db } from "../../../services/db";
@@ -7,11 +7,13 @@ import { TRANSMISE } from "../../../utils/commande-transmise";
 import { ReportsService } from "../reports.service";
 
 const findOrders = (db as any).order.findMany as jest.Mock;
-const findProducts = (db as any).product.findMany as jest.Mock;
+const raw = (db as any).$queryRaw as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
   findOrders.mockResolvedValue([]);
+  (db as any).order.groupBy.mockResolvedValue([]);
+  raw.mockResolvedValue([{ totalOrders: 0n, totalRevenue: 0, totalTax: 0, totalFees: 0 }]);
 });
 
 describe("périmètre des rapports", () => {
@@ -27,9 +29,8 @@ describe("périmètre des rapports", () => {
 
   test("la boutique l'emporte sur le commerce quand les deux sont donnés", async () => {
     await ReportsService.getRevenueByDate({ storeId: "s1", orgId: "o1" });
-    const { where } = findOrders.mock.calls[0][0];
-    expect(where.storeId).toBe("s1");
-    expect(where.store).toBeUndefined();
+    expect(raw.mock.calls[0][1].values).toContain("s1");
+    expect(raw.mock.calls[0].flatMap((part: any) => part?.values || [])).not.toContain("o1");
   });
 
   test("la période borne la date de création", async () => {
@@ -40,11 +41,10 @@ describe("périmètre des rapports", () => {
   });
 
   test("rapport de produits : limité à la boutique et aux commandes transmises", async () => {
-    findProducts.mockResolvedValue([]);
-    await ReportsService.getProductPerformance("s1");
-    const arg = findProducts.mock.calls[0][0];
-    expect(arg.where).toEqual({ storeId: "s1" });
-    expect(arg.include.orderItems.where).toEqual({ order: TRANSMISE });
+    raw.mockResolvedValueOnce([]);
+    const result = await ReportsService.getProductPerformance("s1");
+    expect(raw.mock.calls[0]).toContain("s1");
+    expect(result.pagination).toMatchObject({ total: 0, limit: 50, offset: 0, hasMore: false });
   });
 });
 
@@ -55,10 +55,9 @@ describe("chiffres", () => {
   });
 
   test("chiffre par jour : regroupé, trié par date", async () => {
-    findOrders.mockResolvedValue([
-      { createdAt: new Date("2026-03-02T10:00:00Z"), totalAmount: 10, taxAmount: 1, feesAmount: 0, serviceFeeAmount: 0 },
-      { createdAt: new Date("2026-03-01T23:00:00Z"), totalAmount: 20, taxAmount: 2, feesAmount: 0, serviceFeeAmount: 0 },
-      { createdAt: new Date("2026-03-02T18:00:00Z"), totalAmount: 5, taxAmount: 0.5, feesAmount: 0, serviceFeeAmount: 0 },
+    raw.mockResolvedValueOnce([
+      { date: "2026-03-01", revenue: 20, tax: 2, fees: 0, count: 1n },
+      { date: "2026-03-02", revenue: 15, tax: 1.5, fees: 0, count: 2n },
     ]);
     const jours = await ReportsService.getRevenueByDate({ storeId: "s1" });
     expect(jours.map((j) => j.date)).toEqual(["2026-03-01", "2026-03-02"]);
@@ -66,15 +65,20 @@ describe("chiffres", () => {
     expect(jours[1].tax).toBeCloseTo(1.5);
   });
 
+  test("ventes : pagination stable, totaux sur toutes les commandes", async () => {
+    raw.mockResolvedValueOnce([{ totalOrders: 151n, totalRevenue: 3000.25, totalTax: 120.1, totalFees: 80 }]);
+    findOrders.mockResolvedValue([{ id: "order-51", createdAt: new Date("2026-03-01") }]);
+    const result = await ReportsService.getSalesReport({ storeId: "s1", limit: 1, offset: 50 });
+    expect(findOrders.mock.calls.at(-1)?.[0]).toMatchObject({ take: 1, skip: 50, orderBy: [{ createdAt: "desc" }, { id: "desc" }] });
+    expect(result).toMatchObject({ totalOrders: 151, totalRevenue: 3000.25, pagination: { total: 151, limit: 1, offset: 50, hasMore: true } });
+  });
+
   test("clients : une adresse en capitales et en minuscules est un seul client", async () => {
-    findOrders.mockResolvedValue([
-      { customerEmail: "Ana@Example.com", customerName: "Ana", totalAmount: 10, feesAmount: 0, serviceFeeAmount: 0, createdAt: new Date("2026-03-01") },
-      { customerEmail: "ana@example.com", customerName: "Ana", totalAmount: 30, feesAmount: 0, serviceFeeAmount: 0, createdAt: new Date("2026-03-05") },
-    ]);
-    const clients = await ReportsService.getCustomerAnalytics("s1");
-    expect(clients).toHaveLength(1);
-    expect(clients[0]).toMatchObject({ email: "ana@example.com", orderCount: 2 });
-    expect(clients[0].lastOrder).toEqual(new Date("2026-03-05"));
+    raw.mockResolvedValueOnce([{ email: "ana@example.com", name: "Ana", totalSpent: 40, orderCount: 2n, lastOrder: new Date("2026-03-05"), total: 1n }]);
+    const result = await ReportsService.getCustomerAnalytics("s1");
+    expect(result.customers).toHaveLength(1);
+    expect(result.customers[0]).toMatchObject({ email: "ana@example.com", orderCount: 2 });
+    expect(result.customers[0].lastOrder).toEqual(new Date("2026-03-05"));
   });
 });
 

@@ -1,5 +1,13 @@
 # Site ZupEat / ZupOne / ZupDrive
 
+## A15 — Rapports commerçant
+
+Les rapports utilisent une période par défaut de 90 jours (366 jours maximum).
+Les listes API sont paginées; les exports demandent une période maximale de 31
+jours et 5000 lignes. Le détail contractuel et les erreurs sont dans le
+[guide A15](../docs/RAPPORTS-A15.md). Les requêtes restent soumises au
+cloisonnement serveur des boutiques et organisations.
+
 ## A08 — état des sauvegardes
 
 L'écran Superowner « Gestion des données » précise que sa dernière copie

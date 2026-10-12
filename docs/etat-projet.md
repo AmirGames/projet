@@ -1,5 +1,23 @@
 # État du projet et travail restant
 
+## Étape 14 — A15 : rapports bornés et coûts de lecture (12 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 12 octobre 2026 | Code `f87c42e9055bb1237a6ce09dc096e7c1cb06ff66` sur base `0dad7379e89128ee143a226341e46b6ed2bb005c`; PR synchronisée avec cible `02111181197407ed8cc0829c90fab008d6eaa874` | [PR A15 #221 en brouillon](https://github.com/AmirGames/projet/pull/221), agrégations PostgreSQL, bornes/pagination API, UI et protocole [A15](RAPPORTS-A15.md) |
+| Testé localement | 12 octobre 2026, partiel | SHA testé `f87c42e9055bb1237a6ce09dc096e7c1cb06ff66`, Windows, Node 24.21.0/npm 12.0.2, Prisma/client 7.10.0 | Backend : typecheck, lint, build et 130 tests ciblés réussis. Frontend : typecheck et lint ciblé réussi. Lint global échoue sur 6 avertissements `coverage/`; build bloqué par SWC natif manquant. Types mobile bloqués par `@types/jest` absent, lint par ESLint absent. SQL/charge non exécutés |
+| Intégré | Non intégré | PR #221 ouverte en brouillon | [PR A15](https://github.com/AmirGames/projet/pull/221) |
+| Déployé | Non déployé | Aucun environnement A15 | Aucune preuve |
+| Validé en exploitation | Non validé | Aucune instance instrumentée | Aucune preuve |
+
+Le rapport A15 conserve l'authentification et le cloisonnement existants et
+n'ajoute aucun cache de droits. Les agrégats financiers incluent tout le
+périmètre demandé malgré la pagination. Les plans `EXPLAIN`, mesures mémoire,
+latence/débit et comparaisons SQL restent à faire sur une base représentative;
+aucune capacité n'est revendiquée. La base A12 est déjà intégrée par la [PR
+#220](https://github.com/AmirGames/projet/pull/220); aucune dépendance à la branche
+locale A14 (sonde santé) n'est requise.
+
 ## Étape 11 — A08 : sauvegardes distantes et restauration (12 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |
