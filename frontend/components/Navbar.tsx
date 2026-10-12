@@ -10,6 +10,7 @@ import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { NomMarque } from './NomMarque';
 
 export default function Navbar({ espaceHote }: { espaceHote: EspaceHeberge | null }) {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function Navbar({ espaceHote }: { espaceHote: EspaceHeberge | nul
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-sm ${marque.logo}`}>
               Z
             </div>
-            <span className="font-extrabold tracking-tight text-xl hidden sm:inline">{marque.nom}</span>
+            <NomMarque marque={estZupOne ? 'zupone' : estZupDrive ? 'zupdrive' : 'zupeat'} className="font-extrabold tracking-tight text-xl hidden sm:inline" />
           </Link>
 
           {/* Desktop Navigation */}

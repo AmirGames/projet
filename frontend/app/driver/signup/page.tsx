@@ -16,6 +16,7 @@ import { PAYS } from '@/lib/pays-infos';
 import { useTranslations } from 'next-intl';
 import ReglesMotDePasse from '@/components/ReglesMotDePasse';
 import { motDePasseValide } from '@/lib/mot-de-passe';
+import { EnTeteMarque } from '@/components/EnTeteMarque';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Le libellé de chaque véhicule : `vehicules.<valeur>` des traductions.
@@ -109,11 +110,17 @@ export default function InscriptionLivreurPage() {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <>
+    <EnTeteMarque marque="zupeat" href="/devenir-livreur">
+      <Link href="/driver/login" className="rounded-full px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
+        Connexion
+      </Link>
+    </EnTeteMarque>
+    <main className="flex min-h-[calc(100dvh-56px)] items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-4 py-10 sm:px-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Bike size={32} className="text-white" />
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-[#FF7A00] text-black">
+            <Bike size={24} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">{t('inscription.titre')}</h1>
           <p className="text-gray-500 mt-2">{t('inscription.sousTitre')}</p>
@@ -125,7 +132,7 @@ export default function InscriptionLivreurPage() {
           </div>
         )}
 
-        {!aConfirmer && <form onSubmit={soumettre} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        {!aConfirmer && <form onSubmit={soumettre} className="space-y-5 rounded-[2rem] border border-black/5 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] sm:p-9">
           {erreur && (
             <div className="bg-red-100 border border-red-500/50 rounded-lg p-3 text-red-600 text-sm">
               {erreur}
@@ -137,7 +144,7 @@ export default function InscriptionLivreurPage() {
             <SelecteurPays
               pays={pays}
               onChange={setPays}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
             />
           </div>
 
@@ -148,7 +155,7 @@ export default function InscriptionLivreurPage() {
               required
               minLength={2}
               {...champ('name')}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
             />
           </div>
 
@@ -158,7 +165,7 @@ export default function InscriptionLivreurPage() {
               type="email"
               required
               {...champ('email')}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
             />
           </div>
 
@@ -170,7 +177,7 @@ export default function InscriptionLivreurPage() {
               minLength={9}
               placeholder={PAYS[pays].exempleTelephone}
               {...champ('phone')}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
             />
           </div>
 
@@ -199,8 +206,8 @@ export default function InscriptionLivreurPage() {
                   onClick={() => setFormulaire({ ...formulaire, vehicleType: vehicule.valeur })}
                   className={`flex flex-col items-center gap-2 px-3 py-3 rounded-lg border transition-colors ${
                     formulaire.vehicleType === vehicule.valeur
-                      ? 'border-orange-500 bg-orange-100 text-orange-600'
-                      : 'border-gray-300 bg-gray-100 text-gray-700 hover:border-gray-400'
+                      ? 'border-[#FF7A00] bg-orange-50 text-gray-900 ring-2 ring-[#FF7A00]/20'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
                 >
                   <vehicule.icone size={20} />
@@ -218,7 +225,7 @@ export default function InscriptionLivreurPage() {
               <input
                 type="text"
                 {...champ('vehiclePlate')}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-orange-500"
+                className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
               />
             </div>
           )}
@@ -236,7 +243,7 @@ export default function InscriptionLivreurPage() {
           <button
             type="submit"
             disabled={envoi || !conditionsAcceptees}
-            className="w-full bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+            className="w-full rounded-full bg-[#FF7A00] py-3.5 font-bold text-black transition-colors hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           >
             {envoi ? t('inscription.creation') : t('inscription.creer')}
           </button>
@@ -244,11 +251,13 @@ export default function InscriptionLivreurPage() {
 
         <p className="text-gray-500 text-center text-sm mt-6">
           {t('inscription.dejaInscrit')}{' '}
-          <Link href="/driver/login" className="text-orange-500 hover:text-orange-600">
+          <Link href="/driver/login" className="font-semibold text-gray-900 underline underline-offset-4 transition hover:text-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
             {t('inscription.seConnecter')}
           </Link>
         </p>
       </div>
-    </div>
+    </main>
+    </>
   );
 }
+

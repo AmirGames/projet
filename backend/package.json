@@ -94,5 +94,9 @@
     "@parcel/watcher@2.6.0": true,
     "msgpackr-extract@3.0.4": true,
     "unrs-resolver@1.12.2": true
+  },
+  "overrides": {
+    "mysql2": "^3.23.1",
+    "deepmerge-ts": "^8.0.0"
   }
 }

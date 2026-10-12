@@ -7,6 +7,8 @@ import { EmailService } from "../notifications/email.service";
 import { Notifier } from "../notifications/notifier.service";
 import { Surveillance, resumeErreur } from "./surveillance.service";
 import { Disponibilite } from "./disponibilite.service";
+import { verifierRedisCadence } from "../../middleware/throttle-stockage";
+import { sonderClamav } from "./sondes.service";
 
 /**
  * La vigie : elle regarde les mesures à intervalle régulier, ouvre un incident
@@ -20,6 +22,7 @@ import { Disponibilite } from "./disponibilite.service";
 const INTERVALLE_MS = 30_000;
 /** Un contrôle de courriel ouvre une connexion : on ne le refait pas à chaque passage. */
 const INTERVALLE_SMTP_MS = 5 * 60_000;
+const INTERVALLE_CLAMAV_MS = 30_000;
 /** Deux passages sans défaut avant de refermer : un seuil qui oscille ne doit pas alerter en boucle. */
 const PASSAGES_POUR_REFERMER = 2;
 /** Un même incident ne renvoie pas d'alerte plus d'une fois par quart d'heure. */
@@ -68,6 +71,7 @@ const historique: Incident[] = [];
 const derniereAlerte = new Map<string, number>();
 let dependances: Dependance[] = [];
 let dernierSmtp: { instant: number; dependance: Dependance } | null = null;
+let dernierClamav: { instant: number; dependance: Dependance } | null = null;
 let dernierPassage: string | null = null;
 let minuteur: NodeJS.Timeout | null = null;
 let enCours = false;
@@ -140,9 +144,27 @@ async function verifierSmtp(): Promise<Dependance> {
   return dependance;
 }
 
-function verifierConfigurations(): Dependance[] {
+async function verifierClamav(): Promise<Dependance> {
+  if (dernierClamav && Date.now() - dernierClamav.instant < INTERVALLE_CLAMAV_MS) return dernierClamav.dependance;
+  const host = process.env.CLAMAV_HOST;
+  const maintenant = new Date().toISOString();
+  if (!host) {
+    const dependance = { cle: "clamav", libelle: "Analyse antivirus des documents", etat: "NON_CONFIGURE" as const, detail: "CLAMAV_HOST absent : les dépôts de documents sont refusés", verifieLe: maintenant };
+    dernierClamav = { instant: Date.now(), dependance };
+    return dependance;
+  }
+  const depart = Date.now();
+  const ok = await sonderClamav(host, Number(process.env.CLAMAV_PORT || 3310));
+  const dureeMs = Date.now() - depart;
+  const dependance: Dependance = { cle: "clamav", libelle: "Analyse antivirus des documents", etat: ok ? "OK" : "PANNE", detail: ok ? `Répond en ${dureeMs} ms` : "Service antivirus indisponible : les dépôts de documents sont refusés", dureeMs, verifieLe: new Date().toISOString() };
+  dernierClamav = { instant: Date.now(), dependance };
+  return dependance;
+}
+
+async function verifierConfigurations(): Promise<Dependance[]> {
   const maintenant = new Date().toISOString();
   const { redis } = etatTempsReel();
+  const redisCadence = await verifierRedisCadence();
   const canaux = Notifier.canaux;
   const stripeActif = process.env.ENABLE_STRIPE !== "false";
 
@@ -150,10 +172,10 @@ function verifierConfigurations(): Dependance[] {
     {
       cle: "redis",
       libelle: "Temps réel multi-instances (Redis)",
-      etat: !redis.configure ? "NON_CONFIGURE" : redis.pret ? "OK" : "PANNE",
+      etat: !redis.configure && !redisCadence.configure ? "NON_CONFIGURE" : redis.pret && redisCadence.pret ? "OK" : (redis.configure || redisCadence.configure) ? "PANNE" : "NON_CONFIGURE",
       detail: !redis.configure
         ? "REDIS_URL absent : une seule instance possible"
-        : redis.pret
+        : redis.pret && redisCadence.pret
           ? "Instances reliées"
           : "Redis injoignable : le temps réel ne marche plus qu'entre clients d'une même instance",
       verifieLe: maintenant,
@@ -344,7 +366,7 @@ export async function prevenirPlateforme(alerte: {
   /** Prévenir par courriel que les courriels ne partent plus n'arriverait pas. */
   sansCourriel?: boolean;
 }) {
-  if (process.env.NODE_ENV === "test" || process.env.MONITORING_ALERTS === "false") return;
+  if (process.env.NODE_ENV === "test" || process.env.MONITORING_ALERTS === "false") return { construite: false, envoyee: false, recue: false };
 
   const { sujet, texte } = alerte;
   // Le panneau de la plateforme a son propre domaine (manager.zupone.com) :
@@ -353,36 +375,47 @@ export async function prevenirPlateforme(alerte: {
   const lien = `${process.env.PLATEFORME_URL || process.env.FRONTEND_URL || "http://localhost:3000"}${alerte.chemin}`;
 
   const webhook = process.env.MONITORING_WEBHOOK_URL;
+  let webhookAccepte = false;
   if (webhook) {
     // `text` pour Slack et Mattermost, `content` pour Discord.
     const message = `${sujet}\n${texte}\n${lien}`;
-    fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: message, content: message }),
-    }).catch((err) =>
-      logger.warn("Alerte de surveillance : webhook injoignable", {
-        error: err instanceof Error ? err.message : err,
-      })
-    );
+    try {
+      const reponse = await fetch(webhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: message, content: message }),
+        signal: AbortSignal.timeout(5000),
+      });
+      webhookAccepte = reponse.ok;
+      logger[reponse.ok ? "info" : "warn"]("Alerte de surveillance : webhook traité", { reponseHttp: reponse.status });
+    } catch (err) {
+      logger.warn("Alerte de surveillance : webhook injoignable", { error: err instanceof Error ? err.message : err });
+    }
   }
 
-  if (alerte.sansCourriel) return;
+  if (alerte.sansCourriel) return { construite: true, envoyee: webhookAccepte, recue: false };
 
-  for (const email of await destinataires()) {
-    EmailService.sendEmail({
-      to: email,
-      subject: sujet,
-      text: `${texte}\n\n${lien}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937">
-        <h2 style="color:${alerte.couleur || "#dc2626"}">${sujet}</h2>
-        <p>${texte.replace(/\n/g, "<br>")}</p>
-        <p><a href="${lien}" style="display:inline-block;background:#ea580c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">${alerte.bouton}</a></p>
-      </div>`,
-    }).catch(() => {
-      // EmailService journalise déjà l'échec.
-    });
+  const adresses = await destinataires();
+  let courrielsAcceptes = 0;
+  for (const email of adresses) {
+    try {
+      const resultat = await EmailService.sendEmail({
+        to: email,
+        subject: sujet,
+        text: `${texte}\n\n${lien}`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937">
+          <h2 style="color:${alerte.couleur || "#dc2626"}">${sujet}</h2>
+          <p>${texte.replace(/\n/g, "<br>")}</p>
+          <p><a href="${lien}" style="display:inline-block;background:#ea580c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">${alerte.bouton}</a></p>
+        </div>`,
+      });
+      if (resultat.success && resultat.messageId !== "fictif") courrielsAcceptes++;
+    } catch {
+      // EmailService journalise déjà l'échec, sans inclure le secret SMTP.
+    }
   }
+  logger.info("Alerte de surveillance : remise aux transports terminée", { destinataires: adresses.length, courrielsAcceptes, webhookConfigure: Boolean(webhook) });
+  return { construite: true, envoyee: courrielsAcceptes > 0 || webhookAccepte, recue: false };
 }
 
 async function alerter(incident: Incident, ouverture: boolean) {
@@ -419,8 +452,8 @@ async function passer() {
   enCours = true;
 
   try {
-    const [base, smtp] = await Promise.all([verifierBase(), verifierSmtp()]);
-    dependances = [base, smtp, ...verifierConfigurations()];
+    const [base, smtp, clamav] = await Promise.all([verifierBase(), verifierSmtp(), verifierClamav()]);
+    dependances = [base, smtp, clamav, ...(await verifierConfigurations())];
 
     // Les contrôles métier lisent la base : une panne de lecture ne doit pas
     // masquer les autres constats (la base en panne est déjà signalée plus haut).
@@ -508,14 +541,18 @@ export const Vigie = {
 
   /**
    * Le serveur peut-il servir ? Pour les sondes externes (UptimeRobot,
-   * répartiteur de charge, Kubernetes) : 200 si la base répond, 503 sinon.
+   * répartiteur de charge, Kubernetes) : 200 si PostgreSQL et Redis
+   * (obligatoire en production) répondent, 503 sinon. Les détails restent privés.
    */
   async pret() {
-    const base = await verifierBase();
+    const [base, clamav, redis] = await Promise.all([verifierBase(), verifierClamav(), verifierRedisCadence()]);
+    const production = process.env.NODE_ENV === "production";
+    const redisOk = !production || (redis.configure && redis.pret);
     const processus = Surveillance.processus();
     return {
-      pret: base.etat !== "PANNE",
-      base: { etat: base.etat, dureeMs: base.dureeMs ?? null, detail: base.detail },
+      pret: base.etat !== "PANNE" && redisOk,
+      fonctions: { traficGeneral: base.etat !== "PANNE" && redisOk ? "disponible" : "indisponible", depotDocuments: clamav.etat === "OK" ? "disponible" : "indisponible" },
+      dependances: { base: base.etat === "PANNE" ? "indisponible" : "disponible", redis: !production ? "optionnel" : redisOk ? "disponible" : "indisponible" },
       dureeFonctionnementS: processus.dureeFonctionnementS,
     };
   },

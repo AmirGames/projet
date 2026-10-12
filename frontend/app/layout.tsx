@@ -19,10 +19,13 @@ import "./globals.css";
  */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("titresPages");
+  const entetes = await headers();
+  const hote = entetes.get("x-forwarded-host") || entetes.get("host") || "";
+  const espace = espaceDuDomaine(hote);
   return {
     metadataBase: await baseDuSite(),
-    title: t("siteTitre"),
-    description: t("siteDescription"),
+    title: espace === 'pro' ? t('siteTitrePro') : t("siteTitre"),
+    description: espace === 'pro' ? t('siteDescriptionPro') : t("siteDescription"),
     alternates: await alternatesRegionales(),
   };
 }

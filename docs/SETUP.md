@@ -19,7 +19,7 @@ Ce guide te montre comment installer et lancer Zupone en local pour le développ
 - **macOS** 10.15+, **Linux** (Ubuntu/Debian), ou **Windows** 10/11 (avec WSL2)
 
 ### Logiciels requis
-- **Node.js** 18.17+ et **npm** 9+
+- **Node.js** 20.19+ et **npm** 10+ (Node 22 dans la CI; respecte aussi les moteurs des applications)
   - [Télécharger Node.js LTS](https://nodejs.org/)
   - Vérifier : `node --version` et `npm --version`
 

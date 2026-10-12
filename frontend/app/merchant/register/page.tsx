@@ -19,6 +19,8 @@ import { PAYS } from '@/lib/pays-infos';
 import { useTranslations } from 'next-intl';
 import ReglesMotDePasse from '@/components/ReglesMotDePasse';
 import { motDePasseValide } from '@/lib/mot-de-passe';
+import { EnTeteMarque } from '@/components/EnTeteMarque';
+import { LienConnexion } from '@/components/LienConnexion';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FormData {
@@ -246,17 +248,21 @@ export default function MerchantRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F6] text-gray-900 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <>
+    <EnTeteMarque marque="zupeat" href="/devenir-commercant">
+      <LienConnexion />
+    </EnTeteMarque>
+    <main className="min-h-[calc(100dvh-56px)] bg-[#F7F7F6] px-4 py-10 text-gray-900 sm:py-14">
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('inscription.titre')}</h1>
-          <p className="text-gray-500">{t('inscription.sousTitre')}</p>
+          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">{t('inscription.titre')}</h1>
+          <p className="text-gray-600">{t('inscription.sousTitre')}</p>
         </div>
 
         {/* Success Message */}
         {submitted && successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3" role="status">
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3" role="status">
             <CheckCircle size={24} className="text-green-600" />
             <div>
               <p className="font-semibold text-green-600">{t('inscription.succes')}</p>
@@ -268,7 +274,7 @@ export default function MerchantRegisterPage() {
 
         {/* Error Message */}
         {apiError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
             <AlertCircle size={24} className="text-red-600" />
             <div>
               <p className="font-semibold text-red-600">{t('inscription.erreur')}</p>
@@ -278,12 +284,12 @@ export default function MerchantRegisterPage() {
         )}
 
         {/* Registration Form */}
-        {!aConfirmer && <div className="bg-white border border-gray-200 rounded-lg p-8">
+        {!aConfirmer && <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Section 1: Information Commerciale */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">1</span>
+                <span className="flex size-9 items-center justify-center rounded-full bg-[#FF7A00] text-sm font-bold text-black">1</span>
                 {t('inscription.infosCommerciales')}
               </h2>
 
@@ -297,7 +303,7 @@ export default function MerchantRegisterPage() {
                     name="businessName"
                     value={formData.businessName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.businessName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('inscription.exempleEntreprise')}
@@ -313,7 +319,7 @@ export default function MerchantRegisterPage() {
                     name="businessType"
                     value={formData.businessType}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20"
                   >
                     {etablissements.map((genre) => (
                       <option key={genre.code} value={genre.code}>
@@ -334,7 +340,7 @@ export default function MerchantRegisterPage() {
                       name="cuisineType"
                       value={formData.cuisineType}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20"
                     >
                       <option value="">{t('inscription.nonPrecise')}</option>
                       {cuisines.map((cuisine) => (
@@ -355,7 +361,7 @@ export default function MerchantRegisterPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('inscription.exempleEmail')}
@@ -372,7 +378,7 @@ export default function MerchantRegisterPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.phone ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleTelephone}
@@ -389,7 +395,7 @@ export default function MerchantRegisterPage() {
                     value={formData.description}
                     onChange={handleChange}
                     rows={3}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.description ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('inscription.exempleDescription')}
@@ -406,7 +412,7 @@ export default function MerchantRegisterPage() {
                     name="website"
                     value={formData.website}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20"
                     placeholder="https://example.com"
                   />
                 </div>
@@ -416,7 +422,7 @@ export default function MerchantRegisterPage() {
             {/* Section 2: Adresse */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">2</span>
+                <span className="flex size-9 items-center justify-center rounded-full bg-[#FF7A00] text-sm font-bold text-black">2</span>
                 {t('inscription.adresseTitre')}
               </h2>
 
@@ -428,7 +434,7 @@ export default function MerchantRegisterPage() {
                   <SelecteurPays
                     pays={pays}
                     onChange={setPays}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20"
                   />
                 </div>
 
@@ -448,7 +454,7 @@ export default function MerchantRegisterPage() {
                         postalCode: adresse.postalCode || prev.postalCode,
                       }))
                     }
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.address ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleRue}
@@ -466,7 +472,7 @@ export default function MerchantRegisterPage() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.city ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleVille}
@@ -483,7 +489,7 @@ export default function MerchantRegisterPage() {
                     name="postalCode"
                     value={formData.postalCode}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.postalCode ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={PAYS[pays].exempleCodePostal}
@@ -496,7 +502,7 @@ export default function MerchantRegisterPage() {
             {/* Section 3: Boutique */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">3</span>
+                <span className="flex size-9 items-center justify-center rounded-full bg-[#FF7A00] text-sm font-bold text-black">3</span>
                 {t('inscription.configuration')}
               </h2>
 
@@ -510,7 +516,7 @@ export default function MerchantRegisterPage() {
                     name="storeName"
                     value={formData.storeName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.storeName ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder={t('myStores')}
@@ -523,15 +529,15 @@ export default function MerchantRegisterPage() {
                     {t('inscription.urlBoutique')}
                   </label>
                   <div className="flex items-center">
-                    <span className="px-3 py-2 bg-gray-100 border border-gray-300 border-r-0 rounded-l-lg text-gray-500 text-sm">
-                      app.local/store/
+                    <span className="rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">
+                      zupeat.com/store/
                     </span>
                     <input
                       type="text"
                       name="storeSlug"
                       value={formData.storeSlug}
                       onChange={handleChange}
-                      className={`flex-1 px-4 py-2 bg-gray-100 border rounded-r-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                      className={`flex-1 px-4 py-2 bg-white border rounded-r-lg text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                         errors.storeSlug ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="ma-boutique"
@@ -549,7 +555,7 @@ export default function MerchantRegisterPage() {
             {/* Section 4: Sécurité */}
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-orange-600 text-white font-bold rounded-full flex items-center justify-center text-sm">4</span>
+                <span className="flex size-9 items-center justify-center rounded-full bg-[#FF7A00] text-sm font-bold text-black">4</span>
                 {t('inscription.securite')}
               </h2>
 
@@ -563,7 +569,7 @@ export default function MerchantRegisterPage() {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
@@ -582,7 +588,7 @@ export default function MerchantRegisterPage() {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-hidden focus:border-red-500 ${
+                    className={`w-full px-4 py-2 bg-white border rounded-xl text-gray-900 focus:outline-hidden focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20 ${
                       errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
@@ -607,7 +613,7 @@ export default function MerchantRegisterPage() {
             <button
               type="submit"
               disabled={loading || !conditionsAcceptees}
-              className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[#FF7A00] px-4 py-3.5 font-bold text-black transition-colors hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -622,7 +628,7 @@ export default function MerchantRegisterPage() {
             {/* Sign In Link */}
             <p className="text-center text-gray-500 text-sm">
               {t('inscription.dejaInscrit')}{' '}
-              <a href="/login" className="text-red-600 hover:text-red-700 font-semibold">
+              <a href="/login" className="font-semibold text-gray-900 underline underline-offset-4 hover:text-[#E66E00]">
                 {t('inscription.seConnecter')}
               </a>
             </p>
@@ -630,12 +636,14 @@ export default function MerchantRegisterPage() {
         </div>}
 
         {/* Info Box */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-blue-600 text-sm">
+        <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 sm:p-5">
+          <p className="text-sm leading-6 text-gray-800">
             {t.rich('inscription.apres', { b: (c) => <strong>{c}</strong> })}
           </p>
         </div>
       </div>
-    </div>
+    </main>
+    </>
   );
 }
+

@@ -12,7 +12,10 @@ import { separerRegion } from '@/i18n/chemins-regionaux';
 import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 import AssistantWidget from './assistant/AssistantWidget';
+import { FooterZupEatPro } from './FooterZupEatPro';
+import { FooterZupDrive } from './FooterZupDrive';
 import type { EspaceHeberge } from '@/lib/domaines';
+import { PAGES_LEGALES } from '@/lib/editeur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,6 +30,10 @@ const ESPACES_AVEC_NAVIGATION = [
   '/devenir-commercant',
   '/devenir-livreur',
   '/devenir-chauffeur',
+  // Les formulaires de recrutement ont leur propre en-tête de marque.
+  '/merchant/register',
+  '/driver/login',
+  '/driver/signup',
   // Le passage éclair de la connexion unique.
   '/sso',
   // Le parcours client après la vitrine : il porte l'en-tête client.
@@ -121,12 +128,29 @@ export default function RootLayoutContent({
   // quelle, /fr-fr n'était reconnue par aucune règle, et la navbar s'empilait
   // au-dessus de celle de l'espace client.
   const chemin = pathname ? separerRegion(pathname).reste : pathname;
+  const pageMarketingDrive = chemin === '/zupdrive' || chemin === '/devenir-chauffeur';
   const hideNavbar = chemin === '/' ||
                      chemin?.startsWith('/impression') ||
                      aSaPropreNavigation(chemin);
 
-  const sansPied = chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin) ||
-    chemin === '/client' || chemin === '/restaurants';
+  const espaceZupEat = espaceHote === 'public' || espaceHote === 'pro' || espaceHote === 'livreur';
+  const sansPied = espaceZupEat || chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin) ||
+    espaceHote === 'vitrine' || espaceHote === 'drive' || pageMarketingDrive || chemin === '/zupone' ||
+    chemin === '/client' || chemin?.startsWith('/client/') || chemin === '/restaurants' ||
+    (chemin?.startsWith('/store/') && chemin !== '/store/new');
+  // L'accueil du domaine commerçant porte son identité ZupEat ; le chatbot
+  // ZupOne ajoutait une seconde marque au bas de cette page.
+  const pagesLegales = PAGES_LEGALES.map((page) => page.href);
+  const afficherPiedLivreur = espaceHote === 'livreur' && [
+    '/', '/devenir-livreur', '/driver/login', '/driver/signup', ...pagesLegales,
+  ].includes(chemin ?? '');
+  const afficherPiedCommercant = espaceHote === 'pro' && [
+    '/devenir-commercant', '/merchant/register', ...pagesLegales,
+  ].includes(chemin ?? '');
+  const afficherPiedDrive = (espaceHote === 'drive' || pageMarketingDrive) && [
+    '/', '/zupdrive', '/devenir-chauffeur', ...pagesLegales,
+  ].includes(chemin ?? '');
+  const masquerAssistant = (espaceHote === 'pro' && chemin === '/') || espaceHote === 'livreur' || espaceHote === 'drive' || pageMarketingDrive;
 
   return (
     <>
@@ -134,7 +158,11 @@ export default function RootLayoutContent({
       {!hideNavbar && <Navbar espaceHote={espaceHote} />}
       {children}
       {!sansPied && <PiedDeGroupe />}
-      {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && <AssistantWidget />}
+      {afficherPiedLivreur && <FooterZupEatPro mode="livreur" />}
+      {afficherPiedCommercant && <FooterZupEatPro mode="pro" />}
+      {afficherPiedDrive && <FooterZupDrive />}
+      {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && !masquerAssistant && <AssistantWidget />}
     </>
   );
 }
+

@@ -1,5 +1,12 @@
 # ZupDrive — application passager
 
+## Dépendances — audit A12
+
+Le lockfile du 12 octobre 2026 conserve 34 avis de production (1 critique,
+22 hautes, 11 modérées). La présence dans Expo ne prouve pas à elle seule un
+chemin exploitable. Voir la qualification, les commandes et la revue du
+12 novembre 2026 dans [l’audit A12](../../../docs/AUDIT-DEPENDANCES.md).
+
 Le renouvellement mobile est partagé et transmet un `requestId` aléatoire cryptographique par opération. Après une réponse perdue, il réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Une panne réseau ou un 409 persistant ne déconnecte pas ; seul un refus 401/403 définitif termine la session. Tests ciblés : `npm test -- --runInBand lib/__tests__/renouvellement.test.ts`. Voir le [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
 
 Application mobile du **passager** ZupDrive (VTC) : il commande un trajet à prix fixe, le suit, l'annule, le paie par carte et note son chauffeur. Ce n'est pas l'app livreur de ZupEat (`../delivery`) ni l'app client ZupEat (`../customer`).

@@ -222,8 +222,17 @@ certificats. Suivre :
 Vérifier :
 
 ```bash
-curl https://api.zupeat.com/health/ready    # {"status":"ok","pret":true,…}
+curl -i https://api.zupeat.com/health       # liveness: 200 si le processus répond
+curl -i https://api.zupeat.com/health/ready # 200 base + Redis prêts; 503 sinon
 ```
+
+Le healthcheck Docker du backend utilise `/health` (liveness), jamais la
+readiness : une panne de Redis, ClamAV ou SMTP n'entraîne pas de redémarrage en
+boucle. Le backend peut démarrer même si Redis ou ClamAV est momentanément
+indisponible; migrations PostgreSQL restent un préalable. Les routes protégées
+qui ont besoin des quotas Redis et les dépôts qui exigent ClamAV échouent en
+mode fermé. Pour la matrice, les contrats et les procédures de reprise, voir
+[DEPENDANCES-SANTE](docs/DEPENDANCES-SANTE.md).
 
 puis ouvrez `https://zupeat.com`.
 
@@ -261,27 +270,33 @@ puis ouvrez `https://zupeat.com`.
    au redémarrage, et chaque passage est dans `journalctl -u zup-sauvegarde.service`.
    (Sans systemd, planifiez `zup.sh backup` avec cron.)
 
-   Elles restent 14 jours dans `~/sauvegardes`. **Copiez-les aussi hors du
-   serveur** — si le VPS disparaît, elles disparaissent avec lui. Installez
-   `rclone`, configurez un remote vers un bucket Scaleway Object Storage, puis
-   renseignez `BACKUP_REMOTE=<remote>:<bucket>/zupone` dans `.env.production` :
-   `zup.sh backup` y copie alors chaque sauvegarde (déjà chiffrée) et sort en
-   erreur si la copie échoue. Sans cette variable, le script le signale à
-   chaque passage.
+   La procédure complète, incluant clés, preuves, pannes injectées et limites,
+   est dans le [guide A08](docs/SAUVEGARDES-RESTAURATION-A08.md). Par défaut,
+   `BACKUP_REMOTE_REQUIRED=true` rend une destination distante obligatoire pour
+   les tâches planifiées. Configurez `rclone` sous l'utilisateur `deploy`, puis
+   `BACKUP_REMOTE=<remote>:<bucket>/zupone` dans `.env.production`. Le serveur
+   garde 14 jours localement ; le bucket doit avoir une rétention et des droits
+   d'accès définis séparément.
 
-   Chaque sauvegarde réussie est enregistrée en base : la carte « Sauvegardes »
-   de la santé de la plateforme passe à l'orange si la dernière a plus de deux
-   jours. L'export partiel de l'écran *Données* n'en fait pas partie : ce n'est
-   pas une sauvegarde.
+   Le script chiffre base et fichiers avec age, transfère des objets `.partial`,
+   compare les SHA-256 locaux/distants, vérifie les objets après promotion et
+   publie un manifeste en dernier. Seule cette publication permet le statut
+   `COMPLETED`; absence distante et échec rclone font échouer la commande et ne
+   valident pas l'indicateur. `BACKUP_REMOTE_REQUIRED=false` est réservé à un
+   exercice local explicitement voulu : l'état reste `LOCAL_ONLY` et n'est pas
+   compté comme une copie complète. Le tableau de santé alerte après 24 h et
+   passe en panne après 48 h sans copie distante vérifiée. Consultez
+   `systemctl status zup-sauvegarde.timer` et
+   `journalctl -u zup-sauvegarde.service --since yesterday`.
 
-   **Une sauvegarde jamais restaurée n'est qu'une hypothèse.** Chaque trimestre,
-   et après tout changement de serveur : copiez la clé privée age depuis le
-   coffre, lancez
-   `./deploy/zup.sh restore-test ~/sauvegardes/base-….sql.gz.age ./identite-age.txt ~/sauvegardes/uploads-….tar.gz.age`
-   (restauration dans une base jetable, comparaison avec la production, lecture
-   de l'archive des fichiers, base supprimée ensuite), puis supprimez la clé du
-   serveur. La commande affiche la **durée de la restauration** : notez-la, c'est
-   votre délai de reprise réel, à comparer à ce que vous promettez aux commerçants.
+   Faites un exercice trimestriel sur une base vide `zup_restore_test` d'une
+   infrastructure isolée, jamais sur PostgreSQL production. La commande
+   nécessite les deux archives, l'identité age temporaire et
+   `RESTORE_TEST_DATABASE_URL`; elle contrôle SQL, fichiers, migrations et une
+   requête Prisma applicative. Elle conserve la base test pour inspection, et
+   ne prouve pas une bascule complète. Notez les durées réelles et supprimez
+   ensuite base et identité temporaires. Les cibles actuelles (RPO 24 h, RTO
+   8 h provisoire) ne sont pas encore mesurées ni attestées en exploitation.
 
 ## Au quotidien
 
@@ -295,9 +310,9 @@ puis ouvrez `https://zupeat.com`.
 | `./deploy/zup.sh restart backend` | redémarre un service |
 | `./deploy/zup.sh psql` | console SQL |
 | `./deploy/zup.sh vapid` | crée les clés du push navigateur dans `.env.production` (une seule fois : les changer rend muets les abonnements existants) |
-| `./deploy/zup.sh backup` | sauvegarde base + fichiers dans `~/sauvegardes` |
+| `./deploy/zup.sh backup` | chiffre base + fichiers localement et vérifie la copie distante obligatoire |
 | `./deploy/zup.sh planifier-sauvegardes` | installe la sauvegarde nocturne (timer systemd) |
-| `./deploy/zup.sh restore-test <base-….sql.gz.age> <identite.txt>` | exercice de restauration dans une base jetable, sans toucher à la production |
+| `RESTORE_TEST_DATABASE_URL=… ./deploy/zup.sh restore-test <base.age> <identite.txt> <uploads.age>` | contrôle dans la base vide isolée `zup_restore_test`; ne touche pas à la production |
 | `./deploy/zup.sh restore` | explique la restauration de production, volontairement manuelle (voir `docs/rgpd/exploitation.md`) |
 
 > **Migrations.** Elles ne sont plus lancées au démarrage de chaque instance de

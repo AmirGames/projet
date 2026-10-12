@@ -8,6 +8,14 @@ jours et 5000 lignes. Le détail contractuel et les erreurs sont dans le
 [guide A15](../docs/RAPPORTS-A15.md). Les requêtes restent soumises au
 cloisonnement serveur des boutiques et organisations.
 
+## A08 — état des sauvegardes
+
+L'écran Superowner « Gestion des données » précise que sa dernière copie
+complète vérifiée est distante. Il distingue les entrées `LOCAL_ONLY` et
+`REMOTE_FAILED`, et n'offre ses actions de téléchargement/restauration que sur
+les exports partiels `export-partiel-*`. Les archives serveur `base-*` ne sont
+pas restaurables par ces routes API ; suivre le [guide A08](../docs/SAUVEGARDES-RESTAURATION-A08.md).
+
 ## Liens de compte A10
 
 Les pages `/reinitialiser` et `/verifier-email` affichent les erreurs métier
@@ -63,3 +71,11 @@ porte une clé aléatoire de demande. Le serveur peut restituer le même
 successeur après une réponse perdue pendant 10 secondes. Le client ne boucle
 pas sur 409 et ne ferme la session que sur un refus définitif. Voir le
 [contrat A09](../docs/ROTATION-SESSIONS-A09.md).
+## Dépendances — audit A12
+
+Audit du lockfile le 12 octobre 2026 : 0 alerte avec `npm audit --omit=dev`;
+38 alertes dans l’arbre complet (33 hautes, 5 modérées), qui concerne le build
+et les outils de développement. Le Dockerfile retire les dépendances de
+développement avant l’étape runtime. Ce résultat ne qualifie pas les alertes
+mobiles partagées ni l’image de base; détails et relecture datée dans
+[l’audit A12](../docs/AUDIT-DEPENDANCES.md).

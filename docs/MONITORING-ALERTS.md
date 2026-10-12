@@ -1,5 +1,20 @@
 # Phase 15: Real-time Monitoring & Alerts 📊🔔
 
+## Sauvegardes A08
+
+La carte « Sauvegardes » ne compte que `Backup.status=COMPLETED` dont le nom
+commence par `base-distant-`. Ce marqueur est écrit après vérification SHA-256
+des archives et publication du manifeste distant. Les anciens enregistrements
+`base-*`, les exports partiels, `LOCAL_ONLY` et `REMOTE_FAILED` ne prouvent pas
+une copie hors serveur. Avec un RPO de travail de 24 h, le contrôle passe à
+`ATTENTION` au-delà de 24 h et à `PANNE` au-delà de 48 h. Le remède donne
+`systemctl status zup-sauvegarde.timer` et
+`journalctl -u zup-sauvegarde.service --since yesterday`. Ces seuils surveillent
+l'enregistrement d'une copie, pas une restauration réelle. La Vigie émet aussi
+un incident métier `metier:sauvegarde` à l'équipe via le canal e-mail configuré
+dès l'absence d'une copie vérifiée ou après 24 h ; voir la
+[procédure A08](SAUVEGARDES-RESTAURATION-A08.md).
+
 ## Webhooks sortants ZupDrive (A11)
 
 Le worker annonce sa tâche `zupdrive-webhooks` à la surveillance existante.

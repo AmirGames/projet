@@ -1,5 +1,12 @@
 # ZupEat — application client
 
+## Dépendances — audit A12
+
+Le lockfile du 12 octobre 2026 conserve 47 avis de production (1 critique,
+30 hautes, 16 modérées). La présence dans Expo ne prouve pas à elle seule un
+chemin exploitable. Voir la qualification, les commandes et la revue du
+12 novembre 2026 dans [l’audit A12](../../../docs/AUDIT-DEPENDANCES.md).
+
 Les contrats paiement partagés par le site et les apps (création, confirmation,
 état, permissions invité/connecté, refus et 3DS) ainsi que les limites des
 preuves A13 sont consignés dans le [contrat API A13](../../../docs/CONTRATS-API-A13.md).

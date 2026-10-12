@@ -10,7 +10,7 @@ import { useEffectChargement } from '@/lib/use-effect-chargement';
 interface DataStats {
   totalRecords: number;
   databaseSize: string;
-  lastBackup: string;
+  lastBackup: string | null;
   backupCount: number;
 }
 
@@ -19,7 +19,7 @@ interface Backup {
   name: string;
   size: string;
   createdAt: string;
-  status: 'COMPLETED' | 'IN_PROGRESS' | 'FAILED';
+  status: 'COMPLETED' | 'IN_PROGRESS' | 'FAILED' | 'LOCAL_ONLY' | 'REMOTE_FAILED';
 }
 
 interface DataResponse {
@@ -139,6 +139,8 @@ export default function DataManagementPage() {
       COMPLETED: 'bg-green-100 text-green-600 border-green-500/20',
       IN_PROGRESS: 'bg-blue-100 text-blue-600 border-blue-500/20',
       FAILED: 'bg-red-100 text-red-600 border-red-500/20',
+      REMOTE_FAILED: 'bg-red-100 text-red-600 border-red-500/20',
+      LOCAL_ONLY: 'bg-amber-100 text-amber-700 border-amber-500/20',
     };
     return colors[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/20';
   };
@@ -185,8 +187,12 @@ export default function DataManagementPage() {
 
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <p className="text-gray-500 text-sm mb-2">{t('lastBackup')}</p>
-              <p className="text-sm text-gray-900 font-medium">{new Date(data.stats.lastBackup).toLocaleDateString(localeFormat)}</p>
-              <p className="text-xs text-gray-500 mt-2">{new Date(data.stats.lastBackup).toLocaleTimeString(localeFormat)}</p>
+              {data.stats.lastBackup ? (
+                <>
+                  <p className="text-sm text-gray-900 font-medium">{new Date(data.stats.lastBackup).toLocaleDateString(localeFormat)}</p>
+                  <p className="text-xs text-gray-500 mt-2">{new Date(data.stats.lastBackup).toLocaleTimeString(localeFormat)}</p>
+                </>
+              ) : <p className="text-sm text-amber-700 font-medium">{t('noCompleteBackup')}</p>}
             </div>
 
             <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -227,7 +233,7 @@ export default function DataManagementPage() {
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(backup.status)}`}>
                         {backup.status}
                       </span>
-                      {backup.status === 'COMPLETED' && (
+                      {backup.name.startsWith('export-partiel-') && backup.status === 'COMPLETED' && (
                         <>
                           <button
                             onClick={() => telecharger(backup.id, backup.name)}

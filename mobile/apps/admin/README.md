@@ -1,5 +1,12 @@
 # ZupOne Admin (mobile)
 
+## Dépendances — audit A12
+
+Le lockfile du 12 octobre 2026 conserve 32 avis de production (`npm audit
+--omit=dev`: 21 hautes, 11 modérées). Ils sont dans l’arbre Expo distribué;
+leur exploitabilité n’est pas établie par le seul audit. Revue des paquets,
+limites et échéance du 12 novembre 2026 : [audit A12](../../../docs/AUDIT-DEPENDANCES.md).
+
 Le renouvellement utilise une seule requête partagée et un `requestId` aléatoire cryptographique par opération. Après une réponse perdue, il réessaie une fois avec la même clé dans la fenêtre serveur de 10 secondes. Une panne réseau ou un 409 persistant ne déconnecte pas ; seul un refus 401/403 définitif termine la session. Voir [contrat A09](../../../docs/ROTATION-SESSIONS-A09.md).
 
 Application Expo de l'équipe d'administration : superowner et membres de l'équipe (SuperAdmin, Administrateur, Support, groupes personnalisés).

@@ -12,6 +12,61 @@ Les exportations CSV sont limitées à 31 jours et 5000 lignes. `GET
 `INVALID_REPORT_DATE`, `REPORT_PERIOD_OUT_OF_RANGE`, `INVALID_PAGINATION`.
 Voir le [contrat et protocole A15](../docs/RAPPORTS-A15.md).
 
+## Dépendances A12
+
+`backend/package.json` épingle par overrides les dépendances transitives du
+CLI `prisma@7.10.0` à `mysql2 ^3.23.1` et `deepmerge-ts ^8.0.0`. Le lockfile
+résout actuellement `3.24.5` et `8.0.2`. Cela corrige les avis
+[mysql2 auth](https://github.com/advisories/GHSA-3f6p-5ww8-9rcr),
+[mysql2 inflate](https://github.com/advisories/GHSA-rgwj-5xj2-c3m3) et
+[deepmerge-ts](https://github.com/advisories/GHSA-ggr8-5vv4-36mx); Prisma,
+PostgreSQL, son adaptateur, le schéma et les contrats HTTP ne changent pas.
+L’image applicative inclut encore le CLI pour le service `migrate`; les
+précautions et la revue des overrides au 12 novembre 2026 sont dans
+[l’audit A12](../docs/AUDIT-DEPENDANCES.md).
+
+```bash
+npm ci
+npm run prisma:generate
+npm audit --omit=dev --audit-level=high
+npm run lint && npm run build
+```
+
+## A08 — états des sauvegardes et exports partiels
+
+`Backup.status=COMPLETED` pour `base-*` signifie que la copie distante chiffrée
+a été vérifiée par SHA-256 et publiée avec son manifeste. `LOCAL_ONLY` et
+`REMOTE_FAILED` n'alimentent pas le contrôle de santé. Les routes
+`/api/superowner/backups` restent limitées aux exports partiels `export-partiel-*` ;
+elles refusent la lecture, restauration et suppression des archives serveur
+avec `409 BACKUP_MANAGED_EXTERNALLY`. Les archives complètes se restaurent avec
+`deploy/zup.sh restore-test` dans une base dédiée isolée. Voir le
+[contrat et la procédure A08](../docs/SAUVEGARDES-RESTAURATION-A08.md).
+
+## A07 — Facturation structurée
+
+Les factures plateforme enregistrent XML UBL et instantané des parties, mais
+aucun Access Point n'est configuré et aucun adaptateur externe n'est livré.
+`PEPPOL_PROVIDER` vide garde l'envoi désactivé ; une valeur inconnue échoue
+explicitement. L'API factures reste réservée au superowner. La réception et les
+accusés asynchrones ne sont pas implémentés. Contrats, contrôles, exploitation,
+preuves réglementaires et blocages : [guide A07](../docs/FACTURATION-STRUCTUREE-A07.md).
+
+## Santé des dépendances (A14)
+
+`GET /health` est la liveness sans dépendance. `GET /health/ready` requiert
+PostgreSQL et, en production, Redis; 503 indique que le trafic général ne peut
+pas être garanti. La réponse reste générique et n'inclut aucun détail réseau.
+ClamAV indisponible bloque les dépôts en refus sûr sans rendre l'API
+indisponible; SMTP et les fournisseurs externes restent des capacités
+dégradées. Matrice, délais/cache, reprises et limites des alertes :
+[DEPENDANCES-SANTE](../docs/DEPENDANCES-SANTE.md).
+
+```bash
+npx jest src/modules/monitoring/__tests__/sondes.test.ts --runInBand
+npx jest src/modules/files/__tests__/antivirus.test.ts --runInBand
+```
+
 ## A11 — Webhooks sortants ZupDrive
 
 Le worker PostgreSQL, la signature HMAC-SHA256, les reprises bornées, l'inspection

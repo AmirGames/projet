@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, AlertCircle, Bike } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Bike, ArrowLeft } from 'lucide-react';
 import { confierSessionCentrale, demanderSessionCentrale } from '@/lib/sso';
 import { ENTETE_TRANSPORT, jetonAcces, poserJeton } from '@/lib/jeton-session';
+import { EnTeteMarque } from '@/components/EnTeteMarque';
+import { EMAIL_CONTACT } from '@/lib/editeur';
 
 import { useTranslations } from 'next-intl';
 
@@ -61,38 +63,50 @@ export default function DriverLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-white to-gray-50 flex items-center justify-center px-4 py-12">
+    <>
+    <EnTeteMarque marque="zupeat" href="/devenir-livreur">
+      <Link href="/devenir-livreur" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
+        <ArrowLeft size={16} aria-hidden="true" />
+        <span className="hidden sm:inline">Devenir livreur</span>
+        <span className="sm:hidden">Retour</span>
+      </Link>
+      <Link href="/driver/signup" className="rounded-full bg-[#FF7A00] px-4 py-2 text-sm font-bold text-black transition hover:bg-[#E66E00] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">
+        Créer un compte
+      </Link>
+    </EnTeteMarque>
+    <main className="flex min-h-[calc(100dvh-56px)] items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-4 py-10 sm:px-6">
       <div className="w-full max-w-md">
-        <div className="bg-white border border-gray-200 rounded-3xl shadow-lg p-8">
+        <div className="rounded-[2rem] border border-black/5 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] sm:p-10">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="w-12 h-12 bg-orange-600 text-white rounded-xl flex items-center justify-center">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-[#FF7A00] text-black">
               <Bike size={24} aria-hidden="true" />
             </div>
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('connexion.titre')}</h1>
-          <p className="text-gray-400 text-center mb-8">{t('connexion.sousTitre')}</p>
+          <p className="mb-8 text-center text-gray-600">{t('connexion.sousTitre')}</p>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
+            <div role="alert" className="mb-6 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
               <AlertCircle size={20} className="text-red-600 shrink-0" />
               <p className="text-red-900 text-sm">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-gray-700 text-sm font-semibold mb-2">{t('connexion.email')}</label>
+              <label htmlFor="driver-login-email" className="mb-2 block text-sm font-semibold text-gray-800">{t('connexion.email')}</label>
               <div className="relative">
                 <Mail size={18} className="absolute left-3 top-3 text-gray-500" />
                 <input
+                  id="driver-login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('connexion.exempleEmail')}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-900 placeholder:text-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
                   required
                 />
               </div>
@@ -100,15 +114,16 @@ export default function DriverLoginPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-gray-700 text-sm font-semibold mb-2">{t('connexion.motDePasse')}</label>
+              <label htmlFor="driver-login-password" className="mb-2 block text-sm font-semibold text-gray-800">{t('connexion.motDePasse')}</label>
               <div className="relative">
                 <Lock size={18} className="absolute left-3 top-3 text-gray-500" />
                 <input
+                  id="driver-login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-900 placeholder:text-gray-400 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
                   required
                 />
               </div>
@@ -118,28 +133,33 @@ export default function DriverLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-full transition"
+              className="w-full rounded-full bg-[#FF7A00] py-3.5 font-bold text-black transition hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
             >
               {loading ? t('connexion.encours') : t('connexion.seConnecter')}
             </button>
           </form>
 
           {/* Footer */}
-          <p className="text-gray-400 text-center text-sm mt-8">
+          <p className="mt-8 text-center text-sm text-gray-600">
             {t('connexion.pasInscrit')}{' '}
-            <Link href="/driver/signup" className="text-primary hover:text-primary-hover font-medium transition">
+            <Link href="/driver/signup" className="font-semibold text-gray-900 underline underline-offset-4 transition hover:text-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
               {t('connexion.inscrire')}
             </Link>
           </p>
 
-          <p className="text-gray-500 text-center text-xs mt-6 border-t border-gray-200 pt-6">
-            {t('connexion.besoinAide')}{' '}
-            <Link href="/" className="text-primary hover:text-primary-hover font-medium transition">
-              {t('connexion.contacter')}
-            </Link>
-          </p>
+          <div className="mt-6 border-t border-gray-200 pt-5 text-center text-sm text-gray-600">
+            <p>{t('connexion.besoinAide')}</p>
+            <a
+              href={`mailto:${EMAIL_CONTACT}?subject=${encodeURIComponent('Aide à la connexion livreur ZupEat')}`}
+              className="mt-1 inline-block font-semibold text-gray-900 underline underline-offset-4 transition hover:text-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"
+            >
+              {t('connexion.contacter')} · {EMAIL_CONTACT}
+            </a>
+          </div>
         </div>
       </div>
-    </div>
+    </main>
+    </>
   );
 }
+

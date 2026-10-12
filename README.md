@@ -8,6 +8,53 @@ PostgreSQL; les revenus livreurs n'hydratent plus tout l'historique. Contrats,
 limites et protocole de charge : [guide A15](docs/RAPPORTS-A15.md). Les mesures
 sur une base représentative et la validation en exploitation restent à faire.
 
+## Étape 13 — A12 : audit et correction des dépendances (12 octobre 2026)
+
+Le lockfile backend embarquait quatre alertes de production dans la chaîne du
+CLI Prisma. Deux overrides compatibles corrigent `mysql2` et `deepmerge-ts`
+sans modifier Prisma 7.10.0. L’audit backend `--omit=dev` est maintenant à
+zéro; les lockfiles web/mobile conservent des alertes documentées avec leurs
+limites et dates de revue dans [l’audit A12](docs/AUDIT-DEPENDANCES.md).
+Installation reproductible, génération, lint, build et installation runtime
+ont été exécutés. La CI a passé ses 11 checks, dont migrations PostgreSQL,
+mobile, frontend et E2E ([run](https://github.com/AmirGames/projet/actions/runs/38265964207)).
+La [PR #219](https://github.com/AmirGames/projet/pull/219) est intégrée.
+Le build/scan de l’image OCI réelle, le déploiement et la validation en
+exploitation ne sont pas établis. Résultats : [registre A12](docs/etat-projet.md#étape-13--a12-audit-et-correction-des-dépendances).
+
+## Étape 11 — A08 : sauvegardes distantes et restauration (12 octobre 2026)
+
+`deploy/zup.sh backup` distingue désormais une archive locale, une copie
+distante vérifiée et une restauration d'exercice. En production, la destination
+rclone est requise par défaut ; `COMPLETED` n'est enregistré qu'après SHA-256
+identique des deux objets distants et publication de leur manifeste. L'interface
+des données ne propose le téléchargement/la restauration que pour ses exports
+partiels. Configuration, clés, cibles provisoires, procédures et limites sont
+dans le [guide A08](docs/SAUVEGARDES-RESTAURATION-A08.md) et son
+[registre de preuves](docs/etat-projet.md#étape-11--a08-sauvegardes-distantes-et-restauration).
+Le dépôt ne fournit pas ici de preuve d'accès au bucket, de restauration sur
+infrastructure isolée ni de validation en exploitation.
+
+## Étape 10 — A07 : facturation structurée et preuves légales (12 octobre 2026)
+
+Le transport réel n'est pas activé : aucun opérateur/fournisseur ni données
+d'identité attestées n'ont été communiqués. Le dépôt garde un point d'adaptation
+Peppol, refuse maintenant les fournisseurs inconnus et les entrées UBL
+manifestement invalides, sans présenter XML ou génération comme conformité.
+Les essais Access Point, la réception/rapprochement et la preuve des pages
+publiées restent bloqués. Obligations officielles datées, différences Belgique/
+France, API, configuration, exploitation et validations à obtenir :
+[guide A07](docs/FACTURATION-STRUCTUREE-A07.md). Les déploiements et validations
+en exploitation ne sont pas établis.
+
+## Santé et dépendances (A14)
+
+`/health` mesure la vie du processus; `/health/ready` vérifie PostgreSQL et Redis
+en production, sans exposer d'erreur d'infrastructure. ClamAV bloque uniquement
+les dépôts de documents, et SMTP/les fournisseurs externes dégradent leurs
+fonctions sans retirer le trafic général. Matrice, contrats, alertes et reprises :
+[dépendances et santé](docs/DEPENDANCES-SANTE.md).
+
 ## Étape 07 — A13 : contrats API et preuves de parcours (11 octobre 2026)
 
 Les contrats HTTP paiement sont figés par tests de routes (droits client/invité,
