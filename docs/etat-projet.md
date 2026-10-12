@@ -4,7 +4,7 @@
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a08-backup-restore`, base `18e2503e2e792323c9e74445b89baa8d60900fe4` | Script, contrats de statuts, seuil santé, protections API/UI et [procédure A08](SAUVEGARDES-RESTAURATION-A08.md) |
+| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a08-backup-restore`, commit d'implémentation `990db45c` sur la base `18e2503e2e792323c9e74445b89baa8d60900fe4` | Script, contrats de statuts, seuil santé, protections API/UI et [procédure A08](SAUVEGARDES-RESTAURATION-A08.md) |
 | Testé localement | 12 octobre 2026 | Windows, Node `24.21.0`, npm `12.0.2`, backend Prisma `7.10.0`, Jest `30.5.2`, frontend Next `16.4.0` | Backend A08 + Vigie **24/24** ; tests contractuels Bash avec doubles **7 cas (5 injections)** ; bash -n, TypeScript backend/frontend, lint backend/frontend ciblé et build backend réussis. Build frontend bloqué avant compilation : binding SWC natif Windows absent. Voir les limites ci-dessous. |
 | Intégré | Non | Aucun SHA de fusion | Aucun lien |
 | Déployé | Non | Aucun accès serveur accordé dans cette session | Aucune preuve |
