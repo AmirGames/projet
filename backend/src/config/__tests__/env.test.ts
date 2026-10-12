@@ -63,4 +63,19 @@ describe("configuration des capacités", () => {
     expect(resultat.success).toBe(false);
     if (!resultat.success) expect(resultat.error.issues.some((issue) => issue.path[0] === "DATABASE_URL_MIGRATION")).toBe(true);
   });
+
+  it("refuse un stockage privé absent ou relatif en production", () => {
+    const resultat = envSchema.safeParse({
+      ...base(),
+      NODE_ENV: "production",
+      REDIS_URL: "redis://localhost:6379",
+      DATABASE_URL_APP: "postgresql://app:secret@localhost:5432/app",
+      DATABASE_URL_MIGRATION: "postgresql://owner:secret@localhost:5432/app",
+      SMTP_HOST: "smtp.example.test",
+      EMAIL_FROM: "noreply@example.test",
+      PRIVATE_DOCUMENTS_DIR: "private-documents",
+    });
+    expect(resultat.success).toBe(false);
+    if (!resultat.success) expect(resultat.error.issues.some((issue) => issue.path[0] === "PRIVATE_DOCUMENTS_DIR")).toBe(true);
+  });
 });

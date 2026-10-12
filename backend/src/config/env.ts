@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAbsolute } from "node:path";
 import { assertPrivacyConfiguration } from "../modules/privacy/crypto";
 
 export const envSchema = z.object({
@@ -26,6 +27,7 @@ export const envSchema = z.object({
   SMTP_PASSWORD: z.string().optional(),
   SMTP_SECURE: z.enum(["true", "false"]).optional(),
   EMAIL_FROM: z.string().email().optional(),
+  PRIVATE_DOCUMENTS_DIR: z.string().optional(),
   REDIS_URL: z.string().url().refine((v) => ["redis:", "rediss:"].includes(new URL(v).protocol), "REDIS_URL doit utiliser redis(s)").optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
@@ -135,6 +137,9 @@ export const envSchema = z.object({
   }
   if (config.NODE_ENV === "production" && (!config.SMTP_HOST || !config.EMAIL_FROM)) {
     contexte.addIssue({ code: "custom", path: [!config.SMTP_HOST ? "SMTP_HOST" : "EMAIL_FROM"], message: "SMTP_HOST et EMAIL_FROM sont requis en production pour les courriels de compte et d'exploitation" });
+  }
+  if (config.NODE_ENV === "production" && (!config.PRIVATE_DOCUMENTS_DIR || !isAbsolute(config.PRIVATE_DOCUMENTS_DIR))) {
+    contexte.addIssue({ code: "custom", path: ["PRIVATE_DOCUMENTS_DIR"], message: "Chemin absolu PRIVATE_DOCUMENTS_DIR requis en production" });
   }
   if (config.ENABLE_STRIPE) {
     for (const name of ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET"] as const) {

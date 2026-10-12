@@ -28,8 +28,11 @@ tentative non gardée échoue explicitement. La clé frontend reste une variable
 publique `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, jamais la clé secrète.
 
 Cloudinary est facultatif et doit être configuré avec ses trois identifiants ou
-aucun. Le stockage des pièces justificatives reste le stockage privé local,
-signé et analysé par ClamAV ; Cloudinary ne le remplace pas. SMTP accepte les
+aucun. En production, `PRIVATE_DOCUMENTS_DIR` doit désigner un chemin absolu
+inscriptible par l'API ; le démarrage le crée s'il manque et refuse s'il est
+relatif ou non inscriptible. Il doit être monté sur un volume persistant par le
+déploiement. Le stockage des pièces justificatives reste privé, chiffré et
+analysé par ClamAV ; Cloudinary ne le remplace pas. SMTP accepte les
 défauts locaux de Mailpit ; si un relais est configuré, le port doit être valide,
 `EMAIL_FROM` doit être fourni et identifiant/mot de passe doivent être présents
 ensemble. La vérification SMTP au démarrage est informative : une panne du relais
