@@ -251,9 +251,8 @@ jobs:
         run: npx jest src/modules/assistant/__tests__/integration.test.ts
       - name: Build
         run: npm run build
-      # Informatif : l'état des dépendances ne doit pas bloquer une PR.
-      - name: Audit des dépendances (informatif)
-        continue-on-error: true
+      # Les vulnérabilités hautes livrées dans le runtime bloquent désormais la CI.
+      - name: Audit des dépendances runtime
         run: npm audit --omit=dev --audit-level=high
 
   frontend:
