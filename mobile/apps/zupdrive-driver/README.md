@@ -1,5 +1,10 @@
 # ZupDrive Driver — application chauffeur
 
+**Hors périmètre du pilote ZupEat A16** au commit de référence
+`6439e36a51c6262b4781937c217a4063df6a90db`. Les validations de cette app, de ses
+API et appareils restent distinctes ; aucune ne vaut recette ZupEat. Voir la
+[décision A16](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md#périmètre-décidé).
+
 ## Dépendances — audit A12
 
 Le lockfile du 12 octobre 2026 conserve 47 avis de production (1 critique,

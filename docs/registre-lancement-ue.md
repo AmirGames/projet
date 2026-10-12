@@ -7,6 +7,16 @@ pas une preuve.
 
 Mis à jour le 12 octobre 2026. Chaque ligne doit avoir un responsable, une date et une preuve avant l'ouverture publique. Aucune ligne n'est cochée par le code : seuls l'exploitant, le DPO ou un conseil peuvent les clore. Historique antérieur conservé.
 
+## Périmètre de recette A16
+
+La [décision A16](RECETTE-PILOTE-A16-2026-10-12.md) porte sur un pilote fermé
+ZupEat. **ZupDrive est exclu** et ne doit pas être inclus dans les résultats de
+recette. Au commit intégré `6439e36a51c6262b4781937c217a4063df6a90db`, aucune
+preuve d'environnement actif, de contrôle juridique en pages publiées, de
+facture opérateur ou de validation réglementaire n'est fournie. Le statut du
+pilote est bloqué en attente des contrôles et responsables listés dans le
+compte rendu ; cette entrée ne clôt aucune obligation du registre.
+
 ## Livré dans le dépôt
 
 | Sujet | Base | Ce qui est fait |

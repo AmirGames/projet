@@ -1,5 +1,9 @@
 # ZupEat — application commerçant
 
+Pour la recette fermée au commit intégré `6439e36a51c6262b4781937c217a4063df6a90db`, l'app commerçant est dans le périmètre à
+essayer sur appareil ; la CI ne prouve pas la validation du serveur. ZupDrive
+est exclu. Voir la [matrice et la décision de recette](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
 Application Expo / React Native cliente de l'API REST centrale. Pour l'état
 courant du backend, les rôles de base et les limites des intégrations, consulter
 [CONFIGURATION-A16](../../../docs/CONFIGURATION-A16.md) et le

@@ -1,5 +1,18 @@
 # Validation de ZupEat Livreur
 
+## Limite A16 — recette pilote du 12 octobre 2026
+
+Cette application ZupEat est incluse dans le périmètre proposé de recette
+fermée. Les contrôles antérieurs ci-dessous restent des preuves datées et ne
+valident pas le commit A16 ou le serveur actuel. La CI A16 a validé le job
+mobile Delivery mais n'a pas utilisé de téléphone physique. GPS, notifications,
+remise et reprise réseau restent en attente d'un appareil et d'une API de
+recette identifiée. ZupDrive est explicitement hors périmètre. Suivre le
+[compte rendu et sa matrice](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+La version de référence est le merge `6439e36a51c6262b4781937c217a4063df6a90db` ;
+la CI associée à la PR a passé le job Delivery au head
+`3085ff4dc09974fc99d6c7361cff79fbe67dff15` (run 38287957646).
+
 Préparation locale du **4 octobre 2026**, sous Windows. L'application vise
 `https://api.zupeat.com` et les pages publiques de `https://zupeat.com`.
 Aucun parcours authentifié sur le VPS n'a été exécuté pendant cette préparation.

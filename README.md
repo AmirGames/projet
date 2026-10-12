@@ -1,5 +1,18 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 16 — Décision de recette pilote A16 (12 octobre 2026)
+
+Le code A16 est intégré par la [PR #222](https://github.com/AmirGames/projet/pull/222)
+au commit `6439e36a51c6262b4781937c217a4063df6a90db`. La CI du head
+`3085ff4dc09974fc99d6c7361cff79fbe67dff15` a réussi 11/11 jobs
+([run 38287957646](https://github.com/AmirGames/projet/actions/runs/38287957646)),
+dont migrations sur base vide et E2E avec Stripe désactivé. La décision est
+**bloquée pour démarrer la recette utilisateur** : aucun SHA d'environnement,
+base représentative, Stripe TEST/3DS externe ou appareil n'est attesté.
+Le périmètre proposé est ZupEat fermé ; **ZupDrive est explicitement exclu**.
+Voir le [compte rendu A16, la matrice A01–A16 et les prochaines preuves](docs/RECETTE-PILOTE-A16-2026-10-12.md).
+La CI ne vaut ni validation serveur ni ouverture publique.
+
 ## Rapports A15
 
 Les API de rapports appliquent une période par défaut de 90 jours, une période

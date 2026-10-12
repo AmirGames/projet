@@ -1,5 +1,10 @@
 # ZupDrive — application passager
 
+**Hors périmètre du pilote ZupEat A16** au commit de référence
+`6439e36a51c6262b4781937c217a4063df6a90db`. Les validations de cette app, de ses
+API et appareils restent distinctes ; aucune ne vaut recette ZupEat. Voir la
+[décision A16](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md#périmètre-décidé).
+
 Cette application Expo / React Native utilise Stripe pour la carte avec un
 parcours de paiement natif distinct du checkout navigateur et de sa CSP. Les
 preuves du checkout web/3DS ne valent donc pas validation sur appareil ; voir
