@@ -2,9 +2,9 @@ import Link from '@/components/LienRegional';
 import { useTranslations } from 'next-intl';
 import { accueilDe, lienVersEspace } from '@/lib/domaines';
 
-export function FooterZupEatPro() {
+export function FooterZupEatPro({ mode = 'pro' }: { mode?: 'pro' | 'livreur' }) {
   const t = useTranslations('accueilPro');
-  const colonnes = [
+  const colonnesPro = [
     {
       titre: t('footerDiscover'),
       liens: [
@@ -27,6 +27,31 @@ export function FooterZupEatPro() {
       ],
     },
   ];
+  const colonnesLivreur = [
+    {
+      titre: t('footerDiscover'),
+      liens: [
+        { href: accueilDe('public'), label: t('commerces') },
+        { href: '/devenir-commercant', label: t('devenirCommercant') },
+      ],
+    },
+    {
+      titre: t('footerPartners'),
+      liens: [
+        { href: '/devenir-livreur', label: t('devenirLivreur') },
+        { href: '/conditions-livreurs', label: t('conditionsLivreurs') },
+      ],
+    },
+    {
+      titre: t('footerAccount'),
+      liens: [
+        { href: '/driver/login', label: t('connexionLivreur') },
+        { href: '/driver/signup', label: t('dossierLivreur') },
+        { href: '/mentions-legales', label: t('footerLegal') },
+      ],
+    },
+  ];
+  const colonnes = mode === 'livreur' ? colonnesLivreur : colonnesPro;
 
   return (
     <footer className="border-t border-neutral-200 bg-[#FAFAF9]" aria-label={t('footerLabel')}>
@@ -37,7 +62,7 @@ export function FooterZupEatPro() {
               <span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-[#FF7A00] text-base font-black text-black">Z</span>
               <span className="text-xl font-black tracking-[-.055em] text-black">Zup<span className="text-[#FF7A00]">Eat</span></span>
             </Link>
-            <p className="mt-4 text-sm leading-6 text-neutral-600">{t('footerTagline')}</p>
+            <p className="mt-4 text-sm leading-6 text-neutral-600">{t(mode === 'livreur' ? 'footerTaglineLivreur' : 'footerTagline')}</p>
           </div>
 
           {colonnes.map((colonne) => (
