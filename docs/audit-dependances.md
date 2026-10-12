@@ -72,14 +72,15 @@ chaque dossier d’application.
 |---|---|---|
 | Développé | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d), branche A12 | Overrides backend, lockfile et documentation |
 | Testé localement | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d) | `npm ci`, `npm run prisma:generate`, `npm run lint`, `npm run build`, puis `npm ci --omit=dev`, `npm audit --omit=dev` (0) et `npx prisma --version` (7.10.0). Jest échoue faute d’identifiants PostgreSQL valides. |
-| Intégré | Non | [PR #219 ouverte](https://github.com/AmirGames/projet/pull/219), non fusionnée |
+| Testé en CI | 12 octobre 2026, SHA `b4ee2888ac20cf0dffd40d4c2ca823870cde04b0` | 11/11 checks réussis, dont backend et migrations PostgreSQL dédiées, frontend, six apps mobiles et E2E : [run 38265964207](https://github.com/AmirGames/projet/actions/runs/38265964207). Le premier SHA `e4d5543` avait un échec CI, corrigé avant le run vert. |
+| Intégré | 12 octobre 2026 | [PR #219 fusionnée](https://github.com/AmirGames/projet/pull/219), merge commit `374229621ee573ccee8ad06391851655b3a8da89` dans `claude/awesome-ride-m9lci8` |
 | Déployé | Non | Aucun accès ni déploiement de production |
 | Validé en exploitation | Non | Aucun essai sur instance réelle |
 
-Les audits ont été exécutés contre le registre npm. Le démon Docker Desktop
-n’était pas démarré : build/scan de l’image OCI, migration sur PostgreSQL vide
-et mise à niveau d’une base de test restent à exécuter en CI ou dans un
-environnement PostgreSQL dédié. Un audit npm ne couvre ni l’image de base Node,
+Les audits ont été exécutés contre le registre npm. Les migrations et suites
+PostgreSQL couvertes par le workflow CI ont passé. Le démon Docker Desktop
+n’était pas démarré : build/scan de l’image OCI production et mise à niveau
+d’une base de test restent à exécuter. Un audit npm ne couvre ni l’image de base Node,
 ni les dépendances système, ni l’exploitabilité de l’application.
 
 ---

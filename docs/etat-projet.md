@@ -459,14 +459,15 @@ déploiement et validation en exploitation demeurent des états distincts.
 | État | Date / SHA | Environnement et preuve |
 |---|---|---|
 | Développé | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d), branche `claude/awesome-ride-m9lci8-a12-dependances` | Worktree isolé à partir du tronc `adb811805afe38ffe7a4dc6b90406bfe8b618708`; overrides et lockfile backend |
-| Testé localement | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d) | Node 24.21.0/npm 12.0.2; `npm ci`, génération Prisma 7.10.0, lint et build réussis; simulation `npm ci --omit=dev` et audit runtime à zéro; `prisma --version` confirme 7.10.0. Jest lancé mais échoue faute d’identifiants PostgreSQL valides (`(not available)`). |
-| Intégré | Non | [PR #219 ouverte](https://github.com/AmirGames/projet/pull/219), non fusionnée |
+| Testé localement | 12 octobre 2026, [SHA `e4d55431c13dd927b16960693c3b9c68fe4b348d`](https://github.com/AmirGames/projet/commit/e4d55431c13dd927b16960693c3b9c68fe4b348d) | Node 24.21.0/npm 12.0.2; `npm ci`, génération Prisma 7.10.0, lint et build réussis; simulation `npm ci --omit=dev` et audit runtime à zéro. Jest local bloqué par l’absence d’identifiants PostgreSQL valides. |
+| Testé en CI | 12 octobre 2026, SHA `b4ee2888ac20cf0dffd40d4c2ca823870cde04b0` | 11/11 checks réussis, migrations PostgreSQL dédiées et E2E inclus : [run 38265964207](https://github.com/AmirGames/projet/actions/runs/38265964207). |
+| Intégré | 12 octobre 2026 | [PR #219 fusionnée](https://github.com/AmirGames/projet/pull/219), merge commit `374229621ee573ccee8ad06391851655b3a8da89` |
 | Déployé | Non | Aucun déploiement effectué |
 | Validé en exploitation | Non | Aucune instance de production ni image exécutée |
 
-La migration sur base vide, la mise à niveau d’une base de test, le scan et
-l’exécution de l’image production attendent PostgreSQL et le démon Docker; aucun
-résultat n’est déclaré pour ces contrôles. Les 6 lockfiles mobiles conservent
+Les migrations sur bases vides et les suites PostgreSQL du workflow ont réussi;
+le scan et la construction de l’image OCI production ainsi que la mise à niveau
+d’une base préexistante ne sont pas couverts par ce run. Les 6 lockfiles mobiles conservent
 des alertes de production, suivies à part avec échéance de revue. Voir
 [l’inventaire détaillé, chemins et limites A12](AUDIT-DEPENDANCES.md). Il n’y a
 pas de changement d’API, de schéma, de permission ou de configuration métier.

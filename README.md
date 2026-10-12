@@ -8,10 +8,11 @@ sans modifier Prisma 7.10.0. L’audit backend `--omit=dev` est maintenant à
 zéro; les lockfiles web/mobile conservent des alertes documentées avec leurs
 limites et dates de revue dans [l’audit A12](docs/AUDIT-DEPENDANCES.md).
 Installation reproductible, génération, lint, build et installation runtime
-ont été exécutés. Jest échoue faute d’identifiants PostgreSQL valides; les
-migrations sur base de test et la construction réelle de l’image Docker attendent
-un environnement disponible. Intégration, déploiement et exploitation ne sont pas
-revendiqués. Résultats détaillés : [registre A12](docs/etat-projet.md#étape-13--a12-audit-et-correction-des-dépendances).
+ont été exécutés. La CI a passé ses 11 checks, dont migrations PostgreSQL,
+mobile, frontend et E2E ([run](https://github.com/AmirGames/projet/actions/runs/38265964207)).
+La [PR #219](https://github.com/AmirGames/projet/pull/219) est intégrée.
+Le build/scan de l’image OCI réelle, le déploiement et la validation en
+exploitation ne sont pas établis. Résultats : [registre A12](docs/etat-projet.md#étape-13--a12-audit-et-correction-des-dépendances).
 
 ## Étape 11 — A08 : sauvegardes distantes et restauration (12 octobre 2026)
 
