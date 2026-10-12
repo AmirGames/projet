@@ -4492,7 +4492,11 @@
     "footerLegal": "Legal notice",
     "footerTagline": "The lovely local shops in your neighbourhood, delivered with care or ready for collection.",
     "footerLabel": "ZupEat footer",
-    "footerCopyright": "© {year} ZupEat. All rights reserved."
+    "footerCopyright": "© {year} ZupEat. All rights reserved.",
+    "connexionLivreur": "Courier log in",
+    "dossierLivreur": "Start my courier application",
+    "conditionsLivreurs": "Courier terms",
+    "footerTaglineLivreur": "Deliveries from local shops, on a schedule that works for you."
   },
   "suiviCommande": {
     "saisirNumero": "Please enter your order number",
@@ -4703,7 +4707,9 @@
     "pret": "Ready to start?",
     "enContinuant": "By continuing, you accept the",
     "informationsPour": "Information for: {drapeau} {pays}",
-    "ilVousFaut": "What you need in {pays}"
+    "ilVousFaut": "What you need in {pays}",
+    "connexionLivreur": "Courier log in",
+    "contacterSupport": "Contact support"
   },
   "pays": {
     "BE": "Belgium",
