@@ -9,11 +9,9 @@ const db: any = {
   outboxMessage: { count: jest.fn(), findFirst: jest.fn() },
 };
 jest.mock("../../../services/db", () => ({ db }));
-jest.mock("../backup.service", () => ({ PREFIXE_SAUVEGARDE_COMPLETE: "base-" }));
+jest.mock("../backup.service", () => ({ PREFIXE_SAUVEGARDE_COMPLETE: "base-distant-" }));
 
 import { SystemHealthService } from "../system-health.service";
-
-const JOUR = 24 * 60 * 60 * 1000;
 
 async function controleSauvegardes() {
   const { controles } = await SystemHealthService.etat();
@@ -35,7 +33,7 @@ describe("contrôle de santé « Sauvegardes »", () => {
 
     const controle = await controleSauvegardes();
 
-    expect(db.backup.findFirst.mock.calls[0][0].where).toEqual({ status: "COMPLETED", name: { startsWith: "base-" } });
+    expect(db.backup.findFirst.mock.calls[0][0].where).toEqual({ status: "COMPLETED", name: { startsWith: "base-distant-" } });
     expect(controle.etat).toBe("PANNE");
     expect(controle.detail).toMatch(/complète/);
   });
@@ -46,10 +44,17 @@ describe("contrôle de santé « Sauvegardes »", () => {
   });
 
   it("se dégrade quand la sauvegarde nocturne ne passe plus", async () => {
-    db.backup.findFirst.mockResolvedValue({ createdAt: new Date(Date.now() - 5 * JOUR) });
+    db.backup.findFirst.mockResolvedValue({ createdAt: new Date(Date.now() - 25 * 3600_000) });
     const controle = await controleSauvegardes();
     expect(controle.etat).not.toBe("OK");
-    expect(controle.remede).toMatch(/sauvegardes\.log/);
+    expect(controle.remede).toMatch(/journalctl -u zup-sauvegarde\.service/);
+  });
+
+  it("est en panne après deux jours sans copie distante complète", async () => {
+    db.backup.findFirst.mockResolvedValue({ createdAt: new Date(Date.now() - 49 * 3600_000) });
+    const controle = await controleSauvegardes();
+    expect(controle.score).toBe(0.2);
+    expect(controle.detail).toMatch(/49 h/);
   });
 });
 

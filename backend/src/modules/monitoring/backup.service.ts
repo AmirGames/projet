@@ -10,12 +10,11 @@ import { encrypt, decrypt, isEncrypted } from "../privacy/crypto";
 const DOSSIER = process.env.BACKUP_DIR || path.join(process.cwd(), "backups");
 
 /**
- * Préfixe des vraies sauvegardes : celles de `deploy/zup.sh backup` (dump
- * PostgreSQL + fichiers), enregistrées dans la table Backup une fois chiffrées.
- * Les exports JSON de ce service portent un autre préfixe : ils ne comptent pas
- * pour le contrôle de santé « Sauvegardes ».
+ * Préfixe des sauvegardes distantes vérifiées A08. L'ancien préfixe `base-`
+ * ne prouve pas qu'un transfert distant a réussi et n'alimente plus la santé.
+ * Les exports JSON de ce service portent aussi un autre préfixe.
  */
-export const PREFIXE_SAUVEGARDE_COMPLETE = "base-";
+export const PREFIXE_SAUVEGARDE_COMPLETE = "base-distant-";
 
 function formaterTaille(octets: number) {
   if (octets < 1024) return `${octets} o`;
@@ -33,6 +32,16 @@ const FORMAT_SAUVEGARDE = z.object({
   produits: LIGNES,
   clients: LIGNES,
 });
+
+function exigerExportPartiel(sauvegarde: { name: string }) {
+  if (!sauvegarde.name.startsWith("export-partiel-")) {
+    throw new ApiError(
+      409,
+      "Cette archive complète est gérée par la procédure serveur A08, pas par l'API d'exports partiels",
+      "BACKUP_MANAGED_EXTERNALLY",
+    );
+  }
+}
 
 function parseJsonSecurise(texte: string): unknown {
   try {
@@ -59,7 +68,9 @@ export class BackupService {
         db.customer.count(),
       ]);
 
-    const derniere = sauvegardes.find((s) => s.status === "COMPLETED");
+    const derniere = sauvegardes.find(
+      (s) => s.status === "COMPLETED" && s.name.startsWith(PREFIXE_SAUVEGARDE_COMPLETE),
+    );
 
     return {
       stats: {
@@ -168,6 +179,7 @@ export class BackupService {
   // Renvoie le contenu du fichier pour téléchargement.
   static async read(id: string) {
     const sauvegarde = await this.get(id);
+    exigerExportPartiel(sauvegarde);
 
     if (sauvegarde.status !== "COMPLETED" || !sauvegarde.filePath) {
       throw new ApiError(400, "Cette sauvegarde n'a pas abouti", "BACKUP_INCOMPLETE");
@@ -184,6 +196,7 @@ export class BackupService {
 
   static async remove(id: string) {
     const sauvegarde = await this.get(id);
+    exigerExportPartiel(sauvegarde);
 
     if (sauvegarde.filePath) {
       // Le fichier peut avoir été supprimé à la main : ce n'est pas bloquant.
@@ -200,6 +213,7 @@ export class BackupService {
   // commandes, comptes, appartenances et paiements ne le sont pas.
   static async restore(id: string) {
     const snapshot = await this.get(id);
+    exigerExportPartiel(snapshot);
     const laterErasure = await db.erasureRecord.findFirst({ where: { erasedAt: { gte: snapshot.createdAt } }, select: { id: true } });
     if (laterErasure) throw new ApiError(409, "Cette sauvegarde précède un effacement RGPD : restauration interdite sans réconciliation des effacements", "RESTORE_ERASURE_CONFLICT");
     const { contenu } = await this.read(id);
@@ -257,6 +271,7 @@ export class BackupService {
 
   static async readEncrypted(id: string) {
     const backup = await this.get(id);
+    exigerExportPartiel(backup);
     if (!backup.filePath || backup.status !== "COMPLETED") throw new ApiError(400, "Sauvegarde indisponible", "BACKUP_INCOMPLETE");
     const contenu = await fs.readFile(backup.filePath, "utf8");
     if (!isEncrypted(contenu)) throw new ApiError(409, "Migration de sauvegarde requise", "BACKUP_NOT_ENCRYPTED");

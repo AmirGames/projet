@@ -7,13 +7,12 @@
 #   ./deploy/zup.sh ps
 #   ./deploy/zup.sh version   le commit qui tourne (API et site), lu sur /health
 #   ./deploy/zup.sh down
-#   ./deploy/zup.sh backup    sauvegarde base + fichiers dans ~/sauvegardes
-#                             (BACKUP_REMOTE : copie hors serveur avec rclone)
+#   ./deploy/zup.sh backup    sauvegarde chiffrée locale et copie distante vérifiée
+#                             (BACKUP_REMOTE obligatoire sauf opt-out explicite)
 #   ./deploy/zup.sh planifier-sauvegardes
 #                             installe la sauvegarde nocturne (timer systemd, 03 h 15)
-#   ./deploy/zup.sh restore-test <base-….sql.gz.age> <identite-age.txt> [uploads-….tar.gz.age]
-#                             exercice : restaure dans une base jetable, vérifie
-#                             les fichiers, et chronomètre la restauration
+#   RESTORE_TEST_DATABASE_URL=… ./deploy/zup.sh restore-test <base.age> <identite-age.txt> <uploads.age>
+#                             restaure dans une base distante dédiée et vérifie Prisma
 #   ./deploy/zup.sh restore   explique la restauration de production (manuelle)
 #   ./deploy/zup.sh psql
 #   ./deploy/zup.sh vapid     crée les clés des notifications push navigateur
@@ -75,33 +74,74 @@ case "${1:-}" in
     destinataire="$(valeur AGE_BACKUP_RECIPIENT)"
     [ -n "$destinataire" ] || { echo "AGE_BACKUP_RECIPIENT requis : aucune sauvegarde en clair"; exit 1; }
     umask 077
-    mkdir -p "$SAUVEGARDES"
+    mkdir -p -m 700 "$SAUVEGARDES"
+    chmod 700 "$SAUVEGARDES"
+    command -v flock >/dev/null || { echo "❌ flock requis pour empêcher deux sauvegardes concurrentes"; exit 1; }
+    exec 9>"$SAUVEGARDES/.backup.lock"
+    flock -n 9 || { echo "❌ Une sauvegarde est déjà en cours"; exit 1; }
     horodatage="$(date +%Y%m%d-%H%M%S)"
-    dc exec -T postgres pg_dump -U "$PGU" -d "$PGD" --no-owner | gzip | age -r "$destinataire" > "$SAUVEGARDES/base-$horodatage.sql.gz.age.partial"
-    mv "$SAUVEGARDES/base-$horodatage.sql.gz.age.partial" "$SAUVEGARDES/base-$horodatage.sql.gz.age"
-    dc exec -T backend tar czf - -C /app uploads private-documents backups | age -r "$destinataire" > "$SAUVEGARDES/uploads-$horodatage.tar.gz.age.partial"
-    mv "$SAUVEGARDES/uploads-$horodatage.tar.gz.age.partial" "$SAUVEGARDES/uploads-$horodatage.tar.gz.age"
-    # 14 jours gardés sur le serveur.
-    find "$SAUVEGARDES" -name '*.age' -mtime +14 -delete
-    # La santé de la plateforme (écran Données/Santé) lit cette ligne : seule une
-    # sauvegarde complète, dont le nom commence par « base- », compte. Si cette
-    # étape échoue, la santé passera à l'orange au bout de deux jours.
-    taille="$(stat -c %s "$SAUVEGARDES/base-$horodatage.sql.gz.age")"
-    dc exec -T postgres psql -U "$PGU" -d "$PGD" -v ON_ERROR_STOP=1 -q -c \
-      "INSERT INTO \"Backup\" (id, name, \"sizeBytes\", status, \"filePath\", \"createdAt\", \"completedAt\") VALUES (gen_random_uuid()::text, 'base-$horodatage.sql.gz.age', LEAST($taille, 2147483647), 'COMPLETED', '$SAUVEGARDES/base-$horodatage.sql.gz.age', now(), now())"
-    # Copie hors du serveur : sans elle, la perte du VPS emporte aussi les
-    # sauvegardes. BACKUP_REMOTE est une destination rclone, par exemple
-    # scaleway:mon-bucket/zupone. Les fichiers sont déjà chiffrés par age.
     distant="$(valeur BACKUP_REMOTE)"
+    distant_requis="$(valeur BACKUP_REMOTE_REQUIRED)"; distant_requis="${distant_requis:-true}"
+    case "$distant_requis" in true|false) ;; *) echo "❌ BACKUP_REMOTE_REQUIRED doit valoir true ou false"; exit 1 ;; esac
+    commande_id="$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)"
+    base="$SAUVEGARDES/base-$horodatage.sql.gz.age"
+    uploads="$SAUVEGARDES/uploads-$horodatage.tar.gz.age"
+    dc exec -T postgres pg_dump -U "$PGU" -d "$PGD" --no-owner | gzip | age -r "$destinataire" > "$SAUVEGARDES/base-$horodatage.sql.gz.age.partial"
+    mv "$SAUVEGARDES/base-$horodatage.sql.gz.age.partial" "$base"
+    dc exec -T backend tar czf - -C /app uploads private-documents backups | age -r "$destinataire" > "$SAUVEGARDES/uploads-$horodatage.tar.gz.age.partial"
+    mv "$SAUVEGARDES/uploads-$horodatage.tar.gz.age.partial" "$uploads"
+    # L'état COMPLETED signifie désormais que les deux objets distants ont été
+    # transférés, comparés octet par octet via SHA-256, promus et publiés par manifeste.
+    taille="$(stat -c %s "$SAUVEGARDES/base-$horodatage.sql.gz.age")"
+    dc exec -T postgres psql -U "$PGU" -d "$PGD" -v ON_ERROR_STOP=1 -q \
+      -v backup_id="$commande_id" -v backup_name="base-distant-$horodatage.sql.gz.age" \
+      -v backup_size="$taille" -v backup_path="$base" -c \
+      'INSERT INTO "Backup" (id, name, "sizeBytes", status, "filePath", "createdAt", "completedAt") VALUES (:'"'"'backup_id'"'"', :'"'"'backup_name'"'"', LEAST(:'"'"'backup_size'"'"'::numeric, 2147483647)::int, '\''LOCAL_ONLY'\'', :'"'"'backup_path'"'"', now(), now())'
+    # Rétention locale de 14 jours, après clôture des deux archives locales.
+    find "$SAUVEGARDES" -name '*.age' -mtime +14 -delete
+    find "$SAUVEGARDES" -name 'manifest-*.txt' -mtime +14 -delete
+    marquer_echec_distant() {
+      dc exec -T postgres psql -U "$PGU" -d "$PGD" -q -c \
+        "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='Copie distante non vérifiée' WHERE id='$commande_id'" || true
+    }
     if [ -n "$distant" ]; then
-      command -v rclone >/dev/null || { echo "❌ BACKUP_REMOTE est défini mais rclone n'est pas installé"; exit 1; }
-      rclone copy "$SAUVEGARDES/base-$horodatage.sql.gz.age" "$distant" --immutable
-      rclone copy "$SAUVEGARDES/uploads-$horodatage.tar.gz.age" "$distant" --immutable
-      echo "☁️  Copie hors serveur : $distant"
+      command -v rclone >/dev/null || { marquer_echec_distant; echo "❌ BACKUP_REMOTE défini mais rclone absent; sauvegarde locale conservée"; exit 1; }
+      command -v timeout >/dev/null || { marquer_echec_distant; echo "❌ timeout requis pour borner le transfert"; exit 1; }
+      distant="${distant%/}/$horodatage"
+      verifier_et_publier() {
+        local local_file="$1" nom temp final local_hash distant_hash
+        nom="${local_file##*/}"; temp="$distant/$nom.partial"; final="$distant/$nom"
+        timeout 2h rclone copyto "$local_file" "$temp" --immutable --contimeout 30s --timeout 5m --retries 3 --low-level-retries 10
+        local_hash="$(sha256sum "$local_file" | cut -d' ' -f1)"
+        distant_hash="$(timeout 2h rclone cat "$temp" | sha256sum | cut -d' ' -f1)"
+        [ "$local_hash" = "$distant_hash" ] || { echo "❌ SHA-256 distant incorrect : $nom.partial"; return 1; }
+        timeout 2h rclone moveto "$temp" "$final" --immutable --contimeout 30s --timeout 5m --retries 3 --low-level-retries 10
+        distant_hash="$(timeout 2h rclone cat "$final" | sha256sum | cut -d' ' -f1)"
+        [ "$local_hash" = "$distant_hash" ] || { echo "❌ SHA-256 après promotion incorrect : $nom"; return 1; }
+        printf '%s  %s\n' "$local_hash" "$nom"
+      }
+      sommes_base="$(verifier_et_publier "$base")" || { dc exec -T postgres psql -U "$PGU" -d "$PGD" -v ON_ERROR_STOP=1 -q -c "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='Transfert distant base échoué' WHERE id='$commande_id'" || true; exit 1; }
+      sommes_fichiers="$(verifier_et_publier "$uploads")" || { dc exec -T postgres psql -U "$PGU" -d "$PGD" -v ON_ERROR_STOP=1 -q -c "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='Transfert distant fichiers échoué' WHERE id='$commande_id'" || true; exit 1; }
+      manifeste="$SAUVEGARDES/manifest-$horodatage.txt"
+      { printf 'createdAt=%s\n' "$horodatage"; printf '%s\n' "$sommes_base" "$sommes_fichiers"; } > "$manifeste"
+      chmod 600 "$manifeste"
+      timeout 2h rclone copyto "$manifeste" "$distant/manifest-$horodatage.txt.partial" --immutable --contimeout 30s --timeout 5m --retries 3 --low-level-retries 10 || { dc exec -T postgres psql -U "$PGU" -d "$PGD" -q -c "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='Publication du manifeste échouée' WHERE id='$commande_id'" || true; exit 1; }
+      hash_manifest="$(sha256sum "$manifeste" | cut -d' ' -f1)"
+      test "$(timeout 2h rclone cat "$distant/manifest-$horodatage.txt.partial" | sha256sum | cut -d' ' -f1)" = "$hash_manifest" || { dc exec -T postgres psql -U "$PGU" -d "$PGD" -q -c "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='Manifeste tronqué ou altéré' WHERE id='$commande_id'" || true; exit 1; }
+      timeout 2h rclone moveto "$distant/manifest-$horodatage.txt.partial" "$distant/manifest-$horodatage.txt" --immutable --contimeout 30s --timeout 5m --retries 3 --low-level-retries 10 || { dc exec -T postgres psql -U "$PGU" -d "$PGD" -q -c "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='Promotion du manifeste échouée' WHERE id='$commande_id'" || true; exit 1; }
+      test "$(timeout 2h rclone cat "$distant/manifest-$horodatage.txt" | sha256sum | cut -d' ' -f1)" = "$hash_manifest" || { dc exec -T postgres psql -U "$PGU" -d "$PGD" -q -c "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='Manifeste final tronqué ou altéré' WHERE id='$commande_id'" || true; exit 1; }
+      dc exec -T postgres psql -U "$PGU" -d "$PGD" -v ON_ERROR_STOP=1 -q -c \
+        "UPDATE \"Backup\" SET status='COMPLETED', error=NULL, \"completedAt\"=now() WHERE id='$commande_id'"
+      echo "☁️  Copie distante vérifiée et publiée : $distant/manifest-$horodatage.txt"
     else
-      echo "⚠️  BACKUP_REMOTE non défini : aucune copie hors serveur (voir DEPLOIEMENT-SCALEWAY.md)"
+      echo "⚠️  Sauvegarde locale seulement : $base et $uploads (aucune copie hors serveur)"
+      if [ "$distant_requis" = true ]; then
+        dc exec -T postgres psql -U "$PGU" -d "$PGD" -v ON_ERROR_STOP=1 -q -c "UPDATE \"Backup\" SET status='REMOTE_FAILED', error='BACKUP_REMOTE absent' WHERE id='$commande_id'" || true
+        echo "❌ Copie distante obligatoire absente; les archives locales sont conservées, mais la sauvegarde complète a échoué."
+        exit 1
+      fi
     fi
-    echo "✅ Sauvegarde : $SAUVEGARDES/*-$horodatage.*"
+    echo "✅ Sauvegarde locale vérifiée : $base et $uploads"
     ;;
   planifier-sauvegardes)
     # Une sauvegarde qui n'est pas planifiée n'existe pas : la santé de la
@@ -142,46 +182,71 @@ WantedBy=timers.target"
     echo "   hors du serveur, puis faire un exercice : $0 restore-test <base-….age> <identite-age.txt> <uploads-….age>"
     ;;
   restore-test)
-    # Exercice de restauration : ne touche JAMAIS à la base de production. La
-    # sauvegarde est déchiffrée en flux avec l'identité age (clé privée gardée
-    # hors du VPS : copiez-la ici pour l'exercice, puis supprimez-la), restaurée
-    # dans une base jetable, comparée à la base réelle, puis la base jetable est
-    # supprimée. Une sauvegarde jamais restaurée n'est qu'une hypothèse.
+    # Exercice de restauration : ne touche JAMAIS à la base de production.
+    # Utilise exclusivement la base vide et isolée zup_restore_test configurée
+    # dans l'environnement du shell, puis la conserve pour inspection manuelle.
     fichier="${2:-}"; identite="${3:-}"; fichiers="${4:-}"
-    [ -f "$fichier" ] && [ -f "$identite" ] || { echo "Usage : $0 restore-test <base-….sql.gz.age> <identite-age.txt> [uploads-….tar.gz.age]"; exit 1; }
+    test_url="${RESTORE_TEST_DATABASE_URL:-}"
+    [ -f "$fichier" ] && [ -f "$identite" ] && [ -n "$fichiers" ] && [ -n "$test_url" ] || { echo "Usage : RESTORE_TEST_DATABASE_URL=postgresql://…/zup_restore_test $0 restore-test <base-….sql.gz.age> <identite-age.txt> <uploads-….tar.gz.age>"; exit 1; }
+    test -f "$fichiers" || { echo "❌ Archive de fichiers introuvable : $fichiers"; exit 1; }
+    printf '%s' "$test_url" | grep -Eq '^postgres(ql)?://[^/]+/zup_restore_test([?]|$)' || { echo "❌ RESTORE_TEST_DATABASE_URL doit viser une base dédiée nommée zup_restore_test"; exit 1; }
+    hote_test="$(printf '%s' "$test_url" | sed -E 's#^[^:]+://([^@/]*@)?([^:/?]+).*#\2#')"
+    url_production="$(valeur DATABASE_URL)"; hote_production=postgres
+    if [ -n "$url_production" ]; then hote_production="$(printf '%s' "$url_production" | sed -E 's#^[^:]+://([^@/]*@)?([^:/?]+).*#\2#')"; fi
+    [ -n "$hote_test" ] && [ "$hote_test" != "$hote_production" ] || { echo "❌ La base d'exercice doit être sur un hôte différent de PostgreSQL production."; exit 1; }
+    case "$hote_test" in localhost|127.0.0.1|::1) echo "❌ L'infrastructure d'exercice doit être distante et isolée."; exit 1 ;; esac
     debut_exercice=$SECONDS
     command -v age >/dev/null || { echo "age requis"; exit 1; }
-    TEST_DB="zup_restore_test"
-    sql() { dc exec -T postgres psql -U "$PGU" -v ON_ERROR_STOP=1 -q -t -A "$@"; }
-    nettoyer() { sql -d postgres -c "DROP DATABASE IF EXISTS $TEST_DB" >/dev/null 2>&1 || true; }
-    trap nettoyer EXIT
-    nettoyer
-    sql -d postgres -c "CREATE DATABASE $TEST_DB"
-    age -d -i "$identite" "$fichier" | gunzip | sql -d "$TEST_DB" -o /dev/null
-    echo "Table                 restaurée   production"
+    umask 077
+    dossier_preuves="$SAUVEGARDES/restore-tests"
+    mkdir -p -m 700 "$dossier_preuves"
+    chmod 700 "$dossier_preuves"
+    preuve="$dossier_preuves/restore-$(date +%Y%m%d-%H%M%S).txt"
+    resultat_exercice=FAILED; migrations=0; nombre=0; controle_prisma=NOT_RUN; resume_tables=""
+    finaliser_exercice() {
+      code_sortie=$?
+      trap - EXIT
+      duree_exercice=$((SECONDS - debut_exercice))
+      { printf 'result=%s\nbase=%s\nfichiers=%s\ndatabase=zup_restore_test\nmigrations=%s\nfichiers_extraits=%s\nprisma=%s\ntables=%s\nduration_seconds=%s\n' \
+          "$resultat_exercice" "$(basename "$fichier")" "$(basename "$fichiers")" \
+          "$migrations" "$nombre" "$controle_prisma" "$resume_tables" "$duree_exercice"; } > "$preuve"
+      chmod 600 "$preuve"
+      echo "Durée du contrôle de restauration : ${duree_exercice} s"
+      echo "Preuve locale : $preuve"
+      exit "$code_sortie"
+    }
+    trap finaliser_exercice EXIT
+    sql() { dc exec -T postgres psql "$test_url" -v ON_ERROR_STOP=1 -q -t -A "$@"; }
+    nombre_tables="$(sql -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")"
+    [ "$nombre_tables" = 0 ] || { echo "❌ La base zup_restore_test doit être vide (tables actuelles: $nombre_tables)"; exit 1; }
+    age -d -i "$identite" "$fichier" | gunzip -t
+    age -d -i "$identite" "$fichier" | gunzip | sql -o /dev/null
+    echo "Table                 restaurée   contrôle"
     echec=0
     for table in User Organization Store Order Payment MerchantPayout; do
-      restaure="$(sql -d "$TEST_DB" -c "SELECT count(*) FROM \"$table\"" 2>/dev/null || echo ABSENTE)"
-      reel="$(sql -d "$PGD" -c "SELECT count(*) FROM \"$table\"" 2>/dev/null || echo ABSENTE)"
-      printf '%-20s %10s %12s\n' "$table" "$restaure" "$reel"
+      restaure="$(sql -c "SELECT count(*) FROM \"$table\"" 2>/dev/null || echo ABSENTE)"
+      reel="non comparée"
+      printf '%-20s %10s %15s\n' "$table" "$restaure" "$reel"
+      resume_tables="$resume_tables$table=$restaure;"
       [ "$restaure" = "ABSENTE" ] && echec=1
     done
-    migrations="$(sql -d "$TEST_DB" -c 'SELECT count(*) FROM "_prisma_migrations"' 2>/dev/null || echo 0)"
+    migrations="$(sql -c 'SELECT count(*) FROM "_prisma_migrations"' 2>/dev/null || echo 0)"
     echo "Migrations Prisma restaurées : $migrations"
     [ "${migrations:-0}" -gt 0 ] || echec=1
-    # Les documents privés et les photos : l'archive doit se déchiffrer et se lire.
-    if [ -n "$fichiers" ]; then
-      [ -f "$fichiers" ] || { echo "❌ Archive de fichiers introuvable : $fichiers"; exit 1; }
-      nombre="$(age -d -i "$identite" "$fichiers" | tar tzf - 2>/dev/null | wc -l)"
-      echo "Fichiers dans l'archive : $nombre"
-      [ "${nombre:-0}" -gt 0 ] || echec=1
-    else
-      echo "ℹ️  Archive de fichiers non vérifiée (4e argument : uploads-….tar.gz.age)"
-    fi
-    echo "Durée de la restauration : $((SECONDS - debut_exercice)) s (à noter : c'est votre délai de reprise réel)"
+    # Extraire dans un conteneur éphémère sans volume ni réseau : jamais dans
+    # les volumes de l'API en exploitation. Le conteneur est supprimé à la fin.
+    nombre="$(age -d -i "$identite" "$fichiers" | docker run --rm -i --network none --entrypoint sh zupone-backend -c 'd=$(mktemp -d /tmp/zup-restore.XXXXXX); tar xzf - -C "$d"; find "$d" -type f | wc -l')"
+    echo "Fichiers extraits et contrôlés dans le conteneur éphémère : $nombre"
+    [ "${nombre:-0}" -gt 0 ] || echec=1
+    # Utiliser le client Prisma de production sans démarrer serveur, jobs ou
+    # entrypoint (qui pourrait parcourir les volumes de l'API).
+    dc run --rm --no-deps --entrypoint node -e "DATABASE_URL=$test_url" backend --input-type=module -e \
+      'import { PrismaPg } from "@prisma/adapter-pg"; import { PrismaClient } from "@prisma/client"; const p=new PrismaClient({adapter:new PrismaPg({connectionString:process.env.DATABASE_URL})}); const r=await p.$queryRaw`SELECT count(*)::int AS n FROM "_prisma_migrations"`; console.log(`Prisma applicatif: ${r[0].n} migrations`); if(!r[0].n) process.exitCode=1; await p.$disconnect();'
     if [ "$echec" -ne 0 ]; then echo "❌ Restauration incomplète : cette sauvegarde n'est pas exploitable"; exit 1; fi
-    echo "✅ La sauvegarde se restaure. Écarts de comptage normaux si la production a avancé depuis."
-    echo "   Pensez à supprimer l'identité age copiée sur ce serveur."
+    controle_prisma=PASS
+    resultat_exercice=SUCCESS
+    echo "✅ La sauvegarde se restaure sur la base d'exercice isolée zup_restore_test."
+    echo "   La base zup_restore_test est conservée pour l'inspection; supprimez-la après validation."
     ;;
   restore)
     echo "Restauration en base isolée requise : réconcilier les effacements postérieurs avant de remettre l'API en service. Voir docs/rgpd/exploitation.md."

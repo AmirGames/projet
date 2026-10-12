@@ -96,9 +96,10 @@ async function controlerMaintenance(): Promise<Controle> {
 }
 
 /**
- * Une vraie sauvegarde récente existe-t-elle : dump PostgreSQL + fichiers, faits
- * par `deploy/zup.sh backup`. L'export JSON partiel de l'écran Données n'en est
- * pas une et ne compte pas : il ne permet pas de reprendre après une perte de base.
+ * Une copie distante complète et récente existe-t-elle : le statut COMPLETED
+ * et le préfixe A08 ne sont publiés qu'après vérification du dump PostgreSQL,
+ * des fichiers et du manifeste. Les anciennes lignes et exports partiels ne
+ * prouvent pas une copie hors serveur.
  */
 async function controlerSauvegardes(): Promise<Controle> {
   const derniere = await db.backup.findFirst({
@@ -120,9 +121,10 @@ async function controlerSauvegardes(): Promise<Controle> {
     };
   }
 
-  const jours = Math.floor((Date.now() - derniere.createdAt.getTime()) / JOUR);
-  // Sauvegarde nocturne attendue : au-delà de deux jours, quelque chose a cessé.
-  const score = jours <= 2 ? 1 : jours <= 7 ? 0.5 : 0.2;
+  const ageHeures = (Date.now() - derniere.createdAt.getTime()) / 3_600_000;
+  // RPO de travail : 24 h. Une nuit manquée dégrade l'indicateur dès ce seuil.
+  const score = ageHeures <= 24 ? 1 : ageHeures <= 48 ? 0.5 : 0.2;
+  const heures = Math.floor(ageHeures);
 
   return {
     cle: "sauvegardes",
@@ -131,10 +133,10 @@ async function controlerSauvegardes(): Promise<Controle> {
     score,
     etat: etatDuScore(score),
     detail:
-      jours === 0
-        ? "Sauvegarde complète du jour"
-        : `Dernière sauvegarde complète il y a ${jours} jour${jours > 1 ? "s" : ""}`,
-    remede: score === 1 ? "" : "La sauvegarde nocturne ne passe plus : consultez ~/sauvegardes.log sur le serveur.",
+      heures < 24
+        ? "Sauvegarde distante complète de moins de 24 h"
+        : `Dernière copie distante complète il y a ${heures} h`,
+    remede: score === 1 ? "" : "Contrôlez `systemctl status zup-sauvegarde.timer` puis `journalctl -u zup-sauvegarde.service --since yesterday`; vérifiez BACKUP_REMOTE, rclone et le manifeste distant.",
   };
 }
 

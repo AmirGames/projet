@@ -1,5 +1,18 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Étape 11 — A08 : sauvegardes distantes et restauration (12 octobre 2026)
+
+`deploy/zup.sh backup` distingue désormais une archive locale, une copie
+distante vérifiée et une restauration d'exercice. En production, la destination
+rclone est requise par défaut ; `COMPLETED` n'est enregistré qu'après SHA-256
+identique des deux objets distants et publication de leur manifeste. L'interface
+des données ne propose le téléchargement/la restauration que pour ses exports
+partiels. Configuration, clés, cibles provisoires, procédures et limites sont
+dans le [guide A08](docs/SAUVEGARDES-RESTAURATION-A08.md) et son
+[registre de preuves](docs/etat-projet.md#étape-11--a08-sauvegardes-distantes-et-restauration).
+Le dépôt ne fournit pas ici de preuve d'accès au bucket, de restauration sur
+infrastructure isolée ni de validation en exploitation.
+
 ## Étape 10 — A07 : facturation structurée et preuves légales (12 octobre 2026)
 
 Le transport réel n'est pas activé : aucun opérateur/fournisseur ni données
