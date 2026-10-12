@@ -1,10 +1,13 @@
 # Déployer sur un VPS Scaleway
 
-**État au 4 octobre 2026 :** ZupEat est déjà déployé sur un VPS, avec l'API
-à `https://api.zupeat.com`. Ce guide reste la procédure d'installation et
-d'exploitation ; il s'applique aussi à un VPS compatible chez un autre
-hébergeur. Les validations connues et celles restant à faire sont dans
-[docs/etat-projet.md](docs/etat-projet.md).
+**État documentaire au 12 octobre 2026 :** un compte rendu du 4 octobre indique
+un VPS et l'API `https://api.zupeat.com`, mais aucun SHA actif n'est fourni pour
+la version A16. A16 est intégré au commit
+`6439e36a51c6262b4781937c217a4063df6a90db`; cela ne confirme pas son
+déploiement. Ce guide reste la procédure d'installation et d'exploitation.
+Les contrôles à exécuter et la décision bloquée figurent dans
+[la recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md) et
+[l'état du projet](docs/etat-projet.md).
 
 La configuration de déploiement doit câbler `DATABASE_URL_APP` au conteneur
 API et `DATABASE_URL_MIGRATION` au service de migration ; le rôle propriétaire

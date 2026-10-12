@@ -2,29 +2,32 @@
 
 ## État courant — 12 octobre 2026
 
-La dernière étape de préparation documentée est A16 (voir son registre ci-dessous) ;
-le dépôt est sur la branche de travail courante et le SHA de base avant rebase est
-`02111181197407ed8cc0829c90fab008d6eaa874`. Les registres A01–A15 restent datés
-comme historique et ne valent pas état du serveur aujourd'hui. Les états
-« développé », « testé », « intégré », « déployé » et « validé en exploitation »
-sont indépendants. Le [registre spécialisé de lancement UE](registre-lancement-ue.md)
+La version A16 examinée est intégrée à `claude/awesome-ride-m9lci8` au commit
+`6439e36a51c6262b4781937c217a4063df6a90db` (PR #222). Le compte rendu de
+recette ci-dessous décrit un pilote fermé ZupEat avec ZupDrive explicitement
+exclu. **Décision : bloqué pour démarrer la recette utilisateur**, faute de
+SHA/environnement accessible, base représentative et preuves des parcours
+externes. Le résultat CI ne prouve ni déploiement ni exploitation. Les audits
+A01–A16 restent datés ; consulter [la décision et sa matrice A01–A16](RECETTE-PILOTE-A16-2026-10-12.md).
+Les états « développé », « testé », « intégré », « déployé » et « validé en
+exploitation » sont indépendants. Le [registre spécialisé de lancement UE](registre-lancement-ue.md)
 reste la liste de conformité et ne constitue pas une preuve à lui seul.
 
-## Étape 15 — A16 : configuration et documentation
+## Étape 16 — A16 : vérification du pilote et décision de lancement
 
 | État | Date, SHA, environnement | Preuve |
 |---|---|---|
-| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a16-config-docs`, commit `be7f6c5ceba3aedd2a7ed3e18b58b26447e25be9`, base `32b6251c65dacf2ffd2a3d48797edab49eb17b90` (PR A15 #221 intégrée) | Validations backend, stockage privé vérifié au démarrage, sonde SQL en lecture seule, CSP progressive, corrections README et guide [CONFIGURATION-A16](CONFIGURATION-A16.md) |
-| Testé localement | 12 octobre 2026, Windows, sur le code du commit `be7f6c5ceba3aedd2a7ed3e18b58b26447e25be9`, Node 24.21.0, npm 12.0.2, Prisma 7.10.0, Next.js 16.4.0 | Backend config/Stripe/dépendances activées/stockage **10/10**; TypeScript, lint complet backend et build réussis; frontend TypeScript et lint ciblé réussis; assertions CSP exécutées par Node; vérification des liens Markdown réussie. Jest frontend et build frontend bloqués par le binding natif SWC manquant. Base PostgreSQL, navigateur live et Stripe TEST/3DS indisponibles. |
-| Intégré | Non établi | Aucun SHA de fusion |
-| Déployé | Non exécuté | Aucune instance de production modifiée |
-| Validé en exploitation | Non exécuté | Sonde SQL sur base isolée et Stripe TEST/3DS réel non disponibles pendant la préparation |
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a16-config-docs`, code initial `7ba6fab46a1129508cb1a66541e5e809a54c44ee`; dernière tête avant fusion `3085ff4dc09974fc99d6c7361cff79fbe67dff15` | Configuration backend, stockage privé vérifié au démarrage, sonde SQL en lecture seule, CSP progressive et guide [CONFIGURATION-A16](CONFIGURATION-A16.md) |
+| Testé localement | 12 octobre 2026, Windows, SHA testé `be7f6c5ceba3aedd2a7ed3e18b58b26447e25be9`, Node 24.21.0, npm 12.0.2, Prisma 7.10.0, Next.js 16.4.0 | Backend config/Stripe/dépendances activées/stockage **10/10**; TypeScript, lint complet backend et build réussis; frontend TypeScript et lint ciblé réussis; assertions CSP Node et liens Markdown réussis. Jest/build frontend bloqués par le binding natif SWC absent. Cette preuve locale précède des commits A16 ultérieurs. |
+| Testé en CI | 12 octobre 2026, GitHub Actions, head PR `3085ff4dc09974fc99d6c7361cff79fbe67dff15` | **11/11 jobs réussis** : build backend/frontend, migrations PostgreSQL base vide, A01/A02/A09, A04/A05, E2E navigateur, types/lint mobiles et suites mobiles sélectionnées; [run 38287957646](https://github.com/AmirGames/projet/actions/runs/38287957646). Stripe est coupé dans l'E2E. |
+| Intégré | 12 octobre 2026 | [PR #222 fusionnée](https://github.com/AmirGames/projet/pull/222), merge commit `6439e36a51c6262b4781937c217a4063df6a90db` |
+| Déployé | Non établi | Aucun SHA d'environnement ni image active fournis |
+| Validé en exploitation | Non établi | Aucune base de recette représentative, navigation web live, Stripe TEST/3DS externe ou appareil lié à ce SHA |
 
-Le checkout de départ contenait des modifications locales préexistantes de tests
-frontend ; elles sont préservées dans leur checkout et exclues du commit A16.
-La branche A15 était intégrée (PR #221) avant l'ouverture de cette PR. Aucun
-correctif A16 antérieur n'est une dépendance identifiée. Voir le
-[guide A16](CONFIGURATION-A16.md). Les dates des audits précédents sont conservées.
+ZupDrive est explicitement hors périmètre du pilote ; voir la [décision A16](RECETTE-PILOTE-A16-2026-10-12.md#périmètre-décidé).
+La PR A15 #221 est intégrée avant la PR #222. La CI A16 et la vérification
+locale sont des preuves distinctes et n'attestent pas le serveur. Les dates des
+audits antérieurs restent conservées.
 
 ## Étape 14 — A15 : rapports bornés et coûts de lecture (12 octobre 2026)
 
@@ -32,9 +35,9 @@ correctif A16 antérieur n'est une dépendance identifiée. Voir le
 |---|---|---|---|
 | Développé | 12 octobre 2026 | Code `f87c42e9055bb1237a6ce09dc096e7c1cb06ff66` sur base `0dad7379e89128ee143a226341e46b6ed2bb005c`; PR synchronisée avec cible `02111181197407ed8cc0829c90fab008d6eaa874` | [PR A15 #221 en brouillon](https://github.com/AmirGames/projet/pull/221), agrégations PostgreSQL, bornes/pagination API, UI et protocole [A15](RAPPORTS-A15.md) |
 | Testé localement | 12 octobre 2026, partiel | SHA testé `f87c42e9055bb1237a6ce09dc096e7c1cb06ff66`, Windows, Node 24.21.0/npm 12.0.2, Prisma/client 7.10.0 | Backend : typecheck, lint, build et 130 tests ciblés réussis. Frontend : typecheck et lint ciblé réussi. Lint global échoue sur 6 avertissements `coverage/`; build bloqué par SWC natif manquant. Types mobile bloqués par `@types/jest` absent, lint par ESLint absent. SQL/charge non exécutés |
-| Intégré | Non intégré | PR #221 ouverte en brouillon | [PR A15](https://github.com/AmirGames/projet/pull/221) |
-| Déployé | Non déployé | Aucun environnement A15 | Aucune preuve |
-| Validé en exploitation | Non validé | Aucune instance instrumentée | Aucune preuve |
+| Intégré | 12 octobre 2026 | [PR #221 fusionnée](https://github.com/AmirGames/projet/pull/221), merge commit `32b6251c65dacf2ffd2a3d48797edab49eb17b90` |
+| Déployé | Non établi | SHA d'environnement absent | Aucune preuve |
+| Validé en exploitation | Non établi | Copie représentative / instance instrumentée absente | Aucune preuve |
 
 Le rapport A15 conserve l'authentification et le cloisonnement existants et
 n'ajoute aucun cache de droits. Les agrégats financiers incluent tout le
@@ -50,7 +53,7 @@ locale A14 (sonde santé) n'est requise.
 |---|---|---|---|
 | Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a08-backup-restore`, commit d'implémentation `990db45c` sur la base `18e2503e2e792323c9e74445b89baa8d60900fe4` | Script, contrats de statuts, seuil santé, protections API/UI et [procédure A08](SAUVEGARDES-RESTAURATION-A08.md) |
 | Testé localement | 12 octobre 2026 | Windows, Node `24.21.0`, npm `12.0.2`, backend Prisma `7.10.0`, Jest `30.5.2`, frontend Next `16.4.0` | Backend A08 + Vigie **24/24** ; tests contractuels Bash avec doubles **7 cas (5 injections)** ; bash -n, TypeScript backend/frontend, lint backend/frontend ciblé et build backend réussis. Build frontend bloqué avant compilation : binding SWC natif Windows absent. Voir les limites ci-dessous. |
-| Intégré | Non | Aucun SHA de fusion | Aucun lien |
+| Intégré | 12 octobre 2026 | [PR #217 fusionnée](https://github.com/AmirGames/projet/pull/217), merge commit `b303ac0b2a45ee224216b479089bc083e94ae0c2` |
 | Déployé | Non | Aucun accès serveur accordé dans cette session | Aucune preuve |
 | Validé en exploitation | Non | Bucket/identité de restauration/base isolée non accessibles | Aucune preuve ; consulter les prérequis dans la procédure A08 |
 
@@ -61,8 +64,10 @@ retourne un code non nul en politique production, conserve le local en
 explicitement local conserve `LOCAL_ONLY`. Le contrôle de fraîcheur est à 24 h
 (RPO de travail), en panne au-delà de 48 h. La cible RTO de 8 h est provisoire
 et non mesurée. Aucun exercice sur une base de test ou contrôle applicatif
-restauré n'a pu être exécuté ici. Le RPO/RTO doit être approuvé et réévalué
-après mesures réelles.
+restauré n'a pu être exécuté pendant le relevé local initial. La PR A08 #217
+est depuis intégrée (merge `b303ac0b2a45ee224216b479089bc083e94ae0c2`) ; cela
+n'ajoute aucune preuve de copie distante ou restauration du serveur. Le RPO/RTO
+doit être approuvé et réévalué après mesures réelles.
 
 Les sept cas mockés couvrent destination absente, mode local explicite,
 transfert interrompu, erreur de lecture rclone, objet tronqué, publication
@@ -71,8 +76,9 @@ age/rclone réel. `rclone` et `age` sont absents localement ; aucun serveur,
 bucket ou PostgreSQL isolé n'est connecté. Le build frontend `next build` n'a
 pas démarré, car `@swc/core` ne trouve pas son binding `swc.win32-x64-msvc.node`
 et sa cache native locale échoue au contrôle ACL. Aucun test d'intégration
-distante, restauration réelle, CI A08, intégration, déploiement ou validation
-en exploitation n'est revendiqué.
+distante, restauration réelle, déploiement ou validation en exploitation n'est
+revendiqué ; l'intégration #217 est consignée ci-dessus. Le run CI A16 applique
+les migrations sur base vide mais ne teste pas une restauration A08.
 
 ## Étape 10 — A07 : facturation structurée et pages légales (12 octobre 2026)
 
@@ -92,7 +98,7 @@ du comptable sont à obtenir avant publication et ouverture.
 | Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a07-facturation-structuree`, commit code `d6c9480a92a1ea1ce1a577e609fb1be040efc765`, base `0dad7379e89128ee143a226341e46b6ed2bb005c` | Refus fournisseur inconnu/incomplet ; entrées UBL gardées ; guide A07 |
 | Testé localement | 12 octobre 2026 | Commit tests `516fee48d619cc4a37da7f8e94f20334c70efb3e` (code applicatif `d6c9480a92a1ea1ce1a577e609fb1be040efc765`), Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Jest facturation 15/15 (TVA 6/12/21 %, EUR) et droits/journalisation 177/177 ; typecheck, lint, build backend réussis. Sandbox/réception externe et validation EN 16931 non exécutées. |
 | CI GitHub | 12 octobre 2026 | Head observé `7bc79199993f6082759c878cf240c132275cbf27` | Run [38179656367](https://github.com/AmirGames/projet/actions/runs/38179656367) en attente lors de la vérification. |
-| Intégré | Non | PR #216 ouverte le 12 octobre 2026, base `claude/awesome-ride-m9lci8` | [PR A07](https://github.com/AmirGames/projet/pull/216), non fusionnée |
+| Intégré | 12 octobre 2026 | [PR #216 fusionnée](https://github.com/AmirGames/projet/pull/216), merge commit `d4cd525f6b806965fc328fc594fe5f4e51f80fe8` |
 | Déployé | Non | Aucun environnement confirmé | Aucune |
 | Validé en exploitation | Non | Fournisseur/opérateur/sandbox indisponibles | Aucune ; essais externes bloqués |
 
@@ -103,7 +109,7 @@ du comptable sont à obtenir avant publication et ouverture.
 | Développé | 11 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a06-zupdrive-driver`, commit `15f53d14d4c10ac709b168296e4241ce0c4ea381`, base `db38c1cdfe62dfa46a8933fc6d8d1eb43116b544` | `mobile/apps/zupdrive-driver/lib/chauffeur.ts`, écran `app/index.tsx`, test d’URLs, [README mobile](../mobile/apps/zupdrive-driver/README.md). Dépendance rotation auth A09 intégrée par [PR #209](https://github.com/AmirGames/projet/pull/209), merge `6fdb546c8bbbe9af61de00777051f17b9a81e5aa` |
 | Testé localement | 11 octobre 2026 | SHA `15f53d14d4c10ac709b168296e4241ce0c4ea381`, Windows, Node 24.21/npm 12, Expo `~57.0.25` | Mobile : typecheck, lint, export Expo web et Jest **49/49** ; test montage routeur **4/4** ; intégration PostgreSQL tentée mais échec d’authentification à la base `.env.test` (25 cas bloqués) |
 | Testé en CI | En attente | Contrôle de statut du 11 octobre sur le head PR `28246c45187f08930d600de04824a8a9725b0d8b` | Aucun statut CI n’était publié au relevé ; [PR A06](https://github.com/AmirGames/projet/pull/212) |
-| Intégré | Non | PR #212 ouverte, aucun SHA de fusion | [PR A06](https://github.com/AmirGames/projet/pull/212) |
+| Intégré | 12 octobre 2026 | [PR #212 fusionnée](https://github.com/AmirGames/projet/pull/212), merge commit `9869e32d16ef27b3909f8eb196ab629172c09d1f` |
 | Déployé | Non | Aucun environnement A06 confirmé | Aucune preuve |
 | Validé en exploitation | Non | Aucun appareil/backend réel de test observé | Aucune preuve |
 
@@ -123,7 +129,7 @@ en production n'est annoncé. Les tests et leur état réel figurent dans le
 | Développé | 11 octobre 2026 | branche `claude/awesome-ride-m9lci8-a11-drive-webhooks`, SHA `633f3afd52b38b76d595213a0fa434c8abd84c02` | Service, migration et procédure A11 |
 | Testé localement | 11 octobre 2026 | SHA `633f3afd52b38b76d595213a0fa434c8abd84c02`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | 63/63 tests ciblés ; Prisma validate, TypeScript, lint et build backend réussis |
 | CI GitHub | 11 octobre 2026, run courant en attente | [#38176898421](https://github.com/AmirGames/projet/actions/runs/38176898421), head `6c256ebeb9e7f995beb82d3d67fa5aa0fd96df0a` | Le run précédent #38176640071 a été annulé après la mise à jour documentaire ; aucune validation CI finale revendiquée |
-| Intégré | Non intégré | PR #215 ouverte | [PR A11](https://github.com/AmirGames/projet/pull/215) |
+| Intégré | 12 octobre 2026 | [PR #215 fusionnée](https://github.com/AmirGames/projet/pull/215), merge commit `05acf2dc4564451d316ca16531d8897957f94901` |
 | Déployé | Non déployé | VPS inchangé | Aucune |
 | Validé en exploitation | Non validé ; flag désactivé | Aucun environnement de recette | Aucune |
 
@@ -136,7 +142,7 @@ en production n'est annoncé. Les tests et leur état réel figurent dans le
 | Testé CI | 11 octobre 2026, GitHub Actions / Ubuntu / PostgreSQL 16 | SHA `bb3c3d2b9e221e6216920e8afd5ab923368ae2c8`, 11 jobs réussis | [run #38158760374](https://github.com/AmirGames/projet/actions/runs/38158760374) : backend/tests/couverture/build, PostgreSQL dédié, E2E, MFA, types/lint sur six apps et tests Customer/Merchant/Delivery/ZupDrive Passenger |
 | Tests locaux non exécutables | 11 octobre 2026, Windows | Jest/types Customer/Merchant absents localement; aucun PostgreSQL/Docker local | Les suites concernées passent dans la CI ci-dessus; aucun succès local n'est revendiqué |
 | Non exécuté localement / externe | 11 octobre 2026 | Pas de PostgreSQL/Docker local; Jest/types Customer/Merchant incomplets localement; aucune configuration Stripe TEST ou appareil disponible | Les suites PostgreSQL passent en CI; Stripe TEST/3DS interactif et essais sur appareil restent non exécutés |
-| Intégré | Non vérifié | SHA d'intégration absent | Aucune preuve |
+| Intégré | 11 octobre 2026 | [PR #211 fusionnée](https://github.com/AmirGames/projet/pull/211), merge commit `5250ad7369beddbe16810f3cd0e7ec62a72ae50c` |
 | Déployé | Non exécuté | Aucun environnement A13 confirmé | Aucune preuve |
 | Validé en exploitation | Non exécuté | Stripe TEST externe, 3DS et appareils restent à exécuter | Aucune preuve |
 
@@ -173,7 +179,7 @@ les commandes et limites dans [ROTATION-SESSIONS-A09.md](ROTATION-SESSIONS-A09.m
 |---|---|---|---|
 | Développé | 10 octobre 2026 | branche `claude/awesome-ride-m9lci8-a10`, commit `acd9b600d345d7968f4b24b7ecc0cbe69bd92fbe` ; base `abd2d1e` | [code et contrat](LIENS-COMPTE-A10.md) |
 | Testé | 10 octobre 2026 | Windows local, PostgreSQL `a10_test` isolé et migré | [commandes et résultats](preuves-a10-2026-10-10.md) : 2 987 tests backend passés, 91 ignorés ; types, lint, build passés |
-| Intégré | non | aucun SHA de fusion | PR à créer |
+| Intégré | 11 octobre 2026 | [PR #208 fusionnée](https://github.com/AmirGames/projet/pull/208), merge commit `5c51fddd4882e7f720a201b620cb0ad915ee9b0e` |
 | Déployé | non | aucun environnement confirmé | aucune preuve |
 | Validé en exploitation | non | aucun environnement confirmé | aucune preuve |
 
@@ -443,12 +449,13 @@ Diagnostic en lecture seule et rapprochement historique préparés.
 | Développé | 2026-10-09, Windows, branche dédiée A04 | `6c25dac0271e65ff0db29427bb37898a6b8bcfc7` ; [commit code/tests](https://github.com/AmirGames/projet/commit/6c25dac0271e65ff0db29427bb37898a6b8bcfc7), [comportement](VERSEMENTS-CONCURRENCE.md) |
 | Testé localement | 2026-10-09, PostgreSQL 18 isolé, `a04_final_test` | Versements **40/40**, dont A04 **16/16** ; backend **3 004 réussis / 52 ignorés** ; frontend **200/200** ; types/lint/build backend et frontend ; [preuves et limites](preuves-a04-2026-10-09.md) |
 | CI / PR | 2026-10-09, Ubuntu / PostgreSQL 16, PR ouverte | **9 jobs réussis** au SHA `44008e82a9c0e7a064c527b9c3a661921bbfd7df` : backend, frontend, 6 applications mobiles, E2E ; A04 **16/16** sur `payouts_test`, parcours navigateur versements **37/37** ; [CI #196](https://github.com/AmirGames/projet/actions/runs/37979276245), [PR #203](https://github.com/AmirGames/projet/pull/203) |
-| Intégré | Non exécuté | Aucun SHA d'intégration A04 |
+| Intégré | 10 octobre 2026 | [PR #203 fusionnée](https://github.com/AmirGames/projet/pull/203), merge commit `e66cd0e3f676b7e06c2d783dc53e71f780b41128` |
 | Déployé | Non exécuté | Aucun déploiement A04 ; aucune migration propre à cette étape |
 | Validé en exploitation | Non exécuté | Accès de lecture VPS et pièces bancaires nécessaires au rapprochement des historiques |
 
-La PR A03 #202 est intégrée au SHA de départ `564f63db` ; aucune dépendance
-A04 non intégrée identifiée. Aucun virement réel, fusion ou déploiement réalisés.
+La PR A03 #202 (merge `564f63dbba5c2c9fe3b6a8b5865d98139b84e9b1`) est intégrée ;
+A04 l'est par PR #203 au merge `e66cd0e3f676b7e06c2d783dc53e71f780b41128`.
+Aucun virement réel ou déploiement n'est attesté.
 Les cases de priorités ci-dessus restent des demandes, pas des preuves.
 Consulter le [guide API/configuration/tests/exploitation et rapprochement](VERSEMENTS-CONCURRENCE.md),
 les README [backend](../backend/README.md) / [frontend](../frontend/README.md) et
@@ -488,15 +495,14 @@ procédures sont dans [DEPENDANCES-SANTE](DEPENDANCES-SANTE.md).
 | Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a14-health`, commit `55a7d90113d814c7a23f3aac400317a9110dafe0`, base `b303ac0b2a45ee224216b479089bc083e94ae0c2` | Contrats liveness/readiness, sondes PostgreSQL/Redis PING/ClamAV, retrait des dépendances Redis/ClamAV au démarrage du backend; [commit code A14](https://github.com/AmirGames/projet/commit/55a7d90113d814c7a23f3aac400317a9110dafe0) |
 | Testé localement | 12 octobre 2026, Windows, Node 24.21.0, npm 12.0.2, Prisma 7.10.0 | Tests ciblés **11/11**, routes publiques **5/5**, TypeScript, lint et build backend réussis sur le commit code; Docker daemon absent, donc coupures PostgreSQL/Redis/SMTP sur instance isolée et réception d'alertes non éprouvées |
 | CI / PR | 12 octobre 2026, GitHub | [PR #218](https://github.com/AmirGames/projet/pull/218), branche synchronisée avec base à la création; aucun statut CI publié au relevé |
-| Intégré | Non | Aucun SHA de fusion |
+| Intégré | 12 octobre 2026 | [PR #218 fusionnée](https://github.com/AmirGames/projet/pull/218), merge commit `adb811805afe38ffe7a4dc6b90406bfe8b618708` |
 | Déployé | Non | Aucun déploiement ni migration A14 |
 | Validé en exploitation | Non | Aucune instance isolée avec coupures des quatre dépendances; aucune réception d'alerte vérifiée |
 
-Le poste contient d'autres modifications frontend préexistantes, conservées sans
-modification par A14. La branche locale de départ était 48 commits derrière son
-remote au début du travail; aucune PR précédente non intégrée n'a été traitée
-comme une dépendance A14. La PR #218 est ouverte. CI distante, intégration,
-déploiement et validation en exploitation demeurent des états distincts.
+Le relevé local A14 et l'absence de statut CI correspondent à l'instantané
+initial. La PR #218 est depuis intégrée au merge
+`adb811805afe38ffe7a4dc6b90406bfe8b618708`; cela ne prouve pas le déploiement,
+les coupures isolées ni la réception d'alertes. Ces états restent distincts.
 
 ## Étape 13 — A12 : audit et correction des dépendances (12 octobre 2026)
 

@@ -6,6 +6,9 @@ le rôle réellement ouvert, sans écriture, avec `npm run db:role` après
 `npm run build`, sur une base isolée. `ENABLE_STRIPE=false` est le défaut ; son
 activation exige les clés secrète/publique correspondantes et le secret webhook.
 Voir le [guide A16](../docs/CONFIGURATION-A16.md) pour les contrats et limites.
+La recette proposée est fermée et ZupEat uniquement (ZupDrive exclu) ; son
+SHA intégré `6439e36a51c6262b4781937c217a4063df6a90db`, statut CI et essais externes en attente sont dans le
+[compte rendu A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md).
 
 ## A15 — Rapports bornés
 

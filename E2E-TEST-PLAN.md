@@ -5,7 +5,14 @@
 > [`docs/CONTRATS-API-A13.md`](docs/CONTRATS-API-A13.md). Un scénario local avec
 > Stripe désactivé ou simulé n'est pas une validation de paiement externe.
 
-**Mis à jour** : 4 octobre 2026 (scénarios historiques du 27 septembre ; première version : 22 septembre)
+> **A16 — recette du pilote** : avant le parcours manuel, consulter le
+> [compte rendu daté et sa matrice d'évidence](docs/RECETTE-PILOTE-A16-2026-10-12.md).
+> Le commit intégré de référence est `6439e36a51c6262b4781937c217a4063df6a90db`;
+> la CI A16 (`3085ff4dc09974fc99d6c7361cff79fbe67dff15`, run 38287957646)
+> utilise une base éphémère et coupe Stripe dans son E2E. Elle ne coche aucun
+> scénario de recette en staging. Le pilote A16 exclut ZupDrive.
+
+**Mis à jour** : 12 octobre 2026 (compte rendu A16 ajouté ; scénarios historiques du 27 septembre ; première version : 22 septembre)
 **Environnement du plan** : local ou environnement de test isolé
 
 Le site est désormais déployé sur un VPS. Ce plan décrit des scénarios à

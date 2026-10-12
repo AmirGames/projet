@@ -1,5 +1,9 @@
 # ZupEat — application client
 
+Pour la recette fermée au commit intégré `6439e36a51c6262b4781937c217a4063df6a90db`, l'app client est dans le périmètre à
+essayer sur appareil ; l'export CI ne vaut pas validation physique. ZupDrive
+est exclu. Voir la [matrice et la décision de recette](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
 ## Dépendances — audit A12
 
 Le lockfile du 12 octobre 2026 conserve 47 avis de production (1 critique,

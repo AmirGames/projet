@@ -78,7 +78,8 @@ Commandes locales : `cd backend && npx jest src/config/__tests__/env.test.ts --r
 `npx tsc --noEmit`, `npm run lint`, `npm run build`, puis `npm run verif:csp`
 contre un serveur configuré en report-only et ensuite enforce. Les chemins et
 résultats effectivement exécutés sont consignés dans
-[le registre courant](etat-projet.md#étape-15--a16-configuration-et-documentation).
+[le registre courant](etat-projet.md#étape-16--a16-vérification-du-pilote-et-décision-de-lancement)
+et [le compte rendu de recette](RECETTE-PILOTE-A16-2026-10-12.md).
 
 Pas de migration Prisma attendue. Une correction ultérieure de configuration
 de déploiement doit conserver les contrats REST/webhook existants, les permissions,
