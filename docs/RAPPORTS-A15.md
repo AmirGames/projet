@@ -1,6 +1,6 @@
 # Rapports et revenus bornés — A15
 
-**État au 12 octobre 2026 — branche A15, changements locaux non commités.**
+**État au 12 octobre 2026 — commit code `f87c42e9055bb1237a6ce09dc096e7c1cb06ff66`, PR brouillon [#221](https://github.com/AmirGames/projet/pull/221).**
 
 ## Contrats
 
@@ -109,8 +109,8 @@ configuration ou migration n'est requis.
 
 | État | Date | SHA / environnement | Preuve |
 |---|---|---|---|
-| Développé | 12 octobre 2026 | branche A15 issue de `0dad7379e89128ee143a226341e46b6ed2bb005c`; changements non commités | Code et présent document |
-| Testé localement | 12 octobre 2026, partiel | Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Backend : typecheck, lint, build et 130 tests ciblés réussis (rapports, revenus, cloisonnement). Frontend : typecheck, lint de l'écran rapports, JSON et liens réussis. Lint global frontend échoue sur 6 avertissements dans les fichiers générés `coverage/`; build bloqué par le binding natif SWC absent. App commerçant mobile : types bloqués par les types Jest manquants, lint par ESLint absent. SQL/charge non exécutés |
-| Intégré | Non intégré | SHA de merge absent | Aucune preuve |
+| Développé | 12 octobre 2026 | commit code `f87c42e9055bb1237a6ce09dc096e7c1cb06ff66`, branche A15, base `0dad7379e89128ee143a226341e46b6ed2bb005c` | [PR brouillon #221](https://github.com/AmirGames/projet/pull/221), code et présent document |
+| Testé localement | 12 octobre 2026, partiel | SHA testé `f87c42e9055bb1237a6ce09dc096e7c1cb06ff66`, Windows, Node 24.21.0, npm 12.0.2, Prisma/client 7.10.0 | Backend : typecheck, lint, build et 130 tests ciblés réussis (rapports, revenus, cloisonnement). Frontend : typecheck, lint de l'écran rapports, JSON et liens réussis. Lint global frontend échoue sur 6 avertissements dans les fichiers générés `coverage/`; build bloqué par le binding natif SWC absent. App commerçant mobile : types bloqués par les types Jest manquants, lint par ESLint absent. SQL/charge non exécutés |
+| Intégré | Non intégré | PR #221 ouverte en brouillon | [PR A15](https://github.com/AmirGames/projet/pull/221) |
 | Déployé | Non déployé | Aucun environnement A15 | Aucune preuve |
 | Validé en exploitation | Non validé | Aucune instance équivalente instrumentée | Aucune preuve |
