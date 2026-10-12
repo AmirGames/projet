@@ -14,6 +14,7 @@ import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 import AssistantWidget from './assistant/AssistantWidget';
 import { FooterZupEatPro } from './FooterZupEatPro';
 import type { EspaceHeberge } from '@/lib/domaines';
+import { PAGES_LEGALES } from '@/lib/editeur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -137,8 +138,12 @@ export default function RootLayoutContent({
     (chemin?.startsWith('/store/') && chemin !== '/store/new');
   // L'accueil du domaine commerçant porte son identité ZupEat ; le chatbot
   // ZupOne ajoutait une seconde marque au bas de cette page.
+  const pagesLegales = PAGES_LEGALES.map((page) => page.href);
   const afficherPiedLivreur = espaceHote === 'livreur' && [
-    '/', '/devenir-livreur', '/driver/login', '/driver/signup',
+    '/', '/devenir-livreur', '/driver/login', '/driver/signup', ...pagesLegales,
+  ].includes(chemin ?? '');
+  const afficherPiedCommercant = espaceHote === 'pro' && [
+    '/devenir-commercant', '/merchant/register', ...pagesLegales,
   ].includes(chemin ?? '');
   const masquerAssistant = (espaceHote === 'pro' && chemin === '/') || espaceHote === 'livreur';
 
@@ -149,6 +154,7 @@ export default function RootLayoutContent({
       {children}
       {!sansPied && <PiedDeGroupe />}
       {afficherPiedLivreur && <FooterZupEatPro mode="livreur" />}
+      {afficherPiedCommercant && <FooterZupEatPro mode="pro" />}
       {!chemin?.startsWith('/impression') && !chemin?.startsWith('/sso') && !masquerAssistant && <AssistantWidget />}
     </>
   );
