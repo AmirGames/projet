@@ -441,8 +441,8 @@ procédures sont dans [DEPENDANCES-SANTE](DEPENDANCES-SANTE.md).
 
 | État | Date, SHA, environnement | Preuve |
 |---|---|---|
-| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a14-health`, commit `6f78e94cd9ed63a1e72bb124ca1be617aa6be5a2`, base `b303ac0b2a45ee224216b479089bc083e94ae0c2` | Contrats liveness/readiness, contrôles Redis/ClamAV, retrait des dépendances Redis/ClamAV au démarrage du backend; [commit A14](https://github.com/AmirGames/projet/commit/6f78e94cd9ed63a1e72bb124ca1be617aa6be5a2) |
-| Testé localement | 12 octobre 2026, Windows, Node 24.21.0, npm 12.0.2, Prisma 7.10.0 | Tests ciblés **11/11**, routes publiques **5/5**, TypeScript, lint et build backend réussis; Docker daemon absent, donc coupures PostgreSQL/Redis/SMTP sur instance isolée et réception d'alertes non éprouvées |
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a14-health`, commit `55a7d90113d814c7a23f3aac400317a9110dafe0`, base `b303ac0b2a45ee224216b479089bc083e94ae0c2` | Contrats liveness/readiness, sondes PostgreSQL/Redis PING/ClamAV, retrait des dépendances Redis/ClamAV au démarrage du backend; [commit code A14](https://github.com/AmirGames/projet/commit/55a7d90113d814c7a23f3aac400317a9110dafe0) |
+| Testé localement | 12 octobre 2026, Windows, Node 24.21.0, npm 12.0.2, Prisma 7.10.0 | Tests ciblés **11/11**, routes publiques **5/5**, TypeScript, lint et build backend réussis sur le commit code; Docker daemon absent, donc coupures PostgreSQL/Redis/SMTP sur instance isolée et réception d'alertes non éprouvées |
 | CI / PR | 12 octobre 2026, GitHub | [PR #218](https://github.com/AmirGames/projet/pull/218), branche synchronisée avec base à la création; aucun statut CI publié au relevé |
 | Intégré | Non | Aucun SHA de fusion |
 | Déployé | Non | Aucun déploiement ni migration A14 |
