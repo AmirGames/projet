@@ -43,6 +43,9 @@ interface ReportOrder {
 interface SalesReport {
   statusBreakdown?: Record<string, number>;
   orders?: ReportOrder[];
+  totalOrders?: number;
+  totalRevenue?: number;
+  averageOrderValue?: number;
 }
 
 interface ProductPerf {
@@ -196,6 +199,7 @@ export default function StatsScreen({ token, storeId, onBack }: { token: string;
   const [period, setPeriod] = useState<Period>('7d');
   const [report, setReport] = useState<SalesReport | null>(null);
   const [previous, setPrevious] = useState<ReportOrder[]>([]);
+  const [previousTotals, setPreviousTotals] = useState<{ count: number; revenue: number; average: number }>({ count: 0, revenue: 0, average: 0 });
   const [topProducts, setTopProducts] = useState<ProductPerf[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -210,7 +214,7 @@ export default function StatsScreen({ token, storeId, onBack }: { token: string;
       const prevStart = new Date(start.getTime() - span);
       const prevEnd = period === 'today' ? new Date(Date.now() - DAY) : new Date(start.getTime() - 1);
       const q = (s: Date, e?: Date) =>
-        `/api/reports/sales?storeId=${storeId}&startDate=${encodeURIComponent(s.toISOString())}${
+        `/api/reports/sales?storeId=${storeId}&limit=100&offset=0&startDate=${encodeURIComponent(s.toISOString())}${
           e ? `&endDate=${encodeURIComponent(e.toISOString())}` : ''
         }`;
       const [sales, prev, perf] = await Promise.all([
@@ -220,6 +224,7 @@ export default function StatsScreen({ token, storeId, onBack }: { token: string;
       ]);
       setReport(sales);
       setPrevious(valid(prev.orders));
+      setPreviousTotals({ count: prev.totalOrders ?? valid(prev.orders).length, revenue: prev.totalRevenue ?? valid(prev.orders).reduce((sum, o) => sum + amount(o), 0), average: prev.averageOrderValue ?? 0 });
       setTopProducts((perf.products || []).filter((p) => p.totalSold > 0).slice(0, 5));
     } catch (e: any) {
       setError(e.message || 'Impossible de charger les statistiques');
@@ -236,20 +241,21 @@ export default function StatsScreen({ token, storeId, onBack }: { token: string;
 
   const stats = useMemo(() => {
     const orders = valid(report?.orders);
-    const revenue = orders.reduce((s, o) => s + amount(o), 0);
-    const prevRevenue = previous.reduce((s, o) => s + amount(o), 0);
+    const revenue = report?.totalRevenue ?? orders.reduce((s, o) => s + amount(o), 0);
+    const prevRevenue = previousTotals.revenue || previous.reduce((s, o) => s + amount(o), 0);
+    const count = report?.totalOrders ?? orders.length;
     return {
       orders,
       revenue,
       prevRevenue,
-      count: orders.length,
-      prevCount: previous.length,
-      avg: orders.length ? revenue / orders.length : 0,
-      prevAvg: previous.length ? prevRevenue / previous.length : 0,
-      refused: (report?.orders?.length || 0) - orders.length,
+      count,
+      prevCount: previousTotals.count || previous.length,
+      avg: report?.averageOrderValue ?? (count ? revenue / count : 0),
+      prevAvg: previousTotals.average || (previous.length ? prevRevenue / previous.length : 0),
+      refused: (report?.statusBreakdown?.REJECTED || 0) + (report?.statusBreakdown?.CANCELLED || 0),
       chart: buckets(period, orders),
     };
-  }, [report, previous, period]);
+  }, [report, previous, previousTotals, period]);
 
   const periodInfo = PERIODS.find((p) => p.key === period)!;
   const breakdown = Object.entries(report?.statusBreakdown || {}).filter(([, n]) => n > 0);

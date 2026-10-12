@@ -1,5 +1,22 @@
 # État du projet et travail restant
 
+## Étape 14 — A15 : rapports bornés et coûts de lecture (12 octobre 2026)
+
+| État | Date | SHA / environnement | Preuve |
+|---|---|---|---|
+| Développé | 12 octobre 2026 | Branche `claude/awesome-ride-m9lci8-a15-bounded-reports`, base locale `0dad7379e89128ee143a226341e46b6ed2bb005c`; modifications non commités | Agrégations PostgreSQL, bornes/pagination API, UI de pagination, guide et protocole [A15](RAPPORTS-A15.md) |
+| Testé localement | 12 octobre 2026, partiel | Windows, Node 24.21.0/npm 12.0.2, Prisma/client 7.10.0 | Backend : typecheck, lint, build et 130 tests ciblés réussis. Frontend : typecheck et lint ciblé réussi. Lint global échoue sur 6 avertissements `coverage/`; build bloqué par SWC natif manquant. Types mobile bloqués par `@types/jest` absent, lint par ESLint absent. SQL/charge non exécutés |
+| Intégré | Non intégré | Aucun SHA de merge | Aucune preuve |
+| Déployé | Non déployé | Aucun environnement A15 | Aucune preuve |
+| Validé en exploitation | Non validé | Aucune instance instrumentée | Aucune preuve |
+
+Le rapport A15 conserve l'authentification et le cloisonnement existants et
+n'ajoute aucun cache de droits. Les agrégats financiers incluent tout le
+périmètre demandé malgré la pagination des lignes. Les plans `EXPLAIN`, mesures
+de mémoire/latence/débit sur jeu représentatif, tests multi-organisations et
+comparaisons SQL avant/après restent à exécuter sur une base de test dédiée;
+aucune capacité n'est revendiquée. Voir [contrat et protocole A15](RAPPORTS-A15.md).
+
 ## Étape 08 — A06 : contrat de l’application chauffeur ZupDrive (11 octobre 2026)
 
 | État | Date | SHA / environnement | Preuve |

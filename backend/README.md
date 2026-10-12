@@ -1,5 +1,17 @@
 # Backend ZupEat / ZupDrive
 
+## A15 — Rapports bornés
+
+`GET /api/reports/{sales,revenue,products/:storeId,customers/:storeId}` accepte
+`startDate` et `endDate` (ISO-8601 ou date `YYYY-MM-DD`, bornes inclusives),
+limite une période à 366 jours et utilise les 90 derniers jours par défaut.
+Les listes utilisent `limit` (50 par défaut, max 100) et `offset` (max 100000).
+Les exportations CSV sont limitées à 31 jours et 5000 lignes. `GET
+/api/drivers/earnings` expose les 30 dernières courses par défaut (`limit` 1–100,
+`offset` max 100000), avec totaux calculés sur tout l'historique. Erreurs :
+`INVALID_REPORT_DATE`, `REPORT_PERIOD_OUT_OF_RANGE`, `INVALID_PAGINATION`.
+Voir le [contrat et protocole A15](../docs/RAPPORTS-A15.md).
+
 ## A11 — Webhooks sortants ZupDrive
 
 Le worker PostgreSQL, la signature HMAC-SHA256, les reprises bornées, l'inspection

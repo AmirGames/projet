@@ -14,6 +14,7 @@ import { DriverAvailabilityService } from "./driver-availability.service";
 import { DriverSupportService } from "./driver-support.service";
 import { confirmationExigee, confirmationAEnvoyer, envoyerConfirmation } from "../auth/auth-confirmation.service";
 import { codeErreur } from "../../utils/code-erreur";
+import { debutDeJourBruxelles, debutDeMoisBruxelles, debutDeSemaine } from "../../utils/semaine-bruxelles";
 
 export type InscriptionLivreur = {
   name: string;
@@ -107,68 +108,81 @@ export const DriverAccountService = {
   },
 
   /** Revenus du livreur : totaux par période, pourboires, dernières courses. */
-  async revenus(livreur: Courier) {
-    const [courses, pourboires] = await Promise.all([
+  async revenus(livreur: Courier, limit = 30, offset = 0) {
+    const maintenant = new Date();
+    const debutJour = debutDeJourBruxelles(maintenant);
+    const debutSemaine = debutDeSemaine(maintenant);
+    const debutMois = debutDeMoisBruxelles(maintenant);
+    const [courses, totaux, totauxPourboires] = await Promise.all([
       db.orderDelivery.findMany({
         where: { driverId: livreur.id, status: "DELIVERED" },
         include: { order: { select: { feesAmount: true, tipAmount: true } } },
-        orderBy: { deliveryTime: "desc" },
+        orderBy: [{ deliveryTime: { sort: "desc", nulls: "last" } }, { id: "desc" }],
+        take: limit,
+        skip: offset,
       }),
-      // Les pourboires laissés après la livraison : un revenu à part entière.
-      db.courierTip.findMany({
-        where: { driverId: livreur.id, status: "PAID" },
-        select: { orderId: true, amount: true, paidAt: true },
-      }),
+      db.$queryRaw<Array<{ total: Prisma.Decimal; today: Prisma.Decimal; week: Prisma.Decimal; month: Prisma.Decimal; deliveryCount: bigint; tipsToday: Prisma.Decimal; tipsWeek: Prisma.Decimal; tipsMonth: Prisma.Decimal; tipsTotal: Prisma.Decimal }>>`
+        SELECT
+          COALESCE(SUM(COALESCE(d."driverPayout", o."feesAmount", 0)), 0) AS total,
+          COALESCE(SUM(COALESCE(d."driverPayout", o."feesAmount", 0)) FILTER (WHERE COALESCE(d."deliveryTime", d."updatedAt") >= ${debutJour}), 0) AS today,
+          COALESCE(SUM(COALESCE(d."driverPayout", o."feesAmount", 0)) FILTER (WHERE COALESCE(d."deliveryTime", d."updatedAt") >= ${debutSemaine}), 0) AS week,
+          COALESCE(SUM(COALESCE(d."driverPayout", o."feesAmount", 0)) FILTER (WHERE COALESCE(d."deliveryTime", d."updatedAt") >= ${debutMois}), 0) AS month,
+          COUNT(*) AS "deliveryCount",
+          COALESCE(SUM(o."tipAmount") FILTER (WHERE COALESCE(d."deliveryTime", d."updatedAt") >= ${debutJour}), 0) AS "tipsToday",
+          COALESCE(SUM(o."tipAmount") FILTER (WHERE COALESCE(d."deliveryTime", d."updatedAt") >= ${debutSemaine}), 0) AS "tipsWeek",
+          COALESCE(SUM(o."tipAmount") FILTER (WHERE COALESCE(d."deliveryTime", d."updatedAt") >= ${debutMois}), 0) AS "tipsMonth",
+          COALESCE(SUM(o."tipAmount"), 0) AS "tipsTotal"
+        FROM "OrderDelivery" d JOIN "Order" o ON o.id = d."orderId"
+        WHERE d."driverId" = ${livreur.id} AND d.status = 'DELIVERED'`,
+      db.$queryRaw<Array<{ today: Prisma.Decimal; week: Prisma.Decimal; month: Prisma.Decimal; total: Prisma.Decimal }>>`
+        SELECT
+          COALESCE(SUM(amount) FILTER (WHERE "paidAt" >= ${debutJour}), 0) AS today,
+          COALESCE(SUM(amount) FILTER (WHERE "paidAt" >= ${debutSemaine}), 0) AS week,
+          COALESCE(SUM(amount) FILTER (WHERE "paidAt" >= ${debutMois}), 0) AS month,
+          COALESCE(SUM(amount) FILTER (WHERE "paidAt" IS NOT NULL), 0) AS total
+        FROM "DriverTip" WHERE "driverId" = ${livreur.id} AND status = 'PAID'`,
     ]);
-
-    const maintenant = new Date();
-    const debutJour = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
-    const debutSemaine = new Date(debutJour);
-    debutSemaine.setDate(debutJour.getDate() - ((debutJour.getDay() + 6) % 7));
-    const debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
 
     // On paie ce qui a été annoncé à l'attribution : base + distance. Les
     // frais facturés au client ne servent de repli que pour les courses
     // antérieures au barème, qui n'ont pas de montant figé.
     const gain = (c: (typeof courses)[number]) =>
       Number(c.driverPayout ?? c.order?.feesAmount ?? 0);
-    const pourboiresDepuis = (date: Date) =>
-      pourboires
-        .filter((p) => p.paidAt && p.paidAt >= date)
-        .reduce((somme, p) => somme + Number(p.amount), 0);
-    const depuis = (date: Date) =>
-      courses
-        .filter((c) => (c.deliveryTime || c.updatedAt) >= date)
-        .reduce((somme, c) => somme + gain(c), 0) + pourboiresDepuis(date);
+    const ids = courses.map((c) => c.orderId);
+    const pourboires = ids.length ? await db.courierTip.findMany({
+      where: { driverId: livreur.id, status: "PAID", orderId: { in: ids } },
+      select: { orderId: true, amount: true },
+    }) : [];
     const apresLivraison = new Map(pourboires.map((p) => [p.orderId, Number(p.amount)]));
 
     // Les pourboires à part : celui laissé en commandant (déjà compris dans
     // le gain de la course) compte au jour de la livraison, celui laissé
     // après au jour où il est encaissé.
     const pourboireCommande = (c: (typeof courses)[number]) => Number(c.order?.tipAmount ?? 0);
-    const tousPourboiresDepuis = (date: Date) =>
-      courses
-        .filter((c) => (c.deliveryTime || c.updatedAt) >= date)
-        .reduce((somme, c) => somme + pourboireCommande(c), 0) + pourboiresDepuis(date);
     const arrondi = (n: number) => Math.round(n * 100) / 100;
+    const total = totaux[0];
+    const extras = totauxPourboires[0];
+    const pourboireApres = (key: "today" | "week" | "month" | "total") => Number(extras?.[key] || 0);
+    const pourboireCommandeDepuis = (key: "tipsToday" | "tipsWeek" | "tipsMonth" | "tipsTotal") => Number(total?.[key] || 0);
 
     return {
-      total: courses.reduce((somme, c) => somme + gain(c), 0) + pourboiresDepuis(new Date(0)),
-      today: depuis(debutJour),
-      week: depuis(debutSemaine),
-      month: depuis(debutMois),
-      deliveryCount: courses.length,
+      total: Number(total?.total || 0) + pourboireApres("total"),
+      today: Number(total?.today || 0) + pourboireApres("today"),
+      week: Number(total?.week || 0) + pourboireApres("week"),
+      month: Number(total?.month || 0) + pourboireApres("month"),
+      deliveryCount: Number(total?.deliveryCount || 0),
       // Déjà compris dans les montants ci-dessus : le détail des pourboires.
       pourboires: {
-        today: arrondi(tousPourboiresDepuis(debutJour)),
-        week: arrondi(tousPourboiresDepuis(debutSemaine)),
-        month: arrondi(tousPourboiresDepuis(debutMois)),
-        total: arrondi(tousPourboiresDepuis(new Date(0))),
+        today: arrondi(pourboireCommandeDepuis("tipsToday") + pourboireApres("today")),
+        week: arrondi(pourboireCommandeDepuis("tipsWeek") + pourboireApres("week")),
+        month: arrondi(pourboireCommandeDepuis("tipsMonth") + pourboireApres("month")),
+        total: arrondi(pourboireCommandeDepuis("tipsTotal") + pourboireApres("total")),
       },
       // Nulle tant que personne ne l'a noté : « 5,00 / 5 » s'affichait sur un
       // écran de revenus dès la première course.
       rating: livreur.totalRatings > 0 ? Number(livreur.rating) : null,
       avis: livreur.totalRatings,
+      pagination: { total: Number(total?.deliveryCount || 0), limit, offset, hasMore: offset + courses.length < Number(total?.deliveryCount || 0) },
       deliveries: courses.slice(0, 30).map((c) => ({
         id: c.id,
         orderId: c.orderId,

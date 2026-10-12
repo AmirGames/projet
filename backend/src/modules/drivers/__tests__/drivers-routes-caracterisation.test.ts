@@ -28,6 +28,7 @@ const db: any = {
   outboxMessage: model("create"),
 };
 db.$transaction = jest.fn(async (fn: any) => fn(db));
+db.$queryRaw = jest.fn();
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/env", () => ({ getEnv: () => ({ NODE_ENV: "test", JWT_SECRET: "a".repeat(40), API_URL: "https://api.test", FRONTEND_URL: "https://test", LOG_LEVEL: "error" }) }));
 jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
@@ -225,11 +226,24 @@ describe("profil, revenus, disponibilité", () => {
   it("GET /earnings", async () => {
     db.orderDelivery.findMany.mockResolvedValue([{ id: "course-1", orderId: "commande-1", driverPayout: 5, deliveryTime: new Date(), updatedAt: new Date(), order: { feesAmount: 3, tipAmount: 1 } }]);
     db.courierTip.findMany.mockResolvedValue([{ orderId: "commande-1", amount: 2, paidAt: new Date() }]);
+    db.$queryRaw.mockResolvedValueOnce([{ total: 5, today: 5, week: 5, month: 5, deliveryCount: 1n, tipsToday: 1, tipsWeek: 1, tipsMonth: 1, tipsTotal: 1 }])
+      .mockResolvedValueOnce([{ today: 2, week: 2, month: 2, total: 2 }]);
     const r = await alice(request(app).get("/api/drivers/earnings"));
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ total: 7, today: 7, week: 7, month: 7, deliveryCount: 1, rating: 4.5, avis: 2 });
     expect(r.body.pourboires).toEqual({ today: 3, week: 3, month: 3, total: 3 });
     expect(r.body.deliveries[0]).toMatchObject({ id: "course-1", orderId: "commande-1", earning: 5, pourboire: 1, pourboireApres: 2 });
+    expect(db.orderDelivery.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 30, skip: 0 }));
+  });
+  it("GET /earnings borne la page sans borner les totaux SQL", async () => {
+    db.orderDelivery.findMany.mockResolvedValue([]);
+    db.courierTip.findMany.mockResolvedValue([]);
+    db.$queryRaw.mockResolvedValueOnce([{ total: 900, today: 0, week: 0, month: 0, deliveryCount: 1000n, tipsToday: 0, tipsWeek: 0, tipsMonth: 0, tipsTotal: 0 }])
+      .mockResolvedValueOnce([{ today: 0, week: 0, month: 0, total: 0 }]);
+    const r = await alice(request(app).get("/api/drivers/earnings?limit=20&offset=40"));
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ total: 900, deliveryCount: 1000, pagination: { total: 1000, limit: 20, offset: 40, hasMore: true } });
+    expect(db.orderDelivery.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 20, skip: 40 }));
   });
   it("PATCH /availability : booléen requis", async () => {
     const r = await alice(request(app).patch("/api/drivers/availability").send({ isOnline: "oui" }));

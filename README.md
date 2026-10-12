@@ -1,5 +1,13 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+## Rapports A15
+
+Les API de rapports appliquent une période par défaut de 90 jours, une période
+maximale de 366 jours et une pagination bornée. Les agrégats sont calculés dans
+PostgreSQL; les revenus livreurs n'hydratent plus tout l'historique. Contrats,
+limites et protocole de charge : [guide A15](docs/RAPPORTS-A15.md). Les mesures
+sur une base représentative et la validation en exploitation restent à faire.
+
 ## Étape 07 — A13 : contrats API et preuves de parcours (11 octobre 2026)
 
 Les contrats HTTP paiement sont figés par tests de routes (droits client/invité,

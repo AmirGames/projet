@@ -2981,7 +2981,9 @@
     "derniereVisite": "Last visit",
     "ongletVentes": "Sales",
     "ongletRevenus": "Revenue",
-    "ongletProduits": "Products"
+    "ongletProduits": "Products",
+    "paginationNext": "Next",
+    "paginationPrev": "Previous"
   },
   "merchantstaff": {
     "create": "Create",
