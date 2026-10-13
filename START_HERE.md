@@ -1,5 +1,12 @@
 # START HERE - Zupone Analysis Entry Point
 
+## Lecture prioritaire au 13 octobre 2026
+
+Ce guide du 7 octobre est une **photographie historique**, et non un tableau de bord opérationnel. La CI n'est plus « manquante » : le dépôt comporte `.github/workflows/ci.yml` et le dossier [A16](docs/RECETTE-PILOTE-A16-2026-10-12.md) consigne un run antérieur réussi. Cela ne prouve ni le déploiement ni un parcours complet réel. Les pourcentages de maturité et les volumes de tests affichés plus bas ne doivent pas servir à décider du lancement.
+
+Pour une décision aujourd'hui, lire dans cet ordre : [état du projet](docs/etat-projet.md), [autorisations boutiques A02](docs/SECURITE-A02-2026-10-13.md), [autorisations commandes A03](docs/A03-SECURITE-COMMANDES.md), [recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md), puis [registre UE](docs/registre-lancement-ue.md). Le domaine de gestion commerçant est **manager.zupeat.com** ; ne pas le confondre avec une application appelée ZupMerchant.
+
+
 **Generated:** October 7, 2026  
 **Repository:** https://github.com/AmirGames/projet (branch: claude/awesome-ride-m9lci8)  
 **Analysis Version:** 1.0
