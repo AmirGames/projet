@@ -73,3 +73,9 @@ Les snapshots de factures **anciens** pouvaient contenir e-mail et téléphone :
 Les mots de passe/hashes, tokens de session/push, secrets Stripe, codes de remise et secrets techniques sont exclus. Les profils client invités ne sont associés par e-mail que si l'e-mail du compte est confirmé. Les données d'autres commerçants ou collègues ne sont pas copiées par simple appartenance à une équipe.
 
 Limites : JSON plafonné à 50 Mio et pièces à 100 Mio. Un dépassement renvoie une erreur explicite et demande un traitement DPO, sans archive tronquée. Les données de prestataires (Stripe complet, SMS, appareils/cache OS) nécessitent coordination externe. L'interface web/mobile de téléchargement peut être ajoutée autour de cette API ; les endpoints et formats sont déjà utilisables et documentés.
+
+## Revue de traçabilité — 13 octobre 2026
+
+Les durées de conservation et demandes d'accès/effacement nécessitent tests et validation juridique par pays ; journaliser les exceptions.
+
+Source de décision : [état du projet](../etat-projet.md) et [recette A16](../RECETTE-PILOTE-A16-2026-10-12.md). Aucune preuve nouvelle d'exploitation n'a été produite pendant cette mise à jour documentaire.
