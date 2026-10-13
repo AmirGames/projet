@@ -428,3 +428,9 @@ git add frontend/components/zupdrive/
 git add frontend/messages/
 git commit -m "feat: ZupDrive driver & admin dashboards with real-time monitoring"
 ```
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+Les routes ZupDrive historiques ne doivent pas être copiées sans confrontation à zupdrive-api-admin.md et au code actuel ; ZupDrive reste exclu du pilote A16.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.
