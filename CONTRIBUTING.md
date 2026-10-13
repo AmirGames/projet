@@ -1,5 +1,8 @@
 # Guide de Contribution - Zupone
 
+> **Revue documentaire du 13 octobre 2026.** Ce document doit être lu avec [l'état du projet](docs/etat-projet.md) et la [décision de recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md). Les descriptions de fonctionnalités, statistiques et validations ci-dessous sont bornées à leurs dates et SHA d'origine ; elles ne démontrent pas un déploiement du HEAD, une validation sur appareil, une commande réelle ou un paiement Stripe TEST/3DS externe. Les contrôles d'accès A02/A03 nécessitent une vérification multi-tenant sur PostgreSQL et une CI sur le SHA final. Le portail commerçant est **manager.zupeat.com**. Cette note ne remplace pas les tests et preuves opérationnelles.
+
+
 Merci de vouloir contribuer à Zupone ! Ce guide te montre comment participer au projet de manière efficace et sécurisée.
 
 ## 📋 Table des matières
