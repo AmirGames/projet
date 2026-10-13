@@ -4,7 +4,7 @@ import { OrderStatus } from "@prisma/client";
 import { PourboireService } from "./pourboire.service";
 import { champEmail } from "../../utils/validation";
 import { OrderService } from "./order.service";
-import { exigerBoutique, perimetreBoutiques } from "../auth/autorisation-boutique";
+import { exigerBoutique } from "../auth/autorisation-boutique";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authFacultative, authMiddleware } from "../auth/auth.middleware";
@@ -27,14 +27,14 @@ async function exigerCommande(req: Request, id: string) {
 }
 
 async function exigerOrganisation(req: Request, orgId: string) {
-  const scope = await perimetreBoutiques(req, "read");
-  const accessible = await db.store.findFirst({
-    where: { AND: [{ orgId, deletedAt: null }, scope] },
-    select: { id: true },
+  if (req.compte?.isSuperOwner) return;
+  if (!req.userId) throw new ApiError(401, "Authentification requise", "MISSING_AUTH");
+  const membership = await db.membership.findFirst({
+    where: { userId: req.userId, orgId, role: "ADMIN" },
+    select: { orgId: true },
   });
-  if (!accessible) throw new ApiError(403, "Organisation inaccessible", "FORBIDDEN");
+  if (!membership) throw new ApiError(403, "Organisation inaccessible", "FORBIDDEN");
 }
-
 
 const statutCommande = z.enum(OrderStatus);
 const filtreStatut = z.union([statutCommande, z.literal("ALL")]);
