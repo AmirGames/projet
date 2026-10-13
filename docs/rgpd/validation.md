@@ -14,3 +14,9 @@
 Les dernières tentatives de relance ont été interrompues avant de produire de nouveaux résultats ; elles ne valent pas validation. Les tests déjà réussis ne permettent pas d'affirmer que tous les changements actuels sont validés.
 
 Avant clôture : relancer les suites RGPD et les régressions sur la version finale, corriger tout échec, puis clôturer les P1 du [rapport de conformité](rapport-conformite.md) avec des preuves d'infrastructure et de validation juridique. Vérifier notamment la migration réelle, les gels légaux, les comptes multi-rôles, les paiements en attente, les sauvegardes et l'effacement auprès des sous-traitants.
+
+## Vérification de portée — 13 octobre 2026
+
+La validation RGPD exige tests, décisions juridiques et preuves d'exploitation avant ouverture publique.
+
+Voir [état du projet](../etat-projet.md) et [recette A16](../RECETTE-PILOTE-A16-2026-10-12.md). Cette revue n'atteste aucun test externe.
