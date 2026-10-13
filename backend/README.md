@@ -175,3 +175,9 @@ Reprise limitée à 10 secondes; une autre preuve rejouée révoque la session.
 Migration additive `20261010120000_atomic_refresh_rotation`; appliquer avec
 `npx prisma migrate deploy`. Contrat, codes API, précautions et tests :
 [ROTATION-SESSIONS-A09](../docs/ROTATION-SESSIONS-A09.md).
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Backend Express 5, Prisma 7/PostgreSQL : vérifier les scripts de package.json avant usage et privilégier des tests sur base isolée. Le contrôle d'accès inter-boutiques est imposé côté serveur.
+
+Références : [état courant](../docs/etat-projet.md) et [recette A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.
