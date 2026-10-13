@@ -104,3 +104,9 @@ ultérieur et la sonde ciblée. Compléter la validation avec la suite société
 sur une base dédiée, puis les accès entre comptes authentifiés et la
 concurrence. Les audits admin/superowner, Socket.IO et paiements/webhooks
 ont depuis été menés ; leurs limites figurent dans les rapports dédiés.
+
+## Réévaluation documentaire — 13 octobre 2026
+
+Audit historique : ZupDrive reste hors périmètre du pilote fermé ZupEat ; distinguer endpoints existants et service opérationnel.
+
+Cette note ne confirme ni exécution de tests ni déploiement. Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md).
