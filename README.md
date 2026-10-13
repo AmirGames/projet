@@ -1,5 +1,8 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+> **Audit A01 (13 octobre 2026) :** [baseline et limites des preuves](docs/audit-rea-ubereats.md). Les validations CI documentées ne prouvent pas un déploiement ni un parcours réel complet. Priorité : A02 puis A03.
+
+
 ## Étape 16 — Décision de recette pilote A16 (12 octobre 2026)
 
 Le code A16 est intégré par la [PR #222](https://github.com/AmirGames/projet/pull/222)

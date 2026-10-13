@@ -1,5 +1,8 @@
 # État du projet et travail restant
 
+> **Actualisation documentaire du 13 octobre 2026 :** [baseline A01](audit-rea-ubereats.md). Le pilote reste non validé en exploitation ; aucune nouvelle exécution de test ni preuve serveur n'a été produite pendant cette actualisation.
+
+
 ## État courant — 12 octobre 2026
 
 La version A16 examinée est intégrée à `claude/awesome-ride-m9lci8` au commit

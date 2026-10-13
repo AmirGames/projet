@@ -1,5 +1,8 @@
 # NEXT STEPS - Actions Immédiatement Prioritaires
 
+> **Mise à jour A01 — 13 octobre 2026 :** ce document du 7 octobre est conservé comme archive de planification. Les estimations de maturité, volumes de tests, avertissements et tâches CI ci-dessous ne sont **pas** des mesures actuelles. La CI existe déjà ; le job d'audit des dépendances backend est bloquant, contrairement au job frontend informatif. Le pilote utilisateur reste bloqué faute de preuves de déploiement et de parcours externes. Voir [baseline A01](docs/audit-rea-ubereats.md) et [état courant](docs/etat-projet.md). Priorité suivante : A02 (sécurité), puis A03 (commande complète).
+
+
 **Date:** 2026-10-07  
 **Status:** ZupEat 70% MVP-ready, ZupDrive 10% early-stage  
 **Priority Focus:** Production readiness before Q4 2026 launch
