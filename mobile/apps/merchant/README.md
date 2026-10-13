@@ -1,5 +1,10 @@
 # ZupEat — application commerçant
 
+## Vérification de recette — 13 octobre 2026
+
+Le tableau de bord commerçant web est **manager.zupeat.com** ; cette application Expo commerçant est un autre client de l'API centrale. Les tests CI, même réussis, ne démontrent pas la réception d'une commande sur un téléphone réel. Avant d'autoriser le pilote : tester le rôle commerçant affecté à une seule boutique, refuser l'accès à une boutique d'une autre organisation, accepter/refuser une commande payée en TEST, vérifier notifications/reconnexion, et rapprocher l'état API avec l'écran web. Conserver SHA, modèle de terminal, version de build, horodatage et résultat dans [A16](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md). Ne pas utiliser une commande réelle payante pour ce protocole.
+
+
 Pour la recette fermée au commit intégré `6439e36a51c6262b4781937c217a4063df6a90db`, l'app commerçant est dans le périmètre à
 essayer sur appareil ; la CI ne prouve pas la validation du serveur. ZupDrive
 est exclu. Voir la [matrice et la décision de recette](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md).
