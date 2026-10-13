@@ -135,3 +135,9 @@ les scénarios authentifiés sur le déploiement sans réinitialiser sa base.
 Les audits ciblés ZupDrive, admin/superowner, Socket.IO et paiements ont
 depuis été menés ; leurs preuves et limites sont dans les rapports dédiés
 et [l'état du projet](etat-projet.md).
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Audit historique du 3 octobre : revalider l'IDOR des livreurs, la concurrence d'acceptation et les preuves de livraison sur PostgreSQL.
+
+Références : [état courant](../docs/etat-projet.md) et [recette A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.
