@@ -35,3 +35,9 @@ Chaque étape doit consigner : date, branche, SHA, environnement, commandes exé
 
 ## Limites de cette étape
 Aucun test exécuté, aucune lecture du VPS ni de Stripe, aucune confirmation du SHA actif. Le SHA de la branche créée doit être relevé et figé dans la PR avant de qualifier la baseline de reproductible.
+
+## Réévaluation documentaire — 13 octobre 2026
+
+Ce document constitue une baseline ; A02/A03/A16 doivent être vérifiés sur le SHA candidat avant toute conclusion de lancement.
+
+Cette note ne confirme ni exécution de tests ni déploiement. Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md).
