@@ -7,7 +7,7 @@ const db: any = {
   store: { findFirst: jest.fn() },
   membership: { findFirst: jest.fn(), findMany: jest.fn() },
 };
-const getByStoreId = jest.fn(async () => []);
+const getByStoreId = jest.fn(async (_storeId: string, _limit: number, _offset: number) => []);
 const countByStoreId = jest.fn(async () => 0);
 const getByStatus = jest.fn(async () => []);
 const getByOrgId = jest.fn(async () => []);
