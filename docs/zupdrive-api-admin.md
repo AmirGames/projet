@@ -314,3 +314,9 @@ Quatre routeurs n'ont jamais été montés ; ils ont été supprimés (code, tes
 Même mécanisme que le livreur ZupEat (`PUT /drivers/me/bank-account`) : IBAN normalisé, chiffré au repos (`CompteBancaireChauffeurDrive`, table à part pour qu'il ne sorte jamais avec la fiche), supprimé à l'effacement du compte. `DriverPayoutDrive.ibanSnapshot` (chiffré) reçoit la copie à la création du versement (webhook Stripe, fin de course, « demander mes versements ») ; sans IBAN le versement est créé quand même, et la copie est posée à l'enregistrement du compte pour les versements en attente hors lot. L'IBAN n'est jamais journalisé.
 
 L'app chauffeur (`mobile/apps/zupdrive-driver`) les utilise à la place des routes `/admin/drivers/:id/*` (réservées à l'équipe) ; `GET /finance/admin/settings/commission` (superowner) rend la commission en vigueur.
+
+## Vérification de portée — 13 octobre 2026
+
+Contrôler routes, permissions et états ZupDrive sur le SHA candidat ; l'existence d'endpoints n'atteste pas une exploitation réelle.
+
+Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette revue n'atteste aucun test externe.
