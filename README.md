@@ -1,5 +1,8 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+> **A03 (13 octobre 2026) — Sécurité des commandes :** [correctifs d'autorisation et vérifications restantes](docs/A03-SECURITE-COMMANDES.md). Non testé / non déployé à ce stade.
+
+
 > **A02 — Sécurité (investigation en cours, 13 octobre 2026) :** [revue des autorisations et scénarios de régression](docs/SECURITE-A02-2026-10-13.md). Les risques signalés ne sont pas des vulnérabilités confirmées ; aucune correction ni exécution de test revendiquée.
 
 
