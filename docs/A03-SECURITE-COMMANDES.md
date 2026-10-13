@@ -16,3 +16,6 @@ Correctifs appliqués :
 - Revoir **toutes** les autres routes de `order.routes.ts`, les routes de livraison et les contrôles d'état avant de considérer A03 terminée.
 
 **Statut : correctifs proposés dans une branche, pas encore testés ni déployés.** Aucun test exécuté dans cette session. Ne pas fusionner avant vérification.
+
+## Régression ajoutée — 13 octobre 2026
+Fichier : `backend/src/modules/orders/__tests__/a03-cloisonnement-routes.test.ts`. Tests HTTP avec mocks Prisma pour empêcher l'organisation A de lire les commandes de B, consulter ses agrégats, changer le statut, supprimer ou dispatcher une commande de B. Cas complémentaires : refus des mutations pour STORE_STAFF, lecture autorisée pour STORE_STAFF affecté à la boutique. **La CI doit confirmer l'exécution et la réussite ; il ne s'agit pas d'un test réel de paiement/livraison.**
