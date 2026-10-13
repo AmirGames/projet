@@ -168,3 +168,9 @@ une intervention SQL externe doit respecter le dossier de rapprochement.
 Références techniques consultées après vérification des versions installées :
 [verrous PostgreSQL 18](https://www.postgresql.org/docs/18/explicit-locking.html),
 [transactions Prisma](https://www.prisma.io/docs/orm/fundamentals/transactions).
+
+## Vérification complémentaire — 13 octobre 2026
+
+Vérifier l'exclusion concurrente entre paiement manuel, annulation et lot SEPA, puis rapprocher les montants. Une exportation de fichier ne prouve pas un transfert bancaire exécuté.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).
