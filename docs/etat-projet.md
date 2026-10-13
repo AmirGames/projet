@@ -1,5 +1,8 @@
 # État du projet et travail restant
 
+> **A02 — Investigation ouverte le 13 octobre 2026 :** [revue statique des autorisations](SECURITE-A02-2026-10-13.md), scénarios à reproduire avant correction. Aucune vulnérabilité confirmée, aucun test exécuté, aucun déploiement revendiqué.
+
+
 > **Actualisation documentaire du 13 octobre 2026 :** [baseline A01](audit-rea-ubereats.md). Le pilote reste non validé en exploitation ; aucune nouvelle exécution de test ni preuve serveur n'a été produite pendant cette actualisation.
 
 
