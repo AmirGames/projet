@@ -57,3 +57,9 @@ Les tests de sonde locale simulent ClamAV uniquement. Les coupures PostgreSQL,
 Redis et SMTP, la reprise de l'ensemble Docker, les notifications livrées et
 leur réception restent à éprouver dans un environnement isolé avec les
 services et comptes dédiés. Aucun essai production n'est couvert ici.
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+Tester les pannes réelles ou simulées de PostgreSQL, Redis, SMTP et prestataires externes, ainsi que la reprise et les alertes observées.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.
