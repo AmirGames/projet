@@ -1008,7 +1008,7 @@ export class OrderService {
     if (commande.deletedAt) {
       throw new ApiError(409, "Commande déjà archivée", "ORDER_ALREADY_ARCHIVED");
     }
-    if (commande.status !== "COMPLETED" && commande.status !== "REJECTED" && commande.status !== "CANCELLED") {
+    if (commande.status !== "COMPLETED" && commande.status !== "REJECTED") {
       throw new ApiError(409, "Une commande en cours ne peut pas être archivée", "ORDER_NOT_TERMINAL");
     }
     const resultat = await db.order.updateMany({
