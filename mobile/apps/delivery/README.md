@@ -241,3 +241,9 @@ lib/push.ts                notifications push (app « delivery »)
 lib/realtime.ts            abonnement aux événements, écran par écran
 ```
 
+
+## Contrôles complémentaires de recette — 13 octobre 2026
+
+Vérifier sur un appareil réel les notifications en arrière-plan, le GPS, la perte de réseau, l'attribution et la preuve de remise. Enregistrer build, OS, SHA et résultats ; CI Expo seule insuffisante.
+
+Voir [l'état du projet](../../../docs/etat-projet.md) et [le protocole A16](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md). Cette revue documentaire ne constitue pas une validation de production.
