@@ -642,3 +642,9 @@ Total: ~1,050 lines
 - [WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
 - [ws NPM Package](https://github.com/websockets/ws)
 - [JSON-RPC 2.0](https://www.jsonrpc.org/specification)
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+Ne jamais transmettre un access token dans une URL WebSocket ; vérifier le contrat Socket.IO réel et les permissions des canaux.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.
