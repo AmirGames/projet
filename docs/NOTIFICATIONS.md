@@ -565,3 +565,7 @@ Phase 15: Monitoring Service
 - [Firebase FCM](https://firebase.google.com/docs/cloud-messaging)
 - [Twilio SMS](https://www.twilio.com/docs/sms)
 - [Nodemailer](https://nodemailer.com/)
+
+## Vérification complémentaire — 13 octobre 2026
+
+Ce document de phase conserve des exemples historiques : les routes, permissions et signatures doivent être vérifiées dans les contrats courants avant intégration. Une simulation de notification, paiement ou reversement ne constitue pas une preuve d'exécution externe. Reporter le SHA et les résultats de recette dans [l'état du projet](etat-projet.md) et [A16](RECETTE-PILOTE-A16-2026-10-12.md).
