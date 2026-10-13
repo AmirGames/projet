@@ -48,3 +48,9 @@ lib/{auth,api,session}     session, appels au serveur (renouvellement géré), S
 lib/{paiement,statuts,adresses,confirmer}.ts   logique pure ou petite aide
 lib/push.ts                notifications push (non branché, voir CLAUDE.md)
 ```
+
+## Revue mobile — 13 octobre 2026
+
+Tester sur appareil réel la réservation, la géolocalisation, les états de course et les paiements sur environnement autorisé avant lancement.
+
+Aucun test sur appareil n'a été exécuté pendant cette mise à jour.
