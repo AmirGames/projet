@@ -334,3 +334,9 @@ docker run -d --name osrm -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm
 ```
 
 Ensuite, dans `.env.production` : `ROUTING_PROVIDER=osrm` et `OSRM_API_URL` (l'adresse du conteneur, joignable depuis l'API). Pour suivre l'évolution des routes, refaire la préparation de temps en temps, par exemple chaque mois. Le serveur public de démonstration d'OSRM n'est pas fait pour la production.
+
+## Vérification de portée — 13 octobre 2026
+
+Distinguer la feuille de route ZupDrive, les fonctions implémentées, les tests locaux et l'autorisation d'exploitation ; ZupDrive est hors pilote A16.
+
+Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette revue n'atteste aucun test externe.
