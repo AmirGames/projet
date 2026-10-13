@@ -416,3 +416,9 @@ packages officiels Prisma 7.10.0 et leur moteur WASM installés dans `/tmp`, pui
 vérifiés sur PostgreSQL local. Aucun de ces outils temporaires n'est ajouté aux
 dépendances de l'application. La commande standard `prisma generate` reste celle
 du build/deploiement normal lorsque le réseau permet ce téléchargement.
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+Tester les garde-fous d'accès, confidentialité, limites d'outils et séparation des contextes ZupOne/ZupEat/ZupDrive ; ne pas attribuer à l'assistant un accès qu'il ne possède pas.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.
