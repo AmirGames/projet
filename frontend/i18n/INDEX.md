@@ -327,3 +327,9 @@ Quand la migration est complète :
 *Generated on 2026-09-20*
 *Durée totale de lecture complète : 90-120 minutes*
 *Durée totale de migration : 50-95 minutes*
+
+## Consigne de vérification — 13 octobre 2026
+
+Vérifier la parité des clés, les placeholders et les routes locales avant d'annoncer la migration i18n achevée.
+
+Aucune validation de production n'est déduite de cette mise à jour.
