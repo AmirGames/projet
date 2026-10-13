@@ -66,7 +66,12 @@ describe("routes boutiques : rien de privé sans compte", () => {
   it("GET /:id ne charge jamais les commandes ni les boutiques supprimées", async () => {
     const res = await request(app).get("/api/stores/s1").set("Authorization", "Bearer x");
     expect(res.status).toBe(200);
-    const requete = db.store.findFirst.mock.calls[0][0];
+    // exigerBoutique vérifie d’abord le périmètre ; la seconde requête charge la fiche.
+    expect(db.store.findFirst).toHaveBeenCalledTimes(2);
+    const controle = db.store.findFirst.mock.calls[0][0];
+    expect(JSON.stringify(controle.where)).toContain('"id":"s1"');
+    expect(JSON.stringify(controle.where)).toContain('"orgId":"o1"');
+    const requete = db.store.findFirst.mock.calls[1][0];
     expect(requete.include.orders).toBeUndefined();
     expect(requete.where).toMatchObject({ id: "s1", deletedAt: null });
     expect(JSON.stringify(res.body)).not.toMatch(/customerEmail|customerPhone|trackingTokenHash/);
