@@ -745,3 +745,9 @@ Phase 15: Monitoring (THIS)
 **For drivers**: Check notifications in app dashboard
 **For admins**: Monitor /admin/dashboard for real-time alerts
 **For support team**: Use /admin/alerts to escalate issues
+
+## Contrôles complémentaires de recette — 13 octobre 2026
+
+La présence d'une interface de monitoring ne démontre ni la réception d'alertes ni une restauration testée. Consigner les preuves de sauvegarde distante, d'alertes reçues et de reprise après incident.
+
+Voir [l'état du projet](../docs/etat-projet.md) et [le protocole A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Cette revue documentaire ne constitue pas une validation de production.
