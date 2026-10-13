@@ -47,3 +47,9 @@ boutique active, choisir Support restaurants puis un établissement autorisé.
 Lire les produits, proposer « Rendre indisponible », vérifier l'absence de
 modification, puis confirmer. Utiliser exclusivement une base de développement
 jetable : la confirmation modifie réellement le produit.
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+Les captures locales du 5 octobre ne démontrent pas le comportement du build de production. Conserver les versions, données fictives et résultats d'exécution.
+
+Revoir [l'état du projet](../etat-projet.md) et [la recette A16](../RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.
