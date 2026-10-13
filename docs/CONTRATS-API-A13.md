@@ -144,3 +144,9 @@ ajoutée avec un prérequis explicite.
 | Déployé | Non exécuté | aucun environnement A13 confirmé | aucune preuve |
 | Validé en exploitation | Non exécuté | aucun essai de staging/production A13 confirmé | aucune preuve |
 
+
+## Vérification complémentaire — 13 octobre 2026
+
+Contrat à vérifier en HTTP sur SHA candidat : réponses 401/403, propriété des commandes, idempotence des intentions et webhooks Stripe TEST/3DS. Les mocks ne démontrent pas un paiement externe.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).
