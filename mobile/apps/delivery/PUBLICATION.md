@@ -257,3 +257,9 @@ tableau des traitements :
 
 Augmentez `version` dans `app.json` (1.0.1, 1.1.0…) à chaque version
 publiée ; le numéro de build, lui, est incrémenté par EAS.
+
+## Revue mobile — 13 octobre 2026
+
+Une compilation Expo et un build de publication ne prouvent pas la validation sur appareil ni l'acceptation par les stores.
+
+Aucun test sur appareil n'a été exécuté pendant cette mise à jour.
