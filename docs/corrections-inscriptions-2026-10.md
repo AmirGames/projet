@@ -79,3 +79,9 @@ réparent automatiquement les comptes partiels ou sessions créés auparavant.
 Avant ouverture du service, contrôler ces données sur le serveur et décider
 de leur reprise ou révocation avec l'opérateur, en conservant les preuves
 d'acceptation et l'historique métier.
+
+## Réévaluation documentaire — 13 octobre 2026
+
+Tester les trois inscriptions, la confirmation email, la reprise et l'atomicité sur PostgreSQL, sans utiliser de données réelles.
+
+Cette note ne confirme ni exécution de tests ni déploiement. Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md).
