@@ -61,3 +61,9 @@ identifiants financiers, montant/devise, motif et codes d'erreur. Accès limité
 à la facturation habilitée ; aucun secret/réponse SDK dans le journal. Ils suivent
 la conservation comptable du paiement et sa purge avec la commande. Voir
 [la procédure](../REMBOURSEMENTS-REPRISE.md).
+
+## Revue de traçabilité — 13 octobre 2026
+
+Actualiser la cartographie lors de tout nouveau champ ou prestataire ; valider finalité, base légale, minimisation et responsable de traitement.
+
+Source de décision : [état du projet](../etat-projet.md) et [recette A16](../RECETTE-PILOTE-A16-2026-10-12.md). Aucune preuve nouvelle d'exploitation n'a été produite pendant cette mise à jour documentaire.
