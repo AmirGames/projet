@@ -5970,6 +5970,25 @@
     "aucuneBoutique": "Aucune boutique indiquée : ajoutez ?storeId=... à l'adresse.",
     "chargementImpossible": "Impossible de charger le document"
   },
+  "accueilZupdrive": {
+    "sujetPrevenir": "Je souhaite être prévenu du lancement de ZupDrive",
+    "prix": "Un prix annoncé à l’avance",
+    "prixTexte": "Découvrez le tarif de votre trajet avant de confirmer votre réservation.",
+    "pros": "Des chauffeurs professionnels",
+    "prosTexte": "Des chauffeurs sélectionnés pour vous accompagner sereinement.",
+    "compte": "Un compte unique",
+    "compteTexte": "Retrouvez les services du groupe avec votre compte ZupOne.",
+    "commanderZupeat": "Commander sur ZupEat",
+    "devenirChauffeur": "Devenir chauffeur",
+    "bientot": "Bientôt dans votre ville",
+    "titre": "Vos trajets, en toute simplicité.",
+    "texte": "ZupDrive prépare un nouveau service de transport avec chauffeur : une réservation simple, un tarif annoncé à l’avance et un trajet suivi depuis votre téléphone.",
+    "jeSuisChauffeur": "Je suis chauffeur",
+    "prevenir": "Me prévenir du lancement",
+    "enAttendant": "ZupDrive arrive bientôt",
+    "enAttendantTexte": "Vous êtes chauffeur professionnel ? Laissez-nous votre adresse e-mail pour être informé de l’ouverture du service.",
+    "decouvrir": "Découvrir les commerces ZupEat"
+  },
   "footerZupdrive": {
     "label": "Pied de page ZupDrive",
     "description": "ZupDrive prépare son service de transport de personnes avec chauffeur.",
