@@ -113,3 +113,9 @@ lib/push.ts                notifications push (app « customer »)
 lib/realtime.ts            abonnement aux événements et aux salons, écran par écran
 ```
 
+
+## Contrôles complémentaires de recette — 13 octobre 2026
+
+Vérifier sur appareil réel le checkout Stripe TEST/3DS, la reprise de session, le suivi et les erreurs réseau. Le paiement est confirmé par l'état serveur et non par un écran client.
+
+Voir [l'état du projet](../../../docs/etat-projet.md) et [le protocole A16](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md). Cette revue documentaire ne constitue pas une validation de production.
