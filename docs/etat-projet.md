@@ -1,5 +1,8 @@
 # État du projet et travail restant
 
+> **Point de situation — 13 octobre 2026.** Les statuts ci-dessous sont des relevés historiques par SHA et environnement, pas une certification du HEAD actuel. Les correctifs A02/A03 doivent être soumis à des tests d'accès croisé et à une CI réussie sur leur SHA. Aucune validation de commande réelle complète, d'exploitation, de Stripe TEST/3DS externe ou de terminal physique n'est déduite d'une fusion GitHub. Les preuves manquantes sont détaillées dans [A16](RECETTE-PILOTE-A16-2026-10-12.md).
+
+
 > **A03 — 13 octobre 2026 :** [correctifs initiaux des permissions sur les commandes](A03-SECURITE-COMMANDES.md). En attente des tests multi-tenant et de la CI ; ne pas considérer le parcours complet validé.
 
 
