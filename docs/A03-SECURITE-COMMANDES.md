@@ -1,5 +1,10 @@
 # A03 — Contrôles d'accès aux commandes (13 octobre 2026)
 
+## Relecture documentaire — 13 octobre 2026
+
+Ce document décrit des correctifs et tests **ajoutés au code**, mais il ne suffit pas à établir que toutes les routes de commande sont sécurisées. Vérifier sur le SHA de fusion : (1) les chemins GET sans filtre de boutique, (2) les changements d'état autorisés selon rôle et état courant, (3) les appels depuis manager.zupeat.com et l'application livreur, (4) les commandes invitées, (5) les accès d'organisation A vers B. Les mocks Prisma prouvent le comportement du montage testé, pas l'isolation réelle en PostgreSQL. Ajouter une suite d'intégration HTTP/PostgreSQL dédiée, puis une commande complète en pilote fermé. Reporter dans [l'état projet](etat-projet.md) SHA, run CI, environnement, tests échoués et risques résiduels ; ne pas annoncer une validation de production sans ces preuves.
+
+
 ## Correctif initial
 Analyse statique de `backend/src/modules/orders/order.routes.ts` : plusieurs routes de consultation, de changement de statut, de suppression et de dispatch exigeaient une authentification, **sans vérifier que l'appelant pouvait gérer la boutique de la commande**. La lecture de `OrderService.updateStatus` et `delete` n'a pas révélé de contrôle métier d'appartenance interne.
 
