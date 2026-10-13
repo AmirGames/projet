@@ -1,5 +1,8 @@
 # NEXT STEPS - Actions Immédiatement Prioritaires
 
+> **Plan d'action actualisé au 13 octobre 2026.** Les estimations « 70 % MVP » et les tâches CI historiques ci-dessous sont archivées, et non des indicateurs actuels. Ordre de décision : (1) terminer la revue A02/A03 des autorisations avec tests inter-organisations ; (2) exécuter la CI sur le SHA final ; (3) déployer un environnement pilote isolé et consigner son SHA ; (4) réaliser une commande complète avec acceptation/refus, annulation, perte réseau et livraison ; (5) tester Stripe TEST/3DS, remboursement et rapprochement ; (6) tester sauvegarde/restauration, permissions et conformité avant tout lancement. Références : [état actuel](docs/etat-projet.md), [A02](docs/SECURITE-A02-2026-10-13.md), [A03](docs/A03-SECURITE-COMMANDES.md), [A16](docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
+
 > **Mise à jour A01 — 13 octobre 2026 :** ce document du 7 octobre est conservé comme archive de planification. Les estimations de maturité, volumes de tests, avertissements et tâches CI ci-dessous ne sont **pas** des mesures actuelles. La CI existe déjà ; le job d'audit des dépendances backend est bloquant, contrairement au job frontend informatif. Le pilote utilisateur reste bloqué faute de preuves de déploiement et de parcours externes. Voir [baseline A01](docs/audit-rea-ubereats.md) et [état courant](docs/etat-projet.md). Priorité suivante : A02 (sécurité), puis A03 (commande complète).
 
 
