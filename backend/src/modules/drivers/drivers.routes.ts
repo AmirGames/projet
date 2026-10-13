@@ -51,7 +51,17 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
   try {
     const livreur = await livreurConnecte(req);
 
-    res.json(await DriverAccountService.revenus(livreur));
+    const entier = (valeur: unknown, defaut: number, minimum: number, maximum: number) => {
+      if (valeur === undefined) return defaut;
+      const n = Number(valeur);
+      if (!Number.isSafeInteger(n) || n < minimum || n > maximum) {
+        throw new ApiError(400, "Pagination invalide", "INVALID_PAGINATION");
+      }
+      return n;
+    };
+    const limit = entier(req.query.limit, 30, 1, 100);
+    const offset = entier(req.query.offset, 0, 0, 100_000);
+    res.json(await DriverAccountService.revenus(livreur, limit, offset));
   } catch (err) {
     next(err);
   }

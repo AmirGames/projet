@@ -1,5 +1,10 @@
 # Guide du frontend
 
+L'écran de rapports commerçant transmet les bornes de période, affiche les
+erreurs de filtre renvoyées par l'API et pagine les listes produits/clients.
+Les montants synthétiques sont agrégés côté backend même lorsque les lignes
+sont paginées. Voir le [contrat A15](../docs/RAPPORTS-A15.md).
+
 La MFA des comptes d'équipe/superowner est rendue par `components/MfaGate`
 dans le contexte de session. La page commune `/mfa` permet la gestion du facteur.
 `MaintenanceGate` relaie les refus de preuve MFA au contexte sans rejouer la
@@ -202,7 +207,7 @@ Trois particularités à connaître :
   `<Script>` faite à la main doit lire le nonce (`(await headers()).get('x-nonce')`),
   sans quoi le navigateur le refuse. Toute nouvelle origine externe (script,
   image, API, iframe) s'ajoute dans `construireCsp` avec son test. Mode par
-  `CSP_MODE` : `report-only` (défaut, observation), `enforce`, `off`. Vérifier
+  `CSP_MODE` : `report-only` (défaut, observation), `enforce`, `off` (en production, `off` est forcé à `enforce`). Vérifier
   avec `node scripts/verif-csp.mjs`.
 - **`signalerErreur`** (`lib/erreurs.ts`) remplace `console.error` : elle ne
   journalise pas quand le navigateur quitte la page (les requêtes coupées par

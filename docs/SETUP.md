@@ -2,6 +2,11 @@
 
 Ce guide te montre comment installer et lancer Zupone en local pour le développement.
 
+Les versions testées de la machine de préparation A16 sont Node 24.21.0,
+npm 12.0.2, Prisma 7.10.0 et Next.js 16.4.0 ; elles ne changent pas les minimums
+des `package.json`. Voir [la configuration et les limites A16](CONFIGURATION-A16.md)
+pour les capacités activables, SMTP, Stripe et l'usage de la base isolée.
+
 ## 📋 Table des matières
 
 1. [Prérequis](#prérequis)

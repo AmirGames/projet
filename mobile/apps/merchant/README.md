@@ -1,5 +1,21 @@
 # ZupEat — application commerçant
 
+Pour la recette fermée au commit intégré `6439e36a51c6262b4781937c217a4063df6a90db`, l'app commerçant est dans le périmètre à
+essayer sur appareil ; la CI ne prouve pas la validation du serveur. ZupDrive
+est exclu. Voir la [matrice et la décision de recette](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
+Application Expo / React Native cliente de l'API REST centrale. Pour l'état
+courant du backend, les rôles de base et les limites des intégrations, consulter
+[CONFIGURATION-A16](../../../docs/CONFIGURATION-A16.md) et le
+[registre courant](../../../docs/etat-projet.md).
+
+## Rapports A15
+
+Les rapports ventes utilisent les dates envoyées par l'écran statistiques et
+reçoivent au plus 100 commandes par page; les totaux API couvrent toute la
+période. Période maximale : 366 jours. Les erreurs 400 de date/pagination
+doivent être présentées comme filtres à corriger. Voir le [contrat A15](../../../docs/RAPPORTS-A15.md).
+
 ## Dépendances — audit A12
 
 Le lockfile du 12 octobre 2026 conserve 46 avis de production (1 critique,

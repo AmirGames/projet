@@ -1,5 +1,9 @@
 # ZupEat — application client
 
+Pour la recette fermée au commit intégré `6439e36a51c6262b4781937c217a4063df6a90db`, l'app client est dans le périmètre à
+essayer sur appareil ; l'export CI ne vaut pas validation physique. ZupDrive
+est exclu. Voir la [matrice et la décision de recette](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
 ## Dépendances — audit A12
 
 Le lockfile du 12 octobre 2026 conserve 47 avis de production (1 critique,
@@ -20,6 +24,13 @@ connexion, même barre du bas (Menu · Accueil · Paniers · Commande en cours),
 même tiroir latéral, mêmes composants (`components/ui.tsx`).
 
 ## Ce que fait l'application
+
+Le paiement par carte est via Stripe ; espèces sont autorisées uniquement si le
+commerce les active et pour le retrait. La présence des valeurs `PAYPAL`,
+`APPLE_PAY` ou `GOOGLE_PAY` dans certains enums d'administration n'est pas un
+adaptateur d'encaissement : aucun connecteur PayPal n'est fourni. La politique
+CSP web et son exigence 3DS sont décrites dans
+[CONFIGURATION-A16](../../../docs/CONFIGURATION-A16.md).
 
 - **Connexion ou création de compte** (tout compte peut commander : la fiche
   client naît à la première visite). La création exige un mot de passe de

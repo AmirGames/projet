@@ -1,5 +1,35 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+> **A03 (13 octobre 2026) — Sécurité des commandes :** [correctifs d'autorisation et vérifications restantes](docs/A03-SECURITE-COMMANDES.md). Non testé / non déployé à ce stade.
+
+
+> **A02 — Sécurité (investigation en cours, 13 octobre 2026) :** [revue des autorisations et scénarios de régression](docs/SECURITE-A02-2026-10-13.md). Les risques signalés ne sont pas des vulnérabilités confirmées ; aucune correction ni exécution de test revendiquée.
+
+
+> **Audit A01 (13 octobre 2026) :** [baseline et limites des preuves](docs/audit-rea-ubereats.md). Les validations CI documentées ne prouvent pas un déploiement ni un parcours réel complet. Priorité : A02 puis A03.
+
+
+## Étape 16 — Décision de recette pilote A16 (12 octobre 2026)
+
+Le code A16 est intégré par la [PR #222](https://github.com/AmirGames/projet/pull/222)
+au commit `6439e36a51c6262b4781937c217a4063df6a90db`. La CI du head
+`3085ff4dc09974fc99d6c7361cff79fbe67dff15` a réussi 11/11 jobs
+([run 38287957646](https://github.com/AmirGames/projet/actions/runs/38287957646)),
+dont migrations sur base vide et E2E avec Stripe désactivé. La décision est
+**bloquée pour démarrer la recette utilisateur** : aucun SHA d'environnement,
+base représentative, Stripe TEST/3DS externe ou appareil n'est attesté.
+Le périmètre proposé est ZupEat fermé ; **ZupDrive est explicitement exclu**.
+Voir le [compte rendu A16, la matrice A01–A16 et les prochaines preuves](docs/RECETTE-PILOTE-A16-2026-10-12.md).
+La CI ne vaut ni validation serveur ni ouverture publique.
+
+## Rapports A15
+
+Les API de rapports appliquent une période par défaut de 90 jours, une période
+maximale de 366 jours et une pagination bornée. Les agrégats sont calculés dans
+PostgreSQL; les revenus livreurs n'hydratent plus tout l'historique. Contrats,
+limites et protocole de charge : [guide A15](docs/RAPPORTS-A15.md). Les mesures
+sur une base représentative et la validation en exploitation restent à faire.
+
 ## Étape 13 — A12 : audit et correction des dépendances (12 octobre 2026)
 
 Le lockfile backend embarquait quatre alertes de production dans la chaîne du
@@ -178,7 +208,7 @@ Composée de 2 applications :
 - 👥 Les clients découvrent restaurants, consultent menus, passent commandes
 - 🔍 Recherche/filtrage restaurants par cuisine, localisation, note
 - 🛒 Panier, gestion commandes, suivi livraison en temps réel
-- 💳 Paiement sécurisé (carte, PayPal, etc.)
+- 💳 Paiement par carte via Stripe quand la capacité est configurée ; espèces disponibles selon le moyen activé par le commerce (retrait uniquement).
 - ⭐ Notation restaurant/livreur, historique commandes
 
 #### 2️⃣ **manager.zupeat.com** - App Commerçant
@@ -190,27 +220,25 @@ Composée de 2 applications :
 - 🚚 Gestion livraisons associées, suivi livreurs
 
 #### 3️⃣ **delivery.zupeat.com** - App Livreur
-- 📱 Application mobile native Android (voir section Zupeat Driver App)
+- 📱 Application mobile Expo / React Native (`mobile/apps/delivery`)
 - 📦 Réception commandes à livrer, acceptation/refus
-- 🗺️ Navigation GPS intégrée (Google Maps)
 - 📍 Suivi temps réel pour client et restaurant
-- 💬 Chat avec client et restaurant
-- 💵 Gestion revenus et paiements
+- 💵 Gains et historique des courses
 
 ### Infrastructure Commune
 - 📊 **Tableau de Bord** : Monitoring en temps réel des commandes, livreurs et métriques de performance
-- 💰 **Gestion des Paiements** : Intégration Stripe, multiples moyens de paiement sécurisés
+- 💰 **Paiements** : carte via Stripe et moyens définis par commerce ; l'enum des moyens ne signifie pas que PayPal/Apple Pay/Google Pay aient un adaptateur d'encaissement actif.
 - 📈 **Analytics & Reporting** : Données détaillées sur les commandes, revenus et comportement utilisateur
-- 🔔 **Notifications** : Email, SMS, push pour tous les acteurs
+- 🔔 **Notifications** : courriels SMTP, push navigateur et push mobile selon les capacités configurées ; l'envoi SMS n'est pas livré.
 - 📱 **Support Multi-plateforme** : Web responsive + apps mobiles
 
 ### Stack Technologique Zupeat
 - **Backend API** : Node.js/Express, TypeScript, PostgreSQL, Redis (Prisma ORM)
 - **Frontend Client** : Next.js 16, React 19, Tailwind CSS, next-intl
 - **App Commerçant** : Next.js 16 (dashboard responsive)
-- **App Livreur** : Android Native (Kotlin), Google Maps SDK (voir section Zupeat Driver App)
-- **Paiements** : Stripe API, webhooks pour confirmation
-- **Infrastructure** : Docker, Kubernetes, Scaleway (deployment)
+- **App Livreur** : Expo / React Native, avec modules natifs Android pour certaines alertes
+- **Paiements** : Stripe (carte), confirmation par webhook signé ; remboursement idempotent. Pas de connecteur PayPal livré.
+- **Infrastructure** : `deploy/Caddyfile`, scripts d'exploitation et modèle d'environnement pour Scaleway/VPS avec PostgreSQL et Redis. Le guide décrit Docker Compose, mais `docker-compose.prod.yml` est référencé par les scripts et absent de cet instantané versionné ; Kubernetes/AWS/GCP ne sont pas établis ici.
 - **Temps réel** : WebSockets/Redis pour notifications et suivi GPS
 - **Emails** : Mailpit (local), service externe (production)
 
@@ -222,10 +250,10 @@ Composée de 2 applications :
 
 ---
 
-## 🚚 Zupeat Driver App - Application Livreurs (delivery.zupeat.com)
+## 🚚 Application mobile ZupEat livreur (delivery.zupeat.com)
 
 ### Description
-L'**application Zupeat Driver** est l'application native Android accessible à **delivery.zupeat.com** pour les livreurs de repas Zupeat. Elle leur permet de gérer leurs livraisons directement depuis leur téléphone avec un maximum de confort et d'efficacité.
+L'application est une app Expo / React Native (le domaine `delivery.zupeat.com` est le site web, pas l'application native). Le dépôt fournit les apps Android/iOS et un module natif Android pour les alertes plein écran. Les preuves d'APK, push et appareil réel sont datées dans [l'état du projet](docs/etat-projet.md) et [la validation mobile](mobile/apps/delivery/VALIDATION.md).
 
 ### Fonctionnalités Clés (Complément à delivery.zupeat.com)
 
@@ -263,12 +291,9 @@ L'**application Zupeat Driver** est l'application native Android accessible à *
 - Détails des commissions et bonus
 
 ### Stack Technologique
-- **Plateforme** : Android Native (Java/Kotlin)
-- **Navigation** : Google Maps SDK
-- **Networking** : Retrofit pour les appels API
-- **Architecture** : ViewModel + LiveData (MVVM Pattern)
-- **Services** : Location Services pour le GPS en continu
-- **Base Données Locale** : Room Database pour cache offline
+- **Plateforme** : Expo / React Native, TypeScript ; module Expo natif Android pour les alertes
+- **API** : REST et Socket.IO vers l'API centrale
+- **Carte** : OpenStreetMap et OSRM selon la configuration ; navigateurs externes facultatifs
 
 ### Avantages pour les Livreurs
 ✨ Interface intuitive et facile à maîtriser  
@@ -415,14 +440,12 @@ Les deux écosystèmes partagent la même infra backend/tech mais ont des modèl
 
 | Composant | Technologies |
 |-----------|--------------|
-| **Backend** | Node.js / Python / autres |
-| **Frontend Web** | React / Vue.js / Angular |
-| **Mobile Clients** | React Native / Flutter |
-| **Mobile Drivers** | Android Native (Kotlin/Java) |
-| **Base Données** | PostgreSQL / MongoDB |
-| **Infra** | Docker / Kubernetes / AWS/GCP |
-| **IA/ML** | TensorFlow / scikit-learn |
-| **Mapping** | Google Maps API / Mapbox |
+| **Backend** | Node.js, Express, TypeScript, Prisma |
+| **Frontend Web** | Next.js, React, TypeScript |
+| **Mobile** | Expo / React Native (client, commerçant, livreur, admin) |
+| **Base de données** | PostgreSQL ; Redis pour coordination/cache/temps réel |
+| **Déploiement documenté** | Caddy et scripts Scaleway/VPS ; Docker Compose décrit, manifeste production non présent dans cet instantané |
+| **Cartographie** | OpenStreetMap et OSRM ; fournisseurs et disponibilité dépendent de la configuration |
 
 ---
 

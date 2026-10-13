@@ -1,5 +1,21 @@
 # Site ZupEat / ZupOne / ZupDrive
 
+La politique CSP à nonce passe de `report-only` à `enforce` après revue des
+rapports et essais checkout Stripe/3DS ; `off` est ramené à `enforce` en
+production. Pour les directives et les commandes, voir
+[CONFIGURATION-A16](../docs/CONFIGURATION-A16.md).
+L'état du pilote fermé ZupEat au SHA intégré `6439e36a51c6262b4781937c217a4063df6a90db`,
+l'exclusion de ZupDrive et les preuves manquantes avant la recette navigateur sont dans le
+[compte rendu A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
+## A15 — Rapports commerçant
+
+Les rapports utilisent une période par défaut de 90 jours (366 jours maximum).
+Les listes API sont paginées; les exports demandent une période maximale de 31
+jours et 5000 lignes. Le détail contractuel et les erreurs sont dans le
+[guide A15](../docs/RAPPORTS-A15.md). Les requêtes restent soumises au
+cloisonnement serveur des boutiques et organisations.
+
 ## A08 — état des sauvegardes
 
 L'écran Superowner « Gestion des données » précise que sa dernière copie

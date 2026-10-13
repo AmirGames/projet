@@ -1,5 +1,16 @@
 # ZupEat Livreur
 
+Cette app ZupEat est dans le périmètre proposé du pilote fermé au commit intégré
+`6439e36a51c6262b4781937c217a4063df6a90db` ; push, GPS,
+preuve de remise et reprise hors ligne doivent être contrôlés sur un appareil.
+ZupDrive reste exclu. Voir la [décision et les essais en attente](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
+Cette app est Expo / React Native ; les alertes plein écran/sonnerie utilisent
+un module Expo natif Android et ne sont donc pas des écrans Android Kotlin
+autonomes. Voir la [validation datée](VALIDATION.md) pour séparer code, APK,
+push confirmée et essais restant sur appareil. Le relevé général des capacités
+est dans [l'état du projet](../../../docs/etat-projet.md).
+
 ## Dépendances — audit A12
 
 Le lockfile du 12 octobre 2026 conserve 33 avis de production (1 critique,

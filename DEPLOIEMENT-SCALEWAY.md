@@ -1,10 +1,21 @@
 # Déployer sur un VPS Scaleway
 
-**État au 4 octobre 2026 :** ZupEat est déjà déployé sur un VPS, avec l'API
-à `https://api.zupeat.com`. Ce guide reste la procédure d'installation et
-d'exploitation ; il s'applique aussi à un VPS compatible chez un autre
-hébergeur. Les validations connues et celles restant à faire sont dans
-[docs/etat-projet.md](docs/etat-projet.md).
+**État documentaire au 12 octobre 2026 :** un compte rendu du 4 octobre indique
+un VPS et l'API `https://api.zupeat.com`, mais aucun SHA actif n'est fourni pour
+la version A16. A16 est intégré au commit
+`6439e36a51c6262b4781937c217a4063df6a90db`; cela ne confirme pas son
+déploiement. Ce guide reste la procédure d'installation et d'exploitation.
+Les contrôles à exécuter et la décision bloquée figurent dans
+[la recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md) et
+[l'état du projet](docs/etat-projet.md).
+
+La configuration de déploiement doit câbler `DATABASE_URL_APP` au conteneur
+API et `DATABASE_URL_MIGRATION` au service de migration ; le rôle propriétaire
+ne doit pas être utilisé comme connexion de l'API. Après câblage, la sonde
+`cd backend && npm run build && npm run db:role` atteste le rôle réellement vu par PostgreSQL.
+Le dépôt de cette révision ne contient pas `docker-compose.prod.yml` (référencé
+par `deploy/zup.sh` mais fourni hors de l'arbre versionné) : le wiring réel reste
+à contrôler avant migration. Voir [A16](docs/CONFIGURATION-A16.md).
 
 Pour A04, préparer le [diagnostic en lecture seule et le rapprochement des
 versements](docs/VERSEMENTS-CONCURRENCE.md) avant réouverture. Aucune migration
@@ -24,7 +35,8 @@ Internet ──443──> Caddy ──> frontend:3000   site Next.js, tous les d
 
 - **Caddy** obtient et renouvelle seul les certificats Let's Encrypt.
 - Seuls les ports **22, 80 et 443** sont ouverts.
-- Les migrations Prisma s'appliquent à chaque démarrage de l'API.
+- Les migrations Prisma doivent être appliquées par le service dédié avant de
+  démarrer l'API, avec le compte `DATABASE_URL_MIGRATION` ; l'API ne migre pas.
 - Photos, pièces justificatives et base vivent dans des volumes Docker :
   une reconstruction ne les efface pas.
 
@@ -32,7 +44,7 @@ Fichiers utilisés :
 
 | Fichier | Rôle |
 |---|---|
-| `docker-compose.prod.yml` | Les cinq services : Caddy, frontend, backend, PostgreSQL, Redis |
+| `docker-compose.prod.yml` | Manifeste décrit pour les services de production ; absent de l'instantané versionné actuel et à vérifier avant déploiement |
 | `deploy/Caddyfile` | Reverse proxy + HTTPS |
 | `deploy/env.production.example` | Modèle de `.env.production` (toutes les variables) |
 | `deploy/installer-serveur.sh` | Prépare un VPS neuf (Docker, pare-feu, swap…) |

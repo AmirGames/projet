@@ -56,4 +56,17 @@ describe("CSP du site", () => {
     expect(modeCsp(" ENFORCE ")).toBe("enforce");
     expect(modeCsp("off")).toBe("off");
   });
+
+  it("ne permet pas de couper toute la CSP en production", () => {
+    const précédent = process.env.NODE_ENV;
+    const env = process.env as Record<string, string | undefined>;
+    env.NODE_ENV = "production";
+    try {
+      expect(modeCsp("off")).toBe("enforce");
+      expect(() => modeCsp("bad-value")).toThrow("CSP_MODE doit valoir");
+    } finally {
+      if (précédent === undefined) delete env.NODE_ENV;
+      else env.NODE_ENV = précédent;
+    }
+  });
 });

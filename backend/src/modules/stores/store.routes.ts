@@ -6,6 +6,7 @@ import { TaxService } from "../catalog/tax.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../auth/auth.middleware";
 import { exigerBoutique, perimetreBoutiques } from "../auth/autorisation-boutique";
+import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { PlanService } from "../plans/plan.service";
 import { StoreDuplicationService } from "./store-duplication.service";
@@ -75,6 +76,16 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
     const body = createStoreSchema.parse(req.body);
 
     logger.info("Creating store", { name: body.name, orgId: body.orgId });
+
+    // Seul un administrateur de cette organisation peut y créer une boutique.
+    // Les IDs fournis par le client ne sont jamais une preuve de permission.
+    if (!req.compte?.isSuperOwner) {
+      const membership = await db.membership.findFirst({
+        where: { userId: req.userId, orgId: body.orgId, role: "ADMIN" },
+        select: { orgId: true },
+      });
+      if (!membership) throw new ApiError(403, "Accès à cette organisation refusé", "FORBIDDEN");
+    }
 
     // Le nombre de boutiques dépend de la formule souscrite.
     await PlanService.verifierCreationBoutique(body.orgId);
@@ -171,6 +182,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
   try {
     const id = req.params.id as string;
 
+    await exigerBoutique(req, id, "read");
     const store = await StoreService.getById(id);
 
     if (!store) {
@@ -187,7 +199,15 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 // GET /stores/org/:orgId/quota - Boutiques autorisées par la formule
 router.get("/org/:orgId/quota", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const quota = await PlanService.quotaBoutiques(req.params.orgId as string);
+    const orgId = req.params.orgId as string;
+    if (!req.compte?.isSuperOwner) {
+      const membership = await db.membership.findFirst({
+        where: { userId: req.userId, orgId, role: "ADMIN" },
+        select: { orgId: true },
+      });
+      if (!membership) throw new ApiError(403, "Accès à cette organisation refusé", "FORBIDDEN");
+    }
+    const quota = await PlanService.quotaBoutiques(orgId);
     res.json(quota);
   } catch (err) {
     next(err);
@@ -261,6 +281,7 @@ router.patch("/:id/toggle", authMiddleware, async (req: Request, res: Response, 
   try {
     const id = req.params.id as string;
 
+    await exigerBoutique(req, id, "manage");
     logger.info("Toggling store status", { id });
 
     const store = await StoreService.toggleStatus(id);

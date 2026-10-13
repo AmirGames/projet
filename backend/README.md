@@ -1,5 +1,27 @@
 # Backend ZupEat / ZupDrive
 
+En production, l'API se connecte par `DATABASE_URL_APP`, et les migrations
+par `DATABASE_URL_MIGRATION`; la configuration refuse leur absence. Contrôler
+le rôle réellement ouvert, sans écriture, avec `npm run db:role` après
+`npm run build`, sur une base isolée. `ENABLE_STRIPE=false` est le défaut ; son
+activation exige les clés secrète/publique correspondantes et le secret webhook.
+Voir le [guide A16](../docs/CONFIGURATION-A16.md) pour les contrats et limites.
+La recette proposée est fermée et ZupEat uniquement (ZupDrive exclu) ; son
+SHA intégré `6439e36a51c6262b4781937c217a4063df6a90db`, statut CI et essais externes en attente sont dans le
+[compte rendu A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
+## A15 — Rapports bornés
+
+`GET /api/reports/{sales,revenue,products/:storeId,customers/:storeId}` accepte
+`startDate` et `endDate` (ISO-8601 ou date `YYYY-MM-DD`, bornes inclusives),
+limite une période à 366 jours et utilise les 90 derniers jours par défaut.
+Les listes utilisent `limit` (50 par défaut, max 100) et `offset` (max 100000).
+Les exportations CSV sont limitées à 31 jours et 5000 lignes. `GET
+/api/drivers/earnings` expose les 30 dernières courses par défaut (`limit` 1–100,
+`offset` max 100000), avec totaux calculés sur tout l'historique. Erreurs :
+`INVALID_REPORT_DATE`, `REPORT_PERIOD_OUT_OF_RANGE`, `INVALID_PAGINATION`.
+Voir le [contrat et protocole A15](../docs/RAPPORTS-A15.md).
+
 ## Dépendances A12
 
 `backend/package.json` épingle par overrides les dépendances transitives du

@@ -30,6 +30,7 @@ jest.mock("../../../config/logger", () => ({
 jest.mock("../../../config/env", () => ({
   getEnv: () => ({
     NODE_ENV: "test",
+    DATABASE_URL: process.env.DATABASE_URL,
     API_URL: "http://localhost:3001",
     FRONTEND_URL: "http://localhost:3000",
     JWT_SECRET: "assistant-test-access-secret-at-least-32-characters",
