@@ -1,5 +1,8 @@
 # État du projet et travail restant
 
+> **A03 — 13 octobre 2026 :** [correctifs initiaux des permissions sur les commandes](A03-SECURITE-COMMANDES.md). En attente des tests multi-tenant et de la CI ; ne pas considérer le parcours complet validé.
+
+
 > **A02 — Investigation ouverte le 13 octobre 2026 :** [revue statique des autorisations](SECURITE-A02-2026-10-13.md), scénarios à reproduire avant correction. Aucune vulnérabilité confirmée, aucun test exécuté, aucun déploiement revendiqué.
 
 

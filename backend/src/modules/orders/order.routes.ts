@@ -4,6 +4,8 @@ import { OrderStatus } from "@prisma/client";
 import { PourboireService } from "./pourboire.service";
 import { champEmail } from "../../utils/validation";
 import { OrderService } from "./order.service";
+import { exigerBoutique } from "../auth/autorisation-boutique";
+import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authFacultative, authMiddleware } from "../auth/auth.middleware";
 import { limiterCadence } from "../../middleware/throttle";
@@ -17,6 +19,22 @@ import { SurveillanceCoursesService } from "../drivers/surveillance-courses.serv
 import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
+
+async function exigerCommande(req: Request, id: string) {
+  const order = await db.order.findUnique({ where: { id }, select: { storeId: true } });
+  if (!order) throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+  await exigerBoutique(req, order.storeId, "manage");
+}
+
+async function exigerOrganisation(req: Request, orgId: string) {
+  if (req.compte?.isSuperOwner) return;
+  if (!req.userId) throw new ApiError(401, "Authentification requise", "MISSING_AUTH");
+  const membership = await db.membership.findFirst({
+    where: { userId: req.userId, orgId, role: "ADMIN" },
+    select: { orgId: true },
+  });
+  if (!membership) throw new ApiError(403, "Organisation inaccessible", "FORBIDDEN");
+}
 
 const statutCommande = z.enum(OrderStatus);
 const filtreStatut = z.union([statutCommande, z.literal("ALL")]);
@@ -41,9 +59,11 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
     let resume: { totalOrders: number; totalRevenue: number } | undefined;
 
     if (storeId) {
+      await exigerBoutique(req, storeId, "read");
       orders = await OrderService.getByStoreId(storeId, limit, offset);
       total = await OrderService.countByStoreId(storeId);
     } else {
+      await exigerOrganisation(req, orgId);
       orders = await OrderService.getByOrgId(orgId, status, limit, offset);
       const bilan = await OrderService.chiffreAffairesOrg(orgId, status);
       total = bilan.commandes;
@@ -276,6 +296,7 @@ router.get("/store/:storeId", authMiddleware, async (req: Request, res: Response
     const limit = limiteBornee(req.query.limit, 100, 500);
     const offset = decalage(req.query.offset);
 
+    await exigerBoutique(req, storeId, "read");
     const orders = await OrderService.getByStoreId(storeId, limit, offset);
     const total = await OrderService.countByStoreId(storeId);
 
@@ -301,6 +322,7 @@ router.get("/status/:storeId", authMiddleware, async (req: Request, res: Respons
     }
     const status = statutCommande.parse(req.query.status);
 
+    await exigerBoutique(req, storeId, "read");
     const orders = await OrderService.getByStatus(storeId, status);
 
     res.json({
@@ -319,6 +341,7 @@ router.patch("/:id/status", authMiddleware, async (req: Request, res: Response, 
     const id = req.params.id as string;
     const body = updateOrderStatusSchema.parse(req.body);
 
+    await exigerCommande(req, id);
     logger.info("Updating order status", { id, status: body.status });
 
     const order = await OrderService.updateStatus(id, body.status);
@@ -343,6 +366,7 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: 
   try {
     const id = req.params.id as string;
 
+    await exigerCommande(req, id);
     const order = await OrderService.getById(id);
 
     if (!order) {
@@ -376,6 +400,7 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
   try {
     const orderId = req.params.id as string;
 
+    await exigerCommande(req, orderId);
     const course = await DispatchService.creerCourse(orderId);
 
     if (course.driverId) {
