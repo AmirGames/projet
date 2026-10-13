@@ -272,3 +272,9 @@ Une fonctionnalité est terminée quand :
 6. **Clôture de période** (4.6).
 7. **Export logiciel comptable** (4.7) une fois le logiciel choisi.
 8. Grand livre des tiers, alertes, rapports de pilotage (4.8 à 4.14).
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Le module comptable doit être validé avec un expert belge : rapprochement Stripe, commissions, remboursements, reversements et facturation structurée. Une interface existante n'est pas une preuve de conformité.
+
+Références : [état courant](docs/etat-projet.md) et [recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.
