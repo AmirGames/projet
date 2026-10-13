@@ -202,3 +202,9 @@ suites échouent sans que rien ne soit cassé. Le faux service du dépôt suffit
 et évite de dépendre d'Internet : c'est le terminal 0 ci-dessus, et les deux
 variables `ADDRESS_API_URL` et `PHOTON_API_URL` de l'API.
 
+
+## Consigne de vérification — 13 octobre 2026
+
+Les scripts frontend vérifient des parcours ciblés mais ne remplacent pas un paiement Stripe TEST/3DS ni une livraison réelle.
+
+Aucune validation de production n'est déduite de cette mise à jour.
