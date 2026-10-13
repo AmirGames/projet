@@ -131,3 +131,9 @@ en production. Elles se traitent à la montée de version habituelle, sans urgen
   `npm audit --omit=dev` à chaque montée de dépendance et avant une mise en production.
 - L'exposition des applications mobiles (Expo) : leurs dépendances se jugent à
   part, elles ne tournent pas sur le serveur.
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Cet audit de dépendances est daté ; comparer les alertes au lockfile actuel, en distinguant production, développement et mobile.
+
+Références : [état courant](../docs/etat-projet.md) et [recette A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.
