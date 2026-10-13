@@ -491,3 +491,9 @@ Vous avez maintenant tout ce qu'il faut pour :
 ---
 
 *Pour toute question, consulte MIGRATION_GUIDE_REMAINING_PAGES.md*
+
+## Consigne de vérification — 13 octobre 2026
+
+Les traductions doivent conserver les clés et paramètres, et vérifier l'absence de texte métier non traduit dans les parcours commande et paiement.
+
+Aucune validation de production n'est déduite de cette mise à jour.
