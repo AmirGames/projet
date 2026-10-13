@@ -373,12 +373,12 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: 
       throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
     }
 
-    logger.info("Deleting order", { id });
+    logger.info("Archiving terminal order", { id });
 
     await OrderService.delete(id);
 
     res.json({
-      message: "Commande supprimée",
+      message: "Commande archivée",
     });
   } catch (err) {
     next(err);
