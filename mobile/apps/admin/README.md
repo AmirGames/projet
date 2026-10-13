@@ -40,3 +40,9 @@ npm install
 npm start      # EXPO_PUBLIC_API_URL pour viser un autre serveur
 npm run lint && npx tsc --noEmit
 ```
+
+## Consigne de vérification — 13 octobre 2026
+
+Tester l'app admin sur appareil, la MFA et les refus de permissions ; la CI ne vaut pas recette réelle.
+
+Cette note ne constitue pas une validation de production.
