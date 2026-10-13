@@ -120,3 +120,9 @@ menés et sont consignés dans les rapports correspondants. Les accès avec
 des comptes distincts, le changement de rôle et la révocation pendant une
 connexion sur le déploiement restent des validations complémentaires ;
 voir [l'état courant](etat-projet.md).
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Audit historique du 3 octobre : ne pas transposer ses constats au HEAD sans relecture des routes administrateur et de la MFA.
+
+Références : [état courant](../docs/etat-projet.md) et [recette A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.
