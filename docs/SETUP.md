@@ -364,3 +364,9 @@ PORT=3002 npm run dev
 ---
 
 **Prêt à contribuer ?** Voir [CONTRIBUTING.md](../CONTRIBUTING.md) pour les directives.
+
+## Contrôles complémentaires de recette — 13 octobre 2026
+
+Les commandes de ce guide doivent être confrontées aux package.json et lockfiles du SHA visé. Utiliser une base isolée pour les migrations et tests. Ne pas inférer l'état du VPS depuis une compilation locale.
+
+Voir [l'état du projet](../docs/etat-projet.md) et [le protocole A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Cette revue documentaire ne constitue pas une validation de production.
