@@ -992,17 +992,33 @@ export class OrderService {
     return commandeVisible(id, appelant, jeton);
   }
 
+  /**
+   * Masquage administratif d'une commande clôturée, jamais de suppression physique.
+   * Les paiements, remboursements, preuves de livraison et audits restent conservés.
+   * Une commande active ne doit pas disparaître du traitement opérationnel.
+   */
   static async delete(id: string) {
-    try {
-      return await db.order.delete({
-        where: { id },
-      });
-    } catch (error) {
-      if (codeErreur(error) === "P2025") {
-        throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
-      }
-      throw error;
+    const commande = await db.order.findUnique({
+      where: { id },
+      select: { status: true, deletedAt: true },
+    });
+    if (!commande) {
+      throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
     }
+    if (commande.deletedAt) {
+      throw new ApiError(409, "Commande déjà archivée", "ORDER_ALREADY_ARCHIVED");
+    }
+    if (commande.status !== "COMPLETED" && commande.status !== "REJECTED" && commande.status !== "CANCELLED") {
+      throw new ApiError(409, "Une commande en cours ne peut pas être archivée", "ORDER_NOT_TERMINAL");
+    }
+    const resultat = await db.order.updateMany({
+      where: { id, status: commande.status, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    if (resultat.count !== 1) {
+      throw new ApiError(409, "La commande a changé entre-temps", "ORDER_STATE_CONFLICT");
+    }
+    return { id, archived: true };
   }
 
   static async getByOrgId(orgId: string, status?: OrderStatus | "ALL", limit: number = 100, offset: number = 0) {
