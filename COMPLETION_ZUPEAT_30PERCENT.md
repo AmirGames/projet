@@ -1,5 +1,20 @@
 # Plan de Complétion des 30% Manquants de ZupEat
 
+## Révision du plan au 13 octobre 2026
+
+**Le titre « 30 % manquants », les estimations 70 % → 100 %, la durée 6–8 semaines et les pourcentages par composant sont des hypothèses du 7 octobre, pas des mesures du HEAD.** Une complétion à 100 % ne peut être annoncée sans critères d'acceptation mesurables. La CI existe désormais ; les travaux de sécurité et de configuration A01–A16 ont avancé, mais le pilote fermé reste bloqué faute de preuves d'environnement et de parcours réel.
+
+### Critères de sortie MVP vérifiables
+
+1. **Sécurité** : tests d'accès croisé organisation A/B sur boutiques et commandes, refus sans fuite ni mutation, revue des rôles et CI verte sur le SHA candidat. Voir [A02](docs/SECURITE-A02-2026-10-13.md) et [A03](docs/A03-SECURITE-COMMANDES.md).
+2. **Commande** : panier → paiement de test → acceptation/refus sur **manager.zupeat.com** → attribution au livreur → remise ; vérifier annulation, perte de connexion, doubles clics et absence de double débit.
+3. **Finance** : Stripe TEST avec 3DS et webhook externe, remboursement après refus, pourboire, rapprochement et contrôle de non-double versement. Aucun test LIVE n'est requis pour qualifier le pilote fermé.
+4. **Exploitation** : SHA déployé, migrations sur données représentatives, restauration isolée d'une sauvegarde distante, alertes réellement reçues, preuves de configuration et contrôles d'accès.
+5. **Conformité** : pages légales publiées, validation des responsabilités et données personnelles, facturation structurée selon les obligations applicables. Le code seul ne vaut pas conformité.
+
+Les critères détaillés, propriétaires et preuves manquantes sont consignés dans [A16](docs/RECETTE-PILOTE-A16-2026-10-12.md) et [l'état projet](docs/etat-projet.md). Le plan historique qui suit est conservé pour traçabilité et doit être réestimé avant affectation des tâches.
+
+
 **Objectif :** Transformer ZupEat de 70% → 100% (prêt pour lancement début 2027)
 
 **Timeline :** 6-8 semaines (2 développeurs)
