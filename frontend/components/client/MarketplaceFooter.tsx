@@ -42,31 +42,31 @@ export function MarketplaceFooter() {
   ];
 
   return (
-    <footer className="mt-20 border-t border-neutral-200 bg-white text-neutral-900" aria-label={t('landmark')}>
+    <footer className="mt-0 border-t border-white/10 bg-[#090B0E] text-white" aria-label={t('landmark')}>
       <div className="mx-auto max-w-6xl px-5 py-12 md:px-8 md:py-14">
         <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
           <div className="col-span-2 max-w-xs md:col-span-1">
             <Link href="/client" aria-label="ZupEat — accueil" className="inline-flex rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
-              <NomMarque marque="zupeat" className="text-2xl font-black tracking-[-0.06em] text-black" />
+              <NomMarque marque="zupeat" className="text-2xl font-black tracking-[-0.06em] text-white" />
             </Link>
-            <p className="mt-3 text-sm leading-6 text-neutral-600">{t('tagline')}</p>
+            <p className="mt-3 text-sm leading-6 text-white/65">{t('tagline')}</p>
           </div>
           {colonnes.map((colonne) => (
             <nav key={colonne.titre} aria-label={colonne.navLabel ?? colonne.titre}>
-              <h2 className="text-sm font-bold text-black">
+              <h2 className="text-sm font-bold text-white">
                 {colonne.marque ? <NomMarque marque="zupeat" /> : colonne.titre}
               </h2>
               <ul className="mt-4 space-y-3">
                 {colonne.liens.map((lien) => (
                   <li key={lien.href}>
                     {lien.href.startsWith('mailto:') ? (
-                      <a href={lien.href} className="rounded-sm text-sm text-neutral-600 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
+                      <a href={lien.href} className="rounded-sm text-sm text-white/65 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
                         {lien.label}
                       </a>
                     ) : (
                       <Link
                         href={lien.href}
-                        className="rounded-sm text-sm text-neutral-600 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"
+                        className="rounded-sm text-sm text-white/65 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"
                       >
                         {lien.label}
                       </Link>
@@ -77,11 +77,11 @@ export function MarketplaceFooter() {
             </nav>
           ))}
         </div>
-        <div className="mt-10 flex flex-col gap-3 border-t border-neutral-200 pt-6 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>{t('copyright', { year: new Date().getFullYear() })}</p>
           <p className="inline-flex items-center gap-1">
             {t('groupAttribution')}
-            <Link href={accueilDe('vitrine')} className="rounded-sm font-semibold text-neutral-900 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
+            <Link href={accueilDe('vitrine')} className="rounded-sm font-semibold text-white hover:text-[#FF7A00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
               <NomMarque marque="zupone" />
             </Link>
           </p>
