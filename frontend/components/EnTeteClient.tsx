@@ -46,6 +46,13 @@ export function EnTeteClient() {
     { href: '/client/profile', label: t('nav.profil'), icon: User },
   ];
 
+  const liensPublics = [
+    { href: '/restaurants', label: t('nav.restaurants') },
+    { href: '/client#comment-ca-marche', label: t('nav.commentCaMarche') },
+    { href: '/devenir-commercant', label: t('nav.devenirPartenaire') },
+    { href: '/devenir-livreur', label: t('nav.devenirLivreur') },
+  ];
+
   const isActive = (href: string) => pathname === href;
 
   return (
@@ -94,6 +101,14 @@ export function EnTeteClient() {
                 </Link>
               );
             })}
+            <div className="my-2 border-t border-gray-100 pt-2">
+              {liensPublics.map((item) => (
+                <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-orange-50 hover:text-[#D94B00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5A00]">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
             {/* Le bouton suit la session : toujours affiché, il laissait
                 croire, une fois déconnecté, qu'on l'était encore. */}
             {!isLoading && user && (
@@ -120,39 +135,27 @@ export function EnTeteClient() {
       </nav>
 
       {/* Desktop Navigation */}
-      <nav className="hidden md:block bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <SelecteurEspace actuel="client" href="/client" clair className="gap-2 -ml-2 px-2 py-1">
+      <nav className="sticky top-0 z-40 hidden border-b border-neutral-200/80 bg-white/95 backdrop-blur-xl md:block">
+        <div className="mx-auto flex min-h-[4.25rem] max-w-7xl items-center justify-between gap-5 px-6">
+          <SelecteurEspace actuel="client" href="/client" clair className="shrink-0 gap-2 -ml-2 px-2 py-1">
             <LogoClient />
           </SelecteurEspace>
 
-          <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
-            {navItems.map(item => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 ${
-                    isActive(item.href)
-                      ? 'bg-[#FF7A00] text-black shadow-xs'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span className="hidden lg:inline">{item.label}</span>
-                </Link>
-              );
-            })}
+          <div className="flex min-w-0 items-center justify-center gap-1.5">
+            {liensPublics.map((item) => (
+              <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}
+                className={`whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2 ${isActive(item.href) ? 'bg-orange-50 text-[#D94B00]' : 'text-neutral-700 hover:bg-neutral-100 hover:text-black'}`}>
+                {item.label}
+              </Link>
+            ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2.5">
             <PaniersAccueil />
             {!isLoading && user && (
               <button
                 onClick={seDeconnecter}
-                className="px-4 py-2 rounded-full text-sm text-gray-700 font-semibold hover:bg-gray-100 transition"
+                className="rounded-full px-3 py-2 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-100"
               >
                 {t('deconnexion')}
               </button>
@@ -160,12 +163,15 @@ export function EnTeteClient() {
             {!isLoading && !user && (
               <Link
                 href="/login"
-                className="px-5 py-2 bg-gray-900 hover:bg-gray-800 rounded-full text-sm text-white font-semibold transition"
+                className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-800 transition hover:border-neutral-500 hover:bg-neutral-50"
               >
                 {t('connexion')}
               </Link>
             )}
             <LanguageSwitcher clair />
+            <Link href="/restaurants" className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#FF5A00] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#E64D00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2">
+              {t('nav.commander')}<span aria-hidden="true">→</span>
+            </Link>
           </div>
         </div>
       </nav>

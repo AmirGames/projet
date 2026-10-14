@@ -92,7 +92,7 @@ export default function FavoritesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FFFDFB]">
       {/* Header */}
       <header className="pt-4">
         <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
@@ -116,7 +116,7 @@ export default function FavoritesPage() {
             <p className="text-gray-900 text-lg">{t('loading')}</p>
           </div>
         ) : favorites.length === 0 ? (
-          <div className="rounded-3xl border border-neutral-200 bg-neutral-50 px-6 py-16 text-center">
+          <div className="rounded-3xl border border-orange-100 bg-[#FFF4EB] px-6 py-16 text-center">
             <Heart size={48} className="mx-auto mb-4 text-[#FF7A00]" />
             <p className="text-gray-900 text-xl mb-4">{t('noFavorites')}</p>
               <Link href="/client" className="font-bold text-[#A94F00] underline underline-offset-4 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
@@ -208,7 +208,7 @@ export default function FavoritesPage() {
                     </div>
 
                     {/* CTA Button */}
-                    <Link href={`/store/${store.slug}`} className="block w-full rounded-full bg-[#FF7A00] py-3 text-center font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">
+                    <Link href={`/store/${store.slug}`} className="block w-full rounded-full bg-[#FF5A00] py-3 text-center font-bold text-white transition hover:bg-[#D94B00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2">
                         {t('viewMenu')}
                     </Link>
                   </div>

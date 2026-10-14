@@ -21,7 +21,7 @@ export default function ClientLayout({
    * lise, et laissait croire à deux systèmes de panier concurrents.
    */
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FFFDFB]">
       <EnTeteClient />
 
       <BandeauCommandeEnCours />
