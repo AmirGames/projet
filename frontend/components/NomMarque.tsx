@@ -4,7 +4,7 @@ import type { Marque } from '@/lib/marques';
 export function NomMarque({ marque, className = '' }: { marque: Marque; className?: string }) {
   const suffixe = marque === 'zupone' ? 'One' : marque === 'zupeat' ? 'Eat' : 'Drive';
   const couleurSuffixe = marque === 'zupone'
-    ? 'text-[#2563EB]'
+    ? 'text-[#D8B274]'
     : marque === 'zupeat'
       ? 'text-[#FF7A00]'
       : '';
