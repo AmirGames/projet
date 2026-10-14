@@ -9,7 +9,7 @@ import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag, ArrowRight } from 'lucide-react';
+import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag, ArrowRight, CreditCard, Store, Utensils, MapPin } from 'lucide-react';
 
 import { RechercheAdresseLivraison } from '@/components/RechercheAdresseLivraison';
 import {
@@ -305,44 +305,56 @@ export default function ClientHomePage() {
     <div className="min-h-screen bg-white text-gray-900">
       <title>{`${t('titreOnglet')} — ZupEat`}</title>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
-        {/* L'accroche : un grand aplat chaleureux, et l'adresse au centre du
-            jeu — sans elle, ni frais ni délais justes. */}
-        <section className="relative isolate overflow-hidden rounded-[2rem] bg-[#FFF6EC] px-6 py-9 text-black sm:px-10 md:px-14 md:py-14">
-          <div className="grid items-center gap-8 md:grid-cols-[1.05fr_.95fr] md:gap-12">
-            <div className="relative z-10 max-w-2xl">
-              <p className="mb-4 text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('heroEyebrow')}</p>
-              <h1 className="text-4xl font-black leading-[.98] tracking-[-.06em] sm:text-5xl md:text-6xl">{t('heroTitle')}</h1>
-              <p className="mt-5 max-w-xl text-base leading-7 text-neutral-700 md:text-lg">{t('heroSubtitle')}</p>
-              <p className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-neutral-700">
-                <Check size={17} className="rounded-full bg-[#FF7A00] p-0.5 text-black" />{t('heroOrderWithoutAccount')}
-              </p>
-              <div className="mt-7 flex max-w-xl flex-col gap-3 sm:flex-row sm:items-start">
-                <RechercheAdresseLivraison
-                  adresse={adresse}
-                  onChange={(choisie) => {
-                    setAdresse(choisie);
-                    chargerPour(choisie);
-                  }}
-                  className="mb-0 min-h-14 flex-1 rounded-2xl border border-black/10 bg-white px-4 py-3 shadow-sm transition hover:border-black/20 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                />
-                <Link href="#commerces" className="inline-flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#FF7A00] px-6 text-sm font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">{t('heroAction')} <ArrowRight size={17} /></Link>
-              </div>
-              <Link href="/restaurants" className="mt-3 inline-flex rounded-sm text-sm font-semibold text-neutral-700 underline underline-offset-4 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">{t('seeAll')}</Link>
+      <section className="relative isolate overflow-hidden bg-[#150D08] text-white">
+        <Image src="/images/zupeat/home-hero.webp" alt="" fill priority sizes="100vw" className="-z-20 object-cover object-[68%_center]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-black/95 via-black/75 to-black/10" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
+        <div className="mx-auto max-w-7xl px-5 pb-8 pt-10 sm:px-8 sm:pb-9 sm:pt-14 lg:px-10 lg:pt-16">
+          <div className="max-w-2xl">
+            <p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#FF7A00] sm:text-sm">{t('heroEyebrow')}</p>
+            <h1 className="mt-3 text-[2.7rem] font-black leading-[.99] tracking-[-.055em] text-white sm:text-5xl md:text-6xl">
+              <span className="block">{t('heroTitleLead')}</span>
+              <span className="block text-[#FF7A00]">{t('heroTitleAccent')}</span>
+              <span className="block">{t('heroTitleEnd')}</span>
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-white/85 sm:text-base sm:leading-7">{t('heroSubtitle')}</p>
+            <p className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-white/80 sm:text-sm">
+              <Check size={16} className="rounded-full bg-[#FF7A00] p-0.5 text-black" aria-hidden="true" />{t('heroOrderWithoutAccount')}
+            </p>
+            <div className="mt-5 flex max-w-2xl flex-col gap-2 rounded-full bg-white p-1.5 shadow-[0_12px_35px_rgba(0,0,0,.3)] sm:flex-row sm:items-center">
+              <RechercheAdresseLivraison
+                adresse={adresse}
+                onChange={(choisie) => {
+                  setAdresse(choisie);
+                  chargerPour(choisie);
+                }}
+                className="mb-0 min-h-12 flex-1 rounded-full border-0 bg-white px-4 py-3 text-gray-900 transition hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"
+              />
+              <Link href="#commerces" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[#FF5A00] px-6 text-sm font-bold text-white transition hover:bg-[#E64D00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">{t('heroAction')} <ArrowRight size={17} aria-hidden="true" /></Link>
             </div>
-              <div aria-label={t('heroImageLabel')} className="grid grid-cols-2 gap-3 sm:gap-4">
-              {['boulangerie', 'primeur', 'fromagerie', 'fleuriste'].map((famille, index) => {
-                const visuel = visuelDeCommerce(famille);
-                return <div key={famille} className={`overflow-hidden rounded-3xl bg-white shadow-sm ${index % 2 === 1 ? 'translate-y-5' : ''}`}><img src={visuel.src} alt={visuel.alt} className="aspect-[1.12] w-full object-cover" loading="eager" /></div>;
-              })}
-            </div>
+            <Link href="/restaurants" className="mt-3 inline-flex rounded-sm text-xs font-semibold text-white/80 underline underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] sm:text-sm">{t('seeAll')}</Link>
           </div>
-        </section>
 
-        {/* Les catégories, à la manière des grandes plateformes : une rangée
-            qui défile, un clic filtre, un second clic annule. */}
+          <ul aria-label={t('heroBenefitsLabel')} className="mt-7 grid max-w-4xl grid-cols-2 gap-x-5 gap-y-4 border-t border-white/20 pt-5 sm:grid-cols-4 sm:gap-4">
+            {[
+              { icon: Bike, title: t('benefitDelivery'), text: t('benefitDeliveryText') },
+              { icon: Store, title: t('benefitPickup'), text: t('benefitPickupText') },
+              { icon: CreditCard, title: t('benefitPayment'), text: t('benefitPaymentText') },
+              { icon: Heart, title: t('benefitLocal'), text: t('benefitLocalText') },
+            ].map(({ icon: Icon, title, text }) => (
+              <li key={title} className="flex items-center gap-2.5 text-white">
+                <Icon size={21} strokeWidth={1.8} className="shrink-0 text-[#FF7A00]" aria-hidden="true" />
+                <span><span className="block text-xs font-bold">{title}</span><span className="mt-0.5 block text-[10px] leading-4 text-white/65">{text}</span></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
+        {/* Catégories interactives : elles filtrent la liste réelle des commerces. */}
         {familles.length > 0 && (
-          <nav aria-label={t('categories')} className="relative mt-8">
+          <nav aria-label={t('categories')} className="relative mt-0 rounded-2xl border border-gray-100 bg-white px-2 py-3 shadow-[0_8px_30px_rgba(15,23,42,.07)] sm:px-4">
             {/* Un fondu sous la flèche : les catégories y glissent au lieu de
                 buter contre elle. */}
             <div className="hidden md:flex absolute inset-y-0 left-0 z-10 w-16 items-center justify-start pointer-events-none bg-linear-to-r from-white via-white/90 to-transparent">
@@ -357,7 +369,7 @@ export default function ClientHomePage() {
             </div>
             <ul
               ref={rangee}
-              className="flex gap-1 md:gap-3 pb-2 md:px-10 overflow-x-auto scroll-smooth scrollbar-none [&::-webkit-scrollbar]:hidden"
+              className="flex gap-1 md:gap-2 pb-1 md:px-10 overflow-x-auto scroll-smooth scrollbar-none [&::-webkit-scrollbar]:hidden"
             >
               {familles.map((famille) => {
                 const choisie = familleChoisie === famille.code;
@@ -368,20 +380,20 @@ export default function ClientHomePage() {
                       aria-pressed={choisie}
                       title={famille.libelle}
                       onClick={() => setFamilleChoisie(choisie ? null : famille.code)}
-                      className="group w-20 shrink-0 flex flex-col items-center gap-2 py-1"
+                      className={`group w-[4.5rem] shrink-0 flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] ${choisie ? 'bg-orange-50' : 'hover:bg-gray-50'}`}
                     >
                       <span
                         aria-hidden="true"
-                        className={`flex h-16 w-16 items-center justify-center rounded-full text-3xl leading-none transition ${
+                        className={`flex size-12 items-center justify-center rounded-full text-[1.7rem] leading-none transition ${
                           choisie
-                          ? 'bg-[#FF7A00] ring-2 ring-black/10 scale-105'
-                            : 'bg-gray-100 group-hover:bg-orange-50 group-hover:scale-105'
+                          ? 'bg-[#FF7A00] shadow-sm'
+                            : 'bg-gray-100 group-hover:bg-orange-50'
                         }`}
                       >
                         {famille.emoji}
                       </span>
                       <span
-                        className={`w-full px-1 truncate text-center text-xs ${
+                        className={`w-full px-1 truncate text-center text-[11px] ${
                           choisie ? 'font-bold text-gray-900' : 'font-medium text-gray-700'
                         }`}
                       >
@@ -486,31 +498,78 @@ export default function ClientHomePage() {
             ))}
 
             <section>
-              <h2 className="mb-5 text-2xl font-bold tracking-tight">
-                {familleChoisie
-                  ? familles.find((famille) => famille.code === familleChoisie)?.libelle
-                  : adresse?.latitude != null
-                    ? t('nearbyRestaurants')
-                    : t('allRestaurants')}{' '}
-                <span className="font-medium text-gray-400">({filteredStores.length})</span>
-              </h2>
+              <div className="mb-5 flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+                    {familleChoisie
+                      ? familles.find((famille) => famille.code === familleChoisie)?.libelle
+                      : adresse?.latitude != null
+                        ? t('nearbyRestaurants')
+                        : t('allRestaurants')}{' '}
+                    <span className="text-sm font-medium text-gray-400">({filteredStores.length})</span>
+                  </h2>
+                  {adresse && <p className="mt-1 text-xs text-gray-500">{t('deliveryAddressHeading', { address: adresse.label })}</p>}
+                </div>
+                <Link href="/restaurants" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#D94B00] underline underline-offset-4 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] sm:text-sm">{t('seeAll')}<ArrowRight size={14} aria-hidden="true" /></Link>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-8">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4 lg:gap-x-5 xl:grid-cols-6">
                 {filteredStores.map((store) => carte(store))}
               </div>
             </section>
           </div>
         )}
       </div>
-      <section id="comment-ca-marche" className="mx-auto mt-4 max-w-7xl scroll-mt-20 px-5 py-12 md:px-8 md:py-16">
-        <p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('howEyebrow')}</p>
-        <h2 className="mt-2 text-3xl font-black tracking-[-.045em] md:text-4xl">{t('howTitle')}</h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((numero) => <article key={numero} className="rounded-3xl border border-neutral-200 p-6"><span className="grid size-10 place-items-center rounded-2xl bg-[#FF7A00] text-sm font-black text-black">{String(numero).padStart(2, '0')}</span><h3 className="mt-5 text-xl font-bold tracking-tight">{t(`howStep${numero}Title`)}</h3><p className="mt-2 text-sm leading-6 text-neutral-600">{t(`howStep${numero}Description`)}</p></article>)}
+      <section id="comment-ca-marche" className="mx-auto mt-4 max-w-7xl scroll-mt-20 px-5 py-10 md:px-8 md:py-14">
+        <div className="rounded-[1.75rem] bg-[#FFF2E9] px-5 py-7 sm:px-8 md:py-9">
+          <p className="text-xs font-bold uppercase tracking-[.16em] text-[#D94B00]">{t('howEyebrow')}</p>
+          <h2 className="mt-2 text-2xl font-black tracking-[-.045em] sm:text-3xl md:text-4xl">{t('howTitle')}</h2>
+          <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+            {[1, 2, 3, 4].map((numero) => {
+              const Icone = [MapPin, Store, CreditCard, Bike][numero - 1];
+              return <article key={numero} className="relative flex items-start gap-3 lg:gap-2">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#FF5A00] text-sm font-black text-white">{numero}</span>
+                <div className="min-w-0">
+                  <Icone className="mb-2 size-7 text-[#E94F00]" strokeWidth={2} aria-hidden="true" />
+                  <h3 className="text-sm font-extrabold tracking-tight sm:text-base">{t(`howStep${numero}Title`)}</h3>
+                  <p className="mt-1 text-xs leading-5 text-neutral-700">{t(`howStep${numero}Description`)}</p>
+                </div>
+              </article>;
+            })}
+          </div>
         </div>
       </section>
-      <section className="mx-auto grid max-w-7xl gap-4 px-5 pb-12 md:grid-cols-2 md:px-8 md:pb-16">
-        {[{ href: '/devenir-livreur', image: '/images/shops-redesign/primeur.webp', title: 'partnerDriverTitle', description: 'partnerDriverDescription' }, { href: '/devenir-commercant', image: '/images/shops-redesign/boulangerie.webp', title: 'partnerMerchantTitle', description: 'partnerMerchantDescription' }].map((carte) => <Link key={carte.href} href={carte.href} className="group relative min-h-64 overflow-hidden rounded-[2rem] bg-neutral-900 p-7 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 md:p-9"><img src={carte.image} alt="" className="absolute inset-0 size-full object-cover opacity-35 transition duration-500 group-hover:scale-[1.03]" loading="lazy"/><div className="relative max-w-md"><h2 className="text-2xl font-black tracking-tight md:text-3xl">{t(carte.title)}</h2><p className="mt-3 text-sm leading-6 text-white/90">{t(carte.description)}</p><span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#FF7A00] px-5 py-3 text-sm font-bold text-black">{t('partnerAction')} <ArrowRight size={16}/></span></div></Link>)}
+      <section className="mx-auto grid max-w-7xl gap-3 px-5 pb-10 md:grid-cols-3 md:px-8 md:pb-14">
+        {[
+          { href: '/restaurants', image: '/images/zupeat/consumer.webp', title: 'partnerCustomerTitle', description: 'partnerCustomerDescription' },
+          { href: '/devenir-commercant', image: '/images/zupeat/merchant.webp', title: 'partnerMerchantTitle', description: 'partnerMerchantDescription' },
+          { href: '/devenir-livreur', image: '/images/zupeat/courier.webp', title: 'partnerDriverTitle', description: 'partnerDriverDescription' },
+        ].map((carte) => <Link key={carte.href} href={carte.href} className="group relative min-h-64 overflow-hidden rounded-2xl bg-neutral-900 p-6 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-2 md:p-7">
+          <img src={carte.image} alt="" className="absolute inset-0 size-full object-cover opacity-55 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-65" loading="lazy" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
+          <div className="relative max-w-sm">
+            <h2 className="text-xl font-black leading-tight tracking-tight md:text-2xl">{t(carte.title)}</h2>
+            <p className="mt-3 text-sm leading-5 text-white/90">{t(carte.description)}</p>
+            <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#FF5A00] px-4 py-2.5 text-xs font-bold text-white">{t('partnerAction')} <ArrowRight size={15} aria-hidden="true" /></span>
+          </div>
+        </Link>)}
+      </section>
+      <section className="mx-auto max-w-7xl px-5 pb-12 md:px-8 md:pb-16">
+        <div className="relative isolate flex min-h-44 flex-col justify-center overflow-hidden rounded-[1.75rem] bg-[#FFF2E9] px-6 py-7 sm:px-9 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-lg">
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-[#D94B00]">ZupEat</p>
+            <h2 className="mt-2 text-2xl font-black tracking-[-.04em] sm:text-3xl">{t('mobileTitle')}</h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-700">{t('mobileDescription')}</p>
+            <Link href="#commerces" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#FF5A00] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#D94B00]">{t('heroAction')}<ArrowRight size={16} aria-hidden="true" /></Link>
+          </div>
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 right-12 hidden h-72 w-36 rotate-[-8deg] rounded-[2.2rem] border-[7px] border-[#171717] bg-white p-2 shadow-2xl md:block">
+            <div className="h-full overflow-hidden rounded-[1.6rem] bg-[#FFF8F3]">
+              <div className="flex items-center justify-between px-3 py-4 text-[10px] font-black text-gray-900"><span>Zup<span className="text-[#FF5A00]">Eat</span></span><ShoppingBag size={13} className="text-[#FF5A00]" /></div>
+              <img src="/images/zupeat/home-hero.webp" alt="" className="h-24 w-full object-cover" loading="lazy" />
+              <div className="space-y-2 p-2"><span className="block h-2 w-3/4 rounded bg-neutral-200"/><span className="block h-2 w-full rounded bg-neutral-100"/><div className="mt-3 rounded-lg bg-white p-2 shadow-sm"><span className="block h-12 rounded bg-[#FFEEE2]"/><span className="mt-2 block h-2 w-4/5 rounded bg-neutral-200"/></div></div>
+            </div>
+          </div>
+        </div>
       </section>
       {stores.some((store) => (store.totalRatings || 0) > 0 && store.rating != null) && <section className="bg-neutral-50 py-12 md:py-16"><div className="mx-auto max-w-7xl px-5 md:px-8"><p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('reviewsEyebrow')}</p><h2 className="mt-2 text-3xl font-black tracking-[-.045em]">{t('reviewsTitle')}</h2><p className="mt-2 max-w-2xl text-sm text-neutral-600">{t('reviewsDescription')}</p><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{stores.filter((store) => (store.totalRatings || 0) > 0 && store.rating != null).sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3).map((store) => <Link key={store.id} href={`/store/${store.slug}`} className="rounded-3xl bg-white p-6 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]"><div className="flex items-center gap-2 text-lg font-black"><Star className="size-5 fill-[#FF7A00] text-[#FF7A00]"/>{note(store.rating!)}<span className="text-xs font-medium text-neutral-500">({store.totalRatings} {t('reviews')}</span></div><h3 className="mt-3 font-bold">{store.name}</h3><p className="mt-1 text-sm text-neutral-600">{store.genreLibelle || t('localShop')}</p></Link>)}</div></div></section>}
     </div>
@@ -712,7 +771,7 @@ function CarteCommerce({
 /** Des cartes grises en attendant les commerces : la page ne saute pas. */
 function GrilleEnChargement() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-8" aria-busy="true">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4 lg:gap-x-5 xl:grid-cols-6" aria-busy="true">
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i} className="animate-pulse">
           <div className="aspect-video rounded-2xl bg-gray-100" />
