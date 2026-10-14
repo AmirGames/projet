@@ -1369,7 +1369,7 @@ export function TunnelCommande({
               sousLeMinimum ||
               (enLivraison && livraison?.livrable === false)
             }
-            className="w-full rounded-full bg-[#FF7A00] py-4 text-lg font-bold text-black transition-colors hover:bg-[#E66E00] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+            className="w-full rounded-full bg-[#FF5A00] py-4 text-lg font-bold text-white transition-colors hover:bg-[#D94B00] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2"
           >
             {submitting
               ? t('traitement')

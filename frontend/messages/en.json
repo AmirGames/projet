@@ -4976,7 +4976,12 @@
       "favoris": "Favourites",
       "commandes": "Orders",
       "profil": "Profile",
-      "boutiques": "Shops"
+      "boutiques": "Shops",
+      "restaurants": "Restaurants",
+      "commentCaMarche": "How it works",
+      "devenirPartenaire": "Become a partner",
+      "devenirLivreur": "Become a courier",
+      "commander": "Order now"
     },
     "ouvrirMenu": "Open menu",
     "fermerMenu": "Close menu"

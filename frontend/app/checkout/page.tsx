@@ -45,7 +45,7 @@ function ChargementPanier() {
   const tc = useTranslations('pageCommande');
 
   return (
-    <div className="min-h-screen bg-[#FAF9F7] text-gray-900">
+    <div className="min-h-screen bg-[#FFF8F3] text-gray-900">
       <EnTeteClient />
       <div className="flex min-h-[60vh] items-center justify-center">
         <p className="text-gray-500">{tc('chargement')}</p>
@@ -147,7 +147,7 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF9F7] text-gray-900">
+    <div className="min-h-screen bg-[#FFF8F3] text-gray-900">
       <EnTeteClient />
       <div className="px-4 pt-6 sm:px-6">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
@@ -192,7 +192,7 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
 
             <Link
               href={`/track?commande=${confirmation.id}`}
-              className="block w-full rounded-full bg-[#FF7A00] py-3 text-center font-bold text-black transition-colors hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              className="block w-full rounded-full bg-[#FF5A00] py-3 text-center font-bold text-white transition-colors hover:bg-[#D94B00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2"
             >
               {tc('suivre')}
             </Link>
@@ -207,7 +207,7 @@ function CheckoutPanier({ demandee }: { demandee: string }) {
                 </p>
                 <Link
                   href="/client"
-                  className="inline-block py-3 px-6 bg-gray-900 hover:bg-gray-800 rounded-full text-white font-semibold transition-colors"
+                  className="inline-block rounded-full bg-[#FF5A00] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#D94B00]"
                 >
                   {tc('voirCommerces')}
                 </Link>

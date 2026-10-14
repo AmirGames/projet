@@ -183,7 +183,7 @@ export default function OrderTrackingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFFDFB] flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-900 text-lg mb-4">{t('chargement')}</p>
           <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -194,7 +194,7 @@ export default function OrderTrackingPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#FFFDFB]">
         <header className="pt-4">
           <div className="max-w-7xl mx-auto px-4 py-4">
             <Link href="/client/orders" className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-neutral-600 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00]">
@@ -222,7 +222,7 @@ export default function OrderTrackingPage() {
   const progress = getProgressPercentage();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FFFDFB]">
       {/* Notification Toast */}
       {notification && (
         <div className="fixed top-0 left-0 right-0 z-50">
@@ -287,7 +287,7 @@ export default function OrderTrackingPage() {
                 </div>
                 <Link
                   href={`/client/orders/${orderId}/review`}
-                  className="rounded-full bg-[#FF7A00] px-5 py-3 text-center font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                  className="rounded-full bg-[#FF5A00] px-5 py-3 text-center font-bold text-white transition hover:bg-[#D94B00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2"
                 >
                   {t('reviewPromptButton')}
                 </Link>

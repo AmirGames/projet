@@ -4976,7 +4976,12 @@
       "favoris": "Favoris",
       "commandes": "Commandes",
       "profil": "Profil",
-      "boutiques": "Boutiques"
+      "boutiques": "Boutiques",
+      "restaurants": "Restaurants",
+      "commentCaMarche": "Comment ça marche ?",
+      "devenirPartenaire": "Devenir partenaire",
+      "devenirLivreur": "Devenir livreur",
+      "commander": "Commander"
     },
     "ouvrirMenu": "Ouvrir le menu",
     "fermerMenu": "Fermer le menu"
