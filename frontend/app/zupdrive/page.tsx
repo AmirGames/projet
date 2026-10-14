@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import Link from '@/components/LienRegional';
 import { ArrowRight, BadgeCheck, CarFront, Clock3, Crown, Plane, ShieldCheck, UsersRound } from 'lucide-react';
-import { accueilDe } from '@/lib/domaines';
 import { EMAIL_CONTACT } from '@/lib/editeur';
 import { EnTeteMarque } from '@/components/EnTeteMarque';
 
@@ -16,7 +15,6 @@ export async function generateMetadata(): Promise<Metadata> {
 /** La vitrine ZupDrive présente le service en préparation sans promettre de date d'ouverture. */
 export default function AccueilZupDrive() {
   const t = useTranslations('accueilZupdrive');
-  const prevenir = `mailto:${EMAIL_CONTACT}?subject=${encodeURIComponent(t('sujetPrevenir'))}`;
   const services = [
     { icone: CarFront, titre: t('standardTitle'), texte: t('standardText'), image: '/images/zupdrive/vtc-standard.webp', alt: t('standardImageAlt') },
     { icone: Crown, titre: t('premiumTitle'), texte: t('premiumText'), image: '/images/zupdrive/vtc-premium.webp', alt: t('premiumImageAlt') },
@@ -158,3 +156,4 @@ export default function AccueilZupDrive() {
     </div>
   );
 }
+
