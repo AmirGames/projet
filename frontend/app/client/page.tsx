@@ -9,7 +9,8 @@ import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag, ArrowRight, CreditCard, Store, Utensils, MapPin } from 'lucide-react';
+import ImageNext from 'next/image';
+import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag, ArrowRight, CreditCard, Store, MapPin, ShoppingBag } from 'lucide-react';
 
 import { RechercheAdresseLivraison } from '@/components/RechercheAdresseLivraison';
 import {
@@ -306,7 +307,7 @@ export default function ClientHomePage() {
       <title>{`${t('titreOnglet')} — ZupEat`}</title>
 
       <section className="relative isolate overflow-hidden bg-[#150D08] text-white">
-        <Image src="/images/zupeat/home-hero.webp" alt="" fill priority sizes="100vw" className="-z-20 object-cover object-[68%_center]" />
+        <ImageNext src="/images/zupeat/home-hero.webp" alt="" fill priority sizes="100vw" className="-z-20 object-cover object-[68%_center]" />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-black/95 via-black/75 to-black/10" />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
         <div className="mx-auto max-w-7xl px-5 pb-8 pt-10 sm:px-8 sm:pb-9 sm:pt-14 lg:px-10 lg:pt-16">
