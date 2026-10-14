@@ -129,7 +129,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
     'flex items-center gap-3 px-3 py-2 rounded-[10px] text-sm font-semibold transition-colors text-gray-700 hover:bg-gray-100 hover:text-gray-900';
 
   return (
-    <div className={`flex min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
+    <div className={`flex min-h-screen bg-[#FFF9F4] text-gray-900 ${classe}`}>
       {/* Le voile derrière le tiroir, sur téléphone. */}
       {tiroir && (
         <button
@@ -141,13 +141,13 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#ECECEA] bg-white transition-all duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-orange-100 bg-white transition-all duration-300 lg:static lg:translate-x-0 ${
           tiroir ? 'translate-x-0' : '-translate-x-full'
         } ${menuOuvert ? 'lg:w-64' : 'lg:w-20'}`}
       >
         <div className="p-6 border-b border-gray-200">
           <SelecteurEspace actuel="merchant" href="/merchant" clair className="gap-3 -m-2 p-2 w-full min-w-0" chevron={menuOuvert || tiroir}>
-            <div className="w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center font-extrabold shrink-0">
+            <div className="w-10 h-10 bg-[#FF5A00] text-white rounded-xl flex items-center justify-center font-extrabold shrink-0 shadow-sm shadow-orange-200">
               <LayoutGrid size={20} />
             </div>
             {(menuOuvert || tiroir) && (
@@ -254,7 +254,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 bg-white border-b border-[#ECECEA] px-4 py-3 sm:px-6 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-orange-100 px-4 py-3 sm:px-6 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setTiroir(true)}

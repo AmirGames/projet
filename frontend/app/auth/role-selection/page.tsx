@@ -184,7 +184,7 @@ export default function RoleSelectionPage() {
               </div>
               <button
                 onClick={() => router.push("/client")}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+                className="w-full bg-[#FF5A00] hover:bg-[#E64E00] text-white font-bold py-2 px-4 rounded-xl transition-colors"
               >
                 {tr('acceder')}
               </button>
@@ -234,14 +234,14 @@ export default function RoleSelectionPage() {
                       }
                       router.push("/merchant");
                     }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+                    className="w-full bg-[#FF5A00] hover:bg-[#E64E00] text-white font-bold py-2 px-4 rounded-xl transition-colors"
                   >
                     {tr('acceder')}
                   </button>
                 )}
                 <button
                   onClick={() => setShowMerchantForm(!showMerchantForm)}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
+                  className="w-full bg-white hover:bg-orange-50 text-[#D94B00] border border-orange-200 font-bold py-2 px-4 rounded-xl transition-colors"
                 >
                   {showMerchantForm
                     ? t('cancel')
@@ -284,7 +284,7 @@ export default function RoleSelectionPage() {
                 className={`w-full font-bold py-2 px-4 rounded-lg ${
                   roles.driver.active
                     ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                    : "bg-[#FF7A00] hover:bg-[#E66E00] text-black"
+                    : "bg-[#FF5A00] hover:bg-[#E64E00] text-white"
                 }`}
               >
                 {roles.driver.active ? tr('candidature') : tr('devenirLivreur')}
@@ -450,7 +450,7 @@ export default function RoleSelectionPage() {
               />
               <button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
+                className="w-full bg-[#FF5A00] hover:bg-[#E64E00] text-white font-bold py-2 px-4 rounded-xl transition-colors"
               >
                 {tr('creerLaBoutique')}
               </button>
@@ -537,7 +537,7 @@ export default function RoleSelectionPage() {
               </div>
               <button
                 type="submit"
-                className="w-full rounded-full bg-[#FF7A00] px-4 py-3 font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                className="w-full rounded-full bg-[#FF5A00] px-4 py-3 font-bold text-white transition hover:bg-[#E64E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94B00] focus-visible:ring-offset-2"
               >
                 {tr('postuler')}
               </button>
