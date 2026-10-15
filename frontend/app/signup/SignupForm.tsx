@@ -86,7 +86,7 @@ export default function SignupForm({ marque }: { marque: MarqueConnexion }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-5 py-10 sm:px-6">
-      <div className="w-full max-w-md rounded-[2rem] border border-black/5 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] md:p-10">
+      <div className="w-full max-w-md rounded-[2rem] border border-orange-100 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(40,20,0,.24)] md:p-10">
         <LogoConnexion marque={marque} />
         <h1 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-gray-900">
           {t("title")}
@@ -181,7 +181,7 @@ export default function SignupForm({ marque }: { marque: MarqueConnexion }) {
           <button
             type="submit"
             disabled={loading || !conditionsAcceptees}
-            className="w-full rounded-full bg-[#FF7A00] px-4 py-3.5 font-bold text-black transition hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+            className="w-full rounded-full bg-[#FF5A00] px-4 py-3.5 font-bold text-white transition hover:bg-[#E64E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94B00] focus-visible:ring-offset-2"
           >
             {loading ? t("registering") : t("submit")}
           </button>

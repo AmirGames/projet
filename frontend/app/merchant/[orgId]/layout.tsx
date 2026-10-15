@@ -186,7 +186,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
         aria-current={actif ? 'page' : undefined}
         onClick={() => setTiroirOuvert(false)}
         className={`flex items-center gap-3 rounded-[10px] px-3 py-1.5 text-sm transition-colors ${
-          actif ? 'bg-orange-50 font-bold text-orange-700' : 'font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+          actif ? 'bg-orange-50 font-bold text-[#D94B00]' : 'font-semibold text-gray-700 hover:bg-orange-50/70 hover:text-gray-900'
         }`}
       >
         <item.icon size={18} className="shrink-0" aria-hidden="true" />
@@ -197,7 +197,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
 
   return (
     <CurrentStoreProvider orgId={orgId}>
-    <div className={`flex min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
+    <div className={`flex min-h-screen bg-[#FFF9F4] text-gray-900 ${classe}`}>
       {/* Le voile derrière le tiroir, sur téléphone. */}
       {tiroirOuvert && (
         <button
@@ -209,14 +209,14 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#ECECEA] bg-white transition-all duration-300 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-orange-100 bg-white transition-all duration-300 ${
           tiroirOuvert ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 ${sidebarOpen ? 'lg:w-64' : 'lg:w-20'}`}
       >
         {/* Le commerce, et le passage aux autres espaces du groupe. */}
         <div className="border-b border-[#ECECEA] p-4">
           <SelecteurEspace actuel="merchant" href="/merchant" clair className="gap-3 -m-1 p-1 w-full min-w-0" chevron={sidebarOpen}>
-            <div className="w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center font-extrabold shrink-0">
+            <div className="w-10 h-10 bg-[#FF5A00] text-white rounded-xl flex items-center justify-center font-extrabold shrink-0 shadow-sm shadow-orange-200">
               {orgStatus?.name?.charAt(0).toUpperCase() || 'M'}
             </div>
             <div className={`min-w-0 ${libelle}`}>
@@ -265,7 +265,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
       </aside>
 
       <div className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[#ECECEA] bg-white px-4 py-3 sm:px-6">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-orange-100 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
           {/* Le tiroir sur téléphone, le repli de la barre sur grand écran. */}
           <button
             type="button"
@@ -393,7 +393,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
 
               <Link
                 href={`/merchant/${orgId}/support`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold transition"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF5A00] hover:bg-[#E64E00] text-white rounded-full font-bold transition"
               >
                 <MessageCircle size={18} />
                 {t('ecrire')}

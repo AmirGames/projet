@@ -78,7 +78,7 @@ function Confirmation() {
         )}
         <Link
           href="/login"
-          className="inline-flex rounded-full bg-[#FF7A00] px-6 py-3 font-bold text-black transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 hover:no-underline"
+          className="inline-flex rounded-full bg-[#FF5A00] px-6 py-3 font-bold text-white transition hover:bg-[#E64E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94B00] focus-visible:ring-offset-2 hover:no-underline"
         >
           {t('seConnecter')}
         </Link>
@@ -105,7 +105,7 @@ export default function VerifierEmail() {
   const t = useTranslations('verifierEmail');
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_#fff0df_0,_#faf9f7_44%,_#f5f5f4_100%)] px-5 py-10">
-      <div className="w-full max-w-md rounded-[2rem] border border-black/5 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(0,0,0,.28)] md:p-10">
+      <div className="w-full max-w-md rounded-[2rem] border border-orange-100 bg-white p-7 shadow-[0_24px_80px_-36px_rgba(40,20,0,.24)] md:p-10">
         <LogoZupOne />
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
         <Suspense fallback={<p className="text-center text-slate-600">{t('chargement')}</p>}>

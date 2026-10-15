@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl';
 import '@/app/theme-sombre.css';
 import { useThemeSombre } from '@/lib/theme-sombre';
 import { BasculeTheme } from '@/components/BasculeTheme';
+import { LogoClient } from '@/components/client/LogoClient';
 
 export default function DriverLayout({
   children,
@@ -60,20 +61,18 @@ export default function DriverLayout({
   };
 
   if (isLoading) {
-    return <div className="min-h-screen bg-[#F7F7F6]" />;
+    return <div className="min-h-screen bg-[#FFF9F4]" />;
   }
 
   return (
     <>
-      <div className={`min-h-screen bg-[#F7F7F6] text-gray-900 ${classe}`}>
+      <div className={`min-h-screen bg-[#FFF9F4] text-gray-900 ${classe}`}>
         {/* Mobile Navigation - Afficher uniquement si authentifié */}
         {afficherBarre && (
-          <nav className="md:hidden bg-white border-b border-[#ECECEA] sticky top-0 z-40">
+          <nav className="md:hidden bg-white/95 backdrop-blur border-b border-orange-100 sticky top-0 z-40 shadow-[0_4px_20px_-16px_rgba(40,20,0,.3)]">
             <div className="flex items-center justify-between p-4">
               <SelecteurEspace actuel="driver" href="/driver" clair className="gap-2 -ml-2 px-2 py-1">
-                <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
-                  DR
-                </div>
+                <LogoClient compact />
                 <span className="font-bold text-gray-900">{t('livreur')}</span>
               </SelecteurEspace>
 
@@ -101,7 +100,7 @@ export default function DriverLayout({
                       onClick={() => setMobileMenuOpen(false)}
                       className={`flex items-center gap-3 rounded-[10px] px-4 py-3 transition ${
                         isActive(item.href)
-                          ? 'bg-orange-50 font-bold text-orange-700'
+                          ? 'bg-orange-50 font-bold text-[#D94B00]'
                           : 'font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
@@ -124,12 +123,10 @@ export default function DriverLayout({
 
         {/* Desktop Navigation - Afficher uniquement si authentifié */}
         {afficherBarre && (
-          <nav className="hidden md:block bg-white border-b border-[#ECECEA] sticky top-0 z-40">
+          <nav className="hidden md:block bg-white/95 backdrop-blur border-b border-orange-100 sticky top-0 z-40 shadow-[0_4px_20px_-16px_rgba(40,20,0,.3)]">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
               <SelecteurEspace actuel="driver" href="/driver" clair className="gap-2 -ml-2 px-2 py-1">
-                <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
-                  DR
-                </div>
+                <LogoClient compact />
                 <span className="font-bold text-gray-900 text-lg">{t('espace')}</span>
               </SelecteurEspace>
 
@@ -142,7 +139,7 @@ export default function DriverLayout({
                       href={item.href}
                       className={`flex items-center gap-2 px-3 py-2 rounded-full transition ${
                         isActive(item.href)
-                          ? 'bg-orange-50 font-bold text-orange-700'
+                          ? 'bg-orange-50 font-bold text-[#D94B00]'
                           : 'font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >
