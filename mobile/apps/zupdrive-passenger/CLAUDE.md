@@ -64,3 +64,9 @@ Le prix vient toujours du serveur ; « payé » n'apparaît que quand le serveur
 - `driver-arrived` — chauffeur arrivé
 - `chat-message` — messages chauffeur
 - `alert` — notifications urgentes
+
+## Revue mobile — 13 octobre 2026
+
+Consulter ../../../CLAUDE.md et ../../../docs/zupdrive-api-admin.md ; distinguer endpoints existants et exploitation autorisée.
+
+Aucun test sur appareil n'a été exécuté pendant cette mise à jour.

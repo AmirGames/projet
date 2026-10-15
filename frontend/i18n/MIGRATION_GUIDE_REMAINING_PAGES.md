@@ -338,3 +338,9 @@ Si aucun résultat : migration complète ! ✅
 
 **Durée estimée** : ~30-45 minutes pour migrer les 6 pages
 **Difficulté** : Faible (rechercher/remplacer systématique)
+
+## Consigne de vérification — 13 octobre 2026
+
+Cette liste de pages restantes est une photographie historique : recalculer les écarts de traduction depuis le code actuel.
+
+Aucune validation de production n'est déduite de cette mise à jour.

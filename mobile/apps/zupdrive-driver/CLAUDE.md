@@ -20,3 +20,9 @@ Toujours dériver le chauffeur de la session commune ; ne jamais demander les co
 ## Expo
 
 Lire `AGENTS.md` avant tout changement Expo. Expo est en SDK 57 (`package.json` : `~57.0.25`) ; consulter les [docs versionnées SDK 57](https://docs.expo.dev/versions/v57.0.0/) avant d’utiliser ou modifier une API Expo. Installer avec `npm ci`, contrôler `npm run typecheck`, `npm run lint` et les tests Jest de contrats d’URL.
+
+## Revue mobile — 13 octobre 2026
+
+Consulter ../../../CLAUDE.md et ../../../docs/zupdrive-api-admin.md ; ne pas présumer la disponibilité des paiements ou courses réels.
+
+Aucun test sur appareil n'a été exécuté pendant cette mise à jour.

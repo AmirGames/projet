@@ -506,3 +506,9 @@ A: Document validation detects it and marks document as EXPIRED. Future complian
 - Phase 13: Driver rating & reputation system
 - Phase 14: Payment integration for drivers
 - Phase 15: Real-time monitoring & alerts
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+Les contrôles automatisés ZupDrive ne remplacent pas une décision humaine ni les documents réglementaires ; vérifier les permissions et journaux des décisions.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.

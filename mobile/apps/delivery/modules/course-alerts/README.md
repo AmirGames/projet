@@ -56,3 +56,9 @@ ou le service. Utiliser le test différé, puis une vraie push sur un compte
 livreur validé. Si l'autorisation est refusée, la notification habituelle reste
 le moyen d'accès. Aucun `USE_FULL_SCREEN_INTENT`, service d'accessibilité,
 changement de DND ou de volume global n'est utilisé.
+
+## Revue mobile — 13 octobre 2026
+
+Les alertes de course doivent être vérifiées au premier plan, en arrière-plan et après interruption réseau sur Android réel.
+
+Aucun test sur appareil n'a été exécuté pendant cette mise à jour.

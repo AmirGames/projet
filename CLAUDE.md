@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+> **Revue documentaire du 13 octobre 2026.** Ce document doit être lu avec [l'état du projet](docs/etat-projet.md) et la [décision de recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md). Les descriptions de fonctionnalités, statistiques et validations ci-dessous sont bornées à leurs dates et SHA d'origine ; elles ne démontrent pas un déploiement du HEAD, une validation sur appareil, une commande réelle ou un paiement Stripe TEST/3DS externe. Les contrôles d'accès A02/A03 nécessitent une vérification multi-tenant sur PostgreSQL et une CI sur le SHA final. Le portail commerçant est **manager.zupeat.com**. Cette note ne remplace pas les tests et preuves opérationnelles.
+
+
 Ce fichier fournit les règles et le contexte nécessaires à Claude Code pour travailler sur le dépôt **ZupEat**, première plateforme opérationnelle du groupe **ZupOne**.
 
 > **Règle principale :** avant toute modification importante, comprendre l'architecture existante, les règles métier et les dépendances entre domaines. Ne pas réécrire ou simplifier une partie du système sans vérifier ses impacts.

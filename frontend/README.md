@@ -87,3 +87,9 @@ et les outils de développement. Le Dockerfile retire les dépendances de
 développement avant l’étape runtime. Ce résultat ne qualifie pas les alertes
 mobiles partagées ni l’image de base; détails et relecture datée dans
 [l’audit A12](../docs/AUDIT-DEPENDANCES.md).
+
+## Consigne de vérification — 13 octobre 2026
+
+manager.zupeat.com désigne le portail commerçant ; valider les commandes, les rôles et la reconnexion sur navigateur avant pilote.
+
+Aucune validation de production n'est déduite de cette mise à jour.

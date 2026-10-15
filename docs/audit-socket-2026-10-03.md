@@ -113,3 +113,9 @@ pentest complet avec comptes privilégiés.
 
 L'audit paiements/remboursements/webhooks et abus/rate-limit a ensuite été
 mené. Pour les validations encore ouvertes, voir [l'état du projet](etat-projet.md).
+
+## Réévaluation documentaire — 13 octobre 2026
+
+Audit historique : revalider l'authentification Socket.IO, les canaux et la reconnexion en conditions de réseau dégradé.
+
+Cette note ne confirme ni exécution de tests ni déploiement. Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

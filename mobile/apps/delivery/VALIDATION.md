@@ -309,3 +309,9 @@ déclarés validés.
 
 Pour iOS, la compilation et les essais restent à réaliser séparément.
 Les icônes définitives, comptes des stores et soumissions restent à préparer.
+
+## Revue mobile — 13 octobre 2026
+
+Consigner modèle, OS, build, SHA serveur, notifications, GPS, livraison et reconnexion avec preuves datées.
+
+Aucun test sur appareil n'a été exécuté pendant cette mise à jour.

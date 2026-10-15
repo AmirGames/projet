@@ -12,3 +12,9 @@ Audit du code au **5 octobre 2026**, ZupEat / ZupOne / ZupDrive. Ce dossier cont
 - [Inventaire de chaque champ Prisma](inventaire-champs.csv) — décrit le schéma, ne contient aucune donnée utilisateur.
 
 L'API refuse de démarrer en production si les clés, l'antivirus ou l'attestation de migration manquent. `PRIVACY_MIGRATION_VERIFIED=true` n'est permis qu'après exécution réussie de la vérification et archivage des preuves. Il ne vaut pas approbation juridique ou autorisation d'ouverture publique.
+
+## Contrôles complémentaires de recette — 13 octobre 2026
+
+Les bases légales, durées de conservation et responsabilités RGPD demandent une validation juridique distincte des tests de code. Le pilote fermé et la production restent soumis à cette revue.
+
+Voir [l'état du projet](../../docs/etat-projet.md) et [le protocole A16](../../docs/RECETTE-PILOTE-A16-2026-10-12.md). Cette revue documentaire ne constitue pas une validation de production.

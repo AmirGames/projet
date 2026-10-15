@@ -52,3 +52,9 @@ npm start
 Suivre [le guide de validation mobile chauffeur](../../../docs/validation-mobile-zupdrive-driver.md) : PostgreSQL de test migré, connexion réelle, dossier non validé puis validé, disponibilité et position, proposition, acceptation par deux chauffeurs, course terminée, droits de lecture passager et essai sur appareil/émulateur. L’app demeure **hors périmètre du pilote** tant que ces preuves ne sont pas inscrites dans `docs/etat-projet.md`. Aucun résultat de test backend réel, appareil, intégration, déploiement ou exploitation n’est revendiqué par ce changement.
 
 Architecture mobile : `app/index.tsx`, `lib/chauffeur.ts`, `lib/api.ts`, `lib/session.ts`. Voir aussi [`docs/zupdrive.md`](../../../docs/zupdrive.md) et [`docs/zupdrive-api-admin.md`](../../../docs/zupdrive-api-admin.md).
+
+## Revue mobile — 13 octobre 2026
+
+Les courses, paiements et documents chauffeur ZupDrive doivent être validés sur appareil et environnement autorisé avant ouverture.
+
+Aucun test sur appareil n'a été exécuté pendant cette mise à jour.

@@ -131,3 +131,9 @@ en production. Elles se traitent à la montée de version habituelle, sans urgen
   `npm audit --omit=dev` à chaque montée de dépendance et avant une mise en production.
 - L'exposition des applications mobiles (Expo) : leurs dépendances se jugent à
   part, elles ne tournent pas sur le serveur.
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+Les chiffres de vulnérabilités proviennent du lockfile et de la date indiqués ; les recalculer sur chaque SHA candidat et distinguer runtime, devDependencies et mobile.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.

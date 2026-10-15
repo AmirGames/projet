@@ -71,3 +71,9 @@ La case « J'ai lu et j'accepte les CGV… » n'est plus redemandée tant que le
 - `POST /api/orders` : `conditionsAcceptees` devient facultatif ; sans `true`, le serveur exige `aJour` (sinon 400 `CONDITIONS_REQUIRED`). La preuve de chaque commande est rattachée au compte (`userId`).
 - Republier une page légale (nouveau numéro de version) fait réapparaître la case pour tous.
 - Visiteur sans compte (site) : le navigateur retient la version acceptée ; la preuve par commande reste enregistrée à l'envoi.
+
+## Revue de traçabilité — 13 octobre 2026
+
+Le registre d'ouverture doit bloquer le lancement sans preuves de commande réelle, Stripe TEST/3DS, déploiement, sauvegardes et conformité légale.
+
+Source de décision : [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Aucune preuve nouvelle d'exploitation n'a été produite pendant cette mise à jour documentaire.

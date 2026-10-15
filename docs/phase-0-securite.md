@@ -149,3 +149,9 @@ Stripe et leur idempotence doivent être vérifiées avant publication.
 
 **La Phase 0 reste ouverte. Aucun engagement « aucun accès inter-comptes » ni
 « aucun correctif critique en attente » n'est prononcé.**
+
+## Réévaluation documentaire — 13 octobre 2026
+
+Ce plan de sécurité doit être rapproché des correctifs A02/A03 et de tests inter-organisations avant fusion.
+
+Cette note ne confirme ni exécution de tests ni déploiement. Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

@@ -151,3 +151,9 @@ relevé bancaire et comptabilité, sans supprimer d'écriture. Pour un virement,
 documenter bénéficiaire, montant/devise, lot, référence SEPA et double contrôle.
 Ces paramètres sont actuellement **à fournir et confirmer** ; aucun mouvement
 LIVE ou bancaire n'a été déclenché.
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+La décision de recette bloquée demeure applicable jusqu'à production de preuves datées : SHA déployé, base représentative, appareils, commande complète et Stripe TEST/3DS externe.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.

@@ -189,3 +189,9 @@ identités d'opérateurs et couverture du roster nécessitent un accès exploita
 TOTP n'est pas résistant au phishing ; WebAuthn/passkeys pourra faire une étape
 séparée. Les automatismes financiers durables Stripe/outbox/jobs n'utilisent
 pas une session humaine et restent inchangés.
+
+## Vérification complémentaire — 13 octobre 2026
+
+Exiger une preuve de MFA récente sur chaque opération privilégiée et tester les refus sur comptes de rôles différents. Documenter récupération de compte et rotation des secrets.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

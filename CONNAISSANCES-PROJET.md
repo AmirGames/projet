@@ -1213,3 +1213,9 @@ un simple effet d'outbox. Pending n'annonce pas un remboursement réussi ; les
 échecs techniques sont repris et les incohérences/historiques alertent. Voir
 [le guide de reprise et migration](docs/REMBOURSEMENTS-REPRISE.md) et
 [les preuves datées](docs/preuves-a03-2026-10-09.md).
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Cette base de connaissances évolue : confronter chaque statut au SHA et aux preuves A16. Distinguer ZupOne (groupe), ZupEat (livraison) et ZupDrive (transport), ce dernier hors pilote.
+
+Références : [état courant](docs/etat-projet.md) et [recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.

@@ -75,3 +75,9 @@ Les textes de départ contiennent des champs inconnus entre crochets dans les me
 | Intégré | Non | PR #216 ouverte le 12 octobre 2026, base `claude/awesome-ride-m9lci8` | [PR A07](https://github.com/AmirGames/projet/pull/216) ; pas fusionnée |
 | Déployé | Non | Aucun environnement confirmé | Aucune preuve |
 | Validé en exploitation | Non | Fournisseur, accès sandbox et opérateur inconnus | Aucune preuve ; essais externes bloqués |
+
+## Vérification complémentaire — 13 octobre 2026
+
+Le transport vers un fournisseur et la réception de factures structurées ne sont pas validés par le seul adaptateur. Obtenir preuves de réception, validation comptable et publication légale avant ouverture.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

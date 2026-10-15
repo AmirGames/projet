@@ -180,3 +180,9 @@ isolé, jamais dans `src/app.ts` ou le serveur de production. Il nettoie les obj
 Stripe TEST et supprime sa base temporaire. Ce scénario n'est pas un parcours
 navigateur complet et ne valide aucun mouvement LIVE. Voir les preuves pour ce
 qui a réellement été exécuté.
+
+## Vérification complémentaire — 13 octobre 2026
+
+Tester le remboursement sur refus et annulation avec webhook externe, reprise après interruption et absence de double remboursement. La demande créée n'est pas un remboursement abouti.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

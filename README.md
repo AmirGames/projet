@@ -1,5 +1,8 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+> **Synthèse documentaire du 13 octobre 2026 (branche de documentation).** Le dépôt comporte 88 fichiers Markdown. Cette mise à jour ne constitue ni un audit exhaustif des 2 130 entrées de l'arbre Git, ni une validation d'exécution. Les preuves historiques restent datées. Les travaux A02/A03 sur les autorisations et commandes doivent être revalidés par tests de régression, CI sur le SHA exact et vérification des accès inter-organisations. Voir [état du projet](docs/etat-projet.md), [revue A02](docs/SECURITE-A02-2026-10-13.md), [sécurité commandes A03](docs/A03-SECURITE-COMMANDES.md) et [recette pilote](docs/RECETTE-PILOTE-A16-2026-10-12.md).
+
+
 > **A03 (13 octobre 2026) — Sécurité des commandes :** [correctifs d'autorisation et vérifications restantes](docs/A03-SECURITE-COMMANDES.md). Non testé / non déployé à ce stade.
 
 

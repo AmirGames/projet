@@ -238,3 +238,9 @@ CLI Stripe TEST ; il couvre aussi les pannes avant appel et après restitution.
 Voir [le guide de reprise](../../../docs/REMBOURSEMENTS-REPRISE.md) et
 [les preuves datées](../../../docs/preuves-a03-2026-10-09.md).
 
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Les scripts de vérification ne remplacent pas un E2E externe. Archiver le SHA, les variables non sensibles, les résultats et les limitations de l'environnement.
+
+Références : [état courant](../../../docs/etat-projet.md) et [recette A16](../../../docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.

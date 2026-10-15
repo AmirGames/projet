@@ -1,5 +1,10 @@
 # Guide de Navigation - Analyse Zupone
 
+## Actualisation de la navigation (13 octobre 2026)
+
+Le présent guide décrit le repérage initial du 7 octobre. Les comptes de lignes, modules, tests et pourcentages cités sont des métriques historiques non recalculées. Le point d'entrée décisionnel actuel est [docs/etat-projet.md](docs/etat-projet.md) ; les preuves de recette et blocages sont dans [A16](docs/RECETTE-PILOTE-A16-2026-10-12.md). Pour les contrôles d'accès multi-organisations, lire [A02](docs/SECURITE-A02-2026-10-13.md) et [A03 commandes](docs/A03-SECURITE-COMMANDES.md). Le portail marchand ZupEat est **manager.zupeat.com**. Ne pas assimiler un test CI à une validation sur VPS ou appareil.
+
+
 Deux fichiers ont été générés pour comprendre le repository:
 
 ## 📄 Fichiers d'Analyse

@@ -46,3 +46,9 @@ Le CLI parcourt la base par lots, chiffre les champs en clair, supprime les copi
 Dans l'image construite, le CLI est `node dist/privacy-storage.js --apply|--check|--rotate`, à lancer avec une entrée de conteneur dédiée pendant que l'API est arrêtée. Le contrôle n'évalue ni le chiffrement des disques, ni les objets restants chez Cloudinary, ni les dumps anciens hors du périmètre applicatif : preuve de nettoyage externe requise. Les dumps SQL gzip antérieurs doivent être chiffrés puis détruits selon procédure, en tenant compte des snapshots et sauvegardes hors site.
 
 À la moindre erreur, conserver le service fermé, réparer sur copie, réexécuter la vérification. Une mauvaise clé ne doit jamais provoquer un repli en clair.
+
+## Revue de traçabilité — 13 octobre 2026
+
+Vérifier la rotation des clés, la migration et la restauration sur environnement isolé sans exposer les secrets.
+
+Source de décision : [état du projet](../etat-projet.md) et [recette A16](../RECETTE-PILOTE-A16-2026-10-12.md). Aucune preuve nouvelle d'exploitation n'a été produite pendant cette mise à jour documentaire.

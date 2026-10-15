@@ -68,3 +68,9 @@ node --import tsx scripts/privacy-inventory.ts
 Les tests d'intégration nécessitent PostgreSQL et `unzip`. Ils inspectent des lignes avec un client brut, exercent les transactions et relations, contrôlent fichiers chiffrés, intégrité ZIP, réauthentification/export, triggers de journal, purge, effacement et interdiction de restauration. Les tests AV simulent le protocole du moteur ; ils ne prétendent pas scanner avec les signatures ClamAV de production. Les données créées sont fictives ; aucun message réel n'est envoyé.
 
 Les résultats finaux de l'exécution locale sont consignés dans [validation locale](validation.md).
+
+## Revue de traçabilité — 13 octobre 2026
+
+Ce rapport RGPD demeure une analyse technique ; la conformité juridique et la configuration du VPS ne sont pas automatiquement démontrées.
+
+Source de décision : [état du projet](../etat-projet.md) et [recette A16](../RECETTE-PILOTE-A16-2026-10-12.md). Aucune preuve nouvelle d'exploitation n'a été produite pendant cette mise à jour documentaire.

@@ -236,3 +236,9 @@ WEBHOOK_RELANCES_MS=300,600,900 WEBHOOK_BALAYAGE_MS=200 npx tsx src/server.ts
   recevez toutes les commandes de la plateforme.
 - **Pas de rotation du secret** : pour en changer, il faut supprimer
   l'abonnement et le recréer.
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Tester les signatures de webhook sur le corps brut, la fenêtre temporelle, la déduplication et les reprises après incident. Ne jamais déclarer un paiement validé depuis un retour navigateur seul.
+
+Références : [état courant](docs/etat-projet.md) et [recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.

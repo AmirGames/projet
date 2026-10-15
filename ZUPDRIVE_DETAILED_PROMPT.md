@@ -1005,3 +1005,9 @@ Year 2 (2028): Profitability
 **Responsable :** À assigner
 **Status :** À commencer (Q1 2027)
 **Next Step :** Vérifier régulations belges transport passagers
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Ce prompt ZupDrive est une spécification, non une preuve d'implémentation ; les routes réellement disponibles sont décrites dans docs/zupdrive-api-admin.md et le code. ZupDrive est exclu du pilote fermé ZupEat.
+
+Références : [état courant](docs/etat-projet.md) et [recette A16](docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.

@@ -82,3 +82,9 @@ Les courses PostgreSQL exigent `DATABASE_URL` vers une base de test dédiée
 dont le nom contient `test`; ne jamais exécuter sur une base de production.
 Les preuves de ce changement sont inscrites dans
 [`etat-projet.md`](etat-projet.md#étape-06--a09-rotation-atomique-des-sessions).
+
+## Vérification complémentaire — 13 octobre 2026
+
+Tester deux refresh simultanés avec la même clé et avec clés distinctes sur PostgreSQL ; vérifier révocation, cookies HttpOnly et absence de jetons en URL.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

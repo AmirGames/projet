@@ -99,3 +99,9 @@ PostgreSQL et un serveur récepteur contrôlé restent requis avant activation.
 | Intégré | Non intégré | PR #215 ouverte | [PR A11](https://github.com/AmirGames/projet/pull/215) |
 | Déployé | Non déployé | VPS non modifié | Aucune |
 | Validé en exploitation | Non validé ; flag désactivé | Aucun environnement de recette externe disponible | Aucune |
+
+## Vérification complémentaire — 13 octobre 2026
+
+Le transport de webhooks peut exister sans émission métier. Garder le mécanisme désactivé jusqu'à activation explicite, événements producteurs, signatures et reprises testées.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

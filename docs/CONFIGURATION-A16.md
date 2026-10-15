@@ -86,3 +86,9 @@ de déploiement doit conserver les contrats REST/webhook existants, les permissi
 le cloisonnement multi-tenant et les transactions financières. Tant qu'une base
 isolée et un Stripe TEST avec moyen 3DS ne sont pas disponibles, ces contrôles
 restent « non exécutés », pas « réussis ».
+
+## Point de contrôle documentaire — 13 octobre 2026
+
+La configuration décrite doit être vérifiée sur un environnement isolé ; ne jamais exposer les valeurs de secrets ni assimiler configuration locale et VPS.
+
+Revoir [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette note n'atteste aucun test ni déploiement supplémentaire.

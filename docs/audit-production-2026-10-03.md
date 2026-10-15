@@ -100,3 +100,9 @@ complet signalé, code de sortie 0.
 Preuve de cette exécution : [audit-idor-1791033923585-27548af6.json](audits/audit-idor-1791033923585-27548af6.json) dans
 `docs/audits/` ; identifiants des fixtures, assertions et nettoyage,
 sans jetons, mots de passe ni contenu client.
+
+## Réévaluation documentaire — 13 octobre 2026
+
+Audit historique : le SHA actif sur VPS, la restauration distante et les secrets d'environnement restent à prouver.
+
+Cette note ne confirme ni exécution de tests ni déploiement. Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

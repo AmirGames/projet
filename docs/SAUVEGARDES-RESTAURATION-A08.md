@@ -199,3 +199,9 @@ conservé pour diagnostic, alerte de santé et échec fermé de la restauration.
 Restaurer enfin les deux archives synthétiques dans `zup_restore_test`, vérifier
 la requête Prisma et relever chaque durée. Aucun de ces essais n'a été exécuté
 sur une destination ou un serveur réel au moment de cette livraison.
+
+## Vérification complémentaire — 13 octobre 2026
+
+Documenter une restauration isolée effectivement réalisée depuis le stockage distant, avec empreintes, RPO/RTO observés et journal de vérification ; un manifeste ne prouve pas une restauration.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

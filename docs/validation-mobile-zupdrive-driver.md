@@ -44,3 +44,9 @@ Le test `chauffeur.test.ts` caractérise les URLs employées pour dossier, cours
 ## Preuves à consigner
 
 Pour chaque résultat, indiquer la date, le SHA testé, la version Android/iOS et Expo, le type d’appareil/émulateur, l’environnement/backend, le SHA des migrations, la commande ou le scénario, le résultat et un lien vers le run ou la preuve. Consigner séparément : développé, testé localement, testé en CI, intégré, déployé, validé en exploitation. Une case de demande ou un build ne prouve pas une course réelle. Ne pas inclure de secret, jeton, donnée personnelle ou identifiant réel dans la preuve.
+
+## Vérification de portée — 13 octobre 2026
+
+Valider le conducteur ZupDrive sur appareil réel et selon les obligations réglementaires locales ; hors pilote ZupEat.
+
+Voir [état du projet](etat-projet.md) et [recette A16](RECETTE-PILOTE-A16-2026-10-12.md). Cette revue n'atteste aucun test externe.

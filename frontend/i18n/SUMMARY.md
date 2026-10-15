@@ -345,3 +345,9 @@ Vous avez maintenant :
 
 *Document généré le 20 septembre 2026*
 *Pour les questions ou mises à jour, voir MIGRATION_GUIDE_REMAINING_PAGES.md*
+
+## Consigne de vérification — 13 octobre 2026
+
+Les résultats i18n sont datés ; relancer les tests de parité et vérifier les parcours français et anglais.
+
+Aucune validation de production n'est déduite de cette mise à jour.

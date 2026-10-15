@@ -38,3 +38,9 @@ Vérifier les erreurs 400, l'unique gagnant, les sessions révoquées, l'absence
 de fiche rattachée après rollback et la reprise. Après déploiement, confirmer
 SMTP/outbox, les URL publiques et les journaux sans jeton. Déploiement et
 validation en exploitation sont à consigner séparément des tests locaux.
+
+## Vérification complémentaire — 13 octobre 2026
+
+Les jetons à usage unique nécessitent des tests de concurrence PostgreSQL, réémission, expiration et consommation unique. Vérifier également les messages utilisateur sur le web et mobile.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

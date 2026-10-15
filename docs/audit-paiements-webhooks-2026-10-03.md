@@ -256,3 +256,9 @@ son endpoint configuré dans Stripe, est distincte de cette validation locale.
 Elle a ensuite été confirmée manuellement en mode TEST par l'opérateur,
 avec un rejeu sans doublon visible ; voir le suivi du 4 octobre en tête de ce
 rapport. Le remboursement TEST sur le VPS et le mode LIVE restent à valider.
+
+## Note de vérification documentaire — 13 octobre 2026
+
+Audit historique du 3 octobre : revalider signature Stripe, idempotence, remboursement et réconciliation des montants sur SHA candidat.
+
+Références : [état courant](../docs/etat-projet.md) et [recette A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Aucun test externe ni déploiement n'a été exécuté pendant cette revue.

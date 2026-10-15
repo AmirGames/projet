@@ -114,3 +114,9 @@ configuration ou migration n'est requis.
 | Intégré | Non intégré | PR #221 ouverte en brouillon | [PR A15](https://github.com/AmirGames/projet/pull/221) |
 | Déployé | Non déployé | Aucun environnement A15 | Aucune preuve |
 | Validé en exploitation | Non validé | Aucune instance équivalente instrumentée | Aucune preuve |
+
+## Vérification complémentaire — 13 octobre 2026
+
+Mesurer sur base représentative les limites de pagination et de dates, vérifier les totaux agrégés et les accès inter-boutiques. Les tests unitaires ne démontrent pas les performances en exploitation.
+
+**Statut de cette vérification :** revue de cohérence documentaire, sans exécution de tests, déploiement ni transaction externe. Consigner SHA, preuves et risques résiduels dans [l'état du projet](etat-projet.md) et [la recette A16](RECETTE-PILOTE-A16-2026-10-12.md).

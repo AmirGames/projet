@@ -656,3 +656,9 @@ avant de conclure à une régression.
       passée aux composants partagés
 - [ ] Vérifiée dans un navigateur, sur téléphone aussi
 - [ ] Un ancien lien déplacé a sa redirection dans `next.config.js`
+
+## Contrôles complémentaires de recette — 13 octobre 2026
+
+L'API demeure l'autorité pour les rôles et le cloisonnement ; manager.zupeat.com est le portail commerçant. Tester les erreurs 403, les rôles multi-boutiques et la reconnexion sur les parcours critiques.
+
+Voir [l'état du projet](../docs/etat-projet.md) et [le protocole A16](../docs/RECETTE-PILOTE-A16-2026-10-12.md). Cette revue documentaire ne constitue pas une validation de production.
