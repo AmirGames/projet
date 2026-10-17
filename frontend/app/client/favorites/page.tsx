@@ -59,10 +59,9 @@ export default function FavoritesPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setFavorites(data.data || []);
-      }
+      if (!response.ok) throw new Error('Failed to fetch favorites');
+      const data = await response.json();
+      setFavorites(data.data || []);
     } catch (err) {
       signalerErreur('Error loading favorites:', err);
       setError(t('loadingError'));
@@ -80,10 +79,11 @@ export default function FavoritesPage() {
     if (!token) return;
 
     try {
-      await fetch(`${API_URL}/api/client/me/favorites/${storeId}`, {
+      const response = await fetch(`${API_URL}/api/client/me/favorites/${storeId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (!response.ok) throw new Error('Failed to remove favorite');
 
       setFavorites(favorites.filter(fav => fav.storeId !== storeId));
     } catch (err) {
