@@ -256,7 +256,7 @@ export default function TrackOrderPage() {
   const currentStatusIndex = order ? getStatusIndex(order.status) : -1;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-[#FFFDFB] text-gray-900">
       <EnTeteClient />
       <div className="mx-auto max-w-4xl space-y-8 px-5 py-8 md:px-8 md:py-10">
         {/* Header */}
@@ -282,7 +282,7 @@ export default function TrackOrderPage() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-full bg-[#FF7A00] px-8 py-3 font-bold text-black transition-colors hover:bg-[#E66E00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              className="rounded-full bg-[#FF5A00] px-8 py-3 font-bold text-white transition-colors hover:bg-[#D94B00] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2"
             >
               {loading ? t('recherche') : t('rechercher')}
             </button>

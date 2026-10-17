@@ -175,13 +175,15 @@ export function MarketplaceDirectory() {
 
   return (
     <main className="bg-white text-gray-900">
-      <section className="bg-[#FFF6EC]" aria-labelledby="directory-title">
+      <section className="relative isolate overflow-hidden bg-neutral-950 text-white" aria-labelledby="directory-title">
+        <div aria-hidden="true" className="absolute inset-0 -z-20 bg-cover bg-[center_56%]" style={{ backgroundImage: "url('/images/zupeat/home-hero.webp')" }} />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-black/95 via-black/75 to-black/30" />
         <div className="mx-auto max-w-7xl px-5 py-12 md:px-8 md:py-16">
-          <p className="text-sm font-bold uppercase tracking-[.16em] text-[#A94F00]">{t('eyebrow')}</p>
+          <p className="text-sm font-bold uppercase tracking-[.16em] text-[#FF7A00]">{t('eyebrow')}</p>
           <h1 id="directory-title" className="mt-3 max-w-3xl text-4xl font-black tracking-[-.055em] sm:text-5xl md:text-6xl">
             {t('title')}
           </h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-neutral-600">{t('subtitle')}</p>
+          <p className="mt-4 max-w-xl text-base leading-7 text-white/80">{t('subtitle')}</p>
           <div className="mt-8 grid max-w-4xl gap-3 lg:grid-cols-[1fr_1.05fr]">
             <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 shadow-sm transition focus-within:ring-2 focus-within:ring-[#FF7A00]">
               <Search aria-hidden="true" className="size-5 shrink-0 text-neutral-500" />
@@ -343,9 +345,9 @@ export function MarketplaceDirectory() {
                     <Link
                       key={commerce.id}
                       href={'/store/' + commerce.slug}
-                      className="group block rounded-3xl text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-4"
+                      className="group block overflow-hidden rounded-2xl border border-neutral-100 bg-white text-gray-900 shadow-[0_8px_28px_rgba(15,23,42,.07)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] focus-visible:ring-offset-4"
                     >
-                      <div className="relative aspect-[1.55] overflow-hidden rounded-3xl bg-neutral-100">
+                      <div className="relative aspect-[1.55] overflow-hidden bg-neutral-100">
                         <img
                           src={commerce.settings?.banner || visuel.src}
                           alt={commerce.settings?.banner ? t('storeBannerAlt', { name: commerce.name }) : visuel.alt}
@@ -369,7 +371,7 @@ export function MarketplaceDirectory() {
                           />
                         )}
                       </div>
-                      <div className="mt-3 flex items-start justify-between gap-3">
+                      <div className="flex items-start justify-between gap-3 px-4 pt-3">
                         <h3 className="min-w-0 truncate text-lg font-bold tracking-tight">{commerce.name}</h3>
                         {commerce.rating != null && (commerce.totalRatings || 0) > 0 && (
                           <span
@@ -385,10 +387,10 @@ export function MarketplaceDirectory() {
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 truncate text-sm text-neutral-600">
+                      <p className="mt-1 truncate px-4 text-sm text-neutral-600">
                         {[commerce.genreLibelle, commerce.city].filter(Boolean).join(' · ') || t('shopFallback')}
                       </p>
-                      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-neutral-700">
+                      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-4 text-xs font-semibold text-neutral-700">
                         {minutes != null && <span className="inline-flex items-center gap-1"><Clock3 aria-hidden="true" className="size-3.5" />{t('minutes', { count: minutes })}</span>}
                         {frais != null && <span>{minutes != null ? '· ' : ''}{frais === 0 ? t('freeDelivery') : t('deliveryFee', { amount: euro(frais) })}</span>}
                         {commerce.distance != null && <span>· {commerce.distance.toLocaleString(locale, { maximumFractionDigits: 1 })} {t('kilometres')}</span>}

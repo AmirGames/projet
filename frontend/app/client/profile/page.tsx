@@ -250,7 +250,7 @@ export default function ProfilClientPage() {
             <button
               type="submit"
               disabled={enregistrement}
-              className="flex items-center gap-2 rounded-full bg-[#FF7A00] px-6 py-3 font-bold text-black transition-colors hover:bg-[#E66E00] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              className="flex items-center gap-2 rounded-full bg-[#FF5A00] px-6 py-3 font-bold text-white transition-colors hover:bg-[#D94B00] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2"
             >
               <Save size={16} /> {t('save')}
             </button>

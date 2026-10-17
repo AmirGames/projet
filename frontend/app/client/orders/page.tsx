@@ -139,7 +139,7 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FFFDFB]">
       {/* Header */}
       <header className="pt-4">
         <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
@@ -182,7 +182,7 @@ export default function OrdersPage() {
             <p className="text-gray-900 text-lg">{t('loading')}</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="rounded-3xl border border-neutral-200 bg-neutral-50 px-6 py-16 text-center">
+          <div className="rounded-3xl border border-orange-100 bg-[#FFF4EB] px-6 py-16 text-center">
             <p className="text-gray-900 text-xl mb-4">{t('noOrders')}</p>
             <Link href="/client" className="text-orange-500 hover:text-orange-600">
               {t('startSearching')}
@@ -253,7 +253,7 @@ export default function OrdersPage() {
                           type="button"
                           onClick={(e) => commanderANouveau(e, order)}
                           disabled={reprise?.orderId === order.id && !reprise.message}
-                          className="flex items-center gap-2 rounded-full bg-[#FF7A00] px-4 py-2.5 text-sm font-bold text-black transition hover:bg-[#E66E00] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                          className="flex items-center gap-2 rounded-full bg-[#FF5A00] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#D94B00] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2"
                         >
                           <RotateCcw size={16} />
                           {reprise?.orderId === order.id && !reprise.message ? t('reordering') : t('reorder')}

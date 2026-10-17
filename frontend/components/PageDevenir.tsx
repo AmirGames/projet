@@ -112,17 +112,26 @@ export function PageDevenir({
       </EnTeteMarque>
 
       <main>
-      <section className="relative isolate overflow-hidden bg-[#FFF8F1]">
-        <div aria-hidden="true" className="absolute -right-32 -top-40 size-[34rem] rounded-full bg-orange-200/40 blur-3xl" />
-        <div aria-hidden="true" className="absolute -bottom-48 -left-40 size-[30rem] rounded-full bg-white/90 blur-3xl" />
+      <section className={`relative isolate overflow-hidden ${cle === 'zupeat' ? 'bg-neutral-950 text-white' : 'bg-[#FFF8F1]'}`}>
+        {cle === 'zupeat' ? (
+          <>
+            <div aria-hidden="true" className="absolute inset-0 -z-20 bg-cover bg-[center_42%]" style={{ backgroundImage: `url('/images/zupeat/${estLivreur ? 'courier' : 'merchant'}.webp')` }} />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-black/95 via-black/85 to-black/35" />
+          </>
+        ) : (
+          <>
+            <div aria-hidden="true" className="absolute -right-32 -top-40 size-[34rem] rounded-full bg-orange-200/40 blur-3xl" />
+            <div aria-hidden="true" className="absolute -bottom-48 -left-40 size-[30rem] rounded-full bg-white/90 blur-3xl" />
+          </>
+        )}
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[1.05fr_.95fr] lg:gap-14 lg:px-10 lg:py-20">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-4 py-2 text-sm font-bold text-neutral-800 shadow-sm">
+            <span className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold shadow-sm ${cle === 'zupeat' ? 'border-white/20 bg-black/35 text-white' : 'border-orange-200 bg-white/80 text-neutral-800'}`}>
               <span aria-hidden="true" className="size-2 rounded-full bg-[#FF7A00]" />{badge}
             </span>
             <h1 className="mt-6 text-[2.65rem] font-black leading-[1.02] tracking-[-.055em] sm:text-5xl lg:text-[4.2rem]">{titre}</h1>
-            <p className="mt-6 max-w-xl text-base leading-7 text-neutral-600 sm:text-lg sm:leading-8">{accroche}</p>
-            <p className="mt-3 text-sm font-medium text-neutral-500">{t('informationsPour', { drapeau: PAYS[pays].drapeau, pays: tPays(pays) })}</p>
+            <p className={`mt-6 max-w-xl text-base leading-7 sm:text-lg sm:leading-8 ${cle === 'zupeat' ? 'text-white/80' : 'text-neutral-600'}`}>{accroche}</p>
+            <p className={`mt-3 text-sm font-medium ${cle === 'zupeat' ? 'text-white/65' : 'text-neutral-500'}`}>{t('informationsPour', { drapeau: PAYS[pays].drapeau, pays: tPays(pays) })}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               {bouton()}
               {estLivreur && (
@@ -130,7 +139,7 @@ export function PageDevenir({
               )}
             </div>
           </div>
-          <div className="relative mx-auto flex aspect-[1.05] w-full max-w-[32rem] items-center justify-center">
+          <div className={`relative mx-auto flex aspect-[1.05] w-full max-w-[32rem] items-center justify-center ${cle === 'zupeat' ? 'hidden lg:flex' : ''}`}>
             <div aria-hidden="true" className={`absolute inset-7 rounded-[2.5rem] ${theme.teinte}`} />
             <div aria-hidden="true" className="absolute right-3 top-2 size-24 rounded-full bg-white/80 blur-sm sm:right-8 sm:top-5 sm:size-32" />
             <div className="relative grid size-52 place-items-center rounded-full border border-white bg-white/90 shadow-[0_24px_60px_rgba(0,0,0,.10)] sm:size-64">

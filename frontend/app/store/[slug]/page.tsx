@@ -705,7 +705,7 @@ export default function StorefrontPage() {
           <p className="mt-4 text-xl font-bold text-gray-900">{t('notFound')}</p>
           <Link
             href="/client"
-            className="mt-6 inline-block rounded-full bg-gray-900 px-6 py-3 font-semibold text-white hover:bg-gray-800"
+            className="mt-6 inline-flex items-center rounded-full bg-[#FF5A00] px-6 py-3 font-semibold text-white transition hover:bg-[#E64D00]"
           >
             {t('backHome')}
           </Link>
@@ -719,7 +719,7 @@ export default function StorefrontPage() {
     sommeDesSupplements(supplementsRetenus(product, supChoisis[product.id]));
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 pb-28">
+    <div className="min-h-screen bg-[#FFFDFB] pb-28 text-gray-900">
       <EnTeteClient />
 
       {/* La bannière et l'identité du commerce. */}
@@ -764,12 +764,12 @@ export default function StorefrontPage() {
             <button
               type="button"
               onClick={() => setShowCart(true)}
-              className="relative mt-1 flex shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 py-2.5 text-sm font-semibold hover:bg-gray-200"
+              className="relative mt-1 flex shrink-0 items-center gap-2 rounded-full bg-orange-50 px-4 py-2.5 text-sm font-semibold text-[#C94300] transition hover:bg-orange-100"
             >
               <ShoppingBag size={18} />
               {t('cart')}
               {nombreArticles > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FF7A00] px-1 text-xs font-bold text-black">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FF5A00] px-1 text-xs font-bold text-white">
                   {nombreArticles > 99 ? '99+' : nombreArticles}
                 </span>
               )}
@@ -900,7 +900,7 @@ export default function StorefrontPage() {
                       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
                   className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A00] ${
-                    active ? 'bg-[#FF7A00] text-black' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    active ? 'bg-[#FF5A00] text-white shadow-sm' : 'text-gray-700 hover:bg-orange-50 hover:text-[#C94300]'
                   }`}
                 >
                   {categorie.name}
@@ -1188,7 +1188,7 @@ export default function StorefrontPage() {
                   }}
                   disabled={bloque}
                   aria-label={t('addNamed', { name: product.name })}
-                  className="flex-1 rounded-full bg-[#FF7A00] py-3.5 font-bold text-black transition hover:bg-[#E66E00] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                  className="flex-1 rounded-full bg-[#FF5A00] py-3.5 font-bold text-white transition hover:bg-[#D94B00] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
                 >
                   {!product.isAvailable
                     ? t('soldOut')
@@ -1221,7 +1221,7 @@ export default function StorefrontPage() {
           <button
             type="button"
             onClick={() => setShowCart(true)}
-            className="flex w-full items-center justify-between gap-3 rounded-full bg-[#FF7A00] py-3 pl-3 pr-6 text-black shadow-2xl transition hover:bg-[#E66E00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+            className="flex w-full items-center justify-between gap-3 rounded-full bg-[#FF5A00] py-3 pl-3 pr-6 text-white shadow-2xl transition hover:bg-[#D94B00] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-2"
           >
             <span className="flex items-center gap-3">
               <span className="flex h-10 min-w-10 items-center justify-center rounded-full bg-white px-2 font-bold text-black">
