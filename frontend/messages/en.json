@@ -2084,7 +2084,8 @@
     "infosPerso": "Personal information",
     "statutValide": "✓ Approved",
     "statutEnAttente": "⏳ Awaiting approval",
-    "statutNouveau": "New"
+    "statutNouveau": "New",
+    "statutSuspendu": "Account suspended"
   },
   "driverAuth": {
     "login": "Login",
