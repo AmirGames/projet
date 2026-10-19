@@ -60,12 +60,17 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 
     if (storeId) {
       await exigerBoutique(req, storeId, "read");
-      orders = await OrderService.getByStoreId(storeId, limit, offset);
-      total = await OrderService.countByStoreId(storeId);
+      [orders, total] = await Promise.all([
+        OrderService.getByStoreId(storeId, limit, offset),
+        OrderService.countByStoreId(storeId),
+      ]);
     } else {
       await exigerOrganisation(req, orgId);
-      orders = await OrderService.getByOrgId(orgId, status, limit, offset);
-      const bilan = await OrderService.chiffreAffairesOrg(orgId, status);
+      const [commandesOrg, bilan] = await Promise.all([
+        OrderService.getByOrgId(orgId, status, limit, offset),
+        OrderService.chiffreAffairesOrg(orgId, status),
+      ]);
+      orders = commandesOrg;
       total = bilan.commandes;
       resume = {
         totalOrders: bilan.commandes,
@@ -297,8 +302,10 @@ router.get("/store/:storeId", authMiddleware, async (req: Request, res: Response
     const offset = decalage(req.query.offset);
 
     await exigerBoutique(req, storeId, "read");
-    const orders = await OrderService.getByStoreId(storeId, limit, offset);
-    const total = await OrderService.countByStoreId(storeId);
+    const [orders, total] = await Promise.all([
+      OrderService.getByStoreId(storeId, limit, offset),
+      OrderService.countByStoreId(storeId),
+    ]);
 
     res.json({
       orders,
