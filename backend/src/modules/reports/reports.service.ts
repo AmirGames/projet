@@ -62,7 +62,7 @@ export class ReportsService {
 
       const limit = Math.min(Math.max(filters.limit ?? 50, 1), LIMITE_RAPPORT);
       const offset = Math.max(filters.offset ?? 0, 0);
-      const [orders, statsRows, statuts, paiements] = await Promise.all([
+      const [orders, statsRows, breakdowns] = await Promise.all([
         db.order.findMany({
         where,
         select: {
@@ -86,8 +86,28 @@ export class ReportsService {
             ${filters.endDate ? Prisma.sql`AND o."createdAt" <= ${filters.endDate}` : Prisma.empty}
             ${filters.status ? Prisma.sql`AND o.status = ${filters.status}::"OrderStatus"` : Prisma.empty}
             ${filters.paymentStatus ? Prisma.sql`AND o."paymentStatus" = ${filters.paymentStatus}::"PaymentStatus"` : Prisma.empty}`,
-        db.order.groupBy({ by: ["status"], where, _count: { _all: true } }),
-        db.order.groupBy({ by: ["paymentStatus"], where, _count: { _all: true } }),
+        db.$queryRaw<Array<{ status: string | null; paymentStatus: string | null; count: bigint }>>`
+          SELECT o.status::text AS status, NULL::text AS "paymentStatus", COUNT(*) AS count
+          FROM "Order" o JOIN "Store" s ON s.id = o."storeId"
+          WHERE o."submittedAt" IS NOT NULL
+            ${filters.storeId ? Prisma.sql`AND o."storeId" = ${filters.storeId}` : Prisma.empty}
+            ${!filters.storeId && filters.orgId ? Prisma.sql`AND s."orgId" = ${filters.orgId}` : Prisma.empty}
+            ${filters.startDate ? Prisma.sql`AND o."createdAt" >= ${filters.startDate}` : Prisma.empty}
+            ${filters.endDate ? Prisma.sql`AND o."createdAt" <= ${filters.endDate}` : Prisma.empty}
+            ${filters.status ? Prisma.sql`AND o.status = ${filters.status}::"OrderStatus"` : Prisma.empty}
+            ${filters.paymentStatus ? Prisma.sql`AND o."paymentStatus" = ${filters.paymentStatus}::"PaymentStatus"` : Prisma.empty}
+          GROUP BY o.status
+          UNION ALL
+          SELECT NULL::text AS status, o."paymentStatus"::text AS "paymentStatus", COUNT(*) AS count
+          FROM "Order" o JOIN "Store" s ON s.id = o."storeId"
+          WHERE o."submittedAt" IS NOT NULL
+            ${filters.storeId ? Prisma.sql`AND o."storeId" = ${filters.storeId}` : Prisma.empty}
+            ${!filters.storeId && filters.orgId ? Prisma.sql`AND s."orgId" = ${filters.orgId}` : Prisma.empty}
+            ${filters.startDate ? Prisma.sql`AND o."createdAt" >= ${filters.startDate}` : Prisma.empty}
+            ${filters.endDate ? Prisma.sql`AND o."createdAt" <= ${filters.endDate}` : Prisma.empty}
+            ${filters.status ? Prisma.sql`AND o.status = ${filters.status}::"OrderStatus"` : Prisma.empty}
+            ${filters.paymentStatus ? Prisma.sql`AND o."paymentStatus" = ${filters.paymentStatus}::"PaymentStatus"` : Prisma.empty}
+          GROUP BY o."paymentStatus"`),
       ]);
 
       // Le chiffre du commerçant : ses articles, sans la livraison ni les
@@ -100,8 +120,12 @@ export class ReportsService {
       const totalFees = Number(stats?.totalFees || 0);
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-      const statusBreakdown = Object.fromEntries(statuts.map((x) => [x.status, x._count._all]));
-      const paymentBreakdown = Object.fromEntries(paiements.map((x) => [x.paymentStatus, x._count._all]));
+      const statusBreakdown = Object.fromEntries(
+        breakdowns.filter((x) => x.status !== null).map((x) => [x.status, Number(x.count)])
+      );
+      const paymentBreakdown = Object.fromEntries(
+        breakdowns.filter((x) => x.paymentStatus !== null).map((x) => [x.paymentStatus, Number(x.count)])
+      );
 
       return {
         totalOrders,
