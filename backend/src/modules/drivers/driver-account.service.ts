@@ -116,7 +116,14 @@ export const DriverAccountService = {
     const [courses, totaux, totauxPourboires] = await Promise.all([
       db.orderDelivery.findMany({
         where: { driverId: livreur.id, status: "DELIVERED" },
-        include: { order: { select: { feesAmount: true, tipAmount: true } } },
+        select: {
+          id: true,
+          orderId: true,
+          deliveryTime: true,
+          updatedAt: true,
+          driverPayout: true,
+          order: { select: { feesAmount: true, tipAmount: true } },
+        },
         orderBy: [{ deliveryTime: { sort: "desc", nulls: "last" } }, { id: "desc" }],
         take: limit,
         skip: offset,
@@ -183,7 +190,7 @@ export const DriverAccountService = {
       rating: livreur.totalRatings > 0 ? Number(livreur.rating) : null,
       avis: livreur.totalRatings,
       pagination: { total: Number(total?.deliveryCount || 0), limit, offset, hasMore: offset + courses.length < Number(total?.deliveryCount || 0) },
-      deliveries: courses.slice(0, 30).map((c) => ({
+      deliveries: courses.map((c) => ({
         id: c.id,
         orderId: c.orderId,
         deliveredAt: c.deliveryTime || c.updatedAt,
