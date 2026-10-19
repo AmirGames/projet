@@ -87,7 +87,10 @@ export class ReportsService {
             ${filters.status ? Prisma.sql`AND o.status = ${filters.status}::"OrderStatus"` : Prisma.empty}
             ${filters.paymentStatus ? Prisma.sql`AND o."paymentStatus" = ${filters.paymentStatus}::"PaymentStatus"` : Prisma.empty}`,
         db.$queryRaw<Array<{ status: string | null; paymentStatus: string | null; count: bigint }>>`
-          SELECT o.status::text AS status, NULL::text AS "paymentStatus", COUNT(*) AS count
+          SELECT
+            CASE WHEN GROUPING(o.status) = 0 THEN o.status::text END AS status,
+            CASE WHEN GROUPING(o."paymentStatus") = 0 THEN o."paymentStatus"::text END AS "paymentStatus",
+            COUNT(*) AS count
           FROM "Order" o JOIN "Store" s ON s.id = o."storeId"
           WHERE o."submittedAt" IS NOT NULL
             ${filters.storeId ? Prisma.sql`AND o."storeId" = ${filters.storeId}` : Prisma.empty}
@@ -96,18 +99,7 @@ export class ReportsService {
             ${filters.endDate ? Prisma.sql`AND o."createdAt" <= ${filters.endDate}` : Prisma.empty}
             ${filters.status ? Prisma.sql`AND o.status = ${filters.status}::"OrderStatus"` : Prisma.empty}
             ${filters.paymentStatus ? Prisma.sql`AND o."paymentStatus" = ${filters.paymentStatus}::"PaymentStatus"` : Prisma.empty}
-          GROUP BY o.status
-          UNION ALL
-          SELECT NULL::text AS status, o."paymentStatus"::text AS "paymentStatus", COUNT(*) AS count
-          FROM "Order" o JOIN "Store" s ON s.id = o."storeId"
-          WHERE o."submittedAt" IS NOT NULL
-            ${filters.storeId ? Prisma.sql`AND o."storeId" = ${filters.storeId}` : Prisma.empty}
-            ${!filters.storeId && filters.orgId ? Prisma.sql`AND s."orgId" = ${filters.orgId}` : Prisma.empty}
-            ${filters.startDate ? Prisma.sql`AND o."createdAt" >= ${filters.startDate}` : Prisma.empty}
-            ${filters.endDate ? Prisma.sql`AND o."createdAt" <= ${filters.endDate}` : Prisma.empty}
-            ${filters.status ? Prisma.sql`AND o.status = ${filters.status}::"OrderStatus"` : Prisma.empty}
-            ${filters.paymentStatus ? Prisma.sql`AND o."paymentStatus" = ${filters.paymentStatus}::"PaymentStatus"` : Prisma.empty}
-          GROUP BY o."paymentStatus"`),
+          GROUP BY GROUPING SETS ((o.status), (o."paymentStatus"))`),
       ]);
 
       // Le chiffre du commerçant : ses articles, sans la livraison ni les
