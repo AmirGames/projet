@@ -102,7 +102,7 @@ export class ReportsService {
           GROUP BY GROUPING SETS ((), (o.status), (o."paymentStatus"))`),
       ]);
 
-      const stats = aggregates.find((x) => x.status === null && x.paymentStatus === null);
+      const stats = aggregates.find((x) => x.status === null && x.paymentStatus === null) ?? aggregates[0];
       const totalOrders = Number(stats?.totalOrders || 0);
       // Agrégation SQL sur Decimal : les sommes ne sont pas limitées à la page.
       const totalRevenue = Number(stats?.totalRevenue || 0);
