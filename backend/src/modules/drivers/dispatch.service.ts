@@ -251,6 +251,7 @@ export class DispatchService {
       where: {
         id: { notIn: exclus },
         status: "ACTIVE",
+        bceStatus: "VERIFIED",
         isOnline: true,
         isAvailable: true,
         currentOrderId: null,
@@ -373,9 +374,19 @@ export class DispatchService {
    */
   static async liberer(driverId: string) {
     const restantes = await this.coursesActives(driverId);
+    const livreur = restantes.length === 0
+      ? await db.courier.findUnique({ where: { id: driverId }, select: { isOnline: true, pausedUntil: true } })
+      : null;
+    const indisponible = !livreur?.isOnline || Boolean(livreur.pausedUntil && livreur.pausedUntil > new Date());
     await db.courier.update({
       where: { id: driverId },
-      data: { currentOrderId: restantes[0]?.id ?? null, isAvailable: restantes.length === 0 },
+      data: {
+        currentOrderId: restantes[0]?.id ?? null,
+        isAvailable: restantes.length === 0 && !indisponible,
+        ...(restantes.length === 0 && indisponible
+          ? { latitude: null, longitude: null, lastLocationUpdate: null, gpsLostAt: null }
+          : {}),
+      },
     });
     // Il a réservé la course suivante : elle démarre maintenant. Un échec ne
     // doit pas défaire la livraison qu'il vient de terminer : le balayage
@@ -405,8 +416,8 @@ export class DispatchService {
     const maintenant = new Date();
 
     await db.$transaction(async (tx) => {
-      const livreur = await tx.courier.findUnique({ where: { id: driverId }, select: { status: true } });
-      if (!livreur || livreur.status !== "ACTIVE") {
+      const livreur = await tx.courier.findUnique({ where: { id: driverId }, select: { status: true, bceStatus: true } });
+      if (!livreur || livreur.status !== "ACTIVE" || livreur.bceStatus !== "VERIFIED") {
         throw new ApiError(403, "Votre compte livreur n'est pas actif", "DRIVER_NOT_ACTIVE");
       }
       // Un seul client à remettre : avec une tournée, il n'est pas près d'être libre.
@@ -481,8 +492,8 @@ export class DispatchService {
 
     // La commande a été annulée en attendant, ou le livreur s'est mis hors
     // ligne en se libérant : la réservation tombe, la course repart en recherche.
-    const livreur = await db.courier.findUnique({ where: { id: driverId }, select: { status: true, isOnline: true } });
-    const injoignable = !livreur || livreur.status !== "ACTIVE" || !livreur.isOnline;
+    const livreur = await db.courier.findUnique({ where: { id: driverId }, select: { status: true, bceStatus: true, isOnline: true } });
+    const injoignable = !livreur || livreur.status !== "ACTIVE" || livreur.bceStatus !== "VERIFIED" || !livreur.isOnline;
     if (injoignable || !STATUTS_COMMANDE_A_LIVRER.includes(reservee.order?.status ?? "")) {
       await db.orderDelivery.updateMany({
         where: { id: reservee.id, reservedDriverId: driverId },
@@ -577,6 +588,7 @@ export class DispatchService {
     const livreurs = await db.courier.findMany({
       where: {
         status: "ACTIVE",
+        bceStatus: "VERIFIED",
         isOnline: true,
         currentOrderId: { not: null },
         OR: [{ pausedUntil: null }, { pausedUntil: { lte: new Date() } }],
@@ -642,6 +654,7 @@ export class DispatchService {
       where: {
         id: { notIn: [...exclus, ...dejaReserves] },
         status: "ACTIVE",
+        bceStatus: "VERIFIED",
         isOnline: true,
         currentOrderId: { not: null },
         OR: [{ pausedUntil: null }, { pausedUntil: { lte: new Date(maintenant) } }],
@@ -1241,8 +1254,8 @@ export class DispatchService {
       // jusqu'à la fin de la transaction ; la capacité est recomptée dessous.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`acceptation-livreur:${driverId}`}))`;
 
-      const livreur = await tx.courier.findUnique({ where: { id: driverId }, select: { currentOrderId: true, status: true } });
-      if (!livreur || livreur.status !== "ACTIVE") {
+      const livreur = await tx.courier.findUnique({ where: { id: driverId }, select: { currentOrderId: true, status: true, bceStatus: true } });
+      if (!livreur || livreur.status !== "ACTIVE" || livreur.bceStatus !== "VERIFIED") {
         throw new ApiError(403, "Votre compte livreur n'est pas actif", "DRIVER_NOT_ACTIVE");
       }
 
