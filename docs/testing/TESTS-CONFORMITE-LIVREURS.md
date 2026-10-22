@@ -21,7 +21,7 @@ Ces fichiers ne valident pas tous les scénarios exigés et leur présence ne va
 
 ## Statut d'exécution
 
-Les deux tests mobiles Node sans dépendances (`tests/course-alerts.test.cjs` et `tests/renouvellement.test.cjs`) passent. Les tests Jest backend n'ont pas pu être exécutés faute de dépendances. Les scénarios frontend Playwright n'ont pas démarré faute de module `playwright`. Une installation `npm ci` a été interrompue avant son achèvement. Le run CI sur la PR #237 est en cours; son résultat devra être consigné après achèvement.
+Les deux tests mobiles Node sans dépendances (`tests/course-alerts.test.cjs` et `tests/renouvellement.test.cjs`) passent. Les tests Jest backend n'ont pas pu être exécutés faute de dépendances. Les scénarios frontend Playwright n'ont pas démarré faute de module `playwright`. Une installation `npm ci` a été interrompue avant son achèvement. Consulter le statut CI de la PR #237 pour le dernier head; aucun run entièrement réussi n'est revendiqué ici.
 
 ## Couverture encore requise
 

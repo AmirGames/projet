@@ -55,6 +55,7 @@ export default function DeliveryApp() {
   // Écran de connexion ou d'inscription, tant que personne n'est connecté.
   const [signingUp, setSigningUp] = useState(false);
   const [driver, setDriver] = useState<Driver | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [earnings, setEarnings] = useState<EarningsSummary | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [activeDeliveries, setActiveDeliveries] = useState<Delivery[]>([]);
@@ -296,6 +297,12 @@ export default function DeliveryApp() {
     .map((d) => withPendingSteps(d, outbox.pending))
     .filter((d) => d.status !== 'DELIVERED');
 
+  useEffect(() => {
+    if (!driver?.pausedUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [driver?.pausedUntil]);
+
   const singleId = visibleDeliveries.length === 1 ? visibleDeliveries[0].id : null;
   // Ajustements d'état pendant le rendu, sans effet : une course seule se sélectionne d'elle-même ;
   // ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
@@ -330,7 +337,7 @@ export default function DeliveryApp() {
     visibleDeliveries.length > 0
       ? 'delivery'
       : driver
-        ? driver.pausedUntil && new Date(driver.pausedUntil).getTime() > Date.now()
+        ? driver.pausedUntil && new Date(driver.pausedUntil).getTime() > now
           ? 'paused'
           : driver.isOnline
             ? 'idle'

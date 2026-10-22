@@ -89,7 +89,7 @@ La source par défaut est `backend/src/contenus/pages-legales.defaut.ts` (`condi
 - Deux tests mobiles Node sans dépendances ont passé : `tests/course-alerts.test.cjs` et `tests/renouvellement.test.cjs`. Parsing des messages FR/EN et `git diff --check` passent.
 - Les tests Jest backend n'ont pas pu démarrer et les scénarios frontend Playwright ont échoué au démarrage faute des paquets locaux; typecheck, lint, build, Prisma et tests DB n'ont donc pas été validés.
 - Les tentatives d'installation `npm ci` ont été interrompues avant leur achèvement et n'ont pas produit de dépendances utilisables.
-- La PR brouillon [#237](https://github.com/AmirGames/projet/pull/237) existe. Un run CI est en cours sur le dernier head au moment de cette mise à jour; le résultat n'est pas encore disponible.
+- La PR brouillon [#237](https://github.com/AmirGames/projet/pull/237) existe. Consulter son statut CI pour le dernier head; aucun run entièrement réussi n'est revendiqué par ce rapport.
 - Aucun changement financier ni migration de données effectué. `DeliveryOffer.status` est un champ `String`; le nouvel état ne demande pas de changement physique de schéma. Cela doit tout de même être validé par Prisma sur un environnement avec dépendances installées.
 
 ## Niveau de risque global du périmètre
