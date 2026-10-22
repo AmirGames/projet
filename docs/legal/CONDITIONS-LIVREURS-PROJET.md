@@ -7,6 +7,7 @@ La source par défaut se trouve dans `backend/src/contenus/pages-legales.defaut.
 À revoir avant publication :
 
 - Remplacer les références françaises par les catégories belges effectivement applicables sans faire du numéro BCE une preuve suffisante du statut indépendant.
+- Décrire l'exigence BCE choisie par ZupEat, le contrôle humain dans le registre officiel, les motifs de refus/correction et les droits sur ce numéro. Vérifier la compatibilité du formulaire France avec cette politique et les numéros d'entreprises étrangers avant toute extension géographique.
 - Décrire la proposition, son délai commercial, l'acceptation explicite et la clôture sans pénalité après refus.
 - Décrire la pause choisie librement, sans motif personnel ni validation d'absence; les anciennes valeurs `pauseReason` ne sont pas purgées par le seul changement de code.
 - Décrire le montant réellement affiché, son caractère estimatif éventuel, les frais, les pourboires et leur traitement financier vérifié.
