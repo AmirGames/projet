@@ -16,5 +16,6 @@ La source par défaut se trouve dans `backend/src/contenus/pages-legales.defaut.
 - Distinguer le remboursement du client d'une suspension du livreur : le code ne demande plus la suspension par défaut, mais un opérateur peut toujours la demander explicitement pour un risque sérieux; une procédure de réexamen structurée reste à concevoir.
 - Définir les assurances actuellement exigibles et examiner le régime spécial dont l'entrée en vigueur est reportée au 1er janvier 2028.
 - Décider si le remplacement est permis, avec compte personnel, contrôles d'admissibilité et responsabilités.
+- Une architecture préparatoire de remplacement nominatif est décrite dans `ARCHITECTURE-REMPLACEMENT-LIVREUR.md`; elle n'est pas une fonctionnalité disponible.
 
 Ne pas utiliser une déclaration contractuelle d'indépendance pour contredire les mécanismes réellement déployés.

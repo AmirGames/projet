@@ -156,6 +156,7 @@ export default function OfferSheet({
           </Text>
           <Text style={styles.line}>Total estimé : {formatDistance(distanceM)} · {formatMinutes(durationS)}</Text>
           <Text style={styles.expiry}>La proposition expire automatiquement après un court délai. Vous pouvez la refuser sans conséquence.</Text>
+          <Text style={styles.expiry}>Répondez ou refusez uniquement lorsque vous êtes arrêté en sécurité.</Text>
 
           <View style={styles.divider} />
           <View style={styles.stops}>

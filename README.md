@@ -15,6 +15,7 @@ de validation sont consignés dans [le rapport Livreurs](docs/audits/AUDIT-LIVRE
 La [matrice juridique](docs/legal/MATRICE-REQUALIFICATION.md), la
 [géolocalisation RGPD](docs/legal/RGPD-GEOLOCALISATION-LIVREURS.md), la
 [gestion algorithmique](docs/legal/GESTION-ALGORITHMIQUE-LIVREURS.md) et les
+[proposition d'architecture de remplacement](docs/legal/ARCHITECTURE-REMPLACEMENT-LIVREUR.md) et les
 [scénarios de test](docs/testing/TESTS-CONFORMITE-LIVREURS.md) complètent ce
 travail. Ces changements ne certifient pas la qualification de la relation et
 ne sont pas déployés.
