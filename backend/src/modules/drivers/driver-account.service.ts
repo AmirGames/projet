@@ -15,12 +15,14 @@ import { DriverSupportService } from "./driver-support.service";
 import { confirmationExigee, confirmationAEnvoyer, envoyerConfirmation } from "../auth/auth-confirmation.service";
 import { codeErreur } from "../../utils/code-erreur";
 import { debutDeJourBruxelles, debutDeMoisBruxelles, debutDeSemaine } from "../../utils/semaine-bruxelles";
+import { numeroBceNormalise } from "../../utils/bce";
 
 export type InscriptionLivreur = {
   name: string;
   email: string;
   password: string;
   phone: string;
+  bceNumber: string;
   vehicleType: "car" | "scooter" | "bike";
   vehiclePlate?: string;
 };
@@ -49,6 +51,9 @@ function phraseAutresEspaces(restent: { commercant: boolean }) {
 export const DriverAccountService = {
   /** Inscription d'un livreur : compte ZupOne, preuve d'acceptation, profil livreur, jetons. */
   async inscrire(req: Request, body: InscriptionLivreur) {
+    const bceNumber = numeroBceNormalise(body.bceNumber);
+    if (!bceNumber) throw new ApiError(400, "Numéro BCE invalide", "INVALID_BCE_NUMBER");
+
     const [compteExistant, livreurExistant] = await Promise.all([
       db.user.findUnique({ where: { email: body.email } }),
       db.courier.findUnique({ where: { email: body.email } }),
@@ -84,6 +89,8 @@ export const DriverAccountService = {
             name: body.name,
             email: body.email,
             phone: body.phone,
+            bceNumber,
+            bceStatus: "PENDING",
             vehicleType: body.vehicleType,
             vehiclePlate: body.vehiclePlate,
             licensePlate: body.vehiclePlate,
@@ -242,6 +249,9 @@ export const DriverAccountService = {
       // n'arrivait.
       status: driver.status,
       statusReason: driver.statusReason,
+      bceNumber: driver.bceNumber,
+      bceStatus: driver.bceStatus,
+      bceReviewReason: driver.bceReviewReason,
       pausedUntil: driver.pausedUntil,
       pauseReason: driver.pauseReason,
       gpsLostAt: driver.gpsLostAt,
@@ -284,6 +294,14 @@ export const DriverAccountService = {
       );
     }
 
+    if (voulu && livreur.bceStatus !== "VERIFIED") {
+      throw new ApiError(
+        403,
+        "Votre numéro BCE doit être vérifié dans le registre officiel avant de recevoir des propositions.",
+        "BCE_NOT_VERIFIED"
+      );
+    }
+
     const enPause = DriverAvailabilityService.estEnPause(livreur);
 
     return db.courier.update({
@@ -295,7 +313,40 @@ export const DriverAccountService = {
         ...(voulu
           ? { isAvailable: livreur.currentOrderId === null && !enPause }
           : // Se déconnecter met fin à la pause : elle n'a plus d'objet.
-            { isAvailable: false, pausedUntil: null, pauseReason: null }),
+            {
+              isAvailable: false,
+              pausedUntil: null,
+              pauseReason: null,
+              // Une livraison acceptée conserve son suivi jusqu'à sa fin. Si
+              // le livreur est libre, supprimer la dernière position de
+              // disponibilité dès sa déconnexion.
+              ...(livreur.currentOrderId === null
+                ? { latitude: null, longitude: null, lastLocationUpdate: null, gpsLostAt: null }
+                : {}),
+            }),
+      },
+    });
+  },
+
+  /** Soumettre/corriger le numéro BCE et remettre le contrôle humain en attente. */
+  async modifierNumeroBce(livreur: Courier, saisie: string) {
+    const bceNumber = numeroBceNormalise(saisie);
+    if (!bceNumber) throw new ApiError(400, "Numéro BCE invalide", "INVALID_BCE_NUMBER");
+    return db.courier.update({
+      where: { id: livreur.id },
+      data: {
+        bceNumber,
+        bceStatus: "PENDING",
+        bceReviewedAt: null,
+        bceReviewedBy: null,
+        bceReviewReason: null,
+        isOnline: false,
+        isAvailable: false,
+        pausedUntil: null,
+        pauseReason: null,
+        ...(livreur.currentOrderId === null
+          ? { latitude: null, longitude: null, lastLocationUpdate: null, gpsLostAt: null }
+          : {}),
       },
     });
   },
@@ -389,6 +440,10 @@ export const DriverAccountService = {
         isAvailable: false,
         pausedUntil: null,
         pauseReason: null,
+        latitude: null,
+        longitude: null,
+        lastLocationUpdate: null,
+        gpsLostAt: null,
       },
     });
     // Plus aucune notification de l'application Livreur. Celles de
