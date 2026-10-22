@@ -147,10 +147,6 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
       // dès la déconnexion ou la pause. Le serveur refuse aussi les envois
       // tardifs, mais l'écran ne doit pas conserver une position inactive.
       latest.current = null;
-      setPosition(null);
-      setNear(false);
-      setGps('off');
-      setBackground('off');
       stopBackgroundLocation();
       return;
     }
@@ -231,5 +227,9 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
     };
   }, [token, profile, recheck]);
 
-  return { position, gps: profile === 'off' ? 'off' : gps, background: profile === 'off' ? 'off' : background };
+  return {
+    position: profile === 'off' ? null : position,
+    gps: profile === 'off' ? 'off' : gps,
+    background: profile === 'off' ? 'off' : background,
+  };
 }
