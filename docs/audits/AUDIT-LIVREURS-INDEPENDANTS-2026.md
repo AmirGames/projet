@@ -1,4 +1,4 @@
-Warning: truncated output (original token count: 7310)
+Warning: truncated output (original token count: 7485)
 Total output lines: 138
 
 # Audit des mécanismes Livreurs ZupEat — 22 octobre 2026
@@ -35,7 +35,7 @@ La directive ne doit pas être traitée comme déjà transposée. Son échéance
 
 ## Vérifications complémentaires des flux
 
-- **Rémunération proposée :** `DispatchService.creerProposition` calcule `payout` à partir des frais de livraison plateforme (ou du barème alternatif) et du pourboire de commande; la valeur de l'offre est recopiée à l'acceptation dans `OrderDelivery.driverPayout`. Les flux de paiement créent un relevé à partir de cette valeur figée. L'écran mobile expose maintenant le montant total, le pourboire déjà attribué et des distances estimées. Il n'expose pas de ventilation base/km : en mode plateforme la paie est liée à `feesAmount`, et le modèle ne conserve pas de ventilation fiable de ce montant. Aucun mécanisme de contre-proposition n'existe. Une ventilation fiable ou une négociation demande une décision économique et une analyse de l'engagement déjà pris auprès du client et du commerce; aucun montant fictif n'a été ajouté.
+- **Rémunération proposée :** `DispatchService.creerProposition` calcule `payout` à partir des frais de livraison plateforme (ou du barème alternatif) et du pourboire de commande; la valeur de l'offre est recopiée à l'acceptation dans `OrderDelivery.driverPayout`. Les flux de paiement créent un relevé à partir de cette valeur figée. L'écran mobile expose maintenant le montant total, le pourboire déjà attribué et des distances estimées. Il n'expose pas de ventilation base/km : en mode plateforme la paie est liée à `feesAmount`, et le modèle ne conserve pas de ventilation fiable de ce montant. Aucun mécanisme de contre-proposition n'existe. Le propriétaire confirme le 22 octobre 2026 que le prix ne sera pas négociable dans le modèle retenu; le prix proposé doit donc être exact et transparent avant acceptation. Cette décision commerciale ne supprime pas le risque du critère légal de liberté tarifaire, qui doit être évalué par un avocat belge.
 - **Données client avant acceptation :** l'analyse des trois chemins de lecture (socket d'offre, `GET /offers`, liste et détail des propositions) a trouvé l'adresse de rue dans l'offre, malgré les coordonnées déjà obfusquées. Les interfaces d'offre reçoivent désormais ville/code postal seulement; la rue est retournée après attribution. Un test de caractérisation vérifie ce masquage. Données clientes restantes et accès opérateurs doivent encore être inclus dans une revue de confidentialité complète.
 - **Accès support au GPS :** la route de consultation du chat superowner renvoyait aussi latitude/longitude même si l'interface ne les utilisait pas. Ces coordonnées ont été retirées de la sélection et un test de contrat vérifie l'API; les vues d'incident conservent les données qu'elles utilisent pour l'examen de l'incident et nécessitent une revue des rôles/durées.
 - **Pourboires :** le pourboire après livraison utilise une ligne unique par commande, un identifiant Stripe unique, une intention idempotente et une mise à jour conditionnelle du statut avant l'incrément des gains (`backend/src/modules/orders/pourboire.service.ts`, `backend/prisma/schema.prisma:model CourierTip`). Les tests de paiement/remboursement existent dans le dépôt, mais n'ont pas été exécutés dans cette branche. Les scénarios d'annulation, litige, rapprochement de relevé et double webhook restent à vérifier par CI.
@@ -50,7 +50,17 @@ La directive ne doit pas être traitée comme déjà transposée. Son échéance
 
 | Critère légal | Fonctionnalité | Fichiers et lignes | Constat | Risque | Correction | Test |
 |---|---|---|---|---|---|---|
-| 1. Exclusivité professionnelle | Contrôles de comptes et d'activité concurrente | Aucun contrôle repéré dans le dispatch; texte par défaut `backend/src/contenus/pages-legales.defaut.ts:210-248` | Pas de preuve de verrou technique dans le flux …1310 tokens truncated…travail en France, SIREN) et une localisation uniquement pendant course ou disponibilité. Le texte par défaut a été remplacé par un brouillon prudent pour la Belgique, mais il n'est pas prêt à publier : le texte effectivement accepté peut être administré en base et différer de ce fichier. Comparer les versions réellement acceptées avant publication et faire réviser par avocat belge et responsable du traitement.
+| 1. Exclusivité professionnelle | Contrôles de comptes et d'activité concurrente | Aucun contrôle repéré dans le dispatch; texte par défaut `backend/src/contenus/pages-legales.defaut.ts:210-248` | Pas de preuve de verrou technique dans le flux examiné; contrat actuel/activité réelle à vérifier. | MODÉRÉ | Aucun verrou ajouté; validation contractuelle à faire. | Non-exclusivité pas encore testée en domaine. |
+| 2. Géolocalisation étrangère au service | Position de disponibilité et suivi course | `backend/src/modules/drivers/dispatch.service.ts:1388-1420`; `driver-availability.service.ts:145-220`; `mobile/apps/delivery/lib/useDriverLocation.ts:95-112`; `app/index.tsx:327-339` | Avant correction, les points pouvaient actualiser le profil hors ligne/en pause. Position courante et preuves course sont persistées. | ÉLEVÉ | Backend ignore les mises à jour hors ligne/en pause; le profil est vidé, le logout volontaire ferme la disponibilité, le suivi mobile s'arrête et s'efface en pause/hors ligne; le job ignore la pause. | Tests backend ajoutés pour l'absence d'enregistrement hors ligne/en pause et l'effacement à la déconnexion de fin de course; appareils, rétention, accès et AIPD restent à valider. |
+| 3. Liberté d'organiser/exécuter | Refus, délais, véhicule, regroupement et tournée | `dispatch.service.ts:72-95, 722-785, 821-890, 1178-1370`; `driver-availability.service.ts:31-110` | Réponse par défaut 30 s; contraintes véhicule, lots et tournées. Une réponse explicite clôt désormais la même course. | ÉLEVÉ | Sélection manuelle suit les mêmes règles; message « répondre vite » retiré, sécurité routière rappelée. | Test de refus/manualité ajouté, non exécuté; délai/ergonomie restent à valider. |
+| 4. Liberté tarifaire et limitation des revenus | Barème et prix proposés | `dispatch.service.ts:98-170, 1010-1075`; `driver-courses.service.ts:226-277`; `mobile/apps/delivery/components/OfferSheet.tsx` | Prix calculé par paramètres de la plateforme; montant accepté figé. Aucun droit de contre-proposition ni ventilation base/km fiabl…485 tokens truncated…otif personnel; fin automatique à l'échéance choisie. Aucun flux de remplaçant trouvé dans l'audit. | ÉLEVÉ | État pause distinct; pause absente des stats de réponse; GPS suspendu sans course; suivi mobile arrêté pendant la pause; aucun motif de pause conservé à l'avenir. | Test de route mis à jour, non exécuté; tests de pause/reprise et choix de reprise manquent; remplacement non implémenté. |
+| 8. Activités tierces et clientèle | Exclusivité, autres plateformes et relation directe | Aucun verrou repéré dans le dispatch; texte par défaut `pages-legales.defaut.ts:210-248` | Le dépôt seul ne prouve pas les pratiques commerciales ni la liberté contractuelle effective. | MODÉRÉ | Aucun mécanisme d'exclusivité ajouté; texte français obsolète remplacé par un brouillon belge à valider. | Test logiciel à créer; revue juridique et commerciale nécessaire. |
+
+Les huit critères ne se substituent pas à l'analyse générale du lien d'autorité et de subordination, des modalités d'exécution réelles, ni à la présomption légale applicable. Aucun statut « conforme » n'est conclu sur la seule lecture des conditions.
+
+## Alignement code / Conditions Livreurs publiées par défaut
+
+La source par défaut est `backend/src/contenus/pages-legales.defaut.ts` (`conditions-livreurs`). Avant cette branche, elle affirmait notamment un régime français (micro-entrepreneur, droit au travail en France, SIREN) et une localisation uniquement pendant course ou disponibilité. Le texte par défaut a été remplacé par un brouillon prudent pour la Belgique, mais il n'est pas prêt à publier : le texte effectivement accepté peut être administré en base et différer de ce fichier. Le backend enregistre dans `AcceptationConditions` les documents et leurs versions, la date, l'identifiant du compte et les métadonnées de requête prévues par le modèle. Cette preuve technique ne dit pas à elle seule quel texte est actuellement publié ni ne vaut approbation juridique. Il faut comparer les versions publiées et consultables dans l'espace des pages légales avec les versions proposées lors des inscriptions réelles, puis faire réviser le texte par un avocat belge et le responsable du traitement.
 
 | Clause actuelle | Comportement attendu | Code examiné | État |
 |---|---|---|---|
@@ -91,7 +101,7 @@ Ces niveaux priorisent le travail technique; ils ne chiffrent pas une probabilit
 
 ## Décisions commerciales/juridiques non tranchées par le code
 
-1. Si ZupEat doit permettre au livreur de négocier le prix avant que le client/commerçant soit engagé, et qui supporte l'écart.
+1. Évaluer les conséquences juridiques du choix commercial confirmé le 22 octobre 2026 de ne pas permettre la négociation du prix; vérifier notamment la rémunération, les limitations éventuelles et les modalités réelles de refus.
 2. Définir la personne morale exploitante, les contrats, les bases RGPD et les responsables de traitement.
 3. Valider assurances des véhicules, responsabilité professionnelle et préparation de l'obligation plateforme prévue en 2028.
 4. Réviser Conditions Livreurs et politique de confidentialité selon la Belgique et les flux réels.
@@ -109,7 +119,7 @@ Ces niveaux priorisent le travail technique; ils ne chiffrent pas une probabilit
 
 ## Niveau de risque global du périmètre
 
-ÉLEVÉ : tarif fixé par la plateforme, absence de négociation repérée, historique GPS des livraisons et procédure de recours structurée à établir, ainsi que remplacement non implémenté. Les changements sur le refus, la pause, le dispatch manuel, la collecte GPS hors mission et la jauge d'acceptation réduisent des mécanismes de pression observables, mais ne garantissent pas une qualification indépendante.
+ÉLEVÉ : tarif fixé par la plateforme sans négociation (choix commercial confirmé le 22 octobre 2026), historique GPS des livraisons et procédure de recours structurée à établir, ainsi que remplacement non implémenté. Les changements sur le refus, la pause, le dispatch manuel, la collecte GPS hors mission et la jauge d'acceptation réduisent des mécanismes de pression observables, mais ne garantissent pas une qualification indépendante.
 
 ## Checklist à remettre à un avocat belge en droit social
 
@@ -117,7 +127,7 @@ Ces niveaux priorisent le travail technique; ils ne chiffrent pas une probabilit
 - Évaluer individuellement les huit critères et les flux d'offre, de tournée, de disponibilité, de GPS, d'incident, de tarification, de suspension et de recours.
 - Vérifier la transposition belge de la directive 2024/2831 publiée avant le 2 décembre 2026, son champ et les mesures techniques et procédurales exigées.
 - Confirmer assurances RC professionnelle et véhicule, documents légalement requis et portée/date du régime plateforme 2028.
-- Valider possibilité de négociation des prix, annulations, remboursements, pourboires et articulation avec les sommes déjà encaissées.
+- Évaluer le risque lié au prix fixé par la plateforme sans négociation, et valider annulations, remboursements, pourboires et articulation avec les sommes déjà encaissées.
 - Réviser les versions réellement acceptées des Conditions Livreurs et communications; ne pas se limiter au texte par défaut.
 - Définir remplacement, sous-traitance, compte personnel, assurances, responsabilité et critères objectifs d'admissibilité.
 - Examiner contestation, désactivation, décisions automatisées, information algorithmique et voie de recours.
