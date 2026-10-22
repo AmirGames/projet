@@ -29,7 +29,15 @@ describe("pause du livreur", () => {
 
     expect(db.courier.update).toHaveBeenCalledWith({
       where: { id: "driver-1" },
-      data: expect.objectContaining({ pausedUntil: expect.any(Date), pauseReason: null, isAvailable: false }),
+      data: expect.objectContaining({
+        pausedUntil: expect.any(Date),
+        pauseReason: null,
+        isAvailable: false,
+        latitude: null,
+        longitude: null,
+        lastLocationUpdate: null,
+        gpsLostAt: null,
+      }),
     });
   });
 
