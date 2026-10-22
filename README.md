@@ -1,5 +1,7 @@
 # Zupone - Groupe de Solutions pour la Livraison et la Restauration
 
+**Pour commencer :** [index documentaire](START_HERE.md) · [installation locale](docs/SETUP.md) · [état et preuves datées](docs/etat-projet.md). Ce dépôt contient une API Express/Prisma, un site Next.js et six applications Expo, chacun avec son propre `package.json`. Les descriptions fonctionnelles et objectifs plus bas incluent des éléments projetés ; la présence d'un écran ou d'un contrat ne vaut pas validation en exploitation.
+
 > **A03 (13 octobre 2026) — Sécurité des commandes :** [correctifs d'autorisation et vérifications restantes](docs/A03-SECURITE-COMMANDES.md). Non testé / non déployé à ce stade.
 
 
@@ -36,7 +38,7 @@ Le lockfile backend embarquait quatre alertes de production dans la chaîne du
 CLI Prisma. Deux overrides compatibles corrigent `mysql2` et `deepmerge-ts`
 sans modifier Prisma 7.10.0. L’audit backend `--omit=dev` est maintenant à
 zéro; les lockfiles web/mobile conservent des alertes documentées avec leurs
-limites et dates de revue dans [l’audit A12](docs/AUDIT-DEPENDANCES.md).
+limites et dates de revue dans [l’audit A12](docs/audit-dependances.md).
 Installation reproductible, génération, lint, build et installation runtime
 ont été exécutés. La CI a passé ses 11 checks, dont migrations PostgreSQL,
 mobile, frontend et E2E ([run](https://github.com/AmirGames/projet/actions/runs/38265964207)).
@@ -238,7 +240,7 @@ Composée de 2 applications :
 - **App Commerçant** : Next.js 16 (dashboard responsive)
 - **App Livreur** : Expo / React Native, avec modules natifs Android pour certaines alertes
 - **Paiements** : Stripe (carte), confirmation par webhook signé ; remboursement idempotent. Pas de connecteur PayPal livré.
-- **Infrastructure** : `deploy/Caddyfile`, scripts d'exploitation et modèle d'environnement pour Scaleway/VPS avec PostgreSQL et Redis. Le guide décrit Docker Compose, mais `docker-compose.prod.yml` est référencé par les scripts et absent de cet instantané versionné ; Kubernetes/AWS/GCP ne sont pas établis ici.
+- **Infrastructure** : `deploy/Caddyfile`, scripts d'exploitation et `docker-compose.prod.yml` pour un VPS avec PostgreSQL et Redis. Le Compose local `docker-compose.yml` lance seulement PostgreSQL, Redis et Mailpit. Aucun déploiement de cette copie n'est attesté ici.
 - **Temps réel** : WebSockets/Redis pour notifications et suivi GPS
 - **Emails** : Mailpit (local), service externe (production)
 
@@ -263,32 +265,27 @@ L'application est une app Expo / React Native (le domaine `delivery.zupeat.com` 
 - Historique et suivi des commandes assignées
 - Notifications push prioritaires
 
-#### 🗺️ Navigation Intégrée (Feature Premium)
-- **Google Maps SDK intégré** : Navigation turn-by-turn sans quitter l'app
-- Itinéraires optimisés pour plusieurs livraisons
-- Estimation de temps d'arrivée en temps réel
-- Évaluation du trafic et suggestions d'itinéraires alternatifs
+#### 🗺️ Navigation
+- Carte intégrée Leaflet/OpenStreetMap dans une WebView, itinéraire OSRM et guidage dans l'application.
+- Une tournée peut regrouper plusieurs courses ; le serveur détermine l'ordre des arrêts.
+- Google Maps, Waze ou Plans peuvent être ouverts comme navigateurs externes selon le réglage du livreur.
 
 #### 📍 Localisation et Suivi
 - GPS en temps réel
 - Partage de localisation avec restaurant et client
-- Historique des trajets pour optimisation future
+- Historique des courses et distances dans l'espace livreur.
 
 #### ✅ Confirmation de Livraison
-- Signature électronique des clients (optionnel)
-- Photo de livraison
-- Commentaires et notes
-- Prise de photo du client avec la commande
+- Remise par code à quatre chiffres ou, après la procédure « client injoignable », dépôt avec photo et lieu.
+- Les étapes peuvent être conservées localement en cas de perte de réseau puis envoyées au retour de la connexion.
 
 #### 💬 Communication
-- Chat intégré avec clients
-- Chat avec restaurants
-- Support technique in-app
+- Appel/SMS du client lors du parcours « client injoignable » et discussion avec le support dans l'application.
 
 #### 💵 Gestion Financière
 - Suivi des revenus en temps réel
 - Historique des paiements
-- Détails des commissions et bonus
+- Relevés et montants dus, en attente ou versés, selon les données de l'API.
 
 ### Stack Technologique
 - **Plateforme** : Expo / React Native, TypeScript ; module Expo natif Android pour les alertes
@@ -296,10 +293,10 @@ L'application est une app Expo / React Native (le domaine `delivery.zupeat.com` 
 - **Carte** : OpenStreetMap et OSRM selon la configuration ; navigateurs externes facultatifs
 
 ### Avantages pour les Livreurs
-✨ Interface intuitive et facile à maîtriser  
-⚡ Performances optimisées pour batterie et données mobiles  
-🛡️ Sécurité des données personnelles  
-📱 Fonctionne sur tous les appareils Android modernes  
+Les alertes natives Android, le GPS, les push et les preuves photo demandent
+encore les essais sur appareil indiqués dans le
+[README Delivery](mobile/apps/delivery/README.md) et sa
+[validation datée](mobile/apps/delivery/VALIDATION.md).
 
 ---
 
@@ -314,28 +311,28 @@ L’application mobile chauffeur utilise l’authentification commune ZupOne et 
 - 👤 **Clients** : Téléchargent l'app, demandent un trajet (point A → point B)
 - 🚕 **Chauffeurs** : Reçoivent les demandes de trajet et acceptent les courses
 - 📍 **Géolocalisation** : Suivi en temps réel du trajet et localisation du chauffeur
-- 💰 **Paiements** : Tarification dynamique selon la distance, demande et trafic
+- 💰 **Paiements** : devis et prix fixe présentés avant la demande ; paiement selon la configuration du service.
 - ⭐ **Notation** : Système de notation client ↔ chauffeur pour la qualité
 
 ### Fonctionnalités Principales
 - **App Client** : Demander un trajet, tracker le chauffeur, payer
 - **App Chauffeur** : Recevoir demandes de trajet, navigation intégrée, historique des courses
-- **Gestion Administrativa** : Vérification des documents (licence, assurance, BCE)
-- **Système de Paiement** : Paiement sécurisé, payout chauffeurs
+- **Gestion administrative** : dossier chauffeur et documents (licence, assurance, BCE).
+- **Système de paiement** : contrats Stripe et lecture des revenus ; un virement bancaire réel n'est pas attesté ici.
 - **Support & Feedback** : Chat support, signalement de problèmes, notation
 - **Analytics** : Dashboard chauffeur (revenus, trajets) et admin (métriques)
 
 ### Stack Technologique
 - **Backend** : API Node.js/Express, PostgreSQL, Redis pour temps réel
 - **Frontend Web** : Dashboard admin (Next.js)
-- **App Client** : iOS/Android (React Native ou Expo)
-- **App Chauffeur** : iOS/Android (React Native ou Expo)
-- **Localisation** : Google Maps API, tracking temps réel
+- **App Client** : Expo / React Native (`mobile/apps/zupdrive-passenger`)
+- **App Chauffeur** : Expo / React Native (`mobile/apps/zupdrive-driver`)
+- **Localisation** : GPS et cartes selon les clients ; vérifier les fournisseurs utilisés dans chaque application.
 - **Paiements** : Stripe, gestion des payouts
 
 ### Objectifs Stratégiques
 🎯 Lancer MVP en Belgique (Namur, Bruxelles, Liège)  
-🎯 Atteindre 500+ chauffeurs actifs en Q1 2027  
+🎯 Développer un réseau de chauffeurs après validation du pilote
 🎯 Générer stabilité opérationnelle et rentabilité  
 🎯 Expansion régionale en Wallonie/Flandre  
 
@@ -385,6 +382,11 @@ Les deux écosystèmes partagent la même infra backend/tech mais ont des modèl
 ---
 
 ## 🚀 Timeline et Roadmap
+
+> Projections de planification historiques, sans date de lancement confirmée.
+> Le pilote ZupEat A16 reste bloqué pour démarrer la recette utilisateur ;
+> ZupDrive est hors périmètre de ce pilote. Les jalons ci-dessous sont des
+> objectifs et non des engagements ni des résultats mesurés.
 
 ### **Début 2027 - Lancement Zupeat** 📅
 **Objectifs**
@@ -442,9 +444,9 @@ Les deux écosystèmes partagent la même infra backend/tech mais ont des modèl
 |-----------|--------------|
 | **Backend** | Node.js, Express, TypeScript, Prisma |
 | **Frontend Web** | Next.js, React, TypeScript |
-| **Mobile** | Expo / React Native (client, commerçant, livreur, admin) |
+| **Mobile** | Six applications Expo / React Native : customer, merchant, delivery, admin, zupdrive-passenger et zupdrive-driver |
 | **Base de données** | PostgreSQL ; Redis pour coordination/cache/temps réel |
-| **Déploiement documenté** | Caddy et scripts Scaleway/VPS ; Docker Compose décrit, manifeste production non présent dans cet instantané |
+| **Déploiement documenté** | Caddy, scripts Scaleway/VPS et `docker-compose.prod.yml` versionné ; SHA actif à vérifier sur l'environnement cible |
 | **Cartographie** | OpenStreetMap et OSRM ; fournisseurs et disponibilité dépendent de la configuration |
 
 ---

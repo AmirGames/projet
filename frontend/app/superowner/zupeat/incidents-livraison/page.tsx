@@ -119,7 +119,11 @@ export default function IncidentsLivraisonPage() {
 
   const charger = useCallback(async () => {
     const token = jetonAcces();
-    if (!token) return;
+    if (!token) {
+      setErreur(t('loadError'));
+      setChargement(false);
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/api/superowner/delivery-incidents?etat=${etat}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -165,7 +169,10 @@ export default function IncidentsLivraisonPage() {
   const confirmer = async (incident: Incident) => {
     if (!geste) return;
     const token = jetonAcces();
-    if (!token) return;
+    if (!token) {
+      setErreur(t('actionError'));
+      return;
+    }
     const depot = geste.type === 'valider' || geste.type === 'refuser';
     const url =
       geste.type === 'clore'

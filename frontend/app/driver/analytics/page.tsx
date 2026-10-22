@@ -165,6 +165,7 @@ export default function AnalyticsLivreurPage() {
 
   const r = donnees?.resume;
   const o = donnees?.offres;
+  const variationGains = r && variation(r.gains, donnees.precedente.gains);
 
   return (
     <div className="min-h-screen">
@@ -213,15 +214,15 @@ export default function AnalyticsLivreurPage() {
                 {r.pourboires > 0 && (
                   <p className="text-sm text-yellow-600 mt-2">{t('dontPourboiresFete', { montant: euro(r.pourboires) })}</p>
                 )}
-                {variation(r.gains, donnees.precedente.gains) != null && (
+                {variationGains != null && (
                   <p
                     className={`text-sm mt-2 ${
-                      (variation(r.gains, donnees.precedente.gains) ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                      variationGains >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
-                    {(variation(r.gains, donnees.precedente.gains) ?? 0) >= 0 ? '+' : ''}
+                    {variationGains >= 0 ? '+' : ''}
                     {t('parRapport', {
-                      delta: variation(r.gains, donnees.precedente.gains) ?? 0,
+                      delta: variationGains,
                       n: jours,
                       montant: euro(donnees.precedente.gains),
                     })}
