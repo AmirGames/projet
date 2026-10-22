@@ -10,6 +10,18 @@
 
 > **Audit A01 (13 octobre 2026) :** [baseline et limites des preuves](docs/audit-rea-ubereats.md). Les validations CI documentées ne prouvent pas un déploiement ni un parcours réel complet. Priorité : A02 puis A03.
 
+## Audit des Livreurs en Belgique (22 octobre 2026)
+
+L'audit initial, les huit critères belges, les corrections locales et les limites
+de validation sont consignés dans [le rapport Livreurs](docs/audits/AUDIT-LIVREURS-INDEPENDANTS-2026.md).
+La [matrice juridique](docs/legal/MATRICE-REQUALIFICATION.md), la
+[géolocalisation RGPD](docs/legal/RGPD-GEOLOCALISATION-LIVREURS.md), la
+[gestion algorithmique](docs/legal/GESTION-ALGORITHMIQUE-LIVREURS.md), la
+[proposition d'architecture de remplacement](docs/legal/ARCHITECTURE-REMPLACEMENT-LIVREUR.md) et les
+[scénarios de test](docs/testing/TESTS-CONFORMITE-LIVREURS.md) complètent ce
+travail. Ces changements ne certifient pas la qualification de la relation et
+ne sont pas déployés.
+
 
 ## Étape 16 — Décision de recette pilote A16 (12 octobre 2026)
 
@@ -271,9 +283,16 @@ L'application est une app Expo / React Native (le domaine `delivery.zupeat.com` 
 - Google Maps, Waze ou Plans peuvent être ouverts comme navigateurs externes selon le réglage du livreur.
 
 #### 📍 Localisation et Suivi
-- GPS en temps réel
-- Partage de localisation avec restaurant et client
-- Historique des courses et distances dans l'espace livreur.
+- Position de disponibilité lorsque le livreur est en ligne, et suivi GPS en temps réel pendant une livraison acceptée
+- Partage de localisation avec le restaurant et le client pendant la livraison
+- Arrêt du suivi de disponibilité pendant une pause ou après déconnexion; les données de course restent rattachées à la commande
+- Historique des courses et distances dans l'espace livreur
+- La conservation des coordonnées de commande et des preuves doit suivre la politique de confidentialité et les durées validées
+
+#### ✅ Admissibilité des Livreurs
+- Le numéro BCE est demandé à l'inscription selon la règle de test choisie par ZupEat
+- Le format est vérifié automatiquement; un opérateur doit vérifier le registre officiel avant l'activation
+- Un numéro BCE ne démontre pas, à lui seul, le statut indépendant; le formulaire de pays France nécessite encore une règle pour les identifiants étrangers
 
 #### ✅ Confirmation de Livraison
 - Remise par code à quatre chiffres ou, après la procédure « client injoignable », dépôt avec photo et lieu.

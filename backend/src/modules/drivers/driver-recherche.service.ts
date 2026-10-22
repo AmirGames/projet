@@ -74,6 +74,7 @@ export const DriverRechercheService = {
         name: true,
         phone: true,
         status: true,
+        bceStatus: true,
         isOnline: true,
         isAvailable: true,
         currentOrderId: true,
@@ -83,7 +84,7 @@ export const DriverRechercheService = {
       },
     });
 
-    const actifs = tous.filter((d) => d.status === "ACTIVE");
+    const actifs = tous.filter((d) => d.status === "ACTIVE" && d.bceStatus === "VERIFIED");
     const enLigne = actifs.filter((d) => d.isOnline);
     const libres = enLigne.filter((d) => d.isAvailable && d.currentOrderId === null);
     // Une position figée (signal GPS perdu) ne dit plus où est le livreur :

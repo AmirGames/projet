@@ -36,6 +36,7 @@ jest.mock("../driver-approval.service", () => ({
     dossier: jest.fn(),
     changerEcheance: jest.fn(async () => ({ avant: "2026-01-01", piece: { id: "d1", type: "license", expiryDate: "2027-01-01" } })),
     examinerPiece: jest.fn(async () => ({ id: "d1", type: "license" })),
+    examinerBce: jest.fn(async (id: string, _admin: string, decision: any) => ({ id, bceStatus: decision.status, bceReviewedAt: new Date("2026-10-22T12:00:00Z") })),
     valider: jest.fn(async () => ({ id: "dr1", status: "ACTIVE" })),
     ecarter: jest.fn(async (id: string, etat: string) => ({ id, status: etat })),
     reactiver: jest.fn(async () => ({ id: "dr1", status: "ACTIVE" })),
@@ -92,7 +93,7 @@ const audit = (action: string, target: string, changes: any) =>
 
 describe("accès", () => {
   it.each([
-    ["get", "/drivers"], ["get", "/drivers/dr1"], ["patch", "/drivers/dr1/documents/d1/expiry"], ["patch", "/drivers/dr1/documents/d1"],
+    ["get", "/drivers"], ["get", "/drivers/dr1"], ["patch", "/drivers/dr1/bce"], ["patch", "/drivers/dr1/documents/d1/expiry"], ["patch", "/drivers/dr1/documents/d1"],
     ["post", "/drivers/dr1/approve"], ["post", "/drivers/dr1/reject"], ["post", "/drivers/dr1/reactivate"], ["get", "/driver-support"],
     ["get", "/driver-support/dr1"], ["post", "/driver-support/dr1"], ["get", "/delivery-incidents"],
     ["post", "/delivery-incidents/courses/c1/retirer"], ["post", "/delivery-incidents/courses/c1/echec"],
@@ -146,6 +147,14 @@ describe("dossiers des livreurs", () => {
 });
 
 describe("décisions journalisées", () => {
+  it("PATCH …/bce : demande une décision et journalise l'examen humain", async () => {
+    expect((await owner(request(app).patch("/api/superowner/drivers/dr1/bce").send({}))).status).toBe(400);
+    const r = await owner(request(app).patch("/api/superowner/drivers/dr1/bce").send({ status: "VERIFIED" }));
+    expect(r.body).toMatchObject({ success: true, bceStatus: "VERIFIED" });
+    expect(DriverApprovalService.examinerBce).toHaveBeenCalledWith("dr1", "owner", { status: "VERIFIED" });
+    audit("VERIFY_DRIVER_BCE", "dr1", { status: "VERIFIED", reason: undefined });
+  });
+
   it("PATCH …/documents/:id/expiry", async () => {
     expect((await owner(request(app).patch("/api/superowner/drivers/dr1/documents/d1/expiry").send({}))).status).toBe(400);
     const r = await owner(request(app).patch("/api/superowner/drivers/dr1/documents/d1/expiry").send({ expiryDate: "2027-01-01" }));
@@ -200,7 +209,7 @@ describe("support livreurs", () => {
     expect(DriverSupportService.marquerLu).toHaveBeenCalledWith("dr1", "SUPPORT");
     expect(db.courier.findUnique).toHaveBeenCalledWith({
       where: { id: "dr1" },
-      select: { id: true, name: true, phone: true, email: true, isOnline: true, currentOrderId: true, latitude: true, longitude: true, lastLocationUpdate: true, gpsLostAt: true },
+      select: { id: true, name: true, phone: true, email: true, isOnline: true, currentOrderId: true, lastLocationUpdate: true, gpsLostAt: true },
     });
   });
   it("POST /driver-support/:id : message d'équipe", async () => {
@@ -228,18 +237,20 @@ describe("incidents de livraison", () => {
     expect(SurveillanceCoursesService.retirerCourse).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, motif: "Ne vient pas" });
     audit("WITHDRAW_DELIVERY_FROM_DRIVER", "c1", { driverId: "dr1", orderId: "o1", avant: { status: "ACCEPTED", driverId: "dr1" }, apres: { status: "PENDING", driverId: null }, motif: "Ne vient pas" });
   });
-  it("POST …/echec : remboursement et suspension par défaut", async () => {
+  it("POST …/echec : rembourse par défaut, sans suspendre automatiquement", async () => {
     await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/echec").send({ motif: "Jamais livré" }));
-    expect(SurveillanceCoursesService.declarerEchec).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, motif: "Jamais livré", rembourser: true, suspendre: true });
+    expect(SurveillanceCoursesService.declarerEchec).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, motif: "Jamais livré", rembourser: true, suspendre: false });
     audit("FAIL_DELIVERY", "c1", {
       driverId: "dr1", orderId: "o1", avant: { status: "PICKED_UP" }, apres: { status: "FAILED" }, motif: "Jamais livré",
       remboursement: "REMBOURSEE", livreurSuspendu: true, coursesRetirees: 1,
     });
+    await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/echec").send({ motif: "Risque immédiat", suspendre: true }));
+    expect(SurveillanceCoursesService.declarerEchec).toHaveBeenLastCalledWith("c1", { par: { userId: "owner" }, motif: "Risque immédiat", rembourser: true, suspendre: true });
   });
   it("POST …/depot : VALIDER ou REFUSER", async () => {
     expect((await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/depot").send({ motif: "Photo ok" }))).status).toBe(400);
     await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/depot").send({ decision: "VALIDER", motif: "Photo ok" }));
-    expect(SurveillanceCoursesService.deciderDepot).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, decision: "VALIDER", motif: "Photo ok", rembourser: true, suspendre: true });
+    expect(SurveillanceCoursesService.deciderDepot).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, decision: "VALIDER", motif: "Photo ok", rembourser: true, suspendre: false });
     audit("VALIDATE_DELIVERY_DEPOSIT", "c1", { driverId: "dr1", orderId: "o1", avant: { payoutHold: "REVIEW" }, apres: { payoutHold: null }, motif: "Photo ok", dejaSurUnReleve: false });
     await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/depot").send({ decision: "REFUSER", motif: "Faux" }));
     expect(db.systemAuditLog.create).toHaveBeenLastCalledWith({ data: expect.objectContaining({ action: "REFUSE_DELIVERY_DEPOSIT", changes: expect.objectContaining({ apres: { payoutHold: "REFUSED" } }) }) });

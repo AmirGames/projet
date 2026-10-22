@@ -1337,6 +1337,14 @@ model Courier {
   vehiclePlate    String?
   licensePlate    String?   // Alias for vehiclePlate
 
+  /// Numéro d'entreprise soumis lors de l'inscription; vérification BCE humaine requise.
+  bceNumber       String?
+  /// NOT_SUBMITTED, PENDING, VERIFIED, REJECTED. Le checksum seul ne valide pas le dossier.
+  bceStatus       String    @default("NOT_SUBMITTED")
+  bceReviewedAt   DateTime?
+  bceReviewedBy   String?
+  bceReviewReason String?
+
   // Location
   latitude        Float?
   longitude       Float?
@@ -1406,6 +1414,7 @@ model Courier {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([bceStatus])
   @@index([isOnline])
   @@index([userId])
 
@@ -1768,7 +1777,7 @@ model DeliveryOffer {
   deliveryId  String
   driverId    String
 
-  status      String    @default("PENDING") // PENDING, ACCEPTED, DECLINED, EXPIRED, CANCELLED
+  status      String    @default("PENDING") // PENDING, ACCEPTED, DECLINED, EXPIRED, CANCELLED, UNAVAILABLE_DURING_PAUSE
 
   // Ce que le livreur voit avant d'accepter.
   distanceKm  Float?
@@ -1778,9 +1787,10 @@ model DeliveryOffer {
   expiresAt   DateTime
   respondedAt DateTime?
 
-  /// Combien de fois cette course a été proposée à ce livreur. Après un refus
-  /// ou une expiration, elle peut lui revenir au tour suivant, dans la limite
-  /// de quelques sollicitations : au-delà, ce serait du harcèlement.
+  /// Combien de fois cette course a été proposée à ce livreur. Après une
+  /// expiration sans réponse, elle peut lui revenir au tour suivant,
+  /// dans la limite de quelques sollicitations. Un refus explicite clôt la
+  /// proposition pour ce livreur. Une pause utilise UNAVAILABLE_DURING_PAUSE.
   attempts    Int       @default(1)
 
   /// Courses proposées ensemble au même livreur (un lot) : elles s'acceptent

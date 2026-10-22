@@ -120,6 +120,7 @@ const livreur = await appeler('/api/drivers/register', {
     email: `d-${uniq}@t.fr`,
     password: MDP,
     phone: '0611111111',
+    bceNumber: '0123456749',
     vehicleType: 'scooter',
     vehiclePlate: 'AB-123-CD',
   },

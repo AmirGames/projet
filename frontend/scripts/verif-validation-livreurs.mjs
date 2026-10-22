@@ -71,6 +71,7 @@ const inscription = await appeler('/api/drivers/register', {
     email: emailLivreur,
     password: MDP,
     phone: '0611111111',
+    bceNumber: '0123456749',
     vehicleType: 'scooter',
     vehiclePlate: 'AB-123-CD',
   },

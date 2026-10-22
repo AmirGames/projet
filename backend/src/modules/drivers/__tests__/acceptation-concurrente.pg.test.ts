@@ -52,7 +52,7 @@ beforeAll(async () => {
   orgId = org.id;
   await db.store.create({ data: { orgId, name: "Boutique", slug: `${unique}-s` } });
   const courier = await db.courier.create({
-    data: { name: "Livreur", email: `l-${unique}@example.test`, phone: "0470000001", vehicleType: "bike", status: "ACTIVE" },
+    data: { name: "Livreur", email: `l-${unique}@example.test`, phone: "0470000001", vehicleType: "bike", status: "ACTIVE", bceNumber: "0123456749", bceStatus: "VERIFIED" },
   });
   courierId = courier.id;
 });

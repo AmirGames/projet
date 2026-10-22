@@ -79,12 +79,13 @@ function livreurs({ libres = [], bientot = [] }: { libres?: any[]; bientot?: any
 beforeEach(() => {
   jest.clearAllMocks();
   db.systemConfig.findFirst.mockResolvedValue(null);
+  db.courier.findUnique.mockResolvedValue({ isOnline: true, pausedUntil: null });
   db.deliveryOffer.findFirst.mockResolvedValue(null);
   db.orderDelivery.findMany.mockResolvedValue([]);
   db.orderDelivery.count.mockResolvedValue(0);
   db.deliveryOffer.upsert.mockImplementation(async ({ create }: any) => ({ id: "offre-2", expiresAt: new Date(Date.now() + 30000), ...create }));
   db.$transaction.mockImplementation(async (cb: any) => cb(tx));
-  tx.courier.findUnique.mockResolvedValue({ status: "ACTIVE" });
+  tx.courier.findUnique.mockResolvedValue({ status: "ACTIVE", bceStatus: "VERIFIED" });
   tx.orderDelivery.count.mockResolvedValue(1);
   tx.orderDelivery.updateMany.mockResolvedValue({ count: 1 });
   tx.deliveryOffer.updateMany.mockResolvedValue({ count: 1 });
@@ -253,7 +254,7 @@ describe("réservation et activation", () => {
   it("libérée, la course réservée lui est attribuée et le client est prévenu", async () => {
     db.orderDelivery.count.mockResolvedValue(0);
     db.orderDelivery.findFirst.mockResolvedValue({ id: "course-2", orderId: "cmd-2", order: { status: "PREPARING" } });
-    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", isOnline: true });
+    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", bceStatus: "VERIFIED", isOnline: true });
 
     const id = await DispatchService.activerReservation("sophie");
 
@@ -288,7 +289,7 @@ describe("réservation et activation", () => {
   it("commande annulée entre-temps : la réservation tombe, personne n'est assigné", async () => {
     db.orderDelivery.count.mockResolvedValue(0);
     db.orderDelivery.findFirst.mockResolvedValue({ id: "course-2", orderId: "cmd-2", order: { status: "CANCELLED" } });
-    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", isOnline: true });
+    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", bceStatus: "VERIFIED", isOnline: true });
 
     expect(await DispatchService.activerReservation("sophie")).toBeNull();
     expect(db.orderDelivery.updateMany).toHaveBeenCalledWith(
@@ -300,7 +301,7 @@ describe("réservation et activation", () => {
   it("livreur hors ligne en se libérant : la réservation tombe, la course repart en recherche", async () => {
     db.orderDelivery.count.mockResolvedValue(0);
     db.orderDelivery.findFirst.mockResolvedValue({ id: "course-2", orderId: "cmd-2", order: { status: "PREPARING" } });
-    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", isOnline: false });
+    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", bceStatus: "VERIFIED", isOnline: false });
 
     expect(await DispatchService.activerReservation("sophie")).toBeNull();
     expect(db.$transaction).not.toHaveBeenCalled();
@@ -309,7 +310,7 @@ describe("réservation et activation", () => {
   it("une attribution déjà faite n'est pas refaite (idempotent)", async () => {
     db.orderDelivery.count.mockResolvedValue(0);
     db.orderDelivery.findFirst.mockResolvedValue({ id: "course-2", orderId: "cmd-2", order: { status: "PREPARING" } });
-    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", isOnline: true });
+    db.courier.findUnique.mockResolvedValue({ status: "ACTIVE", bceStatus: "VERIFIED", isOnline: true });
     tx.orderDelivery.updateMany.mockResolvedValue({ count: 0 });
 
     expect(await DispatchService.activerReservation("sophie")).toBeNull();
@@ -324,6 +325,24 @@ describe("réservation et activation", () => {
     await DispatchService.liberer("sophie");
 
     expect(db.courier.update).toHaveBeenCalledWith({ where: { id: "sophie" }, data: { currentOrderId: null, isAvailable: true } });
+    expect(activer).toHaveBeenCalledWith("sophie");
+  });
+
+  it("liberer efface la dernière position si le livreur s'est déconnecté pendant sa course", async () => {
+    const activer = jest.spyOn(DispatchService, "activerReservation").mockResolvedValue(null);
+    jest.spyOn(DispatchService, "coursesActives").mockResolvedValue([]);
+    db.courier.findUnique.mockResolvedValue({ isOnline: false, pausedUntil: null });
+
+    await DispatchService.liberer("sophie");
+
+    expect(db.courier.update).toHaveBeenCalledWith({ where: { id: "sophie" }, data: {
+      currentOrderId: null,
+      isAvailable: false,
+      latitude: null,
+      longitude: null,
+      lastLocationUpdate: null,
+      gpsLostAt: null,
+    } });
     expect(activer).toHaveBeenCalledWith("sophie");
   });
 

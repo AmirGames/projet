@@ -235,6 +235,7 @@ class ApiClient {
     email: string;
     password: string;
     phone: string;
+    bceNumber: string;
     vehicleType: string;
     vehiclePlate: string;
   }): Promise<AuthResponse> {

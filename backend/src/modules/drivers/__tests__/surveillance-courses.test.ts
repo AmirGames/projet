@@ -459,14 +459,14 @@ describe("SurveillanceCoursesService", () => {
     });
   });
 
-  describe("course échouée : remboursement et suspension", () => {
+  describe("course échouée : remboursement et suspension explicite", () => {
     beforeEach(() => {
       db.orderDelivery.findUnique.mockResolvedValue(ligne({ status: "PICKED_UP", pickupTime: new Date() }));
       db.courier.findUnique.mockResolvedValue({ status: "ACTIVE" });
       db.orderDelivery.findMany.mockResolvedValue([]);
     });
 
-    it("rembourse le client payé en ligne et suspend le livreur, par défaut", async () => {
+    it("rembourse par défaut sans suspendre le compte", async () => {
       db.order.findUnique.mockResolvedValue({ paymentStatus: "SUCCEEDED" });
 
       const resultat = await SurveillanceCoursesService.declarerEchec("course-1", {
@@ -475,8 +475,8 @@ describe("SurveillanceCoursesService", () => {
       });
 
       expect(paymentService.rembourserCommande).toHaveBeenCalledWith("commande-abcdef", expect.stringContaining("Parti"));
-      expect(DriverApprovalService.ecarter).toHaveBeenCalledWith("livreur-1", "SUSPENDED", expect.any(String), "admin");
-      expect(resultat).toMatchObject({ remboursement: "REMBOURSEE", suspendu: true });
+      expect(DriverApprovalService.ecarter).not.toHaveBeenCalled();
+      expect(resultat).toMatchObject({ remboursement: "REMBOURSEE", suspendu: false });
     });
 
     it("ne rembourse pas une commande sans paiement en ligne, ni deux fois", async () => {
@@ -512,7 +512,7 @@ describe("SurveillanceCoursesService", () => {
       db.order.findUnique.mockResolvedValue({ paymentStatus: "PENDING" });
       db.orderDelivery.findMany.mockResolvedValue([{ id: "course-2" }]);
       const retirer = jest.spyOn(SurveillanceCoursesService, "retirerCourse").mockResolvedValue(null);
-      const resultat = await SurveillanceCoursesService.declarerEchec("course-1", { par: { userId: "a" }, motif: "xxx" });
+      const resultat = await SurveillanceCoursesService.declarerEchec("course-1", { par: { userId: "a" }, motif: "xxx", suspendre: true });
       expect(retirer).toHaveBeenCalledWith("course-2", expect.objectContaining({ motif: "Livreur suspendu par la plateforme" }));
       expect(resultat.coursesRetirees).toBe(1);
       retirer.mockRestore();
@@ -625,7 +625,7 @@ describe("SurveillanceCoursesService", () => {
       );
     });
 
-    it("refusé : jamais payée, commande annulée, client remboursé, livreur suspendu", async () => {
+    it("refusé : jamais payée, commande annulée et client remboursé, sans suspension automatique", async () => {
       db.orderDelivery.findUnique.mockResolvedValue(livree({ payoutHold: "REVIEW" }));
       db.deliveryIncident.count.mockResolvedValue(1);
       tx.deliveryIncident.updateMany.mockResolvedValue({ count: 1 });
@@ -650,7 +650,8 @@ describe("SurveillanceCoursesService", () => {
         where: { id: "livreur-1" },
         data: { totalDeliveries: { decrement: 1 }, totalEarnings: { decrement: 6.5 } },
       });
-      expect(resultat).toMatchObject({ remboursement: "REMBOURSEE", suspendu: true });
+      expect(resultat).toMatchObject({ remboursement: "REMBOURSEE", suspendu: false });
+      expect(DriverApprovalService.ecarter).not.toHaveBeenCalled();
     });
 
     it("ne tranche pas deux fois", async () => {

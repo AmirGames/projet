@@ -58,6 +58,7 @@ export default function SignupScreen({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [bceNumber, setBceNumber] = useState('');
   const [vehicleType, setVehicleType] = useState<(typeof VEHICULES)[number]['valeur']>('bike');
   const [vehiclePlate, setVehiclePlate] = useState('');
   const [accepted, setAccepted] = useState(false);
@@ -73,6 +74,7 @@ export default function SignupScreen({
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Adresse e-mail invalide.');
     if (!motDePasseValide(password)) return setError(MESSAGE_MOT_DE_PASSE);
     if (phone.replace(/\D/g, '').length < 9) return setError('Numéro de téléphone invalide.');
+    if (!bceNumber.trim()) return setError('Indiquez votre numéro d’entreprise BCE.');
     if (motorise && !vehiclePlate.trim()) return setError('Indiquez la plaque d’immatriculation.');
     if (!accepted) return setError('Acceptez les conditions pour continuer.');
 
@@ -87,6 +89,7 @@ export default function SignupScreen({
           email: email.trim().toLowerCase(),
           password,
           phone: telephoneInternational(phone, pays),
+          bceNumber: bceNumber.trim(),
           vehicleType,
           vehiclePlate: motorise ? vehiclePlate.trim().toUpperCase() : undefined,
         }),
@@ -212,6 +215,21 @@ export default function SignupScreen({
           editable={!sending}
         />
 
+        <Text style={styles.label}>Numéro d’entreprise BCE (obligatoire)</Text>
+        <TextInput
+          style={styles.input}
+          value={bceNumber}
+          onChangeText={setBceNumber}
+          keyboardType="number-pad"
+          autoCapitalize="characters"
+          placeholder="0123.456.749"
+          placeholderTextColor={COLORS.muted}
+          editable={!sending}
+        />
+        <Text style={styles.hint}>
+          Le format sera vérifié à l’inscription. Avant l’activation, ZupEat vérifiera manuellement l’inscription dans la BCE.
+        </Text>
+
         <Text style={styles.label}>Véhicule</Text>
         <View style={styles.chips}>
           {VEHICULES.map((v) => (
@@ -280,6 +298,7 @@ const styles = themedStyles(() => ({
     fontSize: 14,
   },
   label: { fontSize: 14, color: COLORS.onHeader, opacity: 0.9, marginBottom: 6, fontWeight: '600' },
+  hint: { fontSize: 12, lineHeight: 17, color: COLORS.onHeader, opacity: 0.75, marginTop: -8, marginBottom: 14 },
   input: {
     backgroundColor: COLORS.raised,
     borderRadius: 10,

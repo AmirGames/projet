@@ -22,6 +22,9 @@ export interface Driver {
   licensePlate?: string | null;
   status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED' | 'INACTIVE' | string;
   statusReason?: string | null;
+  bceNumber?: string | null;
+  bceStatus?: 'NOT_SUBMITTED' | 'PENDING' | 'VERIFIED' | 'REJECTED' | string;
+  bceReviewReason?: string | null;
   pausedUntil?: string | null;
   pauseReason?: string | null;
   gpsLostAt?: string | null;
@@ -36,6 +39,8 @@ export interface Offer {
   /** Chemin du livreur jusqu'au commerce. */
   approcheKm?: number | null;
   payout: number;
+  /** Pourboire déjà attribué, compris dans `payout`. */
+  pourboire?: number;
   expiresAt: string;
   pickupStore?: string | null;
   pickupAddress?: string | null;

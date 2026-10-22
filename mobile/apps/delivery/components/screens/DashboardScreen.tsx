@@ -7,7 +7,6 @@ import { COLORS, themedStyles } from '../ui';
 
 
 const PAUSE_DURATIONS = [15, 30, 60];
-const PAUSE_REASONS = ['Repas', 'Pause café', 'Plein / recharge', 'Problème véhicule', 'Autre'];
 
 export interface EarningsSummary {
   today: number;
@@ -47,7 +46,6 @@ function PauseCard({
   onDriverChange: (patch: Partial<Driver>) => void;
   now: number;
 }) {
-  const [reason, setReason] = useState(PAUSE_REASONS[0]);
   const [busy, setBusy] = useState(false);
   const end = driver.pausedUntil ? new Date(driver.pausedUntil).getTime() : null;
   const paused = end != null && end > now;
@@ -72,7 +70,7 @@ function PauseCard({
     const left = Math.max(0, Math.ceil((end! - now) / 1000));
     return (
       <View style={[styles.card, styles.pauseActive]}>
-        <Text style={styles.cardTitle}>☕ En pause{driver.pauseReason ? ` · ${driver.pauseReason}` : ''}</Text>
+        <Text style={styles.cardTitle}>☕ En pause</Text>
         <Text style={styles.pauseTimer}>
           {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
         </Text>
@@ -87,20 +85,13 @@ function PauseCard({
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Faire une pause</Text>
-      <View style={styles.chips}>
-        {PAUSE_REASONS.map((r) => (
-          <TouchableOpacity key={r} style={[styles.chip, reason === r && styles.chipActive]} onPress={() => setReason(r)}>
-            <Text style={[styles.chipText, reason === r && styles.chipTextActive]}>{r}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
       <View style={styles.pauseDurations}>
         {PAUSE_DURATIONS.map((m) => (
           <TouchableOpacity
             key={m}
             style={styles.pauseButton}
             disabled={busy}
-            onPress={() => call('POST', { minutes: m, reason })}
+            onPress={() => call('POST', { minutes: m })}
           >
             <Text style={styles.pauseButtonText}>{m} min</Text>
           </TouchableOpacity>
@@ -126,6 +117,7 @@ export default function DashboardScreen({
   onDriverChange,
   onSeeEarnings,
   onSeeAccount,
+  onContactSupport,
 }: {
   header: React.ReactNode;
   token: string;
@@ -142,6 +134,7 @@ export default function DashboardScreen({
   onDriverChange: (patch: Partial<Driver>) => void;
   onSeeEarnings: () => void;
   onSeeAccount: () => void;
+  onContactSupport: () => void;
 }) {
   // Les comptes à rebours des propositions et de la pause avancent à la
   // seconde, mais seulement quand il y en a un : sans rien à décompter,
@@ -182,21 +175,28 @@ export default function DashboardScreen({
         </Text>
 
         {driver && !approved && (
-          <TouchableOpacity style={styles.alert} onPress={onSeeAccount} activeOpacity={0.85}>
-            <Text style={styles.alertIcon}>{driver.status === 'PENDING' ? '📄' : '⚠️'}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.alertTitle}>
-                {driver.status === 'PENDING' ? 'Dossier en cours de validation' : 'Compte inactif'}
-              </Text>
-              <Text style={styles.alertText}>
-                {driver.statusReason ||
-                  (driver.status === 'PENDING'
-                    ? 'Vous pourrez vous mettre en ligne dès que la plateforme aura validé vos pièces.'
-                    : 'Contactez le support pour plus d’informations.')}
-              </Text>
-            </View>
-            <Text style={styles.alertAction}>Voir ›</Text>
-          </TouchableOpacity>
+          <View>
+            <TouchableOpacity style={styles.alert} onPress={onSeeAccount} activeOpacity={0.85}>
+              <Text style={styles.alertIcon}>{driver.status === 'PENDING' ? '📄' : '⚠️'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertTitle}>
+                  {driver.status === 'PENDING' ? 'Dossier en cours de validation' : 'Compte inactif'}
+                </Text>
+                <Text style={styles.alertText}>
+                  {driver.statusReason ||
+                    (driver.status === 'PENDING'
+                      ? 'Vous pourrez vous mettre en ligne dès que la plateforme aura validé vos pièces.'
+                      : 'Consultez le motif et contactez le support si vous souhaitez le contester.')}
+                </Text>
+              </View>
+              <Text style={styles.alertAction}>Voir ›</Text>
+            </TouchableOpacity>
+            {driver.status !== 'PENDING' && (
+              <TouchableOpacity style={styles.supportAction} onPress={onContactSupport} activeOpacity={0.85}>
+                <Text style={styles.supportActionText}>Contester ou demander un réexamen auprès du support</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         <View style={[styles.onlineCard, online && styles.onlineCardOn]}>
@@ -337,6 +337,8 @@ const styles = themedStyles(() => ({
   alertTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
   alertText: { fontSize: 13, color: COLORS.secondary, marginTop: 2 },
   alertAction: { fontSize: 15, fontWeight: '700', color: COLORS.link },
+  supportAction: { alignSelf: 'flex-end', paddingHorizontal: 8, paddingVertical: 10 },
+  supportActionText: { color: COLORS.link, fontSize: 13, fontWeight: '700' },
   onlineCard: {
     flexDirection: 'row',
     alignItems: 'center',

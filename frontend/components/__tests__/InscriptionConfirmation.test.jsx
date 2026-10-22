@@ -77,6 +77,8 @@ it('livreur web : affiche la confirmation, sans stocker des jetons absents', asy
   changer(container.querySelector('[type="text"]'), 'Livreur test');
   changer(container.querySelector('[type="email"]'), 'livreur@example.test');
   changer(container.querySelector('[type="tel"]'), '0470123456');
+  changer(screen.getByPlaceholderText('0123.456.749'), '0123456749');
+  changer(screen.getByPlaceholderText('0123.456.749'), '0123456749');
   changer(container.querySelector('[type="password"]'), 'MotDePasse123!');
   fireEvent.click(container.querySelector('[type="checkbox"]'));
   fireEvent.submit(container.querySelector('form'));
@@ -96,6 +98,7 @@ it('livreur mobile : reste déconnecté et propose le retour à la connexion apr
   changer(screen.getByPlaceholderText('vous@exemple.fr'), 'livreur@example.test');
   changer(container.querySelector('[type="password"]'), 'MotDePasse123!');
   changer(screen.getByPlaceholderText('06 12 34 56 78'), '0612345678');
+  changer(screen.getByPlaceholderText('0123.456.749'), '0123456749');
   fireEvent.click(screen.getByRole('checkbox'));
   fireEvent.click(screen.getByText('Créer mon compte'));
   await waitFor(() => expect(screen.getByText('Vérifiez votre e-mail')).toBeTruthy());

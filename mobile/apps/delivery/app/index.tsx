@@ -55,6 +55,7 @@ export default function DeliveryApp() {
   // Écran de connexion ou d'inscription, tant que personne n'est connecté.
   const [signingUp, setSigningUp] = useState(false);
   const [driver, setDriver] = useState<Driver | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [earnings, setEarnings] = useState<EarningsSummary | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [activeDeliveries, setActiveDeliveries] = useState<Delivery[]>([]);
@@ -179,6 +180,15 @@ export default function DeliveryApp() {
       clearOutbox().then(clearOfflineStore);
     }
     const current = sessionRef.current;
+    // À la déconnexion volontaire, faire aussi tomber l'état de disponibilité
+    // côté serveur. La mission déjà acceptée reste attribuée; le serveur garde
+    // ses coordonnées de course jusqu'à sa fin, mais ne proposera plus d'offre.
+    if (forget && current) {
+      apiFetch('/api/drivers/availability', current.accessToken, {
+        method: 'PATCH',
+        body: { isOnline: false },
+      }).catch(() => undefined);
+    }
     if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
     pushTokenRef.current = null;
     setPushSetup(null);
@@ -296,6 +306,12 @@ export default function DeliveryApp() {
     .map((d) => withPendingSteps(d, outbox.pending))
     .filter((d) => d.status !== 'DELIVERED');
 
+  useEffect(() => {
+    if (!driver?.pausedUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [driver?.pausedUntil]);
+
   const singleId = visibleDeliveries.length === 1 ? visibleDeliveries[0].id : null;
   // Ajustements d'état pendant le rendu, sans effet : une course seule se sélectionne d'elle-même ;
   // ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
@@ -327,7 +343,17 @@ export default function DeliveryApp() {
   // Profil pas encore chargé : on ne coupe pas le suivi en arrière-plan d'un
   // livreur resté en ligne, application fermée.
   const dutyMode: DutyMode =
-    visibleDeliveries.length > 0 ? 'delivery' : driver ? (driver.isOnline ? 'idle' : 'off') : token ? 'loading' : 'off';
+    visibleDeliveries.length > 0
+      ? 'delivery'
+      : driver
+        ? driver.pausedUntil && new Date(driver.pausedUntil).getTime() > now
+          ? 'paused'
+          : driver.isOnline
+            ? 'idle'
+            : 'off'
+        : token
+          ? 'loading'
+          : 'off';
   const { position, gps, background } = useDriverLocation(token, dutyMode, tracking);
 
   useEffect(() => {
@@ -826,6 +852,7 @@ export default function DeliveryApp() {
         onDriverChange={patchDriver}
         onSeeEarnings={() => setTab('earnings')}
         onSeeAccount={() => setTab('account')}
+        onContactSupport={() => setTab('support')}
       />
     );
   };

@@ -48,6 +48,10 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
         vehicleType: dossier.vehicleType,
         vehiclePlate: dossier.vehiclePlate,
         status: dossier.status,
+        bceNumber: dossier.bceNumber,
+        bceStatus: dossier.bceStatus,
+        bceReviewedAt: dossier.bceReviewedAt,
+        bceReviewReason: dossier.bceReviewReason,
         statusReason: dossier.statusReason,
         approvedAt: dossier.approvedAt,
         isOnline: dossier.isOnline,
@@ -76,6 +80,30 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
       piecesManquantes: dossier.piecesManquantes,
       dossierComplet: dossier.dossierComplet,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /superowner/drivers/:driverId/bce - décision humaine après consultation du registre BCE
+router.patch("/drivers/:driverId/bce", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = z.object({
+      status: z.enum(["VERIFIED", "REJECTED"]),
+      reason: z.string().max(500).optional(),
+    }).parse(req.body);
+    const livreur = await DriverApprovalService.examinerBce(
+      req.params.driverId as string,
+      req.userId as string,
+      body
+    );
+
+    await journaliser(req, body.status === "VERIFIED" ? "VERIFY_DRIVER_BCE" : "REJECT_DRIVER_BCE", livreur.id, {
+      status: body.status,
+      reason: body.status === "REJECTED" ? body.reason : undefined,
+    });
+
+    res.json({ success: true, bceStatus: livreur.bceStatus, bceReviewedAt: livreur.bceReviewedAt });
   } catch (err) {
     next(err);
   }
