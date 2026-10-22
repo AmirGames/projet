@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 15341)
-Total output lines: 1519
-
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
@@ -712,7 +709,122 @@ export class DispatchService {
    *
    * Dans l'ordre : le livreur désigné par le commerçant ; un livreur déjà en
    * course qui passe par là (« + 1 course sur votre trajet ») ; sinon le
-   * livreur libre le plus proch…1341 tokens truncated…choisi);
+   * livreur libre le plus proche, avec, s'il y en a, les autres commandes
+   * qui attendent et vont au même endroit (un lot de trois au plus).
+   *
+   * Renvoie la proposition créée, ou null quand personne ne reste : au
+   * commerçant de relancer plus tard, quand d'autres livreurs seront en ligne.
+   */
+  static async proposerAuSuivant(deliveryId: string, livreurPrefere?: string) {
+    const course = await db.orderDelivery.findUnique({
+      where: { id: deliveryId },
+      include: COURSE_A_PROPOSER,
+    });
+
+    if (!course) {
+      throw new ApiError(404, "Course introuvable", "DELIVERY_NOT_FOUND");
+    }
+
+    // Réservée par un livreur qui termine sa livraison : elle lui revient.
+    if (course.driverId || course.reservedDriverId) return null;
+
+    const retrait = { latitude: course.pickupLat, longitude: course.pickupLng };
+
+    if (!estUnPoint(retrait)) {
+      throw new ApiError(
+        400,
+        "La boutique n'a pas de coordonnées : impossible de chercher un livreur",
+        "STORE_WITHOUT_LOCATION"
+      );
+    }
+
+    // Une proposition encore ouverte bloque la suivante : deux livreurs ne
+    // doivent pas pouvoir accepter la même course.
+    const enCours = await db.deliveryOffer.findFirst({
+      where: { deliveryId, status: "PENDING", expiresAt: { gt: new Date() } },
+    });
+
+    if (enCours) return enCours;
+
+    const reglages = await this.reglages();
+    const maintenant = Date.now();
+    const disponibles = await this.livreursEligibles(retrait, reglages);
+
+    const sollicitable = (c: { offers: Sollicitation[] }, driverId: string) => {
+      const offre = c.offers.find((o) => o.driverId === driverId);
+      if (!offre) return true;
+      const libre = libreA(offre, maintenant);
+      return libre != null && libre <= maintenant;
+    };
+    const candidats = disponibles.filter((c) => sollicitable(course, c.id));
+
+    // Le choix manuel du commerçant reste une proposition, jamais une
+    // attribution. Il suit les mêmes règles que le dispatch : un refus
+    // explicite, une offre ouverte, le délai de relance et son plafond ne sont
+    // pas contournés.
+    const prefere = livreurPrefere
+      ? candidats.find((c) => c.id === livreurPrefere)
+      : undefined;
+
+    // Un livreur déjà en course passe par là : la course s'ajoute à sa
+    // tournée plutôt que de mobiliser un livreur de plus.
+    //
+    // Ceux qui terminent leur livraison sont classés avec les livreurs libres
+    // (plus bas) selon leur arrivée au commerce. Ils ne sont pas proposés en
+    // « +1 course » : à la porte de leur client, partir d'abord chercher une
+    // autre commande ferait attendre celui qu'ils ont en main. Ils prennent la
+    // course à enchaîner, après sa remise.
+    const toutBientotLibres = await this.livreursBientotLibres(retrait, reglages, maintenant);
+    const bientotLibres = toutBientotLibres.filter((l) => sollicitable(course, l.id));
+    const presDeLaFin = new Set(toutBientotLibres.map((l) => l.id));
+    const toutesTournees = (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => !presDeLaFin.has(l.id));
+    const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
+
+    // Le véhicule couvre-t-il le trajet commerce → client ? (vehicule-distance.service.ts)
+    const trajet = trajetDe(course);
+    const adapte = (l: { vehicleType: string }) => peutLivrer(l.vehicleType, trajet, reglages);
+
+    // Les livreurs hors limite (un vélo pour 6 km) ne reçoivent la course
+    // qu'à défaut : aucun livreur adapté dans le secteur, ou une recherche
+    // qui dure. Ils acceptent ou refusent en connaissance de la distance.
+    const ouverte = exceptionOuverte({
+      aucunLivreurAdapte: !disponibles.some(adapte) && !toutesTournees.some(adapte) && !toutBientotLibres.some(adapte),
+      rechercheDepuis: course.createdAt,
+      maintenant,
+      limites: reglages,
+    });
+
+    if (prefere && !adapte(prefere) && !ouverte) {
+      const limite = limiteVehiculeKm(prefere.vehicleType, reglages);
+      throw new ApiError(
+        409,
+        `Ce livreur ne livre pas au-delà de ${limite.toFixed(1).replace(".", ",")} km avec son véhicule, et cette course fait ${(trajet ?? 0).toFixed(1).replace(".", ",")} km. Choisissez un livreur avec un véhicule plus adapté.`,
+        "VEHICLE_TOO_LIMITED"
+      );
+    }
+
+    // Les véhicules adaptés d'abord (en tournée, puis les livreurs libres et
+    // ceux qui se libèrent, classés par heure d'arrivée au commerce : à
+    // égalité, le livreur déjà libre), les autres seulement une fois
+    // l'exception ouverte.
+    const arrivee = (l: { distance: number; vehicleType: string; libreDansSecondes?: number }) =>
+      secondesAvantRetrait(l.distance, l.libreDansSecondes ?? 0, l.vehicleType);
+    const libresOuBientot = [
+      ...candidats.map((l) => Object.assign(l, { libreDansSecondes: 0 })),
+      ...bientotLibres,
+    ].sort((a, b) => arrivee(a) - arrivee(b) || a.libreDansSecondes - b.libreDansSecondes);
+    const ordre = [...enTournee, ...libresOuBientot];
+    const choisi = prefere || ordre.find(adapte) || (ouverte ? ordre[0] : undefined);
+
+    if (!choisi) {
+      logger.info("Aucun livreur disponible pour la course", {
+        deliveryId,
+        aPortee: disponibles.length,
+      });
+      return null;
+    }
+
+    const ajout = !prefere && (enTournee as unknown[]).includes(choisi);
     const bientotLibre = bientotLibres.find((l) => l === choisi) ?? null;
     const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
 
