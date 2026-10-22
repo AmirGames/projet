@@ -14,6 +14,8 @@ jest.mock("../../notifications/notifier.service", () => ({
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
 import { DispatchService } from "../dispatch.service";
+import { REGLES_TOURNEE_PAR_DEFAUT } from "../tournee.service";
+import { REGLES_BIENTOT_LIBRE_PAR_DEFAUT } from "../livreur-bientot-libre.service";
 
 // Commerce à Paris ; client ~5,6 km au nord : trop loin pour un vélo (4 km),
 // dans la limite d'un scooter (7 km) et d'une voiture (8 km).
@@ -62,6 +64,33 @@ beforeEach(() => {
 const proposeA = () => db.deliveryOffer.upsert.mock.calls[0]?.[0]?.create;
 
 describe("distance de livraison selon le véhicule (attribution)", () => {
+  it("les incidents ouverts d'une course ne filtrent pas les offres futures de tournée", async () => {
+    db.courier.findMany.mockResolvedValue([]);
+    const coursier = {
+      id: "course-1",
+      status: "PENDING",
+      pickupLat: COMMERCE.latitude,
+      pickupLng: COMMERCE.longitude,
+      deliveryLat: CLIENT.latitude,
+      deliveryLng: CLIENT.longitude,
+    };
+
+    await DispatchService.livreursEnTournee(coursier, REGLES_TOURNEE_PAR_DEFAUT);
+    await DispatchService.livreursBientotLibres(COMMERCE, {
+      ...{
+        baseFee: 2.5, perKmFee: 0.8, offerSeconds: 30, maxRadiusKm: 8,
+        bikeMaxKm: 4, scooterMaxKm: 7, exceptionSeconds: 1800,
+        tournee: REGLES_TOURNEE_PAR_DEFAUT,
+      },
+      bientotLibre: REGLES_BIENTOT_LIBRE_PAR_DEFAUT,
+    }, Date.now());
+
+    expect(db.courier.findMany).toHaveBeenCalledTimes(2);
+    for (const [args] of db.courier.findMany.mock.calls) {
+      expect(args.where).not.toHaveProperty("deliveryIncidents");
+    }
+  });
+
   it("une course de 5,6 km va au scooter plutôt qu'au vélo, même plus proche", async () => {
     db.orderDelivery.findUnique.mockResolvedValue(course());
     livreursEnLigne([livreur("velo", "bike", 0.0005), livreur("scooter", "scooter", 0.003)]);

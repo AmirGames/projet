@@ -5,6 +5,7 @@
 - `backend/src/modules/drivers/__tests__/dispatch-vehicule.test.ts`: un refus explicite antérieur ne génère pas une nouvelle proposition, y compris après 10 minutes et lorsque le commerçant nomme ce livreur; le dispatch propose un autre candidat admissible.
 - `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: l'API des propositions expose le pourboire déjà attribué séparément du montant total (montant dans lequel il reste compris).
 - `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: la liste et le détail d'une proposition ne révèlent que la ville et le code postal avant acceptation, pas la rue du client.
+- `backend/src/modules/drivers/__tests__/dispatch-vehicule.test.ts`: les incidents ouverts d'une course n'excluent plus le livreur des nouvelles offres de tournée.
 - `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: la route du fil support ne sélectionne plus les coordonnées GPS du profil.
 - `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: un échec de livraison rembourse par défaut mais ne suspend plus automatiquement le compte; l'opérateur peut demander explicitement la suspension.
 - `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: la route de pause ne demande ni ne transmet de motif personnel.
