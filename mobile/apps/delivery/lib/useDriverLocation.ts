@@ -143,7 +143,14 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
   useEffect(() => {
     if (profile === 'loading') return;
     if (profile === 'off') {
-      // Les états gps et background se lisent « off » à la sortie (voir plus bas) : rien à y remettre.
+      // Arrêter la collecte et effacer la dernière position tenue en mémoire
+      // dès la déconnexion ou la pause. Le serveur refuse aussi les envois
+      // tardifs, mais l'écran ne doit pas conserver une position inactive.
+      latest.current = null;
+      setPosition(null);
+      setNear(false);
+      setGps('off');
+      setBackground('off');
       stopBackgroundLocation();
       return;
     }
