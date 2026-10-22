@@ -30,7 +30,7 @@ Références officielles et consolidées figurent dans le [rapport d'audit](../a
 
 ## À auditer avant ouverture commerciale
 
-Parcours complet de refus/relance, consentement aux relances, durée de réponse, lots et itinéraire, tarification sans contre-proposition (choix commercial confirmé le 22 octobre 2026, à évaluer juridiquement), pourboires/reversements, suspensions/recours humains, notes/incidents, GPS en arrière-plan et conservation, droits RGPD, remplacement, assurances, vérification effective BCE (activité, identité du titulaire et adéquation des activités), accès aux justificatifs, opérateurs et paramétrage réel. L'application conserve aussi un choix de pays France : définir avant lancement comment traiter les entreprises étrangères et leurs identifiants équivalents; l'obligation d'un numéro BCE à tous est la règle choisie pour cette phase de test.
+Parcours complet de refus/relance, consentement aux relances, durée de réponse, lots et itinéraire, tarification sans contre-proposition (choix confirmé le 22 octobre 2026, à évaluer juridiquement), pourboires/reversements, suspensions/recours humains, notes/incidents, GPS en arrière-plan et conservation, droits RGPD, absence de remplacement (choix confirmé le 22 octobre 2026, à inclure dans l'avis juridique), assurances, vérification effective BCE (activité, identité du titulaire et adéquation des activités), accès aux justificatifs, opérateurs et paramétrage réel. L'application conserve aussi un choix de pays France : définir avant lancement comment traiter les entreprises étrangères et leurs identifiants équivalents; l'obligation d'un numéro BCE à tous est la règle choisie pour cette phase de test.
 
 ## Limite
 
