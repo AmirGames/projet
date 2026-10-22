@@ -9,7 +9,13 @@
 - `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: la route du fil support ne sélectionne plus les coordonnées GPS du profil.
 - `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: un échec de livraison rembourse par défaut mais ne suspend plus automatiquement le compte; l'opérateur peut demander explicitement la suspension.
 - `backend/src/modules/drivers/__tests__/surveillance-courses.test.ts`: le service ne suspend pas par défaut un livreur après une livraison échouée; le test vérifie aussi le chemin de suspension explicitement demandé.
-- `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: la route de pause ne demande ni ne transmet de motif personnel.
+- `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: la route de pause ne demande ni ne transmet de motif personnel, et une déconnexion hors course efface la dernière position de disponibilité.
+- `backend/src/modules/drivers/__tests__/driver-availability-pause.test.ts`: la pause efface coordonnées et horodatages du profil.
+- `backend/src/modules/drivers/__tests__/dispatch-vehicule.test.ts`: aucune nouvelle position de disponibilité n'est enregistrée hors ligne ou pendant une pause.
+- `backend/src/modules/drivers/__tests__/dispatch-bientot-libre.test.ts`: la position de profil est effacée après une course si le livreur s'était déconnecté pendant la prestation.
+- `backend/src/modules/drivers/__tests__/driver-approval-gps.test.ts`: une restriction de compte efface la position de profil sans course active et préserve le suivi d'une livraison déjà acceptée.
+- `backend/src/modules/drivers/__tests__/driver-bce.test.ts`: le contrôle BCE est une décision humaine datée et rattachée à un opérateur; le refus exige un motif et l'activation échoue avant la vérification.
+- `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts` et `drivers-admin-routes-caracterisation.test.ts`: inscription avec format invalide refusée et décision BCE superowner journalisée.
 
 ## Tests existants pertinents (non exécutés ici)
 
@@ -22,7 +28,7 @@ Ces fichiers ne valident pas tous les scénarios exigés et leur présence ne va
 
 ## Statut d'exécution
 
-Les deux tests mobiles Node sans dépendances (`tests/course-alerts.test.cjs` et `tests/renouvellement.test.cjs`) passent. Les tests Jest backend n'ont pas pu être exécutés faute de dépendances. Les scénarios frontend Playwright n'ont pas démarré faute de module `playwright`. Une installation `npm ci` a été interrompue avant son achèvement. Consulter le statut CI de la PR #237 pour le dernier head; aucun run entièrement réussi n'est revendiqué ici.
+Le CI GitHub run #423 a réussi tous ses jobs (tests backend, typecheck/lint/build, migrations, apps mobiles, MFA, concurrence/authentification et E2E) sur le commit `465efa3071c49c322b32499d0fb98d2cc58c1a0d`. Les tests locaux des suites Jest et Playwright n'ont pas pu démarrer faute de dépendances; les tentatives `npm ci` ont été interrompues. Les nouveaux changements GPS et BCE décrits ici ont été ajoutés après le run #423 et doivent passer un nouveau CI avant validation.
 
 ## Couverture encore requise
 
@@ -38,7 +44,7 @@ La perte GPS sans sanction disciplinaire automatique, l'absence d'impact de plus
 | 04 | Pause, absence d'offres et état distinct | Changement de code; test de service à ajouter |
 | 05 | Refus suivi d'une affectation manuelle | Couvert par le test de dispatch ajouté |
 | 06 | Expiration, délais et plafond avec horloge de test | À ajouter |
-| 07 | GPS selon les états de disponibilité | Changement de code; tests de domaine et appareil à ajouter |
+| 07 | GPS selon les états de disponibilité | Tests backend d'absence d'enregistrement et d'effacement du dernier point ajoutés; tests appareil à ajouter |
 | 08 | Transparence prix, frais, distance, lot et refus | Test de champ pourboire ajouté; couverture complète UI/API à ajouter |
 | 09 | Note faible sans suspension automatique et contestation | À ajouter |
 | 10 | Pourboire payé une seule fois / remboursements associés | Tests financiers existants, non exécutés; scénario bout en bout à confirmer |
@@ -49,6 +55,7 @@ La perte GPS sans sanction disciplinaire automatique, l'absence d'impact de plus
 | 15 | Deux acceptations simultanées pour une course | Test PostgreSQL existant, non exécuté |
 | 16 | Lot complet visible avant acceptation et refus libre | À ajouter |
 | 17 | Rémunération figée malgré un nouveau barème | À confirmer dans les tests existants; non exécuté |
-| 18 | Perte GPS sans sanction disciplinaire | À ajouter |
+| 18 | Perte GPS sans sanction disciplinaire | Le job reste un état opérationnel et ne suspend pas le compte; test de perte GPS et appareil à ajouter |
 | 19 | Remplacement avec identité et permissions distinctes | Fonction non repérée; test après implémentation |
 | 20 | Information et recours contre décision automatisée | À ajouter après définition du workflow |
+| 21 | Numéro BCE avant activation | Format obligatoire, examen superowner journalisé et verrou d'activation ajoutés; exécution Jest/CI requise |
