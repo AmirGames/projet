@@ -74,6 +74,29 @@ La source par défaut est `backend/src/contenus/pages-legales.defaut.ts` (`condi
 | Suspension/contestation | Motif, revue humaine et recours | routes admin non auditées complètement | Non validé |
 | Substitution / assurance | Remplacement nominatif, admissibilité professionnelle | aucun flux de remplacement repéré | Non implémenté; exigences juridiques à établir |
 
+## Résultats techniques synthétiques
+
+| Fonctionnalité | Avant | Après cette branche | Tests disponibles | Statut de validation |
+|---|---|---|---|---|
+| Refus des courses | Refus explicite susceptible de relance et offre préférée pouvait contourner les filtres. | Refus ferme la même course; le choix commerçant passe par l'éligibilité commune. | Tests dispatch ajoutés. | Code modifié; Jest et parcours commerçant non exécutés. |
+| Relances | Expiration et refus entraient dans le même cycle de sollicitation. | Expiration sans réponse garde le délai de 3 min et le plafond de 3; refus ne réouvre pas la course. | Test de refus ajouté; horloge de test complète manquante. | Partiel. |
+| Disponibilité | La pause pouvait être comptée comme refus et demander une raison. | Statut de pause distinct, aucune raison demandée; aucune nouvelle offre durant la pause. | Test de pause ajouté. | Code modifié; test de service non exécuté. |
+| Paiements | Barème et pourboires actuels. | Aucun mouvement financier modifié; l'offre détaille le pourboire présent, et l'acceptation conserve le montant figé existant. | Tests financiers existants repérés. | Flux non régressé par changement financier; suite de paiement non exécutée. |
+| Notation | Note moyenne présentée. | Aucun lien automatique note → suspension repéré; note d'acceptation supprimée. | Pas de test de contestation des avis ajouté. | Audit ciblé, recours de note incomplet. |
+| Géolocalisation | Position de profil pouvait être actualisée hors ligne/en pause. | Backend ignore ces points sans course; hook mobile s'arrête en pause et hors ligne; GPS retiré de la réponse support. | Test de contrat support; tests appareil manquants. | Partiel; rétention, permissions et AIPD ouverts. |
+| Suspension | Incident d'échec/dépôt suspendait par défaut. | Aucun effet par défaut au niveau route ou service; action explicite d'opérateur possible et journalisée. | Tests route/service ajoutés. | Code modifié; Jest non exécuté; appel humain et recours formel non validés. |
+| Remplacement | Aucun flux. | Architecture séparée documentée; aucun partage d'identifiants ni changement de modèle. | Test impossible avant décision et implémentation. | Proposition seulement. |
+| Gestion algorithmique | Taux d'acceptation exposé; incident ouvert pouvait filtrer une offre future; ordre groupé imposé. | Taux et filtre incident retirés; ordre de tournée existant reste contraint et doit être validé. | Test de filtre incident ajouté; pas de revue de transparence utilisateur. | Partiel. |
+
+## Niveaux de risque
+
+- **CRITIQUE :** aucune défaillance critique résiduelle n'a été établie pour les chemins modifiés. Une troncature de fichiers dans une première publication de la branche a été détectée par CI puis corrigée; les SHA distants de 32 fichiers modifiés ont été comparés aux fichiers locaux avant la dernière publication.
+- **ÉLEVÉ :** prix déterminé par la plateforme sans contre-proposition; délai de réponse de 30 secondes; ordre des lots figé; conservation et accès aux positions; absence de recours structuré aux suspensions.
+- **MODÉRÉ :** aucune donnée BCE dans `Courier`; remplacement non implémenté; motifs de pause historiques non purgés; réautorisation explicite après refus non modélisée; versions effectives des conditions pas comparées.
+- **FAIBLE :** aucun constat juridique ouvert n'est abaissé à ce niveau sur le seul fondement de cet audit. L'absence d'un verrou de concurrence dans le code ne prouve pas la liberté professionnelle réelle.
+
+Ces niveaux priorisent le travail technique; ils ne chiffrent pas une probabilité de requalification.
+
 ## Décisions commerciales/juridiques non tranchées par le code
 
 1. Si ZupEat doit permettre au livreur de négocier le prix avant que le client/commerçant soit engagé, et qui supporte l'écart.
@@ -87,9 +110,9 @@ La source par défaut est `backend/src/contenus/pages-legales.defaut.ts` (`condi
 
 - Un test unitaire de dispatch a été ajouté pour le refus explicite et le choix manuel commerçant.
 - Deux tests mobiles Node sans dépendances ont passé : `tests/course-alerts.test.cjs` et `tests/renouvellement.test.cjs`. Parsing des messages FR/EN et `git diff --check` passent.
-- Les tests Jest backend n'ont pas pu démarrer et les scénarios frontend Playwright ont échoué au démarrage faute des paquets locaux; typecheck, lint, build, Prisma et tests DB n'ont donc pas été validés.
-- Les tentatives d'installation `npm ci` ont été interrompues avant leur achèvement et n'ont pas produit de dépendances utilisables.
-- La PR brouillon [#237](https://github.com/AmirGames/projet/pull/237) existe. Consulter son statut CI pour le dernier head; aucun run entièrement réussi n'est revendiqué par ce rapport.
+- Les suites backend Jest, les vérifications TypeScript/lint/build/Prisma, les jobs mobiles, MFA, concurrence/authentification PostgreSQL et les parcours navigateur E2E ont réussi dans le CI GitHub, run [#423](https://github.com/AmirGames/projet/actions/runs/39755398725), pour le commit `465efa3071c49c322b32499d0fb98d2cc58c1a0d`. Tous les jobs de ce run sont réussis.
+- Les suites Jest et Playwright n'ont pas pu être lancées localement : les tentatives d'installation `npm ci` ont été interrompues avant leur achèvement et n'ont pas produit de dépendances utilisables. Les résultats CI ci-dessus sont ceux du dépôt distant, pas une exécution locale.
+- La PR brouillon [#237](https://github.com/AmirGames/projet/pull/237) existe. Le commit validé par le run #423 contient le code testé; le présent rapport ajoute le compte rendu documentaire après ce run.
 - Aucun changement financier ni migration de données effectué. `DeliveryOffer.status` est un champ `String`; le nouvel état ne demande pas de changement physique de schéma. Cela doit tout de même être validé par Prisma sur un environnement avec dépendances installées.
 
 ## Niveau de risque global du périmètre
