@@ -36,6 +36,7 @@ jest.mock("../driver-approval.service", () => ({
     dossier: jest.fn(),
     changerEcheance: jest.fn(async () => ({ avant: "2026-01-01", piece: { id: "d1", type: "license", expiryDate: "2027-01-01" } })),
     examinerPiece: jest.fn(async () => ({ id: "d1", type: "license" })),
+    examinerBce: jest.fn(async (id: string, _admin: string, decision: any) => ({ id, bceStatus: decision.status, bceReviewedAt: new Date("2026-10-22T12:00:00Z") })),
     valider: jest.fn(async () => ({ id: "dr1", status: "ACTIVE" })),
     ecarter: jest.fn(async (id: string, etat: string) => ({ id, status: etat })),
     reactiver: jest.fn(async () => ({ id: "dr1", status: "ACTIVE" })),
@@ -92,7 +93,7 @@ const audit = (action: string, target: string, changes: any) =>
 
 describe("accès", () => {
   it.each([
-    ["get", "/drivers"], ["get", "/drivers/dr1"], ["patch", "/drivers/dr1/documents/d1/expiry"], ["patch", "/drivers/dr1/documents/d1"],
+    ["get", "/drivers"], ["get", "/drivers/dr1"], ["patch", "/drivers/dr1/bce"], ["patch", "/drivers/dr1/documents/d1/expiry"], ["patch", "/drivers/dr1/documents/d1"],
     ["post", "/drivers/dr1/approve"], ["post", "/drivers/dr1/reject"], ["post", "/drivers/dr1/reactivate"], ["get", "/driver-support"],
     ["get", "/driver-support/dr1"], ["post", "/driver-support/dr1"], ["get", "/delivery-incidents"],
     ["post", "/delivery-incidents/courses/c1/retirer"], ["post", "/delivery-incidents/courses/c1/echec"],
@@ -146,6 +147,14 @@ describe("dossiers des livreurs", () => {
 });
 
 describe("décisions journalisées", () => {
+  it("PATCH …/bce : demande une décision et journalise l'examen humain", async () => {
+    expect((await owner(request(app).patch("/api/superowner/drivers/dr1/bce").send({}))).status).toBe(400);
+    const r = await owner(request(app).patch("/api/superowner/drivers/dr1/bce").send({ status: "VERIFIED" }));
+    expect(r.body).toMatchObject({ success: true, bceStatus: "VERIFIED" });
+    expect(DriverApprovalService.examinerBce).toHaveBeenCalledWith("dr1", "owner", { status: "VERIFIED" });
+    audit("VERIFY_DRIVER_BCE", "dr1", { status: "VERIFIED", reason: undefined });
+  });
+
   it("PATCH …/documents/:id/expiry", async () => {
     expect((await owner(request(app).patch("/api/superowner/drivers/dr1/documents/d1/expiry").send({}))).status).toBe(400);
     const r = await owner(request(app).patch("/api/superowner/drivers/dr1/documents/d1/expiry").send({ expiryDate: "2027-01-01" }));
