@@ -17,20 +17,20 @@
 - `backend/src/modules/drivers/__tests__/driver-bce.test.ts`: le contrôle BCE est une décision humaine datée et rattachée à un opérateur; le refus exige un motif et l'activation échoue avant la vérification.
 - `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts` et `drivers-admin-routes-caracterisation.test.ts`: inscription avec format invalide refusée et décision BCE superowner journalisée.
 
-## Tests existants pertinents (non exécutés ici)
+## Tests existants pertinents
 
 - `backend/src/modules/drivers/__tests__/acceptation-concurrente.pg.test.ts`: attribution concurrente.
 - `backend/src/modules/drivers/__tests__/dispatch-attribution-idor.test.ts` et `drivers-idor.test.ts`: accès aux offres et données d'autres livreurs.
 - `backend/src/modules/payments/__tests__/refund.integration.test.ts` et `backend/src/modules/orders/__tests__/pourboire-acces.test.ts`: remboursements et accès aux pourboires.
 - `backend/src/modules/payouts/__tests__/payout-concurrence.pg.test.ts` et tests de relevés: concurrence et paiements par lot.
 
-Ces fichiers ne valident pas tous les scénarios exigés et leur présence ne vaut pas résultat de CI.
+Ces fichiers ne valident pas tous les scénarios exigés. Les tests correspondants ont été exécutés dans les jobs backend et PostgreSQL du CI #445 ci-dessous; la couverture fonctionnelle demeure partielle pour les cas indiqués ensuite.
 
 ## Statut d'exécution
 
-Le CI GitHub run #423 a réussi tous ses jobs (tests backend, typecheck/lint/build, migrations, apps mobiles, MFA, concurrence/authentification et E2E) sur le commit `465efa3071c49c322b32499d0fb98d2cc58c1a0d`. Les tests locaux des suites Jest et Playwright n'ont pas pu démarrer faute de dépendances; les tentatives `npm ci` ont été interrompues. Les nouveaux changements GPS et BCE décrits ici ont été ajoutés après le run #423 et doivent passer un nouveau CI avant validation.
+Le CI GitHub run [#445](https://github.com/AmirGames/projet/actions/runs/39772422351) a réussi tous ses jobs (backend, typecheck/lint/build, migrations, apps mobiles, MFA, tests PostgreSQL dédiés et E2E) sur le commit `cbe06b5035433a5499adfde48deb371c32699d7a`. Les tests concernés passent dans cet environnement CI; les suites n'ont pas été relancées localement dans cette session faute de dépendances installées.
 
-Le CI #442 a ensuite révélé quatre défauts de validation des ajouts BCE/GPS : index `bceStatus` absent du modèle Prisma (la migration créait déjà l'index), fixtures backend d'inscription livreur sans numéro BCE, test d'inscription ne renseignant pas le nouveau champ requis et mise à jour d'état synchrone dans l'effet GPS. Ces corrections ont été appliquées; le test d'inscription renseigne maintenant le numéro BCE dans les parcours web et mobile. Le nouveau CI doit confirmer qu'elles règlent les échecs. Le run #442 a aussi échoué au test frontend d'inscription du livreur pour la raison du champ BCE manquant.
+Les runs #442 et #444 ont révélé puis corrigé des défauts de validation : index `bceStatus` manquant du modèle Prisma, fixtures et test d'inscription sans numéro BCE, mise à jour d'état synchrone dans l'effet GPS, puis accolade finale omise lors de la publication du schéma. Le CI #445 valide les corrections et a réussi tous ses jobs.
 
 ## Couverture encore requise
 
