@@ -58,6 +58,6 @@ La perte GPS sans sanction disciplinaire automatique, l'absence d'impact de plus
 | 16 | Lot complet visible avant acceptation et refus libre | À ajouter |
 | 17 | Rémunération figée malgré un nouveau barème | À confirmer dans les tests existants; non exécuté |
 | 18 | Perte GPS sans sanction disciplinaire | Le job reste un état opérationnel et ne suspend pas le compte; test de perte GPS et appareil à ajouter |
-| 19 | Remplacement avec identité et permissions distinctes | Fonction non repérée; test après implémentation |
+| 19 | Remplacement avec identité et permissions distinctes | Non prévu par décision produit du 22 octobre 2026; test non applicable tant qu'aucun remplacement n'est implémenté. Risque de cette restriction à faire évaluer juridiquement. |
 | 20 | Information et recours contre décision automatisée | À ajouter après définition du workflow |
 | 21 | Numéro BCE avant activation | Format obligatoire, examen superowner journalisé et verrou d'activation ajoutés; exécution Jest/CI requise |
