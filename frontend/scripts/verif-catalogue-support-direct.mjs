@@ -233,7 +233,7 @@ const pOrganisations = await ouvrir(PLATEFORME, '/superowner/zupeat/organization
 const livreur = `Livreur ${uniq}`;
 const inscription = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: { conditionsAcceptees: true, name: livreur, email: `l-${uniq}@t.fr`, password: MDP, phone: '0612345678', vehicleType: 'bike' },
+  corps: { conditionsAcceptees: true, name: livreur, email: `l-${uniq}@t.fr`, password: MDP, phone: '0612345678', bceNumber: '0123456749', vehicleType: 'bike' },
 });
 check('un livreur s’inscrit', inscription.statut < 400, JSON.stringify(inscription.donnees)?.slice(0, 200));
 check('il apparaît dans la file des livreurs', await attendre(pLivreurs, contient(pLivreurs, livreur)));
