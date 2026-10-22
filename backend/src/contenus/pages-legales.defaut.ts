@@ -217,7 +217,7 @@ Les parties entendent organiser une relation de prestation indépendante, sous r
 
 ## 2. Validation du dossier
 
-Avant l'accès aux courses, l'exploitant vérifie les éléments nécessaires à l'admissibilité professionnelle au regard des règles belges applicables : identité, inscription BCE lorsque requise, statut professionnel déclaré, informations fiscales nécessaires, coordonnées de paiement, véhicule utilisé, permis et assurances ou autorisations exigés pour l'activité. Les pièces ne sont accessibles qu'aux personnes habilitées pour ce contrôle. Le numéro BCE, pris seul, ne détermine pas la qualification de la relation.
+Avant l'accès aux propositions, ZupEat demande un numéro BCE à tout candidat comme règle d'admissibilité de la plateforme. Le format est contrôlé automatiquement; un opérateur habilité vérifie ensuite le numéro dans le registre BCE et consigne sa décision avant l'activation. Cette règle de plateforme ne signifie pas que la loi impose nécessairement un numéro BCE à chaque personne, et le numéro ne détermine pas à lui seul la qualification de la relation. Les entreprises étrangères et les identifiants équivalents doivent être traités selon des règles à valider avant l'ouverture de ces marchés. Les autres contrôles portent sur l'identité, les informations fiscales nécessaires, les coordonnées de paiement, le véhicule, les permis et les assurances ou autorisations applicables. Les pièces ne sont accessibles qu'aux personnes habilitées pour ce contrôle.
 
 ## 3. Réalisation des courses
 
@@ -252,11 +252,11 @@ Le livreur peut cesser d'utiliser la plateforme et demander la clôture de son c
 
 | Finalité | Données | Base légale | Durée |
 | --- | --- | --- | --- |
-| Gestion du compte | nom, e-mail, téléphone, mot de passe (chiffré) | contrat | jusqu'à suppression, ou 3 ans d'inactivité |
-| Commandes et livraison | produits, adresse, coordonnées, instructions, historique | contrat | durée de la relation, puis 5 ans (prescription) |
+| Gestion du compte et admissibilité Livreur | nom, e-mail, téléphone, mot de passe haché, numéro BCE chiffré et état/date du contrôle | Base légale et durée à documenter par finalité avant publication; vérification du registre BCE et accès réservé aux personnes habilitées | À définir après revue des obligations et du cycle de vie du compte |
+| Commandes et livraison | produits, adresse, coordonnées nécessaires, instructions, historique, position en cours de livraison et preuves attachées à la course | Base légale et durée par type de donnée à confirmer | À définir; les coordonnées enregistrées avec les commandes/preuves ne sont pas purgées par l'arrêt de la localisation du profil |
 | Paiement | montant, statut ; la carte est traitée par Stripe seul | contrat | 10 ans pour les pièces comptables |
-| Suivi en temps réel | position du livreur pendant la course | contrat | durée de la course, puis trace conservée 1 an pour litiges |
-| Dossier commerçant / livreur | pièces justificatives, SIRET, coordonnées bancaires | contrat et obligation légale | durée de la relation + 5 ans |
+| Position de disponibilité | dernière position du profil quand le Livreur choisit d'être en ligne; aucune actualisation pendant pause ou hors ligne sans course | Finalité, base légale, destinataires et nécessité à documenter; pas de consentement présumé | Le point de profil est effacé lors d'une pause/déconnexion sans course; la durée des positions attachées aux courses reste à définir |
+| Dossier Livreur | justificatifs nécessaires, numéro BCE chiffré, coordonnées de paiement | Base légale et durée à documenter par catégorie; contrôle BCE réservé aux opérateurs habilités | À définir après revue juridique; le numéro BCE n'est pas présenté comme preuve suffisante d'indépendance |
 | Preuve d'acceptation des conditions | e-mail, documents et versions acceptés, adresse IP, navigateur, date | obligation légale / intérêt légitime | 5 ans après la fin de la relation |
 | Support et réclamations | messages, pièces jointes | intérêt légitime | 3 ans après clôture |
 | Sécurité et prévention de la fraude | journaux de connexion, adresse IP | obligation légale / intérêt légitime | 1 an |
@@ -274,7 +274,7 @@ Nous ne vendons aucune donnée. Lorsqu'un prestataire traite des données hors d
 
 ## Vos droits
 
-Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition, de portabilité et du droit de retirer votre consentement, ainsi que de définir des directives sur le sort de vos données après votre décès. Écrivez à [dpo@zupeat.com](mailto:dpo@zupeat.com) ; nous répondons sous un mois. Vous pouvez aussi saisir la CNIL ([cnil.fr](https://www.cnil.fr)).
+Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité selon les conditions du RGPD, ainsi que de définir des directives sur le sort de vos données après votre décès. Contactez [contact protection des données]. Les coordonnées du responsable et le processus de réponse doivent être complétés avant publication. Vous pouvez saisir l'Autorité de protection des données belge ([autoriteprotectiondonnees.be](https://www.autoriteprotectiondonnees.be/)).
 
 ## Sécurité
 
