@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 const db: any = {
   orderDelivery: { findUnique: jest.fn(), findMany: jest.fn() },
   deliveryOffer: { findFirst: jest.fn(), upsert: jest.fn() },
-  courier: { findMany: jest.fn() },
+  courier: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
   systemConfig: { findFirst: jest.fn() },
 };
 jest.mock("../../../services/db", () => ({ db }));
@@ -64,6 +64,18 @@ beforeEach(() => {
 const proposeA = () => db.deliveryOffer.upsert.mock.calls[0]?.[0]?.create;
 
 describe("distance de livraison selon le véhicule (attribution)", () => {
+  it.each([
+    ["hors ligne", { isOnline: false, currentOrderId: null, pausedUntil: null }],
+    ["en pause", { isOnline: true, currentOrderId: null, pausedUntil: new Date(Date.now() + 60_000) }],
+  ])("n'enregistre pas la position de disponibilité quand le livreur est %s", async (_etat, contexte) => {
+    db.courier.findUnique.mockResolvedValue(contexte);
+
+    const resultat = await DispatchService.enregistrerPosition("livreur-1", { latitude: 48.85, longitude: 2.35 });
+
+    expect(resultat.suivie).toBe(false);
+    expect(db.courier.update).not.toHaveBeenCalled();
+  });
+
   it("les incidents ouverts d'une course ne filtrent pas les offres futures de tournée", async () => {
     db.courier.findMany.mockResolvedValue([]);
     const coursier = {
