@@ -17,7 +17,7 @@ La source par défaut se trouve dans `backend/src/contenus/pages-legales.defaut.
 - Distinguer évaluations, incidents vérifiés, contestations et décisions de suspension avec intervention humaine appropriée.
 - Distinguer le remboursement du client d'une suspension du livreur : le code ne demande plus la suspension par défaut, mais un opérateur peut toujours la demander explicitement pour un risque sérieux; une procédure de réexamen structurée reste à concevoir.
 - Définir les assurances actuellement exigibles et examiner le régime spécial dont l'entrée en vigueur est reportée au 1er janvier 2028.
-- Décider si le remplacement est permis. Si oui, préciser qui reste contractuellement responsable, qui accepte la proposition transférée, et comment les identités, autorisations, assurances, rémunérations et données sont vérifiées et séparées.
-- Une architecture préparatoire de remplacement nominatif est décrite dans `ARCHITECTURE-REMPLACEMENT-LIVREUR.md`; elle n'est pas une fonctionnalité disponible.
+- Le propriétaire ne prévoit pas de remplacement dans le modèle actuel (décision du 22 octobre 2026). Faire évaluer cette restriction par un avocat belge avant publication des conditions; ne pas présenter une fonction de remplacement comme disponible.
+- L'architecture de remplacement dans `ARCHITECTURE-REMPLACEMENT-LIVREUR.md` est une analyse préparatoire seulement et n'est pas prévue au développement selon la décision actuelle.
 
 Ne pas utiliser une déclaration contractuelle d'indépendance pour contredire les mécanismes réellement déployés.
