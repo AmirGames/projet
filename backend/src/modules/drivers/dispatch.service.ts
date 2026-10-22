@@ -58,18 +58,16 @@ const COURSE_A_PROPOSER = {
  * Il a un délai pour répondre ; passé ce délai elle va au suivant, et ainsi de
  * suite jusqu'à ce que quelqu'un accepte ou que la liste soit épuisée.
  *
- * Quand tout le monde a été sollicité, un nouveau tour commence : la course
- * revient au plus proche, mais jamais à quelqu'un qui vient de répondre
- * (délai de RELANCE_APRES_MS) ni plus de MAX_SOLLICITATIONS fois au même
- * livreur. Auparavant un livreur sollicité était écarté pour toujours : si
- * les dix livreurs du quartier laissaient passer la course, elle restait
- * bloquée, même relancée à la main.
+ * Après expiration sans réponse, la course peut revenir au plus proche passé
+ * RELANCE_APRES_MS, dans la limite de MAX_SOLLICITATIONS. Un refus explicite
+ * ferme la proposition pour ce livreur. Un commerçant peut suggérer un livreur
+ * éligible, sans contourner ces règles ni accepter à sa place.
  */
 
 /** En deçà, le client est prévenu que le livreur arrive et peut descendre. */
 const RAYON_APPROCHE_KM = 0.3;
 
-/** Délai avant de reproposer une course à un livreur qui a refusé ou laissé expirer. */
+/** Délai avant une nouvelle sollicitation après expiration sans réponse. */
 const RELANCE_APRES_MS = 3 * 60000;
 /** Au-delà, la course n'est plus proposée d'office à ce livreur. */
 export const MAX_SOLLICITATIONS = 3;
@@ -87,6 +85,9 @@ interface Sollicitation {
 /** Quand ce livreur pourra de nouveau recevoir la course d'office, ou null s'il ne la recevra plus. */
 function libreA(offre: Sollicitation, maintenant: number): number | null {
   if (offre.status === "PENDING" && offre.expiresAt.getTime() > maintenant) return null;
+  // Un refus explicite clôt la proposition pour ce livreur. La temporisation
+  // ne concerne que les propositions expirées ou fermées sans refus.
+  if (offre.status === "DECLINED") return null;
   if (offre.attempts >= MAX_SOLLICITATIONS) return null;
   const derniere = (offre.respondedAt ?? offre.expiresAt).getTime();
   return derniere + RELANCE_APRES_MS;
@@ -751,12 +752,6 @@ export class DispatchService {
     const maintenant = Date.now();
     const disponibles = await this.livreursEligibles(retrait, reglages);
 
-    // Le commerçant peut désigner un livreur : son choix passe outre le délai
-    // de relance et la limite de sollicitations. Il l'a vu dans la liste des
-    // disponibles, il sait ce qu'il fait — c'est exactement le cas où la
-    // course avait expiré et ne pouvait plus lui être renvoyée.
-    const prefere = livreurPrefere ? disponibles.find((c) => c.id === livreurPrefere) : undefined;
-
     const sollicitable = (c: { offers: Sollicitation[] }, driverId: string) => {
       const offre = c.offers.find((o) => o.driverId === driverId);
       if (!offre) return true;
@@ -764,6 +759,14 @@ export class DispatchService {
       return libre != null && libre <= maintenant;
     };
     const candidats = disponibles.filter((c) => sollicitable(course, c.id));
+
+    // Le choix manuel du commerçant reste une proposition, jamais une
+    // attribution. Il suit les mêmes règles que le dispatch : un refus
+    // explicite, une offre ouverte, le délai de relance et son plafond ne sont
+    // pas contournés.
+    const prefere = livreurPrefere
+      ? candidats.find((c) => c.id === livreurPrefere)
+      : undefined;
 
     // Un livreur déjà en course passe par là : la course s'ajoute à sa
     // tournée plutôt que de mobiliser un livreur de plus.
@@ -773,12 +776,10 @@ export class DispatchService {
     // « +1 course » : à la porte de leur client, partir d'abord chercher une
     // autre commande ferait attendre celui qu'ils ont en main. Ils prennent la
     // course à enchaîner, après sa remise.
-    const toutBientotLibres = prefere ? [] : await this.livreursBientotLibres(retrait, reglages, maintenant);
+    const toutBientotLibres = await this.livreursBientotLibres(retrait, reglages, maintenant);
     const bientotLibres = toutBientotLibres.filter((l) => sollicitable(course, l.id));
     const presDeLaFin = new Set(toutBientotLibres.map((l) => l.id));
-    const toutesTournees = prefere
-      ? []
-      : (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => !presDeLaFin.has(l.id));
+    const toutesTournees = (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => !presDeLaFin.has(l.id));
     const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
 
     // Le véhicule couvre-t-il le trajet commerce → client ? (vehicule-distance.service.ts)
@@ -878,8 +879,9 @@ export class DispatchService {
           : ajout
           ? `${course.order?.store?.name || "Commerce"}, livraison de ${trajets.toFixed(1).replace(".", ",")} km, à ajouter à votre course.`
           : lot.length > 1
-            ? `${[...new Set(lot.map((c) => c.order?.store?.name).filter(Boolean))].join(", ") || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, ${lot.length} clients au même endroit. Répondez vite !`
-            : `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${trajets.toFixed(1).replace(".", ",")} km. Répondez vite !`) +
+            ? `${[...new Set(lot.map((c) => c.order?.store?.name).filter(Boolean))].join(", ") || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, ${lot.length} clients au même endroit.`
+            : `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${trajets.toFixed(1).replace(".", ",")} km.`) +
+          " Répondez uniquement lorsque vous êtes arrêté en sécurité." +
           // Au-delà de ce que son véhicule fait d'ordinaire : à lui de décider.
           (horsLimite ? " Plus longue que votre limite habituelle." : ""),
         url: "/driver",
@@ -1075,7 +1077,9 @@ export class DispatchService {
       pickupLat: course.order?.store?.latitude,
       pickupLng: course.order?.store?.longitude,
       // Lieu de livraison (ADRESSE LISIBLE MAIS COORDONNÉES OBFUSQUÉES)
-      deliveryAddress: course.order?.deliveryAddress,
+      // L'adresse de rue du client est révélée après acceptation; la ville et
+      // le code postal permettent d'évaluer la zone avant ce choix.
+      deliveryAddress: null,
       deliveryCity: course.order?.deliveryCity,
       deliveryPostal: course.order?.deliveryPostal,
       // Coordonnées obfusquées que le livreur verra sur la map
@@ -1384,6 +1388,20 @@ export class DispatchService {
   /** Position du livreur, partagée avec la course en cours s'il en a une. */
   static async enregistrerPosition(driverId: string, position: Point) {
     const maintenant = new Date();
+    const contexte = await db.courier.findUnique({
+      where: { id: driverId },
+      select: { isOnline: true, currentOrderId: true, pausedUntil: true },
+    });
+
+    // Pas de suivi de disponibilité hors ligne, ni pendant une pause sans
+    // course à livrer. Une position de course acceptée reste nécessaire pour
+    // informer le client et assurer le suivi de cette prestation.
+    if (!contexte?.isOnline && !contexte?.currentOrderId) {
+      return { suivie: false, enLigne: false };
+    }
+    if (contexte?.pausedUntil && contexte.pausedUntil > maintenant && !contexte.currentOrderId) {
+      return { suivie: false, enLigne: true, enPause: true };
+    }
 
     const livreur = await db.courier.update({
       where: { id: driverId },

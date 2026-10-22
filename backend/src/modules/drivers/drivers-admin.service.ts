@@ -84,8 +84,6 @@ export const DriversAdminService = {
           email: true,
           isOnline: true,
           currentOrderId: true,
-          latitude: true,
-          longitude: true,
           lastLocationUpdate: true,
           gpsLostAt: true,
         },

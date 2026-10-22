@@ -84,6 +84,29 @@ describe("distance de livraison selon le véhicule (attribution)", () => {
     expect(db.deliveryOffer.upsert).not.toHaveBeenCalled();
   });
 
+  it("ne repropose jamais après un refus explicite, même après trois minutes ou sur demande du commerçant", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(
+      course({
+        deliveryLat: 48.875,
+        offers: [{
+          driverId: "scooter",
+          status: "DECLINED",
+          attempts: 1,
+          expiresAt: new Date(Date.now() - 10 * 60_000),
+          respondedAt: new Date(Date.now() - 10 * 60_000),
+        }],
+      })
+    );
+    livreursEnLigne([livreur("scooter", "scooter"), livreur("velo", "bike", 0.002)]);
+
+    await DispatchService.proposerAuSuivant("course-1", "scooter");
+
+    expect(proposeA()).toMatchObject({ driverId: "velo" });
+    expect(db.deliveryOffer.upsert).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { deliveryId_driverId: { deliveryId: "course-1", driverId: "scooter" } } })
+    );
+  });
+
   it("sans scooter ni voiture, la course s'ouvre au vélo, marquée hors limite", async () => {
     db.orderDelivery.findUnique.mockResolvedValue(course());
     livreursEnLigne([livreur("velo", "bike")]);

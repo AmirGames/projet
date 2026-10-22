@@ -200,7 +200,7 @@ describe("support livreurs", () => {
     expect(DriverSupportService.marquerLu).toHaveBeenCalledWith("dr1", "SUPPORT");
     expect(db.courier.findUnique).toHaveBeenCalledWith({
       where: { id: "dr1" },
-      select: { id: true, name: true, phone: true, email: true, isOnline: true, currentOrderId: true, latitude: true, longitude: true, lastLocationUpdate: true, gpsLostAt: true },
+      select: { id: true, name: true, phone: true, email: true, isOnline: true, currentOrderId: true, lastLocationUpdate: true, gpsLostAt: true },
     });
   });
   it("POST /driver-support/:id : message d'équipe", async () => {

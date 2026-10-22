@@ -30,7 +30,7 @@ interface Analytics {
     coursesAvecPourboire: number;
   };
   precedente: { livrees: number; gains: number };
-  offres: { recues: number; acceptees: number; refusees: number; expirees: number; tauxAcceptation: number | null };
+  offres: { recues: number; acceptees: number; refusees: number; expirees: number };
   notes: { moyennePeriode: number | null; avisPeriode: number; moyenneGlobale: number | null; avisTotal: number };
   parJour: { date: string; livrees: number; gains: number; distanceKm: number; pourboires: number }[];
   parHeure: { heure: number; livrees: number; gains: number }[];
@@ -272,28 +272,13 @@ export default function AnalyticsLivreurPage() {
                   </p>
                 </div>
 
-                {/* Taux d'acceptation : une jauge, piste du même ton. */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <p className="text-gray-500 text-xs">{t('tauxAcceptation')}</p>
-                  <p className="text-gray-900 text-2xl font-semibold mt-1">
-                    {o.tauxAcceptation != null ? t('pourcent', { n: o.tauxAcceptation }) : '—'}
-                  </p>
-                  <div
-                    className="mt-2 h-2 rounded-full bg-orange-50"
-                    role="meter"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={o.tauxAcceptation ?? 0}
-                    aria-label={t('tauxAcceptation')}
-                  >
-                    <div
-                      className="h-2 rounded-full"
-                      style={{ width: `${o.tauxAcceptation ?? 0}%`, background: '#ea580c' }}
-                    />
-                  </div>
+                  <p className="text-gray-500 text-xs">{t('offresRecues')}</p>
+                  <p className="text-gray-900 text-2xl font-semibold mt-1">{o.recues}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {t('offres', { acceptees: o.acceptees, refusees: o.refusees, expirees: o.expirees })}
                   </p>
+                  <p className="text-xs text-gray-500 mt-1">{t('offresSansEffet')}</p>
                 </div>
               </div>
 

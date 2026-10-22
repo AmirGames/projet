@@ -1,0 +1,107 @@
+# Audit des mécanismes Livreurs ZupEat — 22 octobre 2026
+
+## Portée et méthode
+
+Audit local du dépôt courant, branche `audit/conformite-livreurs-belgique-2026`. L'arbre était propre avant les changements. L'analyse porte sur les parcours de dispatch, disponibilité/GPS, activité/statistiques, offres, aperçu du paiement des pourboires, versements, notation, suspension/incident et inscription. Ce n'est pas une certification de conformité ni un avis juridique. La production, les pratiques commerciales, l'intégralité des flux financiers et les contrats réellement acceptés restent à vérifier.
+
+Les documents d'audit présents dans le dépôt sont datés et ne prouvent pas l'état déployé. La société exploitante et ses identifiants restent à confirmer : aucun numéro BCE/TVA ni raison sociale n'est déduit.
+
+## Références juridiques consultées
+
+- Les articles 328 à 343 de la loi-programme (I) du 27 décembre 2006, dont les critères sectoriels de l'article 337/3 : [texte consolidé Refli](https://refli.be/fr/lex/2006021362) et [SPF Emploi — nature de la relation](https://emploi.belgique.be/fr/themes/contrats-de-travail/nature-de-la-relation-de-travail-travail-salarie-ou-travail-independant).
+- Loi du 3 octobre 2022, chapitre 4, section 2 sur l'assurance accidents des collaborateurs indépendants de plateformes : [texte consolidé Refli](https://refli.be/fr/lex/2022206360). L'arrêté royal du 19 décembre 2025 reporte cette entrée en vigueur au 1er janvier 2028 : [arrêté royal](https://refli.be/fr/lex/2025009799).
+- Directive (UE) 2024/2831 : [EUR-Lex](https://eur-lex.europa.eu/eli/dir/2024/2831/oj). Le délai de transposition est le 2 décembre 2026. À la date de référence, les sources publiques consultées ne permettent pas d'attester une mesure belge de transposition promulguée applicable à ZupEat; cette vérification doit être répétée avant cette échéance.
+- RGPD, notamment articles 5, 13–15, 22 et 35, et [APD — décisions automatisées](https://www.autoriteprotectiondonnees.be/professionnel/rgpd-/droits-des-citoyens/droit-de-ne-pas-etre-soumis-a-une-decision-individuelle-automatisee) et [APD — AIPD](https://www.autoriteprotectiondonnees.be/professionnel/rgpd-/analyse-d-impact-relative-a-la-protection-des-donnees).
+
+La directive ne doit pas être traitée comme déjà transposée. Son échéance proche et ses obligations sur la gestion algorithmique justifient une préparation technique; l'applicabilité exacte dépend de la transposition, du champ d'application et de la qualification réelle.
+
+## Constats prioritaires avant correction
+
+| Niveau | Constat établi dans le code | Réponse de cette branche | Risque restant |
+|---|---|---|---|
+| ÉLEVÉ | Un refus explicite pouvait être suivi d'une nouvelle proposition automatique après 3 minutes. | Un statut `DECLINED` n'est plus sollicitable, même par appel manuel du dispatch. | Pas de mécanisme de réautorisation explicite; une nouvelle initiative du livreur n'est pas encore modélisée. |
+| ÉLEVÉ | `livreurPrefere` contournait les délais, plafonds et une partie du dispatch. | Le commerçant suggère un candidat filtré par les mêmes règles; l'offre reste librement acceptée/refusée. | Les routes commerçant et interface sont à vérifier de bout en bout pour confirmer qu'elles ne modifient jamais directement l'attribution. |
+| MODÉRÉ | La pause inscrivait les offres ouvertes comme `DECLINED`, polluant les statistiques de refus. | Nouveau statut `UNAVAILABLE_DURING_PAUSE`; le balayage GPS ignore les pauses en cours. | Les statistiques historiques antérieures conservent leur ancienne ambiguïté. |
+| ÉLEVÉ | La page Analytics rendait le taux d'acceptation comme jauge visuelle. | Suppression du taux dans l'API et l'interface; les nombres descriptifs restent accompagnés d'une explication sans effet sur les offres. | Vérifier les consommateurs API non présents dans ce dépôt et les exports opérationnels. |
+| MODÉRÉ | Le service de position acceptait de mettre à jour la position courante hors ligne ou en pause sans course. | Le backend ignore ces mises à jour; une course acceptée garde le suivi nécessaire. | L'arrêt de la collecte locale/du service en arrière-plan mobile reste à auditer. |
+| ÉLEVÉ | L'écran d'offre affichait un montant agrégé sans isoler le pourboire et animait une barre de compte à rebours. | L'offre mobile affiche maintenant rémunération hors pourboire, pourboire déjà attribué, distances distinctes estimées et expiration sans animation ni compte à rebours chiffré. | L'offre expire toujours après le délai configuré (30 s par défaut); décision de durée à valider côté produit. |
+
+## Vérifications complémentaires des flux
+
+- **Rémunération proposée :** `DispatchService.creerProposition` calcule `payout` à partir des frais de livraison plateforme (ou du barème alternatif) et du pourboire de commande; la valeur de l'offre est recopiée à l'acceptation dans `OrderDelivery.driverPayout`. Les flux de paiement créent un relevé à partir de cette valeur figée. L'écran mobile expose maintenant le montant total, le pourboire déjà attribué et des distances estimées. Il n'expose pas de ventilation base/km : en mode plateforme la paie est liée à `feesAmount`, et le modèle ne conserve pas de ventilation fiable de ce montant. Aucun mécanisme de contre-proposition n'existe. Une ventilation fiable ou une négociation demande une décision économique et une analyse de l'engagement déjà pris auprès du client et du commerce; aucun montant fictif n'a été ajouté.
+- **Données client avant acceptation :** l'analyse des trois chemins de lecture (socket d'offre, `GET /offers`, liste et détail des propositions) a trouvé l'adresse de rue dans l'offre, malgré les coordonnées déjà obfusquées. Les interfaces d'offre reçoivent désormais ville/code postal seulement; la rue est retournée après attribution. Un test de caractérisation vérifie ce masquage. Données clientes restantes et accès opérateurs doivent encore être inclus dans une revue de confidentialité complète.
+- **Accès support au GPS :** la route de consultation du chat superowner renvoyait aussi latitude/longitude même si l'interface ne les utilisait pas. Ces coordonnées ont été retirées de la sélection et un test de contrat vérifie l'API; les vues d'incident conservent les données qu'elles utilisent pour l'examen de l'incident et nécessitent une revue des rôles/durées.
+- **Pourboires :** le pourboire après livraison utilise une ligne unique par commande, un identifiant Stripe unique, une intention idempotente et une mise à jour conditionnelle du statut avant l'incrément des gains (`backend/src/modules/orders/pourboire.service.ts`, `backend/prisma/schema.prisma:model CourierTip`). Les tests de paiement/remboursement existent dans le dépôt, mais n'ont pas été exécutés dans cette branche. Les scénarios d'annulation, litige, rapprochement de relevé et double webhook restent à vérifier par CI.
+- **Notation :** `driver-rating.service.ts` calcule la moyenne et l'expose au livreur; aucune transition de statut liée à la note n'a été repérée dans les modules Drivers audités. Les avis restent contestables via le support général, mais aucun workflow spécifique de vérification/correction d'une note n'a été trouvé.
+- **Suspension/recours :** l'API superowner accepte un motif et journalise l'action; le service notifie le livreur, et `reactiver` constitue un acte humain. Les routes de support restent accessibles après suspension; l'application mobile présente maintenant un accès direct pour contester ou demander un réexamen. Cependant, les incidents d'échec de livraison et de dépôt refusé demandent `suspendre=true` par défaut et peuvent déclencher une suspension de précaution ainsi que le retrait d'autres offres. Le support existant n'est pas un workflow de contestation structuré : aucun délai de réexamen, état de dossier ni journal métier dédié au réexamen humain n'a été trouvé. Une validation juridique/opérationnelle et des tests de procédure restent nécessaires.
+- **Inscription/admissibilité :** l'inscription collecte identité déclarée, contact, véhicule, accepte trois documents contractuels et crée un dossier `PENDING`. Le service de validation exige des justificatifs selon le véhicule (identité, permis, assurance, immatriculation, sac isotherme) avant activation. Aucun champ ni contrôle du numéro BCE/statut TVA n'a été trouvé dans le modèle `Courier`; l'inscription ne démontre donc pas à elle seule l'admissibilité professionnelle belge. Déterminer avec le conseil quelles données et preuves sont nécessaires avant toute extension du formulaire.
+- **Conservation GPS :** le profil conserve `latitude`, `longitude`, `lastLocationUpdate` et `gpsLostAt`; l'analyse n'a trouvé ni historique de traces GPS de disponibilité ni politique/purge dédiée à ces champs. Les positions liées aux courses et preuves de livraison sont distinctes et demeurent stockées. Durées, accès opérateur, base juridique, chiffrement et nécessité d'une AIPD ne sont pas établis par cette seule revue.
+
+## Matrice des huit critères de l'article 337/3
+
+| Critère légal | Fonctionnalité | Fichiers et lignes | Constat | Risque | Correction | Test |
+|---|---|---|---|---|---|---|
+| 1. Exclusivité professionnelle | Contrôles de comptes et d'activité concurrente | Aucun contrôle repéré dans le dispatch; texte par défaut `backend/src/contenus/pages-legales.defaut.ts:210-248` | Pas de preuve de verrou technique dans le flux examiné; contrat actuel/activité réelle à vérifier. | MODÉRÉ | Aucun verrou ajouté; validation contractuelle à faire. | Non-exclusivité pas encore testée en domaine. |
+| 2. Géolocalisation étrangère au service | Position de disponibilité et suivi course | `backend/src/modules/drivers/dispatch.service.ts:1388-1420`; `driver-availability.service.ts:145-220`; `mobile/apps/delivery/lib/useDriverLocation.ts:95-112`; `app/index.tsx:327-339` | Avant correction, les points pouvaient actualiser le profil hors ligne/en pause. Position courante et preuves course sont persistées. | ÉLEVÉ | Backend ignore l'actualisation hors ligne/en pause sans course; mobile arrête le suivi en pause; job ignore la pause. | Test GPS dédié manquant; tests appareil, rétention, accès et AIPD non validés. |
+| 3. Liberté d'organiser/exécuter | Refus, délais, véhicule, regroupement et tournée | `dispatch.service.ts:72-95, 722-785, 821-890, 1178-1370`; `driver-availability.service.ts:31-110` | Réponse par défaut 30 s; contraintes véhicule, lots et tournées. Une réponse explicite clôt désormais la même course. | ÉLEVÉ | Sélection manuelle suit les mêmes règles; message « répondre vite » retiré, sécurité routière rappelée. | Test de refus/manualité ajouté, non exécuté; délai/ergonomie restent à valider. |
+| 4. Liberté tarifaire et limitation des revenus | Barème et prix proposés | `dispatch.service.ts:98-170, 1010-1075`; `driver-courses.service.ts:226-277`; `mobile/apps/delivery/components/OfferSheet.tsx` | Prix calculé par paramètres de la plateforme; montant accepté figé. Aucun droit de contre-proposition ni ventilation base/km fiable n'a été repéré. | ÉLEVÉ | L'écran sépare rémunération hors pourboire et pourboire existant, et détaille des distances estimées; pas de changement de tarif ni bouton fictif. | Test de caractérisation du champ pourboire ajouté; tests d'interface, de lot et d'immuabilité financière non exécutés. |
+| 5. Règles de présentation/comportement/exécution | Notifications, preuve, code/photo, tournée et ordre de remise | `dispatch.service.ts:870-895`; `surveillance-courses.service.ts`; pages livraison frontend/mobile | Preuves de remise et ordre de tournée existent; nature et proportionnalité des instructions à examiner. | ÉLEVÉ | Retrait d'une injonction de réponse rapide dans les notifications. | Parcours complet, mode conduite et liberté d'itinéraire non testés. |
+| 6. Priorité/prix/classement par contrôle d'exécution | Dispatch et statistiques | `dispatch.service.ts:235-270, 743-810`; `surveillance-courses.service.ts`; `driver-activity.service.ts:310-350`; Analytics frontend | Dispatch utilise proximité, compatibilité véhicule, disponibilité, mission en cours et incidents; pas de taux d'acceptation trouvé dans le dispatch ZupEat. Jauge API/UI supprimée. Après acceptation, l'ordre des remises d'une tournée est calculé puis fixé et certaines lectures/actions restent masquées jusqu'au tour prévu. | MODÉRÉ à ÉLEVÉ | Taux retiré de la sortie API et de la jauge; stats restantes descriptives. L'ordre contraint mérite une justification opérationnelle et une revue juridique, surtout pour un lot accepté volontairement. | Test d'absence de score dispatch/suspension à créer; paramètres et effets de tournée à expliquer. |
+| 7. Horaires, absences, refus, organisation et remplacement | Connexion, pause, indisponibilité, remplacement | `driver-availability.service.ts:31-110, 145-220`; dispatch | Pause de 5 à 240 minutes choisie par le livreur; fin automatique à l'échéance choisie. Aucun flux de remplaçant trouvé dans l'audit. | ÉLEVÉ | État pause distinct; pause absente des stats de réponse; GPS suspendu sans course; l'application mobile passe le service de localisation en mode arrêté pendant la pause. | Tests pause/reprise et choix de reprise manquent; remplacement non implémenté. |
+| 8. Activités tierces et clientèle | Exclusivité, autres plateformes et relation directe | Aucun verrou repéré dans le dispatch; texte par défaut `pages-legales.defaut.ts:210-248` | Le dépôt seul ne prouve pas les pratiques commerciales ni la liberté contractuelle effective. | MODÉRÉ | Aucun mécanisme d'exclusivité ajouté; texte français obsolète remplacé par un brouillon belge à valider. | Test logiciel à créer; revue juridique et commerciale nécessaire. |
+
+Les huit critères ne se substituent pas à l'analyse générale du lien d'autorité et de subordination, des modalités d'exécution réelles, ni à la présomption légale applicable. Aucun statut « conforme » n'est conclu sur la seule lecture des conditions.
+
+## Alignement code / Conditions Livreurs publiées par défaut
+
+La source par défaut est `backend/src/contenus/pages-legales.defaut.ts` (`conditions-livreurs`). Avant cette branche, elle affirmait notamment un régime français (micro-entrepreneur, droit au travail en France, SIREN) et une localisation uniquement pendant course ou disponibilité. Le texte par défaut a été remplacé par un brouillon prudent pour la Belgique, mais il n'est pas prêt à publier : le texte effectivement accepté peut être administré en base et différer de ce fichier. Comparer les versions réellement acceptées avant publication et faire réviser par avocat belge et responsable du traitement.
+
+| Clause actuelle | Comportement attendu | Code examiné | État |
+|---|---|---|---|
+| Acceptation volontaire, refus sans pénalité | Chaque offre requiert une action positive; le refus ne limite pas les offres suivantes | `DispatchService.accepter/refuser/proposerAuSuivant` | Correction du refus et de sélection manuelle réalisée; tests encore incomplets |
+| Horaires libres | Disponibilité déclarée par le livreur | `DriverAvailabilityService` | Pause distincte; audit d'inactivité et de reprise restant |
+| Non-exclusivité | Aucun contrôle de plateforme concurrente | Parcours d'inscription/dispatch non entièrement audité | Non démontré |
+| Géolocalisation limitée | Collecte uniquement aux états/finalités nécessaires | `enregistrerPosition`, `useDriverLocation`, `backgroundLocation` | Blocage backend hors ligne/en pause sans course et arrêt app en pause ajoutés; rétention et tests appareil non validés |
+| Rémunération transparente | Montant et distance présentés avant décision | offres backend/mobile | Le champ payout existe; décomposition de tous les compléments/frais non validée |
+| Pourboires | Attribution et versement cohérents | paiements non audités dans ce lot | Non validé |
+| Liberté des moyens | Consignes limitées au résultat, à la loi et à la sécurité | tournées, suivi | Non validé |
+| Statistiques | Descriptives, sans effet adverse | activité + interface Analytics | Taux d'acceptation retiré; autres décisions indirectes restent à tracer |
+| Suspension/contestation | Motif, revue humaine et recours | routes admin non auditées complètement | Non validé |
+| Substitution / assurance | Remplacement nominatif, admissibilité professionnelle | aucun flux de remplacement repéré | Non implémenté; exigences juridiques à établir |
+
+## Décisions commerciales/juridiques non tranchées par le code
+
+1. Si ZupEat doit permettre au livreur de négocier le prix avant que le client/commerçant soit engagé, et qui supporte l'écart.
+2. Définir la personne morale exploitante, les contrats, les bases RGPD et les responsables de traitement.
+3. Valider assurances des véhicules, responsabilité professionnelle et préparation de l'obligation plateforme prévue en 2028.
+4. Réviser Conditions Livreurs et politique de confidentialité selon la Belgique et les flux réels.
+5. Définir remplacement et sous-traitance avec critères objectifs, vérification et responsabilité.
+6. Vérifier la transposition belge de la directive avant le 2 décembre 2026 et les obligations correspondantes.
+
+## Preuves et limites de validation
+
+- Un test unitaire de dispatch a été ajouté pour le refus explicite et le choix manuel commerçant.
+- Tentatives de `npx jest ...dispatch-vehicule.test.ts` et `npx tsc --noEmit` interrompues : le dépôt ne contient pas `backend/node_modules`; `npx` cherchait les exécutables via npm dans un environnement à réseau restreint. Aucun test, lint, typecheck, build, migration ou test DB n'est donc déclaré réussi.
+- Une installation `npm ci` a été lancée pour permettre ces validations, mais interrompue avant son achèvement; elle n'a pas produit de dépendances utilisables.
+- Pas de pull request ouverte ou poussée; la branche est locale.
+- Aucun changement financier ni migration de données effectué. `DeliveryOffer.status` est un champ `String`; le nouvel état ne demande pas de changement physique de schéma. Cela doit tout de même être validé par Prisma sur un environnement avec dépendances installées.
+
+## Niveau de risque global du périmètre
+
+ÉLEVÉ : tarif fixé par la plateforme, absence de négociation repérée, collecte GPS mobile à analyser et absence de preuve sur suspension/recours et remplacement. Les changements sur le refus, la pause, le dispatch manuel et la jauge d'acceptation réduisent des mécanismes de pression observables, mais ne garantissent pas une qualification indépendante.
+
+## Checklist à remettre à un avocat belge en droit social
+
+- Confirmer la qualification selon les articles 328–343, l'article 337/3 et les indices généraux, pour le service exploité et les profils de livreurs concernés.
+- Évaluer individuellement les huit critères et les flux d'offre, de tournée, de disponibilité, de GPS, d'incident, de tarification, de suspension et de recours.
+- Vérifier la transposition belge de la directive 2024/2831 publiée avant le 2 décembre 2026, son champ et les mesures techniques et procédurales exigées.
+- Confirmer assurances RC professionnelle et véhicule, documents légalement requis et portée/date du régime plateforme 2028.
+- Valider possibilité de négociation des prix, annulations, remboursements, pourboires et articulation avec les sommes déjà encaissées.
+- Réviser les versions réellement acceptées des Conditions Livreurs et communications; ne pas se limiter au texte par défaut.
+- Définir remplacement, sous-traitance, compte personnel, assurances, responsabilité et critères objectifs d'admissibilité.
+- Examiner contestation, désactivation, décisions automatisées, information algorithmique et voie de recours.
+- Confirmer entité exploitante, BCE/TVA, droit applicable, juridiction, médiation et identité/contact du responsable RGPD/DPO le cas échéant.
+
+## Proposition de dossier pour la Commission administrative de règlement de la relation de travail
+
+Constituer un dossier de faits et de preuves datées plutôt qu'une conclusion préparée : identité et activité de la plateforme; contrats proposés et versions acceptées; parcours d'inscription et de vérification professionnelle; règles et versions de l'algorithme; exemples anonymisés d'offres, montants, distances et expirations; règles observées de refus, pause, déconnexion et arrêt GPS; exemples vérifiables des effets du refus; possibilités de travailler via d'autres plateformes et de remplacer un livreur par une personne admissible; procédures de suspension et recours; facturation, frais, paiements, assurances, matériel et risques économiques; entretiens avec des livreurs aux situations variées. Préserver aussi les éléments défavorables et les exceptions, expliquer les limites de l'échantillon et demander au conseil si une demande formelle d'avis/décision est recevable et pertinente.

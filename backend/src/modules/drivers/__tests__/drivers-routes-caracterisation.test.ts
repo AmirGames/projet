@@ -448,7 +448,16 @@ describe("courses", () => {
     const r = await alice(request(app).get("/api/drivers/deliveries"));
     expect(r.status).toBe(200);
     expect(r.body.data).toHaveLength(1);
-    expect(r.body.data[0]).toMatchObject({ id: "course-1", orderId: "commande-1", status: "PENDING", pickupAddress: "1 rue A, Lyon", pickupStore: "Chez Test", deliveryAddress: "2 rue B, 69000 Lyon", payout: 5, masque: null });
+    expect(r.body.data[0]).toMatchObject({
+      id: "course-1",
+      orderId: "commande-1",
+      status: "PENDING",
+      pickupAddress: "1 rue A, Lyon",
+      pickupStore: "Chez Test",
+      deliveryAddress: "69000 Lyon",
+      payout: 5,
+      masque: null,
+    });
     expect(r.body.data[0]).not.toHaveProperty("attenteFinLe");
     expect(db.orderDelivery.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { status: "PENDING", driverId: null, offers: { some: { driverId: "driver-alice", status: "PENDING", expiresAt: { gt: expect.any(Date) } } } },
@@ -476,6 +485,26 @@ describe("courses", () => {
     const r = await alice(request(app).get("/api/drivers/deliveries/course-1"));
     expect(r.status).toBe(200);
     expect(r.body.data).toMatchObject({ id: "course-1", orderStatus: "READY", pickupStore: "Chez Test", latitude: 1, longitude: 2, payout: 5, bilan: null, masque: null });
+  });
+  it("GET /deliveries/:id : une proposition ne révèle pas la rue du client", async () => {
+    db.deliveryOffer.findFirst.mockResolvedValue({ id: "offre-1" });
+    db.orderDelivery.findUnique.mockResolvedValue({
+      ...course({ driverId: null, status: "PENDING" }),
+      deliveryLat: 1,
+      deliveryLng: 2,
+      deliveryLatObfusquee: 3,
+      deliveryLngObfusquee: 4,
+      order: { ...order, pourboireApres: null },
+      offers: [{ payout: 6 }],
+      deliveryCode: null,
+      codeAttempts: 0,
+      proofPhoto: null,
+    });
+    const r = await alice(request(app).get("/api/drivers/deliveries/course-1"));
+    expect(r.status).toBe(200);
+    expect(r.body.data.deliveryAddress).toBe("69000 Lyon");
+    expect(r.body.data.deliveryAddress).not.toContain("rue B");
+    expect(r.body.data.latitude).toBe(3);
   });
   it("PATCH /deliveries/:id/accept", async () => {
     db.orderDelivery.findUnique.mockResolvedValue({ ...course({ driverId: null, status: "PENDING" }) });
@@ -607,12 +636,24 @@ describe("courses", () => {
     db.deliveryOffer.findMany.mockResolvedValue([{
       id: "offre-1", deliveryId: "course-1", distanceKm: 3, payout: 6, expiresAt: new Date("2026-10-04T12:00:00Z"), batchId: null, ajout: false,
       horsLimite: false, bientotLibre: false, libreDansSecondes: null,
-      delivery: { deliveryLatObfusquee: 1, deliveryLngObfusquee: 2, order: { id: "commande-1", deliveryAddress: "2 rue B", deliveryCity: "Lyon", deliveryPostal: "69000", store: order.store } },
+      delivery: { deliveryLatObfusquee: 1, deliveryLngObfusquee: 2, order: { id: "commande-1", deliveryAddress: "2 rue B", deliveryCity: "Lyon", deliveryPostal: "69000", tipAmount: 1.5, store: order.store } },
     }]);
     const r = await alice(request(app).get("/api/drivers/offers"));
     expect(r.status).toBe(200);
     expect(r.body.data).toHaveLength(1);
-    expect(r.body.data[0]).toMatchObject({ id: "offre-1", deliveryId: "course-1", distanceKm: 3, approcheKm: 0, payout: 6, pickupStore: "Chez Test", deliveryLat: 1, boutique: order.store, codePostal: "69000" });
+    expect(r.body.data[0]).toMatchObject({
+      id: "offre-1",
+      deliveryId: "course-1",
+      distanceKm: 3,
+      approcheKm: 0,
+      payout: 6,
+      pourboire: 1.5,
+      deliveryAddress: null,
+      pickupStore: "Chez Test",
+      deliveryLat: 1,
+      boutique: order.store,
+      codePostal: "69000",
+    });
     expect(db.deliveryOffer.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { driverId: "driver-alice", status: "PENDING", expiresAt: { gt: expect.any(Date) } }, orderBy: { offeredAt: "asc" } }));
   });
   it("GET /tournee", async () => {

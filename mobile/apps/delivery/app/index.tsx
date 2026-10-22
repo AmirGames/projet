@@ -327,7 +327,17 @@ export default function DeliveryApp() {
   // Profil pas encore chargé : on ne coupe pas le suivi en arrière-plan d'un
   // livreur resté en ligne, application fermée.
   const dutyMode: DutyMode =
-    visibleDeliveries.length > 0 ? 'delivery' : driver ? (driver.isOnline ? 'idle' : 'off') : token ? 'loading' : 'off';
+    visibleDeliveries.length > 0
+      ? 'delivery'
+      : driver
+        ? driver.pausedUntil && new Date(driver.pausedUntil).getTime() > Date.now()
+          ? 'paused'
+          : driver.isOnline
+            ? 'idle'
+            : 'off'
+        : token
+          ? 'loading'
+          : 'off';
   const { position, gps, background } = useDriverLocation(token, dutyMode, tracking);
 
   useEffect(() => {
@@ -826,6 +836,7 @@ export default function DeliveryApp() {
         onDriverChange={patchDriver}
         onSeeEarnings={() => setTab('earnings')}
         onSeeAccount={() => setTab('account')}
+        onContactSupport={() => setTab('support')}
       />
     );
   };

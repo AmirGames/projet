@@ -8,10 +8,9 @@ import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 /**
  * Pause temporaire d'un livreur.
  *
- * Se mettre hors ligne pour cinq minutes de pause obligeait à couper le
- * partage de position, puis à penser à se remettre en ligne. La pause garde le
- * livreur connecté et localisé, écarte seulement les nouvelles courses, et se
- * lève d'elle-même à l'heure dite.
+ * La pause écarte les nouvelles propositions. Sans course en cours, les
+ * coordonnées ne sont pas actualisées pendant cette période. La fin de pause
+ * correspond à la durée que le livreur a lui-même choisie.
  */
 
 const PAUSE_MIN_MINUTES = 5;
@@ -77,7 +76,9 @@ export class DriverAvailabilityService {
     if (ouvertes.length > 0) {
       await db.deliveryOffer.updateMany({
         where: { id: { in: ouvertes.map((o) => o.id) } },
-        data: { status: "DECLINED", respondedAt: new Date() },
+        // Une pause n'est pas un refus volontaire. L'état distinct la rend
+        // vérifiable et l'exclut des statistiques de réponse/refus.
+        data: { status: "UNAVAILABLE_DURING_PAUSE", respondedAt: new Date() },
       });
 
       for (const offre of ouvertes) {
@@ -158,7 +159,10 @@ export class DriverAvailabilityService {
         isOnline: true,
         gpsLostAt: null,
         updatedAt: { lt: limite },
-        OR: [{ lastLocationUpdate: null }, { lastLocationUpdate: { lt: limite } }],
+        AND: [
+          { OR: [{ pausedUntil: null }, { pausedUntil: { lte: maintenant } }] },
+          { OR: [{ lastLocationUpdate: null }, { lastLocationUpdate: { lt: limite } }] },
+        ],
       },
       select: {
         id: true,
@@ -202,7 +206,12 @@ export class DriverAvailabilityService {
     // l'application. Le laisser en ligne fausserait la liste des disponibles.
     const limiteHorsLigne = new Date(maintenant.getTime() - HORS_LIGNE_APRES_MS);
     const abandonnes = await db.courier.findMany({
-      where: { isOnline: true, currentOrderId: null, gpsLostAt: { lt: limiteHorsLigne } },
+      where: {
+        isOnline: true,
+        currentOrderId: null,
+        gpsLostAt: { lt: limiteHorsLigne },
+        OR: [{ pausedUntil: null }, { pausedUntil: { lte: maintenant } }],
+      },
       select: { id: true, email: true, user: { select: { email: true } } },
     });
 

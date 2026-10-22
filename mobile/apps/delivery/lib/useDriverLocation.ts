@@ -22,7 +22,7 @@ export type GpsState = 'off' | 'searching' | 'ok' | 'denied' | 'error';
  * 'loading' : profil pas encore chargé, on ne touche à rien (une tâche en
  * arrière-plan déjà lancée continue).
  */
-export type DutyMode = 'loading' | 'off' | 'idle' | 'delivery';
+export type DutyMode = 'loading' | 'off' | 'paused' | 'idle' | 'delivery';
 
 /**
  * La position part-elle téléphone verrouillé ?
@@ -109,7 +109,7 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
   }, [background, tracking.target]);
 
   const profile: Profile =
-    !token || mode === 'off'
+    !token || mode === 'off' || mode === 'paused'
       ? 'off'
       : mode === 'loading'
         ? 'loading'

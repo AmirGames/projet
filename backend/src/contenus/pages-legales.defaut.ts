@@ -209,38 +209,39 @@ Les réclamations passent par le support commerçant. Droit français ; tribunal
 
   "conditions-livreurs": {
     titre: "Conditions générales livreurs",
-    contenu: `Ces conditions lient ZupEat et les livreurs indépendants qui réalisent des courses via la plateforme. Elles complètent les [CGU](/cgu).
+    contenu: `Ces conditions sont un projet à valider par un avocat belge et identifient les engagements annoncés aux livreurs qui utilisent la plateforme ZupEat. Elles complètent les [CGU](/cgu). L'exploitant est [Raison sociale], [forme juridique], établi à [adresse], inscrit à la BCE sous le numéro [numéro BCE] et identifié à la TVA sous le numéro [numéro TVA].
 
 ## 1. Statut
 
-Le livreur exerce en tant que travailleur indépendant (micro-entrepreneur ou société). Il n'est lié par aucun lien de subordination : il choisit librement ses périodes de connexion, peut refuser une course sans pénalité et peut travailler pour d'autres plateformes.
+Les parties entendent organiser une relation de prestation indépendante, sous réserve de la qualification résultant des conditions concrètes d'exécution et du droit applicable. Le livreur choisit ses périodes de connexion, peut se déconnecter, faire une pause, cesser d'utiliser la plateforme et travailler pour des tiers. Aucun nombre minimal de jours ou de courses n'est annoncé comme obligatoire. Chaque course est présentée comme une proposition distincte et requiert l'acceptation explicite du livreur. Un refus ou une absence de réponse ne constitue pas, à lui seul, un manquement et ne réduit pas l'accès aux autres offres.
 
 ## 2. Validation du dossier
 
-Avant toute course, le livreur fournit : pièce d'identité, justificatif d'immatriculation, droit de travailler en France, et selon le véhicule permis, carte grise et assurance adaptée. ZupEat valide le dossier et peut le refuser s'il est incomplet ou non conforme.
+Avant l'accès aux courses, l'exploitant vérifie les éléments nécessaires à l'admissibilité professionnelle au regard des règles belges applicables : identité, inscription BCE lorsque requise, statut professionnel déclaré, informations fiscales nécessaires, coordonnées de paiement, véhicule utilisé, permis et assurances ou autorisations exigés pour l'activité. Les pièces ne sont accessibles qu'aux personnes habilitées pour ce contrôle. Le numéro BCE, pris seul, ne détermine pas la qualification de la relation.
 
 ## 3. Réalisation des courses
 
-- le prix de chaque course est affiché avant acceptation ;
-- le livreur remet la commande en l'état, dans le respect du code de la route ;
-- il peut être demandé une preuve de remise (photo, code) ;
-- la localisation n'est partagée que pendant une course ou une période de disponibilité.
+- avant sa décision, le livreur voit le montant proposé et les informations de distance et de lot disponibles dans l'application. Les distances, durées et montants marqués comme estimatifs ne constituent pas une garantie de durée ou de trajet ;
+- un commerçant peut suggérer un livreur admissible, mais cette suggestion ne lui attribue pas la course. Seule l'acceptation explicite de l'offre l'engage ;
+- le livreur organise les moyens et l'itinéraire, sous réserve des obligations légales, de sécurité et des informations nécessaires à la commande acceptée. Pour un lot de courses accepté en une seule offre, l'application calcule actuellement l'ordre des remises et le maintient pendant la tournée ; cette contrainte technique, sa nécessité et sa portée doivent être validées par un avocat belge avant publication ;
+- une preuve de remise peut être demandée lorsqu'elle est nécessaire à la bonne exécution ou au traitement d'un litige ;
+- la position peut être traitée lorsque le livreur choisit la disponibilité en ligne et pour le suivi d'une course acceptée. Elle n'est pas actualisée côté serveur pendant une pause sans course ni après la déconnexion ; les données de preuve et de litige suivent leurs finalités propres décrites dans la politique de confidentialité.
 
 ## 4. Rémunération
 
-Les sommes dues sont reversées périodiquement ; le détail des versements est consultable dans l'espace livreur. Le livreur s'acquitte lui-même de ses cotisations sociales et impôts. Conformément à la directive (UE) 2021/514 (DAC7), ZupEat déclare chaque année à l'administration fiscale les sommes versées au livreur ; celui-ci fournit pour cela son identité, son adresse, son numéro d'identification fiscale ou SIREN et son IBAN.
+Le montant individuel affiché avant acceptation est celui proposé pour la mission et, après acceptation, est enregistré avec la course. Le détail du calcul, des compléments éventuels, des frais applicables et du calendrier de paiement doit être précisé dans l'espace livreur et les documents commerciaux applicables avant lancement. Les pourboires attribués au livreur sont identifiés séparément dans les relevés. Le livreur reste responsable des obligations fiscales et sociales qui lui incombent selon son statut. Les informations fiscales requises sont recueillies et déclarées selon les règles applicables, notamment DAC7 le cas échéant ; aucun identifiant fiscal français n'est présumé.
 
 ## 5. Notes
 
-Les clients peuvent noter les livraisons. Les notes ne sont jamais la seule base d'une désactivation, qui est toujours motivée et peut être contestée auprès du support.
+Les clients peuvent évaluer le résultat commercial d'une livraison. Les avis et plaintes contestées ne sont pas assimilés à des faits vérifiés. Toute restriction importante du compte doit indiquer son motif et les moyens de la contester ; les décisions importantes appellent un examen humain approprié lorsque la loi l'exige. Les mécanismes précis de contestation et de révision doivent être opérationnels avant d'annoncer leur disponibilité.
 
 ## 6. Assurance et sécurité
 
-Le livreur justifie d'une assurance responsabilité civile professionnelle et d'une assurance de son véhicule couvrant l'usage professionnel. Il peut signaler tout incident via l'application.
+Le livreur fournit les attestations légalement requises pour son statut et son véhicule. Les exigences exactes, ainsi que le régime d'assurance propre aux collaborateurs indépendants de plateformes et sa date d'entrée en vigueur, doivent être confirmés pour la Belgique avant l'activation commerciale. Il peut signaler un incident via l'application.
 
 ## 7. Fin de la relation
 
-Le livreur peut clôturer son compte à tout moment. ZupEat peut désactiver un compte en cas de fraude, de mise en danger ou de manquement grave, après en avoir exposé les motifs.`,
+Le livreur peut cesser d'utiliser la plateforme et demander la clôture de son compte, sous réserve des obligations de conservation applicables. Toute suspension ou fin d'accès doit reposer sur un motif objectif lié à l'admissibilité, à la sécurité, à la fraude ou à un manquement grave ; elle ne peut être fondée sur un refus de course, l'inactivité ou l'utilisation de plateformes concurrentes. La procédure de notification, de contestation et de réexamen doit être définie avant publication.`,
   },
 
   confidentialite: {

@@ -36,6 +36,8 @@ export interface Offer {
   /** Chemin du livreur jusqu'au commerce. */
   approcheKm?: number | null;
   payout: number;
+  /** Pourboire déjà attribué, compris dans `payout`. */
+  pourboire?: number;
   expiresAt: string;
   pickupStore?: string | null;
   pickupAddress?: string | null;

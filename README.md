@@ -8,6 +8,17 @@
 
 > **Audit A01 (13 octobre 2026) :** [baseline et limites des preuves](docs/audit-rea-ubereats.md). Les validations CI documentées ne prouvent pas un déploiement ni un parcours réel complet. Priorité : A02 puis A03.
 
+## Audit des Livreurs en Belgique (22 octobre 2026)
+
+L'audit initial, les huit critères belges, les corrections locales et les limites
+de validation sont consignés dans [le rapport Livreurs](docs/audits/AUDIT-LIVREURS-INDEPENDANTS-2026.md).
+La [matrice juridique](docs/legal/MATRICE-REQUALIFICATION.md), la
+[géolocalisation RGPD](docs/legal/RGPD-GEOLOCALISATION-LIVREURS.md), la
+[gestion algorithmique](docs/legal/GESTION-ALGORITHMIQUE-LIVREURS.md) et les
+[scénarios de test](docs/testing/TESTS-CONFORMITE-LIVREURS.md) complètent ce
+travail. Ces changements ne certifient pas la qualification de la relation et
+ne sont pas déployés.
+
 
 ## Étape 16 — Décision de recette pilote A16 (12 octobre 2026)
 
