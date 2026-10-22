@@ -5,6 +5,7 @@ import { emitNotification } from "../realtime/socket";
 import { FileUploadService } from "../files/file-upload.service";
 import { notifierPlateforme } from "../notifications/notification.service";
 import { cheminRelatif } from "../files/fichiers-prives.service";
+import { numeroBceNormalise } from "../../utils/bce";
 
 /**
  * Le dossier d'un livreur, et sa validation par la plateforme.
@@ -288,6 +289,10 @@ export class DriverApprovalService {
   static async valider(driverId: string, adminId: string) {
     const dossier = await this.dossier(driverId);
 
+    if (dossier.bceStatus !== "VERIFIED") {
+      throw new ApiError(400, "Le numéro BCE doit être vérifié dans le registre officiel avant validation.", "BCE_NOT_VERIFIED");
+    }
+
     if (!dossier.dossierComplet) {
       const manquantes = dossier.piecesManquantes.map(libelleDuDocument).join(", ");
 
@@ -321,6 +326,39 @@ export class DriverApprovalService {
     return livreur;
   }
 
+  /** Contrôle humain du numéro BCE après consultation du registre officiel. */
+  static async examinerBce(
+    driverId: string,
+    adminId: string,
+    decision: { status: "VERIFIED" | "REJECTED"; reason?: string }
+  ) {
+    const dossier = await db.courier.findUnique({ where: { id: driverId }, select: { id: true, bceNumber: true, updatedAt: true } });
+    if (!dossier) throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
+    if (!numeroBceNormalise(dossier.bceNumber || "")) {
+      throw new ApiError(400, "Aucun numéro BCE valide n'est associé au dossier.", "BCE_NUMBER_MISSING");
+    }
+    if (decision.status === "REJECTED" && !decision.reason?.trim()) {
+      throw new ApiError(400, "Indiquez pourquoi le numéro BCE n'a pas été vérifié.", "BCE_REJECTION_REASON_REQUIRED");
+    }
+
+    const bceReviewedAt = new Date();
+    const miseAJour = await db.courier.updateMany({
+      // Si le Livreur corrige son numéro pendant le contrôle, ne jamais
+      // appliquer le résultat du contrôle à la nouvelle valeur.
+      where: { id: driverId, updatedAt: dossier.updatedAt },
+      data: {
+        bceStatus: decision.status,
+        bceReviewedAt,
+        bceReviewedBy: adminId,
+        bceReviewReason: decision.status === "REJECTED" ? decision.reason!.trim() : null,
+      },
+    });
+    if (miseAJour.count !== 1) {
+      throw new ApiError(409, "Le dossier a changé pendant le contrôle. Rechargez-le et vérifiez le numéro à nouveau.", "BCE_REVIEW_STALE");
+    }
+    return { id: driverId, bceStatus: decision.status, bceReviewedAt };
+  }
+
   /**
    * Refuse ou suspend un livreur. Dans les deux cas il quitte la file : les
    * courses en cours ne lui sont pas retirées, mais il n'en reçoit plus.
@@ -335,6 +373,11 @@ export class DriverApprovalService {
       throw new ApiError(400, "Dites au livreur pourquoi", "MISSING_REASON");
     }
 
+    const contexte = await db.courier.findUnique({
+      where: { id: driverId },
+      select: { currentOrderId: true },
+    });
+
     const livreur = await db.courier.update({
       where: { id: driverId },
       data: {
@@ -344,6 +387,11 @@ export class DriverApprovalService {
         isOnline: false,
         isAvailable: false,
         approvedBy: adminId,
+        // Ne pas garder un point de disponibilité après le retrait du compte.
+        // Une course déjà acceptée conserve son suivi jusqu'à sa fin.
+        ...(contexte?.currentOrderId === null || !contexte
+          ? { latitude: null, longitude: null, lastLocationUpdate: null, gpsLostAt: null }
+          : {}),
       },
     });
 
@@ -364,6 +412,10 @@ export class DriverApprovalService {
 
     if (!livreur) {
       throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
+    }
+
+    if (livreur.bceStatus !== "VERIFIED") {
+      throw new ApiError(400, "Le numéro BCE doit être vérifié avant réactivation.", "BCE_NOT_VERIFIED");
     }
 
     if (livreur.status === "PENDING" || livreur.status === "REJECTED") {
