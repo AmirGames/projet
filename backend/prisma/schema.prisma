@@ -1414,6 +1414,7 @@ model Courier {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([bceStatus])
   @@index([isOnline])
   @@index([userId])
 
@@ -4136,4 +4137,3 @@ model RefundOperationEvent {
   code String?
   createdAt DateTime @default(now())
   @@index([operationId, createdAt])
-}
