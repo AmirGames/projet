@@ -19,7 +19,7 @@ Références officielles et consolidées figurent dans le [rapport d'audit](../a
 - Les positions ne sont plus enregistrées par le backend hors ligne ou en pause sans course; l'app mobile bascule en suivi arrêté pendant la pause.
 - Le balayage GPS ignore les pauses actives.
 - Les incidents ouverts d'une course ne filtrent plus les offres futures de tournée; l'incident reste suivi sur la mission concernée.
-- Une livraison échouée ou un dépôt refusé ne suspend plus le compte par défaut; une suspension temporaire reste possible sur décision explicite d'un opérateur.
+- Une livraison échouée ou un dépôt refusé ne suspend plus le compte par défaut, y compris si le service métier est appelé sans option; une suspension temporaire reste possible sur décision explicite d'un opérateur.
 - Le taux d'acceptation n'est plus envoyé par l'API Analytics et la jauge frontend est remplacée par un compte descriptif assorti d'une information sans effet sur l'accès futur.
 - Les notifications de mission n'incitent plus à « répondre vite » et rappellent d'attendre d'être arrêté en sécurité.
 - L'écran de proposition n'affiche plus de compte à rebours visuel dégressif; il présente la rémunération hors pourboire, le pourboire déjà attribué et des distances/durée estimées. Il ne décompose pas base/km, et le délai serveur (30 s par défaut) reste à évaluer avec l'équipe produit.

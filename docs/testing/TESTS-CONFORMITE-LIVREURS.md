@@ -8,6 +8,7 @@
 - `backend/src/modules/drivers/__tests__/dispatch-vehicule.test.ts`: les incidents ouverts d'une course n'excluent plus le livreur des nouvelles offres de tournée.
 - `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: la route du fil support ne sélectionne plus les coordonnées GPS du profil.
 - `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: un échec de livraison rembourse par défaut mais ne suspend plus automatiquement le compte; l'opérateur peut demander explicitement la suspension.
+- `backend/src/modules/drivers/__tests__/surveillance-courses.test.ts`: le service ne suspend pas par défaut un livreur après une livraison échouée; le test vérifie aussi le chemin de suspension explicitement demandé.
 - `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: la route de pause ne demande ni ne transmet de motif personnel.
 
 ## Tests existants pertinents (non exécutés ici)
