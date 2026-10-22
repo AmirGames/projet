@@ -180,6 +180,15 @@ export default function DeliveryApp() {
       clearOutbox().then(clearOfflineStore);
     }
     const current = sessionRef.current;
+    // À la déconnexion volontaire, faire aussi tomber l'état de disponibilité
+    // côté serveur. La mission déjà acceptée reste attribuée; le serveur garde
+    // ses coordonnées de course jusqu'à sa fin, mais ne proposera plus d'offre.
+    if (forget && current) {
+      apiFetch('/api/drivers/availability', current.accessToken, {
+        method: 'PATCH',
+        body: { isOnline: false },
+      }).catch(() => undefined);
+    }
     if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
     pushTokenRef.current = null;
     setPushSetup(null);
