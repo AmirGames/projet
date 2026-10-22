@@ -79,7 +79,7 @@ suite("Dispatch par véhicule et livreurs bientôt libres : base PostgreSQL de t
     return db.courier.create({
       data: {
         id: nouvelId(nom), name: nom, email: `${nom}-${compteur}@dispatch-it.invalid`, phone: "000", vehicleType,
-        status: "ACTIVE", isOnline: true, isAvailable: true, ...position,
+        status: "ACTIVE", bceNumber: "0123456749", bceStatus: "VERIFIED", isOnline: true, isAvailable: true, ...position,
       },
     });
   }
