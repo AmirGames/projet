@@ -65,7 +65,18 @@ export class DriverAvailabilityService {
       where: { id: driverId },
       // Une pause n'est pas une absence à justifier : ne pas conserver de motif
       // personnel qui n'est pas nécessaire pour arrêter les propositions.
-      data: { pausedUntil: fin, pauseReason: null, isAvailable: false },
+      data: {
+        pausedUntil: fin,
+        pauseReason: null,
+        isAvailable: false,
+        // Sans course active, ne pas garder une ancienne position exploitable
+        // pendant une pause. Les positions propres aux livraisons restent
+        // rattachées à leur dossier de commande.
+        latitude: null,
+        longitude: null,
+        lastLocationUpdate: null,
+        gpsLostAt: null,
+      },
     });
 
     // Une course proposée juste avant la pause ne doit pas attendre la fin du
@@ -220,7 +231,16 @@ export class DriverAvailabilityService {
     for (const livreur of abandonnes) {
       await db.courier.update({
         where: { id: livreur.id },
-        data: { isOnline: false, isAvailable: false, pausedUntil: null, pauseReason: null },
+        data: {
+          isOnline: false,
+          isAvailable: false,
+          pausedUntil: null,
+          pauseReason: null,
+          latitude: null,
+          longitude: null,
+          lastLocationUpdate: null,
+          gpsLostAt: null,
+        },
       });
       emitDriverEvent(livreur.user?.email || livreur.email, "mis-hors-ligne", {
         raison: "Aucune position reçue depuis 10 minutes",
