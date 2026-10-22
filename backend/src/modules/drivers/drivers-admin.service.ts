@@ -47,6 +47,7 @@ export const DriversAdminService = {
           vehicleType: livreur.vehicleType,
           vehiclePlate: livreur.vehiclePlate,
           status: livreur.status,
+          bceStatus: livreur.bceStatus,
           statusReason: livreur.statusReason,
           approvedAt: livreur.approvedAt,
           isOnline: livreur.isOnline,
