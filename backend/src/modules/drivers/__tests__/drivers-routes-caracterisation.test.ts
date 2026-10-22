@@ -81,11 +81,12 @@ afterEach(() => {
 });
 
 const livreur = {
-  id: "driver-alice", userId: "alice", email: "alice@test.fr", name: "Alice", status: "ACTIVE", statusReason: null,
+  id: "driver-alice", userId: "alice", email: "alice@test.fr", name: "Alice", status: "ACTIVE", bceStatus: "VERIFIED", statusReason: null,
   isOnline: false, isAvailable: false, currentOrderId: null, pausedUntil: null, pauseReason: null,
   latitude: 45.7, longitude: 4.8, lastLocationUpdate: new Date(), gpsLostAt: null,
   rating: 4.5, totalRatings: 2, totalEarnings: 12, totalDeliveries: 3, iban: null, accountHolder: null,
   vehicleType: "bike", licensePlate: null, approvedAt: null, suppressionDemandeeLe: null,
+  bceNumber: "0123456749", bceReviewReason: null,
 };
 const course = (extra: any = {}) => ({
   id: "course-1", orderId: "commande-1", status: "ACCEPTED", driverId: "driver-alice", assignedAt: new Date("2026-10-04T10:00:00Z"),
@@ -158,7 +159,7 @@ describe("/api/drivers — authentification", () => {
 });
 
 describe("POST /register", () => {
-  const corps = { name: "Alice", email: "a@test.fr", password: "Motdepasse!123", phone: "0612345678", vehicleType: "bike", acceptation: true };
+  const corps = { name: "Alice", email: "a@test.fr", password: "Motdepasse!123", phone: "0612345678", bceNumber: "0123.456.749", vehicleType: "bike", acceptation: true };
   it("e-mail déjà pris → 409 EMAIL_EXISTS", async () => {
     db.user.findUnique.mockResolvedValue({ id: "u" });
     db.courier.findUnique.mockResolvedValue(null);
@@ -172,6 +173,11 @@ describe("POST /register", () => {
     expect(r.status).toBeGreaterThanOrEqual(400);
     expect(db.user.create).not.toHaveBeenCalled();
   });
+  it("numéro BCE mal formé → refus avant création", async () => {
+    const r = await request(app).post("/api/drivers/register").send({ ...corps, bceNumber: "123" });
+    expect(r.status).toBeGreaterThanOrEqual(400);
+    expect(db.user.create).not.toHaveBeenCalled();
+  });
   it("inscription → 201 avec jetons et livreur", async () => {
     db.user.findUnique.mockResolvedValue(null);
     db.courier.findUnique.mockResolvedValue(null);
@@ -181,7 +187,7 @@ describe("POST /register", () => {
     expect(r.status).toBe(201);
     expect(r.body).toEqual({ message: "Inscription réussie", accessToken: "at", refreshToken: "rt", driver: { id: "d1", name: "Alice", email: "a@test.fr" } });
     expect(db.user.create).toHaveBeenCalledWith({ data: { email: "a@test.fr", name: "Alice", passwordHash: "hash" } });
-    expect(db.courier.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: "u1", vehicleType: "bike", phone: "0612345678" }) });
+    expect(db.courier.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: "u1", vehicleType: "bike", phone: "0612345678", bceNumber: "0123456749", bceStatus: "PENDING" }) });
   });
   it("confirmation exigée : 202 et e-mail durable, sans jetons ni session", async () => {
     process.env.REQUIRE_EMAIL_VERIFICATION = "true";
@@ -217,7 +223,7 @@ describe("profil, revenus, disponibilité", () => {
     expect(r.status).toBe(200);
     expect(r.body.success).toBe(true);
     expect(Object.keys(r.body.data).sort()).toEqual([
-      "approvedAt", "avis", "completedDeliveries", "compte", "email", "gpsLostAt", "id", "isAvailable", "isOnline", "lastLocationUpdate",
+      "approvedAt", "avis", "bceNumber", "bceReviewReason", "bceStatus", "completedDeliveries", "compte", "email", "gpsLostAt", "id", "isAvailable", "isOnline", "lastLocationUpdate",
       "latitude", "licensePlate", "longitude", "maxCourses", "name", "pauseReason", "pausedUntil", "piecesAttendues", "rating",
       "status", "statusReason", "totalEarnings", "vehicleType",
     ]);
@@ -234,6 +240,19 @@ describe("profil, revenus, disponibilité", () => {
     expect(r.body.pourboires).toEqual({ today: 3, week: 3, month: 3, total: 3 });
     expect(r.body.deliveries[0]).toMatchObject({ id: "course-1", orderId: "commande-1", earning: 5, pourboire: 1, pourboireApres: 2 });
     expect(db.orderDelivery.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 30, skip: 0 }));
+  });
+  it("PATCH /me/bce : correction du numéro relance le contrôle et coupe la disponibilité", async () => {
+    db.courier.update.mockResolvedValue({ bceNumber: "0123456749", bceStatus: "PENDING" });
+    const r = await alice(request(app).patch("/api/drivers/me/bce").send({ bceNumber: "BE0123.456.749" }));
+    expect(r.status).toBe(200);
+    expect(r.body.data).toEqual({ bceNumber: "0123456749", bceStatus: "PENDING" });
+    expect(db.courier.update).toHaveBeenCalledWith({
+      where: { id: "driver-alice" },
+      data: expect.objectContaining({
+        bceNumber: "0123456749", bceStatus: "PENDING", bceReviewedAt: null,
+        isOnline: false, isAvailable: false,
+      }),
+    });
   });
   it("GET /earnings borne la page sans borner les totaux SQL", async () => {
     db.orderDelivery.findMany.mockResolvedValue([]);
@@ -257,6 +276,13 @@ describe("profil, revenus, disponibilité", () => {
     expect(r.body.code).toBe("DRIVER_NOT_APPROVED");
     expect(db.courier.update).not.toHaveBeenCalled();
   });
+  it("PATCH /availability : numéro BCE non vérifié ne passe pas en ligne", async () => {
+    db.courier.findUnique.mockResolvedValue({ ...livreur, bceStatus: "PENDING" });
+    const r = await alice(request(app).patch("/api/drivers/availability").send({ isOnline: true }));
+    expect(r.status).toBe(403);
+    expect(r.body.code).toBe("BCE_NOT_VERIFIED");
+    expect(db.courier.update).not.toHaveBeenCalled();
+  });
   it("PATCH /availability : se mettre en ligne", async () => {
     db.courier.update.mockResolvedValue({ isAvailable: true, isOnline: true, pausedUntil: null });
     const r = await alice(request(app).patch("/api/drivers/availability").send({ isOnline: true }));
@@ -267,7 +293,10 @@ describe("profil, revenus, disponibilité", () => {
   it("PATCH /availability : se déconnecter met fin à la pause", async () => {
     db.courier.update.mockResolvedValue({ isAvailable: false, isOnline: false, pausedUntil: null });
     await alice(request(app).patch("/api/drivers/availability").send({ isAvailable: false }));
-    expect(db.courier.update).toHaveBeenCalledWith({ where: { id: "driver-alice" }, data: { isOnline: false, isAvailable: false, pausedUntil: null, pauseReason: null } });
+    expect(db.courier.update).toHaveBeenCalledWith({ where: { id: "driver-alice" }, data: {
+      isOnline: false, isAvailable: false, pausedUntil: null, pauseReason: null,
+      latitude: null, longitude: null, lastLocationUpdate: null, gpsLostAt: null,
+    } });
   });
   it("POST /pause : aucun motif personnel n'est demandé ni transmis", async () => {
     const r = await alice(request(app).post("/api/drivers/pause").send({ minutes: 15 }));
@@ -698,7 +727,7 @@ describe("courses", () => {
 
 describe("GET /available (commerçant)", () => {
   const boutique = { id: "s1", orgId: "org1", latitude: 45.7, longitude: 4.8 };
-  const coursier = (id: string, extra: any = {}) => ({ id, name: id, phone: "06", status: "ACTIVE", isOnline: true, isAvailable: true, currentOrderId: null, latitude: 45.71, longitude: 4.81, gpsLostAt: null, ...extra });
+  const coursier = (id: string, extra: any = {}) => ({ id, name: id, phone: "06", status: "ACTIVE", bceStatus: "VERIFIED", isOnline: true, isAvailable: true, currentOrderId: null, latitude: 45.71, longitude: 4.81, gpsLostAt: null, ...extra });
   it("storeId requis → 400, boutique inconnue → 404", async () => {
     let r = await alice(request(app).get("/api/drivers/available"));
     expect(r.status).toBe(400);
