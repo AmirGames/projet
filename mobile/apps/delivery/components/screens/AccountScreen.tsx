@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { pickPdf } from '../../lib/document';
@@ -52,6 +52,8 @@ export default function AccountScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
+  const [bceDraft, setBceDraft] = useState('');
+  const [savingBce, setSavingBce] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -61,6 +63,7 @@ export default function AccountScreen({
         apiFetch<{ data: Documents }>('/api/drivers/documents', token),
       ]);
       setDriver(me.data);
+      setBceDraft(me.data.bceNumber || '');
       setDocs(documents.data);
       onDriverLoaded(me.data);
     } catch (e: any) {
@@ -133,6 +136,19 @@ export default function AccountScreen({
       { cancelable: true }
     );
 
+  const saveBce = async () => {
+    setSavingBce(true);
+    try {
+      await apiFetch('/api/drivers/me/bce', token, { method: 'PATCH', body: { bceNumber: bceDraft.trim() } });
+      Alert.alert('Numéro envoyé', 'Votre numéro BCE sera vérifié avant la reprise des propositions.');
+      await load();
+    } catch (e: any) {
+      Alert.alert('Numéro non envoyé', e.message || 'Vérifiez le numéro BCE.');
+    } finally {
+      setSavingBce(false);
+    }
+  };
+
   const displayName = driver?.name || driver?.email?.split('@')[0] || '';
   const initials = displayName
     .split(/\s+/)
@@ -177,6 +193,31 @@ export default function AccountScreen({
           </Card>
 
           <BankAccountCard token={token} compte={driver?.compte} onSaved={() => load()} />
+
+          <Card title="Vérification BCE">
+            <Text style={styles.help}>
+              {driver?.bceStatus === 'VERIFIED'
+                ? 'Numéro vérifié par ZupEat.'
+                : driver?.bceStatus === 'REJECTED'
+                  ? 'Le numéro n’a pas été validé. Corrigez-le pour demander un nouvel examen.'
+                  : 'Le numéro doit être confirmé dans le registre officiel avant activation.'}
+            </Text>
+            {driver?.bceReviewReason ? <Text style={styles.reason}>{driver.bceReviewReason}</Text> : null}
+            <TextInput
+              style={styles.bceInput}
+              value={bceDraft}
+              onChangeText={setBceDraft}
+              placeholder="0123.456.749"
+              placeholderTextColor={COLORS.muted}
+              keyboardType="number-pad"
+              autoCapitalize="characters"
+              editable={!savingBce}
+              accessibilityLabel="Numéro d’entreprise BCE"
+            />
+            <TouchableOpacity style={styles.docButton} onPress={saveBce} disabled={savingBce || !bceDraft.trim()}>
+              {savingBce ? <ActivityIndicator color="#fff" /> : <Text style={styles.docButtonText}>Envoyer pour vérification</Text>}
+            </TouchableOpacity>
+          </Card>
 
           {docs && (
             <Card title="Mon dossier">
@@ -264,4 +305,5 @@ const styles = themedStyles(() => ({
   docNote: { fontSize: 12, color: COLORS.secondary, marginTop: 2 },
   docButton: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
   docButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  bceInput: { backgroundColor: COLORS.raised, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, color: COLORS.text, marginVertical: 10 },
 }));
