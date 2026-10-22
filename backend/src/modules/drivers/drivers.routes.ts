@@ -13,6 +13,7 @@ import { DispatchService } from "./dispatch.service";
 import { DriverAccountService } from "./driver-account.service";
 import { livreurConnecte } from "./driver-ownership.service";
 import { REPONSE_INSCRIPTION_A_CONFIRMER } from "../auth/auth-inscription.service";
+import { numeroBceNormalise } from "../../utils/bce";
 
 // Compte du livreur : inscription, profil, revenus, disponibilité, versements.
 // Le dossier, les notifications et le support sont dans drivers.dossier.routes.ts,
@@ -25,6 +26,7 @@ const inscriptionSchema = z.object({
   email: champEmail(),
   password: champMotDePasse(),
   phone: z.string().min(9, "Téléphone invalide"),
+  bceNumber: z.string().min(1, "Le numéro BCE est obligatoire").refine((value) => numeroBceNormalise(value) !== null, "Numéro BCE invalide"),
   vehicleType: z.enum(["car", "scooter", "bike"]),
   vehiclePlate: z.string().optional(),
   ...champAcceptation,
@@ -186,6 +188,18 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
     const data = await DriverAccountService.profil(req.user?.userId as string);
 
     res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /drivers/me/bce - Corriger son numéro BCE, avec nouvelle vérification humaine.
+router.patch("/me/bce", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const body = z.object({ bceNumber: z.string().min(1).max(32) }).parse(req.body);
+    const misAJour = await DriverAccountService.modifierNumeroBce(livreur, body.bceNumber);
+    res.json({ success: true, data: { bceNumber: misAJour.bceNumber, bceStatus: misAJour.bceStatus } });
   } catch (err) {
     next(err);
   }
