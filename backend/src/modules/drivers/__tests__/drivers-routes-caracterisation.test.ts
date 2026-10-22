@@ -112,7 +112,7 @@ beforeEach(() => {
   jest.spyOn(DriverSupportService, "fil").mockResolvedValue([{ id: "m1" }] as any);
   jest.spyOn(DriverSupportService, "marquerLu").mockResolvedValue(undefined as any);
   jest.spyOn(DriverSupportService, "nonLusPourLivreur").mockResolvedValue(2 as any);
-  jest.spyOn(DriverAvailabilityService, "mettreEnPause").mockResolvedValue({ isAvailable: false, isOnline: true, pausedUntil: new Date("2026-10-04T12:00:00Z"), pauseReason: "café" } as any);
+  jest.spyOn(DriverAvailabilityService, "mettreEnPause").mockResolvedValue({ isAvailable: false, isOnline: true, pausedUntil: new Date("2026-10-04T12:00:00Z"), pauseReason: null } as any);
   jest.spyOn(DriverAvailabilityService, "reprendre").mockResolvedValue({ isAvailable: true, isOnline: true } as any);
   jest.spyOn(DriverActivityService, "historique").mockResolvedValue({ data: [], total: 0 } as any);
   jest.spyOn(DriverActivityService, "analytics").mockResolvedValue({ jours: 7 } as any);
@@ -269,11 +269,11 @@ describe("profil, revenus, disponibilité", () => {
     await alice(request(app).patch("/api/drivers/availability").send({ isAvailable: false }));
     expect(db.courier.update).toHaveBeenCalledWith({ where: { id: "driver-alice" }, data: { isOnline: false, isAvailable: false, pausedUntil: null, pauseReason: null } });
   });
-  it("POST /pause", async () => {
-    const r = await alice(request(app).post("/api/drivers/pause").send({ minutes: 15, reason: "café" }));
+  it("POST /pause : aucun motif personnel n'est demandé ni transmis", async () => {
+    const r = await alice(request(app).post("/api/drivers/pause").send({ minutes: 15 }));
     expect(r.status).toBe(200);
-    expect(r.body).toMatchObject({ success: true, isAvailable: false, isOnline: true, pauseReason: "café" });
-    expect(DriverAvailabilityService.mettreEnPause).toHaveBeenCalledWith("driver-alice", 15, "café");
+    expect(r.body).toMatchObject({ success: true, isAvailable: false, isOnline: true, pauseReason: null });
+    expect(DriverAvailabilityService.mettreEnPause).toHaveBeenCalledWith("driver-alice", 15);
   });
   it("POST /pause : corps invalide → 4xx", async () => {
     const r = await alice(request(app).post("/api/drivers/pause").send({ minutes: "x" }));

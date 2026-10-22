@@ -67,8 +67,9 @@ router.post(
  *
  * Commande partie avec le livreur (PICKED_UP) et qui n'arrivera pas : la
  * course passe à FAILED, le livreur est libéré et n'est pas payé.
- * Body : { motif, rembourser = true, suspendre = true }. Rembourse le client
- * (paiement en ligne) et suspend le livreur, ses courses encore au commerce
+ * Body : { motif, rembourser = true, suspendre = false }. Rembourse le client
+ * (paiement en ligne). Une suspension temporaire peut être demandée explicitement
+ * par l'opérateur si le risque le justifie; les courses au commerce sont alors
  * reproposées. Réponse : `remboursement` (REMBOURSEE, DEJA_REMBOURSEE,
  * SANS_PAIEMENT_EN_LIGNE, ECHEC, NON_DEMANDE), `suspendu`, `coursesRetirees`.
  */
@@ -80,10 +81,10 @@ router.post(
     try {
       const body = motif
         .extend({
-          // Cochés par défaut : un client qui n'a rien reçu est remboursé, et
-          // le livreur ne roule plus tant que l'équipe n'a pas examiné le cas.
+          // Le remboursement protège le client; la suspension est une mesure
+          // distincte qui doit être décidée explicitement et motivée.
           rembourser: z.boolean().default(true),
-          suspendre: z.boolean().default(true),
+          suspendre: z.boolean().default(false),
         })
         .parse(req.body);
       const resultat = await SurveillanceCoursesService.declarerEchec(req.params.deliveryId as string, {
@@ -116,10 +117,11 @@ router.post(
  *
  * Dépôt en photo fait pendant un incident, ou réclamation du client : le
  * paiement au livreur attend cette décision. Body : { decision: VALIDER |
- * REFUSER, motif, rembourser = true, suspendre = true } (les deux derniers ne
+ * REFUSER, motif, rembourser = true, suspendre = false } (les deux derniers ne
  * servent qu'au refus). VALIDER : la course est payée avec le relevé de la
  * semaine. REFUSER : jamais payée, commande annulée (DELIVERY_FAILED, due au
- * commerçant), client remboursé, livreur suspendu.
+ * commerçant) et client remboursé; la suspension est optionnelle et doit être
+ * demandée explicitement si les faits justifient une mesure conservatoire.
  */
 router.post(
   "/delivery-incidents/courses/:deliveryId/depot",
@@ -131,7 +133,7 @@ router.post(
         .extend({
           decision: z.enum(["VALIDER", "REFUSER"]),
           rembourser: z.boolean().default(true),
-          suspendre: z.boolean().default(true),
+          suspendre: z.boolean().default(false),
         })
         .parse(req.body);
       const resultat = await SurveillanceCoursesService.deciderDepot(req.params.deliveryId as string, {

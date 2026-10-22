@@ -6,6 +6,8 @@
 - `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: l'API des propositions expose le pourboire déjà attribué séparément du montant total (montant dans lequel il reste compris).
 - `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: la liste et le détail d'une proposition ne révèlent que la ville et le code postal avant acceptation, pas la rue du client.
 - `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: la route du fil support ne sélectionne plus les coordonnées GPS du profil.
+- `backend/src/modules/drivers/__tests__/drivers-admin-routes-caracterisation.test.ts`: un échec de livraison rembourse par défaut mais ne suspend plus automatiquement le compte; l'opérateur peut demander explicitement la suspension.
+- `backend/src/modules/drivers/__tests__/drivers-routes-caracterisation.test.ts`: la route de pause ne demande ni ne transmet de motif personnel.
 
 ## Tests existants pertinents (non exécutés ici)
 

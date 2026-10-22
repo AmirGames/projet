@@ -228,18 +228,20 @@ describe("incidents de livraison", () => {
     expect(SurveillanceCoursesService.retirerCourse).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, motif: "Ne vient pas" });
     audit("WITHDRAW_DELIVERY_FROM_DRIVER", "c1", { driverId: "dr1", orderId: "o1", avant: { status: "ACCEPTED", driverId: "dr1" }, apres: { status: "PENDING", driverId: null }, motif: "Ne vient pas" });
   });
-  it("POST …/echec : remboursement et suspension par défaut", async () => {
+  it("POST …/echec : rembourse par défaut, sans suspendre automatiquement", async () => {
     await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/echec").send({ motif: "Jamais livré" }));
-    expect(SurveillanceCoursesService.declarerEchec).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, motif: "Jamais livré", rembourser: true, suspendre: true });
+    expect(SurveillanceCoursesService.declarerEchec).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, motif: "Jamais livré", rembourser: true, suspendre: false });
     audit("FAIL_DELIVERY", "c1", {
       driverId: "dr1", orderId: "o1", avant: { status: "PICKED_UP" }, apres: { status: "FAILED" }, motif: "Jamais livré",
       remboursement: "REMBOURSEE", livreurSuspendu: true, coursesRetirees: 1,
     });
+    await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/echec").send({ motif: "Risque immédiat", suspendre: true }));
+    expect(SurveillanceCoursesService.declarerEchec).toHaveBeenLastCalledWith("c1", { par: { userId: "owner" }, motif: "Risque immédiat", rembourser: true, suspendre: true });
   });
   it("POST …/depot : VALIDER ou REFUSER", async () => {
     expect((await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/depot").send({ motif: "Photo ok" }))).status).toBe(400);
     await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/depot").send({ decision: "VALIDER", motif: "Photo ok" }));
-    expect(SurveillanceCoursesService.deciderDepot).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, decision: "VALIDER", motif: "Photo ok", rembourser: true, suspendre: true });
+    expect(SurveillanceCoursesService.deciderDepot).toHaveBeenCalledWith("c1", { par: { userId: "owner" }, decision: "VALIDER", motif: "Photo ok", rembourser: true, suspendre: false });
     audit("VALIDATE_DELIVERY_DEPOSIT", "c1", { driverId: "dr1", orderId: "o1", avant: { payoutHold: "REVIEW" }, apres: { payoutHold: null }, motif: "Photo ok", dejaSurUnReleve: false });
     await owner(request(app).post("/api/superowner/delivery-incidents/courses/c1/depot").send({ decision: "REFUSER", motif: "Faux" }));
     expect(db.systemAuditLog.create).toHaveBeenLastCalledWith({ data: expect.objectContaining({ action: "REFUSE_DELIVERY_DEPOSIT", changes: expect.objectContaining({ apres: { payoutHold: "REFUSED" } }) }) });

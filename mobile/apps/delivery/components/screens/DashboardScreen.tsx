@@ -7,7 +7,6 @@ import { COLORS, themedStyles } from '../ui';
 
 
 const PAUSE_DURATIONS = [15, 30, 60];
-const PAUSE_REASONS = ['Repas', 'Pause café', 'Plein / recharge', 'Problème véhicule', 'Autre'];
 
 export interface EarningsSummary {
   today: number;
@@ -47,7 +46,6 @@ function PauseCard({
   onDriverChange: (patch: Partial<Driver>) => void;
   now: number;
 }) {
-  const [reason, setReason] = useState(PAUSE_REASONS[0]);
   const [busy, setBusy] = useState(false);
   const end = driver.pausedUntil ? new Date(driver.pausedUntil).getTime() : null;
   const paused = end != null && end > now;
@@ -72,7 +70,7 @@ function PauseCard({
     const left = Math.max(0, Math.ceil((end! - now) / 1000));
     return (
       <View style={[styles.card, styles.pauseActive]}>
-        <Text style={styles.cardTitle}>☕ En pause{driver.pauseReason ? ` · ${driver.pauseReason}` : ''}</Text>
+        <Text style={styles.cardTitle}>☕ En pause</Text>
         <Text style={styles.pauseTimer}>
           {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
         </Text>
@@ -87,20 +85,13 @@ function PauseCard({
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Faire une pause</Text>
-      <View style={styles.chips}>
-        {PAUSE_REASONS.map((r) => (
-          <TouchableOpacity key={r} style={[styles.chip, reason === r && styles.chipActive]} onPress={() => setReason(r)}>
-            <Text style={[styles.chipText, reason === r && styles.chipTextActive]}>{r}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
       <View style={styles.pauseDurations}>
         {PAUSE_DURATIONS.map((m) => (
           <TouchableOpacity
             key={m}
             style={styles.pauseButton}
             disabled={busy}
-            onPress={() => call('POST', { minutes: m, reason })}
+            onPress={() => call('POST', { minutes: m })}
           >
             <Text style={styles.pauseButtonText}>{m} min</Text>
           </TouchableOpacity>

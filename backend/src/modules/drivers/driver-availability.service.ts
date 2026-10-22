@@ -38,7 +38,7 @@ export class DriverAvailabilityService {
     return Boolean(livreur.pausedUntil && livreur.pausedUntil > maintenant);
   }
 
-  static async mettreEnPause(driverId: string, minutes: number, raison?: string) {
+  static async mettreEnPause(driverId: string, minutes: number) {
     if (!Number.isFinite(minutes) || minutes < PAUSE_MIN_MINUTES || minutes > PAUSE_MAX_MINUTES) {
       throw new ApiError(
         400,
@@ -63,7 +63,9 @@ export class DriverAvailabilityService {
 
     const misAJour = await db.courier.update({
       where: { id: driverId },
-      data: { pausedUntil: fin, pauseReason: raison?.trim() || null, isAvailable: false },
+      // Une pause n'est pas une absence à justifier : ne pas conserver de motif
+      // personnel qui n'est pas nécessaire pour arrêter les propositions.
+      data: { pausedUntil: fin, pauseReason: null, isAvailable: false },
     });
 
     // Une course proposée juste avant la pause ne doit pas attendre la fin du

@@ -92,15 +92,15 @@ router.patch("/availability", authMiddleware, async (req: Request, res: Response
   }
 });
 
-// POST /drivers/pause - Pause temporaire { minutes, reason? }
+// POST /drivers/pause - Pause temporaire { minutes }
 router.post("/pause", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
     const body = z
-      .object({ minutes: z.number(), reason: z.string().max(200).optional() })
+      .object({ minutes: z.number() })
       .parse(req.body);
 
-    const misAJour = await DriverAvailabilityService.mettreEnPause(livreur.id, body.minutes, body.reason);
+    const misAJour = await DriverAvailabilityService.mettreEnPause(livreur.id, body.minutes);
 
     res.json({
       success: true,

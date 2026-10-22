@@ -101,9 +101,9 @@ export default function IncidentsLivraisonPage() {
   const [geste, setGeste] = useState<Geste | null>(null);
   const [texte, setTexte] = useState('');
   const [envoi, setEnvoi] = useState(false);
-  // Course échouée : rembourser le client et suspendre le livreur, cochés d'office.
+  // Le remboursement protège le client; une suspension reste une décision séparée.
   const [rembourser, setRembourser] = useState(true);
-  const [suspendre, setSuspendre] = useState(true);
+  const [suspendre, setSuspendre] = useState(false);
   // Ce que la dernière action a donné (remboursement, suspension).
   const [bilan, setBilan] = useState('');
   // L'heure du dernier relevé : « il y a 12 min » se calcule depuis elle.
