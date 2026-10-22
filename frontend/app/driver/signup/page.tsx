@@ -39,6 +39,7 @@ export default function InscriptionLivreurPage() {
     email: '',
     password: '',
     phone: '',
+    bceNumber: '',
     vehicleType: 'bike',
     vehiclePlate: '',
   });
@@ -179,6 +180,20 @@ export default function InscriptionLivreurPage() {
               {...champ('phone')}
               className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('inscription.bce')}</label>
+            <input
+              type="text"
+              required
+              maxLength={32}
+              autoComplete="off"
+              placeholder="0123.456.749"
+              {...champ('bceNumber')}
+              className="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-900 transition focus:border-[#FF7A00] focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/20"
+            />
+            <p className="mt-1 text-xs text-gray-500">{t('inscription.bceAide')}</p>
           </div>
 
           <div>

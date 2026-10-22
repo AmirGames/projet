@@ -152,6 +152,7 @@ const courseEnCours = async (suffixe, coordonneesClient) => {
       email: `d-${suffixe}-${uniq}@t.fr`,
       password: MDP,
       phone: '0611111111',
+      bceNumber: '0123456749',
       vehicleType: 'scooter',
       vehiclePlate: 'AB-123-CD',
     },

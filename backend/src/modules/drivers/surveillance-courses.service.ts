@@ -998,7 +998,7 @@ export class SurveillanceCoursesService {
     // La course est close avant tout : un remboursement ou une suspension qui
     // échoue ne la rouvre pas, et se rattrape à part.
     const remboursement = options.rembourser === false ? "NON_DEMANDE" : await this.rembourser(course.orderId, options.motif);
-    const suspension = options.suspendre === false ? null : await this.suspendre(driverId, options);
+    const suspension = options.suspendre === true ? await this.suspendre(driverId, options) : null;
 
     if (course.order) {
       const numero = numeroDe(course.orderId);
@@ -1249,8 +1249,8 @@ export class SurveillanceCoursesService {
    * VALIDER : la course est payée avec le relevé de la semaine en cours.
    * REFUSER : la commande est jugée non livrée — la course n'est jamais payée,
    * la commande est annulée pour le client (motif DELIVERY_FAILED, toujours
-   * due au commerçant), le client remboursé et le livreur suspendu, sauf cases
-   * décochées.
+   * due au commerçant), le client remboursé et, si l'opérateur l'a demandé
+   * explicitement, le livreur temporairement suspendu.
    */
   static async deciderDepot(
     deliveryId: string,
@@ -1365,7 +1365,7 @@ export class SurveillanceCoursesService {
     }
 
     const remboursement = options.rembourser === false ? "NON_DEMANDE" : await this.rembourser(course.orderId, options.motif);
-    const suspension = options.suspendre === false ? null : await this.suspendre(driverId, options);
+    const suspension = options.suspendre === true ? await this.suspendre(driverId, options) : null;
 
     enArrierePlan(
       Notifier.pushLivreur(driverId, {

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 const db: any = {
   orderDelivery: { findUnique: jest.fn(), findMany: jest.fn() },
   deliveryOffer: { findFirst: jest.fn(), upsert: jest.fn() },
-  courier: { findMany: jest.fn() },
+  courier: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
   systemConfig: { findFirst: jest.fn() },
 };
 jest.mock("../../../services/db", () => ({ db }));
@@ -14,6 +14,8 @@ jest.mock("../../notifications/notifier.service", () => ({
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
 import { DispatchService } from "../dispatch.service";
+import { REGLES_TOURNEE_PAR_DEFAUT } from "../tournee.service";
+import { REGLES_BIENTOT_LIBRE_PAR_DEFAUT } from "../livreur-bientot-libre.service";
 
 // Commerce à Paris ; client ~5,6 km au nord : trop loin pour un vélo (4 km),
 // dans la limite d'un scooter (7 km) et d'une voiture (8 km).
@@ -62,6 +64,45 @@ beforeEach(() => {
 const proposeA = () => db.deliveryOffer.upsert.mock.calls[0]?.[0]?.create;
 
 describe("distance de livraison selon le véhicule (attribution)", () => {
+  it.each([
+    ["hors ligne", { isOnline: false, currentOrderId: null, pausedUntil: null }],
+    ["en pause", { isOnline: true, currentOrderId: null, pausedUntil: new Date(Date.now() + 60_000) }],
+  ])("n'enregistre pas la position de disponibilité quand le livreur est %s", async (_etat, contexte) => {
+    db.courier.findUnique.mockResolvedValue(contexte);
+
+    const resultat = await DispatchService.enregistrerPosition("livreur-1", { latitude: 48.85, longitude: 2.35 });
+
+    expect(resultat.suivie).toBe(false);
+    expect(db.courier.update).not.toHaveBeenCalled();
+  });
+
+  it("les incidents ouverts d'une course ne filtrent pas les offres futures de tournée", async () => {
+    db.courier.findMany.mockResolvedValue([]);
+    const coursier = {
+      id: "course-1",
+      status: "PENDING",
+      pickupLat: COMMERCE.latitude,
+      pickupLng: COMMERCE.longitude,
+      deliveryLat: CLIENT.latitude,
+      deliveryLng: CLIENT.longitude,
+    };
+
+    await DispatchService.livreursEnTournee(coursier, REGLES_TOURNEE_PAR_DEFAUT);
+    await DispatchService.livreursBientotLibres(COMMERCE, {
+      ...{
+        baseFee: 2.5, perKmFee: 0.8, offerSeconds: 30, maxRadiusKm: 8,
+        bikeMaxKm: 4, scooterMaxKm: 7, exceptionSeconds: 1800,
+        tournee: REGLES_TOURNEE_PAR_DEFAUT,
+      },
+      bientotLibre: REGLES_BIENTOT_LIBRE_PAR_DEFAUT,
+    }, Date.now());
+
+    expect(db.courier.findMany).toHaveBeenCalledTimes(2);
+    for (const [args] of db.courier.findMany.mock.calls) {
+      expect(args.where).not.toHaveProperty("deliveryIncidents");
+    }
+  });
+
   it("une course de 5,6 km va au scooter plutôt qu'au vélo, même plus proche", async () => {
     db.orderDelivery.findUnique.mockResolvedValue(course());
     livreursEnLigne([livreur("velo", "bike", 0.0005), livreur("scooter", "scooter", 0.003)]);
@@ -82,6 +123,29 @@ describe("distance de livraison selon le véhicule (attribution)", () => {
 
     expect(res).toBeNull();
     expect(db.deliveryOffer.upsert).not.toHaveBeenCalled();
+  });
+
+  it("ne repropose jamais après un refus explicite, même après trois minutes ou sur demande du commerçant", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(
+      course({
+        deliveryLat: 48.875,
+        offers: [{
+          driverId: "scooter",
+          status: "DECLINED",
+          attempts: 1,
+          expiresAt: new Date(Date.now() - 10 * 60_000),
+          respondedAt: new Date(Date.now() - 10 * 60_000),
+        }],
+      })
+    );
+    livreursEnLigne([livreur("scooter", "scooter"), livreur("velo", "bike", 0.002)]);
+
+    await DispatchService.proposerAuSuivant("course-1", "scooter");
+
+    expect(proposeA()).toMatchObject({ driverId: "velo" });
+    expect(db.deliveryOffer.upsert).not.toHaveBeenCalledWith(
+      expect.objectContaining({ where: { deliveryId_driverId: { deliveryId: "course-1", driverId: "scooter" } } })
+    );
   });
 
   it("sans scooter ni voiture, la course s'ouvre au vélo, marquée hors limite", async () => {

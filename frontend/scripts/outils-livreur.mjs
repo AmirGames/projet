@@ -25,6 +25,18 @@ export async function validerLivreur(API, jetonLivreur, jetonPlateforme) {
   const moi = await lire(await fetch(`${API}/api/drivers/me`, { headers: entetes(jetonLivreur) }));
   const driverId = moi?.data?.id;
 
+  // Les scripts tournent contre une base de test locale/staging : cette action
+  // simule la revue manuelle du numéro fictif fourni par leurs fixtures.
+  const controleBce = await fetch(`${API}/api/superowner/drivers/${driverId}/bce`, {
+    method: 'PATCH',
+    headers: entetes(jetonPlateforme),
+    body: JSON.stringify({ status: 'VERIFIED' }),
+  });
+  if (!controleBce.ok) {
+    const erreur = await lire(controleBce);
+    throw new Error(`Revue BCE de test impossible : ${erreur?.error || controleBce.status}`);
+  }
+
   // L'API refuse les liens externes : chaque pièce est un vrai fichier, déposé
   // par la route d'upload (PNG minimal, le contenu importe peu ici).
   for (const type of moi?.data?.piecesAttendues || []) {

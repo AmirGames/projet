@@ -22,7 +22,7 @@ export type GpsState = 'off' | 'searching' | 'ok' | 'denied' | 'error';
  * 'loading' : profil pas encore chargé, on ne touche à rien (une tâche en
  * arrière-plan déjà lancée continue).
  */
-export type DutyMode = 'loading' | 'off' | 'idle' | 'delivery';
+export type DutyMode = 'loading' | 'off' | 'paused' | 'idle' | 'delivery';
 
 /**
  * La position part-elle téléphone verrouillé ?
@@ -109,7 +109,7 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
   }, [background, tracking.target]);
 
   const profile: Profile =
-    !token || mode === 'off'
+    !token || mode === 'off' || mode === 'paused'
       ? 'off'
       : mode === 'loading'
         ? 'loading'
@@ -143,7 +143,10 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
   useEffect(() => {
     if (profile === 'loading') return;
     if (profile === 'off') {
-      // Les états gps et background se lisent « off » à la sortie (voir plus bas) : rien à y remettre.
+      // Arrêter la collecte et effacer la dernière position tenue en mémoire
+      // dès la déconnexion ou la pause. Le serveur refuse aussi les envois
+      // tardifs, mais l'écran ne doit pas conserver une position inactive.
+      latest.current = null;
       stopBackgroundLocation();
       return;
     }
@@ -224,5 +227,9 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
     };
   }, [token, profile, recheck]);
 
-  return { position, gps: profile === 'off' ? 'off' : gps, background: profile === 'off' ? 'off' : background };
+  return {
+    position: profile === 'off' ? null : position,
+    gps: profile === 'off' ? 'off' : gps,
+    background: profile === 'off' ? 'off' : background,
+  };
 }

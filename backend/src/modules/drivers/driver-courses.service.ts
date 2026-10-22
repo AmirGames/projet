@@ -77,7 +77,10 @@ export const DriverCoursesService = {
       status: d.status,
       pickupAddress: adresseRetrait(d.order?.store),
       pickupStore: d.order?.store?.name || "",
-      deliveryAddress: adresseLivraison(d.order),
+      deliveryAddress: enAttente
+        ? [d.order?.deliveryPostal, d.order?.deliveryCity].filter(Boolean).join(" ") ||
+          "Zone communiquée après acceptation"
+        : adresseLivraison(d.order),
       customerName: d.order?.customerName || "",
       customerPhone: d.order?.customerPhone || "",
       // Ce que la course lui rapporte. Le total payé par le client (articles,
@@ -154,7 +157,10 @@ export const DriverCoursesService = {
       orderStatus: delivery.order?.status,
       pickupStore: delivery.order?.store?.name || "",
       pickupAddress: adresseRetrait(delivery.order?.store),
-      deliveryAddress: adresseLivraison(delivery.order),
+      deliveryAddress: attribuee
+        ? adresseLivraison(delivery.order)
+        : [delivery.order?.deliveryPostal, delivery.order?.deliveryCity].filter(Boolean).join(" ") ||
+          "Zone communiquée après acceptation",
       customerName: delivery.order?.customerName,
       customerPhone: delivery.order?.customerPhone,
       payout: gainAnnonce(delivery, delivery.offers[0]),
@@ -229,6 +235,7 @@ export const DriverCoursesService = {
                 deliveryAddress: true,
                 deliveryCity: true,
                 deliveryPostal: true,
+                tipAmount: true,
                 store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
               },
             },
@@ -253,6 +260,9 @@ export const DriverCoursesService = {
           : null;
       })(),
       payout: Number(proposition.payout || 0),
+      // Le pourboire déjà attribué est distinct du tarif de livraison, tout
+      // en restant compris dans le montant total figé de la proposition.
+      pourboire: Number(proposition.delivery.order?.tipAmount || 0),
       expiresAt: proposition.expiresAt,
       // Plusieurs courses : proposées ensemble (même batchId, un seul
       // « Accepter » pour tout le lot), ou ajoutée à la course en cours.
@@ -269,7 +279,10 @@ export const DriverCoursesService = {
       pickupCity: proposition.delivery.order?.store?.city,
       pickupLat: proposition.delivery.order?.store?.latitude,
       pickupLng: proposition.delivery.order?.store?.longitude,
-      deliveryAddress: proposition.delivery.order?.deliveryAddress,
+      // Avant acceptation, la zone suffit à évaluer l'offre. La rue et le
+      // numéro sont des données du client nécessaires seulement à la course
+      // acceptée; les coordonnées de proposition restent déjà obfusquées.
+      deliveryAddress: null,
       deliveryCity: proposition.delivery.order?.deliveryCity,
       deliveryPostal: proposition.delivery.order?.deliveryPostal,
       // Le point de livraison, à 50-100 m près tant que la course n'est pas

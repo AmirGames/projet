@@ -4,7 +4,7 @@ import { decrypt, encrypt, isEncrypted } from "./crypto";
 /** Les champs de recherche/index et les coordonnées numériques sont couverts par le chiffrement du volume, voir politique. */
 export const ENCRYPTED_FIELDS: Record<string, string[]> = {
   Organization: ["iban", "bic", "accountHolder", "vatNumber", "registrationNumber", "billingAddress", "billingPostalCode", "billingCity", "ownerFirstName", "ownerLastName", "ownerEmail", "ownerPhone", "customTermsNote"],
-  Courier: ["iban", "bic", "accountHolder", "phone", "vehiclePlate", "licensePlate", "pushSubscription"],
+  Courier: ["iban", "bic", "accountHolder", "phone", "vehiclePlate", "licensePlate", "bceNumber", "pushSubscription"],
   Customer: ["phone", "address", "city", "postalCode", "savedAddresses", "notes"],
   Order: ["customerName", "customerPhone", "deliveryAddress", "deliveryCity", "deliveryPostal", "notes", "rejectionNote"],
   Payment: ["stripeClientSecret"],

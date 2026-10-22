@@ -33,6 +33,10 @@ interface Livreur {
   status: string;
   statusReason: string | null;
   approvedAt: string | null;
+  bceNumber: string | null;
+  bceStatus: string;
+  bceReviewedAt: string | null;
+  bceReviewReason: string | null;
   isOnline: boolean;
   /** Nulle tant que personne ne l'a noté. */
   rating: number | null;
@@ -184,7 +188,7 @@ export default function LivreursPage() {
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/drivers/${chemin}`, {
-        method: chemin.includes('/documents/') ? 'PATCH' : 'POST',
+        method: chemin.includes('/documents/') || chemin.endsWith('/bce') ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify(corps ?? {}),
       });
@@ -212,8 +216,6 @@ export default function LivreursPage() {
 
   const changerEcheance = async (livreurId: string, piece: Piece) => {
     const date = echeance[piece.id];
-    if (!date) return;
-
     if (await agir(`${livreurId}/documents/${piece.id}/expiry`, { expiryDate: date })) {
       setEcheance(({ [piece.id]: _, ...reste }) => reste);
     }
@@ -406,6 +408,29 @@ export default function LivreursPage() {
                     )}
                     <h4 className="font-semibold text-gray-900">{t('documentsParts')}</h4>
 
+                    <section className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2">
+                      <h4 className="font-semibold text-gray-900">{t('bce.title')}</h4>
+                      <p className="text-sm text-gray-700">{t('bce.number')}: <span className="font-mono">{dossier.driver.bceNumber || t('bce.missing')}</span></p>
+                      <p className="text-sm text-gray-600">{t('bce.status')}: {t(`bce.${dossier.driver.bceStatus || 'NOT_SUBMITTED'}`)}</p>
+                      <p className="text-xs text-gray-500">{t('bce.instruction')}</p>
+                      {dossier.driver.bceReviewReason && <p className="text-sm text-red-700">{dossier.driver.bceReviewReason}</p>}
+                      {dossier.driver.bceReviewedAt && <p className="text-xs text-gray-500">{t('bce.reviewedAt')}: {new Date(dossier.driver.bceReviewedAt).toLocaleString(locale)}</p>}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => agir(`${livreur.id}/bce`, { status: 'VERIFIED' })}
+                          disabled={!dossier.driver.bceNumber || dossier.driver.bceStatus === 'VERIFIED'}
+                          className="px-3 py-2 rounded-sm bg-green-600 text-white text-sm disabled:opacity-40"
+                        >{t('bce.verify')}</button>
+                        <button
+                          type="button"
+                          onClick={() => agir(`${livreur.id}/bce`, { status: 'REJECTED', reason: motif || t('bce.defaultReason') })}
+                          disabled={!dossier.driver.bceNumber}
+                          className="px-3 py-2 rounded-sm bg-red-600 text-white text-sm disabled:opacity-40"
+                        >{t('bce.reject')}</button>
+                      </div>
+                    </section>
+
                     {dossier.documents.length === 0 ? (
                       <p className="text-sm text-gray-500">
                         {t('noDocuments')}
@@ -549,7 +574,7 @@ export default function LivreursPage() {
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => agir(`${livreur.id}/approve`)}
-                          disabled={!dossier.dossierComplet || livreur.status === 'ACTIVE'}
+                          disabled={!dossier.dossierComplet || dossier.driver.bceStatus !== 'VERIFIED' || livreur.status === 'ACTIVE'}
                           className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-sm text-sm font-medium transition"
                         >
                           {t('approveDriver')}

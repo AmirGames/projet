@@ -27,7 +27,7 @@ const commerce = (nom: string) => ({
   address: "1 rue test", postalCode: "5000", city: "Namur", description: "Test", latitude: 50.46, longitude: 4.86,
 });
 const client = (nom: string) => ({ email: `${prefixe}-${nom}@example.test`, name: "Client test", password: "MotDePasse123!" });
-const livreur = (nom: string) => ({ ...client(nom), phone: "+32470000001", vehicleType: "bike" as const });
+const livreur = (nom: string) => ({ ...client(nom), phone: "+32470000001", bceNumber: "0123456749", vehicleType: "bike" as const });
 
 async function nettoyer() {
   const whereEmail = { email: { startsWith: prefixe } };

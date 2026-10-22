@@ -306,8 +306,8 @@ export class DriverActivityService {
     const moyenne = (valeurs: number[]) =>
       valeurs.length ? Math.round(valeurs.reduce((a, b) => a + b, 0) / valeurs.length) : null;
 
-    // Les propositions sans réponse de sa part (annulées par le système) ne
-    // comptent pas dans le taux : le livreur n'y est pour rien.
+    // L'ancien taux d'acceptation a été retiré. Les événements système et les
+    // pauses ne sont pas transformés en refus; ces compteurs restent descriptifs.
     const compte = { ACCEPTED: 0, DECLINED: 0, EXPIRED: 0 };
     let annuleesParLui = 0;
     for (const o of offres) {
@@ -345,7 +345,6 @@ export class DriverActivityService {
         acceptees: compte.ACCEPTED,
         refusees: compte.DECLINED,
         expirees: compte.EXPIRED,
-        tauxAcceptation: repondues ? Math.round((compte.ACCEPTED / repondues) * 100) : null,
       },
       notes: {
         moyennePeriode: notes._avg.note != null ? arrondi(notes._avg.note) : null,

@@ -273,7 +273,6 @@ export default function AnalyticsLivreurPage() {
                   </p>
                 </div>
 
-                {/* Taux d'acceptation : une jauge, piste du même ton. */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <p className="text-gray-500 text-xs">{t('tauxAcceptation')}</p>
                   <p className="text-gray-900 text-2xl font-semibold mt-1">
@@ -295,6 +294,7 @@ export default function AnalyticsLivreurPage() {
                   <p className="text-xs text-gray-500 mt-1">
                     {t('offres', { acceptees: o.acceptees, refusees: o.refusees, expirees: o.expirees })}
                   </p>
+                  <p className="text-xs text-gray-500 mt-1">{t('offresSansEffet')}</p>
                 </div>
               </div>
 

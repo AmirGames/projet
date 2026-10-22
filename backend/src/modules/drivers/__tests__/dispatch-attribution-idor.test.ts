@@ -22,7 +22,7 @@ beforeEach(() => {
   db.orderDelivery.count.mockResolvedValue(0);
   db.orderDelivery.findUniqueOrThrow.mockResolvedValue({ id: "course-alice" });
   jest.spyOn(DispatchService, "reglages").mockResolvedValue({ tournee: { maxCourses: 2 } } as any);
-  tx.courier.findUnique.mockResolvedValue({ status: "ACTIVE", currentOrderId: null });
+  tx.courier.findUnique.mockResolvedValue({ status: "ACTIVE", bceStatus: "VERIFIED", currentOrderId: null });
   tx.orderDelivery.count.mockResolvedValue(0);
   tx.$executeRaw.mockReset();
   tx.orderDelivery.updateMany.mockResolvedValue({ count: 1 });

@@ -6,8 +6,8 @@ import type { Position } from '../lib/useDriverLocation';
 import LiveMap, { RouteInfo } from './LiveMap';
 import { COLORS, isDarkTheme, themedStyles } from './ui';
 
-/** Hauteur du panneau : la carte cadre le trajet au-dessus. */
-const SHEET_HEIGHT = 380;
+/** Hauteur de référence du panneau pour laisser visibles les arrêts sur la carte. */
+const SHEET_HEIGHT = 460;
 /** Faute d'itinéraire calculé, une vitesse moyenne en ville. */
 const CITY_SPEED_KMH = 20;
 
@@ -34,11 +34,6 @@ export default function OfferSheet({
 }) {
   const [now, setNow] = useState(() => Date.now());
   const [route, setRoute] = useState<RouteInfo | null>(null);
-  // Le temps de réponse total, mesuré à la première apparition de l'offre.
-  // Clé sur l'échéance aussi : une course refusée puis reproposée garde son
-  // identifiant, mais c'est une nouvelle proposition, avec un nouveau délai.
-  const [firstSeen, setFirstSeen] = useState(() => new Map<string, number>());
-
   const live = offers.filter((o) => new Date(o.expiresAt).getTime() > now);
   const offer = live[0];
   // Un lot s'affiche d'un bloc : même temps de réponse, un seul geste.
@@ -55,26 +50,12 @@ export default function OfferSheet({
 
   useEffect(() => {
     if (!offerKey) return;
-    // Première apparition de l'offre et heure à jour aussitôt (hors du rendu), puis toutes les 250 ms.
-    const premier = setTimeout(() => {
-      const maintenant = Date.now();
-      setFirstSeen((seen) => (seen.has(offerKey) ? seen : new Map(seen).set(offerKey, maintenant)));
-      setNow(maintenant);
-    }, 0);
-    const id = setInterval(() => setNow(Date.now()), 250);
-    return () => {
-      clearTimeout(premier);
-      clearInterval(id);
-    };
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
   }, [offerKey]);
 
   if (!offer) return null;
 
-  const expires = new Date(offer.expiresAt).getTime();
-  const start = firstSeen.get(`${offer.id}|${offer.expiresAt}`) ?? now;
-  const total = Math.max(1, expires - start);
-  const remaining = Math.max(0, expires - now);
-  const fraction = Math.min(1, remaining / total);
   const busy = answeringOfferId === offer.id;
 
   const pickup = offer.pickupLat != null && offer.pickupLng != null ? { lat: offer.pickupLat, lng: offer.pickupLng } : null;
@@ -87,6 +68,7 @@ export default function OfferSheet({
   // des autres, mais chaque trajet est compté en entier.
   const totalKm = (offer.approcheKm ?? 0) + group.reduce((t, o) => t + (o.distanceKm ?? 0), 0);
   const amount = group.reduce((t, o) => t + (Number(o.payout) || 0), 0);
+  const tips = group.reduce((t, o) => t + (Number(o.pourboire) || 0), 0);
   const stores = [...new Set(group.map((o) => o.pickupStore || 'Commerce'))];
   const durationS = route?.durationS ?? (totalKm / CITY_SPEED_KMH) * 3600;
   const distanceM = route?.distanceM ?? totalKm * 1000;
@@ -153,9 +135,11 @@ export default function OfferSheet({
           <Text style={styles.amount}>+ {formatEuros(amount)}</Text>
           <View style={styles.guaranteed}>
             <Text style={styles.guaranteedText}>
-              {group.length > 1 ? `Montant garanti · ${group.length} courses payées chacune` : 'Montant garanti'}
+              {group.length > 1 ? `${group.length} courses · montant proposé total` : 'Montant proposé'}
             </Text>
           </View>
+          <Text style={styles.line}>Rémunération hors pourboire : {formatEuros(amount - tips)}</Text>
+          {tips > 0 && <Text style={styles.line}>Pourboire déjà attribué : {formatEuros(tips)}</Text>}
 
           {offer.horsLimite && (
             <Text style={styles.warning}>
@@ -165,8 +149,14 @@ export default function OfferSheet({
 
           <View style={styles.divider} />
           <Text style={styles.line}>
-            🕒 {formatMinutes(durationS)} ({formatDistance(distanceM)}) au total
+            Approche estimée : {offer.approcheKm == null ? 'indisponible' : formatDistance(offer.approcheKm * 1000)}
           </Text>
+          <Text style={styles.line}>
+            Livraison estimée : {formatDistance(group.reduce((t, o) => t + (o.distanceKm ?? 0), 0) * 1000)}
+          </Text>
+          <Text style={styles.line}>Total estimé : {formatDistance(distanceM)} · {formatMinutes(durationS)}</Text>
+          <Text style={styles.expiry}>La proposition expire automatiquement après un court délai. Vous pouvez la refuser sans conséquence.</Text>
+          <Text style={styles.expiry}>Répondez ou refusez uniquement lorsque vous êtes arrêté en sécurité.</Text>
 
           <View style={styles.divider} />
           <View style={styles.stops}>
@@ -206,16 +196,12 @@ export default function OfferSheet({
             activeOpacity={0.85}
             onPress={() => onAnswer(offer, 'accept')}
             disabled={busy}
-            accessibilityLabel={`${group.length > 1 ? `Accepter les ${group.length} courses` : 'Accepter la course'}, ${Math.ceil(remaining / 1000)} secondes restantes`}
+            accessibilityLabel={group.length > 1 ? `Accepter les ${group.length} courses` : 'Accepter la course'}
           >
-            {/* Le vert foncé se retire à mesure que le temps de réponse file. */}
-            <View style={[styles.acceptFill, { width: `${fraction * 100}%` }]} />
             {busy ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.acceptText}>
-                {group.length > 1 ? `Accepter les ${group.length}` : 'Accepter'} · {Math.ceil(remaining / 1000)} s
-              </Text>
+              <Text style={styles.acceptText}>{group.length > 1 ? `Accepter les ${group.length}` : 'Accepter'}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -259,6 +245,7 @@ const styles = themedStyles(() => ({
     marginTop: 4,
   },
   guaranteedText: { color: COLORS.text, fontSize: 14 },
+  expiry: { color: COLORS.secondary, fontSize: 12, marginTop: 5 },
   warning: { color: '#b45309', fontSize: 14, marginTop: 10 },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 12 },
   line: { fontSize: 17, color: COLORS.text },

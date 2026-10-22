@@ -1,5 +1,6 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
+import { numeroBceNormalise } from "../../utils/bce";
 import { logger } from "../../config/logger";
 import { emitNotification } from "../realtime/socket";
 import { notifierPlateforme } from "../notifications/notification.service";
@@ -108,13 +109,7 @@ export function piecesExigees(region: string | null | undefined, options: { enSo
  * 97 − (les huit premiers modulo 97). Accepte « BE0123.456.749 » ou
  * « 0123 456 749 ».
  */
-export function numeroBceNormalise(saisie: string): string | null {
-  const chiffres = saisie.replace(/^BE/i, "").replace(/[\s.\-]/g, "");
-  if (!/^[01]\d{9}$/.test(chiffres)) return null;
-  const base = Number(chiffres.slice(0, 8));
-  const controle = Number(chiffres.slice(8));
-  return 97 - (base % 97) === controle ? chiffres : null;
-}
+export { numeroBceNormalise };
 
 /** Le numéro de TVA belge d'une entreprise : « BE » suivi du numéro BCE. */
 export const numeroTva = (numeroEntreprise: string | null | undefined) =>

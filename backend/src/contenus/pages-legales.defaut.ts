@@ -209,38 +209,39 @@ Les réclamations passent par le support commerçant. Droit français ; tribunal
 
   "conditions-livreurs": {
     titre: "Conditions générales livreurs",
-    contenu: `Ces conditions lient ZupEat et les livreurs indépendants qui réalisent des courses via la plateforme. Elles complètent les [CGU](/cgu).
+    contenu: `Ces conditions sont un projet à valider par un avocat belge et identifient les engagements annoncés aux livreurs qui utilisent la plateforme ZupEat. Elles complètent les [CGU](/cgu). L'exploitant est [Raison sociale], [forme juridique], établi à [adresse], inscrit à la BCE sous le numéro [numéro BCE] et identifié à la TVA sous le numéro [numéro TVA].
 
 ## 1. Statut
 
-Le livreur exerce en tant que travailleur indépendant (micro-entrepreneur ou société). Il n'est lié par aucun lien de subordination : il choisit librement ses périodes de connexion, peut refuser une course sans pénalité et peut travailler pour d'autres plateformes.
+Les parties entendent organiser une relation de prestation indépendante, sous réserve de la qualification résultant des conditions concrètes d'exécution et du droit applicable. Le livreur choisit ses périodes de connexion, peut se déconnecter, faire une pause, cesser d'utiliser la plateforme et travailler pour des tiers. Aucun nombre minimal de jours ou de courses n'est annoncé comme obligatoire. Chaque course est présentée comme une proposition distincte et requiert l'acceptation explicite du livreur. Un refus ou une absence de réponse ne constitue pas, à lui seul, un manquement et ne réduit pas l'accès aux autres offres.
 
 ## 2. Validation du dossier
 
-Avant toute course, le livreur fournit : pièce d'identité, justificatif d'immatriculation, droit de travailler en France, et selon le véhicule permis, carte grise et assurance adaptée. ZupEat valide le dossier et peut le refuser s'il est incomplet ou non conforme.
+Avant l'accès aux propositions, ZupEat demande un numéro BCE à tout candidat comme règle d'admissibilité de la plateforme. Le format est contrôlé automatiquement; un opérateur habilité vérifie ensuite le numéro dans le registre BCE et consigne sa décision avant l'activation. Cette règle de plateforme ne signifie pas que la loi impose nécessairement un numéro BCE à chaque personne, et le numéro ne détermine pas à lui seul la qualification de la relation. Les entreprises étrangères et les identifiants équivalents doivent être traités selon des règles à valider avant l'ouverture de ces marchés. Les autres contrôles portent sur l'identité, les informations fiscales nécessaires, les coordonnées de paiement, le véhicule, les permis et les assurances ou autorisations applicables. Les pièces ne sont accessibles qu'aux personnes habilitées pour ce contrôle.
 
 ## 3. Réalisation des courses
 
-- le prix de chaque course est affiché avant acceptation ;
-- le livreur remet la commande en l'état, dans le respect du code de la route ;
-- il peut être demandé une preuve de remise (photo, code) ;
-- la localisation n'est partagée que pendant une course ou une période de disponibilité.
+- avant sa décision, le livreur voit le montant proposé et les informations de distance et de lot disponibles dans l'application. Les distances, durées et montants marqués comme estimatifs ne constituent pas une garantie de durée ou de trajet ;
+- un commerçant peut suggérer un livreur admissible, mais cette suggestion ne lui attribue pas la course. Seule l'acceptation explicite de l'offre l'engage ;
+- le livreur organise les moyens et l'itinéraire, sous réserve des obligations légales, de sécurité et des informations nécessaires à la commande acceptée. Pour un lot de courses accepté en une seule offre, l'application calcule actuellement l'ordre des remises et le maintient pendant la tournée ; cette contrainte technique, sa nécessité et sa portée doivent être validées par un avocat belge avant publication ;
+- une preuve de remise peut être demandée lorsqu'elle est nécessaire à la bonne exécution ou au traitement d'un litige ;
+- la position peut être traitée lorsque le livreur choisit la disponibilité en ligne et pour le suivi d'une course acceptée. Elle n'est pas actualisée côté serveur pendant une pause sans course ni après la déconnexion ; les données de preuve et de litige suivent leurs finalités propres décrites dans la politique de confidentialité.
 
 ## 4. Rémunération
 
-Les sommes dues sont reversées périodiquement ; le détail des versements est consultable dans l'espace livreur. Le livreur s'acquitte lui-même de ses cotisations sociales et impôts. Conformément à la directive (UE) 2021/514 (DAC7), ZupEat déclare chaque année à l'administration fiscale les sommes versées au livreur ; celui-ci fournit pour cela son identité, son adresse, son numéro d'identification fiscale ou SIREN et son IBAN.
+Le montant individuel affiché avant acceptation est celui proposé pour la mission et, après acceptation, est enregistré avec la course. Le détail du calcul, des compléments éventuels, des frais applicables et du calendrier de paiement doit être précisé dans l'espace livreur et les documents commerciaux applicables avant lancement. Les pourboires attribués au livreur sont identifiés séparément dans les relevés. Le livreur reste responsable des obligations fiscales et sociales qui lui incombent selon son statut. Les informations fiscales requises sont recueillies et déclarées selon les règles applicables, notamment DAC7 le cas échéant ; aucun identifiant fiscal français n'est présumé.
 
 ## 5. Notes
 
-Les clients peuvent noter les livraisons. Les notes ne sont jamais la seule base d'une désactivation, qui est toujours motivée et peut être contestée auprès du support.
+Les clients peuvent évaluer le résultat commercial d'une livraison. Les avis et plaintes contestées ne sont pas assimilés à des faits vérifiés. Toute restriction importante du compte doit indiquer son motif et les moyens de la contester ; les décisions importantes appellent un examen humain approprié lorsque la loi l'exige. Les mécanismes précis de contestation et de révision doivent être opérationnels avant d'annoncer leur disponibilité.
 
 ## 6. Assurance et sécurité
 
-Le livreur justifie d'une assurance responsabilité civile professionnelle et d'une assurance de son véhicule couvrant l'usage professionnel. Il peut signaler tout incident via l'application.
+Le livreur fournit les attestations légalement requises pour son statut et son véhicule. Les exigences exactes, ainsi que le régime d'assurance propre aux collaborateurs indépendants de plateformes et sa date d'entrée en vigueur, doivent être confirmés pour la Belgique avant l'activation commerciale. Il peut signaler un incident via l'application.
 
 ## 7. Fin de la relation
 
-Le livreur peut clôturer son compte à tout moment. ZupEat peut désactiver un compte en cas de fraude, de mise en danger ou de manquement grave, après en avoir exposé les motifs.`,
+Le livreur peut cesser d'utiliser la plateforme et demander la clôture de son compte, sous réserve des obligations de conservation applicables. Toute suspension ou fin d'accès doit reposer sur un motif objectif lié à l'admissibilité, à la sécurité, à la fraude ou à un manquement grave ; elle ne peut être fondée sur un refus de course, l'inactivité ou l'utilisation de plateformes concurrentes. La procédure de notification, de contestation et de réexamen doit être définie avant publication.`,
   },
 
   confidentialite: {
@@ -251,11 +252,11 @@ Le livreur peut clôturer son compte à tout moment. ZupEat peut désactiver un 
 
 | Finalité | Données | Base légale | Durée |
 | --- | --- | --- | --- |
-| Gestion du compte | nom, e-mail, téléphone, mot de passe (chiffré) | contrat | jusqu'à suppression, ou 3 ans d'inactivité |
-| Commandes et livraison | produits, adresse, coordonnées, instructions, historique | contrat | durée de la relation, puis 5 ans (prescription) |
+| Gestion du compte et admissibilité Livreur | nom, e-mail, téléphone, mot de passe haché, numéro BCE chiffré et état/date du contrôle | Base légale et durée à documenter par finalité avant publication; vérification du registre BCE et accès réservé aux personnes habilitées | À définir après revue des obligations et du cycle de vie du compte |
+| Commandes et livraison | produits, adresse, coordonnées nécessaires, instructions, historique, position en cours de livraison et preuves attachées à la course | Base légale et durée par type de donnée à confirmer | À définir; les coordonnées enregistrées avec les commandes/preuves ne sont pas purgées par l'arrêt de la localisation du profil |
 | Paiement | montant, statut ; la carte est traitée par Stripe seul | contrat | 10 ans pour les pièces comptables |
-| Suivi en temps réel | position du livreur pendant la course | contrat | durée de la course, puis trace conservée 1 an pour litiges |
-| Dossier commerçant / livreur | pièces justificatives, SIRET, coordonnées bancaires | contrat et obligation légale | durée de la relation + 5 ans |
+| Position de disponibilité | dernière position du profil quand le Livreur choisit d'être en ligne; aucune actualisation pendant pause ou hors ligne sans course | Finalité, base légale, destinataires et nécessité à documenter; pas de consentement présumé | Le point de profil est effacé lors d'une pause/déconnexion sans course; la durée des positions attachées aux courses reste à définir |
+| Dossier Livreur | justificatifs nécessaires, numéro BCE chiffré, coordonnées de paiement | Base légale et durée à documenter par catégorie; contrôle BCE réservé aux opérateurs habilités | À définir après revue juridique; le numéro BCE n'est pas présenté comme preuve suffisante d'indépendance |
 | Preuve d'acceptation des conditions | e-mail, documents et versions acceptés, adresse IP, navigateur, date | obligation légale / intérêt légitime | 5 ans après la fin de la relation |
 | Support et réclamations | messages, pièces jointes | intérêt légitime | 3 ans après clôture |
 | Sécurité et prévention de la fraude | journaux de connexion, adresse IP | obligation légale / intérêt légitime | 1 an |
@@ -273,7 +274,7 @@ Nous ne vendons aucune donnée. Lorsqu'un prestataire traite des données hors d
 
 ## Vos droits
 
-Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition, de portabilité et du droit de retirer votre consentement, ainsi que de définir des directives sur le sort de vos données après votre décès. Écrivez à [dpo@zupeat.com](mailto:dpo@zupeat.com) ; nous répondons sous un mois. Vous pouvez aussi saisir la CNIL ([cnil.fr](https://www.cnil.fr)).
+Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité selon les conditions du RGPD, ainsi que de définir des directives sur le sort de vos données après votre décès. Contactez [contact protection des données]. Les coordonnées du responsable et le processus de réponse doivent être complétés avant publication. Vous pouvez saisir l'Autorité de protection des données belge ([autoriteprotectiondonnees.be](https://www.autoriteprotectiondonnees.be/)).
 
 ## Sécurité
 
