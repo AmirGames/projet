@@ -83,7 +83,7 @@ La source par défaut est `backend/src/contenus/pages-legales.defaut.ts` (`condi
 - Un test unitaire de dispatch a été ajouté pour le refus explicite et le choix manuel commerçant.
 - Tentatives de `npx jest ...dispatch-vehicule.test.ts` et `npx tsc --noEmit` interrompues : le dépôt ne contient pas `backend/node_modules`; `npx` cherchait les exécutables via npm dans un environnement à réseau restreint. Aucun test, lint, typecheck, build, migration ou test DB n'est donc déclaré réussi.
 - Une installation `npm ci` a été lancée pour permettre ces validations, mais interrompue avant son achèvement; elle n'a pas produit de dépendances utilisables.
-- Pas de pull request ouverte ou poussée; la branche est locale.
+- La branche distante `audit/conformite-livreurs-belgique-2026` et la PR brouillon [#237](https://github.com/AmirGames/projet/pull/237) existent. Elle est explicitement non prête à fusionner; aucun CI/test n'est déclaré réussi.
 - Aucun changement financier ni migration de données effectué. `DeliveryOffer.status` est un champ `String`; le nouvel état ne demande pas de changement physique de schéma. Cela doit tout de même être validé par Prisma sur un environnement avec dépendances installées.
 
 ## Niveau de risque global du périmètre
