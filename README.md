@@ -14,7 +14,7 @@ L'audit initial, les huit critères belges, les corrections locales et les limit
 de validation sont consignés dans [le rapport Livreurs](docs/audits/AUDIT-LIVREURS-INDEPENDANTS-2026.md).
 La [matrice juridique](docs/legal/MATRICE-REQUALIFICATION.md), la
 [géolocalisation RGPD](docs/legal/RGPD-GEOLOCALISATION-LIVREURS.md), la
-[gestion algorithmique](docs/legal/GESTION-ALGORITHMIQUE-LIVREURS.md) et les
+[gestion algorithmique](docs/legal/GESTION-ALGORITHMIQUE-LIVREURS.md), la
 [proposition d'architecture de remplacement](docs/legal/ARCHITECTURE-REMPLACEMENT-LIVREUR.md) et les
 [scénarios de test](docs/testing/TESTS-CONFORMITE-LIVREURS.md) complètent ce
 travail. Ces changements ne certifient pas la qualification de la relation et
@@ -282,9 +282,14 @@ L'application est une app Expo / React Native (le domaine `delivery.zupeat.com` 
 - Évaluation du trafic et suggestions d'itinéraires alternatifs
 
 #### 📍 Localisation et Suivi
-- GPS en temps réel
-- Partage de localisation avec restaurant et client
-- Historique des trajets pour optimisation future
+- Position de disponibilité lorsque le livreur est en ligne, et suivi pendant une livraison acceptée
+- Arrêt du suivi de disponibilité pendant une pause ou après déconnexion; les données de course restent rattachées à la commande
+- La conservation des coordonnées de commande et des preuves doit suivre la politique de confidentialité et les durées validées
+
+#### ✅ Admissibilité des Livreurs
+- Le numéro BCE est demandé à l'inscription selon la règle de test choisie par ZupEat
+- Le format est vérifié automatiquement; un opérateur doit vérifier le registre officiel avant l'activation
+- Un numéro BCE ne démontre pas, à lui seul, le statut indépendant; le formulaire de pays France nécessite encore une règle pour les identifiants étrangers
 
 #### ✅ Confirmation de Livraison
 - Signature électronique des clients (optionnel)
