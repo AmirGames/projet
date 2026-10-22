@@ -1,4 +1,8 @@
-# Architecture proposée — remplacement d'un Livreur
+# Analyse préparatoire — remplacement d'un Livreur
+
+## Décision produit
+
+Le 22 octobre 2026, le propriétaire a indiqué que le remplacement ne lui semble pas utile et ne souhaite pas l'inclure dans le modèle actuel. Aucun développement ni migration n'est prévu sur cette base. Cette décision produit doit être présentée à un avocat belge pour évaluer l'effet de l'absence de remplacement sur la liberté d'organisation; ce document ne conclut pas que le remplacement est obligatoire.
 
 ## État constaté
 
