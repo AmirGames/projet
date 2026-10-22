@@ -21,7 +21,7 @@ Ces fichiers ne valident pas tous les scénarios exigés et leur présence ne va
 
 ## Statut d'exécution
 
-Le test Jest ciblé et `npx tsc --noEmit` ont été tentés mais n'ont pas pu être exécutés : les dépendances `backend/node_modules` sont absentes et l'environnement restreint n'a pas permis à `npx` de les télécharger. Une installation `npm ci` a été interrompue avant son achèvement. Aucun résultat positif n'est revendiqué.
+Les deux tests mobiles Node sans dépendances (`tests/course-alerts.test.cjs` et `tests/renouvellement.test.cjs`) passent. Les tests Jest backend n'ont pas pu être exécutés faute de dépendances. Les scénarios frontend Playwright n'ont pas démarré faute de module `playwright`. Une installation `npm ci` a été interrompue avant son achèvement. Le run CI sur la PR #237 est en cours; son résultat devra être consigné après achèvement.
 
 ## Couverture encore requise
 

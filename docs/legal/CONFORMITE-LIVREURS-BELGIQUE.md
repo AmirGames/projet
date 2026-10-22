@@ -13,15 +13,18 @@ Références officielles et consolidées figurent dans le [rapport d'audit](../a
 
 ## Corrections locales dans cette branche
 
-- Le refus explicite ferme la course pour le livreur concerné; le dispatch commerçant n'annule plus ce refus ni le délai/plafond. Un test ciblé a été ajouté mais n'a pu être exécuté faute de dépendances installées.
+- Le refus explicite ferme la course pour le livreur concerné; le dispatch commerçant n'annule plus ce refus ni le délai/plafond. Des tests Jest ciblés ont été ajoutés mais n'ont pu être exécutés faute de dépendances backend installées.
 - La pause produit `UNAVAILABLE_DURING_PAUSE` et n'est plus agrégée avec le refus.
+- Le motif personnel de pause n'est plus demandé ni transmis; la colonne historique est vidée lors d'une nouvelle pause. Les valeurs historiques ne sont pas purgées automatiquement.
 - Les positions ne sont plus enregistrées par le backend hors ligne ou en pause sans course; l'app mobile bascule en suivi arrêté pendant la pause.
 - Le balayage GPS ignore les pauses actives.
+- Les incidents ouverts d'une course ne filtrent plus les offres futures de tournée; l'incident reste suivi sur la mission concernée.
+- Une livraison échouée ou un dépôt refusé ne suspend plus le compte par défaut; une suspension temporaire reste possible sur décision explicite d'un opérateur.
 - Le taux d'acceptation n'est plus envoyé par l'API Analytics et la jauge frontend est remplacée par un compte descriptif assorti d'une information sans effet sur l'accès futur.
 - Les notifications de mission n'incitent plus à « répondre vite » et rappellent d'attendre d'être arrêté en sécurité.
 - L'écran de proposition n'affiche plus de compte à rebours visuel dégressif; il présente la rémunération hors pourboire, le pourboire déjà attribué et des distances/durée estimées. Il ne décompose pas base/km, et le délai serveur (30 s par défaut) reste à évaluer avec l'équipe produit.
 - Les interfaces de proposition ne reçoivent que la zone ville/code postal avant acceptation; la rue du client est donnée après attribution.
-- Le texte juridique par défaut a été déplacé vers un brouillon belge prudent avec placeholders. La version en base, les versions déjà acceptées et les parcours réels doivent être comparés avant toute publication.
+- Le texte juridique par défaut a été déplacé vers un brouillon belge prudent avec placeholders. Une architecture préparatoire de remplacement nominatif est documentée, sans fonctionnalité correspondante ni migration. La version en base, les versions déjà acceptées et les parcours réels doivent être comparés avant toute publication.
 
 ## À auditer avant ouverture commerciale
 
