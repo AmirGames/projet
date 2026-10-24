@@ -4,7 +4,7 @@ import { Outbox } from "../jobs/outbox.service";
 import { reversementsDepuis } from "../payouts/merchant-payout.service";
 import { debutDeSemaine } from "../../utils/semaine-bruxelles";
 import { PREFIXE_SAUVEGARDE_COMPLETE } from "./backup.service";
-import { PagesLegalesService } from "../legal/pages-legales.service";
+import { PagesLegalesService, contientChampLegalACompleter, estPageLegalePrete } from "../legal/pages-legales.service";
 
 /**
  * Les alertes « métier » : ce qui est cassé sans qu'aucune requête n'échoue.
@@ -145,9 +145,9 @@ export function constatsDepuisMesures(m: MesuresMetier): ConstatMetier[] {
   if (m.pagesLegalesACompleter && m.pagesLegalesACompleter.length > 0) {
     constats.push({
       cle: "metier:pages-legales",
-      niveau: "ATTENTION",
+      niveau: "CRITIQUE",
       titre: "Pages légales à compléter",
-      detail: `${m.pagesLegalesACompleter.join(", ")} : texte de départ non publié ou champs entre crochets à remplir (identité de la société, médiateur…). À publier depuis l'espace superowner, puis à faire valider juridiquement.`,
+      detail: `${m.pagesLegalesACompleter.join(", ")} : texte de départ, brouillon ou champs à remplir. Les commandes en production attendent la publication des pages essentielles. Faire valider les textes et publier depuis l'espace superowner.`,
     });
   }
 
@@ -158,7 +158,7 @@ export function constatsDepuisMesures(m: MesuresMetier): ConstatMetier[] {
  * Un champ à remplir ressemble à « [Raison sociale] ». Un lien Markdown
  * « [texte](adresse) » n'en est pas un.
  */
-export const aDesChampsAremplir = (contenu: string) => /\[[^\]\n]+\](?!\()/.test(contenu);
+export const aDesChampsAremplir = contientChampLegalACompleter;
 
 /** Compte, en base, ce que les contrôles regardent. */
 export async function mesurer(maintenant = new Date()): Promise<MesuresMetier> {
@@ -234,7 +234,7 @@ export async function mesurer(maintenant = new Date()): Promise<MesuresMetier> {
           ? maintenant.getTime() - derniereSauvegarde.createdAt.getTime()
           : "aucune",
     pagesLegalesACompleter: pages
-      ? pages.filter((p) => p.parDefaut || aDesChampsAremplir(p.contenu)).map((p) => p.slug)
+      ? pages.filter((p) => !estPageLegalePrete(p)).map((p) => p.slug)
       : null,
   };
 }

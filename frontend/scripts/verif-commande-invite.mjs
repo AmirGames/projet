@@ -196,12 +196,18 @@ check('et la durée annoncée', /25 min/.test(zone), zone.slice(0, 900));
 // Sans les conditions générales de vente acceptées, le bouton reste grisé.
 await page.getByLabel(/conditions générales de vente/).check();
 
-const bouton = page.locator('button', { hasText: /Confirmer la Commande/ });
+const bouton = page.locator('button', { hasText: /Commande avec obligation de paiement/ });
 check('la commande est validable', !(await bouton.first().isDisabled()), 'bloquée à tort');
 
 titre('Il confirme');
 await bouton.first().click();
-await page.waitForTimeout(3500);
+// Le délai de retour n'apparaît que si le commerce a configuré les espèces.
+// Ce scénario crée un commerce sans moyen de paiement explicite.
+const delai = page.getByRole('dialog');
+if (await delai.isVisible()) {
+  await delai.getByRole('button', { name: /Envoyer la commande/ }).click();
+}
+await page.getByRole('heading', { name: /Commande envoyée/i }).waitFor({ timeout: 15000 });
 
 const apres = await texte();
 // Le commerce doit encore l'accepter : la page dit « envoyée », pas

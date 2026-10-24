@@ -293,7 +293,7 @@ check('la livraison n’est plus facturée', /Retrait sur place/.test(retrait), 
 // Sans les conditions générales de vente acceptées, le bouton reste grisé.
 await page.getByLabel(/conditions générales de vente/).check();
 
-const boutonRetrait = page.locator('button', { hasText: /Confirmer la Commande/ });
+const boutonRetrait = page.locator('button', { hasText: /Commande avec obligation de paiement/ });
 check('la commande reste validable', !(await boutonRetrait.first().isDisabled()), 'bloquée à tort');
 
 const vraiesErreurs = erreurs.filter(

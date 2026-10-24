@@ -4482,7 +4482,7 @@
     "traitement": "Traitement...",
     "minimum": "Minimum {minimum}",
     "adresseNonLivree": "Adresse non livrée",
-    "confirmer": "Confirmer la Commande",
+    "confirmer": "Commande avec obligation de paiement",
     "mentionConfirmation": "En confirmant, vous transmettez votre commande à {boutique}. Elle sera préparée dès que la boutique l'aura acceptée ; vous en serez averti par e-mail."
   },
   "accueilPro": {
@@ -4674,7 +4674,7 @@
   "delaiAnnulation": {
     "titre": "Commande en cours…",
     "retour": "Retour",
-    "parfait": "Parfait (00:{secondes})"
+    "parfait": "Envoyer la commande (00:{secondes})"
   },
   "noterLivreur": {
     "votreNote": "Votre note",

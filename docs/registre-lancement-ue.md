@@ -32,7 +32,7 @@ compte rendu ; cette entrée ne clôt aucune obligation du registre.
 
 | # | Action | Responsable | Date | Preuve |
 |---|---|---|---|---|
-| 1 | Renseigner les mentions légales (raison sociale, RCS, TVA, hébergeur, directeur de publication, médiateur de la consommation) depuis l'espace superowner, puis publier | | | |
+| 1 | Identifier l'exploitant et sa forme juridique, puis renseigner les mentions légales belges (nom, adresse, BCE, TVA si applicable, e-mail, téléphone, hébergeur et médiation compétente) depuis l'espace superowner ; faire valider et publier avant les commandes publiques | | | |
 | 2 | Migration réelle du chiffrement, `privacy:check`, preuve de chiffrement disque/WAL, sauvegardes hors site testées | | | |
 | 3 | Test ClamAV réel (fichier EICAR, arrêt du moteur) | | | |
 | 4 | Rôle PostgreSQL d'exécution distinct du rôle de migration ; MFA administrateur | | | |

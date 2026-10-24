@@ -13,6 +13,20 @@ export type PageLegale = {
   parDefaut: boolean;
 };
 
+/** Les crochets des liens Markdown sont suivis de « ( » ; les autres désignent un champ à compléter. */
+export const contientChampLegalACompleter = (contenu: string) => /\[[^\]\n]+\](?!\()/.test(contenu);
+
+const contientAvertissementDeBrouillon = (contenu: string) =>
+  /\bprojet (?:de |d['’])?(?:conditions|notice|déclaration|document)|\bprojet à compléter\b|à (?:définir|confirmer|documenter|valider|compléter)\b/i.test(contenu);
+
+export const estPageLegalePrete = (page: PageLegale) =>
+  !page.parDefaut &&
+  !contientChampLegalACompleter(page.contenu) &&
+  !contientAvertissementDeBrouillon(page.contenu);
+
+/** Ces pages doivent être publiées avant de permettre une commande en production. */
+const PAGES_REQUISES_COMMANDE: SlugLegal[] = ["mentions-legales", "cgu", "cgv", "confidentialite", "cookies"];
+
 function estSlugLegal(slug: string): slug is SlugLegal {
   return (SLUGS_LEGAUX as readonly string[]).includes(slug);
 }
@@ -61,6 +75,9 @@ export const PagesLegalesService = {
         "LEGAL_VARIABLES_MISSING"
       );
     }
+    if (contientChampLegalACompleter(contenuResolu.contenu) || contientAvertissementDeBrouillon(contenuResolu.contenu)) {
+      throw new ApiError(422, "Complétez les champs et retirez l'avertissement de brouillon avant publication", "LEGAL_DRAFT");
+    }
     const actuelle = await this.enVigueur(slug);
     const dejaPrise =
       (actuelle.parDefaut && version === VERSION_INITIALE) ||
@@ -69,8 +86,7 @@ export const PagesLegalesService = {
       throw new ApiError(409, `La version « ${version} » existe déjà pour cette page : choisissez un nouveau numéro`, "VERSION_EXISTS");
     }
     return db.pageLegaleVersion.create({
-      // Une version publiée est un instantané : les futures modifications du profil
-      // de société ne réécrivent jamais les textes déjà acceptés.
+      // Une version publiée est un instantané : modifier le profil ne la réécrit pas.
       data: { slug, version, titre: titreResolu.contenu.trim(), contenu: contenuResolu.contenu, publiePar: auteur ?? null },
     });
   },
@@ -79,5 +95,13 @@ export const PagesLegalesService = {
   async versionsDe(slugs: string[]): Promise<string> {
     const pages = await Promise.all(slugs.map((slug) => this.enVigueur(slug)));
     return pages.map((page) => `${page.slug}@${page.version}`).join(" ");
+  },
+
+  async verifierPrealablesCommande(): Promise<void> {
+    const pages = await Promise.all(PAGES_REQUISES_COMMANDE.map((slug) => this.enVigueur(slug)));
+    const manquantes = pages.filter((page) => !estPageLegalePrete(page)).map((page) => page.slug);
+    if (manquantes.length) {
+      throw new ApiError(503, `Commandes indisponibles : pages légales à publier (${manquantes.join(", ")})`, "LEGAL_PAGES_NOT_READY");
+    }
   },
 };
