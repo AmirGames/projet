@@ -2,9 +2,54 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
 import { PagesLegalesService } from "../legal/pages-legales.service";
+import {
+  CHAMPS_PROFIL_LEGAL,
+  enregistrerProfilLegal,
+  lireProfilLegal,
+  type ProfilLegal,
+} from "../legal/company-profile";
 import { isSuperOwner, journaliser } from "./shared";
 
 const router = Router();
+
+// GET /superowner/pages-legales/identite - Informations réutilisées dans les documents.
+router.get("/pages-legales/identite", authMiddleware, isSuperOwner, async (_req, res, next) => {
+  try {
+    res.json({ data: await lireProfilLegal() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /superowner/pages-legales/identite - Enregistre les variables légales.
+router.put("/pages-legales/identite", authMiddleware, isSuperOwner, async (req, res, next) => {
+  try {
+    const schema = z.object({
+      nom: z.string().trim().max(200),
+      raison_sociale: z.string().trim().max(200),
+      forme_juridique: z.string().trim().max(100),
+      adresse: z.string().trim().max(500),
+      numero_bce: z.string().trim().max(100),
+      numero_tva: z.string().trim().max(100),
+      capital_social: z.string().trim().max(100),
+      dirigeant: z.string().trim().max(200),
+      telephone: z.string().trim().max(100),
+      email: z.string().trim().max(200),
+      mediateur: z.string().trim().max(200),
+      site_mediation: z.string().trim().max(500),
+      hebergeur: z.string().trim().max(200),
+      adresse_hebergeur: z.string().trim().max(500),
+    }).strict();
+    const profil = schema.parse(req.body) as ProfilLegal;
+    const data = await enregistrerProfilLegal(profil);
+    await journaliser(req, "PROFIL_LEGAL_MODIFIE", "SYSTEM_CONFIG", {
+      champs: CHAMPS_PROFIL_LEGAL.filter((cle) => Boolean(profil[cle])),
+    });
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /superowner/pages-legales - Pages en vigueur et historique des versions
 router.get("/pages-legales", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {

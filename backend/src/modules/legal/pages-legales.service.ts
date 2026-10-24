@@ -1,6 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { PAGES_LEGALES_DEFAUT, SLUGS_LEGAUX, VERSION_INITIALE, type SlugLegal } from "../../contenus/pages-legales.defaut";
+import { lireProfilLegal, remplacerVariablesLegales } from "./company-profile";
 
 export type PageLegale = {
   slug: SlugLegal;
@@ -16,7 +17,7 @@ export type PageLegale = {
 export const contientChampLegalACompleter = (contenu: string) => /\[[^\]\n]+\](?!\()/.test(contenu);
 
 const contientAvertissementDeBrouillon = (contenu: string) =>
-  /\bprojet (?:de |d['’])?(?:conditions|notice|déclaration|document)|\bprojet à compléter\b|\bà (?:définir|confirmer|documenter|valider)\b/i.test(contenu);
+  /\bprojet (?:de |d['’])?(?:conditions|notice|déclaration|document)|\bprojet à compléter\b|\bà (?:définir|confirmer|documenter|valider|compléter)\b/i.test(contenu);
 
 export const estPageLegalePrete = (page: PageLegale) =>
   !page.parDefaut &&
@@ -62,10 +63,21 @@ export const PagesLegalesService = {
    */
   async publier(slugBrut: string, donnees: { titre: string; contenu: string; version: string }, auteur?: string) {
     const slug = verifierSlug(slugBrut);
-    if (contientChampLegalACompleter(donnees.contenu) || contientAvertissementDeBrouillon(donnees.contenu)) {
+    const version = donnees.version.trim();
+    const profil = await lireProfilLegal();
+    const titreResolu = remplacerVariablesLegales(donnees.titre, profil);
+    const contenuResolu = remplacerVariablesLegales(donnees.contenu, profil);
+    const variablesManquantes = [...new Set([...titreResolu.manquantes, ...contenuResolu.manquantes])];
+    if (variablesManquantes.length) {
+      throw new ApiError(
+        400,
+        "Complétez les variables avant publication : " + variablesManquantes.map((cle) => "$" + cle).join(", "),
+        "LEGAL_VARIABLES_MISSING"
+      );
+    }
+    if (contientChampLegalACompleter(contenuResolu.contenu) || contientAvertissementDeBrouillon(contenuResolu.contenu)) {
       throw new ApiError(422, "Complétez les champs et retirez l'avertissement de brouillon avant publication", "LEGAL_DRAFT");
     }
-    const version = donnees.version.trim();
     const actuelle = await this.enVigueur(slug);
     const dejaPrise =
       (actuelle.parDefaut && version === VERSION_INITIALE) ||
@@ -74,7 +86,8 @@ export const PagesLegalesService = {
       throw new ApiError(409, `La version « ${version} » existe déjà pour cette page : choisissez un nouveau numéro`, "VERSION_EXISTS");
     }
     return db.pageLegaleVersion.create({
-      data: { slug, version, titre: donnees.titre.trim(), contenu: donnees.contenu, publiePar: auteur ?? null },
+      // Une version publiée est un instantané : modifier le profil ne la réécrit pas.
+      data: { slug, version, titre: titreResolu.contenu.trim(), contenu: contenuResolu.contenu, publiePar: auteur ?? null },
     });
   },
 

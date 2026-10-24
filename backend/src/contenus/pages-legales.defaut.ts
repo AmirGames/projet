@@ -27,16 +27,16 @@ export const PAGES_LEGALES_DEFAUT: Record<SlugLegal, { titre: string; contenu: s
 
 ## Éditeur
 
-- Nom ou dénomination de l'exploitant : [Nom de l'exploitant]
-- Forme juridique, si applicable : [Forme juridique]
-- Adresse d'établissement : [Adresse de l'exploitant]
-- Numéro d'entreprise BCE : [Numéro BCE]
-- Numéro de TVA, si applicable : [Numéro TVA]
-- Courriel : [Adresse électronique de contact] — Téléphone : [Numéro de téléphone]
+- Nom ou dénomination légale de l'exploitant : $raison_sociale
+- Forme juridique, si applicable : $forme_juridique
+- Adresse d'établissement : $adresse
+- Numéro d'entreprise BCE : $numero_bce
+- Numéro de TVA, si applicable : $numero_tva
+- Courriel : $email — Téléphone : $telephone
 
 ## Hébergement
 
-[Nom de l'hébergeur], [Adresse de l'hébergeur], [Coordonnées de l'hébergeur].
+$hebergeur, $adresse_hebergeur. Les autres coordonnées de l'hébergeur sont à compléter si nécessaires.
 
 ## Rôle de ZupEat
 
@@ -48,7 +48,7 @@ La marque ZupEat, le site, son code et ses contenus propres sont protégés. Tou
 
 ## Signaler un contenu illicite
 
-Conformément au règlement (UE) 2022/2065 (Digital Services Act), toute personne peut signaler un contenu qu'elle estime illicite (produit interdit, contrefaçon, avis frauduleux, etc.) à [Adresse électronique de signalement]. Le signalement indique :
+Conformément au règlement (UE) 2022/2065 (Digital Services Act), toute personne peut signaler un contenu qu'elle estime illicite (produit interdit, contrefaçon, avis frauduleux, etc.) à $email. Le signalement indique :
 
 - l'adresse exacte de la page concernée ;
 - les raisons pour lesquelles le contenu est illicite ;
@@ -56,7 +56,7 @@ Conformément au règlement (UE) 2022/2065 (Digital Services Act), toute personn
 
 La procédure de réception, d'examen, de notification des décisions et de contestation des signalements doit être opérationnelle et documentée avant publication de cette page.
 
-Point de contact pour les autorités et les utilisateurs : [Adresse électronique de contact DSA]. Les langues de communication acceptées doivent être précisées.
+Point de contact pour les autorités et les utilisateurs : $email. Les langues de communication acceptées doivent être précisées.
 
 ## Médiation de la consommation
 
@@ -65,7 +65,7 @@ En cas de litige non résolu avec le service client, le consommateur peut consul
 
   cgu: {
     titre: "Conditions générales d'utilisation",
-    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Les présentes conditions encadrent l'accès et l'usage de la plateforme ZupEat, exploitée par [Nom de l'exploitant] (voir les [mentions légales](/mentions-legales)). L'acceptation des conditions est recueillie dans les parcours qui la requièrent.
+    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Les présentes conditions encadrent l'accès et l'usage de la plateforme ZupEat, exploitée par $raison_sociale (voir les [mentions légales](/mentions-legales)). L'acceptation des conditions est recueillie dans les parcours qui la requièrent.
 
 ## 1. Objet
 
@@ -77,7 +77,7 @@ ZupEat permet aux clients de commander auprès de commerces de proximité, en re
 - Les informations fournies doivent être exactes et tenues à jour.
 - L'utilisateur garde son mot de passe confidentiel et répond de l'usage de son compte.
 - Il faut avoir 16 ans pour créer un compte, et 18 ans pour commander de l'alcool.
-- Le compte peut être supprimé à tout moment selon le parcours prévu dans le compte ou sur demande à [Adresse électronique de contact].
+- Le compte peut être supprimé à tout moment selon le parcours prévu dans le compte ou sur demande à $email.
 
 ## 3. Comportements interdits
 
@@ -120,7 +120,7 @@ Le droit applicable et la juridiction compétente doivent être déterminés sel
 
   cgv: {
     titre: "Conditions générales de vente",
-    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Ces conditions s'appliquent à toute commande passée par un client auprès d'un commerçant via ZupEat. Le vendeur est le commerçant dont l'identité doit figurer sur la vitrine ; la répartition exacte des obligations entre ce vendeur et [Nom de l'exploitant] doit être vérifiée. ZupEat agit en intermédiaire et encaisse le paiement pour le compte du vendeur lorsque ce mode est activé.
+    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Ces conditions s'appliquent à toute commande passée par un client auprès d'un commerçant via ZupEat. Le vendeur est le commerçant dont l'identité doit figurer sur la vitrine ; la répartition exacte des obligations entre ce vendeur et $raison_sociale doit être vérifiée. ZupEat agit en intermédiaire et encaisse le paiement pour le compte du vendeur lorsque ce mode est activé.
 
 ## 1. Commande
 
@@ -165,7 +165,7 @@ Voir la médiation dans les [mentions légales](/mentions-legales). Le droit app
 
   "conditions-commercants": {
     titre: "Conditions générales commerçants",
-    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Ces conditions lient [Nom de l'exploitant] et tout professionnel qui ouvre une boutique sur la plateforme. Elles complètent les [CGU](/cgu).
+    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Ces conditions lient $raison_sociale et tout professionnel qui ouvre une boutique sur la plateforme. Elles complètent les [CGU](/cgu).
 
 ## 1. Inscription
 
@@ -213,7 +213,7 @@ Les réclamations passent par le support commerçant. Le droit applicable et la 
 
   "conditions-livreurs": {
     titre: "Conditions générales livreurs",
-    contenu: `Ces conditions sont un projet à valider par un avocat belge et identifient les engagements annoncés aux livreurs qui utilisent la plateforme ZupEat. Elles complètent les [CGU](/cgu). L'exploitant est [Raison sociale], [forme juridique], établi à [adresse], inscrit à la BCE sous le numéro [numéro BCE] et identifié à la TVA sous le numéro [numéro TVA].
+    contenu: `Ces conditions sont un projet à valider par un avocat belge et identifient les engagements annoncés aux livreurs qui utilisent la plateforme ZupEat. Elles complètent les [CGU](/cgu). L'exploitant est $raison_sociale, $forme_juridique, établi à $adresse, inscrit à la BCE sous le numéro $numero_bce et identifié à la TVA sous le numéro $numero_tva.
 
 ## 1. Statut
 
@@ -250,7 +250,7 @@ Le livreur peut cesser d'utiliser la plateforme et demander la clôture de son c
 
   confidentialite: {
     titre: "Politique de confidentialité",
-    contenu: `**Projet de notice à compléter avant toute collecte commerciale.** [Nom de l'exploitant] (ZupEat) est responsable des traitements décrits ci-dessous au titre du règlement (UE) 2016/679 (RGPD). Le rôle de chaque commerçant dans les traitements partagés ou propres doit être documenté.
+    contenu: `**Projet de notice à compléter avant toute collecte commerciale.** $raison_sociale (ZupEat) est responsable des traitements décrits ci-dessous au titre du règlement (UE) 2016/679 (RGPD). Le rôle de chaque commerçant dans les traitements partagés ou propres doit être documenté.
 
 ## Données traitées et finalités
 
@@ -270,7 +270,7 @@ Le livreur peut cesser d'utiliser la plateforme et demander la clôture de son c
 
 - le commerçant et, en livraison, le livreur, pour ce qui est nécessaire à la commande ;
 - Stripe (paiement) ;
-- notre hébergeur ([Nom de l'hébergeur]) ;
+- notre hébergeur ($hebergeur) ;
 - le service de géocodage Photon (Komoot) pour les suggestions d'adresse, et OpenStreetMap pour l'affichage des cartes ;
 - les autorités, sur réquisition légale.
 
@@ -278,7 +278,7 @@ Nous ne vendons aucune donnée. Les éventuels transferts hors de l'Espace écon
 
 ## Vos droits
 
-Vous disposez, selon les conditions du RGPD, des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité. Lorsque le traitement repose sur votre consentement, vous pouvez le retirer. Contactez [Adresse de contact pour les données personnelles]. Les coordonnées du responsable, celles du délégué à la protection des données s'il est requis, et le processus de réponse doivent être complétés avant publication. Vous pouvez introduire une plainte auprès de l'[Autorité de protection des données belge](https://www.autoriteprotectiondonnees.be/).
+Vous disposez, selon les conditions du RGPD, des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité. Lorsque le traitement repose sur votre consentement, vous pouvez le retirer. Contactez $email. Les coordonnées du responsable, celles du délégué à la protection des données s'il est requis, et le processus de réponse doivent être complétés avant publication. Vous pouvez introduire une plainte auprès de l'[Autorité de protection des données belge](https://www.autoriteprotectiondonnees.be/).
 
 ## Sécurité
 
@@ -331,7 +331,7 @@ Aucun niveau de conformité ne peut être attesté sans audit complet du site et
 
 ## Nous contacter
 
-Si vous ne parvenez pas à accéder à un contenu ou à un service, écrivez à [Adresse électronique de contact] en décrivant le problème et l'outil utilisé. Le délai de réponse et la solution proposée doivent être précisés selon les moyens réellement disponibles.
+Si vous ne parvenez pas à accéder à un contenu ou à un service, écrivez à $email en décrivant le problème et l'outil utilisé. Le délai de réponse et la solution proposée doivent être précisés selon les moyens réellement disponibles.
 
 ## Voies de recours
 
