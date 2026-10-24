@@ -20,6 +20,7 @@ import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
 import { getEnv } from "../../config/env";
 import { TRANSMISE, payeEnLigne } from "../../utils/commande-transmise";
+import { PagesLegalesService } from "../legal/pages-legales.service";
 
 export interface LigneTarifee {
   productId: string;
@@ -314,6 +315,11 @@ export class OrderService {
       if (options.cleIdempotence && empreinteAchat) {
         const rejouee = await this.rejouerSiConnue(data.storeId, options.cleIdempotence, empreinteAchat);
         if (rejouee) return rejouee;
+      }
+
+      // Aucun achat réel ne doit accepter les textes de départ encore incomplets.
+      if (getEnv().NODE_ENV === "production") {
+        await PagesLegalesService.verifierPrealablesCommande();
       }
 
       /**

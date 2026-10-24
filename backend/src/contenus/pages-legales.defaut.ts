@@ -1,9 +1,9 @@
 /**
  * Textes légaux de départ, en Markdown.
  *
- * Servis tant que la plateforme n'a publié aucune version d'une page depuis
- * l'espace superowner (Pages légales). Les valeurs entre crochets sont à
- * remplacer avant l'ouverture au public.
+ * Projets servis tant que la plateforme n'a publié aucune version depuis
+ * l'espace superowner. Ces textes ne valent pas validation juridique : les
+ * champs entre crochets et les pratiques réelles sont à vérifier avant vente.
  */
 export const VERSION_INITIALE = "2026-10-08";
 
@@ -23,20 +23,20 @@ export type SlugLegal = (typeof SLUGS_LEGAUX)[number];
 export const PAGES_LEGALES_DEFAUT: Record<SlugLegal, { titre: string; contenu: string }> = {
   "mentions-legales": {
     titre: "Mentions légales",
-    contenu: `Conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), voici l'identité des intervenants du site zupeat.com et de ses déclinaisons (zupeat.com, zupdrive.com).
+    contenu: `**Projet à compléter avant toute ouverture commerciale.** L'identité de l'exploitant de ZupEat et des domaines exploités doit être vérifiée et publiée. Les activités ZupDrive font l'objet de documents distincts avant leur lancement.
 
 ## Éditeur
 
-- [Raison sociale], [SAS / SARL / EI…] au capital de [montant] €
-- Siège social : [Adresse du siège social]
-- RCS : [Ville d'immatriculation] [numéro SIREN]
-- TVA intracommunautaire : [Numéro de TVA intracommunautaire]
-- Courriel : [contact@zupeat.com](mailto:contact@zupeat.com) — Téléphone : [Téléphone]
-- Directeur de la publication : [Nom du directeur de la publication]
+- Nom ou dénomination de l'exploitant : [Nom de l'exploitant]
+- Forme juridique, si applicable : [Forme juridique]
+- Adresse d'établissement : [Adresse de l'exploitant]
+- Numéro d'entreprise BCE : [Numéro BCE]
+- Numéro de TVA, si applicable : [Numéro TVA]
+- Courriel : [Adresse électronique de contact] — Téléphone : [Numéro de téléphone]
 
 ## Hébergement
 
-[Nom de l'hébergeur], [Adresse de l'hébergeur], [Téléphone de l'hébergeur].
+[Nom de l'hébergeur], [Adresse de l'hébergeur], [Coordonnées de l'hébergeur].
 
 ## Rôle de ZupEat
 
@@ -48,24 +48,24 @@ La marque ZupEat, le site, son code et ses contenus propres sont protégés. Tou
 
 ## Signaler un contenu illicite
 
-Conformément au règlement (UE) 2022/2065 (Digital Services Act), toute personne peut signaler un contenu qu'elle estime illicite (produit interdit, contrefaçon, avis frauduleux, etc.) à [contact@zupeat.com](mailto:contact@zupeat.com). Le signalement indique :
+Conformément au règlement (UE) 2022/2065 (Digital Services Act), toute personne peut signaler un contenu qu'elle estime illicite (produit interdit, contrefaçon, avis frauduleux, etc.) à [Adresse électronique de signalement]. Le signalement indique :
 
 - l'adresse exacte de la page concernée ;
 - les raisons pour lesquelles le contenu est illicite ;
 - le nom et l'adresse électronique de l'auteur du signalement (sauf infractions relevant des articles 3 à 7 de la directive 2011/93/UE).
 
-Nous accusons réception, examinons chaque signalement avec diligence et informons son auteur de la décision prise et des voies de recours. Lorsque nous retirons un contenu ou suspendons un compte, l'utilisateur concerné reçoit un exposé des motifs et peut contester la décision en répondant au même courriel, puis saisir un organisme de règlement extrajudiciaire des litiges ou la justice.
+La procédure de réception, d'examen, de notification des décisions et de contestation des signalements doit être opérationnelle et documentée avant publication de cette page.
 
-Point de contact unique pour les autorités des États membres, la Commission européenne et les utilisateurs : [contact@zupeat.com](mailto:contact@zupeat.com), en français ou en anglais.
+Point de contact pour les autorités et les utilisateurs : [Adresse électronique de contact DSA]. Les langues de communication acceptées doivent être précisées.
 
 ## Médiation de la consommation
 
-En cas de litige non résolu avec notre service client, le consommateur peut recourir gratuitement au médiateur : [Nom du médiateur de la consommation] ([Site du médiateur]).`,
+En cas de litige non résolu avec le service client, le consommateur peut consulter le [Service de Médiation pour le Consommateur](https://mediationconsommateur.be/) si celui-ci est compétent. Les coordonnées de contact de l'exploitant et les éventuelles autres entités de médiation compétentes sont à confirmer avant publication.`,
   },
 
   cgu: {
     titre: "Conditions générales d'utilisation",
-    contenu: `Les présentes conditions encadrent l'accès et l'usage de la plateforme ZupEat, éditée par [Raison sociale] (voir les [mentions légales](/mentions-legales)). Utiliser le site, avec ou sans compte, vaut acceptation de ces conditions.
+    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Les présentes conditions encadrent l'accès et l'usage de la plateforme ZupEat, exploitée par [Nom de l'exploitant] (voir les [mentions légales](/mentions-legales)). L'acceptation des conditions est recueillie dans les parcours qui la requièrent.
 
 ## 1. Objet
 
@@ -77,7 +77,7 @@ ZupEat permet aux clients de commander auprès de commerces de proximité, en re
 - Les informations fournies doivent être exactes et tenues à jour.
 - L'utilisateur garde son mot de passe confidentiel et répond de l'usage de son compte.
 - Il faut avoir 16 ans pour créer un compte, et 18 ans pour commander de l'alcool.
-- Le compte peut être supprimé à tout moment sur simple demande à [contact@zupeat.com](mailto:contact@zupeat.com).
+- Le compte peut être supprimé à tout moment selon le parcours prévu dans le compte ou sur demande à [Adresse électronique de contact].
 
 ## 3. Comportements interdits
 
@@ -92,6 +92,10 @@ Tout manquement peut entraîner la restriction, la suspension ou la fermeture du
 ## 4. Avis et notes
 
 Les notes attribuées aux livreurs reflètent l'expérience réelle de l'utilisateur. ZupEat peut retirer une note manifestement abusive. Les notes ne sont pas rémunérées.
+
+## 4 bis. Classement des commerces
+
+La liste « Recommandées » classe d'abord les commerces ouverts, puis ceux qui livrent à l'adresse choisie, puis selon leur note. L'utilisateur peut choisir un tri par note, délai et frais de livraison, ou distance lorsque son adresse le permet. La description des paramètres doit aussi être accessible directement auprès de la liste de résultats. Aucun placement payant n'est prévu dans le code actuel.
 
 ## 5. Disponibilité
 
@@ -111,12 +115,12 @@ Ces conditions peuvent évoluer. Les titulaires d'un compte sont prévenus de to
 
 ## 9. Droit applicable
 
-Droit français. En cas de litige, une solution amiable est recherchée en priorité ; le consommateur peut saisir le médiateur mentionné dans les mentions légales ou la juridiction compétente selon les règles de droit commun.`,
+Le droit applicable et la juridiction compétente doivent être déterminés selon l'établissement de l'exploitant et les règles impératives protégeant le consommateur. Une solution amiable est recherchée en priorité ; voir les [mentions légales](/mentions-legales) pour les voies de médiation.`,
   },
 
   cgv: {
     titre: "Conditions générales de vente",
-    contenu: `Ces conditions s'appliquent à toute commande passée par un client auprès d'un commerçant via ZupEat. Le vendeur est le commerçant dont l'identité figure sur la vitrine ; ZupEat agit en intermédiaire et encaisse le paiement pour son compte.
+    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Ces conditions s'appliquent à toute commande passée par un client auprès d'un commerçant via ZupEat. Le vendeur est le commerçant dont l'identité doit figurer sur la vitrine ; la répartition exacte des obligations entre ce vendeur et [Nom de l'exploitant] doit être vérifiée. ZupEat agit en intermédiaire et encaisse le paiement pour le compte du vendeur lorsque ce mode est activé.
 
 ## 1. Commande
 
@@ -127,7 +131,7 @@ Le client compose son panier, choisit le retrait ou la livraison, et valide apr�
 Les prix sont affichés en euros TTC, fixés par chaque commerçant. S'y ajoutent, affichés avant validation :
 
 - les frais de livraison, selon la zone de l'adresse ;
-- des frais de service de 0,25 € par commande, perçus par ZupEat ;
+- les frais de service en vigueur, calculés et affichés dans le récapitulatif avant la commande ;
 - le cas échéant, un minimum de commande propre au commerçant.
 
 ## 3. Paiement
@@ -144,11 +148,11 @@ Le client peut annuler sans frais tant que le commerçant n'a pas accepté la co
 
 ## 6. Droit de rétractation
 
-Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne s'applique pas aux denrées susceptibles de se détériorer ou de se périmer rapidement, ni aux biens confectionnés selon les spécifications du client. Pour les autres produits non périssables, le client dispose de 14 jours à compter de la réception pour se rétracter, en contactant [contact@zupeat.com](mailto:contact@zupeat.com).
+Le droit de rétractation de 14 jours s'applique aux ventes à distance lorsqu'aucune exception légale ne joue. Les denrées susceptibles de se détériorer ou de se périmer rapidement et les biens confectionnés selon les spécifications du client peuvent notamment relever d'une exception. Le vendeur doit informer le client de l'existence ou de l'absence du droit applicable au produit, des modalités d'exercice et, lorsque ce droit existe, lui fournir le formulaire type avant la commande. Les modalités concrètes de retour et le contact du vendeur sont à compléter.
 
 ## 7. Réclamations
 
-Produit manquant, erroné ou non conforme : signalez-le depuis votre espace (support) ou à [contact@zupeat.com](mailto:contact@zupeat.com) dans les 48 heures, avec si possible une photo. Un remboursement total ou partiel est accordé lorsque la réclamation est fondée. Les garanties légales de conformité et des vices cachés restent applicables.
+Produit manquant, erroné ou non conforme : signalez-le depuis votre espace (support) ou à [Adresse électronique de contact], avec si possible une photo. La possibilité de signaler rapidement le problème ne limite pas les droits et délais légaux du consommateur. Un remboursement total ou partiel est accordé lorsque la réclamation est fondée. Les garanties légales applicables restent en vigueur.
 
 ## 8. Allergènes et alcool
 
@@ -156,16 +160,16 @@ Les informations sur les allergènes sont fournies par le commerçant ; en cas d
 
 ## 9. Litiges
 
-Voir la médiation dans les [mentions légales](/mentions-legales). Droit français applicable.`,
+Voir la médiation dans les [mentions légales](/mentions-legales). Le droit applicable est déterminé selon l'établissement du vendeur et les protections impératives du consommateur.`,
   },
 
   "conditions-commercants": {
     titre: "Conditions générales commerçants",
-    contenu: `Ces conditions lient ZupEat et tout professionnel qui ouvre une boutique sur la plateforme. Elles complètent les [CGU](/cgu).
+    contenu: `**Projet de conditions à valider avant ouverture commerciale.** Ces conditions lient [Nom de l'exploitant] et tout professionnel qui ouvre une boutique sur la plateforme. Elles complètent les [CGU](/cgu).
 
 ## 1. Inscription
 
-Le commerçant fournit un dossier exact et à jour (identité de l'entreprise, SIRET, TVA le cas échéant, coordonnées bancaires, autorisations propres à son activité). ZupEat peut refuser ou suspendre une boutique dont le dossier est incomplet ou inexact.
+Le commerçant fournit un dossier exact et à jour (identité de l'entreprise, numéro BCE ou identifiant professionnel étranger équivalent, TVA le cas échéant, coordonnées bancaires, autorisations propres à son activité). ZupEat peut refuser ou suspendre une boutique dont le dossier est incomplet ou inexact.
 
 ## 2. Obligations du commerçant
 
@@ -184,7 +188,7 @@ Le commerçant souscrit une formule (prix, nombre de boutiques) et paie une comm
 
 ZupEat encaisse le paiement des clients pour le compte du commerçant, via Stripe, et lui reverse les sommes dues après déduction des commissions et frais. Une facture mensuelle détaille chaque ligne.
 
-Conformément à la directive (UE) 2021/514 (DAC7), ZupEat collecte et transmet chaque année à l'administration fiscale les informations relatives aux commerçants actifs et aux sommes perçues (identité, adresse, numéro d'identification fiscale ou SIREN, TVA, IBAN, nombre de transactions et montants par trimestre). Le commerçant s'engage à fournir ces informations ; à défaut, ZupEat peut retenir les reversements après deux relances.
+Selon le champ d'application des règles DAC7 transposées dans le pays de déclaration, ZupEat collecte et transmet les informations requises relatives aux commerçants concernés et aux sommes perçues (identité, adresse, numéro d'identification fiscale, TVA le cas échéant, coordonnées du compte de paiement, nombre de transactions et montants par trimestre). La procédure de déclaration, les exceptions et les conséquences d'un dossier incomplet doivent être précisées avant publication.
 
 ## 5. Données des clients
 
@@ -200,11 +204,11 @@ Chaque partie peut résilier à tout moment avec un préavis de 30 jours. ZupEat
 
 ## 8. Classement
 
-L'ordre d'affichage des commerces dépend principalement de la distance, de l'ouverture et de la zone de livraison. Aucun classement payant n'est pratiqué à ce jour.
+La liste « Recommandées » classe d'abord les commerces ouverts, puis ceux qui livrent à l'adresse choisie, puis selon leur note. Les autres tris proposés portent sur la note, le délai et les frais de livraison, ou la distance lorsque l'adresse le permet. Aucun classement payant n'est prévu dans le code actuel. Ces paramètres doivent être vérifiés après chaque évolution de l'algorithme et expliqués aussi aux consommateurs dans la liste de résultats.
 
 ## 9. Réclamations et droit applicable
 
-Les réclamations passent par le support commerçant. Droit français ; tribunal de commerce du siège de ZupEat compétent.`,
+Les réclamations passent par le support commerçant. Le droit applicable et la juridiction compétente doivent être précisés après identification de l'exploitant et examen des règles impératives applicables.`,
   },
 
   "conditions-livreurs": {
@@ -246,7 +250,7 @@ Le livreur peut cesser d'utiliser la plateforme et demander la clôture de son c
 
   confidentialite: {
     titre: "Politique de confidentialité",
-    contenu: `[Raison sociale] (ZupEat) est responsable des traitements décrits ci-dessous, conformément au règlement (UE) 2016/679 (RGPD) et à la loi Informatique et Libertés. Chaque commerçant est responsable des traitements qu'il réalise pour ses propres besoins.
+    contenu: `**Projet de notice à compléter avant toute collecte commerciale.** [Nom de l'exploitant] (ZupEat) est responsable des traitements décrits ci-dessous au titre du règlement (UE) 2016/679 (RGPD). Le rôle de chaque commerçant dans les traitements partagés ou propres doit être documenté.
 
 ## Données traitées et finalités
 
@@ -270,11 +274,11 @@ Le livreur peut cesser d'utiliser la plateforme et demander la clôture de son c
 - le service de géocodage Photon (Komoot) pour les suggestions d'adresse, et OpenStreetMap pour l'affichage des cartes ;
 - les autorités, sur réquisition légale.
 
-Nous ne vendons aucune donnée. Lorsqu'un prestataire traite des données hors de l'Union européenne, le transfert est encadré par les clauses contractuelles types de la Commission européenne ou une décision d'adéquation.
+Nous ne vendons aucune donnée. Les éventuels transferts hors de l'Espace économique européen, leurs pays de destination, garanties et moyens d'en obtenir copie restent à documenter à partir des contrats et paramètres réellement utilisés.
 
 ## Vos droits
 
-Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité selon les conditions du RGPD, ainsi que de définir des directives sur le sort de vos données après votre décès. Contactez [contact protection des données]. Les coordonnées du responsable et le processus de réponse doivent être complétés avant publication. Vous pouvez saisir l'Autorité de protection des données belge ([autoriteprotectiondonnees.be](https://www.autoriteprotectiondonnees.be/)).
+Vous disposez, selon les conditions du RGPD, des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité. Lorsque le traitement repose sur votre consentement, vous pouvez le retirer. Contactez [Adresse de contact pour les données personnelles]. Les coordonnées du responsable, celles du délégué à la protection des données s'il est requis, et le processus de réponse doivent être complétés avant publication. Vous pouvez introduire une plainte auprès de l'[Autorité de protection des données belge](https://www.autoriteprotectiondonnees.be/).
 
 ## Sécurité
 
@@ -287,18 +291,17 @@ Voir la page [cookies et traceurs](/cookies).`,
 
   cookies: {
     titre: "Cookies et traceurs",
-    contenu: `ZupEat n'utilise **aucun cookie publicitaire ni de mesure d'audience tierce**. Les seuls traceurs déposés sont strictement nécessaires au service ; conformément à l'article 82 de la loi Informatique et Libertés, ils sont exemptés de consentement.
+    contenu: `**Projet de notice à vérifier sur le site déployé.** Le code connu ne prévoit pas de cookie publicitaire ni de mesure d'audience tierce. Les cookies et autres informations stockées sur l'appareil doivent être inventoriés en production. Un consentement préalable est requis pour les traceurs qui ne sont pas strictement nécessaires au service demandé.
 
 ## Traceurs utilisés
 
 | Nom | Type | Rôle | Durée |
 | --- | --- | --- | --- |
-| Cookie de langue | cookie | mémoriser la langue choisie | 1 an |
-| accessToken, refreshToken, driverToken | stockage local | maintenir la session connectée | jusqu'à la déconnexion |
-| currentOrgId, currentDriverId, userEmail | stockage local | retrouver la boutique ou le compte actif | jusqu'à la déconnexion |
-| Panier | stockage local | conserver le panier entre deux visites | jusqu'à la commande ou au vidage |
-| selectedTheme | stockage local | mémoriser le thème d'affichage | persistant |
-| Cookies Stripe | cookie tiers | sécuriser le paiement et prévenir la fraude, uniquement lors du paiement | selon Stripe |
+| Langue et pays choisis | cookies | mémoriser les préférences choisies | jusqu'à 1 an |
+| Session et connexion centralisée | cookies HttpOnly | maintenir la connexion demandée | selon la durée de session configurée |
+| Panier et adresse de livraison récente | stockage local | retrouver les choix du client | jusqu'à effacement par le client ou purge applicative |
+| Boutique active, thème et préférences d'interface | stockage local | retrouver les choix de l'utilisateur | jusqu'à effacement par le client ou purge applicative |
+| Cookies Stripe, si paiement en ligne | cookies tiers | sécurité et prévention de la fraude pendant le paiement | selon la documentation et la configuration du prestataire |
 
 ## Services tiers
 
@@ -306,7 +309,7 @@ L'affichage des cartes charge des tuiles OpenStreetMap et les suggestions d'adre
 
 ## Les supprimer
 
-La déconnexion efface les jetons de session. Vous pouvez supprimer à tout moment cookies et stockage local depuis les réglages de votre navigateur ; le site vous demandera alors de vous reconnecter.
+La déconnexion révoque la session de connexion. Vous pouvez supprimer les cookies et le stockage local depuis les réglages de votre navigateur ; le site pourra alors vous demander de vous reconnecter ou de ressaisir vos préférences. Les durées et les catégories de traceurs doivent être vérifiées sur chaque domaine exploité.
 
 ## Évolution
 
@@ -315,11 +318,11 @@ Si des traceurs soumis à consentement (mesure d'audience, publicité) étaient 
 
   accessibilite: {
     titre: "Déclaration d'accessibilité",
-    contenu: `ZupEat s'engage à rendre ses services accessibles, conformément à la directive (UE) 2019/882 (acte européen sur l'accessibilité) et à l'article 47 de la loi n° 2005-102 du 11 février 2005.
+    contenu: `**Projet de déclaration à compléter après audit.** ZupEat vise l'accessibilité de ses services de commerce électronique conformément aux exigences applicables en Belgique issues de la directive (UE) 2019/882. Le champ exact et les éventuelles exceptions doivent être vérifiés selon l'exploitant et le service.
 
 ## État de conformité
 
-Le site et les applications sont **partiellement conformes** aux référentiels WCAG 2.1 niveau AA et RGAA 4. Un audit complet n'a pas encore été réalisé : les résultats seront publiés ici dès qu'il sera terminé.
+Aucun niveau de conformité ne peut être attesté sans audit complet du site et des applications concernés. Le périmètre, la méthode, les résultats et les mesures correctives seront publiés ici après vérification.
 
 ## Contenus non accessibles
 
@@ -328,10 +331,10 @@ Le site et les applications sont **partiellement conformes** aux référentiels 
 
 ## Nous contacter
 
-Si vous ne parvenez pas à accéder à un contenu ou à un service, écrivez à [contact@zupeat.com](mailto:contact@zupeat.com) en décrivant le problème et l'outil utilisé : nous répondons sous 10 jours ouvrés et proposons une alternative.
+Si vous ne parvenez pas à accéder à un contenu ou à un service, écrivez à [Adresse électronique de contact] en décrivant le problème et l'outil utilisé. Le délai de réponse et la solution proposée doivent être précisés selon les moyens réellement disponibles.
 
 ## Voies de recours
 
-Sans réponse satisfaisante, vous pouvez écrire au Défenseur des droits (formulaire en ligne sur [defenseurdesdroits.fr](https://formulaire.defenseurdesdroits.fr)) ou, en Belgique, saisir Unia.`,
+Les voies de signalement et l'autorité compétente doivent être précisées pour chaque service et pays effectivement exploité.`,
   },
 };

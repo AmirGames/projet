@@ -12,6 +12,20 @@ export type PageLegale = {
   parDefaut: boolean;
 };
 
+/** Les crochets des liens Markdown sont suivis de « ( » ; les autres désignent un champ à compléter. */
+export const contientChampLegalACompleter = (contenu: string) => /\[[^\]\n]+\](?!\()/.test(contenu);
+
+const contientAvertissementDeBrouillon = (contenu: string) =>
+  /\bprojet (?:de |d['’])?(?:conditions|notice|déclaration|document)|\bprojet à compléter\b|\bà (?:définir|confirmer|documenter|valider)\b/i.test(contenu);
+
+export const estPageLegalePrete = (page: PageLegale) =>
+  !page.parDefaut &&
+  !contientChampLegalACompleter(page.contenu) &&
+  !contientAvertissementDeBrouillon(page.contenu);
+
+/** Ces pages doivent être publiées avant de permettre une commande en production. */
+const PAGES_REQUISES_COMMANDE: SlugLegal[] = ["mentions-legales", "cgu", "cgv", "confidentialite", "cookies"];
+
 function estSlugLegal(slug: string): slug is SlugLegal {
   return (SLUGS_LEGAUX as readonly string[]).includes(slug);
 }
@@ -48,6 +62,9 @@ export const PagesLegalesService = {
    */
   async publier(slugBrut: string, donnees: { titre: string; contenu: string; version: string }, auteur?: string) {
     const slug = verifierSlug(slugBrut);
+    if (contientChampLegalACompleter(donnees.contenu) || contientAvertissementDeBrouillon(donnees.contenu)) {
+      throw new ApiError(422, "Complétez les champs et retirez l'avertissement de brouillon avant publication", "LEGAL_DRAFT");
+    }
     const version = donnees.version.trim();
     const actuelle = await this.enVigueur(slug);
     const dejaPrise =
@@ -65,5 +82,13 @@ export const PagesLegalesService = {
   async versionsDe(slugs: string[]): Promise<string> {
     const pages = await Promise.all(slugs.map((slug) => this.enVigueur(slug)));
     return pages.map((page) => `${page.slug}@${page.version}`).join(" ");
+  },
+
+  async verifierPrealablesCommande(): Promise<void> {
+    const pages = await Promise.all(PAGES_REQUISES_COMMANDE.map((slug) => this.enVigueur(slug)));
+    const manquantes = pages.filter((page) => !estPageLegalePrete(page)).map((page) => page.slug);
+    if (manquantes.length) {
+      throw new ApiError(503, `Commandes indisponibles : pages légales à publier (${manquantes.join(", ")})`, "LEGAL_PAGES_NOT_READY");
+    }
   },
 };

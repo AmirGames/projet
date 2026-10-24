@@ -13,7 +13,11 @@ jest.mock("../../../config/logger", () => ({ logger: { info: jest.fn(), warn: je
 const etatOutbox = jest.fn(async (_maintenant?: Date) => ({ enAttente: 0, echecs: 0, retardMs: 0 }));
 jest.mock("../../jobs/outbox.service", () => ({ Outbox: { etat: (m?: Date) => etatOutbox(m) } }));
 
-jest.mock("../../legal/pages-legales.service", () => ({ PagesLegalesService: { toutes: jest.fn(async () => []) } }));
+jest.mock("../../legal/pages-legales.service", () => ({
+  PagesLegalesService: { toutes: jest.fn(async () => []) },
+  contientChampLegalACompleter: (contenu: string) => /\[[^\]\n]+\](?!\()/.test(contenu),
+  estPageLegalePrete: (page: { parDefaut: boolean }) => !page.parDefaut,
+}));
 import { DELAIS_METIER, aDesChampsAremplir, constatsDepuisMesures, mesurer, type MesuresMetier } from "../supervision-metier.service";
 
 const calme: MesuresMetier = {
@@ -84,7 +88,7 @@ describe("pages légales (C-32)", () => {
   it("signale les pages à compléter, et seulement elles", () => {
     expect(constatsDepuisMesures({ ...calme, pagesLegalesACompleter: [] })).toEqual([]);
     const [c] = constatsDepuisMesures({ ...calme, pagesLegalesACompleter: ["mentions-legales", "cgv"] });
-    expect(c).toMatchObject({ cle: "metier:pages-legales", niveau: "ATTENTION" });
+    expect(c).toMatchObject({ cle: "metier:pages-legales", niveau: "CRITIQUE" });
     expect(c.detail).toContain("mentions-legales, cgv");
   });
 

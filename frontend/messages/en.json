@@ -4482,7 +4482,7 @@
     "traitement": "Processing...",
     "minimum": "Minimum {minimum}",
     "adresseNonLivree": "Address not served",
-    "confirmer": "Confirm order",
+    "confirmer": "Place order with obligation to pay",
     "mentionConfirmation": "By confirming, you send your order to {boutique}. It will be prepared as soon as the shop accepts it; you will be notified by email."
   },
   "accueilPro": {
@@ -4674,7 +4674,7 @@
   "delaiAnnulation": {
     "titre": "Placing order…",
     "retour": "Back",
-    "parfait": "Perfect (00:{secondes})"
+    "parfait": "Send order (00:{secondes})"
   },
   "noterLivreur": {
     "votreNote": "Your rating",
