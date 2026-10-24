@@ -201,9 +201,13 @@ check('la commande est validable', !(await bouton.first().isDisabled()), 'bloqu�
 
 titre('Il confirme');
 await bouton.first().click();
-// Le paiement en espèces ouvre un bref délai de retour avant l'envoi effectif.
-await page.locator('[role="dialog"] button', { hasText: /Envoyer la commande/ }).click();
-await page.waitForTimeout(3500);
+// Le délai de retour n'apparaît que si le commerce a configuré les espèces.
+// Ce scénario crée un commerce sans moyen de paiement explicite.
+const delai = page.getByRole('dialog');
+if (await delai.isVisible()) {
+  await delai.getByRole('button', { name: /Envoyer la commande/ }).click();
+}
+await page.getByRole('heading', { name: /Commande envoyée/i }).waitFor({ timeout: 15000 });
 
 const apres = await texte();
 // Le commerce doit encore l'accepter : la page dit « envoyée », pas
