@@ -1,6 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { PAGES_LEGALES_DEFAUT, SLUGS_LEGAUX, VERSION_INITIALE, type SlugLegal } from "../../contenus/pages-legales.defaut";
+import { lireProfilLegal, remplacerVariablesLegales } from "./company-profile";
 
 export type PageLegale = {
   slug: SlugLegal;
@@ -49,6 +50,17 @@ export const PagesLegalesService = {
   async publier(slugBrut: string, donnees: { titre: string; contenu: string; version: string }, auteur?: string) {
     const slug = verifierSlug(slugBrut);
     const version = donnees.version.trim();
+    const profil = await lireProfilLegal();
+    const titreResolu = remplacerVariablesLegales(donnees.titre, profil);
+    const contenuResolu = remplacerVariablesLegales(donnees.contenu, profil);
+    const variablesManquantes = [...new Set([...titreResolu.manquantes, ...contenuResolu.manquantes])];
+    if (variablesManquantes.length) {
+      throw new ApiError(
+        400,
+        "Complétez les variables avant publication : " + variablesManquantes.map((cle) => "$" + cle).join(", "),
+        "LEGAL_VARIABLES_MISSING"
+      );
+    }
     const actuelle = await this.enVigueur(slug);
     const dejaPrise =
       (actuelle.parDefaut && version === VERSION_INITIALE) ||
@@ -57,7 +69,9 @@ export const PagesLegalesService = {
       throw new ApiError(409, `La version « ${version} » existe déjà pour cette page : choisissez un nouveau numéro`, "VERSION_EXISTS");
     }
     return db.pageLegaleVersion.create({
-      data: { slug, version, titre: donnees.titre.trim(), contenu: donnees.contenu, publiePar: auteur ?? null },
+      // Une version publiée est un instantané : les futures modifications du profil
+      // de société ne réécrivent jamais les textes déjà acceptés.
+      data: { slug, version, titre: titreResolu.contenu.trim(), contenu: contenuResolu.contenu, publiePar: auteur ?? null },
     });
   },
 
