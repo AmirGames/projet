@@ -38,6 +38,30 @@ interface Page {
 }
 
 type Brouillon = { titre: string; contenu: string; version: string };
+type ProfilLegal = Record<string, string>;
+
+const CHAMPS_PROFIL = [
+  ['nom', 'Nom de la plateforme'],
+  ['raison_sociale', 'Raison sociale'],
+  ['forme_juridique', 'Forme juridique'],
+  ['adresse', 'Adresse du siège'],
+  ['numero_bce', 'Numéro BCE'],
+  ['numero_tva', 'Numéro de TVA'],
+  ['capital_social', 'Capital social'],
+  ['dirigeant', 'Dirigeant / directeur de publication'],
+  ['telephone', 'Téléphone'],
+  ['email', 'E-mail de contact'],
+  ['mediateur', 'Médiateur de la consommation'],
+  ['site_mediation', 'Site du médiateur'],
+  ['hebergeur', 'Nom de l’hébergeur'],
+  ['adresse_hebergeur', 'Adresse de l’hébergeur'],
+] as const;
+
+function remplacerVariables(texte: string, profil: ProfilLegal) {
+  return texte.replace(/\$([a-z][a-z0-9_]*)/gi, (variable, cle: string) =>
+    profil[cle]?.trim() ? profil[cle].trim() : variable
+  );
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -55,6 +79,9 @@ export default function PagesLegalesPage() {
   const date = (iso: string) =>
     new Date(iso).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
   const [pages, setPages] = useState<Page[]>([]);
+  const [profilLegal, setProfilLegal] = useState<ProfilLegal>(
+    Object.fromEntries(CHAMPS_PROFIL.map(([cle]) => [cle, '']))
+  );
   const [slug, setSlug] = useState('');
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
   const [consultee, setConsultee] = useState<Version | null>(null);
@@ -62,6 +89,7 @@ export default function PagesLegalesPage() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
+  const [enregistrementProfil, setEnregistrementProfil] = useState(false);
 
   const page = pages.find((p) => p.slug === slug);
 
@@ -82,6 +110,11 @@ export default function PagesLegalesPage() {
         setErreur(donnees.error || t('chargementImpossible'));
         return;
       }
+      const reponseProfil = await fetch(`${API_URL}/api/superowner/pages-legales/identite`, {
+        headers: { Authorization: `Bearer ${jetonAcces()}` },
+      });
+      const donneesProfil = await reponseProfil.json();
+      if (reponseProfil.ok) setProfilLegal(donneesProfil.data);
       const liste: Page[] = donnees.data;
       setPages(liste);
       const choisie = liste.find((p) => p.slug === garder) ?? liste[0];
@@ -112,6 +145,40 @@ export default function PagesLegalesPage() {
 
   const brouillonModifie =
     !!page && !!brouillon && (brouillon.titre !== page.titre || brouillon.contenu !== page.contenu);
+
+  const texteAvecVariables = (texte: string) => remplacerVariables(texte, profilLegal);
+  const variablesManquantes = [...new Set(
+    `${brouillon?.titre ?? ''}\n${brouillon?.contenu ?? ''}`
+      .match(/\$[a-z][a-z0-9_]*/gi)
+      ?.filter((variable) => !profilLegal[variable.slice(1)]?.trim()) ?? []
+  )];
+
+  const enregistrerProfil = async () => {
+    setEnregistrementProfil(true);
+    setErreur('');
+    setMessage('');
+    try {
+      const reponse = await fetch(`${API_URL}/api/superowner/pages-legales/identite`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jetonAcces()}`,
+        },
+        body: JSON.stringify(profilLegal),
+      });
+      const donnees = await reponse.json();
+      if (!reponse.ok) {
+        setErreur(donnees.error || 'Impossible d’enregistrer les informations de la société.');
+        return;
+      }
+      setProfilLegal(donnees.data);
+      setMessage('Informations de la société enregistrées.');
+    } catch {
+      setErreur(t('injoignable'));
+    } finally {
+      setEnregistrementProfil(false);
+    }
+  };
 
   const publier = async () => {
     if (!page || !brouillon) return;
@@ -170,6 +237,34 @@ export default function PagesLegalesPage() {
       {message && (
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3">{message}</div>
       )}
+
+      <details className="bg-white border border-gray-200 rounded-lg p-5">
+        <summary className="cursor-pointer font-semibold">Informations de la société et variables des documents</summary>
+        <p className="mt-3 text-sm text-gray-600">
+          Renseignez chaque valeur une fois, puis utilisez sa variable dans un document, par exemple <code>$nom</code> ou <code>$raison_sociale</code>.
+          Les valeurs sont figées dans chaque version au moment de la publication.
+        </p>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {CHAMPS_PROFIL.map(([cle, libelle]) => (
+            <label key={cle} className="block text-sm">
+              <span className="text-gray-600">{libelle} <code className="text-xs">${cle}</code></span>
+              <input
+                value={profilLegal[cle] ?? ''}
+                onChange={(e) => setProfilLegal({ ...profilLegal, [cle]: e.target.value })}
+                className="mt-1 w-full bg-gray-50 border border-gray-300 rounded-sm px-3 py-2"
+              />
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={enregistrerProfil}
+          disabled={enregistrementProfil}
+          className="mt-4 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-lg"
+        >
+          {enregistrementProfil ? 'Enregistrement…' : 'Enregistrer les informations'}
+        </button>
+      </details>
 
       <div className="grid grid-cols-1 xl:grid-cols-[240px_1fr] gap-6">
         {/* Liste des pages */}
@@ -253,10 +348,16 @@ export default function PagesLegalesPage() {
                   <p className="text-sm text-gray-500 mb-1">{t('apercu')}</p>
                   <div className="legal bg-white ring-1 ring-gray-200 text-gray-800 rounded-sm p-6 max-h-168 overflow-y-auto">
                     <h1>{brouillon.titre}</h1>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{brouillon.contenu}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{texteAvecVariables(brouillon.contenu)}</ReactMarkdown>
                   </div>
                 </div>
               </div>
+
+              {variablesManquantes.length > 0 && (
+                <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                  Variables à renseigner avant publication : {variablesManquantes.join(', ')}
+                </p>
+              )}
 
               <div className="flex flex-wrap items-center gap-3">
                 <button
