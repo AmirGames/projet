@@ -17,7 +17,7 @@ export type PageLegale = {
 export const contientChampLegalACompleter = (contenu: string) => /\[[^\]\n]+\](?!\()/.test(contenu);
 
 const contientAvertissementDeBrouillon = (contenu: string) =>
-  /\bprojet (?:de |d['’])?(?:conditions|notice|déclaration|document)|\bprojet à compléter\b|\bà (?:définir|confirmer|documenter|valider|compléter)\b/i.test(contenu);
+  /\bprojet (?:de |d['’])?(?:conditions|notice|déclaration|document)|\bprojet à compléter\b|à (?:définir|confirmer|documenter|valider|compléter)\b/i.test(contenu);
 
 export const estPageLegalePrete = (page: PageLegale) =>
   !page.parDefaut &&

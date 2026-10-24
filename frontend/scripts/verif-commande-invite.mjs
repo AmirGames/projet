@@ -196,7 +196,7 @@ check('et la durée annoncée', /25 min/.test(zone), zone.slice(0, 900));
 // Sans les conditions générales de vente acceptées, le bouton reste grisé.
 await page.getByLabel(/conditions générales de vente/).check();
 
-const bouton = page.locator('button', { hasText: /Confirmer la Commande/ });
+const bouton = page.locator('button', { hasText: /Commande avec obligation de paiement/ });
 check('la commande est validable', !(await bouton.first().isDisabled()), 'bloquée à tort');
 
 titre('Il confirme');
