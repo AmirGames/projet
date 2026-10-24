@@ -201,6 +201,8 @@ check('la commande est validable', !(await bouton.first().isDisabled()), 'bloqu�
 
 titre('Il confirme');
 await bouton.first().click();
+// Le paiement en espèces ouvre un bref délai de retour avant l'envoi effectif.
+await page.locator('[role="dialog"] button', { hasText: /Envoyer la commande/ }).click();
 await page.waitForTimeout(3500);
 
 const apres = await texte();
