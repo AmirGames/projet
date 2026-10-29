@@ -3,7 +3,7 @@
 
 import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
@@ -76,6 +76,7 @@ export default function OrdersPage() {
   const orgId = params?.orgId as string;
 
   const [vue, setVue] = useState<'enCours' | 'historique'>('enCours');
+  const historiqueOuvert = useRef(false);
   const [enCours, setEnCours] = useState<Order[]>([]);
   const [duJour, setDuJour] = useState<Order[]>([]);
   const [erreurEnCours, setErreurEnCours] = useState(false);
@@ -218,8 +219,8 @@ export default function OrdersPage() {
 
   // L'historique ne se charge que s'il est ouvert, et à chaque filtre ou page.
   useEffectChargement(() => {
-    if (storeId && vue === 'historique') fetchOrders();
-  }, [storeId, vue, fetchOrders]);
+    if (storeId && historiqueOuvert.current) fetchOrders();
+  }, [storeId, filter, page, fetchOrders]);
 
   // Une commande arrive, ou quelqu'un y répond : la liste se relit seule.
   useEffect(() => {
@@ -359,7 +360,13 @@ export default function OrdersPage() {
               type="button"
               role="tab"
               aria-selected={vue === cle}
-              onClick={() => setVue(cle)}
+              onClick={() => {
+                setVue(cle);
+                historiqueOuvert.current = cle === 'historique';
+                // L'historique doit se charger dès l'action du commerçant,
+                // sans attendre le prochain cycle d'effet React.
+                if (cle === 'historique' && storeId) void fetchOrders();
+              }}
               className={`rounded-full px-4 py-1.5 text-sm transition ${
                 vue === cle ? 'bg-white font-bold shadow-xs' : 'font-semibold text-gray-600 hover:text-gray-900'
               }`}

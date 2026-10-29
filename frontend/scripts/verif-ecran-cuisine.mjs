@@ -257,6 +257,14 @@ check('avec le motif choisi', refus?.rejectionReason === 'TOO_BUSY', `${refus?.r
 
 titre('L’historique');
 
+const reponseHistoriqueApi = await appeler(`/api/order-management/${storeId}?skip=0&take=20`, { jeton: T });
+const idsHistorique = (reponseHistoriqueApi.donnees?.data || []).map((commande) => commande.id);
+check(
+  'l’API conserve les commandes terminées et refusées',
+  reponseHistoriqueApi.statut === 200 && idsHistorique.includes(terminee) && idsHistorique.includes(aRefuser),
+  `${reponseHistoriqueApi.statut} ${idsHistorique.join(',')}`
+);
+
 await page.getByRole('tab', { name: 'Historique' }).click();
 await page.waitForFunction(
   ([numeroTerminee, numeroRefusee]) => {
