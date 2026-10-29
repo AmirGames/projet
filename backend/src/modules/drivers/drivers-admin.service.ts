@@ -87,6 +87,9 @@ export const DriversAdminService = {
           currentOrderId: true,
           lastLocationUpdate: true,
           gpsLostAt: true,
+          bceNumber: true,
+          bceStatus: true,
+          bceReviewReason: true,
         },
       }),
     ]);

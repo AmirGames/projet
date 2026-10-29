@@ -2123,7 +2123,17 @@
     "statutValide": "✓ Approved",
     "statutEnAttente": "⏳ Awaiting approval",
     "statutNouveau": "New",
-    "statutSuspendu": "Account suspended"
+    "statutSuspendu": "Account suspended",
+    "bceTitre": "BCE enterprise number",
+    "bceExplication": "Your BCE number is checked against the official register. You can correct it here; a correction restarts the review and takes you offline until it is processed.",
+    "bceVerifie": "Number verified",
+    "bceRefuse": "Verification refused. Correct the number or read the reason.",
+    "bceEnAttente": "Verification pending: you cannot receive offers yet.",
+    "bceNumero": "BCE number",
+    "bceEnregistrer": "Save and request verification",
+    "bceEnvoi": "Submitting…",
+    "bceSoumis": "Number saved. Verification is pending.",
+    "erreurMiseAJourBce": "Unable to save the BCE number"
   },
   "driverAuth": {
     "login": "Login",
@@ -2210,7 +2220,10 @@
     "connectionError": "Connection error",
     "titreOnglet": "Courier space",
     "votreGain": "Your earnings",
-    "km": "{n} km"
+    "km": "{n} km",
+    "bceAVerifier": "Your BCE number needs verification",
+    "bceAVerifierAide": "You will not receive offers until the official register check is complete.",
+    "completerBce": "Review or correct my BCE number →"
   },
   "merchantReviews": {
     "title": "Reviews and Ratings",
@@ -3521,7 +3534,17 @@
     "onDelivery": "On a delivery",
     "gpsLost": "GPS lost",
     "loadError": "Could not load.",
-    "sendError": "The message was not sent."
+    "sendError": "The message was not sent.",
+    "bceTitle": "Driver BCE number",
+    "bceNumber": "BCE number provided",
+    "bceStatus": "Status: {status}",
+    "bceVerified": "verified",
+    "bcePending": "verification pending",
+    "bceRejected": "rejected",
+    "bceSave": "Save number",
+    "bceSaving": "Saving…",
+    "bceHelp": "Saving restarts the official check and takes the driver offline until review.",
+    "bceSaveError": "Unable to save the BCE number."
   },
   "superownerDeliveryIncidents": {
     "title": "Delivery incidents",

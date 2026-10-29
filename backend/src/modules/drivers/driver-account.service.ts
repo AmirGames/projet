@@ -329,7 +329,7 @@ export const DriverAccountService = {
   },
 
   /** Soumettre/corriger le numéro BCE et remettre le contrôle humain en attente. */
-  async modifierNumeroBce(livreur: Courier, saisie: string) {
+  async modifierNumeroBce(livreur: Pick<Courier, "id" | "currentOrderId">, saisie: string) {
     const bceNumber = numeroBceNormalise(saisie);
     if (!bceNumber) throw new ApiError(400, "Numéro BCE invalide", "INVALID_BCE_NUMBER");
     return db.courier.update({

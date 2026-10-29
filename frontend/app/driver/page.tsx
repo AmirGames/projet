@@ -41,6 +41,7 @@ interface Driver {
   phone: string;
   /** PENDING tant que la plateforme n'a pas validé le dossier. */
   status?: string;
+  bceStatus?: string | null;
   /** Nulle tant que personne ne l'a noté. */
   rating: number | null;
   avis?: number;
@@ -350,6 +351,13 @@ export default function DriverDashboard() {
         {/* Courses proposées : elles n'ont que quelques dizaines de secondes de
             vie, elles passent donc avant tout le reste. */}
         <div className="mb-8">
+          {driver && driver.bceStatus !== 'VERIFIED' && (
+            <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950">
+              <p className="font-semibold">{t('bceAVerifier')}</p>
+              <p className="mt-1 text-sm">{t('bceAVerifierAide')}</p>
+              <Link href="/driver/profile" className="mt-3 inline-flex font-semibold underline">{t('completerBce')}</Link>
+            </div>
+          )}
           <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('proposedDeliveries')}</h2>
           <PropositionsCourses
             isOnline={isOnline}

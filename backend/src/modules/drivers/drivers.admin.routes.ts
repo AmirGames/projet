@@ -7,6 +7,9 @@ import { DriverPayoutService } from "../payouts/driver-payout.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { isSuperOwner, journaliser } from "../superowner/shared";
 import { DriversAdminService } from "./drivers-admin.service";
+import { DriverAccountService } from "./driver-account.service";
+import { numeroBceNormalise } from "../../utils/bce";
+import { db } from "../../services/db";
 import { limiteBornee, decalage } from "../../utils/pagination";
 
 const router = Router();
@@ -245,6 +248,31 @@ router.get("/driver-support/:driverId", authMiddleware, isSuperOwner, async (req
   try {
     const driverId = req.params.driverId as string;
     res.json({ success: true, data: await DriversAdminService.filDeSupport(driverId) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /superowner/driver-support/:driverId/bce - enregistrer un BCE communiqué au support.
+// La saisie relance le contrôle humain ; le support ne peut pas la déclarer vérifiée.
+router.patch("/driver-support/:driverId/bce", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = z.object({ bceNumber: z.string().min(1).max(32) }).parse(req.body);
+    if (!numeroBceNormalise(body.bceNumber)) {
+      res.status(400).json({ success: false, error: "Numéro BCE invalide" });
+      return;
+    }
+    const livreur = await db.courier.findUnique({
+      where: { id: req.params.driverId as string },
+      select: { id: true, currentOrderId: true },
+    });
+    if (!livreur) {
+      res.status(404).json({ success: false, error: "Livreur introuvable" });
+      return;
+    }
+    const misAJour = await DriverAccountService.modifierNumeroBce(livreur, body.bceNumber);
+    await journaliser(req, "UPDATE_DRIVER_BCE_FROM_SUPPORT", livreur.id, { bceStatus: misAJour.bceStatus });
+    res.json({ success: true, data: { bceNumber: misAJour.bceNumber, bceStatus: misAJour.bceStatus } });
   } catch (err) {
     next(err);
   }

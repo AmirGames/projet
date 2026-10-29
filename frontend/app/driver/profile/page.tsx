@@ -29,6 +29,9 @@ interface Driver {
   completedDeliveries: number;
   isAvailable: boolean;
   status?: string;
+  bceNumber?: string | null;
+  bceStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | null;
+  bceReviewReason?: string | null;
   documents?: {
     id_card?: boolean;
     driver_license?: boolean;
@@ -45,6 +48,8 @@ export default function DriverProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [bceNumber, setBceNumber] = useState('');
+  const [bceSaving, setBceSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -67,6 +72,7 @@ export default function DriverProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setDriver(data.data);
+        setBceNumber(data.data.bceNumber || '');
         setFormData({
           name: data.data.name || '',
           email: data.data.email || '',
@@ -128,6 +134,35 @@ export default function DriverProfilePage() {
     } catch (err) {
       signalerErreur('Error updating profile:', err);
       setError(t('erreurConnexion'));
+    }
+  };
+
+  const handleUpdateBce = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = jetonAcces();
+    if (!token || bceSaving) return;
+    setBceSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await fetch(`${API_URL}/api/drivers/me/bce`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ bceNumber }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || t('erreurMiseAJourBce'));
+        return;
+      }
+      setBceNumber(data.data?.bceNumber || bceNumber);
+      setSuccess(t('bceSoumis'));
+      await loadDriverData();
+    } catch (err) {
+      signalerErreur('Error updating BCE number:', err);
+      setError(t('erreurConnexion'));
+    } finally {
+      setBceSaving(false);
     }
   };
 
@@ -384,6 +419,22 @@ export default function DriverProfilePage() {
                 )}
               </form>
             </div>
+
+            <section className="mt-6 bg-white ring-1 ring-gray-200 rounded-lg p-8" aria-labelledby="bce-title">
+              <h2 id="bce-title" className="text-xl font-bold text-gray-900">{t('bceTitre')}</h2>
+              <p className="mt-2 text-sm text-gray-600">{t('bceExplication')}</p>
+              <p className={`mt-3 text-sm font-semibold ${driver.bceStatus === 'VERIFIED' ? 'text-green-700' : driver.bceStatus === 'REJECTED' ? 'text-red-700' : 'text-amber-700'}`}>
+                {driver.bceStatus === 'VERIFIED' ? t('bceVerifie') : driver.bceStatus === 'REJECTED' ? t('bceRefuse') : t('bceEnAttente')}
+              </p>
+              {driver.bceReviewReason && <p className="mt-1 text-sm text-red-700">{driver.bceReviewReason}</p>}
+              <form onSubmit={handleUpdateBce} className="mt-4 space-y-3">
+                <label htmlFor="bceNumber" className="block text-sm font-medium text-gray-700">{t('bceNumero')}</label>
+                <input id="bceNumber" name="bceNumber" type="text" required maxLength={32} autoComplete="off" value={bceNumber} onChange={(e) => setBceNumber(e.target.value)} placeholder="0123.456.749" className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-orange-600" />
+                <button type="submit" disabled={bceSaving || !bceNumber.trim()} className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg">
+                  {bceSaving ? t('bceEnvoi') : t('bceEnregistrer')}
+                </button>
+              </form>
+            </section>
 
             <CompteVersementLivreur compte={driver?.compte} onSaved={loadDriverData} />
 

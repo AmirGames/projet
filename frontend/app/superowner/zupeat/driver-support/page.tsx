@@ -31,6 +31,9 @@ interface Livreur {
   currentOrderId: string | null;
   lastLocationUpdate: string | null;
   gpsLostAt: string | null;
+  bceNumber: string | null;
+  bceStatus: 'PENDING' | 'VERIFIED' | 'REJECTED' | null;
+  bceReviewReason: string | null;
 }
 
 /** Chat support : les conversations avec les livreurs, en direct. */
@@ -40,6 +43,8 @@ export default function DriverSupportPage() {
   const [selection, setSelection] = useState<string | null>(null);
   const [livreur, setLivreur] = useState<Livreur | null>(null);
   const [messages, setMessages] = useState<MessageSupport[]>([]);
+  const [bceNumber, setBceNumber] = useState('');
+  const [bceSaving, setBceSaving] = useState(false);
   const [erreur, setErreur] = useState('');
   const selectionRef = useRef<string | null>(null);
 
@@ -73,6 +78,7 @@ export default function DriverSupportPage() {
         const donnees = await res.json();
         if (!res.ok) throw new Error(donnees.error);
         setLivreur(donnees.data.driver);
+        setBceNumber(donnees.data.driver.bceNumber || '');
         setMessages(donnees.data.messages);
         // Ouvrir le fil l'a marqué lu.
         setConversations((liste) => liste.map((c) => (c.driverId === driverId ? { ...c, unread: 0 } : c)));
@@ -140,6 +146,29 @@ export default function DriverSupportPage() {
     } catch {
       setErreur(t('sendError'));
       return false;
+    }
+  };
+
+  const enregistrerBce = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = jeton();
+    if (!token || !selection || bceSaving) return;
+    setBceSaving(true);
+    setErreur('');
+    try {
+      const res = await fetch(`${API_URL}/api/superowner/driver-support/${selection}/bce`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ bceNumber }),
+      });
+      const donnees = await res.json();
+      if (!res.ok) throw new Error(donnees.error || t('bceSaveError'));
+      setLivreur((courant) => courant ? { ...courant, ...donnees.data, bceReviewReason: null } : courant);
+      setBceNumber(donnees.data.bceNumber);
+    } catch (e) {
+      setErreur(e instanceof Error && e.message ? e.message : t('bceSaveError'));
+    } finally {
+      setBceSaving(false);
     }
   };
 
@@ -236,6 +265,19 @@ export default function DriverSupportPage() {
                   )}
                 </div>
               </div>
+              <form onSubmit={enregistrerBce} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="font-semibold text-gray-900">{t('bceTitle')}</p>
+                  <p className="text-sm text-gray-600">{t('bceStatus', { status: livreur.bceStatus === 'VERIFIED' ? t('bceVerified') : livreur.bceStatus === 'REJECTED' ? t('bceRejected') : t('bcePending') })}</p>
+                  {livreur.bceReviewReason && <p className="text-sm text-red-700">{livreur.bceReviewReason}</p>}
+                </div>
+                <label htmlFor="support-bce" className="block text-sm font-medium text-gray-700">{t('bceNumber')}</label>
+                <div className="flex flex-wrap gap-2">
+                  <input id="support-bce" value={bceNumber} onChange={(e) => setBceNumber(e.target.value)} maxLength={32} required placeholder="0123.456.749" className="min-w-56 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-gray-900" />
+                  <button type="submit" disabled={bceSaving || !bceNumber.trim()} className="rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white disabled:opacity-50">{bceSaving ? t('bceSaving') : t('bceSave')}</button>
+                </div>
+                <p className="text-xs text-gray-500">{t('bceHelp')}</p>
+              </form>
               <FilSupport clair messages={messages} moi="SUPPORT" surEnvoi={repondre} hauteur="h-[58vh]" />
             </>
           )}

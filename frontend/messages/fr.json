@@ -2123,7 +2123,17 @@
     "statutValide": "✓ Validé",
     "statutEnAttente": "⏳ En attente de validation",
     "statutNouveau": "Nouveau",
-    "statutSuspendu": "Compte suspendu"
+    "statutSuspendu": "Compte suspendu",
+    "bceTitre": "Numéro d’entreprise BCE",
+    "bceExplication": "Votre numéro BCE est vérifié dans le registre officiel. Vous pouvez le corriger ici ; une correction relance la vérification et vous met hors ligne jusqu’à son traitement.",
+    "bceVerifie": "Numéro vérifié",
+    "bceRefuse": "Vérification refusée. Corrigez le numéro ou consultez le motif.",
+    "bceEnAttente": "Vérification en attente : vous ne pouvez pas encore recevoir de propositions.",
+    "bceNumero": "Numéro BCE",
+    "bceEnregistrer": "Enregistrer et demander la vérification",
+    "bceEnvoi": "Envoi…",
+    "bceSoumis": "Numéro enregistré. La vérification est en attente.",
+    "erreurMiseAJourBce": "Impossible d’enregistrer le numéro BCE"
   },
   "driverAuth": {
     "login": "Connexion",
@@ -2210,7 +2220,10 @@
     "connectionError": "Erreur de connexion",
     "titreOnglet": "Espace livreur",
     "votreGain": "Votre gain",
-    "km": "{n} km"
+    "km": "{n} km",
+    "bceAVerifier": "Votre numéro BCE doit être vérifié",
+    "bceAVerifierAide": "Vous ne recevrez pas de propositions avant la vérification du registre officiel.",
+    "completerBce": "Vérifier ou corriger mon numéro BCE →"
   },
   "merchantReviews": {
     "title": "Avis et Évaluations",
@@ -3521,7 +3534,17 @@
     "onDelivery": "En course",
     "gpsLost": "GPS perdu",
     "loadError": "Chargement impossible.",
-    "sendError": "Le message n'est pas parti."
+    "sendError": "Le message n'est pas parti.",
+    "bceTitle": "Numéro BCE du livreur",
+    "bceNumber": "Numéro BCE communiqué",
+    "bceStatus": "Statut : {status}",
+    "bceVerified": "vérifié",
+    "bcePending": "en attente de vérification",
+    "bceRejected": "refusé",
+    "bceSave": "Enregistrer le numéro",
+    "bceSaving": "Enregistrement…",
+    "bceHelp": "L’enregistrement relance la vérification officielle et met le livreur hors ligne jusqu’au contrôle.",
+    "bceSaveError": "Impossible d’enregistrer le numéro BCE."
   },
   "superownerDeliveryIncidents": {
     "title": "Incidents de livraison",
