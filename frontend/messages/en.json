@@ -2103,6 +2103,7 @@
     "erreurProfil": "Profile loading error",
     "retourTableau": "Back to dashboard",
     "documentsRequis": "Required documents",
+    "documentsIndisponibles": "Document statuses could not be loaded.",
     "carteIdentite": "Identity card",
     "nomComplet": "Full name",
     "telephone": "Phone",

@@ -2103,6 +2103,7 @@
     "erreurProfil": "Erreur de chargement du profil",
     "retourTableau": "Retourner au tableau de bord",
     "documentsRequis": "Documents requis",
+    "documentsIndisponibles": "Le statut des documents n'a pas pu être chargé.",
     "carteIdentite": "Carte d'identité",
     "nomComplet": "Nom complet",
     "telephone": "Téléphone",

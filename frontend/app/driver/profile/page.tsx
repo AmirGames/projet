@@ -32,11 +32,10 @@ interface Driver {
   bceNumber?: string | null;
   bceStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | null;
   bceReviewReason?: string | null;
-  documents?: {
-    id_card?: boolean;
-    driver_license?: boolean;
-    insurance?: boolean;
-  };
+  documents?: Array<{
+    type: string;
+    status: string;
+  }> | null;
   createdAt?: string;
 }
 
@@ -65,13 +64,20 @@ export default function DriverProfilePage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/drivers/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const [response, documentsResponse] = await Promise.all([
+        fetch(`${API_URL}/api/drivers/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/drivers/documents`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
       if (response.ok) {
         const data = await response.json();
-        setDriver(data.data);
+        const dossier = documentsResponse.ok ? await documentsResponse.json() : null;
+        const documents = Array.isArray(dossier?.data?.documents) ? dossier.data.documents : null;
+        setDriver({ ...data.data, documents });
         setBceNumber(data.data.bceNumber || '');
         setFormData({
           name: data.data.name || '',
@@ -292,25 +298,26 @@ export default function DriverProfilePage() {
                 {t('documentsRequis')}
               </p>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">{t('carteIdentite')}</span>
-                  <span className={`text-sm font-semibold ${driver.documents?.id_card ? 'text-green-600' : 'text-red-600'}`}>
-                    {driver.documents?.id_card ? '✓' : '✗'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">{t('permis')}</span>
-                  <span className={`text-sm font-semibold ${driver.documents?.driver_license ? 'text-green-600' : 'text-red-600'}`}>
-                    {driver.documents?.driver_license ? '✓' : '✗'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">{t('assurance')}</span>
-                  <span className={`text-sm font-semibold ${driver.documents?.insurance ? 'text-green-600' : 'text-red-600'}`}>
-                    {driver.documents?.insurance ? '✓' : '✗'}
-                  </span>
-                </div>
+                {[
+                  ['identity', t('carteIdentite')],
+                  ['license', t('permis')],
+                  ['insurance', t('assurance')],
+                ].map(([type, label]) => {
+                  const approuve = driver.documents?.some((document) => document.type === type && document.status === 'APPROVED') ?? false;
+                  const charge = driver.documents !== null && driver.documents !== undefined;
+                  return (
+                    <div key={type} className="flex items-center justify-between">
+                      <span className="text-gray-500 text-sm">{label}</span>
+                      <span className={`text-sm font-semibold ${!charge ? 'text-gray-500' : approuve ? 'text-green-600' : 'text-red-600'}`}>
+                        {!charge ? '—' : approuve ? '✓' : '✗'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+              {!driver.documents && (
+                <p className="mt-3 text-xs text-gray-500" role="status">{t('documentsIndisponibles')}</p>
+              )}
             </div>
           </div>
 
