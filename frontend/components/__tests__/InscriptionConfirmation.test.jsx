@@ -1,18 +1,20 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush }) }));
+const mockReplace = jest.fn();
+const mockAuth = { user: null, isLoading: false };
+jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush, replace: mockReplace }) }));
 jest.mock('next-intl', () => ({
   useTranslations: (namespace) => Object.assign(
     (key) => key === 'checkEmail' ? 'Vérifiez votre e-mail de confirmation.' : `${namespace}.${key}`,
     { rich: (key) => `${namespace}.${key}` },
   ),
 }));
-jest.mock('@/lib/auth-context', () => ({ useAuth: () => ({ user: null, isLoading: false }) }));
+jest.mock('@/lib/auth-context', () => ({ useAuth: () => mockAuth }));
 jest.mock('@/lib/navigateur', () => ({ useJetonAcces: () => null }));
 jest.mock('@/lib/pays-client', () => ({ usePays: () => ['BE', jest.fn()] }));
 jest.mock('@/lib/types-commerce', () => ({ useTypesDeCommerce: () => ({ etablissements: [{ code: 'restaurant', libelle: 'Restaurant' }], cuisines: [] }) }));
-jest.mock('@/lib/jeton-session', () => ({ poserJeton: jest.fn(), adopterRefresh: jest.fn() }));
+jest.mock('@/lib/jeton-session', () => ({ jetonAcces: jest.fn(() => 'test-access-token'), poserJeton: jest.fn(), adopterRefresh: jest.fn() }));
 jest.mock('@/lib/sso', () => ({ confierSessionCentrale: jest.fn() }));
 jest.mock('@/components/SelecteurPays', () => ({ SelecteurPays: () => null }));
 jest.mock('@/components/ReglesMotDePasse', () => ({ __esModule: true, default: () => null }));
@@ -48,6 +50,9 @@ import { confierSessionCentrale } from '@/lib/sso';
 const ancienFetch = global.fetch;
 beforeEach(() => {
   jest.clearAllMocks();
+  mockAuth.user = null;
+  mockAuth.isLoading = false;
+  localStorage.removeItem('currentOrgId');
   global.fetch = jest.fn(async () => ({ ok: true, status: 202, json: async () => ({ emailVerificationRequired: true }) }));
 });
 afterEach(() => { global.fetch = ancienFetch; });
@@ -70,6 +75,39 @@ it('commerçant : affiche la confirmation, sans session ni redirection vers un t
   expect(adopterRefresh).not.toHaveBeenCalled();
   expect(confierSessionCentrale).not.toHaveBeenCalled();
   expect(mockPush).not.toHaveBeenCalled();
+});
+
+it('commerçant déjà inscrit : retourne à sa boutique au lieu de recréer un commerce', async () => {
+  mockAuth.user = { id: 'user-1', email: 'commercant@example.test' };
+  localStorage.setItem('currentOrgId', 'org-existing');
+  global.fetch = jest.fn(async () => ({
+    ok: true,
+    json: async () => ({
+      roles: {
+        merchant: {
+          active: true,
+          organizations: [{ id: 'org-other' }, { id: 'org-existing' }],
+        },
+      },
+    }),
+  }));
+
+  render(<MerchantRegisterPage />);
+
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/merchant/org-existing/dashboard'));
+  expect(localStorage.getItem('currentOrgId')).toBe('org-existing');
+});
+
+it('compte connecté sans rôle commerçant : poursuit vers le formulaire de création', async () => {
+  mockAuth.user = { id: 'user-2', email: 'client@example.test' };
+  global.fetch = jest.fn(async () => ({
+    ok: true,
+    json: async () => ({ roles: { merchant: { active: false, organizations: [] } } }),
+  }));
+
+  render(<MerchantRegisterPage />);
+
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/merchant/onboard'));
 });
 
 it('livreur web : affiche la confirmation, sans stocker des jetons absents', async () => {

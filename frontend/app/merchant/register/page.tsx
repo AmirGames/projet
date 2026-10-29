@@ -1,6 +1,6 @@
 'use client';
 
-import { adopterRefresh, poserJeton } from '@/lib/jeton-session';
+import { adopterRefresh, jetonAcces, poserJeton } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { slugify } from '@/lib/slug';
 import { useState, FormEvent, useEffect } from 'react';
@@ -59,14 +59,52 @@ export default function MerchantRegisterPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [apiError, setApiError] = useState('');
+  const [erreurVerificationCompte, setErreurVerificationCompte] = useState(false);
   const { etablissements, cuisines } = useTypesDeCommerce();
   const [pays, setPays] = usePays();
 
-  // Rediriger vers onboard si connecté
+  // Un compte commerçant déjà créé doit retrouver sa boutique, pas repasser
+  // par l'onboarding qui en créerait une deuxième.
   useEffect(() => {
-    if (!authLoading && user) {
-      router.push('/merchant/onboard');
-    }
+    if (authLoading || !user) return;
+
+    let actif = true;
+    const verifierEspaceCommercant = async () => {
+      try {
+        const token = jetonAcces();
+        if (!token) throw new Error('Session commerçant absente');
+
+        const response = await fetch(`${API_URL}/api/auth/me/roles`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error(`Vérification des rôles refusée (${response.status})`);
+
+        const data = await response.json();
+        if (!actif) return;
+
+        const organisations = data.roles?.merchant?.organizations ?? [];
+        if (data.roles?.merchant?.active && organisations.length > 0) {
+          const organisationCourante = localStorage.getItem('currentOrgId');
+          const organisation = organisations.find((org: { id: string }) => org.id === organisationCourante)
+            ?? organisations[0];
+
+          localStorage.setItem('currentOrgId', organisation.id);
+          router.replace(`/merchant/${encodeURIComponent(organisation.id)}/dashboard`);
+          return;
+        }
+
+        router.replace('/merchant/onboard');
+      } catch (error) {
+        if (!actif) return;
+        signalerErreur('Impossible de vérifier l’espace commerçant:', error);
+        setErreurVerificationCompte(true);
+      }
+    };
+
+    void verifierEspaceCommercant();
+    return () => {
+      actif = false;
+    };
   }, [user, authLoading, router]);
 
   const [formData, setFormData] = useState<FormData>({
@@ -246,6 +284,30 @@ export default function MerchantRegisterPage() {
       setLoading(false);
     }
   };
+
+  if (authLoading || (user && !erreurVerificationCompte)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-gray-600" role="status">
+        <Loader className="animate-spin" size={32} />
+        <p>{t('inscription.verificationCompte')}</p>
+      </div>
+    );
+  }
+
+  if (user && erreurVerificationCompte) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#F7F7F6] px-4 text-center text-gray-900">
+        <p role="alert" className="max-w-lg">{t('inscription.verificationErreur')}</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white hover:bg-orange-700"
+        >
+          {t('inscription.recharger')}
+        </button>
+      </main>
+    );
+  }
 
   return (
     <>
