@@ -52,6 +52,14 @@ jest.mock("../driver-support.service", () => ({
     envoyer: jest.fn(async () => ({ id: "m2" })),
   },
 }));
+jest.mock("../driver-account.service", () => ({
+  DriverAccountService: {
+    modifierNumeroBce: jest.fn(async (_driver: any, bceNumber: string) => ({
+      bceNumber: bceNumber.replace(/\D/g, ""),
+      bceStatus: "PENDING",
+    })),
+  },
+}));
 jest.mock("../surveillance-courses.service", () => ({
   SurveillanceCoursesService: {
     liste: jest.fn(async () => [{ id: "i1" }]),
@@ -72,6 +80,7 @@ import incidentsRouter from "../drivers.incidents.admin.routes";
 import { errorHandler } from "../../../middleware/errorHandler";
 import { DriverApprovalService } from "../driver-approval.service";
 import { DriverSupportService } from "../driver-support.service";
+import { DriverAccountService } from "../driver-account.service";
 import { SurveillanceCoursesService } from "../surveillance-courses.service";
 
 const app = express();
@@ -95,7 +104,7 @@ describe("accès", () => {
   it.each([
     ["get", "/drivers"], ["get", "/drivers/dr1"], ["patch", "/drivers/dr1/bce"], ["patch", "/drivers/dr1/documents/d1/expiry"], ["patch", "/drivers/dr1/documents/d1"],
     ["post", "/drivers/dr1/approve"], ["post", "/drivers/dr1/reject"], ["post", "/drivers/dr1/reactivate"], ["get", "/driver-support"],
-    ["get", "/driver-support/dr1"], ["post", "/driver-support/dr1"], ["get", "/delivery-incidents"],
+    ["get", "/driver-support/dr1"], ["patch", "/driver-support/dr1/bce"], ["post", "/driver-support/dr1"], ["get", "/delivery-incidents"],
     ["post", "/delivery-incidents/courses/c1/retirer"], ["post", "/delivery-incidents/courses/c1/echec"],
     ["post", "/delivery-incidents/courses/c1/depot"], ["get", "/delivery-incidents/i1/dossier"], ["post", "/delivery-incidents/i1/clore"],
   ])("%s %s : 401 sans session, 403 sans droit", async (method, path) => {
@@ -209,8 +218,20 @@ describe("support livreurs", () => {
     expect(DriverSupportService.marquerLu).toHaveBeenCalledWith("dr1", "SUPPORT");
     expect(db.courier.findUnique).toHaveBeenCalledWith({
       where: { id: "dr1" },
-      select: { id: true, name: true, phone: true, email: true, isOnline: true, currentOrderId: true, lastLocationUpdate: true, gpsLostAt: true },
+      select: {
+        id: true, name: true, phone: true, email: true, isOnline: true, currentOrderId: true,
+        lastLocationUpdate: true, gpsLostAt: true, bceNumber: true, bceStatus: true, bceReviewReason: true,
+      },
     });
+  });
+  it("PATCH /driver-support/:id/bce : enregistre le numéro et relance sa vérification", async () => {
+    expect((await owner(request(app).patch("/api/superowner/driver-support/dr1/bce").send({ bceNumber: "invalide" }))).status).toBe(400);
+    db.courier.findUnique.mockResolvedValue({ id: "dr1", currentOrderId: null });
+    const r = await owner(request(app).patch("/api/superowner/driver-support/dr1/bce").send({ bceNumber: "0123.456.749" }));
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ success: true, data: { bceNumber: "0123456749", bceStatus: "PENDING" } });
+    expect(DriverAccountService.modifierNumeroBce).toHaveBeenCalledWith({ id: "dr1", currentOrderId: null }, "0123.456.749");
+    audit("UPDATE_DRIVER_BCE_FROM_SUPPORT", "dr1", { bceStatus: "PENDING" });
   });
   it("POST /driver-support/:id : message d'équipe", async () => {
     expect((await owner(request(app).post("/api/superowner/driver-support/dr1").send({ body: "" }))).status).toBe(400);
