@@ -149,8 +149,23 @@ export default function LivreursPage() {
       if (!reponse.ok) throw new Error(t('loadError'));
 
       const lu = await reponse.json();
-      setLivreurs(lu.drivers || []);
+      const liste: Livreur[] = Array.isArray(lu.drivers) ? lu.drivers : [];
+      setLivreurs(liste);
       setComptes(lu.counts || {});
+
+      // La liste des membres peut ouvrir directement le dossier demandé.
+      const url = new URL(window.location.href);
+      const driverId = url.searchParams.get('driver');
+      const livreur = driverId ? liste.find((element) => element.id === driverId) : undefined;
+      if (livreur) {
+        url.searchParams.delete('driver');
+        window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+        const detail = await fetch(`${API_URL}/api/superowner/drivers/${livreur.id}`, {
+          headers: { Authorization: `Bearer ${jeton()}` },
+        });
+        if (detail.ok) setDossier(await detail.json());
+        else setErreur(t('loadError'));
+      }
     } catch (err) {
       setErreur(err instanceof Error ? err.message : tCommon('error'));
     } finally {
@@ -163,8 +178,9 @@ export default function LivreursPage() {
   }, [charger]);
 
   useEffectChargement(() => {
-    if (new URLSearchParams(window.location.search).get('status') === 'VEHICLE_CHANGE_PENDING') {
-      setFiltre('VEHICLE_CHANGE_PENDING');
+    const status = new URLSearchParams(window.location.search).get('status');
+    if (status && ['PENDING', 'ACTIVE', 'SUSPENDED', 'REJECTED', 'INACTIVE', 'VEHICLE_CHANGE_PENDING'].includes(status)) {
+      setFiltre(status);
     }
   }, []);
 

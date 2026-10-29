@@ -1586,6 +1586,8 @@
     "phone": "Phone",
     "storeName": "Store Name",
     "companyName": "Company",
+    "deliveriesCount": "Deliveries",
+    "rating": "Rating",
     "vehicleType": "Vehicle Type",
     "joinDate": "Join Date",
     "status": {
@@ -1604,8 +1606,10 @@
     "clientsSubtitle": "Manage all clients on the platform",
     "merchantsTitle": "Merchants",
     "merchantsSubtitle": "Manage all merchants on the platform",
-    "deliveriesTitle": "Deliveries",
-    "deliveriesSubtitle": "Manage all delivery companies on the platform",
+    "deliveriesTitle": "Couriers",
+    "deliveriesSubtitle": "Manage couriers registered on the platform",
+    "loadError": "Couldn't load couriers. Check your connection and try again.",
+    "retry": "Retry",
     "driversTitle": "Drivers",
     "driversSubtitle": "Manage all drivers on the platform"
   },

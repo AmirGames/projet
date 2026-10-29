@@ -1586,6 +1586,8 @@
     "phone": "Téléphone",
     "storeName": "Nom du magasin",
     "companyName": "Entreprise",
+    "deliveriesCount": "Livraisons",
+    "rating": "Note",
     "vehicleType": "Type de véhicule",
     "joinDate": "Date d'adhésion",
     "status": {
@@ -1605,7 +1607,9 @@
     "merchantsTitle": "Commerçants",
     "merchantsSubtitle": "Gérez tous les commerçants de la plateforme",
     "deliveriesTitle": "Livreurs",
-    "deliveriesSubtitle": "Gérez toutes les entreprises de livraison de la plateforme",
+    "deliveriesSubtitle": "Gérez les livreurs inscrits sur la plateforme",
+    "loadError": "Impossible de charger les livreurs. Vérifiez votre connexion puis réessayez.",
+    "retry": "Réessayer",
     "driversTitle": "Chauffeurs",
     "driversSubtitle": "Gérez tous les chauffeurs de la plateforme"
   },

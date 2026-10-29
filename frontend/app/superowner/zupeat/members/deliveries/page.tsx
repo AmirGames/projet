@@ -5,7 +5,8 @@ import { jetonAcces } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Briefcase, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Briefcase, Search, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -15,9 +16,7 @@ interface Delivery {
   name: string;
   email: string;
   phone?: string;
-  companyName?: string;
   status: 'active' | 'suspended' | 'inactive';
-  joinDate: string;
   deliveries?: number;
   rating?: number;
 }
@@ -26,10 +25,13 @@ export default function DeliveriesPage() {
   const t = useTranslations('superownerMembers');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'inactive'>('all');
 
   const fetchDeliveries = async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const token = jetonAcces();
       const response = await fetch(`${API_URL}/api/superowner/members/deliveries`, {
@@ -38,12 +40,17 @@ export default function DeliveriesPage() {
 
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
+      if (!Array.isArray(data.deliveries)) throw new Error('Invalid couriers response');
       // L'API renvoie les statuts de la base, en majuscules (ACTIVE) ; l'écran
       // — couleurs, filtre, libellés — les attend en minuscules.
       setDeliveries(
-        (data.deliveries || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
+        data.deliveries.map((ligne: Delivery) => ({
+          ...ligne,
+          status: String(ligne.status || '').toLowerCase() as Delivery['status'],
+        }))
       );
     } catch (error) {
+      setLoadError(true);
       signalerErreur('Error:', error);
     } finally {
       setLoading(false);
@@ -84,7 +91,7 @@ export default function DeliveriesPage() {
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (loading && deliveries.length === 0) return <div className="text-center py-8" role="status">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">
@@ -97,6 +104,16 @@ export default function DeliveriesPage() {
         <p className="text-gray-500 mt-1">{t('deliveriesSubtitle')}</p>
       </div>
 
+      {loadError && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800" role="alert">
+          <span>{t('loadError')}</span>
+          <button type="button" onClick={fetchDeliveries} className="rounded-md border border-red-300 px-3 py-2 font-medium hover:bg-red-100">
+            {t('retry')}
+          </button>
+        </div>
+      )}
+      {loading && deliveries.length > 0 && <p className="text-sm text-gray-500" role="status">{t('loading')}</p>}
+
       {/* Search and Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
         <div className="flex gap-3">
@@ -104,16 +121,13 @@ export default function DeliveriesPage() {
             <Search size={18} className="absolute left-3 top-3 text-gray-500" />
             <input
               type="text"
+              aria-label={t('searchPlaceholder')}
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-purple-500"
             />
           </div>
-          <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg flex items-center gap-2 text-gray-700 transition-colors">
-            <Filter size={18} />
-            {t('filters')}
-          </button>
         </div>
 
         {/* Status Filter */}
@@ -121,6 +135,8 @@ export default function DeliveriesPage() {
           {(['all', 'active', 'suspended', 'inactive'] as const).map((status) => (
             <button
               key={status}
+              type="button"
+              aria-pressed={statusFilter === status}
               onClick={() => setStatusFilter(status)}
               className={`px-4 py-2 rounded-lg border transition-colors ${
                 statusFilter === status
@@ -143,7 +159,9 @@ export default function DeliveriesPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('name')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('email')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('companyName')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('phone')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('deliveriesCount')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('rating')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('statusColumn')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('actions')}</th>
                 </tr>
@@ -153,7 +171,9 @@ export default function DeliveriesPage() {
                   <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-900">{delivery.name}</td>
                     <td className="px-6 py-4 text-gray-500 text-sm">{delivery.email}</td>
-                    <td className="px-6 py-4 text-gray-500 text-sm">{delivery.companyName || '-'}</td>
+                    <td className="px-6 py-4 text-gray-500 text-sm">{delivery.phone || '—'}</td>
+                    <td className="px-6 py-4 text-gray-700 text-sm">{delivery.deliveries ?? 0}</td>
+                    <td className="px-6 py-4 text-gray-700 text-sm">{typeof delivery.rating === 'number' ? delivery.rating.toFixed(1) : '—'}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
                         {getStatusIcon(delivery.status)}
@@ -162,15 +182,15 @@ export default function DeliveriesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button className="p-2 hover:bg-gray-200 rounded-sm transition-colors text-gray-500 hover:text-gray-700" title={t('view')}>
+                        <Link
+                          href={`/superowner/zupeat/drivers?status=${encodeURIComponent(delivery.status.toUpperCase())}&driver=${encodeURIComponent(delivery.id)}`}
+                          className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-600"
+                          title={t('view')}
+                          aria-label={`${t('view')} — ${delivery.name}`}
+                        >
                           <Eye size={18} />
-                        </button>
-                        <button className="p-2 hover:bg-gray-200 rounded-sm transition-colors text-gray-500 hover:text-gray-700" title={t('edit')}>
-                          <Edit2 size={18} />
-                        </button>
-                        <button className="p-2 hover:bg-red-50 rounded-sm transition-colors text-gray-500 hover:text-red-600" title={t('delete')}>
-                          <Trash2 size={18} />
-                        </button>
+                          {t('view')}
+                        </Link>
                       </div>
                     </td>
                   </tr>
