@@ -332,6 +332,8 @@ describe('adresse et coordonnées', () => {
   it('retaper l\'adresse après une suggestion jette ses coordonnées devenues fausses', async () => {
     await preparerLivraison();
     saisir(new RegExp(`^${t('adresse')}`), '99 autre rue');
+    await waitFor(() => expect(appelsA('/zone-livraison').length).toBeGreaterThan(1));
+    await waitFor(() => expect(bouton(t('confirmer'))).toBeEnabled());
     cocherConditions();
     cocherConditions();
     confirmer();

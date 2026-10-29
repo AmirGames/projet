@@ -1267,6 +1267,8 @@
   "merchantDashboard": {
     "loading": "Loading…",
     "loadError": "Failed to load dashboard data",
+    "ordersLoadError": "Unable to load orders. The count is unavailable right now.",
+    "retry": "Try again",
     "changeSwitcher": "— change store from top right",
     "storeOpen": "Open",
     "storeClosed": "Closed",
@@ -1302,6 +1304,8 @@
   "merchantOrders": {
     "title": "Orders",
     "description": "Manage and process your orders",
+    "loadError": "Unable to load orders. Your orders are not being displayed. Try again or contact support if the problem continues.",
+    "retry": "Try again",
     "empty": "No orders found",
     "loading": "Loading orders...",
     "total": "Total",
@@ -2756,6 +2760,7 @@
     "montant": "Order amount",
     "fraisLivraison": "+ Delivery fee (for you)",
     "payeClient": "Paid by the customer",
+    "totalClient": "Order total",
     "dontLivraison": "incl. delivery (platform courier)",
     "dontService": "incl. service fee (platform)",
     "sommesPasAVous": "These amounts are not yours: they are carried to your monthly statement, with the commission.",
@@ -3081,6 +3086,7 @@
     "horairesOuverture": "Opening hours",
     "horairesAide": "A day can have several services — lunch and dinner, for example. A closing time after midnight is entered as is: 17:30 – 01:00.",
     "ferme": "Closed",
+    "touteLaJournee": "All day",
     "lendemain": "(next day)",
     "modifier": "Edit",
     "fermeCeJour": "Closed that day",
@@ -4406,6 +4412,8 @@
     "codeSansRemise": "This code gives no discount on this basket",
     "verificationImpossible": "Unable to check right now",
     "champsObligatoires": "Please fill in all required fields",
+    "champRequis": "This field is required.",
+    "emailInvalide": "Enter a valid email address.",
     "adresseManquante": "Please enter the delivery address",
     "heureManquante": "Please choose a pickup time",
     "panierVide": "Your basket is empty",
@@ -4433,6 +4441,9 @@
     "zone": "Zone “{nom}”",
     "livraisonOfferte": "Free delivery",
     "livraisonA": "Delivery {frais}",
+    "adresseAvantTarif": "Enter a delivery address to calculate the delivery fee.",
+    "verificationTarifLivraison": "Checking the address and delivery fee…",
+    "tarifLivraisonIndisponible": "The delivery fee could not be checked for this address. Edit the address or choose pickup.",
     "environMinutes": ", about {minutes} min",
     "minimumZone": " — minimum {minimum}",
     "encorePourOfferte": "{montant} more for free delivery.",
@@ -4630,7 +4641,14 @@
     "quantite": "Quantity: {n}",
     "livreurProcheTitre": "Your courier is almost there",
     "livreurProcheTexte": "You can go down to the door.",
-    "produitSupprime": "Deleted product"
+    "produitSupprime": "Deleted product",
+    "etatPaiement": "Payment status",
+    "etatPaiementStatut": {
+      "PENDING": "Payment pending",
+      "SUCCEEDED": "Payment confirmed",
+      "FAILED": "Payment failed",
+      "REFUNDED": "Payment refunded"
+    }
   },
   "motifsRefus": {
     "client": {

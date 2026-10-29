@@ -9,6 +9,7 @@ import { activeHolds } from "./legal-holds";
 import { Prisma } from "@prisma/client";
 import { codeErreur } from "../../utils/code-erreur";
 import { logger } from "../../config/logger";
+import { limiteConservationComptable } from "../../utils/semaine-bruxelles";
 
 const RETENTION = { gps: 1, proof: 90, contact: 90, support: 730, audit: 180, security: 90, backup: 14, deletedProfile: 30, documentsReplaced: 30, accounting: 3653, consent: 1826 } as const;
 const before = (days: number, now: Date) => new Date(now.getTime() - days * 86400000);
@@ -19,12 +20,19 @@ export async function runRetention(now = new Date()) {
   const result: Record<string, number> = {};
   const holds = await activeHolds(now);
   const held = await db.deliveryIncident.findMany({ where: { closedAt: null }, select: { deliveryId: true } });
+  const pendingErasure = await db.privacyDeferredOrderErasure.findMany({ where: { orderId: { notIn: holds("Order") } }, select: { orderId: true }, take: 500 });
+  if (pendingErasure.length) await db.$transaction(async (tx) => {
+    const ids = pendingErasure.map((r) => r.orderId);
+    await tx.order.updateMany({ where: { id: { in: ids } }, data: { customerId: null, customerName: "Client supprimé", customerEmail: "supprime@zupeat.invalid", customerPhone: "", deliveryAddress: null, deliveryCity: null, deliveryPostal: null, deliveryLat: null, deliveryLng: null, notes: null, rejectionNote: null, trackingTokenHash: null } });
+    await tx.privacyDeferredOrderErasure.deleteMany({ where: { orderId: { in: ids } } });
+  });
+  result.deferredOrderErasures = pendingErasure.length;
   result.courierGps = (await db.courier.updateMany({ where: { lastLocationUpdate: { lt: before(RETENTION.gps, now) } }, data: { latitude: null, longitude: null } })).count;
   result.chauffeurGps = (await db.chauffeurDrive.updateMany({ where: { positionLe: { lt: before(RETENTION.gps, now) } }, data: { latitude: null, longitude: null } })).count;
-  result.deliveryGps = (await db.orderDelivery.updateMany({ where: { status: { in: terminal }, updatedAt: { lt: before(RETENTION.gps, now) } }, data: { driverLat: null, driverLng: null } })).count;
+  result.deliveryGps = (await db.orderDelivery.updateMany({ where: { id: { notIn: [...held.map((i) => i.deliveryId), ...holds("OrderDelivery")] }, status: { in: terminal }, updatedAt: { lt: before(RETENTION.gps, now) } }, data: { driverLat: null, driverLng: null } })).count;
   result.driveHistory = (await db.courseDrive.updateMany({ where: { id: { notIn: holds("CourseDrive") }, statut: { in: ["TERMINEE", "ANNULEE"] }, createdAt: { lt: before(RETENTION.contact, now) }, OR: [{ departLatitude: { not: 0 } }, { arriveeLatitude: { not: 0 } }] }, data: { departAdresse: "Effacé", arriveeAdresse: "Effacé", departLatitude: 0, departLongitude: 0, arriveeLatitude: 0, arriveeLongitude: 0, motifAnnulation: null } })).count;
   result.driveMessages = (await db.messageCourseDrive.deleteMany({ where: { course: { id: { notIn: holds("CourseDrive") }, statut: { in: ["TERMINEE", "ANNULEE"] }, createdAt: { lt: before(RETENTION.contact, now) } } } })).count;
-  result.orderContact = (await db.order.updateMany({ where: { status: { in: ["COMPLETED", "REJECTED"] }, customerEmail: { notIn: ["archive@zupeat.invalid", "supprime@zupeat.invalid"] }, createdAt: { lt: before(RETENTION.contact, now) } }, data: { customerName: "Client archivé", customerEmail: "archive@zupeat.invalid", customerPhone: "", deliveryAddress: null, deliveryCity: null, deliveryPostal: null, deliveryLat: null, deliveryLng: null, notes: null, rejectionNote: null, trackingTokenHash: null } })).count;
+  result.orderContact = (await db.order.updateMany({ where: { id: { notIn: holds("Order") }, status: { in: ["COMPLETED", "REJECTED"] }, customerEmail: { notIn: ["archive@zupeat.invalid", "supprime@zupeat.invalid"] }, createdAt: { lt: before(RETENTION.contact, now) } }, data: { customerName: "Client archivé", customerEmail: "archive@zupeat.invalid", customerPhone: "", deliveryAddress: null, deliveryCity: null, deliveryPostal: null, deliveryLat: null, deliveryLng: null, notes: null, rejectionNote: null, trackingTokenHash: null } })).count;
   const proofs = await db.orderDelivery.findMany({ where: { id: { notIn: [...held.map((i) => i.deliveryId), ...holds("OrderDelivery")] }, status: { in: terminal }, proofAt: { lt: before(RETENTION.proof, now) }, OR: [{ payoutHold: null }, { payoutHold: { not: "REVIEW" } }], AND: [{ OR: [{ proofPhoto: { not: null } }, { proofLat: { not: null } }] }] }, select: { id: true, proofPhoto: true }, take: 500 });
   for (const proof of proofs) {
     const relative = cheminRelatif(proof.proofPhoto);
@@ -84,12 +92,33 @@ export async function runRetention(now = new Date()) {
     });
   }
   await db.privacyErasureRequest.deleteMany({ where: { status: "COMPLETED", completedAt: { lt: before(30, now) } } });
-  const ancientOrders = await db.order.findMany({ where: { id: { notIn: holds("Order") }, createdAt: { lt: before(RETENTION.accounting, now) }, status: { in: ["COMPLETED", "REJECTED"] }, OR: [{ delivery: { is: null } }, { delivery: { status: { in: terminal }, payoutHold: null, payout: { status: "PAID" }, id: { notIn: [...held.map((i) => i.deliveryId), ...holds("OrderDelivery")] } } }] }, select: { id: true }, take: 500 });
+  const limiteComptable = limiteConservationComptable(now);
+  const ancienSansCommande = await db.order.findMany({
+    where: {
+      id: { notIn: holds("Order") },
+      createdAt: { lt: limiteComptable },
+      status: { in: ["COMPLETED", "REJECTED"] },
+      OR: [
+        { delivery: { is: null } },
+        {
+          delivery: {
+            status: { in: terminal },
+            payoutHold: null,
+            payout: { status: "PAID" },
+            id: { notIn: [...held.map((i) => i.deliveryId), ...holds("OrderDelivery")] },
+          },
+        },
+      ],
+    },
+    select: { id: true, invoice: { select: { issuedAt: true } } },
+    take: 500,
+  });
+  const ancientOrders = ancienSansCommande.filter((o) => !o.invoice || o.invoice.issuedAt < limiteComptable);
   await db.$transaction(async (tx) => {
     const ids = ancientOrders.map((o) => o.id);
-    await tx.invoice.deleteMany({ where: { orderId: { in: ids } } });
+    await tx.invoice.deleteMany({ where: { orderId: { in: ids }, issuedAt: { lt: limiteComptable } } });
     await tx.order.deleteMany({ where: { id: { in: ids } } });
-    await tx.platformInvoice.deleteMany({ where: { id: { notIn: holds("PlatformInvoice") }, issuedAt: { lt: before(RETENTION.accounting, now) } } });
+    await tx.platformInvoice.deleteMany({ where: { id: { notIn: holds("PlatformInvoice") }, issuedAt: { lt: limiteComptable } } });
     await tx.courierPayout.deleteMany({ where: { id: { notIn: holds("CourierPayout") }, status: { in: ["PAID", "CANCELLED"] }, periodEnd: { lt: before(RETENTION.accounting, now) } } });
     await tx.merchantPayout.deleteMany({ where: { id: { notIn: holds("MerchantPayout") }, status: { in: ["PAID", "CANCELLED", "CARRIED"] }, periodEnd: { lt: before(RETENTION.accounting, now) } } });
     // Les lots clos portent des IBAN figés : même durée de conservation comptable.

@@ -181,21 +181,6 @@ export class OrderManagementService {
               variant: true,
             },
           },
-          customer: true,
-          payments: { select: PAIEMENT_COMMERCANT },
-          store: true,
-          // Le commerçant suit le livreur : arrivée, récupération, livraison.
-          delivery: {
-            select: {
-              status: true,
-              assignedAt: true,
-              pickupTime: true,
-              deliveryTime: true,
-              estimatedTime: true,
-              reservedDriverId: true,
-              driver: { select: { name: true, phone: true, vehicleType: true } },
-            },
-          },
         },
       });
 
@@ -204,8 +189,8 @@ export class OrderManagementService {
       }
 
       return order.status === "PENDING"
-        ? { ...avecReservation(order), echeance: echeanceDeReponse(order) }
-        : avecReservation(order);
+        ? { ...order, echeance: echeanceDeReponse(order) }
+        : order;
     } catch (error) {
       throw error;
     }

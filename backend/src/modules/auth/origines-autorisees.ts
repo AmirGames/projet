@@ -12,8 +12,10 @@ export function originesAutorisees(): string[] {
     .split(",")
     .map((origine) => origine.trim())
     .filter(Boolean);
+  const environnementsLocaux =
+    process.env.NODE_ENV === "production" ? [] : ["http://localhost:3000"];
+  const configurees = [process.env.FRONTEND_URL, ...environnementsLocaux, ...supplementaires]
+    .filter((origine): origine is string => Boolean(origine));
 
-  return Array.from(
-    new Set([process.env.FRONTEND_URL || "http://localhost:3000", "http://localhost:3000", ...supplementaires])
-  );
+  return Array.from(new Set(configurees));
 }

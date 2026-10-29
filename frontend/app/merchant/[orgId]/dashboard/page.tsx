@@ -87,6 +87,7 @@ export default function MerchantDashboard() {
   const [remiseEnVente, setRemiseEnVente] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [ordersError, setOrdersError] = useState(false);
 
   // silencieux : une relecture en direct ne remplace pas la page par
   // « Chargement… » à chaque commande qui arrive.
@@ -117,7 +118,13 @@ export default function MerchantDashboard() {
         if (!statsRes.ok) throw new Error('stats');
 
         setJours((await statsRes.json()).parJour || []);
-        setEnCours(enCoursRes.ok ? (await enCoursRes.json()).data || [] : []);
+        if (enCoursRes.ok) {
+          setEnCours((await enCoursRes.json()).data || []);
+          setOrdersError(false);
+        } else {
+          setEnCours([]);
+          setOrdersError(true);
+        }
         setEpuises(
           produitsRes.ok
             ? ((await produitsRes.json()).products || []).filter((p: ProduitEpuise) => !p.isAvailable)
@@ -193,7 +200,7 @@ export default function MerchantDashboard() {
       libelle: t('kpiAverageToday'),
       valeur: euro(aujourdhui.commandes ? aujourdhui.chiffreAffaires / aujourdhui.commandes : 0),
     },
-    { libelle: t('kpiInProgress'), valeur: String(enCours.length), lien: `/merchant/${orgId}/orders` },
+    { libelle: t('kpiInProgress'), valeur: ordersError ? '—' : String(enCours.length), lien: `/merchant/${orgId}/orders` },
   ];
 
   const carte = 'rounded-[18px] border border-[#ECECEA] bg-white';
@@ -354,7 +361,14 @@ export default function MerchantDashboard() {
             {t('inProgressAll')}
           </Link>
         </div>
-        {enCours.length === 0 ? (
+        {ordersError ? (
+          <div role="alert" className="border-t border-red-100 bg-red-50 px-6 py-5 text-sm text-red-900">
+            <p>{t('ordersLoadError')}</p>
+            <button type="button" onClick={() => fetchDashboardData(true)} className="mt-3 rounded-full bg-white px-4 py-2 font-bold ring-1 ring-red-200 hover:bg-red-100">
+              {t('retry')}
+            </button>
+          </div>
+        ) : enCours.length === 0 ? (
           <p className="border-t border-gray-100 px-6 py-5 text-sm text-gray-500">{t('inProgressNone')}</p>
         ) : (
           <ul>

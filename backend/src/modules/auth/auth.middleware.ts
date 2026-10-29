@@ -204,6 +204,10 @@ export async function checkOrgStatus(req: Request, _res: Response, next: NextFun
 
     const org = await db.organization.findUnique({
       where: { id: orgId },
+      // Ce contrôle ne lit que le statut. Lire toute l'organisation ici
+      // déchiffrait aussi ses coordonnées bancaires et pouvait bloquer des
+      // actions de catalogue si un autre champ privé avait une clé invalide.
+      select: { id: true, status: true },
     });
 
     if (!org) {

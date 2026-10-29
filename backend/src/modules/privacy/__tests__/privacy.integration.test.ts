@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import express from "express";
 import request from "supertest";
 import { PrismaClient } from "@prisma/client";
@@ -34,6 +33,69 @@ const password = "Phase6-local-test-only!";
 const app = express(); app.use(express.json()); app.use(middlewareOrigine); app.use("/api/privacy", privacyRouter); app.use(errorHandler);
 let userId: string, otherId: string, courierId: string, customerId: string, orgId: string, storeId: string, orderId: string, sessionId: string, token: string, fileUrl: string, directory: string;
 
+function verifierZipStocke(archive: Buffer) {
+  const crc32 = (content: Buffer) => {
+    let crc = 0xffffffff;
+    for (const byte of content) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+  const entries = new Map<string, Buffer>();
+  const localOffsets = new Map<string, number>();
+  let offset = 0;
+  while (archive.readUInt32LE(offset) === 0x04034b50) {
+    const method = archive.readUInt16LE(offset + 8);
+    const expectedCrc = archive.readUInt32LE(offset + 14);
+    const compressedSize = archive.readUInt32LE(offset + 18);
+    const uncompressedSize = archive.readUInt32LE(offset + 22);
+    const nameLength = archive.readUInt16LE(offset + 26);
+    const extraLength = archive.readUInt16LE(offset + 28);
+    const nameStart = offset + 30;
+    const name = archive.toString("utf8", nameStart, nameStart + nameLength);
+    const contentStart = nameStart + nameLength + extraLength;
+    const content = archive.subarray(contentStart, contentStart + compressedSize);
+    expect(method).toBe(0);
+    expect(compressedSize).toBe(uncompressedSize);
+    expect(crc32(content)).toBe(expectedCrc);
+    entries.set(name, content);
+    localOffsets.set(name, offset);
+    offset = contentStart + compressedSize;
+  }
+
+  const endOffset = archive.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  expect(endOffset).toBeGreaterThanOrEqual(offset);
+  const entryCount = archive.readUInt16LE(endOffset + 10);
+  const directorySize = archive.readUInt32LE(endOffset + 12);
+  const directoryOffset = archive.readUInt32LE(endOffset + 16);
+  expect(directoryOffset).toBe(offset);
+  expect(directoryOffset + directorySize).toBe(endOffset);
+  expect(entryCount).toBe(entries.size);
+
+  let centralOffset = directoryOffset;
+  for (let index = 0; index < entryCount; index++) {
+    expect(archive.readUInt32LE(centralOffset)).toBe(0x02014b50);
+    const expectedCrc = archive.readUInt32LE(centralOffset + 16);
+    const compressedSize = archive.readUInt32LE(centralOffset + 20);
+    const uncompressedSize = archive.readUInt32LE(centralOffset + 24);
+    const nameLength = archive.readUInt16LE(centralOffset + 28);
+    const extraLength = archive.readUInt16LE(centralOffset + 30);
+    const commentLength = archive.readUInt16LE(centralOffset + 32);
+    const localOffset = archive.readUInt32LE(centralOffset + 42);
+    const nameStart = centralOffset + 46;
+    const name = archive.toString("utf8", nameStart, nameStart + nameLength);
+    const content = entries.get(name);
+    expect(content).toBeDefined();
+    expect(compressedSize).toBe(uncompressedSize);
+    expect(crc32(content!)).toBe(expectedCrc);
+    expect(localOffsets.get(name)).toBe(localOffset);
+    centralOffset = nameStart + nameLength + extraLength + commentLength;
+  }
+  expect(centralOffset).toBe(endOffset);
+  return entries;
+}
+
 integration("RGPD sur PostgreSQL réel", () => {
   beforeAll(async () => {
     if (process.env.NODE_ENV !== "test" || !new URL(process.env.DATABASE_URL!).pathname.includes("test")) throw new Error("Base de test dédiée requise");
@@ -53,7 +115,29 @@ integration("RGPD sur PostgreSQL réel", () => {
     sessionId = (await db.sessionConnexion.create({ data: { userId, expiresAt: new Date(Date.now() + 3600000) } })).id;
     token = AuthService.generateAccessToken(userId, sessionId);
   }, 30000);
-  afterAll(async () => { await db.$disconnect(); await raw.$disconnect(); if (directory) await fs.rm(directory, { recursive: true, force: true }); });
+  afterAll(async () => {
+    try {
+      if (orderId) {
+        await raw.invoice.deleteMany({ where: { orderId } });
+        await raw.payment.deleteMany({ where: { orderId } });
+        await raw.orderItem.deleteMany({ where: { orderId } });
+        await raw.orderTrackingToken.deleteMany({ where: { orderId } });
+        await raw.orderDelivery.deleteMany({ where: { orderId } });
+        await raw.order.deleteMany({ where: { id: orderId } });
+      }
+      if (storeId) await raw.store.deleteMany({ where: { id: storeId } });
+      if (orgId) await raw.organization.deleteMany({ where: { id: orgId } });
+      if (courierId) await raw.courier.deleteMany({ where: { id: courierId } });
+      if (customerId) await raw.customer.deleteMany({ where: { id: customerId } });
+      if (userId) await raw.user.deleteMany({ where: { id: userId } });
+      if (otherId) await raw.user.deleteMany({ where: { id: otherId } });
+      // Les événements d'audit append-only restent conservés par leur protection SQL.
+    } finally {
+      await db.$disconnect();
+      await raw.$disconnect();
+      if (directory) await fs.rm(directory, { recursive: true, force: true });
+    }
+  });
 
   test("chiffrement réel en base, transaction et lecture imbriquée", async () => {
     const row = await raw.customer.findUnique({ where: { id: customerId } });
@@ -78,9 +162,10 @@ integration("RGPD sur PostgreSQL réel", () => {
     expect(stored).not.toContain("Test document"); expect((await readPrivate(relative)).toString()).toContain("%PDF");
     const data = await collectExport(userId), archive = await exportZip(data, { userId });
     const archivePath = path.join(directory, "export.zip"); await fs.writeFile(archivePath, archive);
-    const list = execFileSync("unzip", ["-l", archivePath]).toString(); expect(list).toContain("donnees.json"); expect(list).toContain("documents/");
-    execFileSync("unzip", ["-t", archivePath]);
-    const json = execFileSync("unzip", ["-p", archivePath, "donnees.json"]).toString(); expect(json).not.toContain("never-export-this"); expect(json).not.toContain("passwordHash");
+    const entries = verifierZipStocke(await fs.readFile(archivePath));
+    expect(entries.has("donnees.json")).toBe(true);
+    expect([...entries.keys()].some((name) => name.startsWith("documents/"))).toBe(true);
+    const json = entries.get("donnees.json")!.toString(); expect(json).not.toContain("never-export-this"); expect(json).not.toContain("passwordHash");
   });
 
   test("export HTTP exige session et mot de passe, aucun userId arbitraire", async () => {

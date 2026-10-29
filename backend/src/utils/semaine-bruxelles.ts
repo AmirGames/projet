@@ -66,6 +66,12 @@ export function jourBruxelles(instant: Date) {
   return new Intl.DateTimeFormat("fr-CA", { timeZone: FUSEAU }).format(instant);
 }
 
+/** Borne exclusive avant laquelle dix années civiles belges sont écoulées. */
+export function limiteConservationComptable(now: Date) {
+  const annee = Number(jourBruxelles(now).slice(0, 4));
+  return new Date(Date.UTC(annee - 10, 0, 1) - 3600000);
+}
+
 /**
  * Les `nombre` derniers jours de Bruxelles, du plus ancien à aujourd'hui.
  * Calculés sur le calendrier, pas en retranchant 24 h : un jour de

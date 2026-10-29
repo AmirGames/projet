@@ -9,6 +9,7 @@ import { cheminRelatif } from "../files/fichiers-prives.service";
 import { removePrivate } from "../files/private-storage";
 import { activeHolds } from "./legal-holds";
 import { ibanValide } from "../../utils/sepa";
+import { effacerCommandesClient } from "./order-erasure";
 
 export async function requestErasure(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId }, include: { driver: true, chauffeurDrive: true } });
@@ -64,7 +65,7 @@ export async function completeErasure(userId: string): Promise<{ status: string 
       const orders = await tx.order.findMany({ where: { customerId: customer.id }, select: { id: true } });
       await tx.orderTrackingToken.deleteMany({ where: { orderId: { in: orders.map((o) => o.id) } } });
       await tx.orderDelivery.updateMany({ where: { orderId: { in: orders.map((o) => o.id) } }, data: { deliveryLat: null, deliveryLng: null, driverLat: null, driverLng: null, deliveryLatObfusquee: null, deliveryLngObfusquee: null, deliveryCode: null, proofNote: null } });
-      await tx.order.updateMany({ where: { customerId: customer.id }, data: { customerId: null, customerName: "Client supprimé", customerEmail: "supprime@zupeat.invalid", customerPhone: "", deliveryAddress: null, deliveryCity: null, deliveryPostal: null, deliveryLat: null, deliveryLng: null, trackingTokenHash: null, notes: null, rejectionNote: null } });
+      await effacerCommandesClient(tx, customer.id, orders.map((o) => o.id), holds("Order"));
       await tx.review.deleteMany({ where: { customerId: customer.id } });
       await tx.courierRating.deleteMany({ where: { customerId: customer.id } });
       await tx.favoriteStore.deleteMany({ where: { customerId: customer.id } });

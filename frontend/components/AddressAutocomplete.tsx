@@ -99,6 +99,8 @@ interface Props {
   className?: string;
   required?: boolean;
   id?: string;
+  'aria-invalid'?: boolean;
+  'aria-describedby'?: string;
   /**
    * Pays choisi dans le formulaire (« BE », « FR ») : ses adresses passent en
    * tête. Sans lui, le pays est deviné.
@@ -122,6 +124,8 @@ export function AddressAutocomplete({
   className = '',
   required,
   id,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
   pays,
   clair = false,
 }: Props) {
@@ -251,6 +255,8 @@ export function AddressAutocomplete({
         type="text"
         value={value}
         required={required}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
         placeholder={placeholderValue}
         autoComplete="off"
         onChange={(e) => {

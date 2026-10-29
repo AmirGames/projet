@@ -18,7 +18,7 @@ import { jetonAcces } from '@/lib/jeton-session';
 import { useCallback, useState } from 'react';
 import { Plus, Trash2, Clock, Power } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -59,7 +59,8 @@ const franchitMinuit = (plage: Plage) => plage.close <= plage.open;
 
 export default function HorairesPage() {
   const t = useTranslations('merchantstorehours');
-  const { storeId } = useCurrentStore();
+  const locale = useLocale();
+  const { storeId, loading: chargementBoutiques, error: erreurBoutiques } = useCurrentStore();
 
   const [data, setData] = useState<Horaires | null>(null);
   const [chargement, setChargement] = useState(true);
@@ -78,7 +79,18 @@ export default function HorairesPage() {
   const [formulaireCreneau, setFormulaireCreneau] = useState(false);
 
   const charger = useCallback(async () => {
-    if (!storeId) return;
+    if (!storeId) {
+      // La session peut expirer ou ne plus avoir de boutique. Terminer le
+      // chargement au lieu de laisser le spinner tourner indéfiniment.
+      if (!chargementBoutiques) {
+        setData(null);
+        setErreur(erreurBoutiques || t('indisponibles'));
+        setChargement(false);
+      }
+      return;
+    }
+
+    setChargement(true);
 
     try {
       const token = jetonAcces();
@@ -98,7 +110,7 @@ export default function HorairesPage() {
     } finally {
       setChargement(false);
     }
-  }, [storeId, t]);
+  }, [storeId, chargementBoutiques, erreurBoutiques, t]);
 
   useEffectChargement(() => {
     charger();
@@ -320,9 +332,15 @@ export default function HorairesPage() {
                         <span className="text-sm text-green-600">
                           {(horaires?.plages || []).map((plage, index) => (
                             <span key={index} className="ml-3 first:ml-0">
-                              {plage.open} – {plage.close}
-                              {franchitMinuit(plage) && (
-                                <span className="text-gray-500 text-xs"> {t('lendemain')}</span>
+                              {plage.open === '00:00' && plage.close === '00:00' ? (
+                                locale === 'fr' ? 'Toute la journée' : 'All day'
+                              ) : (
+                                <>
+                                  {plage.open} – {plage.close}
+                                  {franchitMinuit(plage) && (
+                                    <span className="text-gray-500 text-xs"> {t('lendemain')}</span>
+                                  )}
+                                </>
                               )}
                             </span>
                           ))}

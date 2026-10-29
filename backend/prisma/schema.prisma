@@ -37,6 +37,11 @@ model PrivacyErasureRequest {
   @@index([status, requestedAt])
 }
 
+model PrivacyDeferredOrderErasure {
+  orderId     String   @id
+  requestedAt DateTime @default(now())
+}
+
 /// Gel ciblé et réexaminable, jamais un report indéfini de toute suppression.
 model PrivacyLegalHold {
   id        String @id @default(cuid())

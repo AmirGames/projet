@@ -1267,6 +1267,8 @@
   "merchantDashboard": {
     "loading": "Chargement…",
     "loadError": "Impossible de charger les données du tableau de bord",
+    "ordersLoadError": "Impossible de charger les commandes. Le nombre affiché n’est pas disponible pour le moment.",
+    "retry": "Réessayer",
     "changeSwitcher": "— changez de boutique en haut à droite",
     "storeOpen": "Ouverte",
     "storeClosed": "Fermée",
@@ -1302,6 +1304,8 @@
   "merchantOrders": {
     "title": "Commandes",
     "description": "Gérez et traitez vos commandes",
+    "loadError": "Impossible de charger les commandes. Vos commandes ne sont pas affichées. Réessayez ou contactez l’assistance si le problème persiste.",
+    "retry": "Réessayer",
     "empty": "Aucune commande trouvée",
     "loading": "Chargement des commandes...",
     "total": "Total",
@@ -2756,6 +2760,7 @@
     "montant": "Montant de la commande",
     "fraisLivraison": "+ Frais de livraison (pour vous)",
     "payeClient": "Payé par le client",
+    "totalClient": "Total de la commande",
     "dontLivraison": "dont livraison (livreur de la plateforme)",
     "dontService": "dont frais de service (plateforme)",
     "sommesPasAVous": "Ces sommes ne vous reviennent pas : elles sont reportées sur votre relevé du mois, avec la commission.",
@@ -3081,6 +3086,7 @@
     "horairesOuverture": "Horaires d'ouverture",
     "horairesAide": "Une journée peut compter plusieurs services — midi et soir, par exemple. Une fermeture après minuit se saisit telle quelle : 17h30 – 01h00.",
     "ferme": "Fermé",
+    "touteLaJournee": "Toute la journée",
     "lendemain": "(le lendemain)",
     "modifier": "Modifier",
     "fermeCeJour": "Fermé ce jour-là",
@@ -4406,6 +4412,8 @@
     "codeSansRemise": "Ce code n'accorde aucune remise sur ce panier",
     "verificationImpossible": "Vérification impossible pour le moment",
     "champsObligatoires": "Veuillez remplir tous les champs obligatoires",
+    "champRequis": "Ce champ est obligatoire.",
+    "emailInvalide": "Saisissez une adresse e-mail valide.",
     "adresseManquante": "Veuillez remplir l'adresse de livraison",
     "heureManquante": "Veuillez sélectionner une heure de retrait",
     "panierVide": "Votre panier est vide",
@@ -4433,6 +4441,9 @@
     "zone": "Zone « {nom} »",
     "livraisonOfferte": "Livraison offerte",
     "livraisonA": "Livraison {frais}",
+    "adresseAvantTarif": "Saisissez une adresse pour calculer les frais de livraison.",
+    "verificationTarifLivraison": "Vérification de l'adresse et du tarif de livraison…",
+    "tarifLivraisonIndisponible": "Les frais de livraison n'ont pas pu être vérifiés pour cette adresse. Modifiez l'adresse ou choisissez le retrait.",
     "environMinutes": ", environ {minutes} min",
     "minimumZone": " — minimum {minimum}",
     "encorePourOfferte": "Encore {montant} pour la livraison offerte.",
@@ -4630,7 +4641,14 @@
     "quantite": "Quantité : {n}",
     "livreurProcheTitre": "Votre livreur est bientôt là",
     "livreurProcheTexte": "Vous pouvez descendre devant la porte.",
-    "produitSupprime": "Produit supprimé"
+    "produitSupprime": "Produit supprimé",
+    "etatPaiement": "État du paiement",
+    "etatPaiementStatut": {
+      "PENDING": "En attente de paiement",
+      "SUCCEEDED": "Paiement confirmé",
+      "FAILED": "Paiement échoué",
+      "REFUNDED": "Paiement remboursé"
+    }
   },
   "motifsRefus": {
     "client": {

@@ -65,12 +65,19 @@ export class UserService {
   static async getUserById(id: string) {
     const user = await db.user.findUnique({
       where: { id },
-      include: {
-        memberships: {
-          include: {
-            org: true,
-          },
-        },
+      // Les adhésions sont chargées séparément par getUserOrganizations.
+      // Inclure ici organisations et boutiques faisait aussi déchiffrer les
+      // coordonnées bancaires et autres données privées lors d'une simple
+      // ouverture de session.
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        passwordHash: true,
+        status: true,
+        emailVerified: true,
+        isSuperOwner: true,
+        isSystemAdmin: true,
       },
     });
 
@@ -108,10 +115,15 @@ export class UserService {
   static async getUserOrganizations(userId: string) {
     const memberships = await db.membership.findMany({
       where: { userId },
-      include: {
+      select: {
+        role: true,
         org: {
-          include: {
-            stores: true,
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            suspensionReason: true,
+            closureReason: true,
           },
         },
       },

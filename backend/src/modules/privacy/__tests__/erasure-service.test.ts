@@ -156,10 +156,34 @@ describe("completeErasure : anonymisation sans perte comptable", () => {
     resultats["order.findMany"] = [{ id: "commande-1" }];
     await completeErasure("alice");
     const anonymisation = de("order", "updateMany")[0].args;
-    expect(anonymisation.where).toEqual({ customerId: "client-1" });
+    expect(anonymisation.where).toEqual({ customerId: "client-1", id: { notIn: [] } });
     expect(anonymisation.data).toMatchObject({ customerId: null, customerName: "Client supprimé", customerEmail: "supprime@zupeat.invalid", customerPhone: "", deliveryAddress: null, trackingTokenHash: null });
     expect(de("orderTrackingToken", "deleteMany")[0].args.where).toEqual({ orderId: { in: ["commande-1"] } });
     expect(de("customer", "update")[0].args.data).toMatchObject({ userId: null, name: "Client supprimé", email: "supprime-client-1@zupeat.invalid", phone: null, address: null, savedAddresses: [], status: "INACTIVE" });
+  });
+
+  it("détache une commande sous gel et reporte son anonymisation à la rétention", async () => {
+    resultats["customer.findMany"] = [{ id: "client-1" }];
+    resultats["order.findMany"] = [{ id: "commande-gelee" }, { id: "commande-libre" }];
+    resultats["privacyLegalHold.findMany"] = [{ model: "Order", recordId: "commande-gelee" }];
+
+    await completeErasure("alice");
+
+    expect(de("privacyDeferredOrderErasure", "createMany")[0].args).toEqual({
+      data: [{ orderId: "commande-gelee" }],
+      skipDuplicates: true,
+    });
+    expect(de("order", "updateMany").map((call) => call.args)).toEqual([
+      {
+        where: { customerId: "client-1", id: { in: ["commande-gelee"] } },
+        data: { customerId: null, trackingTokenHash: null },
+      },
+      {
+        where: { customerId: "client-1", id: { notIn: ["commande-gelee"] } },
+        data: expect.objectContaining({ customerId: null, customerName: "Client supprimé", deliveryAddress: null }),
+      },
+    ]);
+    expect(de("order", "deleteMany")).toEqual([]);
   });
 
   it.each(["payment", "invoice", "order", "orderDelivery", "platformInvoice", "courierPayout", "merchantPayout", "payoutBatch", "orderItem"])(

@@ -343,7 +343,7 @@ export default function DetailCommandePage() {
               (commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0)) && (
               <div className="pt-2 border-t border-gray-200 space-y-1 text-xs text-gray-500">
                 <div className="flex justify-between">
-                  <span>{t('payeClient')}</span>
+                  <span>{t(commande.paymentStatus === 'SUCCEEDED' ? 'payeClient' : 'totalClient')}</span>
                   <span>{euro(commande.totalAmount)}</span>
                 </div>
                 {commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0 && (

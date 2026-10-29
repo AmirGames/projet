@@ -1,5 +1,5 @@
-import { RefundJobs } from "./modules/payments/refund.jobs";
 import 'dotenv/config';
+import { RefundJobs } from "./modules/payments/refund.jobs";
 import http from 'http';
 import { loadEnv } from "./config/env";
 import { logger } from "./config/logger";

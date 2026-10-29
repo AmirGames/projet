@@ -586,6 +586,25 @@ export default function TrackOrderPage() {
               <DetailDuTotal commande={order} couleurTotal="text-orange-600" />
             </div>
 
+            {order.paymentStatus &&
+              ['PENDING', 'SUCCEEDED', 'FAILED', 'REFUNDED'].includes(order.paymentStatus) && (
+                <div
+                  role="status"
+                  className={`rounded-lg border p-4 ${
+                    order.paymentStatus === 'SUCCEEDED'
+                      ? 'border-green-200 bg-green-50 text-green-800'
+                      : order.paymentStatus === 'FAILED'
+                        ? 'border-red-200 bg-red-50 text-red-800'
+                        : order.paymentStatus === 'REFUNDED'
+                          ? 'border-blue-200 bg-blue-50 text-blue-800'
+                          : 'border-amber-200 bg-amber-50 text-amber-900'
+                  }`}
+                >
+                  <p className="text-sm font-medium">{t('etatPaiement')}</p>
+                  <p className="font-semibold">{t(`etatPaiementStatut.${order.paymentStatus}`)}</p>
+                </div>
+              )}
+
             {/* Notes */}
             {order.notes && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

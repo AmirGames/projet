@@ -78,6 +78,8 @@ export default function OrdersPage() {
   const [vue, setVue] = useState<'enCours' | 'historique'>('enCours');
   const [enCours, setEnCours] = useState<Order[]>([]);
   const [duJour, setDuJour] = useState<Order[]>([]);
+  const [erreurEnCours, setErreurEnCours] = useState(false);
+  const [erreurHistorique, setErreurHistorique] = useState(false);
   const [recherche, setRecherche] = useState('');
   const [maintenant, setMaintenant] = useState(() => Date.now());
 
@@ -121,12 +123,14 @@ export default function OrdersPage() {
 
       const donnees = await reponse.json();
       setEnCours(donnees.data || []);
+      setErreurEnCours(false);
 
       if (reponseDuJour.ok) {
         const jour = await reponseDuJour.json();
         setDuJour(jour.orders || []);
       }
     } catch (error) {
+      setErreurEnCours(true);
       signalerErreur('Error fetching orders:', error);
     } finally {
       setLoading(false);
@@ -153,7 +157,9 @@ export default function OrdersPage() {
       const data = await response.json();
       setOrders(data.data || []);
       setTotal(data.total || 0);
+      setErreurHistorique(false);
     } catch (error) {
+      setErreurHistorique(true);
       signalerErreur('Error fetching orders:', error);
     }
   }, [filter, page, jeton, storeId]);
@@ -385,6 +391,13 @@ export default function OrdersPage() {
               <p className="text-gray-500">{t('loading')}</p>
             </div>
           </div>
+        ) : erreurEnCours ? (
+          <div role="alert" className="m-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-900">
+            <p className="font-semibold">{t('loadError')}</p>
+            <button type="button" onClick={fetchEnCours} className="mt-3 rounded-full bg-white px-4 py-2 font-bold text-red-900 ring-1 ring-red-200 hover:bg-red-100">
+              {t('retry')}
+            </button>
+          </div>
         ) : (
           <div className="grid items-start gap-5 px-6 pb-10 pt-6 lg:grid-cols-3 lg:px-8">
             {colonnes.map((colonne) => (
@@ -488,7 +501,14 @@ export default function OrdersPage() {
           </div>
 
           <div className="overflow-x-auto rounded-[18px] border border-[#ECECEA] bg-white">
-            {orders.length === 0 ? (
+            {erreurHistorique ? (
+              <div role="alert" className="p-8 text-center text-red-800">
+                <p>{t('loadError')}</p>
+                <button type="button" onClick={fetchOrders} className="mt-3 rounded-full border border-red-200 px-4 py-2 font-bold hover:bg-red-50">
+                  {t('retry')}
+                </button>
+              </div>
+            ) : orders.length === 0 ? (
               <p className="p-8 text-center text-gray-500">{t('empty')}</p>
             ) : (
               <table className="w-full min-w-[640px] text-sm">

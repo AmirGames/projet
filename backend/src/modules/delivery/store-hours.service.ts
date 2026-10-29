@@ -174,7 +174,9 @@ function verifierLesPlages(plages: Plage[]): Plage[] {
       throw new ApiError(400, "Heure invalide : utilisez le format HH:mm", "INVALID_TIME_FORMAT");
     }
 
-    if (plage.open === plage.close) {
+    // Convention explicite pour une journée complète : minuit à minuit.
+    // `bornes()` interprète cette plage comme 24 heures, sans intervalle fermé.
+    if (plage.open === plage.close && !(plage.open === "00:00" && plage.close === "00:00")) {
       throw new ApiError(
         400,
         `${plage.open} – ${plage.close} : cette plage ne dure rien`,

@@ -113,6 +113,16 @@ interface Props {
   ouverteMaintenant?: boolean;
 }
 
+type ChampObligatoire =
+  | 'customerName'
+  | 'customerEmail'
+  | 'customerPhone'
+  | 'deliveryAddress'
+  | 'deliveryCity'
+  | 'pickupTime';
+type ErreurChamp = 'required' | 'invalid';
+type ErreursChamps = Partial<Record<ChampObligatoire, ErreurChamp>>;
+
 export function TunnelCommande({
   boutique,
   lignes,
@@ -122,7 +132,10 @@ export function TunnelCommande({
   const t = useTranslations('tunnelCommande');
   const livraisonFermee = ouverteMaintenant === false;
   const { user } = useAuth();
-  const [livraison, setLivraison] = useState<Livraison | null>(null);
+  const [livraisonResolue, setLivraisonResolue] = useState<{
+    requete: string;
+    donnees: Livraison | null;
+  } | null>(null);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
   const [creneaux, setCreneaux] = useState<
     { date: string; libelle: string; creneaux: { valeur: string; libelle: string }[] }[]
@@ -138,6 +151,8 @@ export function TunnelCommande({
   const tAllergenes = useTranslations('allergenes');
   const contientAlcool = lignes.some((ligne) => ligne.alcool);
   const [checkoutError, setCheckoutError] = useState('');
+  const [erreursChamps, setErreursChamps] = useState<ErreursChamps>({});
+  const [champAFocaliser, setChampAFocaliser] = useState<ChampObligatoire | null>(null);
   const router = useRouter();
   /**
    * Ce qui partira au commerçant une fois le délai de repentir écoulé.
@@ -179,6 +194,12 @@ export function TunnelCommande({
   const [notesOuvertes, setNotesOuvertes] = useState(false);
   const [panierDeplie, setPanierDeplie] = useState(false);
   const [promoOuverte, setPromoOuverte] = useState(false);
+
+  useEffect(() => {
+    if (!champAFocaliser) return;
+    document.getElementById(champAFocaliser)?.focus();
+    setChampAFocaliser(null);
+  }, [champAFocaliser, contactOuvert, adresseOuverte]);
 
   const [checkoutForm, setCheckoutForm] = useState({
     customerName: '',
@@ -302,7 +323,15 @@ export function TunnelCommande({
     return `${boutique.id}/zone-livraison${parametres}`;
   })();
 
-  if (requeteLivraison === null && livraison !== null) setLivraison(null);
+  // Une réponse d'une ancienne adresse ne doit jamais servir à afficher un
+  // tarif ni à autoriser la commande pour l'adresse actuellement saisie.
+  const livraison =
+    requeteLivraison && livraisonResolue?.requete === requeteLivraison
+      ? livraisonResolue.donnees
+      : null;
+  const reponseLivraisonActuelle = Boolean(
+    requeteLivraison && livraisonResolue?.requete === requeteLivraison
+  );
 
   useEffect(() => {
     if (requeteLivraison === null) return;
@@ -314,9 +343,13 @@ export function TunnelCommande({
       fetch(`${API_URL}/api/client/stores/${requeteLivraison}`)
         .then((reponse) => (reponse.ok ? reponse.json() : null))
         .then((donnees) => {
-          if (!annule && donnees) setLivraison(donnees.data || null);
+          if (!annule) {
+            setLivraisonResolue({ requete: requeteLivraison, donnees: donnees?.data || null });
+          }
         })
-        .catch(() => undefined);
+        .catch(() => {
+          if (!annule) setLivraisonResolue({ requete: requeteLivraison, donnees: null });
+        });
     }, situee ? 0 : 500);
 
     return () => {
@@ -386,6 +419,9 @@ export function TunnelCommande({
   }, []);
 
   const sousTotal = totalDuPanier(lignes);
+  const fraisLivraisonVerifies =
+    checkoutForm.deliveryType !== 'DELIVERY' ||
+    (reponseLivraisonActuelle && Boolean(livraison));
 
   /**
    * Les frais réellement facturés : ceux de la zone de livraison.
@@ -497,25 +533,43 @@ export function TunnelCommande({
   const commander = async () => {
     setCheckoutError('');
 
-    if (!checkoutForm.customerName || !checkoutForm.customerEmail || !checkoutForm.customerPhone) {
-      setCheckoutError(t('champsObligatoires'));
-      setContactOuvert(true);
-      return;
+    const erreurs: ErreursChamps = {};
+    if (!checkoutForm.customerName.trim()) erreurs.customerName = 'required';
+    if (!checkoutForm.customerEmail.trim()) erreurs.customerEmail = 'required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(checkoutForm.customerEmail.trim())) {
+      erreurs.customerEmail = 'invalid';
     }
-
-    if (
-      checkoutForm.deliveryType === 'DELIVERY' &&
-      (!checkoutForm.deliveryAddress || !checkoutForm.deliveryCity)
-    ) {
-      setCheckoutError(t('adresseManquante'));
-      setAdresseOuverte(true);
-      return;
+    if (!checkoutForm.customerPhone.trim()) erreurs.customerPhone = 'required';
+    if (checkoutForm.deliveryType === 'DELIVERY') {
+      if (!checkoutForm.deliveryAddress.trim()) erreurs.deliveryAddress = 'required';
+      if (!checkoutForm.deliveryCity.trim()) erreurs.deliveryCity = 'required';
     }
-
     if (checkoutForm.deliveryType === 'PICKUP' && !checkoutForm.pickupTime) {
-      setCheckoutError(t('heureManquante'));
+      erreurs.pickupTime = 'required';
+    }
+
+    setErreursChamps(erreurs);
+    const premierChampInvalide = (
+      ['deliveryAddress', 'deliveryCity', 'customerName', 'customerEmail', 'customerPhone', 'pickupTime'] as const
+    ).find((cle) => erreurs[cle]);
+    if (premierChampInvalide) {
+      setCheckoutError(
+        erreurs.customerName || erreurs.customerEmail || erreurs.customerPhone
+          ? t('champsObligatoires')
+          : erreurs.pickupTime
+            ? t('heureManquante')
+          : checkoutForm.deliveryType === 'DELIVERY' &&
+              (erreurs.deliveryAddress || erreurs.deliveryCity)
+            ? t('adresseManquante')
+            : t('champsObligatoires')
+      );
+      if (erreurs.customerName || erreurs.customerEmail || erreurs.customerPhone) setContactOuvert(true);
+      if (erreurs.deliveryAddress || erreurs.deliveryCity) setAdresseOuverte(true);
+      setChampAFocaliser(premierChampInvalide);
       return;
     }
+
+    setCheckoutError('');
 
     if (lignes.length === 0) {
       setCheckoutError(t('panierVide'));
@@ -637,6 +691,22 @@ export function TunnelCommande({
 
   const champ =
     'w-full bg-white border border-gray-300 rounded-2xl px-4 py-3 text-gray-900 transition focus:outline-none focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20';
+  const classeChamp = (cle: ChampObligatoire) =>
+    erreursChamps[cle]
+      ? champ
+          .replace('border-gray-300', 'border-red-500')
+          .replace('focus:border-[#FF7A00]', 'focus:border-red-600')
+          .replace('focus:ring-[#FF7A00]/20', 'focus:ring-red-500/20')
+      : champ;
+  const messageErreurChamp = (cle: ChampObligatoire) => {
+    const erreur = erreursChamps[cle];
+    if (!erreur) return null;
+    return (
+      <p id={`${cle}-erreur`} className="mt-1 text-sm font-medium text-red-700">
+        {erreur === 'invalid' ? t('emailInvalide') : t('champRequis')}
+      </p>
+    );
+  };
   const carte = 'bg-white border border-neutral-200 rounded-3xl shadow-sm';
   const boutonModifier =
     'shrink-0 rounded-full bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-semibold transition-colors';
@@ -769,32 +839,46 @@ export function TunnelCommande({
                         clair
                         id="livraison-adresse"
                         value={checkoutForm.deliveryAddress}
+                        required
+                        aria-invalid={Boolean(erreursChamps.deliveryAddress)}
+                        aria-describedby={erreursChamps.deliveryAddress ? 'deliveryAddress-erreur' : undefined}
                         onChange={(valeur) =>
-                          setCheckoutForm({
-                            ...checkoutForm,
-                            deliveryAddress: valeur,
-                            // Taper par-dessus une suggestion retenue rendrait ses
-                            // coordonnées fausses.
-                            deliveryLat: undefined,
-                            deliveryLng: undefined,
-                          })
+                          {
+                            setCheckoutForm({
+                              ...checkoutForm,
+                              deliveryAddress: valeur,
+                              // Taper par-dessus une suggestion retenue rendrait ses
+                              // coordonnées fausses.
+                              deliveryLat: undefined,
+                              deliveryLng: undefined,
+                            });
+                            setErreursChamps((anciens) => ({ ...anciens, deliveryAddress: undefined }));
+                          }
                         }
                         onSelect={(adresse) =>
-                          setCheckoutForm({
-                            ...checkoutForm,
-                            deliveryAddress: adresse.street,
-                            deliveryCity: adresse.city || checkoutForm.deliveryCity,
-                            deliveryPostal: adresse.postalCode || checkoutForm.deliveryPostal,
-                            // Les coordonnées de l'adresse choisie étaient jetées :
-                            // sans elles, le suivi ne peut afficher ni distance
-                            // restante ni durée estimée.
-                            deliveryLat: adresse.latitude ?? undefined,
-                            deliveryLng: adresse.longitude ?? undefined,
-                          })
+                          {
+                            setCheckoutForm({
+                              ...checkoutForm,
+                              deliveryAddress: adresse.street,
+                              deliveryCity: adresse.city || checkoutForm.deliveryCity,
+                              deliveryPostal: adresse.postalCode || checkoutForm.deliveryPostal,
+                              // Les coordonnées de l'adresse choisie étaient jetées :
+                              // sans elles, le suivi ne peut afficher ni distance
+                              // restante ni durée estimée.
+                              deliveryLat: adresse.latitude ?? undefined,
+                              deliveryLng: adresse.longitude ?? undefined,
+                            });
+                            setErreursChamps((anciens) => ({
+                              ...anciens,
+                              deliveryAddress: undefined,
+                              ...(adresse.city ? { deliveryCity: undefined } : {}),
+                            }));
+                          }
                         }
-                        className={champ}
+                        className={classeChamp('deliveryAddress')}
                         placeholder={t('exempleAdresse')}
                       />
+                      {messageErreurChamp('deliveryAddress')}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -808,13 +892,25 @@ export function TunnelCommande({
                         <input
                           id="livraison-ville"
                           type="text"
+                          required
+                          aria-invalid={Boolean(erreursChamps.deliveryCity)}
+                          aria-describedby={erreursChamps.deliveryCity ? 'deliveryCity-erreur' : undefined}
                           value={checkoutForm.deliveryCity}
                           onChange={(e) =>
-                            setCheckoutForm({ ...checkoutForm, deliveryCity: e.target.value })
+                            {
+                              setCheckoutForm({
+                                ...checkoutForm,
+                                deliveryCity: e.target.value,
+                                deliveryLat: undefined,
+                                deliveryLng: undefined,
+                              });
+                              setErreursChamps((anciens) => ({ ...anciens, deliveryCity: undefined }));
+                            }
                           }
-                          className={champ}
+                          className={classeChamp('deliveryCity')}
                           placeholder={t('exempleVille')}
                         />
+                        {messageErreurChamp('deliveryCity')}
                       </div>
 
                       <div>
@@ -830,7 +926,12 @@ export function TunnelCommande({
                           inputMode="numeric"
                           value={checkoutForm.deliveryPostal}
                           onChange={(e) =>
-                            setCheckoutForm({ ...checkoutForm, deliveryPostal: e.target.value })
+                            setCheckoutForm({
+                              ...checkoutForm,
+                              deliveryPostal: e.target.value,
+                              deliveryLat: undefined,
+                              deliveryLng: undefined,
+                            })
                           }
                           className={champ}
                           placeholder="75002"
@@ -939,13 +1040,20 @@ export function TunnelCommande({
                   <input
                     id="client-nom"
                     type="text"
+                    required
+                    aria-invalid={Boolean(erreursChamps.customerName)}
+                    aria-describedby={erreursChamps.customerName ? 'customerName-erreur' : undefined}
                     value={checkoutForm.customerName}
                     onChange={(e) =>
-                      setCheckoutForm({ ...checkoutForm, customerName: e.target.value })
+                      {
+                        setCheckoutForm({ ...checkoutForm, customerName: e.target.value });
+                        setErreursChamps((anciens) => ({ ...anciens, customerName: undefined }));
+                      }
                     }
-                    className={champ}
+                    className={classeChamp('customerName')}
                     placeholder={t('exempleNom')}
                   />
+                  {messageErreurChamp('customerName')}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -956,13 +1064,20 @@ export function TunnelCommande({
                     <input
                       id="client-email"
                       type="email"
+                      required
+                      aria-invalid={Boolean(erreursChamps.customerEmail)}
+                      aria-describedby={erreursChamps.customerEmail ? 'customerEmail-erreur' : undefined}
                       value={checkoutForm.customerEmail}
                       onChange={(e) =>
-                        setCheckoutForm({ ...checkoutForm, customerEmail: e.target.value })
+                        {
+                          setCheckoutForm({ ...checkoutForm, customerEmail: e.target.value });
+                          setErreursChamps((anciens) => ({ ...anciens, customerEmail: undefined }));
+                        }
                       }
-                      className={champ}
+                      className={classeChamp('customerEmail')}
                       placeholder={t('exempleEmail')}
                     />
+                    {messageErreurChamp('customerEmail')}
                   </div>
 
                   <div>
@@ -975,13 +1090,20 @@ export function TunnelCommande({
                     <input
                       id="client-telephone"
                       type="tel"
+                      required
+                      aria-invalid={Boolean(erreursChamps.customerPhone)}
+                      aria-describedby={erreursChamps.customerPhone ? 'customerPhone-erreur' : undefined}
                       value={checkoutForm.customerPhone}
                       onChange={(e) =>
-                        setCheckoutForm({ ...checkoutForm, customerPhone: e.target.value })
+                        {
+                          setCheckoutForm({ ...checkoutForm, customerPhone: e.target.value });
+                          setErreursChamps((anciens) => ({ ...anciens, customerPhone: undefined }));
+                        }
                       }
-                      className={champ}
+                      className={classeChamp('customerPhone')}
                       placeholder="+33 6 12 34 56 78"
                     />
+                    {messageErreurChamp('customerPhone')}
                   </div>
                 </div>
 
@@ -1118,9 +1240,15 @@ export function TunnelCommande({
               ) : (
                 <select
                   id="creneau"
+                  required
+                  aria-invalid={Boolean(erreursChamps.pickupTime)}
+                  aria-describedby={erreursChamps.pickupTime ? 'pickupTime-erreur' : undefined}
                   value={checkoutForm.pickupTime}
-                  onChange={(e) => setCheckoutForm({ ...checkoutForm, pickupTime: e.target.value })}
-                  className={champ}
+                  onChange={(e) => {
+                    setCheckoutForm({ ...checkoutForm, pickupTime: e.target.value });
+                    setErreursChamps((anciens) => ({ ...anciens, pickupTime: undefined }));
+                  }}
+                  className={classeChamp('pickupTime')}
                 >
                   <option value="">{t('choisirCreneau')}</option>
                   {creneaux.map((jour) => (
@@ -1134,6 +1262,7 @@ export function TunnelCommande({
                   ))}
                 </select>
               )}
+              {messageErreurChamp('pickupTime')}
             </div>
           )}
         </section>
@@ -1309,8 +1438,23 @@ export function TunnelCommande({
               {t('livraison')}
               {enLivraison && livraison?.zone ? ` — ${livraison.zone.name}` : ''}
             </span>
-            <span>{enLivraison ? euro(fraisDeLivraison) : t('retraitSurPlace')}</span>
+            <span>
+              {enLivraison
+                ? fraisLivraisonVerifies && livraison?.livrable
+                  ? euro(fraisDeLivraison)
+                  : '—'
+                : t('retraitSurPlace')}
+            </span>
           </div>
+          {enLivraison && !fraisLivraisonVerifies && (
+            <p role="status" className="text-sm text-amber-700">
+              {!requeteLivraison
+                ? t('adresseAvantTarif')
+                : reponseLivraisonActuelle
+                  ? t('tarifLivraisonIndisponible')
+                  : t('verificationTarifLivraison')}
+            </p>
+          )}
           {remise && (
             <div className="flex justify-between text-green-700">
               <span>{t('remise', { code: remise.code })}</span>
@@ -1366,6 +1510,9 @@ export function TunnelCommande({
               submitting ||
               !conditionsAcceptees ||
               (contientAlcool && !ageConfirme) ||
+              (enLivraison &&
+                Boolean(checkoutForm.deliveryAddress.trim() && checkoutForm.deliveryCity.trim()) &&
+                !fraisLivraisonVerifies) ||
               sousLeMinimum ||
               (enLivraison && livraison?.livrable === false)
             }

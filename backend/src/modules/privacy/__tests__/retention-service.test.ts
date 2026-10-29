@@ -47,6 +47,7 @@ import { runRetention } from "../retention.service";
 const MAINTENANT = new Date("2026-10-08T12:00:00.000Z");
 const JOUR = 86400000;
 const avant = (jours: number) => new Date(MAINTENANT.getTime() - jours * JOUR);
+const LIMITE_COMPTABLE = new Date("2015-12-31T23:00:00.000Z");
 const de = (table: string, methode: string) => appels.filter(a => a.table === table && a.methode === methode);
 
 beforeEach(() => {
@@ -68,7 +69,7 @@ describe("rétention : durées de conservation", () => {
 
   it("ne touche aux positions d'une livraison que lorsqu'elle est terminée", async () => {
     await runRetention(MAINTENANT);
-    expect(de("orderDelivery", "updateMany")[0].args.where).toEqual({ status: { in: ["DELIVERED", "FAILED", "CANCELLED"] }, updatedAt: { lt: avant(1) } });
+    expect(de("orderDelivery", "updateMany")[0].args.where).toEqual({ id: { notIn: [] }, status: { in: ["DELIVERED", "FAILED", "CANCELLED"] }, updatedAt: { lt: avant(1) } });
   });
 
   it("anonymise les coordonnées des commandes closes après 90 jours et jamais celles d'une commande en cours", async () => {
@@ -116,17 +117,17 @@ describe("rétention : durées de conservation", () => {
 });
 
 describe("rétention : pièces comptables conservées dix ans", () => {
-  it("ne supprime les commandes qu'après 3653 jours, terminées et sans versement en attente", async () => {
+  it("ne supprime les commandes qu'après dix années civiles, terminées et sans versement en attente", async () => {
     await runRetention(MAINTENANT);
     const where = de("order", "findMany")[0].args.where;
-    expect(where.createdAt).toEqual({ lt: avant(3653) });
+    expect(where.createdAt).toEqual({ lt: LIMITE_COMPTABLE });
     expect(where.status).toEqual({ in: ["COMPLETED", "REJECTED"] });
     expect(where.OR[1].delivery.payout).toEqual({ status: "PAID" });
     expect(where.OR[1].delivery.payoutHold).toBeNull();
   });
 
   it.each([
-    ["platformInvoice", { issuedAt: { lt: avant(3653) } }],
+    ["platformInvoice", { issuedAt: { lt: LIMITE_COMPTABLE } }],
     ["courierPayout", { status: { in: ["PAID", "CANCELLED"] }, periodEnd: { lt: avant(3653) } }],
     ["merchantPayout", { status: { in: ["PAID", "CANCELLED", "CARRIED"] }, periodEnd: { lt: avant(3653) } }],
     ["payoutBatch", { status: { in: ["CONFIRMED", "REJECTED", "CANCELLED"] }, closedAt: { lt: avant(3653) } }],
@@ -141,9 +142,18 @@ describe("rétention : pièces comptables conservées dix ans", () => {
     resultats["order.findMany"] = (args: any) => (args.select?.id && args.take === 500 ? [{ id: "ancienne-1" }, { id: "ancienne-2" }] : []);
     const resultat = await runRetention(MAINTENANT);
     expect(transaction).toHaveBeenCalled();
-    expect(de("invoice", "deleteMany")[0].args.where).toEqual({ orderId: { in: ["ancienne-1", "ancienne-2"] } });
+    expect(de("invoice", "deleteMany")[0].args.where).toEqual({ orderId: { in: ["ancienne-1", "ancienne-2"] }, issuedAt: { lt: LIMITE_COMPTABLE } });
     expect(de("order", "deleteMany")[0].args.where).toEqual({ id: { in: ["ancienne-1", "ancienne-2"] } });
     expect(resultat.accounting).toBe(2);
+  });
+
+  it("conserve une facture récente et sa commande, même si la commande est ancienne", async () => {
+    resultats["order.findMany"] = (args: any) => args.select?.invoice
+      ? [{ id: "ancienne-avec-facture-recente", invoice: { issuedAt: new Date("2020-03-01T00:00:00.000Z") } }]
+      : [];
+    await runRetention(MAINTENANT);
+    expect(de("order", "deleteMany")[0].args.where).toEqual({ id: { in: [] } });
+    expect(de("invoice", "deleteMany")[0].args.where.issuedAt).toEqual({ lt: LIMITE_COMPTABLE });
   });
 
   it("consigne l'effacement des commandes dans la même transaction que les factures", async () => {
@@ -159,6 +169,17 @@ describe("rétention : pièces comptables conservées dix ans", () => {
 });
 
 describe("rétention : gels légaux et enquêtes en cours", () => {
+  it("termine l'anonymisation différée après la levée du gel", async () => {
+    resultats["privacyDeferredOrderErasure.findMany"] = [{ orderId: "commande-liberee" }];
+    await runRetention(MAINTENANT);
+    expect(de("privacyDeferredOrderErasure", "findMany")[0].args.where.orderId).toEqual({ notIn: [] });
+    expect(de("order", "updateMany")[0].args).toMatchObject({
+      where: { id: { in: ["commande-liberee"] } },
+      data: { customerId: null, customerName: "Client supprimé", deliveryAddress: null },
+    });
+    expect(de("privacyDeferredOrderErasure", "deleteMany")[0].args).toEqual({ where: { orderId: { in: ["commande-liberee"] } } });
+  });
+
   it("épargne ce qui est sous gel légal", async () => {
     resultats["privacyLegalHold.findMany"] = [
       { model: "MerchantTicket", recordId: "ticket-gele" },
@@ -166,6 +187,7 @@ describe("rétention : gels légaux et enquêtes en cours", () => {
       { model: "AcceptationConditions", recordId: "accord-gele" },
       { model: "CourseDrive", recordId: "course-gelee" },
       { model: "PlatformInvoice", recordId: "facture-gelee" },
+      { model: "Order", recordId: "commande-gelee" },
     ];
     await runRetention(MAINTENANT);
     expect(de("merchantTicket", "deleteMany")[0].args.where.id).toEqual({ notIn: ["ticket-gele"] });
@@ -174,6 +196,7 @@ describe("rétention : gels légaux et enquêtes en cours", () => {
     expect(de("courseDrive", "updateMany")[0].args.where.id).toEqual({ notIn: ["course-gelee"] });
     expect(de("courseDrive", "deleteMany")[0].args.where.id).toEqual({ notIn: ["course-gelee"] });
     expect(de("platformInvoice", "deleteMany")[0].args.where.id).toEqual({ notIn: ["facture-gelee"] });
+    expect(de("privacyDeferredOrderErasure", "findMany")[0].args.where.orderId).toEqual({ notIn: ["commande-gelee"] });
   });
 
   it("ne lit que les gels non échus", async () => {
@@ -191,6 +214,7 @@ describe("rétention : gels légaux et enquêtes en cours", () => {
     expect(where.status).toEqual({ in: ["DELIVERED", "FAILED", "CANCELLED"] });
     expect(where.proofAt).toEqual({ lt: avant(90) });
     expect(where.OR).toEqual([{ payoutHold: null }, { payoutHold: { not: "REVIEW" } }]);
+    expect(de("orderDelivery", "updateMany")[0].args.where.id).toEqual({ notIn: ["livraison-incident", "livraison-gelee"] });
   });
 
   it("supprime le fichier puis efface les champs de preuve, et compte les preuves purgées", async () => {

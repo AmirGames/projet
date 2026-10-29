@@ -2,6 +2,8 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { oublierCompte } from "../auth/auth.middleware";
+import { activeHolds } from "../privacy/legal-holds";
+import { effacerCommandesClient } from "../privacy/order-erasure";
 
 /**
  * Supprimer son compte client ZupEat.
@@ -119,6 +121,7 @@ export class CustomerAccountService {
     }
 
     const maintenant = new Date();
+    const holds = await activeHolds(maintenant);
     await db.$transaction(async (tx) => {
       await tx.assistantConversation.deleteMany({ where: { ownerId: userId, service: "EAT", category: "customer", actions: { none: { state: "EXECUTING" } } } });
       const compte = await tx.user.findUnique({ where: { id: userId }, select: { emailVerified: true } });
@@ -129,7 +132,7 @@ export class CustomerAccountService {
         await tx.orderTrackingToken.deleteMany({ where: { orderId: { in: orderIds } } });
         await tx.orderDelivery.updateMany({ where: { orderId: { in: orderIds } }, data: { deliveryLat: null, deliveryLng: null, deliveryLatObfusquee: null, deliveryLngObfusquee: null, driverLat: null, driverLng: null, deliveryCode: null, proofNote: null } });
         await tx.erasureRecord.upsert({ where: { subjectId_scope: { subjectId: id, scope: "CUSTOMER" } }, create: { subjectId: id, scope: "CUSTOMER" }, update: {} });
-        await tx.order.updateMany({ where: { customerId: id }, data: { customerId: null, customerName: "Client supprimé", customerEmail: "supprime@zupeat.invalid", customerPhone: "", deliveryAddress: null, deliveryCity: null, deliveryPostal: null, deliveryLat: null, deliveryLng: null, notes: null, rejectionNote: null, trackingTokenHash: null } });
+        await effacerCommandesClient(tx, id, orderIds, holds("Order"));
         await tx.review.deleteMany({ where: { customerId: id } });
         await tx.courierRating.deleteMany({ where: { customerId: id } });
         await tx.favoriteStore.deleteMany({ where: { customerId: id } });

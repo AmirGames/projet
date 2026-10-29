@@ -106,7 +106,16 @@ export function decryptResult(model: string, data: unknown): unknown {
     const schema = field(model, name);
     if (ENCRYPTED_FIELDS[model]?.includes(name) && value != null) {
       const encoded = schema?.type === "Json" ? (estEnreg(value) ? value._encrypted : undefined) : value;
-      if (isEncrypted(encoded)) result[name] = JSON.parse(decrypt(encoded, `${model}.${name}`).toString("utf8"));
+      if (isEncrypted(encoded)) {
+        try {
+          result[name] = JSON.parse(decrypt(encoded, `${model}.${name}`).toString("utf8"));
+        } catch {
+          // Le message de chiffrement seul ne dit pas quelle colonne a échoué.
+          // Nommer le champ aide à repérer une ancienne clé ou une donnée
+          // corrompue, sans jamais journaliser le texte chiffré ou déchiffré.
+          throw new Error(`Échec du déchiffrement de ${model}.${name}`);
+        }
+      }
       else if (process.env.NODE_ENV === "production" && process.env.PRIVACY_ALLOW_LEGACY_READ !== "true") throw new Error(`Migration requise : ${model}.${name}`);
     } else if (schema?.kind === "object") result[name] = decryptResult(schema.type, value);
   }
