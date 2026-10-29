@@ -432,7 +432,6 @@ export default function OrdersPage() {
                       commande={commande}
                       maintenant={maintenant}
                       livreurDeLaPlateforme={parLaPlateforme(commande)}
-                      surChangement={relire}
                       surChoisirLivreur={handleCallDelivery}
                     />
                   ))

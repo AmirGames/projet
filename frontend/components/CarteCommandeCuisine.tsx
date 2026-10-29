@@ -74,7 +74,6 @@ export function CarteCommandeCuisine({
   commande,
   maintenant,
   livreurDeLaPlateforme,
-  surChangement,
   surChoisirLivreur,
 }: {
   storeId: string;
@@ -84,7 +83,6 @@ export function CarteCommandeCuisine({
   maintenant: number;
   /** La course part chez un livreur de la plateforme (et non du commerce). */
   livreurDeLaPlateforme: boolean;
-  surChangement: () => void;
   surChoisirLivreur: (orderId: string) => void;
 }) {
   const t = useTranslations('merchantOrders.cuisine');
@@ -107,8 +105,7 @@ export function CarteCommandeCuisine({
       setRefus(false);
       setMotif('');
       setNote('');
-      surChangement();
-      // La sonnerie et les autres écrans se remettent à jour.
+      // Les écrans concernés se remettent à jour via cet événement.
       window.dispatchEvent(new Event(EVENEMENT_COMMANDES_CHANGEES));
     } catch (e) {
       setErreur(e instanceof Error ? e.message : t('actionImpossible'));
