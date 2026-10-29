@@ -435,6 +435,10 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
 
     const livreurs =
       etat.aPortee === 1 ? "Le seul livreur à proximité a" : `Les ${etat.aPortee} livreurs à proximité ont`;
+    const aucunLivreurRelancable =
+      etat.aPortee === 1
+        ? "Le seul livreur actuellement disponible à proximité a déjà reçu cette proposition sans l'accepter. Il ne peut plus être sollicité pour cette course."
+        : `Les ${etat.aPortee} livreurs actuellement disponibles à proximité ont déjà reçu cette proposition sans l'accepter. Aucun ne peut plus être sollicité pour cette course.`;
 
     res.json({
       success: true,
@@ -443,7 +447,7 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
           ? "Aucun livreur en ligne à proximité. La recherche continue automatiquement dès qu'un livreur se connecte."
           : etat.prochaineTentative
             ? `${livreurs} déjà été sollicité${etat.aPortee > 1 ? "s" : ""}. Nouvelle tentative automatique vers ${heure} — vous pouvez aussi choisir un livreur dans la liste.`
-            : `${livreurs} refusé cette course plusieurs fois. Choisissez un livreur dans la liste pour la lui proposer directement.`,
+            : `${aucunLivreurRelancable} La recherche automatique reprendra dès qu'un autre livreur éligible sera disponible.`,
       data: {
         deliveryId: course.id,
         propose: false,
