@@ -24,7 +24,7 @@ import { signalerErreur } from '@/lib/erreurs';
  * à faire défiler dans une boîte de quelques centimètres de haut.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import { paysDuNavigateur } from '@/lib/pays-client';
 import {
@@ -152,7 +152,8 @@ export function TunnelCommande({
   const contientAlcool = lignes.some((ligne) => ligne.alcool);
   const [checkoutError, setCheckoutError] = useState('');
   const [erreursChamps, setErreursChamps] = useState<ErreursChamps>({});
-  const [champAFocaliser, setChampAFocaliser] = useState<ChampObligatoire | null>(null);
+  const [demandeDeFocus, setDemandeDeFocus] = useState<{ champ: ChampObligatoire; numero: number } | null>(null);
+  const numeroDemandeDeFocus = useRef(0);
   const router = useRouter();
   /**
    * Ce qui partira au commerçant une fois le délai de repentir écoulé.
@@ -196,10 +197,9 @@ export function TunnelCommande({
   const [promoOuverte, setPromoOuverte] = useState(false);
 
   useEffect(() => {
-    if (!champAFocaliser) return;
-    document.getElementById(champAFocaliser)?.focus();
-    setChampAFocaliser(null);
-  }, [champAFocaliser, contactOuvert, adresseOuverte]);
+    if (!demandeDeFocus) return;
+    document.getElementById(demandeDeFocus.champ)?.focus();
+  }, [demandeDeFocus]);
 
   const [checkoutForm, setCheckoutForm] = useState({
     customerName: '',
@@ -565,7 +565,7 @@ export function TunnelCommande({
       );
       if (erreurs.customerName || erreurs.customerEmail || erreurs.customerPhone) setContactOuvert(true);
       if (erreurs.deliveryAddress || erreurs.deliveryCity) setAdresseOuverte(true);
-      setChampAFocaliser(premierChampInvalide);
+      setDemandeDeFocus({ champ: premierChampInvalide, numero: ++numeroDemandeDeFocus.current });
       return;
     }
 

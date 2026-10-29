@@ -258,7 +258,14 @@ check('avec le motif choisi', refus?.rejectionReason === 'TOO_BUSY', `${refus?.r
 titre('L’historique');
 
 await page.getByRole('tab', { name: 'Historique' }).click();
-await page.waitForTimeout(2000);
+await page.waitForFunction(
+  ([numeroTerminee, numeroRefusee]) => {
+    const texte = document.querySelector('main')?.innerText || '';
+    return texte.includes(numeroTerminee) && texte.includes(numeroRefusee);
+  },
+  [numero(terminee), numero(aRefuser)],
+  { timeout: 15000 }
+);
 const historique = await page.locator('main').innerText();
 check('les commandes terminées et refusées y sont', historique.includes(numero(terminee)) && historique.includes(numero(aRefuser)));
 check('le motif du refus est rappelé', historique.includes('Trop occupé'));

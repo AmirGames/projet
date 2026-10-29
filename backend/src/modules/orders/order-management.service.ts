@@ -181,6 +181,7 @@ export class OrderManagementService {
               variant: true,
             },
           },
+          payments: { select: PAIEMENT_COMMERCANT },
         },
       });
 

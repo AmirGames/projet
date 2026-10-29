@@ -27,5 +27,6 @@ describe("réponses de gestion des commandes", () => {
     const payments = paiementsDemandes(appel);
     expect(payments).not.toBe(true);
     expect(payments.select.stripeClientSecret).toBeUndefined();
+    expect(payments.select.status).toBe(true);
   });
 });
