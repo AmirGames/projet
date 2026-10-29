@@ -13,7 +13,9 @@ export const DriversAdminService = {
    * une course dans la minute.
    */
   async lister({ limit, offset, statut }: { limit: number; offset: number; statut: string }) {
-    const where = statut && statut !== "ALL" ? { status: statut } : {};
+    const where = statut === "VEHICLE_CHANGE_PENDING"
+      ? { vehicleChangeRequests: { some: { status: "PENDING" } } }
+      : statut && statut !== "ALL" ? { status: statut } : {};
 
     const [livreurs, total, parEtat] = await Promise.all([
       db.courier.findMany({
@@ -22,6 +24,7 @@ export const DriversAdminService = {
         take: limit,
         include: {
           documents: { select: { type: true, status: true, expiryDate: true } },
+          vehicleChangeRequests: { where: { status: "PENDING" }, select: { id: true } },
           _count: { select: { deliveries: true } },
         },
         // Les dossiers à traiter d'abord : c'est ce que la plateforme vient
@@ -63,6 +66,7 @@ export const DriversAdminService = {
           piecesValidees: validees.size,
           piecesAttendues: attendues.length,
           dossierComplet: attendues.every((type) => validees.has(type)),
+          vehicleChangePending: livreur.vehicleChangeRequests.length > 0,
           suppressionDemandeeLe: livreur.suppressionDemandeeLe,
           createdAt: livreur.createdAt,
         };

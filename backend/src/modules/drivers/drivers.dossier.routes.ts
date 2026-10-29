@@ -11,6 +11,7 @@ import { DriverAccountService } from "./driver-account.service";
 import { cheminRelatif } from "../files/fichiers-prives.service";
 import { servirFichierPrive } from "../files/files.routes";
 import { livreurConnecte } from "./driver-ownership.service";
+import { DriverVehicleChangeService } from "./driver-vehicle-change.service";
 
 // Dossier du livreur (pièces), notifications push et fil avec le support.
 // Monté sur /api/drivers (voir app.ts).
@@ -146,6 +147,7 @@ router.get("/documents", authMiddleware, async (req: Request, res: Response, nex
           reviewNote: piece.reviewNote,
           reviewedAt: piece.reviewedAt,
         })),
+        vehicleChange: await DriverVehicleChangeService.etat(livreur.id),
       },
     });
   } catch (err) {
@@ -215,6 +217,69 @@ router.post(
         message: `${libelleDuDocument(piece.type)} déposée, en attente de validation`,
         data: piece,
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /drivers/vehicle-change - Véhicule actif et éventuelle demande en cours.
+router.get("/vehicle-change", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    res.json({ success: true, data: await DriverVehicleChangeService.etat(livreur.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /drivers/vehicle-change - Demander un changement sans modifier le véhicule actif.
+router.post("/vehicle-change", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const body = z.object({
+      vehicleType: z.enum(["bike", "scooter", "car"]),
+      vehiclePlate: z.string().max(20).optional().nullable(),
+    }).parse(req.body);
+    const demande = await DriverVehicleChangeService.demander(livreur.id, body);
+    res.status(201).json({ success: true, data: { id: demande.id, status: demande.status } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /drivers/vehicle-change/:requestId - Annuler une demande en attente.
+router.delete("/vehicle-change/:requestId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    await DriverVehicleChangeService.annuler(livreur.id, req.params.requestId as string);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /drivers/vehicle-change/:requestId/documents/upload - Pièce attachée uniquement à la demande.
+router.post(
+  "/vehicle-change/:requestId/documents/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+      if (!req.file) throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      const body = z.object({
+        type: z.enum(TYPES_DOCUMENT),
+        expiryDate: z.string().optional().nullable(),
+      }).parse(req.body);
+      const piece = await DriverVehicleChangeService.deposerFichier(livreur.id, req.params.requestId as string, {
+        type: body.type,
+        file: req.file.buffer,
+        filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
+        mimeType: req.file.mimetype,
+        expiryDate: body.expiryDate,
+      });
+      res.status(201).json({ success: true, data: piece, message: `${libelleDuDocument(piece.type)} envoyée pour validation.` });
     } catch (err) {
       next(err);
     }

@@ -1400,6 +1400,7 @@ model Courier {
   tips            CourierTip[]
   offers          DeliveryOffer[]
   documents       CourierDocument[]
+  vehicleChangeRequests CourierVehicleChangeRequest[]
   payouts         CourierPayout[]
   /// Le compte à créditer pour ses versements (virement SEPA groupé).
   iban            String?
@@ -1471,18 +1472,41 @@ model CourierDocument {
   /// Le motif d'un refus, que le livreur doit pouvoir lire.
   reviewNote      String?
   reviewedAt      DateTime?
+  vehicleChangeRequestId String?
 
   // Relations
   driver          Courier    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicleChangeRequest CourierVehicleChangeRequest? @relation(fields: [vehicleChangeRequestId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([driverId])
   @@index([status])
+  @@index([vehicleChangeRequestId])
 
   /// Table au nom historique (renommage Driver → Courier, code seulement).
   @@map("DriverDocument")
+}
+
+/// Demande contrôlée de changement de véhicule : le type actif reste inchangé
+/// jusqu'à l'approbation des pièces par le support.
+model CourierVehicleChangeRequest {
+  id                    String   @id @default(cuid())
+  driverId              String
+  currentVehicleType    String
+  requestedVehicleType  String
+  requestedVehiclePlate String?
+  status                String   @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  reviewNote            String?
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  driver                Courier  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  documents             CourierDocument[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([driverId, status, createdAt])
 }
 
 model OrderDelivery {

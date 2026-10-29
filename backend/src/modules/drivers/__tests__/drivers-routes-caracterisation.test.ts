@@ -16,6 +16,7 @@ const model = (...methods: string[]) => Object.fromEntries(methods.map((m) => [m
 const db: any = {
   user: model("findUnique", "create"),
   courier: model("findUnique", "findMany", "create", "update"),
+  courierVehicleChangeRequest: model("findFirst", "findMany", "create", "updateMany"),
   courierTip: model("findMany"),
   courierRating: model("findMany"),
   orderDelivery: model("findUnique", "findUniqueOrThrow", "findMany", "count", "update", "updateMany"),
@@ -36,6 +37,12 @@ jest.mock("../../realtime/socket", () => ({ emitDeliveryUpdate: jest.fn(), emitN
 jest.mock("../../notifications/email.service", () => ({ EmailService: {} }));
 jest.mock("../../notifications/email.config", () => ({ emailTransporter: { sendMail: jest.fn() } }));
 jest.mock("../../legal/acceptation-conditions.service", () => ({ champAcceptation: {}, enregistrerAcceptation: jest.fn() }));
+jest.mock("../driver-vehicle-change.service", () => ({ DriverVehicleChangeService: {
+  etat: jest.fn(async () => ({ currentVehicleType: "bike", currentVehiclePlate: null, request: null })),
+  demander: jest.fn(async () => ({ id: "change-1", status: "PENDING" })),
+  annuler: jest.fn(async () => undefined),
+  deposerFichier: jest.fn(async () => ({ id: "piece-change-1", type: "license" })),
+} }));
 jest.mock("../../../middleware/throttle", () => ({ limiterInscriptions: (_q: any, _r: any, next: any) => next() }));
 jest.mock("../../auth/auth.middleware", () => ({ authMiddleware: (req: any, res: any, next: any) => {
   const id = req.headers.authorization?.replace("Bearer ", "");
@@ -53,6 +60,7 @@ import driversOffresRouter from "../drivers.offres.routes";
 import { DispatchService } from "../dispatch.service";
 import { DriverPayoutService } from "../../payouts/driver-payout.service";
 import { DriverApprovalService } from "../driver-approval.service";
+import { DriverVehicleChangeService } from "../driver-vehicle-change.service";
 import { DriverActivityService } from "../driver-activity.service";
 import { DriverAvailabilityService } from "../driver-availability.service";
 import { DriverSupportService } from "../driver-support.service";
@@ -140,6 +148,7 @@ describe("/api/drivers — authentification", () => {
     ["get", "/analytics"], ["get", "/deliveries/x"], ["patch", "/deliveries/x/accept"], ["patch", "/deliveries/x"],
     ["post", "/deliveries/x/photo"], ["post", "/deliveries/x/attente"], ["get", "/ratings"], ["patch", "/deliveries/x/location"],
     ["patch", "/location"], ["get", "/offers"], ["get", "/tournee"], ["post", "/offers/x/accept"], ["post", "/offers/x/decline"],
+    ["get", "/vehicle-change"], ["post", "/vehicle-change"], ["delete", "/vehicle-change/x"], ["post", "/vehicle-change/x/documents/upload"],
     ["patch", "/deliveries/x/cancel"], ["get", "/available"],
   ];
   it.each(protegees)("%s %s sans jeton → 401", async (method, path) => {
@@ -417,8 +426,23 @@ describe("dossier, relevés, historique", () => {
   it("GET /documents", async () => {
     const r = await alice(request(app).get("/api/drivers/documents"));
     expect(r.status).toBe(200);
-    expect(Object.keys(r.body.data).sort()).toEqual(["documents", "dossierComplet", "piecesAttendues", "piecesManquantes", "status", "statusReason"]);
+    expect(Object.keys(r.body.data).sort()).toEqual(["documents", "dossierComplet", "piecesAttendues", "piecesManquantes", "status", "statusReason", "vehicleChange"]);
     expect(r.body.data.piecesAttendues[0]).toHaveProperty("libelle");
+  });
+  it("POST /vehicle-change conserve le véhicule actif en attente de validation", async () => {
+    const r = await alice(request(app).post("/api/drivers/vehicle-change").send({ vehicleType: "scooter", vehiclePlate: "1-ABC-234" }));
+    expect(r.status).toBe(201);
+    expect(r.body.data).toEqual({ id: "change-1", status: "PENDING" });
+    expect(DriverVehicleChangeService.demander).toHaveBeenCalledWith("driver-alice", { vehicleType: "scooter", vehiclePlate: "1-ABC-234" });
+    expect(db.courier.update).not.toHaveBeenCalled();
+  });
+  it("POST /vehicle-change/:id/documents/upload : exige un fichier et lie le document à la demande", async () => {
+    let r = await alice(request(app).post("/api/drivers/vehicle-change/change-1/documents/upload").field("type", "license"));
+    expect(r.status).toBe(400);
+    expect(r.body.code).toBe("NO_FILE");
+    r = await alice(request(app).post("/api/drivers/vehicle-change/change-1/documents/upload").field("type", "license").attach("file", PDF, { filename: "permis.pdf", contentType: "application/pdf" }));
+    expect(r.status).toBe(201);
+    expect(DriverVehicleChangeService.deposerFichier).toHaveBeenCalledWith("driver-alice", "change-1", expect.objectContaining({ type: "license", filename: "permis.pdf", mimeType: "application/pdf" }));
   });
   it("POST /documents", async () => {
     const r = await alice(request(app).post("/api/drivers/documents").send({ type: "license", documentUrl: "https://x.test/p.pdf" }));

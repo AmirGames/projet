@@ -22,6 +22,8 @@ interface Driver {
   name: string;
   email?: string;
   phone: string;
+  vehicleType?: 'bike' | 'scooter' | 'car';
+  vehiclePlate?: string | null;
   address?: string;
   rating: number | null;
   avis?: number;
@@ -39,6 +41,28 @@ interface Driver {
   createdAt?: string;
 }
 
+interface VehicleChangeState {
+  currentVehicleType: string;
+  currentVehiclePlate: string | null;
+  request: null | {
+    id: string;
+    currentVehicleType: string;
+    requestedVehicleType: string;
+    requestedVehiclePlate: string | null;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | string;
+    reviewNote: string | null;
+    documents: Array<{
+      type: string;
+      libelle: string;
+      documentId: string | null;
+      status: string;
+      reviewNote: string | null;
+      uploadedForRequest: boolean;
+    }>;
+    dossierComplet: boolean;
+  };
+}
+
 export default function DriverProfilePage() {
   const t = useTranslations('driverProfile');
   const router = useRouter();
@@ -49,6 +73,11 @@ export default function DriverProfilePage() {
   const [success, setSuccess] = useState('');
   const [bceNumber, setBceNumber] = useState('');
   const [bceSaving, setBceSaving] = useState(false);
+  const [vehicleChange, setVehicleChange] = useState<VehicleChangeState | null>(null);
+  const [vehicleTypeDraft, setVehicleTypeDraft] = useState<'bike' | 'scooter' | 'car'>('scooter');
+  const [vehiclePlateDraft, setVehiclePlateDraft] = useState('');
+  const [vehicleChangeSaving, setVehicleChangeSaving] = useState(false);
+  const [vehicleDocumentUploading, setVehicleDocumentUploading] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -77,7 +106,11 @@ export default function DriverProfilePage() {
         const data = await response.json();
         const dossier = documentsResponse.ok ? await documentsResponse.json() : null;
         const documents = Array.isArray(dossier?.data?.documents) ? dossier.data.documents : null;
+        const vehicleState = dossier?.data?.vehicleChange as VehicleChangeState | undefined;
         setDriver({ ...data.data, documents });
+        setVehicleChange(vehicleState ?? null);
+        setVehicleTypeDraft((vehicleState?.request?.status === 'PENDING' ? vehicleState.request.requestedVehicleType : data.data.vehicleType === 'bike' ? 'scooter' : 'bike') as 'bike' | 'scooter' | 'car');
+        setVehiclePlateDraft(vehicleState?.request?.requestedVehiclePlate || '');
         setBceNumber(data.data.bceNumber || '');
         setFormData({
           name: data.data.name || '',
@@ -169,6 +202,90 @@ export default function DriverProfilePage() {
       setError(t('erreurConnexion'));
     } finally {
       setBceSaving(false);
+    }
+  };
+
+  const submitVehicleChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = jetonAcces();
+    if (!token || vehicleChangeSaving) return;
+    setVehicleChangeSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await fetch(`${API_URL}/api/drivers/vehicle-change`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ vehicleType: vehicleTypeDraft, vehiclePlate: vehicleTypeDraft === 'bike' ? null : vehiclePlateDraft }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || t('vehicleChangeError'));
+        return;
+      }
+      setSuccess(t('vehicleChangeSubmitted'));
+      await loadDriverData();
+    } catch (err) {
+      signalerErreur('Error requesting vehicle change:', err);
+      setError(t('erreurConnexion'));
+    } finally {
+      setVehicleChangeSaving(false);
+    }
+  };
+
+  const uploadVehicleDocument = async (type: string, file?: File) => {
+    const token = jetonAcces();
+    const request = vehicleChange?.request;
+    if (!token || !request || !file || vehicleDocumentUploading) return;
+    setVehicleDocumentUploading(type);
+    setError('');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      body.append('type', type);
+      const response = await fetch(`${API_URL}/api/drivers/vehicle-change/${request.id}/documents/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || t('vehicleChangeError'));
+        return;
+      }
+      setSuccess(t('vehicleDocumentUploaded'));
+      await loadDriverData();
+    } catch (err) {
+      signalerErreur('Error uploading vehicle change document:', err);
+      setError(t('erreurConnexion'));
+    } finally {
+      setVehicleDocumentUploading(null);
+    }
+  };
+
+  const cancelVehicleChange = async () => {
+    const token = jetonAcces();
+    const request = vehicleChange?.request;
+    if (!token || !request || request.status !== 'PENDING') return;
+    setVehicleChangeSaving(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/api/drivers/vehicle-change/${request.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        setError(data?.error || t('vehicleChangeError'));
+        return;
+      }
+      setSuccess(t('vehicleChangeCancelled'));
+      await loadDriverData();
+    } catch (err) {
+      signalerErreur('Error cancelling vehicle change:', err);
+      setError(t('erreurConnexion'));
+    } finally {
+      setVehicleChangeSaving(false);
     }
   };
 
@@ -323,6 +440,89 @@ export default function DriverProfilePage() {
 
           {/* Right Side - Profile Form */}
           <div className="lg:col-span-2">
+            {(driver.status === 'ACTIVE' || vehicleChange?.request?.status === 'PENDING') && (
+            <section className="mb-6 bg-white ring-1 ring-gray-200 rounded-lg p-8" aria-labelledby="vehicle-change-title">
+              <h2 id="vehicle-change-title" className="text-xl font-bold text-gray-900">{t('vehicleChangeTitle')}</h2>
+              <p className="mt-2 text-sm text-gray-600">
+                {t('vehicleCurrent', { vehicle: t(`vehicleTypes.${driver.vehicleType || 'bike'}`) })}
+              </p>
+
+              {vehicleChange?.request?.status === 'PENDING' ? (
+                <div className="mt-4 space-y-4">
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+                    {t('vehicleChangePending', { vehicle: t(`vehicleTypes.${vehicleChange.request.requestedVehicleType}`) })}
+                    <br />{t('vehicleKeepCurrent')}
+                  </div>
+                  <ul className="space-y-3">
+                    {vehicleChange.request.documents.map((document) => {
+                      const canUpload = ['MISSING', 'REJECTED', 'EXPIRED'].includes(document.status);
+                      return (
+                        <li key={document.type} className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                          <div>
+                            <p className="font-medium text-gray-900">{document.libelle}</p>
+                            <p className={`text-sm ${document.status === 'APPROVED' ? 'text-green-700' : document.status === 'PENDING' ? 'text-amber-700' : 'text-gray-600'}`}>
+                              {document.status === 'APPROVED' ? t('vehicleDocumentApproved') : document.status === 'PENDING' ? t('vehicleDocumentPending') : document.status === 'MISSING' ? t('vehicleDocumentMissing') : t('vehicleDocumentNeedsReplacement')}
+                            </p>
+                            {document.reviewNote && <p className="mt-1 text-sm text-red-700">{document.reviewNote}</p>}
+                          </div>
+                          {canUpload && (
+                            <label className="cursor-pointer rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                              {vehicleDocumentUploading === document.type ? t('vehicleDocumentUploading') : t('vehicleDocumentAdd')}
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="sr-only"
+                                disabled={vehicleDocumentUploading !== null}
+                                onChange={(event) => {
+                                  void uploadVehicleDocument(document.type, event.currentTarget.files?.[0]);
+                                  event.currentTarget.value = '';
+                                }}
+                              />
+                            </label>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <button type="button" onClick={cancelVehicleChange} disabled={vehicleChangeSaving} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                    {vehicleChangeSaving ? t('vehicleChangeSaving') : t('vehicleChangeCancel')}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {vehicleChange?.request?.status === 'APPROVED' && (
+                    <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800" role="status">{t('vehicleChangeApproved')}</p>
+                  )}
+                  {vehicleChange?.request?.status === 'REJECTED' && (
+                    <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="status">
+                      {t('vehicleChangeRejected')} {vehicleChange.request.reviewNote || ''}
+                    </p>
+                  )}
+                  <form onSubmit={submitVehicleChange} className="mt-4 space-y-4">
+                    <div>
+                      <label htmlFor="requested-vehicle" className="mb-1 block text-sm font-medium text-gray-700">{t('vehicleChangeChoose')}</label>
+                      <select id="requested-vehicle" value={vehicleTypeDraft} onChange={(event) => setVehicleTypeDraft(event.target.value as 'bike' | 'scooter' | 'car')} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-orange-600">
+                        {(['bike', 'scooter', 'car'] as const).filter((type) => type !== driver.vehicleType).map((type) => (
+                          <option key={type} value={type}>{t(`vehicleTypes.${type}`)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {vehicleTypeDraft !== 'bike' && (
+                      <div>
+                        <label htmlFor="requested-vehicle-plate" className="mb-1 block text-sm font-medium text-gray-700">{t('vehicleChangePlate')}</label>
+                        <input id="requested-vehicle-plate" required maxLength={20} value={vehiclePlateDraft} onChange={(event) => setVehiclePlateDraft(event.target.value)} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-orange-600" />
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-600">{t('vehicleChangeExplanation')}</p>
+                    <button type="submit" disabled={vehicleChangeSaving || (vehicleTypeDraft !== 'bike' && !vehiclePlateDraft.trim())} className="rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white hover:bg-orange-700 disabled:opacity-50">
+                      {vehicleChangeSaving ? t('vehicleChangeSaving') : t('vehicleChangeSubmit')}
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
+            )}
+
             <div className="bg-white ring-1 ring-gray-200 rounded-lg p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">{t('infosPerso')}</h2>

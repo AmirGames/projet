@@ -30,6 +30,7 @@ interface Livreur {
   phone: string;
   vehicleType: string;
   vehiclePlate: string | null;
+  vehicleChangePending?: boolean;
   status: string;
   statusReason: string | null;
   approvedAt: string | null;
@@ -38,6 +39,7 @@ interface Livreur {
   bceReviewedAt: string | null;
   bceReviewReason: string | null;
   isOnline: boolean;
+  currentOrderId?: string | null;
   /** Nulle tant que personne ne l'a noté. */
   rating: number | null;
   avis: number;
@@ -66,6 +68,23 @@ interface Piece {
 interface Dossier {
   driver: Livreur;
   documents: Piece[];
+  vehicleChangeRequests?: Array<{
+    id: string;
+    currentVehicleType: string;
+    requestedVehicleType: string;
+    requestedVehiclePlate: string | null;
+    status: string;
+    reviewNote: string | null;
+    requiredDocuments: Array<{
+      type: string;
+      libelle: string;
+      documentId: string | null;
+      documentUrl: string | null;
+      status: string;
+      reviewNote: string | null;
+      expiryDate: string | null;
+    }>;
+  }>;
   piecesAttendues: { type: string; libelle: string }[];
   piecesManquantes: string[];
   dossierComplet: boolean;
@@ -143,6 +162,12 @@ export default function LivreursPage() {
     charger();
   }, [charger]);
 
+  useEffectChargement(() => {
+    if (new URLSearchParams(window.location.search).get('status') === 'VEHICLE_CHANGE_PENDING') {
+      setFiltre('VEHICLE_CHANGE_PENDING');
+    }
+  }, []);
+
   // Un livreur qui s'inscrit ou dépose une pièce, validé par un collègue :
   // la file suit, et le dossier ouvert avec elle.
   const dossierOuvert = useDerniereValeur<string | null>(dossier?.driver.id ?? null);
@@ -188,7 +213,7 @@ export default function LivreursPage() {
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/drivers/${chemin}`, {
-        method: chemin.includes('/documents/') || chemin.endsWith('/bce') ? 'PATCH' : 'POST',
+        method: chemin.includes('/documents/') || chemin.endsWith('/bce') || chemin.includes('/vehicle-change-requests/') ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify(corps ?? {}),
       });
@@ -270,6 +295,7 @@ export default function LivreursPage() {
       <div className="flex flex-wrap gap-2" role="group" aria-label={t('filterDrivers')}>
         {[
           { valeur: 'PENDING', key: 'statusPending' },
+          { valeur: 'VEHICLE_CHANGE_PENDING', key: 'vehicleChangeRequests' },
           { valeur: 'ACTIVE', key: 'statusActive' },
           { valeur: 'SUSPENDED', key: 'statusSuspended' },
           { valeur: 'REJECTED', key: 'statusRejected' },
@@ -361,6 +387,11 @@ export default function LivreursPage() {
                     {livreur.suppressionDemandeeLe && (
                       <p className="text-xs text-amber-700 mt-1">{t('suppression.compteDemandee')}</p>
                     )}
+                    {livreur.vehicleChangePending && (
+                      <span className="mt-2 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                        {t('vehicleChangeRequests')}
+                      </span>
+                    )}
                   </div>
 
                   <span className="text-sm text-gray-500 shrink-0">
@@ -430,6 +461,51 @@ export default function LivreursPage() {
                         >{t('bce.reject')}</button>
                       </div>
                     </section>
+
+                    {(dossier.vehicleChangeRequests || []).filter((request) => request.status === 'PENDING').map((request) => (
+                      <section key={request.id} className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{t('vehicleChangeTitle')}</h4>
+                          <p className="text-sm text-gray-700">
+                            {t('vehicleChangeFromTo', {
+                              current: t(`vehicules.${request.currentVehicleType}`),
+                              requested: t(`vehicules.${request.requestedVehicleType}`),
+                            })}
+                            {request.requestedVehiclePlate ? ` · ${request.requestedVehiclePlate}` : ''}
+                          </p>
+                          <p className="text-xs text-amber-800">{t('vehicleChangeKeepCurrent')}</p>
+                          {dossier.driver.currentOrderId && <p className="text-xs font-medium text-amber-900">{t('vehicleChangeWaitForDelivery')}</p>}
+                        </div>
+                        <ul className="space-y-2">
+                          {request.requiredDocuments.map((document) => (
+                            <li key={document.type} className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-200 pt-2">
+                              <div>
+                                <span className="text-sm text-gray-900">{document.libelle} — </span>
+                                <span className={`text-sm ${document.status === 'APPROVED' ? 'text-green-700' : document.status === 'REJECTED' || document.status === 'EXPIRED' ? 'text-red-700' : 'text-amber-800'}`}>
+                                  {document.status === 'APPROVED' ? t('documentApproved') : document.status === 'MISSING' ? t('vehicleDocumentMissing') : document.status === 'EXPIRED' ? t('vehicleDocumentExpired') : getDocumentStatus(document.status)}
+                                </span>
+                                {document.reviewNote && <p className="text-xs text-red-700">{document.reviewNote}</p>}
+                              </div>
+                              {document.documentUrl && document.documentId && (
+                                <div className="flex items-center gap-2">
+                                  <button type="button" onClick={() => setPreviewPiece({ id: document.documentId!, type: document.type, libelle: document.libelle, documentUrl: document.documentUrl!, expiryDate: document.expiryDate, status: document.status, reviewNote: document.reviewNote })} className="text-xs text-blue-700 hover:underline">{t('preview')}</button>
+                                  {document.status !== 'APPROVED' && (
+                                    <>
+                                      <button type="button" onClick={() => agir(`${livreur.id}/documents/${document.documentId}`, { approuve: true })} aria-label={t('approveDocument', { name: document.libelle })} className="rounded-sm bg-green-100 p-1.5 text-green-800"><Check size={14} /></button>
+                                      <button type="button" onClick={() => agir(`${livreur.id}/documents/${document.documentId}`, { approuve: false, note: motif || t('defaultRejectReason') })} aria-label={t('rejectDocument', { name: document.libelle })} className="rounded-sm bg-red-100 p-1.5 text-red-800"><X size={14} /></button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="flex flex-wrap gap-2 border-t border-amber-200 pt-3">
+                          <button type="button" onClick={() => agir(`${livreur.id}/vehicle-change-requests/${request.id}`, { status: 'APPROVED' })} disabled={Boolean(dossier.driver.currentOrderId) || request.requiredDocuments.some((document) => document.status !== 'APPROVED')} className="rounded-sm bg-green-600 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40">{t('approveVehicleChange')}</button>
+                          <button type="button" onClick={() => agir(`${livreur.id}/vehicle-change-requests/${request.id}`, { status: 'REJECTED', reason: motif || t('defaultVehicleChangeReject') })} className="rounded-sm bg-red-600 px-3 py-2 text-sm font-medium text-white">{t('rejectVehicleChange')}</button>
+                        </div>
+                      </section>
+                    ))}
 
                     {dossier.documents.length === 0 ? (
                       <p className="text-sm text-gray-500">

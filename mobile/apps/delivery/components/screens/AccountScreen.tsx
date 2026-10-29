@@ -25,6 +25,19 @@ interface Documents {
     reviewNote?: string | null;
     expiryDate?: string | null;
   }[];
+  vehicleChange: {
+    currentVehicleType: string;
+    currentVehiclePlate: string | null;
+    request: null | {
+      id: string;
+      requestedVehicleType: string;
+      requestedVehiclePlate: string | null;
+      status: string;
+      reviewNote: string | null;
+      documents: { type: string; libelle: string; documentId: string | null; status: string; reviewNote: string | null }[];
+      dossierComplet: boolean;
+    };
+  };
 }
 
 // Le ton plutôt que la couleur : elle suit le thème en cours.
@@ -54,6 +67,9 @@ export default function AccountScreen({
   const [uploading, setUploading] = useState<string | null>(null);
   const [bceDraft, setBceDraft] = useState('');
   const [savingBce, setSavingBce] = useState(false);
+  const [vehicleTypeDraft, setVehicleTypeDraft] = useState<'bike' | 'scooter' | 'car'>('scooter');
+  const [vehiclePlateDraft, setVehiclePlateDraft] = useState('');
+  const [savingVehicleChange, setSavingVehicleChange] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -65,6 +81,9 @@ export default function AccountScreen({
       setDriver(me.data);
       setBceDraft(me.data.bceNumber || '');
       setDocs(documents.data);
+      const change = documents.data.vehicleChange;
+      setVehicleTypeDraft((change.request?.status === 'PENDING' ? change.request.requestedVehicleType : change.currentVehicleType === 'bike' ? 'scooter' : 'bike') as 'bike' | 'scooter' | 'car');
+      setVehiclePlateDraft(change.request?.requestedVehiclePlate || '');
       onDriverLoaded(me.data);
     } catch (e: any) {
       setError(e.message || 'Impossible de charger le compte');
@@ -97,7 +116,7 @@ export default function AccountScreen({
     return { ...photo, name: `${type.toLowerCase()}.jpg` };
   };
 
-  const upload = async (type: string, source: 'camera' | 'library' | 'file') => {
+  const upload = async (type: string, source: 'camera' | 'library' | 'file', requestId?: string) => {
     let file: { uri: string; type: string; name: string } | null;
     try {
       file = source === 'file' ? await pickPdf() : await pickPhoto(type, source);
@@ -109,7 +128,10 @@ export default function AccountScreen({
 
     setUploading(type);
     try {
-      const res = await uploadFile('/api/drivers/documents/upload', token, file, 'file', { type });
+      const path = requestId
+        ? `/api/drivers/vehicle-change/${requestId}/documents/upload`
+        : '/api/drivers/documents/upload';
+      const res = await uploadFile(path, token, file, 'file', { type });
       const data = res.data;
       if (!res.ok) throw new Error(data?.error || data?.message || `Envoi impossible (erreur ${res.status})`);
       Alert.alert('Pièce envoyée', data?.message || 'En attente de validation');
@@ -123,14 +145,14 @@ export default function AccountScreen({
 
   // Android n'affiche que trois boutons dans une alerte : le quatrième, « Annuler »,
   // y est remplacé par un appui en dehors de la fenêtre.
-  const chooseSource = (type: string, libelle: string) =>
+  const chooseSource = (type: string, libelle: string, requestId?: string) =>
     Alert.alert(
       libelle,
       'Comment ajouter la pièce ?',
       [
-        { text: 'Prendre une photo', onPress: () => upload(type, 'camera') },
-        { text: 'Choisir dans la galerie', onPress: () => upload(type, 'library') },
-        { text: 'Choisir un fichier PDF', onPress: () => upload(type, 'file') },
+        { text: 'Prendre une photo', onPress: () => upload(type, 'camera', requestId) },
+        { text: 'Choisir dans la galerie', onPress: () => upload(type, 'library', requestId) },
+        { text: 'Choisir un fichier PDF', onPress: () => upload(type, 'file', requestId) },
         ...(Platform.OS === 'android' ? [] : [{ text: 'Annuler', style: 'cancel' as const }]),
       ],
       { cancelable: true }
@@ -146,6 +168,36 @@ export default function AccountScreen({
       Alert.alert('Numéro non envoyé', e.message || 'Vérifiez le numéro BCE.');
     } finally {
       setSavingBce(false);
+    }
+  };
+
+  const submitVehicleChange = async () => {
+    setSavingVehicleChange(true);
+    try {
+      await apiFetch('/api/drivers/vehicle-change', token, {
+        method: 'POST',
+        body: { vehicleType: vehicleTypeDraft, vehiclePlate: vehicleTypeDraft === 'bike' ? null : vehiclePlateDraft.trim() },
+      });
+      Alert.alert('Demande envoyée', 'Vous pouvez continuer à livrer avec votre véhicule actuel pendant l’examen.');
+      await load();
+    } catch (e: any) {
+      Alert.alert('Demande impossible', e.message || 'Vérifiez les informations du véhicule.');
+    } finally {
+      setSavingVehicleChange(false);
+    }
+  };
+
+  const cancelVehicleChange = async () => {
+    const request = docs?.vehicleChange.request;
+    if (!request || request.status !== 'PENDING') return;
+    setSavingVehicleChange(true);
+    try {
+      await apiFetch(`/api/drivers/vehicle-change/${request.id}`, token, { method: 'DELETE' });
+      await load();
+    } catch (e: any) {
+      Alert.alert('Annulation impossible', e.message || 'Réessayez.');
+    } finally {
+      setSavingVehicleChange(false);
     }
   };
 
@@ -191,6 +243,74 @@ export default function AccountScreen({
               last
             />
           </Card>
+
+          {docs?.vehicleChange && (driver?.status === 'ACTIVE' || docs.vehicleChange.request?.status === 'PENDING') && (
+            <Card title="Changer de véhicule">
+              <Text style={styles.help}>
+                Véhicule actif : {VEHICLE_LABELS[docs.vehicleChange.currentVehicleType] || docs.vehicleChange.currentVehicleType}.
+              </Text>
+              {docs.vehicleChange.request?.status === 'PENDING' ? (
+                <>
+                  <Text style={styles.vehicleNotice}>
+                    Demande en attente pour {VEHICLE_LABELS[docs.vehicleChange.request.requestedVehicleType] || docs.vehicleChange.request.requestedVehicleType}. Vous pouvez continuer à livrer avec votre véhicule actuel tant qu’il reste autorisé.
+                  </Text>
+                  {docs.vehicleChange.request.documents.map((piece) => {
+                    const state = DOC_STATUS[piece.status];
+                    const canUpload = ['MISSING', 'REJECTED', 'EXPIRED'].includes(piece.status);
+                    return (
+                      <View key={piece.type} style={styles.doc}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.docName}>{piece.libelle}</Text>
+                          <Text style={[styles.docStatus, { color: state ? COLORS[state.tone] : COLORS.muted }]}>
+                            {state?.label || (piece.status === 'MISSING' ? 'À fournir' : piece.status)}
+                          </Text>
+                          {piece.reviewNote ? <Text style={styles.docNote}>{piece.reviewNote}</Text> : null}
+                        </View>
+                        {canUpload && (
+                          <TouchableOpacity style={styles.docButton} disabled={uploading !== null} onPress={() => chooseSource(piece.type, piece.libelle, docs.vehicleChange.request!.id)}>
+                            {uploading === piece.type ? <ActivityIndicator color="#fff" /> : <Text style={styles.docButtonText}>Ajouter</Text>}
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })}
+                  <TouchableOpacity style={styles.cancelVehicleButton} onPress={cancelVehicleChange} disabled={savingVehicleChange}>
+                    <Text style={styles.cancelVehicleText}>{savingVehicleChange ? 'Enregistrement…' : 'Annuler la demande'}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {docs.vehicleChange.request?.status === 'APPROVED' && <Text style={styles.vehicleSuccess}>Votre demande précédente a été approuvée.</Text>}
+                  {docs.vehicleChange.request?.status === 'REJECTED' && (
+                    <Text style={styles.reason}>Demande précédente refusée : {docs.vehicleChange.request.reviewNote || 'motif non communiqué'}</Text>
+                  )}
+                  <Text style={styles.help}>Le véhicule demandé ne sera utilisé qu’après validation des documents par le support.</Text>
+                  <View style={styles.vehicleChoices}>
+                    {(['bike', 'scooter', 'car'] as const).filter((type) => type !== docs.vehicleChange.currentVehicleType).map((type) => (
+                      <TouchableOpacity key={type} accessibilityRole="radio" accessibilityState={{ selected: vehicleTypeDraft === type }} onPress={() => setVehicleTypeDraft(type)} style={[styles.vehicleChoice, vehicleTypeDraft === type && styles.vehicleChoiceActive]}>
+                        <Text style={[styles.vehicleChoiceText, vehicleTypeDraft === type && styles.vehicleChoiceTextActive]}>{VEHICLE_LABELS[type]}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {vehicleTypeDraft !== 'bike' && (
+                    <TextInput
+                      style={styles.bceInput}
+                      value={vehiclePlateDraft}
+                      onChangeText={setVehiclePlateDraft}
+                      placeholder="Plaque d’immatriculation"
+                      placeholderTextColor={COLORS.muted}
+                      autoCapitalize="characters"
+                      maxLength={20}
+                      accessibilityLabel="Plaque d’immatriculation"
+                    />
+                  )}
+                  <TouchableOpacity style={styles.docButton} onPress={submitVehicleChange} disabled={savingVehicleChange || (vehicleTypeDraft !== 'bike' && !vehiclePlateDraft.trim())}>
+                    {savingVehicleChange ? <ActivityIndicator color="#fff" /> : <Text style={styles.docButtonText}>Demander le changement</Text>}
+                  </TouchableOpacity>
+                </>
+              )}
+            </Card>
+          )}
 
           <BankAccountCard token={token} compte={driver?.compte} onSaved={() => load()} />
 
@@ -292,6 +412,15 @@ const styles = themedStyles(() => ({
   status: { fontSize: 13, fontWeight: '700', marginTop: 8 },
   help: { fontSize: 13, color: COLORS.secondary, marginBottom: 6 },
   reason: { fontSize: 13, color: COLORS.danger, marginBottom: 6 },
+  vehicleNotice: { fontSize: 13, color: COLORS.warning, backgroundColor: '#fff7ed', borderRadius: 8, padding: 10, marginVertical: 8 },
+  vehicleSuccess: { fontSize: 13, color: COLORS.successText, marginVertical: 8 },
+  vehicleChoices: { flexDirection: 'row', gap: 8, marginVertical: 10 },
+  vehicleChoice: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  vehicleChoiceActive: { borderColor: COLORS.primary, backgroundColor: '#fff7ed' },
+  vehicleChoiceText: { color: COLORS.text, fontSize: 13, fontWeight: '600' },
+  vehicleChoiceTextActive: { color: COLORS.primary },
+  cancelVehicleButton: { alignSelf: 'flex-start', paddingVertical: 10, marginTop: 4 },
+  cancelVehicleText: { color: COLORS.danger, fontSize: 13, fontWeight: '600' },
   doc: {
     flexDirection: 'row',
     alignItems: 'center',

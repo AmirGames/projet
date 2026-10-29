@@ -8,6 +8,7 @@ import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { isSuperOwner, journaliser } from "../superowner/shared";
 import { DriversAdminService } from "./drivers-admin.service";
 import { DriverAccountService } from "./driver-account.service";
+import { DriverVehicleChangeService } from "./driver-vehicle-change.service";
 import { numeroBceNormalise } from "../../utils/bce";
 import { db } from "../../services/db";
 import { limiteBornee, decalage } from "../../utils/pagination";
@@ -58,6 +59,7 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
         statusReason: dossier.statusReason,
         approvedAt: dossier.approvedAt,
         isOnline: dossier.isOnline,
+        currentOrderId: dossier.currentOrderId,
         rating: dossier.totalRatings > 0 ? Number(dossier.rating) : null,
         avis: dossier.totalRatings,
         totalDeliveries: dossier.totalDeliveries,
@@ -65,6 +67,27 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
         createdAt: dossier.createdAt,
       },
       suppression,
+      vehicleChangeRequests: (await DriverVehicleChangeService.historiqueAdmin(dossier.id)).map((request) => ({
+        id: request.id,
+        currentVehicleType: request.currentVehicleType,
+        requestedVehicleType: request.requestedVehicleType,
+        requestedVehiclePlate: request.requestedVehiclePlate,
+        status: request.status,
+        reviewNote: request.reviewNote,
+        reviewedAt: request.reviewedAt,
+        createdAt: request.createdAt,
+        requiredDocuments: request.requiredDocuments,
+        documents: request.documents.map((piece) => ({
+          id: piece.id,
+          type: piece.type,
+          libelle: libelleDuDocument(piece.type),
+          documentUrl: piece.documentUrl,
+          expiryDate: piece.expiryDate,
+          status: piece.status,
+          reviewNote: piece.reviewNote,
+          createdAt: piece.createdAt,
+        })),
+      })),
       documents: dossier.documents.map((piece) => ({
         id: piece.id,
         type: piece.type,
@@ -87,6 +110,36 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
     next(err);
   }
 });
+
+// PATCH /superowner/drivers/:driverId/vehicle-change-requests/:requestId
+router.patch(
+  "/drivers/:driverId/vehicle-change-requests/:requestId",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = z.object({
+        status: z.enum(["APPROVED", "REJECTED"]),
+        reason: z.string().min(3).max(500).optional(),
+      }).parse(req.body);
+      const result = await DriverVehicleChangeService.examiner(
+        req.params.driverId as string,
+        req.params.requestId as string,
+        req.userId as string,
+        body
+      );
+      await journaliser(req, body.status === "APPROVED" ? "APPROVE_DRIVER_VEHICLE_CHANGE" : "REJECT_DRIVER_VEHICLE_CHANGE", req.params.driverId as string, {
+        requestId: req.params.requestId as string,
+        status: body.status,
+        reason: body.status === "REJECTED" ? body.reason : undefined,
+        vehicleType: result.vehicleType,
+      });
+      res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // PATCH /superowner/drivers/:driverId/bce - décision humaine après consultation du registre BCE
 router.patch("/drivers/:driverId/bce", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {

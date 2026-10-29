@@ -13,6 +13,7 @@ const db: any = {
   courier: model("findMany", "count", "groupBy", "findUnique"),
   user: model("findUnique"),
   systemAuditLog: model("create"),
+  courierVehicleChangeRequest: model("findMany"),
 };
 
 jest.mock("../../../services/db", () => ({ db }));
@@ -60,6 +61,10 @@ jest.mock("../driver-account.service", () => ({
     })),
   },
 }));
+jest.mock("../driver-vehicle-change.service", () => ({ DriverVehicleChangeService: {
+  historiqueAdmin: jest.fn(async () => []),
+  examiner: jest.fn(async (_driverId: string, _requestId: string, _adminId: string, decision: any) => ({ status: decision.status, vehicleType: "scooter" })),
+} }));
 jest.mock("../surveillance-courses.service", () => ({
   SurveillanceCoursesService: {
     liste: jest.fn(async () => [{ id: "i1" }]),
@@ -82,6 +87,7 @@ import { DriverApprovalService } from "../driver-approval.service";
 import { DriverSupportService } from "../driver-support.service";
 import { DriverAccountService } from "../driver-account.service";
 import { SurveillanceCoursesService } from "../surveillance-courses.service";
+import { DriverVehicleChangeService } from "../driver-vehicle-change.service";
 
 const app = express();
 app.use(express.json());
@@ -119,7 +125,7 @@ describe("dossiers des livreurs", () => {
     db.courier.findMany.mockResolvedValue([{
       id: "dr1", name: "Léo", email: "l@test.fr", phone: "06", vehicleType: "bike", vehiclePlate: null, status: "PENDING", statusReason: null,
       approvedAt: null, isOnline: false, rating: 4.5, totalRatings: 2, totalDeliveries: 3, totalEarnings: "30.5", suppressionDemandeeLe: null,
-      createdAt: new Date("2026-10-01T00:00:00Z"), documents: [{ type: "identity", status: "APPROVED" }, { type: "license", status: "PENDING" }], _count: { deliveries: 4 },
+      createdAt: new Date("2026-10-01T00:00:00Z"), documents: [{ type: "identity", status: "APPROVED" }, { type: "license", status: "PENDING" }], vehicleChangeRequests: [], _count: { deliveries: 4 },
     }]);
     db.courier.count.mockResolvedValue(1);
     db.courier.groupBy.mockResolvedValue([{ status: "PENDING", _count: 1 }]);
@@ -132,7 +138,7 @@ describe("dossiers des livreurs", () => {
     });
     expect(db.courier.findMany).toHaveBeenCalledWith({
       where: { status: "PENDING" }, skip: 1, take: 5,
-      include: { documents: { select: { type: true, status: true, expiryDate: true } }, _count: { select: { deliveries: true } } },
+      include: { documents: { select: { type: true, status: true, expiryDate: true } }, vehicleChangeRequests: { where: { status: "PENDING" }, select: { id: true } }, _count: { select: { deliveries: true } } },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     });
     expect(db.courier.groupBy).toHaveBeenCalledWith({ by: ["status"], _count: true });
@@ -152,6 +158,16 @@ describe("dossiers des livreurs", () => {
     expect(r.body.documents[0]).toMatchObject({ id: "d1", libelle: "Libellé identity" });
     expect(r.body.piecesAttendues).toEqual([{ type: "identity", libelle: "Libellé identity" }]);
     expect(r.body.dossierComplet).toBe(true);
+  });
+  it("filtre les livreurs ayant une demande de véhicule en attente", async () => {
+    db.courier.findMany.mockResolvedValue([]);
+    db.courier.count.mockResolvedValue(0);
+    db.courier.groupBy.mockResolvedValue([]);
+    const r = await owner(request(app).get("/api/superowner/drivers?status=VEHICLE_CHANGE_PENDING"));
+    expect(r.status).toBe(200);
+    expect(db.courier.findMany).toHaveBeenLastCalledWith(expect.objectContaining({
+      where: { vehicleChangeRequests: { some: { status: "PENDING" } } },
+    }));
   });
 });
 
@@ -179,6 +195,14 @@ describe("décisions journalisées", () => {
     audit("APPROVE_DRIVER_DOCUMENT", "dr1", { type: "license" });
     await owner(request(app).patch("/api/superowner/drivers/dr1/documents/d1").send({ approuve: false, note: "Flou" }));
     audit("REJECT_DRIVER_DOCUMENT", "dr1", { type: "license", note: "Flou" });
+  });
+  it("PATCH …/vehicle-change-requests/:id : décision support journalisée", async () => {
+    const route = "/api/superowner/drivers/dr1/vehicle-change-requests/change1";
+    expect((await owner(request(app).patch(route).send({ status: "APPROVED" }))).body).toMatchObject({ success: true, data: { status: "APPROVED", vehicleType: "scooter" } });
+    expect(DriverVehicleChangeService.examiner).toHaveBeenCalledWith("dr1", "change1", "owner", { status: "APPROVED" });
+    audit("APPROVE_DRIVER_VEHICLE_CHANGE", "dr1", { requestId: "change1", status: "APPROVED", reason: undefined, vehicleType: "scooter" });
+    expect((await owner(request(app).patch(route).send({ status: "REJECTED", reason: "Pièce illisible" }))).status).toBe(200);
+    audit("REJECT_DRIVER_VEHICLE_CHANGE", "dr1", { requestId: "change1", status: "REJECTED", reason: "Pièce illisible", vehicleType: "scooter" });
   });
   it("POST …/approve, /reject, /reactivate", async () => {
     let r = await owner(request(app).post("/api/superowner/drivers/dr1/approve"));
