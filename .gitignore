@@ -61,3 +61,13 @@ frontend/next-env.d.ts
 
 # Visuels de réseaux sociaux : hors du dépôt (les icônes des apps, dans output/mobile-icons, restent suivies).
 output/instagram/
+
+# Local Codex worktrees and generated test/compiler artifacts
+.codex-worktrees/
+backend/node-compile-cache/
+frontend/node-compile-cache/
+frontend/.jest-*/
+frontend/.jest-babel-tmp.cjs
+frontend/.coverage-babel-temp/
+frontend/.tmp/
+tmp/node-compile-cache/

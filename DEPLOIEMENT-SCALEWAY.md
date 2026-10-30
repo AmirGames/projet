@@ -13,9 +13,13 @@ La configuration de déploiement doit câbler `DATABASE_URL_APP` au conteneur
 API et `DATABASE_URL_MIGRATION` au service de migration ; le rôle propriétaire
 ne doit pas être utilisé comme connexion de l'API. Après câblage, la sonde
 `cd backend && npm run build && npm run db:role` atteste le rôle réellement vu par PostgreSQL.
-Le dépôt de cette révision ne contient pas `docker-compose.prod.yml` (référencé
-par `deploy/zup.sh` mais fourni hors de l'arbre versionné) : le wiring réel reste
-à contrôler avant migration. Voir [A16](docs/CONFIGURATION-A16.md).
+Le manifeste `docker-compose.prod.yml` est présent et suivi par Git. Il câble
+`DATABASE_URL_APP` à l'API et `DATABASE_URL_MIGRATION` au service dédié, avec
+repli sur le rôle PostgreSQL historique si ces variables ne sont pas définies.
+La présence de ce câblage ne prouve pas les valeurs du `.env.production` ni le
+rôle réellement utilisé par un serveur : vérifier ces éléments avant migration
+avec `./deploy/zup.sh version`, les journaux `migrate` et `npm run db:role`.
+Voir [A16](docs/CONFIGURATION-A16.md).
 
 Pour A04, préparer le [diagnostic en lecture seule et le rapprochement des
 versements](docs/VERSEMENTS-CONCURRENCE.md) avant réouverture. Aucune migration
@@ -44,7 +48,7 @@ Fichiers utilisés :
 
 | Fichier | Rôle |
 |---|---|
-| `docker-compose.prod.yml` | Manifeste décrit pour les services de production ; absent de l'instantané versionné actuel et à vérifier avant déploiement |
+| `docker-compose.prod.yml` | Manifeste suivi par Git : services de production, migrations dédiées, API, frontend, proxy et volumes persistants ; configuration effective à vérifier sur l'environnement cible |
 | `deploy/Caddyfile` | Reverse proxy + HTTPS |
 | `deploy/env.production.example` | Modèle de `.env.production` (toutes les variables) |
 | `deploy/installer-serveur.sh` | Prépare un VPS neuf (Docker, pare-feu, swap…) |

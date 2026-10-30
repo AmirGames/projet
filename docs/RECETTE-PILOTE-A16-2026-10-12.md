@@ -111,12 +111,16 @@ de CI seule ne la fait pas passer à « prêt ».
    ultérieure n'est pas rétrocompatible, arrêter le retour applicatif et suivre
    une restauration isolée approuvée ; ne pas modifier une migration déjà
    appliquée ni restaurer par-dessus la production.
-5. Après déploiement de recette, consigner `./deploy/zup.sh version`,
+5. Le manifeste `docker-compose.prod.yml` est présent et suivi par Git. Il
+   sépare les URL SQL de l'API et des migrations lorsqu'elles sont configurées,
+   et déclare les volumes privés et les images backend/frontend. Avant toute
+   migration, vérifier les valeurs effectives dans `.env.production`, le SHA
+   servi, les journaux du service `migrate` et le rôle SQL réellement connecté.
+   Après déploiement de recette, consigner `./deploy/zup.sh version`,
    `./deploy/zup.sh ps`, `/health`, `/health/ready`, logs du service `migrate`,
-   et compare SHA aux deux conteneurs. Toute différence, readiness 503 ou job
-   durable bloqué arrête la recette. Le manifeste `docker-compose.prod.yml`
-   n'est pas présent dans cet instantané versionné : vérifier son wiring des
-   deux rôles, des volumes privés et des images avant d'agir.
+   et comparer le SHA aux deux conteneurs. Toute différence, readiness 503 ou
+   job durable bloqué arrête la recette. La présence du manifeste ne constitue
+   pas une preuve de configuration ou de déploiement sur le serveur.
 
 ## Matrice de recette — aucun résultat encore déclaré
 
