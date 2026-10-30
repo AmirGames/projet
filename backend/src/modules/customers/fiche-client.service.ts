@@ -64,6 +64,9 @@ export async function ficheClientDuCompte(userId: string | undefined, options: {
   const propre = await db.customer.findUnique({ where: { userId: utilisateur.id } });
   if (propre) {
     if (propre.deletedAt) throw aucuneFiche;
+    if (propre.status === "BLOCKED") {
+      throw new ApiError(403, "Votre accès client est suspendu. Contactez le support.", "CUSTOMER_BLOCKED");
+    }
     return propre;
   }
 
@@ -82,6 +85,9 @@ export async function ficheClientDuCompte(userId: string | undefined, options: {
 
   // Fiche supprimée, ou appartenant à un autre compte : rien à montrer.
   if (fiche.deletedAt || fiche.userId) throw aucuneFiche;
+  if (fiche.status === "BLOCKED") {
+    throw new ApiError(403, "Votre accès client est suspendu. Contactez le support.", "CUSTOMER_BLOCKED");
+  }
 
   // Fiche invité : ses commandes ne se montrent qu'à qui a prouvé l'adresse.
   if (!utilisateur.emailVerified) {
@@ -96,5 +102,8 @@ export async function ficheClientDuCompte(userId: string | undefined, options: {
 
   const rattachee = await db.customer.findUnique({ where: { userId: utilisateur.id } });
   if (!rattachee) throw aucuneFiche;
+  if (rattachee.status === "BLOCKED") {
+    throw new ApiError(403, "Votre accès client est suspendu. Contactez le support.", "CUSTOMER_BLOCKED");
+  }
   return rattachee;
 }

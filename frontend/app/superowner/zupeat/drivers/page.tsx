@@ -10,9 +10,9 @@ import { jetonAcces } from '@/lib/jeton-session';
  * une course dans la minute.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
-import { Bike, Car, Check, Eye, ExternalLink, Truck, X } from 'lucide-react';
+import { Bike, Car, Check, Eye, ExternalLink, Pencil, Truck, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
@@ -130,6 +130,13 @@ export default function LivreursPage() {
   const [echeance, setEcheance] = useState<Record<string, string>>({});
   // Demain : une date du jour serait déjà passée pour le serveur (minuit UTC).
   const [dateMin, setDateMin] = useState('');
+  const [editionProfil, setEditionProfil] = useState(false);
+  const [nomModifie, setNomModifie] = useState('');
+  const [telephoneModifie, setTelephoneModifie] = useState('');
+  const [motifModification, setMotifModification] = useState('');
+  const [enregistrementProfil, setEnregistrementProfil] = useState(false);
+  const [erreurProfil, setErreurProfil] = useState('');
+  const [messageProfil, setMessageProfil] = useState('');
 
   const jeton = () => jetonAcces();
 
@@ -207,10 +214,15 @@ export default function LivreursPage() {
   const ouvrirDossier = async (livreur: Livreur) => {
     if (dossier?.driver.id === livreur.id) {
       setDossier(null);
+      setEditionProfil(false);
+      setErreurProfil('');
       return;
     }
 
     setMotif('');
+    setEditionProfil(false);
+    setErreurProfil('');
+    setMessageProfil('');
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/drivers/${livreur.id}`, {
@@ -220,6 +232,53 @@ export default function LivreursPage() {
       if (reponse.ok) setDossier(await reponse.json());
     } catch {
       setErreur(t('loadError'));
+    }
+  };
+
+  const ouvrirEditionProfil = () => {
+    if (!dossier) return;
+    setNomModifie(dossier.driver.name);
+    setTelephoneModifie(dossier.driver.phone || '');
+    setMotifModification('');
+    setErreurProfil('');
+    setMessageProfil('');
+    setEditionProfil(true);
+  };
+
+  const enregistrerProfil = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!dossier) return;
+
+    setEnregistrementProfil(true);
+    setErreurProfil('');
+    setMessageProfil('');
+    try {
+      const response = await fetch(`${API_URL}/api/superowner/drivers/${encodeURIComponent(dossier.driver.id)}/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jeton()}`,
+        },
+        body: JSON.stringify({
+          name: nomModifie.trim(),
+          phone: telephoneModifie.trim(),
+          reason: motifModification.trim(),
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error || t('profileSaveError'));
+
+      const driverMisAJour = { ...dossier.driver, name: data.driver.name, phone: data.driver.phone };
+      setDossier({ ...dossier, driver: driverMisAJour });
+      setLivreurs((current) => current.map((driver) =>
+        driver.id === driverMisAJour.id ? { ...driver, name: driverMisAJour.name, phone: driverMisAJour.phone } : driver
+      ));
+      setEditionProfil(false);
+      setMessageProfil(t('profileSaveSuccess'));
+    } catch (error) {
+      setErreurProfil(error instanceof Error ? error.message : t('profileSaveError'));
+    } finally {
+      setEnregistrementProfil(false);
     }
   };
 
@@ -417,6 +476,60 @@ export default function LivreursPage() {
 
                 {ouvert && dossier && (
                   <div className="border-t border-gray-200 p-5 space-y-4">
+                    <section className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{t('profileTitle')}</h4>
+                          <p className="mt-1 text-sm text-gray-500">{t('profileInfo')}</p>
+                        </div>
+                        {!editionProfil && (
+                          <button
+                            type="button"
+                            onClick={ouvrirEditionProfil}
+                            className="inline-flex items-center gap-2 rounded-sm bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-black"
+                          >
+                            <Pencil size={14} />
+                            {t('editProfile')}
+                          </button>
+                        )}
+                      </div>
+
+                      {messageProfil && <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">{messageProfil}</p>}
+                      {editionProfil ? (
+                        <form onSubmit={enregistrerProfil} className="space-y-4">
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                              <label htmlFor={`driver-name-${livreur.id}`} className="mb-1 block text-sm text-gray-500">{t('colName')}</label>
+                              <input id={`driver-name-${livreur.id}`} required minLength={2} maxLength={100} value={nomModifie} onChange={(event) => setNomModifie(event.target.value)} className="w-full rounded-sm border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-900" />
+                            </div>
+                            <div>
+                              <label htmlFor={`driver-phone-${livreur.id}`} className="mb-1 block text-sm text-gray-500">{t('colPhone')}</label>
+                              <input id={`driver-phone-${livreur.id}`} required type="tel" minLength={7} maxLength={32} value={telephoneModifie} onChange={(event) => setTelephoneModifie(event.target.value)} className="w-full rounded-sm border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-900" />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label htmlFor={`driver-reason-${livreur.id}`} className="mb-1 block text-sm text-gray-500">{t('profileEditReason')}</label>
+                              <textarea id={`driver-reason-${livreur.id}`} required minLength={3} maxLength={500} rows={3} value={motifModification} onChange={(event) => setMotifModification(event.target.value)} className="w-full rounded-sm border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-900" />
+                            </div>
+                          </div>
+                          {erreurProfil && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{erreurProfil}</p>}
+                          <div className="flex flex-wrap gap-2">
+                            <button type="submit" disabled={enregistrementProfil} className="rounded-sm bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500 disabled:opacity-50">
+                              {enregistrementProfil ? t('loading') : t('saveProfile')}
+                            </button>
+                            <button type="button" disabled={enregistrementProfil} onClick={() => { setEditionProfil(false); setErreurProfil(''); }} className="rounded-sm bg-gray-100 px-4 py-2 text-sm text-gray-900 transition hover:bg-gray-200 disabled:opacity-50">
+                              {t('cancelProfile')}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                          <div><dt className="text-gray-500">{t('colName')}</dt><dd className="font-medium text-gray-900">{dossier.driver.name}</dd></div>
+                          <div><dt className="text-gray-500">{t('colEmail')}</dt><dd className="font-medium text-gray-900">{dossier.driver.email}</dd></div>
+                          <div><dt className="text-gray-500">{t('colPhone')}</dt><dd className="font-medium text-gray-900">{dossier.driver.phone || '—'}</dd></div>
+                        </dl>
+                      )}
+                    </section>
+
                     {/* Supprimer son compte ne fait pas perdre ce qui est dû :
                         les données attendent le dernier versement. */}
                     {dossier.suppression && (

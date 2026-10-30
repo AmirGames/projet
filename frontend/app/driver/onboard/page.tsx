@@ -47,9 +47,30 @@ export default function DriverOnboardPage() {
 
   // Rediriger si pas connecté
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/driver/signup');
+    if (isLoading) return;
+    if (!user) {
+      router.replace('/driver/signup');
+      return;
     }
+
+    const token = jetonAcces();
+    if (!token) return;
+
+    let cancelled = false;
+    fetch(`${API_URL}/api/auth/me/roles`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.roles?.driver?.active) router.replace('/driver');
+      })
+      .catch(() => {
+        // Si la vérification de rôle échoue, le formulaire reste disponible.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, isLoading, router]);
 
   const validateForm = (): boolean => {
@@ -98,10 +119,14 @@ export default function DriverOnboardPage() {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setApiError(data.message || t('errorMessage'));
+        if (data.code === 'DRIVER_EXISTS') {
+          router.replace('/driver');
+          return;
+        }
+        setApiError(data.error || data.message || t('errorMessage'));
         return;
       }
 
@@ -154,7 +179,7 @@ export default function DriverOnboardPage() {
 
         <div className="bg-white border border-gray-200 rounded-lg p-8">
           {apiError && (
-            <div className="mb-6 bg-red-100 border border-red-500/50 rounded-lg p-4 flex gap-3">
+            <div role="alert" className="mb-6 bg-red-100 border border-red-500/50 rounded-lg p-4 flex gap-3">
               <AlertCircle className="text-red-600 shrink-0" size={20} />
               <p className="text-red-600">{apiError}</p>
             </div>

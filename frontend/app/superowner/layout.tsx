@@ -52,8 +52,6 @@ import {
   ChevronDown,
   Users2,
   UserCheck,
-  ShoppingCart,
-  Briefcase,
   MessageCircle,
   ShieldCheck,
   UserCircle,
@@ -205,8 +203,6 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       icon: Users2,
       items: [
         { label: t('nav.clients'), icon: UserCheck, href: '/superowner/zupeat/members/clients', section: 'members' },
-        { label: t('nav.merchants'), icon: ShoppingCart, href: '/superowner/zupeat/members/merchants', section: 'members' },
-        { label: t('nav.deliveries'), icon: Briefcase, href: '/superowner/zupeat/members/deliveries', section: 'members' },
       ],
     },
     {

@@ -41,8 +41,20 @@ services:
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "true"
 
+  # Scanner de fichiers des dépôts locaux. Le protocole ClamAV sur TCP n'est
+  # pas chiffré : le port reste accessible uniquement depuis cette machine.
+  clamav:
+    image: clamav/clamav:1.5
+    container_name: zupeat-clamav-test
+    ports:
+      - "127.0.0.1:3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  clamav_data:
 
 # Usage:
 # docker-compose up -d          # Start services

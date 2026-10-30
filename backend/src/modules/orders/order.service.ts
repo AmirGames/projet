@@ -188,7 +188,16 @@ export class OrderService {
    * garde l'adresse saisie, qui reçoit les courriels de suivi.
    */
   private static async resoudreClient(data: OrderData) {
-    if (data.customerId) return data.customerId;
+    if (data.customerId) {
+      const client = await db.customer.findFirst({
+        where: { id: data.customerId, deletedAt: null },
+        select: { status: true },
+      });
+      if (client?.status === "BLOCKED") {
+        throw new ApiError(403, "Ce compte client est suspendu.", "CUSTOMER_BLOCKED");
+      }
+      return data.customerId;
+    }
 
     // Le compte connecté commande pour lui : sa propre fiche, quelle que soit
     // l'adresse de contact saisie.
@@ -199,8 +208,11 @@ export class OrderService {
     if (compte) {
       const propre = await db.customer.findUnique({
         where: { userId: compte.id },
-        select: { id: true, deletedAt: true },
+        select: { id: true, deletedAt: true, status: true },
       });
+      if (propre?.status === "BLOCKED") {
+        throw new ApiError(403, "Votre compte client est suspendu. Contactez le support.", "CUSTOMER_BLOCKED");
+      }
       if (propre && !propre.deletedAt) return propre.id;
     }
 
@@ -208,13 +220,19 @@ export class OrderService {
 
     const existant = await db.customer.findUnique({
       where: { email: data.customerEmail },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, status: true },
     });
 
     if (existant) {
       // Fiche invité : les commandes sans compte s'y regroupent. Fiche d'un
       // autre compte : on n'y touche pas.
-      return !existant.userId || existant.userId === compte?.id ? existant.id : undefined;
+      if (!existant.userId || existant.userId === compte?.id) {
+        if (existant.status === "BLOCKED") {
+          throw new ApiError(403, "Ce compte client est suspendu.", "CUSTOMER_BLOCKED");
+        }
+        return existant.id;
+      }
+      return undefined;
     }
 
     const cree = await db.customer.create({

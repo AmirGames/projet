@@ -111,6 +111,48 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
   }
 });
 
+// PATCH /superowner/drivers/:driverId/profile - Corriger les coordonnées du livreur.
+// L'email de connexion, le statut et le véhicule suivent leurs circuits dédiés.
+router.patch("/drivers/:driverId/profile", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = z.object({
+      name: z.string().trim().min(2).max(100),
+      phone: z.string().trim().min(7).max(32).regex(/^[+\d\s().-]+$/, "Numéro de téléphone invalide"),
+      reason: z.string().trim().min(3).max(500),
+    }).strict().parse(req.body);
+    const driverId = req.params.driverId as string;
+    const existing = await db.courier.findUnique({
+      where: { id: driverId },
+      select: { id: true, userId: true },
+    });
+
+    if (!existing) {
+      res.status(404).json({ success: false, error: "Livreur introuvable" });
+      return;
+    }
+
+    const driver = await db.$transaction(async (tx) => {
+      const updated = await tx.courier.update({
+        where: { id: driverId },
+        data: { name: body.name, phone: body.phone },
+        select: { id: true, name: true, email: true, phone: true, status: true },
+      });
+      if (existing.userId) {
+        await tx.user.update({ where: { id: existing.userId }, data: { name: body.name } });
+      }
+      return updated;
+    });
+
+    await journaliser(req, "UPDATE_DRIVER_PROFILE", driver.id, {
+      fields: ["name", "phone"],
+      reason: body.reason,
+    });
+    res.json({ success: true, driver });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // PATCH /superowner/drivers/:driverId/vehicle-change-requests/:requestId
 router.patch(
   "/drivers/:driverId/vehicle-change-requests/:requestId",
