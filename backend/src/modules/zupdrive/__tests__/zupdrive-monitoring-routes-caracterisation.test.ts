@@ -44,7 +44,16 @@ jest.mock("../zupdrive-monitoring.service", () => ({
     markAsRead: jest.fn(async () => undefined),
     markAllAsRead: jest.fn(async () => 4),
     getDriverMetrics: jest.fn(async () => ({ rating: 4.8 })),
-    getGainsChauffeur: jest.fn(async (_id: string, depuis: Date) => ({ gainsCentimes: depuis.getHours() === 0 ? 1000 : 7000, nombreCourses: depuis.getHours() === 0 ? 2 : 9 })),
+    getGainsChauffeur: jest.fn(async (_id: string, depuis: Date) => {
+      const debutJour =
+        depuis.getHours() === 0 &&
+        depuis.getMinutes() === 0 &&
+        depuis.getSeconds() === 0 &&
+        depuis.getMilliseconds() === 0;
+      return debutJour
+        ? { gainsCentimes: 1000, nombreCourses: 2 }
+        : { gainsCentimes: 7000, nombreCourses: 9 };
+    }),
     getAdminDashboard: jest.fn(async () => ({ drivers: 12 })),
   },
 }));
