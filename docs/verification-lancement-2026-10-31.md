@@ -39,19 +39,5 @@
 
 ## Conclusion
 
-Le code correctif a passé la CI complète, mais n’est pas encore intégré ni déployé. Le lancement ne peut pas être qualifié de prêt : les conditions publiques comportent une déclaration d’assurance contredite par l’exploitant, la couverture obligatoire applicable aux livreurs indépendants décrits par les conditions n’est pas en vigueur, et plusieurs faits légaux/opérationnels ainsi que les parcours production/recette restent à valider. BCE, TVA et hébergeur n’ont pas été modifiés.
+Une version antérieure du code a passé la CI complète, mais les jobs de la mise à jour suivante ont été annulés et aucun statut CI n’est visible pour la tête actuelle de la PR. Le code n’est pas intégré ni déployé. Le lancement ne peut pas être qualifié de prêt : les conditions publiques comportent une déclaration d’assurance contredite par l’exploitant, la couverture applicable aux livreurs indépendants décrits par les conditions n’est pas en vigueur, et plusieurs faits légaux/opérationnels ainsi que les parcours production/recette restent à valider. BCE, TVA et hébergeur n’ont pas été modifiés.
 
- M .github/workflows/ci.yml
- M backend/src/contenus/pages-legales.defaut.ts
- M backend/src/modules/legal/pages-legales.routes.ts
- M backend/src/modules/superowner/pages-legales.routes.ts
- M docs/etat-projet.md
- M frontend/ARCHITECTURE.md
- M frontend/app/superowner/pages-legales/page.tsx
- M frontend/components/PageLegale.tsx
- M frontend/eslint.config.mjs
- M frontend/messages/en.json
- M frontend/messages/fr.json
- M frontend/package-lock.json
- M frontend/package.json
-?? docs/verification-lancement-2026-10-31.md
