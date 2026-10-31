@@ -10,10 +10,19 @@ const base = () => ({
 });
 
 describe("configuration des capacités", () => {
-  it("désactive Stripe par défaut sans exiger de clés", () => {
+  it("désactive Stripe et les livreurs plateforme par défaut", () => {
     const resultat = envSchema.safeParse(base());
     expect(resultat.success).toBe(true);
-    if (resultat.success) expect(resultat.data.ENABLE_STRIPE).toBe(false);
+    if (resultat.success) {
+      expect(resultat.data.ENABLE_STRIPE).toBe(false);
+      expect(resultat.data.ENABLE_PLATFORM_COURIER_DELIVERY).toBe(false);
+    }
+  });
+
+  it("permet une activation explicite des livreurs plateforme", () => {
+    const resultat = envSchema.safeParse({ ...base(), ENABLE_PLATFORM_COURIER_DELIVERY: "true" });
+    expect(resultat.success).toBe(true);
+    if (resultat.success) expect(resultat.data.ENABLE_PLATFORM_COURIER_DELIVERY).toBe(true);
   });
 
   it("refuse Stripe activé sans clés secrète, publique et webhook", () => {

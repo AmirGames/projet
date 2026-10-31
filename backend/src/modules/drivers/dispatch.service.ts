@@ -1,5 +1,6 @@
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
+import { livraisonPlateformeAutorisee } from "../delivery/delivery-mode.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { distanceKm, estUnPoint, Point } from "../../utils/geo";
 import { emitDeliveryUpdate, emitDriverEvent } from "../realtime/socket";
@@ -176,6 +177,10 @@ export class DispatchService {
    * renvoie l'existante plutôt que d'échouer.
    */
   static async creerCourse(orderId: string) {
+    if (!livraisonPlateformeAutorisee()) {
+      throw new ApiError(503, "La livraison par les livreurs de la plateforme est désactivée.", "PLATFORM_DELIVERY_DISABLED");
+    }
+
     const existante = await db.orderDelivery.findUnique({ where: { orderId } });
     if (existante) return existante;
 
@@ -480,6 +485,8 @@ export class DispatchService {
    * Renvoie l'identifiant de la course démarrée, ou null.
    */
   static async activerReservation(driverId: string) {
+    if (!livraisonPlateformeAutorisee()) return null;
+
     const enCours = await db.orderDelivery.count({ where: { driverId, status: { in: STATUTS_EN_COURSE } } });
     if (enCours > 0) return null;
 
@@ -729,6 +736,10 @@ export class DispatchService {
    * commerçant de relancer plus tard, quand d'autres livreurs seront en ligne.
    */
   static async proposerAuSuivant(deliveryId: string, livreurPrefere?: string) {
+    if (!livraisonPlateformeAutorisee()) {
+      throw new ApiError(503, "La livraison par les livreurs de la plateforme est désactivée.", "PLATFORM_DELIVERY_DISABLED");
+    }
+
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
       include: COURSE_A_PROPOSER,
@@ -1191,6 +1202,10 @@ export class DispatchService {
    * la tournée en cours. Jamais plus que le réglage de la plateforme à la fois.
    */
   static async accepter(offerId: string, driverId: string) {
+    if (!livraisonPlateformeAutorisee()) {
+      throw new ApiError(503, "La livraison par les livreurs de la plateforme est désactivée.", "PLATFORM_DELIVERY_DISABLED");
+    }
+
     const proposition = await db.deliveryOffer.findUnique({
       where: { id: offerId },
       include: { delivery: true },

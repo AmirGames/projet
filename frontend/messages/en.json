@@ -4884,7 +4884,8 @@
     "titre": "Legal information",
     "indisponible": "This text is temporarily unavailable. Please try again in a moment.",
     "version": "Version {version}",
-    "enVigueur": " — in force since {date}"
+    "enVigueur": " — in force since {date}",
+    "tableauDefilant": "Scrollable legal information table"
   },
   "pageDevenir": {
     "pays": "Country",
@@ -5816,6 +5817,7 @@
     "publicationImpossible": "Publishing failed",
     "chargement": "Loading…",
     "titrePage": "Legal pages",
+    "rechargerVersions": "Refresh versions",
     "voirPublique": "View the public page",
     "titre": "Title",
     "nouvelleVersion": "New version",

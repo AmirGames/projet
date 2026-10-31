@@ -79,6 +79,9 @@ export const envSchema = z.object({
   // ZupDrive : tant que la course n'est pas payée en ligne, aucun chauffeur ne la reçoit (elle expire sans
   // chauffeur comme les autres après RECHERCHE_MAX_MS). Faux par défaut : à activer quand l'écran de paiement est en ligne.
   ZUPDRIVE_PAIEMENT_OBLIGATOIRE: z.string().default("false").transform((v) => v === "true"),
+  // ZupEat : courses rémunérées par des livreurs de la plateforme. Désactivé
+  // par défaut en production jusqu'à confirmation de la couverture applicable.
+  ENABLE_PLATFORM_COURIER_DELIVERY: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
   ENABLE_STRIPE: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
   ENABLE_EMAIL_VERIFICATION: z.string().default("true").transform((v) => v === "true"),
   ASSISTANT_MODE: z.enum(['auto', 'real', 'degraded', 'simulation']).default('auto'),
@@ -187,7 +190,8 @@ export function loadEnv(): Env {
   env = result.data;
   if (env.NODE_ENV === "production") assertPrivacyConfiguration();
   console.log(`✅ Environment loaded: ${env.NODE_ENV}`);
-  console.log(`Capabilities: Stripe=${env.ENABLE_STRIPE ? "enabled" : "disabled"}, Cloudinary=${env.CLOUDINARY_CLOUD_NAME ? "enabled" : "disabled"}, SMTP=${env.SMTP_HOST ? "configured" : "local-default"}, email-verification=${env.ENABLE_EMAIL_VERIFICATION ? "enabled" : "disabled"}, assistant=${env.ASSISTANT_MODE}, OSRM=${env.ROUTING_PROVIDER === "osrm" ? "enabled" : "estimation"}`);
+  const livraisonPlateforme = env.NODE_ENV !== "production" || env.ENABLE_PLATFORM_COURIER_DELIVERY;
+  console.log(`Capabilities: Stripe=${env.ENABLE_STRIPE ? "enabled" : "disabled"}, ZupEat-platform-delivery=${livraisonPlateforme ? "enabled" : "disabled"}, Cloudinary=${env.CLOUDINARY_CLOUD_NAME ? "enabled" : "disabled"}, SMTP=${env.SMTP_HOST ? "configured" : "local-default"}, email-verification=${env.ENABLE_EMAIL_VERIFICATION ? "enabled" : "disabled"}, assistant=${env.ASSISTANT_MODE}, OSRM=${env.ROUTING_PROVIDER === "osrm" ? "enabled" : "estimation"}`);
   return env;
 }
 

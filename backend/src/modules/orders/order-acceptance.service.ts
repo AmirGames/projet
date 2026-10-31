@@ -8,6 +8,7 @@ import { logger } from "../../config/logger";
 import { emitWebhook } from "../webhooks/webhook.service";
 import { EmailService } from "../notifications/email.service";
 import { DispatchService } from "../drivers/dispatch.service";
+import { livraisonPlateformeAutorisee } from "../delivery/delivery-mode.service";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { paymentService } from "../payments/payment.service";
 import { emitOrderUpdate, emitNotification, emitMerchantEvent } from "../realtime/socket";
@@ -527,6 +528,8 @@ export class OrderAcceptanceService {
 
   /** Crée la course et la propose, sans faire échouer l'appelant. */
   static async chercherUnLivreur(orderId: string) {
+    if (!livraisonPlateformeAutorisee()) return;
+
     try {
       const course = await DispatchService.creerCourse(orderId);
       if (!course.driverId) await DispatchService.proposerAuSuivant(course.id);

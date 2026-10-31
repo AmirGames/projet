@@ -4884,7 +4884,8 @@
     "titre": "Informations légales",
     "indisponible": "Ce texte est momentanément indisponible. Merci de réessayer dans quelques instants.",
     "version": "Version {version}",
-    "enVigueur": " — en vigueur depuis le {date}"
+    "enVigueur": " — en vigueur depuis le {date}",
+    "tableauDefilant": "Tableau juridique défilant horizontalement"
   },
   "pageDevenir": {
     "pays": "Pays",
@@ -5816,6 +5817,7 @@
     "publicationImpossible": "Publication impossible",
     "chargement": "Chargement…",
     "titrePage": "Pages légales",
+    "rechargerVersions": "Recharger les versions",
     "voirPublique": "Voir la page publique",
     "titre": "Titre",
     "nouvelleVersion": "Nouvelle version",

@@ -15,6 +15,7 @@ import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { lienDeSuivi } from "../orders/suivi-commande.service";
 import { prevenirPlateforme } from "../monitoring/vigie.service";
 import { DispatchService, MAX_SOLLICITATIONS, STATUTS_EN_COURSE } from "./dispatch.service";
+import { livraisonPlateformeAutorisee } from "../delivery/delivery-mode.service";
 import { GPS_PERDU_APRES_MS } from "./driver-availability.service";
 import { presenter } from "../files/fichiers-prives.service";
 import { ATTENTE_CLIENT_MS, RAYON_ATTENTE_CLIENT_KM, photoPriseLoinDuClient } from "./delivery-proof.service";
@@ -863,7 +864,9 @@ export class SurveillanceCoursesService {
     }
 
     // Aussitôt, sans attendre le prochain balayage.
-    enArrierePlan(DispatchService.proposerAuSuivant(deliveryId));
+    if (livraisonPlateformeAutorisee()) {
+      enArrierePlan(DispatchService.proposerAuSuivant(deliveryId));
+    }
 
     return { deliveryId, driverId, orderId: course.orderId };
   }

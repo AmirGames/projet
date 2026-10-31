@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const db: any = {
-  orderDelivery: { findUnique: jest.fn(), findMany: jest.fn() },
-  deliveryOffer: { findFirst: jest.fn(), upsert: jest.fn() },
+  orderDelivery: { findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn(), findFirst: jest.fn() },
+  deliveryOffer: { findFirst: jest.fn(), findUnique: jest.fn(), upsert: jest.fn() },
   courier: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
   systemConfig: { findFirst: jest.fn() },
 };
@@ -14,6 +14,7 @@ jest.mock("../../notifications/notifier.service", () => ({
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
 import { DispatchService } from "../dispatch.service";
+import * as deliveryMode from "../../delivery/delivery-mode.service";
 import { REGLES_TOURNEE_PAR_DEFAUT } from "../tournee.service";
 import { REGLES_BIENTOT_LIBRE_PAR_DEFAUT } from "../livreur-bientot-libre.service";
 
@@ -59,6 +60,41 @@ beforeEach(() => {
   db.deliveryOffer.findFirst.mockResolvedValue(null);
   db.orderDelivery.findMany.mockResolvedValue([]);
   db.deliveryOffer.upsert.mockImplementation(async ({ create }: any) => ({ id: "offre-1", ...create }));
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe("garde-fou des courses par livreurs de la plateforme", () => {
+  it("bloque la création, le dispatch et l'acceptation avant tout accès aux courses", async () => {
+    jest.spyOn(deliveryMode, "livraisonPlateformeAutorisee").mockReturnValue(false);
+
+    await expect(DispatchService.creerCourse("commande-1")).rejects.toMatchObject({
+      statusCode: 503,
+      code: "PLATFORM_DELIVERY_DISABLED",
+    });
+    await expect(DispatchService.proposerAuSuivant("course-1")).rejects.toMatchObject({
+      statusCode: 503,
+      code: "PLATFORM_DELIVERY_DISABLED",
+    });
+    await expect(DispatchService.accepter("offre-1", "livreur-1")).rejects.toMatchObject({
+      statusCode: 503,
+      code: "PLATFORM_DELIVERY_DISABLED",
+    });
+
+    expect(db.orderDelivery.findUnique).not.toHaveBeenCalled();
+    expect(db.deliveryOffer.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("ne démarre pas une réservation de course tant que le garde-fou est fermé", async () => {
+    jest.spyOn(deliveryMode, "livraisonPlateformeAutorisee").mockReturnValue(false);
+
+    await expect(DispatchService.activerReservation("livreur-1")).resolves.toBeNull();
+
+    expect(db.orderDelivery.count).not.toHaveBeenCalled();
+    expect(db.orderDelivery.findFirst).not.toHaveBeenCalled();
+  });
 });
 
 const proposeA = () => db.deliveryOffer.upsert.mock.calls[0]?.[0]?.create;
@@ -223,3 +259,4 @@ describe("distance de livraison selon le véhicule (attribution)", () => {
     expect(proposeA()).toMatchObject({ driverId: "velo", horsLimite: false });
   });
 });
+

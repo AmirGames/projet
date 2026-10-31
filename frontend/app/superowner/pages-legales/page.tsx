@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Scale, Send, ExternalLink, History } from 'lucide-react';
+import { Scale, Send, ExternalLink, History, RefreshCw } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { useLocale, useTranslations } from 'next-intl';
 
@@ -82,8 +82,12 @@ export default function PagesLegalesPage() {
   const [profilLegal, setProfilLegal] = useState<ProfilLegal>(
     Object.fromEntries(CHAMPS_PROFIL.map(([cle]) => [cle, '']))
   );
+  const [profilLegalInitial, setProfilLegalInitial] = useState<ProfilLegal>(
+    Object.fromEntries(CHAMPS_PROFIL.map(([cle]) => [cle, '']))
+  );
   const [slug, setSlug] = useState('');
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
+  const [brouillonInitial, setBrouillonInitial] = useState<Brouillon | null>(null);
   const [consultee, setConsultee] = useState<Version | null>(null);
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
@@ -103,6 +107,7 @@ export default function PagesLegalesPage() {
     setChargement(true);
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/pages-legales`, {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
       const donnees = await reponse.json();
@@ -111,16 +116,22 @@ export default function PagesLegalesPage() {
         return;
       }
       const reponseProfil = await fetch(`${API_URL}/api/superowner/pages-legales/identite`, {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
       const donneesProfil = await reponseProfil.json();
-      if (reponseProfil.ok) setProfilLegal(donneesProfil.data);
+      if (reponseProfil.ok) {
+        setProfilLegal(donneesProfil.data);
+        setProfilLegalInitial(donneesProfil.data);
+      }
       const liste: Page[] = donnees.data;
       setPages(liste);
       const choisie = liste.find((p) => p.slug === garder) ?? liste[0];
       if (choisie) {
         setSlug(choisie.slug);
-        setBrouillon(partirDe(choisie));
+        const nouveauBrouillon = partirDe(choisie);
+        setBrouillon(nouveauBrouillon);
+        setBrouillonInitial(nouveauBrouillon);
       }
       setErreur('');
     } catch {
@@ -137,14 +148,25 @@ export default function PagesLegalesPage() {
   const choisir = (p: Page) => {
     if (brouillonModifie && !confirm(t('abandonner'))) return;
     setSlug(p.slug);
-    setBrouillon(partirDe(p));
+    const nouveauBrouillon = partirDe(p);
+    setBrouillon(nouveauBrouillon);
+    setBrouillonInitial(nouveauBrouillon);
     setConsultee(null);
     setMessage('');
     setErreur('');
   };
 
   const brouillonModifie =
-    !!page && !!brouillon && (brouillon.titre !== page.titre || brouillon.contenu !== page.contenu);
+    !!brouillon && !!brouillonInitial &&
+    (brouillon.titre !== brouillonInitial.titre ||
+      brouillon.contenu !== brouillonInitial.contenu ||
+      brouillon.version !== brouillonInitial.version);
+  const profilLegalModifie = JSON.stringify(profilLegal) !== JSON.stringify(profilLegalInitial);
+
+  const actualiser = async () => {
+    if ((brouillonModifie || profilLegalModifie) && !confirm(t('abandonner'))) return;
+    await charger(slug);
+  };
 
   const texteAvecVariables = (texte: string) => remplacerVariables(texte, profilLegal);
   const variablesManquantes = [...new Set(
@@ -172,6 +194,7 @@ export default function PagesLegalesPage() {
         return;
       }
       setProfilLegal(donnees.data);
+      setProfilLegalInitial(donnees.data);
       setMessage('Informations de la société enregistrées.');
     } catch {
       setErreur(t('injoignable'));
@@ -221,14 +244,25 @@ export default function PagesLegalesPage() {
 
   return (
     <div className="p-8 space-y-6">
-      <div className="flex items-center gap-3">
-        <Scale size={28} className="text-red-500" />
-        <div>
-          <h1 className="text-3xl font-bold">{t('titrePage')}</h1>
-          <p className="text-gray-500 text-sm">
-            {t('intro')}
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Scale size={28} className="text-red-500" />
+          <div>
+            <h1 className="text-3xl font-bold">{t('titrePage')}</h1>
+            <p className="text-gray-500 text-sm">
+              {t('intro')}
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={actualiser}
+          disabled={chargement || envoi || enregistrementProfil}
+          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        >
+          <RefreshCw size={16} className={chargement ? 'animate-spin' : ''} />
+          {t('rechargerVersions')}
+        </button>
       </div>
 
       {erreur && (
@@ -370,7 +404,11 @@ export default function PagesLegalesPage() {
                 </button>
                 {brouillonModifie && (
                   <button
-                    onClick={() => setBrouillon(partirDe(page))}
+                    onClick={() => {
+                      const nouveauBrouillon = partirDe(page);
+                      setBrouillon(nouveauBrouillon);
+                      setBrouillonInitial(nouveauBrouillon);
+                    }}
                     className="text-sm text-gray-500 hover:text-gray-900"
                   >
                     {t('annulerModifs')}

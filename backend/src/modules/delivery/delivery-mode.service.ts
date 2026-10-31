@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { objetJson } from "../../utils/json";
+import { getEnv } from "../../config/env";
 /**
  * Qui livre les commandes d'une boutique.
  *
@@ -15,6 +16,18 @@ import { objetJson } from "../../utils/json";
  * livraison »). Non coché, ce sont les livreurs de la plateforme.
  */
 export type ModeDeLivraison = "OWN" | "PLATFORM";
+
+/**
+ * La livraison par des livreurs de la plateforme est bloquée par défaut en
+ * production. Son activation est réservée à la confirmation de la couverture
+ * d'assurance applicable ; les environnements de développement/test restent
+ * disponibles pour les essais fonctionnels.
+ */
+export function livraisonPlateformeAutorisee(
+  configuration: { NODE_ENV: string; ENABLE_PLATFORM_COURIER_DELIVERY: boolean } = getEnv()
+) {
+  return configuration.NODE_ENV !== "production" || configuration.ENABLE_PLATFORM_COURIER_DELIVERY;
+}
 
 export function modeDeLivraison(settings: unknown): ModeDeLivraison {
   const livraison = objetJson(settings as Prisma.JsonValue | null | undefined).delivery;

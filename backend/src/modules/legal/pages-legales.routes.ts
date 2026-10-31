@@ -9,6 +9,7 @@ const router = Router();
 // GET /pages-legales - Titres et versions en vigueur
 router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    res.set("Cache-Control", "no-store");
     const pages = await PagesLegalesService.toutes();
     res.json({ data: pages.map(({ contenu: _contenu, ...page }) => page) });
   } catch (err) {
@@ -32,6 +33,7 @@ router.get("/acceptation/commande", authFacultative, async (req: Request, res: R
 // GET /pages-legales/:slug - Texte en vigueur d'une page
 router.get("/:slug", async (req: Request, res: Response, next: NextFunction) => {
   try {
+    res.set("Cache-Control", "no-store");
     res.json({ data: await PagesLegalesService.enVigueur(req.params.slug as string) });
   } catch (err) {
     next(err);

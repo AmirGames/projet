@@ -3,6 +3,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitDeliveryUpdate, emitDriverEvent, emitNotification } from "../realtime/socket";
 import { DispatchService } from "./dispatch.service";
+import { livraisonPlateformeAutorisee } from "../delivery/delivery-mode.service";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 
 /**
@@ -94,7 +95,7 @@ export class DriverAvailabilityService {
         data: { status: "UNAVAILABLE_DURING_PAUSE", respondedAt: new Date() },
       });
 
-      for (const offre of ouvertes) {
+      for (const offre of livraisonPlateformeAutorisee() ? ouvertes : []) {
         await DispatchService.proposerAuSuivant(offre.deliveryId).catch((err) =>
           logger.warn("Relance après pause impossible", {
             deliveryId: offre.deliveryId,

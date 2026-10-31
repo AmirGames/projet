@@ -11,5 +11,11 @@ export default defineConfig([
       "react-hooks/exhaustive-deps": ["warn", { additionalHooks: "^useEffectChargement$" }],
     },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "coverage/**",
+    "next-env.d.ts",
+  ]),
 ]);

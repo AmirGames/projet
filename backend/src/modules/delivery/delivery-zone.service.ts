@@ -2,7 +2,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "../../utils/geo";
 import { AddressService, paysDeLAdresse } from "../customers/address.service";
-import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
+import { livraisonPlateformeAutorisee, modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
 import { DispatchService } from "../drivers/dispatch.service";
 import { codeErreur } from "../../utils/code-erreur";
 import type { DeliveryZone } from "@prisma/client";
@@ -560,6 +560,10 @@ export class DeliveryZoneService {
       raison,
       forfaitBoutique: false,
     });
+
+    if (!livraisonPlateformeAutorisee()) {
+      return refus("La livraison par les livreurs de la plateforme est temporairement indisponible.");
+    }
 
     const depart = { latitude: boutique.latitude, longitude: boutique.longitude };
 
