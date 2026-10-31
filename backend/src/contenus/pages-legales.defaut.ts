@@ -241,7 +241,7 @@ Les clients peuvent évaluer le résultat commercial d'une livraison. Les avis e
 
 ## 6. Assurance et sécurité
 
-Le livreur fournit les attestations légalement requises pour son statut et son véhicule. Les exigences exactes, ainsi que le régime d'assurance propre aux collaborateurs indépendants de plateformes et sa date d'entrée en vigueur, doivent être confirmés pour la Belgique avant l'activation commerciale. Il peut signaler un incident via l'application.
+Le livreur fournit les attestations légalement requises pour son statut et son véhicule. **Au 31 octobre 2026, l'exploitant confirme ne disposer d'aucune police d'assurance accident de plateforme. Aucune course rémunérée de livreur indépendant ne doit être activée avant vérification de la prise d'effet de la couverture requise.** L'article 19 de la loi belge du 3 octobre 2022 impose cette assurance aux exploitants concernés ; l'arrêté royal du 12 août 2024 a fixé son entrée en vigueur au 1er janvier 2026. La couverture doit protéger les dommages corporels des collaborateurs indépendants pendant les activités rémunérées via la plateforme et les trajets associés. Le périmètre dépend de la qualification de la plateforme et de la relation concrète avec les livreurs ; il doit être confirmé avec un assureur ou un conseil belge. Le livreur peut signaler un incident via l'application.
 
 ## 7. Fin de la relation
 
