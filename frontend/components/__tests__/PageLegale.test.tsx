@@ -1,6 +1,6 @@
-import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach } from '@jest/globals';
 import type { ReactNode } from 'react';
+import { render, screen } from '@testing-library/react';
 
 jest.mock('next-intl/server', () => ({
   getLocale: jest.fn(async () => 'fr'),
@@ -43,17 +43,15 @@ describe('PageLegale', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const element = await PageLegale({ slug: 'confidentialite' });
-    const html = renderToStaticMarkup(element);
+    const { container } = render(element);
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/pages-legales/confidentialite'),
       { cache: 'no-store' },
     );
-    expect(html).toContain('role="region"');
-    expect(html).toContain('aria-label="Tableau défilant"');
-    expect(html).toContain('overflow-x-auto');
-    expect(html).toContain('<table');
-    expect(html).toContain('Version 2026-10-31');
+    expect(screen.getByRole('region', { name: 'Tableau défilant' })).toBeTruthy();
+    expect(container.querySelector('.overflow-x-auto table')).not.toBeNull();
+    expect(screen.getByText('Version 2026-10-31')).toBeTruthy();
   });
 });
 
