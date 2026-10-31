@@ -72,7 +72,7 @@ describe('PageLegale', () => {
     );
     expect(screen.getByRole('region', { name: 'Tableau défilant' })).toBeTruthy();
     expect(container.querySelector('.overflow-x-auto table')).not.toBeNull();
-    expect(screen.getByText('Version 2026-10-31')).toBeTruthy();
+    expect(container.querySelector('p')?.textContent).toContain('Version 2026-10-31');
   });
 });
 
