@@ -3,10 +3,15 @@
 ## Actualisation — 31 octobre 2026
 
 Les correctifs de préparation des pages légales et du contrôle runtime sont
-proposés dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/241).
-La CI complète est réussie (11/11 jobs) sur la tête `8c13d04824b96b80ffd4b2383c3749f9308700fa`;
-la preuve détaillée, les changements et les blocages de production sont consignés
-dans le [rapport de vérification du lancement](verification-lancement-2026-10-31.md).
+proposés dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/241),
+qui contient 14 fichiers au total. Sa tête vérifiée le 31 octobre est
+`b40f775abd879596f16d8dc8ad37b73d3039a51b`. La dernière CI complète réussie est
+le run #489 (11/11) sur un commit antérieur `7404e3c261c335f70ac24adb113fea7ac183bd82`.
+Le run #491 sur le commit `334e5f3c1176fc8a935dbe613f4522635ba19f1a` a terminé
+ses six jobs mobiles avec succès, mais a annulé les cinq autres jobs. Aucun
+statut CI n'est visible sur la tête actuelle. La preuve détaillée, les changements
+et les blocages de production sont consignés dans le
+[rapport de vérification du lancement](verification-lancement-2026-10-31.md).
 La sonde publique `/health/ready` répondait `ok` sur la révision de production
 `a24ffc196ca3` le 31 octobre à 18:10 UTC ; cela ne valide pas les commandes ni
 les paiements.
