@@ -66,11 +66,12 @@ function remplacerVariables(texte: string, profil: ProfilLegal) {
 }
 
 function restaurerVariables(texte: string, profil: ProfilLegal) {
-  if (/\$[a-z][a-z0-9_]*/i.test(texte)) return texte;
   const occurrences = new Map<string, string[]>();
   for (const [cle] of CHAMPS_PROFIL) {
     const valeur = profil[cle]?.trim();
-    if (!valeur || valeur.length < 5) continue;
+    // Les formes juridiques comme « SA » et « SRL » sont courtes, mais doivent
+    // aussi être restaurées dans les anciens textes déjà résolus.
+    if (!valeur || (valeur.length < 5 && cle !== 'forme_juridique')) continue;
     occurrences.set(valeur, [...(occurrences.get(valeur) ?? []), cle]);
   }
   const remplacements = [...occurrences.entries()]
@@ -79,7 +80,13 @@ function restaurerVariables(texte: string, profil: ProfilLegal) {
     .sort(([a], [b]) => b.length - a.length);
   return remplacements.reduce((modele, [valeur, variable]) => {
     const echappee = valeur.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return modele.replace(new RegExp(echappee, 'g'), variable);
+    if (valeur.length < 5) {
+      // Une forme courte ne doit pas remplacer la même suite de lettres au
+      // milieu d'un autre mot (ex. « SA » dans « saison »).
+      const expression = new RegExp(`(^|[^\\p{L}\\p{N}_])${echappee}(?![\\p{L}\\p{N}_])`, 'gu');
+      return modele.replace(expression, (_correspondance, prefixe: string) => `${prefixe}${variable}`);
+    }
+    return modele.replace(new RegExp(echappee, 'g'), () => variable);
   }, texte);
 }
 
