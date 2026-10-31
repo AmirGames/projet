@@ -7,9 +7,16 @@ proposés dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/2
 La CI complète est réussie (11/11 jobs) sur la tête `8c13d04824b96b80ffd4b2383c3749f9308700fa`;
 la preuve détaillée, les changements et les blocages de production sont consignés
 dans le [rapport de vérification du lancement](verification-lancement-2026-10-31.md).
-La PR n'est pas intégrée ni déployée. Les règles de remboursement/annulation,
-l'assurance des livreurs et la conservation de géolocalisation restent à confirmer
-par l'exploitant. Les champs BCE, TVA et hébergeur sont exclus des changements.
+La sonde publique `/health/ready` répondait `ok` sur la révision de production
+`a24ffc196ca3` le 31 octobre à 18:10 UTC ; cela ne valide pas les commandes ni
+les paiements.
+La PR n'est pas intégrée ni déployée. L'exploitant a confirmé qu'aucune assurance
+accident de plateforme n'est en vigueur, alors que les conditions livreurs
+publiques promettent cette couverture. Les courses rémunérées de livreurs
+indépendants restent bloquées jusqu'à validation du régime belge applicable et
+mise en place de la couverture requise. Les règles de remboursement/annulation
+et la base légale de géolocalisation hors course restent aussi à confirmer.
+Les champs BCE, TVA et hébergeur sont exclus des changements.
 
 > **A03 — 13 octobre 2026 :** [correctifs initiaux des permissions sur les commandes](A03-SECURITE-COMMANDES.md). En attente des tests multi-tenant et de la CI ; ne pas considérer le parcours complet validé.
 
