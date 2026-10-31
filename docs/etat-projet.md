@@ -9,7 +9,7 @@ la preuve détaillée, les changements et les blocages de production sont consig
 dans le [rapport de vérification du lancement](verification-lancement-2026-10-31.md).
 La PR n'est pas intégrée ni déployée. Les règles de remboursement/annulation,
 l'assurance des livreurs et la conservation de géolocalisation restent à confirmer
-par l\x27exploitant. Les champs BCE, TVA et hébergeur sont exclus des changements.
+par l'exploitant. Les champs BCE, TVA et hébergeur sont exclus des changements.
 
 > **A03 — 13 octobre 2026 :** [correctifs initiaux des permissions sur les commandes](A03-SECURITE-COMMANDES.md). En attente des tests multi-tenant et de la CI ; ne pas considérer le parcours complet validé.
 
