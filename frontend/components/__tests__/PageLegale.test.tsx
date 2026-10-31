@@ -1,5 +1,5 @@
-import { afterEach } from '@jest/globals';
-import type { ReactNode } from 'react';
+import { afterEach, jest } from '@jest/globals';
+import type { ComponentType, ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 
 jest.mock('next-intl/server', () => ({
@@ -15,6 +15,28 @@ jest.mock('next-intl/server', () => ({
     return messages[cle] ?? cle;
   }),
 }));
+
+jest.mock('remark-gfm', () => ({ __esModule: true, default: jest.fn() }));
+
+jest.mock('react-markdown', () => {
+  const React = jest.requireActual('react');
+  return {
+    __esModule: true,
+    default: ({ components }: { components?: { table?: ComponentType<{ children: ReactNode }> } }) => {
+      const contenu = React.createElement(
+        React.Fragment,
+        null,
+        React.createElement('thead', null, React.createElement('tr', null,
+          React.createElement('th', null, 'Donnée'), React.createElement('th', null, 'Durée'))),
+        React.createElement('tbody', null, React.createElement('tr', null,
+          React.createElement('td', null, 'Commandes'), React.createElement('td', null, '14 jours'))),
+      );
+      return components?.table
+        ? React.createElement(components.table, null, contenu)
+        : React.createElement('table', null, contenu);
+    },
+  };
+});
 
 jest.mock('@/components/LienRegional', () => ({
   __esModule: true,
