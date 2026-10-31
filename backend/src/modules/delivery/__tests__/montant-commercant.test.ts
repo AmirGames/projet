@@ -1,5 +1,19 @@
 import { describe, expect, it } from "@jest/globals";
-import { montantCommercant, totalCommercant } from "../delivery-mode.service";
+import { livraisonPlateformeAutorisee, montantCommercant, totalCommercant } from "../delivery-mode.service";
+
+describe("livraisonPlateformeAutorisee", () => {
+  it("bloque les livreurs de la plateforme en production sans activation explicite", () => {
+    expect(livraisonPlateformeAutorisee({ NODE_ENV: "production", ENABLE_PLATFORM_COURIER_DELIVERY: false })).toBe(false);
+  });
+
+  it("autorise la livraison en production seulement après activation explicite", () => {
+    expect(livraisonPlateformeAutorisee({ NODE_ENV: "production", ENABLE_PLATFORM_COURIER_DELIVERY: true })).toBe(true);
+  });
+
+  it("ne bloque pas les environnements de développement et de test", () => {
+    expect(livraisonPlateformeAutorisee({ NODE_ENV: "test", ENABLE_PLATFORM_COURIER_DELIVERY: false })).toBe(true);
+  });
+});
 
 describe("montantCommercant", () => {
   it("ne garde que les articles : ni livraison, ni frais de service", () => {

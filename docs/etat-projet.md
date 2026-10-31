@@ -4,8 +4,8 @@
 
 Les correctifs de préparation des pages légales et du contrôle runtime sont
 proposés dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/241),
-qui contient 14 fichiers au total. Sa tête vérifiée le 31 octobre est
-`b40f775abd879596f16d8dc8ad37b73d3039a51b`. La dernière CI complète réussie est
+qui contient 26 fichiers au total. Sa tête vérifiée avant ce lot de garde-fous
+était `1f5a9688e83cbb1f53c0827383a71ad2f04157c6`. La dernière CI complète réussie est
 le run #489 (11/11) sur un commit antérieur `7404e3c261c335f70ac24adb113fea7ac183bd82`.
 Le run #491 sur le commit `334e5f3c1176fc8a935dbe613f4522635ba19f1a` a terminé
 ses six jobs mobiles avec succès, mais a annulé les cinq autres jobs. Aucun
@@ -21,6 +21,10 @@ publiques promettent cette couverture. Les courses rémunérées de livreurs
 indépendants restent bloquées jusqu'à validation du régime belge applicable et
 mise en place de la couverture requise. Les règles de remboursement/annulation
 et la base légale de géolocalisation hors course restent aussi à confirmer.
+La PR ajoute ENABLE_PLATFORM_COURIER_DELIVERY, faux par défaut en production ;
+après déploiement, il bloque devis, nouvelles commandes, dispatch et acceptations
+pour les livreurs plateforme, sans couper le retrait ou la livraison propre du
+commerçant. Il ne protège pas la production avant intégration et déploiement.
 Les champs BCE, TVA et hébergeur sont exclus des changements.
 
 > **A03 — 13 octobre 2026 :** [correctifs initiaux des permissions sur les commandes](A03-SECURITE-COMMANDES.md). En attente des tests multi-tenant et de la CI ; ne pas considérer le parcours complet validé.

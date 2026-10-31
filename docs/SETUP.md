@@ -83,6 +83,9 @@ Puis ajuste les valeurs selon tes besoins (tokens Stripe, URLs, etc.).
 
 **ZupDrive** : `ZUPDRIVE_PAIEMENT_OBLIGATOIRE` (`false` par défaut ; `true` = une course n'est proposée aux chauffeurs qu'une fois payée en ligne, à activer avec le formulaire de paiement de `/trajet/[id]`, qui demande `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` côté frontend). `ZUPDRIVE_NOTIFICATIONS_WEBHOOK_SECRET` (≥ 32 caractères, vide par défaut) signe les accusés de notification du fournisseur d'envoi ; vide, le webhook `POST /api/zupdrive/notifications/webhooks/status` répond 503. Le paiement des courses utilise le webhook Stripe existant (`STRIPE_WEBHOOK_SECRET`).
 
+
+ZupEat : ENABLE_PLATFORM_COURIER_DELIVERY vaut false par défaut en production. Tant que cette valeur reste fausse, le calcul des livraisons et la création, l'attribution et l'acceptation de courses des livreurs de la plateforme sont bloqués ; le retrait et la livraison propre du commerçant restent disponibles. Ne l'activer qu'après confirmation de la couverture d'assurance applicable par l'assureur ou un conseil belge. Cette option est un verrou opérationnel, pas une preuve de conformité.
+
 ---
 
 ## Services Locaux

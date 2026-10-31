@@ -8,6 +8,7 @@ import { DeliveryProofService, finAttente } from "./delivery-proof.service";
 import { bilanCourse } from "./driver-activity.service";
 import { courseDuLivreur } from "./driver-ownership.service";
 import { adresseLivraison, adresseRetrait, gainAnnonce, masquerClient } from "./driver-course-format";
+import { livraisonPlateformeAutorisee } from "../delivery/delivery-mode.service";
 
 /**
  * Lecture des courses du livreur : liste, détail, propositions en cours et
@@ -22,6 +23,7 @@ export const DriverCoursesService = {
     // n'importe qui prendre celle d'un autre, ce qui vide l'attribution de
     // son sens.
     const enAttente = status === "PENDING";
+    if (enAttente && !livraisonPlateformeAutorisee()) return [];
 
     // « ACTIVE » : la course en cours du livreur, acceptée ou déjà récupérée.
     // Sans ce filtre, le tableau de bord ne relevait que les courses en
@@ -220,6 +222,8 @@ export const DriverCoursesService = {
 
   /** Les courses proposées au livreur, en attente de sa réponse. */
   async propositions(livreur: Courier) {
+    if (!livraisonPlateformeAutorisee()) return [];
+
     const propositions = await db.deliveryOffer.findMany({
       where: {
         driverId: livreur.id,
