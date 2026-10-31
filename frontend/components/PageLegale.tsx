@@ -58,6 +58,18 @@ export default async function PageLegale({ slug }: { slug: string }) {
                 {children}
               </a>
             ),
+          // Les tableaux RGPD ont plusieurs colonnes : les garder lisibles sur
+          // mobile au lieu de les écraser ou de faire déborder toute la page.
+          table: ({ children }) => (
+            <div
+              className="my-6 w-full overflow-x-auto rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              role="region"
+              aria-label={t('tableauDefilant')}
+              tabIndex={0}
+            >
+              <table className="min-w-[40rem]">{children}</table>
+            </div>
+          ),
         }}
       >
         {page.contenu}

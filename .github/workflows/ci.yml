@@ -283,8 +283,7 @@ jobs:
         run: npx jest
       - name: Build
         run: npm run build
-      - name: Audit des dépendances (informatif)
-        continue-on-error: true
+      - name: Audit des dépendances runtime frontend
         run: npm audit --omit=dev --audit-level=high
 
   # Les six applications Expo : sans ce job, une erreur de type ou une

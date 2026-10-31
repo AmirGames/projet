@@ -88,7 +88,7 @@ Ce qui est utilisé, et ce qui ne l'est pas :
   `fetch` directement (voir [H](#h-appeler-lapi)).
 - Bibliothèques présentes : `lucide-react` (icônes), `socket.io-client` (temps
   réel), `leaflet` (cartes), `@stripe/react-stripe-js` (paiement),
-  `react-hook-form` et `zod` (formulaires), `zustand` (état partagé).
+  `react-hook-form` (formulaires), `zustand` (état partagé).
 
 ## Espaces, domaines et routage
 

@@ -15,6 +15,7 @@ const router = Router();
 // GET /superowner/pages-legales/identite - Informations réutilisées dans les documents.
 router.get("/pages-legales/identite", authMiddleware, isSuperOwner, async (_req, res, next) => {
   try {
+    res.set("Cache-Control", "private, no-store");
     res.json({ data: await lireProfilLegal() });
   } catch (err) {
     next(err);
@@ -54,6 +55,7 @@ router.put("/pages-legales/identite", authMiddleware, isSuperOwner, async (req, 
 // GET /superowner/pages-legales - Pages en vigueur et historique des versions
 router.get("/pages-legales", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    res.set("Cache-Control", "private, no-store");
     const pages = await PagesLegalesService.toutes();
     const data = await Promise.all(
       pages.map(async (page) => ({ ...page, historique: await PagesLegalesService.historique(page.slug) }))
