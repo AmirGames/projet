@@ -43,13 +43,12 @@ jest.mock('@/components/LienRegional', () => ({
   default: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a>,
 }));
 
-import PageLegale from '../PageLegale';
-
 describe('PageLegale', () => {
   const ancienFetch = global.fetch;
   afterEach(() => { global.fetch = ancienFetch; });
 
   it('affiche une table Markdown dans une région défilante accessible et la version publiée', async () => {
+    const { default: PageLegale } = await import('../PageLegale');
     const fetchMock = jest.fn(async () => ({
       ok: true,
       json: async () => ({
