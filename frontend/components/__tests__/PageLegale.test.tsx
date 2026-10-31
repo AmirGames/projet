@@ -19,7 +19,7 @@ jest.mock('next-intl/server', () => ({
 jest.mock('remark-gfm', () => ({ __esModule: true, default: jest.fn() }));
 
 jest.mock('react-markdown', () => {
-  const React = jest.requireActual('react');
+  const React = jest.requireActual<typeof import('react')>('react');
   return {
     __esModule: true,
     default: ({ components }: { components?: { table?: ComponentType<{ children: ReactNode }> } }) => {
@@ -50,7 +50,7 @@ describe('PageLegale', () => {
   afterEach(() => { global.fetch = ancienFetch; });
 
   it('affiche une table Markdown dans une région défilante accessible et la version publiée', async () => {
-    const fetchMock = jest.fn().mockResolvedValue({
+    const fetchMock = jest.fn(async () => ({
       ok: true,
       json: async () => ({
         data: {
@@ -61,7 +61,7 @@ describe('PageLegale', () => {
           publieLe: '2026-10-31T12:00:00.000Z',
         },
       }),
-    });
+    }));
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const element = await PageLegale({ slug: 'confidentialite' });
