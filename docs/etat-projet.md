@@ -1,4 +1,4 @@
-Warning: truncated output (original token count: 11500)
+Warning: truncated output (original token count: 11636)
 Total output lines: 544
 
 # État du projet et travail restant
@@ -33,7 +33,20 @@ SHA/environnement accessible, base représentative et preuves des parcours
 externes. Le résultat CI ne prouve ni déploiement ni exploitation. Les audits
 A01–A16 restent datés ; consulter [la décision et sa matrice A01–A16](RECETTE-PILOTE-A16-2026-10-12.md).
 Les états « développé », « testé », « intégré », « déployé » et « validé en
-exploitation …10400 tokens truncated…e |
+exploitation » sont indépendants. Le [registre spécialisé de lancement UE](registre-lancement-ue.md)
+reste la liste de conformité et ne constitue pas une preuve à lui seul.
+
+## Étape 16 — A16 : vérification du pilote et décision de lancement
+
+| État | Date, SHA, environnement | Preuve |
+|---|---|---|
+| Développé | 12 octobre 2026, branche `claude/awesome-ride-m9lci8-a16-config-docs`, code initial `7ba6fab46a1129508cb1a66541e5e809a54c44ee`; dernière tête avant fusion `3085ff4dc09974fc99d6c7361cff79fbe67dff15` | Configuration backend, stockage privé vérifié au démarrage, sonde SQL en lecture seule, CSP progressive et guide [CONFIGURATION-A16](CONFIGURATION-A16.md) |
+| Testé localement | 12 octobre 2026, Windows, SHA testé `be7f6c5ceba3aedd2a7ed3e18b58b26447e25be9`, Node 24.21.0, npm 12.0.2, Prisma 7.10.0, Next.js 16.4.0 | Backend config/Stripe/dépendances activées/stockage **10/10**; TypeScript, lint complet backend et build réussis; fro…10036 tokens truncated… backend; [commit code A14](https://github.com/AmirGames/projet/commit/55a7d90113d814c7a23f3aac400317a9110dafe0) |
+| Testé localement | 12 octobre 2026, Windows, Node 24.21.0, npm 12.0.2, Prisma 7.10.0 | Tests ciblés **11/11**, routes publiques **5/5**, TypeScript, lint et build backend réussis sur le commit code; Docker daemon absent, donc coupures PostgreSQL/Redis/SMTP sur instance isolée et réception d'alertes non éprouvées |
+| CI / PR | 12 octobre 2026, GitHub | [PR #218](https://github.com/AmirGames/projet/pull/218), branche synchronisée avec base à la création; aucun statut CI publié au relevé |
+| Intégré | 12 octobre 2026 | [PR #218 fusionnée](https://github.com/AmirGames/projet/pull/218), merge commit `adb811805afe38ffe7a4dc6b90406bfe8b618708` |
+| Déployé | Non | Aucun déploiement ni migration A14 |
+| Validé en exploitation | Non | Aucune instance isolée avec coupures des quatre dépendances; aucune réception d'alerte vérifiée |
 
 Le relevé local A14 et l'absence de statut CI correspondent à l'instantané
 initial. La PR #218 est depuis intégrée au merge
