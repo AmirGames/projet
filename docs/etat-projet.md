@@ -3,14 +3,14 @@
 ## Actualisation — 31 octobre 2026
 
 Les correctifs de préparation des pages légales et du contrôle runtime sont
-proposés dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/241),
-qui contient 26 fichiers au total. Sa tête vérifiée avant ce lot de garde-fous
-était `1f5a9688e83cbb1f53c0827383a71ad2f04157c6`. La dernière CI complète réussie est
-le run #489 (11/11) sur un commit antérieur `7404e3c261c335f70ac24adb113fea7ac183bd82`.
-Le run #491 sur le commit `334e5f3c1176fc8a935dbe613f4522635ba19f1a` a terminé
-ses six jobs mobiles avec succès, mais a annulé les cinq autres jobs. Aucun
-statut CI n'est visible sur la tête actuelle. La preuve détaillée, les changements
-et les blocages de production sont consignés dans le
+proposés dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/241).
+La CI #496 a réussi ses 11/11 jobs sur la tête `68bc61c44a7d9df19c91a6d95d769578f6d52a7f`.
+Le nouveau commit qui ajoute des tests de régression dédiés au verrou de livraison
+et au rendu Markdown n'est pas couvert par ce run ; consulter les checks de la PR
+pour son résultat. La CI #489 avait également réussi 11/11 jobs sur le commit
+antérieur `7404e3c261c335f70ac24adb113fea7ac183bd82`. Le run #491 a terminé ses
+six jobs mobiles avec succès, mais a annulé les cinq autres jobs. La preuve
+détaillée, les changements et les blocages de production sont consignés dans le
 [rapport de vérification du lancement](verification-lancement-2026-10-31.md).
 La sonde publique `/health/ready` répondait `ok` sur la révision de production
 `a24ffc196ca3` le 31 octobre à 18:10 UTC ; cela ne valide pas les commandes ni
@@ -21,10 +21,10 @@ publiques promettent cette couverture. Les courses rémunérées de livreurs
 indépendants restent bloquées jusqu'à validation du régime belge applicable et
 mise en place de la couverture requise. Les règles de remboursement/annulation
 et la base légale de géolocalisation hors course restent aussi à confirmer.
-La PR ajoute ENABLE_PLATFORM_COURIER_DELIVERY, faux par défaut en production ;
-après déploiement, il bloque devis, nouvelles commandes, dispatch et acceptations
-pour les livreurs plateforme, sans couper le retrait ou la livraison propre du
-commerçant. Il ne protège pas la production avant intégration et déploiement.
+La PR ajoute un garde-fou backend `ENABLE_PLATFORM_COURIER_DELIVERY`, faux par
+défaut en production ; après déploiement, il bloquera la livraison par les
+livreurs de la plateforme sans couper le retrait ni la livraison propre des
+commerces. Il ne protège pas la production avant intégration et déploiement.
 Les champs BCE, TVA et hébergeur sont exclus des changements.
 
 > **A03 — 13 octobre 2026 :** [correctifs initiaux des permissions sur les commandes](A03-SECURITE-COMMANDES.md). En attente des tests multi-tenant et de la CI ; ne pas considérer le parcours complet validé.
@@ -557,4 +557,5 @@ d’une base préexistante ne sont pas couverts par ce run. Les 6 lockfiles mobi
 des alertes de production, suivies à part avec échéance de revue. Voir
 [l’inventaire détaillé, chemins et limites A12](AUDIT-DEPENDANCES.md). Il n’y a
 pas de changement d’API, de schéma, de permission ou de configuration métier.
+
 
