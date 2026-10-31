@@ -241,7 +241,7 @@ Les clients peuvent évaluer le résultat commercial d'une livraison. Les avis e
 
 ## 6. Assurance et sécurité
 
-Le livreur fournit les attestations légalement requises pour son statut et son véhicule. **Au 31 octobre 2026, l'exploitant confirme ne disposer d'aucune police d'assurance accident de plateforme. Aucune course rémunérée de livreur indépendant ne doit être activée avant vérification de la prise d'effet de la couverture requise.** L'article 19 de la loi belge du 3 octobre 2022 impose cette assurance aux exploitants concernés ; l'arrêté royal du 12 août 2024 a fixé son entrée en vigueur au 1er janvier 2026. La couverture doit protéger les dommages corporels des collaborateurs indépendants pendant les activités rémunérées via la plateforme et les trajets associés. Le périmètre dépend de la qualification de la plateforme et de la relation concrète avec les livreurs ; il doit être confirmé avec un assureur ou un conseil belge. Le livreur peut signaler un incident via l'application.
+Le livreur fournit les attestations légalement requises pour son statut et son véhicule. **Au 31 octobre 2026, l'exploitant confirme ne disposer d'aucune police d'assurance accident de plateforme. Aucune couverture de plateforme n'est donc fournie par ZupOne.** L'article 19 de la loi belge du 3 octobre 2022 prévoit une assurance pour les collaborateurs indépendants des plateformes entrant dans son champ. Son entrée en vigueur, initialement prévue au 1er janvier 2026 par l'arrêté royal du 12 août 2024, a été reportée au 1er janvier 2028 par l'arrêté royal du 19 décembre 2025. Le dispositif vise les dommages corporels résultant d'accidents lors des activités rémunérées via la plateforme et des trajets associés. Le champ d'application et les obligations transitoires doivent être confirmés avec un assureur ou un conseil belge avant activation des livraisons. Le livreur peut signaler un incident via l'application.
 
 ## 7. Fin de la relation
 
@@ -338,3 +338,4 @@ Si vous ne parvenez pas à accéder à un contenu ou à un service, écrivez à 
 Les voies de signalement et l'autorité compétente doivent être précisées pour chaque service et pays effectivement exploité.`,
   },
 };
+
