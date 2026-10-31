@@ -11,7 +11,13 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
   try {
     res.set("Cache-Control", "no-store");
     const pages = await PagesLegalesService.toutes();
-    res.json({ data: pages.map(({ contenu: _contenu, ...page }) => page) });
+    const data = await Promise.all(
+      pages.map(async (page) => {
+        const { contenu: _contenu, ...publique } = await PagesLegalesService.enVigueurPublique(page.slug);
+        return publique;
+      })
+    );
+    res.json({ data });
   } catch (err) {
     next(err);
   }
@@ -34,7 +40,7 @@ router.get("/acceptation/commande", authFacultative, async (req: Request, res: R
 router.get("/:slug", async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.set("Cache-Control", "no-store");
-    res.json({ data: await PagesLegalesService.enVigueur(req.params.slug as string) });
+    res.json({ data: await PagesLegalesService.enVigueurPublique(req.params.slug as string) });
   } catch (err) {
     next(err);
   }

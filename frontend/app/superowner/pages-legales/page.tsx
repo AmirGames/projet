@@ -25,6 +25,7 @@ interface Version {
   contenu: string;
   publieLe: string;
   publiePar: string | null;
+  profilLegalSnapshot?: ProfilLegal | null;
 }
 
 interface Page {
@@ -35,6 +36,7 @@ interface Page {
   publieLe: string | null;
   parDefaut: boolean;
   historique: Version[];
+  profilLegalSnapshot?: ProfilLegal | null;
 }
 
 type Brouillon = { titre: string; contenu: string; version: string };
@@ -61,6 +63,24 @@ function remplacerVariables(texte: string, profil: ProfilLegal) {
   return texte.replace(/\$([a-z][a-z0-9_]*)/gi, (variable, cle: string) =>
     profil[cle]?.trim() ? profil[cle].trim() : variable
   );
+}
+
+function restaurerVariables(texte: string, profil: ProfilLegal) {
+  if (/\$[a-z][a-z0-9_]*/i.test(texte)) return texte;
+  const occurrences = new Map<string, string[]>();
+  for (const [cle] of CHAMPS_PROFIL) {
+    const valeur = profil[cle]?.trim();
+    if (!valeur || valeur.length < 5) continue;
+    occurrences.set(valeur, [...(occurrences.get(valeur) ?? []), cle]);
+  }
+  const remplacements = [...occurrences.entries()]
+    .filter(([, cles]) => cles.length === 1)
+    .map(([valeur, [cle]]) => [valeur, `$${cle}`] as const)
+    .sort(([a], [b]) => b.length - a.length);
+  return remplacements.reduce((modele, [valeur, variable]) => {
+    const echappee = valeur.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return modele.replace(new RegExp(echappee, 'g'), variable);
+  }, texte);
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -97,9 +117,9 @@ export default function PagesLegalesPage() {
 
   const page = pages.find((p) => p.slug === slug);
 
-  const partirDe = (p: Page): Brouillon => ({
-    titre: p.titre,
-    contenu: p.contenu,
+  const partirDe = (p: Page, profil: ProfilLegal): Brouillon => ({
+    titre: restaurerVariables(p.titre, profil),
+    contenu: restaurerVariables(p.contenu, profil),
     version: versionSuivante(p.version),
   });
 
@@ -120,6 +140,7 @@ export default function PagesLegalesPage() {
         headers: { Authorization: `Bearer ${jetonAcces()}` },
       });
       const donneesProfil = await reponseProfil.json();
+      const profilCharge: ProfilLegal = reponseProfil.ok ? donneesProfil.data : {};
       if (reponseProfil.ok) {
         setProfilLegal(donneesProfil.data);
         setProfilLegalInitial(donneesProfil.data);
@@ -129,7 +150,7 @@ export default function PagesLegalesPage() {
       const choisie = liste.find((p) => p.slug === garder) ?? liste[0];
       if (choisie) {
         setSlug(choisie.slug);
-        const nouveauBrouillon = partirDe(choisie);
+        const nouveauBrouillon = partirDe(choisie, profilCharge);
         setBrouillon(nouveauBrouillon);
         setBrouillonInitial(nouveauBrouillon);
       }
@@ -148,7 +169,7 @@ export default function PagesLegalesPage() {
   const choisir = (p: Page) => {
     if (brouillonModifie && !confirm(t('abandonner'))) return;
     setSlug(p.slug);
-    const nouveauBrouillon = partirDe(p);
+    const nouveauBrouillon = partirDe(p, profilLegal);
     setBrouillon(nouveauBrouillon);
     setBrouillonInitial(nouveauBrouillon);
     setConsultee(null);
@@ -276,7 +297,7 @@ export default function PagesLegalesPage() {
         <summary className="cursor-pointer font-semibold">Informations de la société et variables des documents</summary>
         <p className="mt-3 text-sm text-gray-600">
           Renseignez chaque valeur une fois, puis utilisez sa variable dans un document, par exemple <code>$nom</code> ou <code>$raison_sociale</code>.
-          Les valeurs sont figées dans chaque version au moment de la publication.
+          L’éditeur conserve les variables ; l’aperçu et les pages publiées affichent les valeurs. Chaque publication fige les valeurs utilisées.
         </p>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {CHAMPS_PROFIL.map(([cle, libelle]) => (
@@ -405,7 +426,7 @@ export default function PagesLegalesPage() {
                 {brouillonModifie && (
                   <button
                     onClick={() => {
-                      const nouveauBrouillon = partirDe(page);
+                      const nouveauBrouillon = partirDe(page, profilLegal);
                       setBrouillon(nouveauBrouillon);
                       setBrouillonInitial(nouveauBrouillon);
                     }}
@@ -453,7 +474,11 @@ export default function PagesLegalesPage() {
                             {t('voir')}
                           </button>
                           <button
-                            onClick={() => setBrouillon({ titre: v.titre, contenu: v.contenu, version: versionSuivante(page.version) })}
+                            onClick={() => setBrouillon({
+                              titre: restaurerVariables(v.titre, profilLegal),
+                              contenu: restaurerVariables(v.contenu, profilLegal),
+                              version: versionSuivante(page.version),
+                            })}
                             className="text-gray-700 hover:text-gray-900"
                           >
                             {t('repartir')}
@@ -481,8 +506,10 @@ export default function PagesLegalesPage() {
             <p className="text-sm text-gray-500">
               {t('versionPubliee', { version: consultee.version, date: date(consultee.publieLe) })}
             </p>
-            <h1>{consultee.titre}</h1>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{consultee.contenu}</ReactMarkdown>
+            <h1>{remplacerVariables(consultee.titre, consultee.profilLegalSnapshot ?? profilLegal)}</h1>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {remplacerVariables(consultee.contenu, consultee.profilLegalSnapshot ?? profilLegal)}
+            </ReactMarkdown>
             <button onClick={() => setConsultee(null)} className="mt-6 rounded-sm bg-white ring-1 ring-gray-200 px-4 py-2 text-gray-900">
               {t('fermer')}
             </button>

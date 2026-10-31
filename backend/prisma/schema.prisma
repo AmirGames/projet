@@ -2752,13 +2752,14 @@ model AcceptationConditions {
 // vigueur est la plus récente, et les anciennes restent consultables pour
 // savoir quel texte une personne a accepté.
 model PageLegaleVersion {
-  id         String   @id @default(cuid())
-  slug       String
-  version    String
-  titre      String
-  contenu    String
-  publieLe   DateTime @default(now())
-  publiePar  String?
+  id                   String   @id @default(cuid())
+  slug                 String
+  version              String
+  titre                String
+  contenu              String
+  profilLegalSnapshot  Json?
+  publieLe             DateTime @default(now())
+  publiePar            String?
 
   @@unique([slug, version])
   @@index([slug, publieLe])

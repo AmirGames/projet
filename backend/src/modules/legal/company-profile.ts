@@ -44,6 +44,15 @@ export async function lireProfilLegal(): Promise<ProfilLegal> {
   ) as ProfilLegal;
 }
 
+/** Lit un instantané de profil depuis une version légale, sans faire confiance à sa forme JSON. */
+export function profilLegalDepuisSnapshot(snapshot: unknown): ProfilLegal | null {
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return null;
+  const valeurs = snapshot as Record<string, unknown>;
+  return Object.fromEntries(
+    CHAMPS_PROFIL_LEGAL.map((cle) => [cle, typeof valeurs[cle] === "string" ? valeurs[cle] : ""])
+  ) as ProfilLegal;
+}
+
 export async function enregistrerProfilLegal(profil: ProfilLegal): Promise<ProfilLegal> {
   const config = await configSysteme();
   const settings = objetJson(config.settings);

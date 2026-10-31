@@ -1,7 +1,12 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { PAGES_LEGALES_DEFAUT, SLUGS_LEGAUX, VERSION_INITIALE, type SlugLegal } from "../../contenus/pages-legales.defaut";
-import { lireProfilLegal, remplacerVariablesLegales } from "./company-profile";
+import {
+  lireProfilLegal,
+  profilLegalDepuisSnapshot,
+  remplacerVariablesLegales,
+  type ProfilLegal,
+} from "./company-profile";
 
 export type PageLegale = {
   slug: SlugLegal;
@@ -9,6 +14,7 @@ export type PageLegale = {
   contenu: string;
   version: string;
   publieLe: Date | null;
+  profilLegalSnapshot?: ProfilLegal | null;
   /** Vrai tant qu'aucune version n'a été publiée : c'est le texte de départ. */
   parDefaut: boolean;
 };
@@ -42,9 +48,28 @@ export const PagesLegalesService = {
     const slug = verifierSlug(slugBrut);
     const derniere = await db.pageLegaleVersion.findFirst({ where: { slug }, orderBy: { publieLe: "desc" } });
     if (derniere) {
-      return { slug, titre: derniere.titre, contenu: derniere.contenu, version: derniere.version, publieLe: derniere.publieLe, parDefaut: false };
+      const profilLegalSnapshot = profilLegalDepuisSnapshot(derniere.profilLegalSnapshot);
+      return {
+        slug,
+        titre: derniere.titre,
+        contenu: derniere.contenu,
+        version: derniere.version,
+        publieLe: derniere.publieLe,
+        profilLegalSnapshot,
+        parDefaut: false,
+      };
     }
-    return { slug, ...PAGES_LEGALES_DEFAUT[slug], version: VERSION_INITIALE, publieLe: null, parDefaut: true };
+    return { slug, ...PAGES_LEGALES_DEFAUT[slug], version: VERSION_INITIALE, publieLe: null, profilLegalSnapshot: null, parDefaut: true };
+  },
+
+  /** Le rendu public utilise les valeurs figées à la publication, tandis que l'éditeur garde le modèle. */
+  async enVigueurPublique(slug: string): Promise<Omit<PageLegale, "profilLegalSnapshot">> {
+    const page = await this.enVigueur(slug);
+    const profil = page.profilLegalSnapshot ?? await lireProfilLegal();
+    const titre = remplacerVariablesLegales(page.titre, profil).contenu;
+    const contenu = remplacerVariablesLegales(page.contenu, profil).contenu;
+    const { profilLegalSnapshot: _profilLegalSnapshot, ...publique } = page;
+    return { ...publique, titre, contenu };
   },
 
   async toutes(): Promise<PageLegale[]> {
@@ -85,10 +110,19 @@ export const PagesLegalesService = {
     if (dejaPrise) {
       throw new ApiError(409, `La version « ${version} » existe déjà pour cette page : choisissez un nouveau numéro`, "VERSION_EXISTS");
     }
-    return db.pageLegaleVersion.create({
-      // Une version publiée est un instantané : modifier le profil ne la réécrit pas.
-      data: { slug, version, titre: titreResolu.contenu.trim(), contenu: contenuResolu.contenu, publiePar: auteur ?? null },
+    const creee = await db.pageLegaleVersion.create({
+      // On conserve le modèle pour l'éditeur et les valeurs figées pour le rendu public.
+      data: {
+        slug,
+        version,
+        titre: donnees.titre.trim(),
+        contenu: donnees.contenu.trim(),
+        profilLegalSnapshot: profil,
+        publiePar: auteur ?? null,
+      },
     });
+    // Garder le contenu résolu dans la réponse immédiate de publication.
+    return { ...creee, titre: titreResolu.contenu.trim(), contenu: contenuResolu.contenu };
   },
 
   /** « cgu@2026-09-25 cgv@v2 » : les versions en vigueur des documents acceptés. */
