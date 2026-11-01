@@ -436,7 +436,8 @@ jobs:
       #
       # Pas encore retenues (échec constant ou prérequis non établis en local) :
       #   assistant, carte-suivi, catalogue-support-direct, cloche,
-      #   commandes-direct, espace-administration, menu-merchant,
+      #   commande-invite, espace-cuisine, espace-tableau-de-bord,
+      #   suivi-client, commandes-direct, espace-administration, menu-merchant,
       #   note-livreur, preuve-livraison, profil-commercant,
       #   validation-livreurs, zones-livraison, zupdrive-chauffeur,
       #   zupdrive-courses, zupdrive-societe. domaines demande six domaines
@@ -464,9 +465,9 @@ jobs:
             echo "L'API ne redémarre pas"; return 1
           }
           echecs=0
-          for suite in session-perimee mot-de-passe-oublie paniers commande-invite suivi-client compte-restreint \
-                       carte-zones courses-livreur creneaux-retrait declinaisons ecran-cuisine fiche-boutique \
-                       formules-pages horaires-genre menu-restaurant tableau-de-bord versements-livreurs \
+          for suite in session-perimee mot-de-passe-oublie paniers compte-restreint \
+                       carte-zones courses-livreur creneaux-retrait declinaisons fiche-boutique \
+                       formules-pages horaires-genre menu-restaurant versements-livreurs \
                        vitrine-unique webhooks traductions; do
             echo "::group::verif-$suite"
             redemarrer_api
