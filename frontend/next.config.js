@@ -9,6 +9,8 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Ne pas révéler le framework dans les réponses HTTP.
+  poweredByHeader: false,
   // Fixer explicitement le dossier du frontend comme racine de l'application.
   outputFileTracingRoot: __dirname,
   images: {

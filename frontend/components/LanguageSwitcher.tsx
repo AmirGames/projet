@@ -19,7 +19,8 @@ import { useRegion } from '@/lib/region-context';
 const UN_AN = 60 * 60 * 24 * 365;
 
 function poserCookie(nom: string, valeur: string) {
-  document.cookie = `${nom}=${valeur};path=/;max-age=${UN_AN};samesite=lax`;
+  const secure = window.location.protocol === 'https:' ? ';secure' : '';
+  document.cookie = `${nom}=${valeur};path=/;max-age=${UN_AN};samesite=lax${secure}`;
 }
 
 /**

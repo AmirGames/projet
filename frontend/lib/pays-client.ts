@@ -45,7 +45,8 @@ function lireCookie(): string | null {
 
 /** Retient le choix du visiteur pour les autres pages (un an). */
 export function memoriserPays(pays: Pays) {
-  document.cookie = `${COOKIE_PAYS}=${pays}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  document.cookie = `${COOKIE_PAYS}=${pays}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax${secure}`;
 }
 
 /**

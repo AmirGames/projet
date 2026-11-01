@@ -186,7 +186,12 @@ export function proxy(requete: NextRequest) {
 
     // Arriver par /gb-en/… vaut choix : le reste du site (tunnel, compte)
     // suit la région et la langue de l'adresse.
-    const options = { path: '/', maxAge: UN_AN, sameSite: 'lax' as const };
+    const options = {
+      path: '/',
+      maxAge: UN_AN,
+      sameSite: 'lax' as const,
+      secure: process.env.NODE_ENV === 'production',
+    };
     if (requete.cookies.get(NOM_COOKIE_REGION)?.value !== region.code) {
       reponse.cookies.set(NOM_COOKIE_REGION, region.code, options);
     }
