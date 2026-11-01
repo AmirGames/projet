@@ -392,7 +392,7 @@ jobs:
         working-directory: backend
         run: |
           nohup node scripts/verification/faux-service-adresses.mjs > "$RUNNER_TEMP/adresses.log" 2>&1 &
-          nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &
+          NODE_ENV=test nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &
           for i in $(seq 1 30); do
             curl -fsS http://localhost:3001/health/ready > /dev/null && exit 0
             sleep 2
@@ -456,7 +456,7 @@ jobs:
               sleep 0.5
             done
             pkill -9 -f "node --env-file=.env.test dist/server.js" || true
-            (cd ../backend && nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &)
+            (cd ../backend && NODE_ENV=test nohup node --env-file=.env.test dist/server.js > "$RUNNER_TEMP/api.log" 2>&1 &)
             for i in $(seq 1 30); do
               curl -fsS http://localhost:3001/health/ready > /dev/null && return 0
               sleep 1
