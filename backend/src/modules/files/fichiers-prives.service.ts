@@ -107,6 +107,11 @@ function signature(relatif: string, expire: number, userId = "", sessionId = "")
   return createHmac("sha256", cleDeSignature()).update(`${relatif}\n${expire}\n${userId}\n${sessionId}`).digest("hex");
 }
 
+/** Lien court, limité à la photo d'une commande dont le visiteur connaît le jeton de suivi. */
+function signatureSuivi(relatif: string, expire: number, orderId: string): string {
+  return createHmac("sha256", cleDeSignature()).update(`suivi\n${orderId}\n${relatif}\n${expire}`).digest("hex");
+}
+
 // Le reçu de dépôt lie une photo à sa course. Une signature de lecture
 // seule ne doit jamais autoriser le rattachement d'un fichier à une autre course.
 const DUREE_DEPOT_S = 24 * 3600;
@@ -172,6 +177,28 @@ function baseApi(): string {
 export function adresseSignee(relatif: string, maintenant = Date.now(), identity = origineActuelle()): string {
   const { exp, sig, u, s } = signer(relatif, maintenant, identity);
   return `${baseApi()}/api/files/${relatif}?exp=${exp}&sig=${sig}&u=${encodeURIComponent(u)}&s=${encodeURIComponent(s)}`;
+}
+
+/** Le suivi public peut afficher cette photo pendant cinq minutes sans exposer de session client. */
+export function adresseSigneeSuivi(relatif: string, orderId: string, maintenant = Date.now()): string {
+  const exp = Math.floor(maintenant / 1000) + DUREE_SIGNATURE_S;
+  const sig = signatureSuivi(relatif, exp, orderId);
+  return `${baseApi()}/api/files/${relatif}?cap=suivi&o=${encodeURIComponent(orderId)}&exp=${exp}&sig=${sig}`;
+}
+
+export function signatureSuiviValable(relatif: string, orderId: string, exp: unknown, sig: unknown, maintenant = Date.now()): boolean {
+  if (typeof exp !== "string" || !/^\d{1,12}$/.test(exp)) return false;
+  if (typeof sig !== "string" || !/^[a-f0-9]{64}$/.test(sig)) return false;
+  const expiration = Number(exp);
+  const secondes = Math.floor(maintenant / 1000);
+  if (expiration < secondes || expiration > secondes + DUREE_SIGNATURE_S) return false;
+  return timingSafeEqual(Buffer.from(signatureSuivi(relatif, expiration, orderId), "hex"), Buffer.from(sig, "hex"));
+}
+
+export function presenterPourSuivi(adresse: string | null | undefined, orderId: string): string | null {
+  if (!adresse) return null;
+  const relatif = cheminRelatif(adresse);
+  return relatif ? adresseSigneeSuivi(relatif, orderId) : null;
 }
 
 /**

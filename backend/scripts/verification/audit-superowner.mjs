@@ -48,7 +48,7 @@ const revoc = await post(`/api/superowner/api-keys/${cleId}/revoke`, null, T);
 check('Clé API — révocation', revoc.status < 300, `status=${revoc.status}`);
 
 // Webhooks
-const wh = await post('/api/superowner/webhooks', { url: 'https://exemple.fr/hook', events: ['order.created'] }, T);
+const wh = await post('/api/superowner/webhooks', { url: 'http://127.0.0.1:4911/hook', events: ['order.created'] }, T);
 const whData = await j(wh);
 check('Webhook — création', wh.status < 300, `status=${wh.status} ${JSON.stringify(whData)?.slice(0, 120)}`);
 const whId = whData?.webhook?.id || whData?.id;

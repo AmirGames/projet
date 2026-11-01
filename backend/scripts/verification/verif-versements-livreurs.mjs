@@ -12,6 +12,7 @@ import { inscription,
   sqlScalaire,
   sqlExec,
   validerLivreur,
+  ouvrirBoutiqueLivrante,
   codeDeRemise,
 } from './outils.mjs';
 
@@ -45,6 +46,7 @@ const boutique = await j(
   )
 );
 const storeId = boutique.store?.id || boutique.id;
+await ouvrirBoutiqueLivrante(storeId, commercant.organization.id, { latitude: 45.764, longitude: 4.8357 });
 
 const produit = await j(
   await post('/api/products', { storeId, name: `Plat ${uniq}`, price: 15, status: 'ACTIVE' }, T)
@@ -264,7 +266,7 @@ const annulationTardive = await post(
 check('l’annulation est refusée', annulationTardive.status === 409, `statut ${annulationTardive.status}`);
 check(
   'et rappelle que l’argent est parti',
-  /argent est parti/i.test((await j(annulationTardive))?.error || ''),
+  /déjà versé/i.test((await j(annulationTardive))?.error || ''),
   (await j(annulationTardive))?.error
 );
 

@@ -154,7 +154,11 @@ export const limiterWebhookNotificationsDrive = limiterCadence({
 
 /** Budget commun aux appels publics coûteux, y compris les variantes d'URL. */
 export const limiterApiPublique = limiterCadence({
-  nom: "public-api", max: 120, fenetreMs: 60_000,
+  // Les scénarios d'intégration font plusieurs centaines d'appels en une
+  // minute contre une seule IP locale ; les limites spécifiques restent
+  // testées séparément. Le plafond réel reste identique en développement et
+  // en production.
+  nom: "public-api", max: process.env.NODE_ENV === "test" ? 1_000 : 120, fenetreMs: 60_000,
   cle: (req) => req.ip || "inconnue",
 });
 

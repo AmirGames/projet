@@ -1,5 +1,11 @@
 # Backend ZupEat / ZupDrive
 
+**Vérification locale du 1 novembre 2026 :** attribution, tournées, preuves de
+livraison, versements et parcours livreur : **236/236 contrôles API** ; Jest
+ciblé fichiers privés/limiteur : **27/27** ; `npx tsc --noEmit` réussi. Cette
+validation utilise une base PostgreSQL de test locale et ne prouve pas le
+déploiement. Détails : [rapport API](../docs/verification-api-parcours-2026-11-01.md).
+
 En production, l'API se connecte par `DATABASE_URL_APP`, et les migrations
 par `DATABASE_URL_MIGRATION`; la configuration refuse leur absence. Contrôler
 le rôle réellement ouvert, sans écriture, avec `npm run db:role` après

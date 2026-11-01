@@ -15,6 +15,8 @@ const DOSSIER = process.env.BACKUP_DIR || path.join(process.cwd(), "backups");
  * Les exports JSON de ce service portent aussi un autre préfixe.
  */
 export const PREFIXE_SAUVEGARDE_COMPLETE = "base-distant-";
+/** Exports partiels chiffrés par l'API ; seuls ceux-ci sont gérés par BackupService. */
+export const PREFIXE_EXPORT_PARTIEL = "export-partiel-";
 
 function formaterTaille(octets: number) {
   if (octets < 1024) return `${octets} o`;
@@ -34,7 +36,7 @@ const FORMAT_SAUVEGARDE = z.object({
 });
 
 function exigerExportPartiel(sauvegarde: { name: string }) {
-  if (!sauvegarde.name.startsWith("export-partiel-")) {
+  if (!sauvegarde.name.startsWith(PREFIXE_EXPORT_PARTIEL)) {
     throw new ApiError(
       409,
       "Cette archive complète est gérée par la procédure serveur A08, pas par l'API d'exports partiels",
@@ -99,7 +101,7 @@ export class BackupService {
   // `deploy/zup.sh backup` (pg_dump + fichiers) et `restore-test`.
   static async create(createdById?: string) {
     const horodatage = new Date().toISOString().replace(/[:.]/g, "-");
-    const nom = `export-partiel-${horodatage}.json.zupenc`;
+    const nom = `${PREFIXE_EXPORT_PARTIEL}${horodatage}.json.zupenc`;
 
     const enregistrement = await db.backup.create({
       data: { name: nom, createdById, status: "IN_PROGRESS" },

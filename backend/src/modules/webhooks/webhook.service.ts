@@ -78,7 +78,6 @@ export class WebhookService {
   }
 
   static async create(params: { url: string; events: string[]; createdById?: string }) {
-    await destinationWebhook(params.url);
     // Un événement inconnu était accepté sans un mot : l'abonnement paraissait
     // en place et n'envoyait rien. Il est maintenant refusé, en nommant ce qui
     // ne va pas.
@@ -91,6 +90,10 @@ export class WebhookService {
         "UNKNOWN_EVENT"
       );
     }
+
+    // Refuser d'abord un événement invalide, sans faire dépendre le résultat
+    // d'une résolution DNS externe.
+    await destinationWebhook(params.url);
 
     const existant = await db.webhook.findFirst({ where: { url: params.url } });
 

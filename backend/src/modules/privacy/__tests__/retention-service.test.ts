@@ -40,7 +40,10 @@ jest.mock("../../files/fichiers-prives.service", () => ({
   cheminRelatif: (url: unknown) => (typeof url === "string" && url.startsWith("/prive/") ? url.slice(1) : null),
 }));
 jest.mock("../erasure.service", () => ({ completeErasure: (...a: any[]) => completeErasure(...a) }));
-jest.mock("../../monitoring/backup.service", () => ({ BackupService: { remove: (...a: any[]) => retirerSauvegarde(...a) } }));
+jest.mock("../../monitoring/backup.service", () => ({
+  BackupService: { remove: (...a: any[]) => retirerSauvegarde(...a) },
+  PREFIXE_EXPORT_PARTIEL: "export-partiel-",
+}));
 
 import { runRetention } from "../retention.service";
 
@@ -102,10 +105,13 @@ describe("rétention : durées de conservation", () => {
     expect(de("payment", "updateMany")[0].args).toEqual({ where: { status: { in: ["SUCCEEDED", "FAILED", "REFUNDED"] } }, data: { stripeClientSecret: null } });
   });
 
-  it("retire les sauvegardes de plus de 14 jours, une par une", async () => {
+  it("retire les exports partiels de plus de 14 jours, jamais les archives complètes", async () => {
     resultats["backup.findMany"] = [{ id: "sauvegarde-1" }, { id: "sauvegarde-2" }];
     const resultat = await runRetention(MAINTENANT);
-    expect(de("backup", "findMany")[0].args.where).toEqual({ createdAt: { lt: avant(14) } });
+    expect(de("backup", "findMany")[0].args.where).toEqual({
+      createdAt: { lt: avant(14) },
+      name: { startsWith: "export-partiel-" },
+    });
     expect(retirerSauvegarde.mock.calls.map(c => c[0])).toEqual(["sauvegarde-1", "sauvegarde-2"]);
     expect(resultat.backups).toBe(2);
   });

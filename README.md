@@ -2,6 +2,16 @@
 
 **Pour commencer :** [index documentaire](START_HERE.md) · [installation locale](docs/SETUP.md) · [état et preuves datées](docs/etat-projet.md). Ce dépôt contient une API Express/Prisma, un site Next.js et six applications Expo, chacun avec son propre `package.json`. Les descriptions fonctionnelles et objectifs plus bas incluent des éléments projetés ; la présence d'un écran ou d'un contrat ne vaut pas validation en exploitation.
 
+Les encadrés A01–A03 ci-dessous sont des notes d'audit datées. Pour l'état
+actuel et les vérifications les plus récentes, suivre les liens ci-dessus.
+
+**Actualisation du 1 novembre 2026 :** les parcours API d'attribution, tournée,
+preuve de livraison, versement et parcours livreur passent localement (**236/236**).
+Les tests Jest ciblés et le typecheck passent aussi. Ce résultat porte sur le
+worktree et une base de test locale, pas sur la production ; voir le
+[rapport détaillé](docs/verification-api-parcours-2026-11-01.md) et
+[l'état courant du projet](docs/etat-projet.md).
+
 > **A03 (13 octobre 2026) — Sécurité des commandes :** [correctifs d'autorisation et vérifications restantes](docs/A03-SECURITE-COMMANDES.md). Non testé / non déployé à ce stade.
 
 
@@ -50,7 +60,7 @@ Le lockfile backend embarquait quatre alertes de production dans la chaîne du
 CLI Prisma. Deux overrides compatibles corrigent `mysql2` et `deepmerge-ts`
 sans modifier Prisma 7.10.0. L’audit backend `--omit=dev` est maintenant à
 zéro; les lockfiles web/mobile conservent des alertes documentées avec leurs
-limites et dates de revue dans [l’audit A12](docs/audit-dependances.md).
+limites et dates de revue dans [l’audit A12](docs/AUDIT-DEPENDANCES.md).
 Installation reproductible, génération, lint, build et installation runtime
 ont été exécutés. La CI a passé ses 11 checks, dont migrations PostgreSQL,
 mobile, frontend et E2E ([run](https://github.com/AmirGames/projet/actions/runs/38265964207)).

@@ -1,5 +1,11 @@
 # État de préparation au lancement — 31 octobre 2026
 
+> **Mise à jour postérieure :** les parcours API locaux d'attribution, tournée,
+> preuve de livraison et versement ont été vérifiés le 1 novembre 2026. Les
+> résultats et leurs limites sont consignés dans le [rapport API du 1 novembre](verification-api-parcours-2026-11-01.md).
+> Les observations ci-dessous restent datées du 31 octobre et ne prouvent pas
+> un déploiement ultérieur.
+
 ## État vérifié du dépôt
 
 - Base du worktree : `a24ffc196ca369f4d1058b198a4ec7f71939f063`; les correctifs décrits ci-dessous sont présents localement et proposés dans la PR.

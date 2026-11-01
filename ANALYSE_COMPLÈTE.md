@@ -366,7 +366,7 @@ Frontend inclut des tests navigateur automatisés (`frontend/scripts/verif-*.mjs
 - `lucide-react` - Icons
 - `leaflet` - Maps (delivery zones)
 - `@stripe/react-stripe-js` - Payment UI
-- `react-hook-form` + `zod` - Form validation
+- `react-hook-form` - Form validation
 - `zustand` - State management
 - `socket.io-client` - Realtime
 

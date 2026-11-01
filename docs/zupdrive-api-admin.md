@@ -179,6 +179,17 @@ Retirés : `POST /admin/audit-logs` (l'acteur venait du corps : entrée falsifia
 
 `run-checks` exécute 8 contrôles (pièces, cohérence, identité, infractions, comportement, **géographie**, doublons, fraude). Le contrôle `GEOGRAPHIC_ANOMALY` signale (risque 20, sévérité `MEDIUM`) un chauffeur dont au moins un départ de course est à plus de 100 km (`SEUIL_ELOIGNEMENT_KM`, à vol d'oiseau) de la zone de sa région déclarée, ou sans région. Les régions n'ayant pas de frontière en base, `zones-regions.ts` les approche par un cercle (centre + rayon) : valeurs approximatives, à affiner si besoin ; le code postal reste ce qui décide de la région d'un trajet.
 
+Limites des signaux enregistrés : la cohérence vérifie les dates d'expiration du
+permis et du contrôle technique, mais ne compare pas le nom de la pièce à celui
+du chauffeur (le nom extrait de la pièce n'est pas conservé). La détection de
+doublons ne peut pas comparer les numéros de pièces : le schéma ne les stocke
+pas et ce contrôle renvoie actuellement zéro doublon. Le contrôle fraude signale
+la création du compte moins de 24 heures avant l'examen ; les tentatives de
+soumission précédentes et les métadonnées de falsification ne sont pas
+disponibles. Les huit entrées du rapport ne signifient donc pas que ces signaux
+absents ont été vérifiés. `autoDecision` reste une recommandation ; aucun statut
+du chauffeur n'est modifié automatiquement.
+
 ## `analytics` — `/api/zupdrive/analytics` (Équipe `courses-drive`, lecture seule)
 
 `GET /period`, `/drivers` (+`limit`), `/regions`, `/payments` : query `startDate`, `endDate` (ISO 8601, `fin ≥ début`, au plus 366 jours, sinon `400`).

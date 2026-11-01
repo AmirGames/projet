@@ -105,16 +105,18 @@ export class StoreService {
       const store = await client.store.create({
         data: {
           orgId: data.orgId,
-          // Les trois taux de TVA belges, préajoutés : le commerçant n'a qu'à
-          // affecter ses catégories et ses articles. Il peut les modifier ou
-          // les supprimer comme les autres réglages. Pas de taux par défaut
-          // pour une boutique établie en France (taux différents).
+          // Les trois taux belges sont proposés comme réglages, mais ne
+          // s'appliquent à aucun produit avant que le commerçant leur assigne
+          // des catégories. Les créer en « all » taxait chaque article au
+          // premier taux (6 %), y compris les boissons et produits à 21 %.
+          // Pas de taux préajoutés pour une boutique établie en France.
           ...(countryCode !== "FR" && {
             taxSettings: {
               create: TAUX_TVA_PAR_DEFAUT_BE.map((taux) => ({
                 name: `TVA ${taux} %`,
                 rate: taux,
-                applicableTo: "all",
+                applicableTo: "categories",
+                categoryIds: [],
                 included: true,
                 status: "ACTIVE",
               })),

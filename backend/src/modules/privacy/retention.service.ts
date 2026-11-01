@@ -4,7 +4,7 @@ import { db } from "../../services/db";
 import { cheminRelatif, DOSSIERS_PRIVES } from "../files/fichiers-prives.service";
 import { privateRoot, removePrivate } from "../files/private-storage";
 import { completeErasure } from "./erasure.service";
-import { BackupService } from "../monitoring/backup.service";
+import { BackupService, PREFIXE_EXPORT_PARTIEL } from "../monitoring/backup.service";
 import { activeHolds } from "./legal-holds";
 import { Prisma } from "@prisma/client";
 import { codeErreur } from "../../utils/code-erreur";
@@ -54,7 +54,13 @@ export async function runRetention(now = new Date()) {
   await db.merchantArchive.updateMany({ data: { ordersData: Prisma.DbNull, customersData: Prisma.DbNull } });
   await db.merchantArchive.deleteMany({ where: { restorationDeadline: { lt: now } } });
   await db.acceptationConditions.deleteMany({ where: { id: { notIn: holds("AcceptationConditions") }, acceptedAt: { lt: before(RETENTION.consent, now) } } });
-  const backups = await db.backup.findMany({ where: { createdAt: { lt: before(RETENTION.backup, now) } }, select: { id: true } });
+  const backups = await db.backup.findMany({
+    where: {
+      createdAt: { lt: before(RETENTION.backup, now) },
+      name: { startsWith: PREFIXE_EXPORT_PARTIEL },
+    },
+    select: { id: true },
+  });
   for (const backup of backups) await BackupService.remove(backup.id);
   result.backups = backups.length;
   const replaced = await db.documentChauffeurDrive.findMany({ where: { id: { notIn: holds("DocumentChauffeurDrive") }, OR: [{ archiveeLe: { lt: before(RETENTION.documentsReplaced, now) } }, { statut: "REJECTED", examineLe: { lt: before(RETENTION.documentsReplaced, now) } }] }, select: { id: true, url: true }, take: 500 });

@@ -1,32 +1,5 @@
 # État du projet et travail restant
 
-## Actualisation — 31 octobre 2026
-
-Les correctifs de préparation des pages légales et du contrôle runtime sont
-proposés dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/241).
-La CI #496 a réussi ses 11/11 jobs sur la tête `68bc61c44a7d9df19c91a6d95d769578f6d52a7f`.
-Le nouveau commit qui ajoute des tests de régression dédiés au verrou de livraison
-et au rendu Markdown n'est pas couvert par ce run ; consulter les checks de la PR
-pour son résultat. La CI #489 avait également réussi 11/11 jobs sur le commit
-antérieur `7404e3c261c335f70ac24adb113fea7ac183bd82`. Le run #491 a terminé ses
-six jobs mobiles avec succès, mais a annulé les cinq autres jobs. La preuve
-détaillée, les changements et les blocages de production sont consignés dans le
-[rapport de vérification du lancement](verification-lancement-2026-10-31.md).
-La sonde publique `/health/ready` répondait `ok` sur la révision de production
-`a24ffc196ca3` le 31 octobre à 18:10 UTC ; cela ne valide pas les commandes ni
-les paiements.
-La PR n'est pas intégrée ni déployée. L'exploitant a confirmé qu'aucune assurance
-accident de plateforme n'est en vigueur, alors que les conditions livreurs
-publiques promettent cette couverture. Les courses rémunérées de livreurs
-indépendants restent bloquées jusqu'à validation du régime belge applicable et
-mise en place de la couverture requise. Les règles de remboursement/annulation
-et la base légale de géolocalisation hors course restent aussi à confirmer.
-La PR ajoute un garde-fou backend `ENABLE_PLATFORM_COURIER_DELIVERY`, faux par
-défaut en production ; après déploiement, il bloquera la livraison par les
-livreurs de la plateforme sans couper le retrait ni la livraison propre des
-commerces. Il ne protège pas la production avant intégration et déploiement.
-Les champs BCE, TVA et hébergeur sont exclus des changements.
-
 > **A03 — 13 octobre 2026 :** [correctifs initiaux des permissions sur les commandes](A03-SECURITE-COMMANDES.md). En attente des tests multi-tenant et de la CI ; ne pas considérer le parcours complet validé.
 
 
@@ -36,14 +9,92 @@ Les champs BCE, TVA et hébergeur sont exclus des changements.
 > **Actualisation documentaire du 13 octobre 2026 :** [baseline A01](audit-rea-ubereats.md). Le pilote reste non validé en exploitation ; aucune nouvelle exécution de test ni preuve serveur n'a été produite pendant cette actualisation.
 
 
-## État courant — 12 octobre 2026
+## État courant
+
+### Actualisation — 1 novembre 2026 : parcours API attribution/livraison/versement
+
+Les corrections locales d'attribution, de tournée, de preuve de livraison et
+de versement ont passé **236/236 contrôles API** sur une base PostgreSQL locale
+dédiée : attribution 41/41, tournée 55/55, preuve et photo 57/57, versements
+56/56, parcours livreur 27/27. Les tests Jest ciblés fichiers privés/limiteur
+passent 27/27 et `npx tsc --noEmit` réussit. La preuve détaillée et ses limites
+sont dans [le rapport de vérification API du 1 novembre](verification-api-parcours-2026-11-01.md).
+
+Le conflit dans ce document est résolu. Le lien de photo du suivi client est
+signé pour la commande et la preuve correspondante, avec une durée de cinq
+minutes ; les scripts déposent désormais une vraie photo privée et récupèrent
+le code de remise par le parcours client autorisé. Le plafond de 120 appels par
+minute demeure en développement et en production ; seul l'environnement de
+test utilise un plafond supérieur pour les suites longues.
+
+Cette validation est locale. Ces changements ne sont pas encore commités,
+poussés ou déployés et aucun parcours live ni paiement Stripe réel n'est
+revendiqué. Les blocages légaux et opérationnels listés dans l'actualisation
+du 31 octobre restent ouverts.
+
+### Actualisation — 31 octobre 2026
+
+La branche `claude/awesome-ride-m9lci8` est au SHA
+`a24ffc196ca369f4d1058b198a4ec7f71939f063`. La CI GitHub de ce commit a réussi
+ses **11 jobs** le 30 octobre ([run 40979988326](https://github.com/AmirGames/projet/actions/runs/40979988326)),
+dont les suites backend couvrant les régressions A02/A03 et les intégrations
+PostgreSQL dédiées. Une exécution précédente sur le commit parent a échoué ; le
+run réussi porte bien sur le commit courant. Son journal frontend signale aussi
+une vulnérabilité élevée de Zod ; l'étape d'audit est configurée
+`continue-on-error`. Zod 3 n'est importé par aucune source frontend : la
+dépendance directe a été retirée localement, mais ce correctif n'a pas encore
+été commité ni déployé. Le backend verrouille déjà Zod 4.6.7.
+
+Cette preuve actualise l'état CI, mais ne change pas la décision de lancement.
+Un contrôle HTTP en lecture seule effectué le 31 octobre sur
+`https://api.zupeat.com/health/ready` répond `status: ok`, `pret: true`, avec
+PostgreSQL et Redis disponibles, et expose la révision `a24ffc196ca3`, qui
+correspond au préfixe du SHA de cette branche. `https://zupeat.com/fr-fr` charge
+également la vitrine publique. Cela identifie le SHA actuellement servi et
+confirme la readiness technique de base ; cela ne valide pas les commandes,
+paiements, le remboursement, les apps sur appareils, les sauvegardes ou la
+conformité. Le pilote ZupEat reste à réaliser en environnement fermé ; ZupDrive
+reste hors périmètre. Les contrôles encore ouverts sont détaillés dans la
+[recette pilote A16](RECETTE-PILOTE-A16-2026-10-12.md) et le
+[registre de lancement UE](registre-lancement-ue.md).
+
+Complément de vérification locale du 31 octobre : le lint frontend complet et
+`tsc --noEmit` réussissent après exclusion des rapports générés `coverage/**`.
+Le lockfile a les mêmes dépendances racine que le manifeste et ne déclare plus
+Zod en production. Le build frontend après ce changement reste non vérifié :
+SWC échoue au contrôle ACL de son cache natif dans le bac à sable Windows et le
+démon Docker n’est pas accessible dans cette session. Voir le
+[rapport détaillé de lancement](verification-lancement-2026-10-31.md).
+L’audit de production frontend est maintenant bloquant dans le workflow local ;
+aucun nouveau run GitHub ne l’a encore exécuté.
+
+Contrôle BCE public effectué en lecture seule le même jour : les recherches
+exacte et phonétique de `ZupOne` au code postal 5000 ne renvoient aucun résultat.
+À l’adresse publiée Chaussée de Waterloo 75, 5000 Namur, le registre affiche
+Basic-Fit Namen (73–75), sans résultat ZupOne. La dénomination, le siège, le
+capital affiché (`1`) et le directeur de publication (`Soultane`) restent à
+confirmer par l’exploitant avant toute nouvelle publication. Aucun champ légal
+ni les valeurs BCE/TVA/hébergeur n’a été modifié.
+
+Le correctif préparatoire des pages légales et du contrôle runtime est suivi
+dans la [PR brouillon #241](https://github.com/AmirGames/projet/pull/241) ; la
+CI #496 a réussi 11/11 jobs sur le commit `68bc61c44a7d9df19c91a6d95d769578f6d52a7f`.
+Ce résultat ne couvre pas les changements ultérieurs de la PR. L'exploitant a
+confirmé qu'aucune assurance accident de plateforme n'est actuellement en
+vigueur, alors que les conditions livreurs publiques promettent cette
+couverture. Les courses rémunérées par la plateforme restent bloquées jusqu'à
+validation du régime belge applicable et mise en place de la couverture
+requise. Le garde-fou `ENABLE_PLATFORM_COURIER_DELIVERY`, désactivé par défaut
+en production, n'agit qu'après déploiement. Les règles d'annulation/remboursement
+et la base légale de la géolocalisation hors course restent à confirmer.
 
 La version A16 examinée est intégrée à `claude/awesome-ride-m9lci8` au commit
 `6439e36a51c6262b4781937c217a4063df6a90db` (PR #222). Le compte rendu de
 recette ci-dessous décrit un pilote fermé ZupEat avec ZupDrive explicitement
-exclu. **Décision : bloqué pour démarrer la recette utilisateur**, faute de
-SHA/environnement accessible, base représentative et preuves des parcours
-externes. Le résultat CI ne prouve ni déploiement ni exploitation. Les audits
+exclu. **Décision : bloqué pour démarrer la recette utilisateur**, faute
+d'environnement de recette représentatif, de base représentative et de preuves
+des parcours externes. Le contrôle HTTP du 31 octobre identifie la révision de
+production, sans remplacer ces preuves de recette. Les audits
 A01–A16 restent datés ; consulter [la décision et sa matrice A01–A16](RECETTE-PILOTE-A16-2026-10-12.md).
 Les états « développé », « testé », « intégré », « déployé » et « validé en
 exploitation » sont indépendants. Le [registre spécialisé de lancement UE](registre-lancement-ue.md)
@@ -64,6 +115,12 @@ ZupDrive est explicitement hors périmètre du pilote ; voir la [décision A16](
 La PR A15 #221 est intégrée avant la PR #222. La CI A16 et la vérification
 locale sont des preuves distinctes et n'attestent pas le serveur. Les dates des
 audits antérieurs restent conservées.
+
+**Actualisation d'exploitation du 31 octobre 2026 :** l'endpoint public
+`/health/ready` sert la révision `a24ffc196ca3`, correspondant au préfixe du
+HEAD de la branche, avec `pret: true`. La page d'accueil publique répond
+également. Cette lecture n'exécute aucun parcours client et ne vérifie pas les
+secrets de production.
 
 ## Étape 14 — A15 : rapports bornés et coûts de lecture (12 octobre 2026)
 
@@ -557,5 +614,4 @@ d’une base préexistante ne sont pas couverts par ce run. Les 6 lockfiles mobi
 des alertes de production, suivies à part avec échéance de revue. Voir
 [l’inventaire détaillé, chemins et limites A12](AUDIT-DEPENDANCES.md). Il n’y a
 pas de changement d’API, de schéma, de permission ou de configuration métier.
-
 

@@ -4,7 +4,7 @@ import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { finAttente } from "../drivers/delivery-proof.service";
 import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient, retardPourLeClient } from "../drivers/retard-livraison";
-import { presenter } from "../files/fichiers-prives.service";
+import { presenter, presenterPourSuivi } from "../files/fichiers-prives.service";
 import type { Compte } from "../auth/auth.middleware";
 
 /**
@@ -189,7 +189,7 @@ async function lireCommande(id: string) {
 type Lue = NonNullable<Awaited<ReturnType<typeof lireCommande>>>;
 
 /** Ce que disent la course et la preuve de dépôt, communs aux deux vues. */
-function etatDeLaLivraison(commande: Lue, avecCode: boolean) {
+function etatDeLaLivraison(commande: Lue, avecCode: boolean, suiviPublic = false) {
   const course = commande.delivery;
   const depose = course?.proofType === "PHOTO";
 
@@ -201,7 +201,11 @@ function etatDeLaLivraison(commande: Lue, avecCode: boolean) {
     preuveDeLivraison: course?.proofType ?? null,
     // Adresse signée : la photo n'est plus servie sans contrôle, et une
     // balise <img> n'envoie pas de jeton.
-    photoDepot: depose ? presenter(course?.proofPhoto) : null,
+    photoDepot: depose
+      ? suiviPublic
+        ? presenterPourSuivi(course?.proofPhoto, commande.id)
+        : presenter(course?.proofPhoto)
+      : null,
     noteDepot: depose ? course?.proofNote ?? null : null,
     livreurProche: Boolean(course?.nearCustomerNotifiedAt),
     // Le livreur attend à la porte : passé cette heure, la commande est
@@ -269,7 +273,7 @@ function vuePublique(commande: Lue) {
     items: articles(commande),
     // Le code est celui que le client donne au livreur : c'est lui qui
     // détient le jeton.
-    ...etatDeLaLivraison(commande, true),
+    ...etatDeLaLivraison(commande, true, true),
   };
 }
 

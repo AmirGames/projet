@@ -15,6 +15,7 @@ import {
   sqlExec,
   terminer,
   validerLivreur,
+  ouvrirBoutiqueLivrante,
 } from './outils.mjs';
 
 // Place Bellecour, Lyon.
@@ -78,12 +79,8 @@ const T = inscription.accessToken;
 const storeId = inscription.store?.id;
 const orgId = await sqlScalaire(`SELECT "orgId" FROM "Store" WHERE id = '${storeId}'`);
 
-// Validé, ouvert, situé, et livrant : ce script ne vérifie pas ces verrous-là.
-await sqlExec(`UPDATE "Organization" SET "approvedAt" = NOW(), tier = 'FREE' WHERE id = '${orgId}'`);
-await sqlExec(
-  `UPDATE "Store" SET "isOpen" = true, "acceptsDelivery" = true, "minDeliveryAmount" = 0,
-     latitude = ${BOUTIQUE.latitude}, longitude = ${BOUTIQUE.longitude} WHERE id = '${storeId}'`
-);
+// Validé, ouvert toute la semaine, situé et livrant : ce script ne vérifie pas ces verrous-là.
+await ouvrirBoutiqueLivrante(storeId, orgId, BOUTIQUE);
 
 const produit = await j(await post('/api/products', { storeId, name: 'Margherita', price: 20, status: 'ACTIVE' }, T));
 const productId = produit.product?.id || produit.id;

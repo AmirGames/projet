@@ -43,11 +43,16 @@ export async function destinationWebhook(brut: string) {
   const destination = urlDestination(brut);
   const ip = isIP(destination.hostname);
   let timer: NodeJS.Timeout | undefined;
-  const adresses = ip ? [{ address: destination.hostname, family: ip }] :
-    await Promise.race([
-      lookup(destination.hostname, { all: true, verbatim: true }),
-      new Promise<never>((_resolve, reject) => { timer = setTimeout(() => reject(new Error('Webhook DNS timeout')), 5000); }),
-    ]).finally(() => clearTimeout(timer));
+  let adresses: { address: string; family: number }[];
+  try {
+    adresses = ip ? [{ address: destination.hostname, family: ip }] :
+      await Promise.race([
+        lookup(destination.hostname, { all: true, verbatim: true }),
+        new Promise<never>((_resolve, reject) => { timer = setTimeout(() => reject(new Error('Webhook DNS timeout')), 5000); }),
+      ]).finally(() => clearTimeout(timer));
+  } catch {
+    throw new ApiError(400, "Le nom d'hôte du webhook ne peut pas être résolu.", "WEBHOOK_HOST_UNRESOLVED");
+  }
   if (!adresses.length || adresses.some(({ address }) =>
     !adressePublique(address) && !(destination.local && ['127.0.0.1', '::1'].includes(address)))) throw refus();
   return { ...destination, adresse: adresses[0] };

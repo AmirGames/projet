@@ -13,6 +13,12 @@ données en réinitialisant la base. Le passage historique du 2 octobre
 Les validations et priorités sont dans
 [l'état du projet](../../docs/etat-projet.md).
 
+**Mise à jour du 1 novembre 2026 :** les vérifications API liées à
+l'attribution, aux tournées, aux preuves de livraison et aux versements sont
+vertes sur base locale (236/236), mais les suites navigateur de ce dossier
+n'ont pas été rejouées dans cette vérification. Voir le
+[rapport API](../../docs/verification-api-parcours-2026-11-01.md).
+
 Ces scripts pilotent un **vrai navigateur** sur un site qui tourne. Ils
 attrapent ce que les vérifications d'API ne voient pas : un lien mort, une
 barre latérale en double, un bouton qui ne fait rien, un message d'erreur qui

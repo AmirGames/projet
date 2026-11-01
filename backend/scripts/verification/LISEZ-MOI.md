@@ -12,6 +12,14 @@ Ne pas les exécuter sur la base du VPS en exploitation. Les résultats datés,
 les audits ciblés et le travail restant figurent dans
 [l'état du projet](../../../docs/etat-projet.md).
 
+**Mise à jour API du 1 novembre 2026 :** cinq parcours locaux — attribution,
+tournée, preuve/photo, versements et parcours livreur — passent **236/236**.
+Jest ciblé passe 27/27 et le typecheck passe. La preuve et ses limites sont
+dans le [rapport daté](../../../docs/verification-api-parcours-2026-11-01.md).
+Pour rejouer ces longues suites, lancer l'API en `NODE_ENV=test` sur une base
+dédiée dont le nom contient `test`. Le plafond API est alors plus haut en test
+uniquement ; le plafond de développement et production reste 120/minute.
+
 Pour A04 : `PAYOUT_INTEGRATION=true npx jest src/modules/payouts/__tests__ --runInBand`
 sur une base PostgreSQL dédiée. Les courses attendent les verrous réels et
 contrôlent paiements, annulations, clôtures et rejeux. Le diagnostic

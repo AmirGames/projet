@@ -856,10 +856,16 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 
 ## 8. Ce qui est actif en ce moment
 
-### Terminé et poussé
+### État des parcours livreur et versements — actualisé le 1 novembre 2026
 
-**Le plan de livraison en trois temps est terminé** : validation des livreurs,
-versements, preuve de la remise. Tout est vert et poussé.
+Le plan fonctionnel couvre la validation des livreurs, les versements et la
+preuve de remise. Les corrections locales vérifiées le 1 novembre passent
+236/236 contrôles API (attribution 41, tournée 55, preuve 57, versements 56,
+parcours livreur 27), 27/27 tests Jest ciblés et le typecheck. Elles ne sont
+pas encore commités, poussées ni déployées. Les anciens nombres du tableau
+« Résultats historiques consignés » ci-dessus restent les résultats datés du
+2 octobre, et ne décrivent pas cette exécution. Détails :
+[rapport API du 1 novembre](docs/verification-api-parcours-2026-11-01.md).
 
 Deux invariants à ne jamais casser :
 

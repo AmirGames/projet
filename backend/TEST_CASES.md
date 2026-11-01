@@ -1,5 +1,10 @@
 # 🧪 Test Cases - Unified Identity Authentication
 
+> Les exemples de parcours de ce document sont historiques et peuvent précéder
+> les contrats actuels. Pour le résultat courant des parcours d'attribution,
+> tournée, preuve de livraison et versement, consulter le
+> [rapport API local du 1 novembre 2026](../docs/verification-api-parcours-2026-11-01.md).
+
 ## Étape A13 — contrats de paiement et parcours ouverts
 
 Le contrat HTTP `/api/payments` (payloads, réponses, statuts et permissions) et

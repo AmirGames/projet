@@ -14,6 +14,7 @@ import { inscription,
   terminer,
   validerLivreur,
   codeDeRemise,
+  ouvrirBoutiqueLivrante,
 } from './outils.mjs';
 
 // Lyon : la boutique au centre, les livreurs à des distances croissantes.
@@ -51,6 +52,7 @@ const boutique = await j(
   )
 );
 const storeId = boutique.store?.id || boutique.id;
+await ouvrirBoutiqueLivrante(storeId, orgId, BOUTIQUE);
 
 const produit = await j(
   await post('/api/products', { storeId, name: 'Margherita', price: 12, status: 'ACTIVE' }, T)

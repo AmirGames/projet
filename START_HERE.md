@@ -44,18 +44,15 @@
 - Quick commands
 
 ### For QA / Testing
-**Read:** `NEXT_STEPS.md` (20 min read)
-- Test coverage gaps (15-20% backend, <5% frontend)
-- High-priority test scenarios
-- Performance baseline needed
-- 3-week actionable checklist
+**Read:** [vérifications API et procédure](backend/scripts/verification/LISEZ-MOI.md)
+and [current API verification report](docs/verification-api-parcours-2026-11-01.md).
+`NEXT_STEPS.md` is a historical plan; its estimates and checklist are not the
+current state.
 
 ### For DevOps / Infrastructure
-**Read:** `NEXT_STEPS.md` sections:
-1. CI/CD Pipeline Setup (Critical)
-2. Database Backup Strategy
-3. Log Centralization
-4. Performance Baseline
+**Read:** [deployment procedure](DEPLOIEMENT-SCALEWAY.md), [current project
+status](docs/etat-projet.md), and [A16 configuration limits](docs/CONFIGURATION-A16.md).
+The dated DevOps checklist in `NEXT_STEPS.md` is retained as an archive.
 
 ---
 

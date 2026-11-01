@@ -22,6 +22,7 @@ import {
   sqlScalaire,
   validerLivreur,
   codeDeRemise,
+  ouvrirBoutiqueLivrante,
 } from './outils.mjs';
 
 const MDP = 'Password123!';
@@ -60,6 +61,7 @@ const boutique = await j(
   )
 );
 const storeId = boutique.store?.id || boutique.id;
+await ouvrirBoutiqueLivrante(storeId, orgId, COMMERCE);
 
 const produit = await j(
   await post('/api/products', { storeId, name: `Plat ${uniq}`, price: 15, status: 'ACTIVE' }, T)

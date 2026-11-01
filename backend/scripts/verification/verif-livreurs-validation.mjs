@@ -1,6 +1,6 @@
 // Un livreur ne roule pas avant que la plateforme ait vu son dossier.
 
-import { inscription, titre, check, j, uniq, post, get, patch, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, deposerDocumentLivreur, ouvrirBoutiqueLivrante, declarerPrete, terminer, sqlScalaire } from './outils.mjs';
 
 const MDP = 'Password123!';
 
@@ -34,6 +34,7 @@ const boutique = await j(
   )
 );
 const storeId = boutique.store?.id || boutique.id;
+await ouvrirBoutiqueLivrante(storeId, commercant.organization.id);
 
 const produit = await j(
   await post('/api/products', { storeId, name: `Plat ${uniq}`, price: 15, status: 'ACTIVE' }, T)
@@ -56,6 +57,8 @@ const commande = await j(
   })
 );
 const orderId = commande.order?.id || commande.id;
+check('la commande de test est créée', Boolean(orderId), JSON.stringify(commande));
+await declarerPrete(storeId, orderId, T);
 
 // ===== L'inscription ne suffit plus =====
 
@@ -102,23 +105,15 @@ check('personne n’est disponible', recherche?.data?.propose !== true, JSON.str
 // ===== Le dossier =====
 
 titre('Il dépose ses pièces');
-const depot = await post(
-  '/api/drivers/documents',
-  { type: 'license', documentUrl: 'https://exemple.fr/permis.pdf', expiryDate: '2030-01-01T00:00:00.000Z' },
-  D
-);
+const depot = await deposerDocumentLivreur('license', D, { expiryDate: '2030-01-01T00:00:00.000Z' });
 check('la pièce est acceptée', depot.status === 201, `statut ${depot.status}`);
 
-const expiree = await post(
-  '/api/drivers/documents',
-  { type: 'insurance', documentUrl: 'https://exemple.fr/assurance.pdf', expiryDate: '2020-01-01T00:00:00.000Z' },
-  D
-);
+const expiree = await deposerDocumentLivreur('insurance', D, { expiryDate: '2020-01-01T00:00:00.000Z' });
 check('une pièce déjà expirée est refusée', expiree.status === 400, `statut ${expiree.status}`);
 
-await post('/api/drivers/documents', { type: 'identity', documentUrl: 'https://exemple.fr/id.pdf' }, D);
-await post('/api/drivers/documents', { type: 'insurance', documentUrl: 'https://exemple.fr/assur.pdf' }, D);
-await post('/api/drivers/documents', { type: 'vehicle_registration', documentUrl: 'https://exemple.fr/cg.pdf' }, D);
+await deposerDocumentLivreur('identity', D);
+await deposerDocumentLivreur('insurance', D);
+await deposerDocumentLivreur('vehicle_registration', D);
 
 const dossier = await j(await get('/api/drivers/documents', D));
 check('ses quatre pièces sont au dossier', (dossier?.data?.documents || []).length === 4, `${(dossier?.data?.documents || []).length}`);
@@ -143,6 +138,9 @@ check(
   (vue?.documents || []).some((piece) => piece.libelle === 'Permis de conduire'),
   JSON.stringify((vue?.documents || []).map((p) => p.libelle))
 );
+
+const examenBce = await patch(`/api/superowner/drivers/${enAttente.id}/bce`, { status: 'VERIFIED' }, TP);
+check('le numéro BCE est vérifié par la plateforme', examenBce.status === 200, `statut ${examenBce.status}`);
 
 titre('Valider sans dossier complet est refusé');
 const trop = await post(`/api/superowner/drivers/${enAttente.id}/approve`, {}, TP);
@@ -184,7 +182,7 @@ check(
   refusSac.status === 400 && /Sac isotherme/.test((await j(refusSac))?.error || ''),
   `statut ${refusSac.status}`
 );
-await post('/api/drivers/documents', { type: 'insulated_bag', documentUrl: 'https://exemple.fr/sac.jpg' }, D);
+await deposerDocumentLivreur('insulated_bag', D);
 const avecSac = await j(await get(`/api/superowner/drivers/${enAttente.id}`, TP));
 const sac = (avecSac?.documents || []).find((piece) => piece.type === 'insulated_bag');
 check('le justificatif arrive au dossier', sac?.libelle === 'Sac isotherme (photo du sac ou facture)', JSON.stringify(sac));
@@ -209,12 +207,12 @@ const prevenu = await sqlScalaire(
 check('le livreur est prévenu', Number(prevenu) >= 1, prevenu);
 
 titre('Maintenant il roule');
-const enLigneApres = await patch('/api/drivers/availability', { isOnline: true }, D);
+const enLigneApres = await patch('/api/drivers/availability', { isAvailable: true, isOnline: true }, D);
 check('il se met en ligne', enLigneApres.status < 400, `statut ${enLigneApres.status}`);
 
 await patch('/api/drivers/location', { latitude: 45.764, longitude: 4.8357 }, D);
 const rechercheApres = await j(await post(`/api/orders/${orderId}/dispatch`, {}, T));
-check('et la course lui est proposée', rechercheApres?.data?.propose === true, JSON.stringify(rechercheApres?.data));
+check('et la course lui est proposée', rechercheApres?.data?.propose === true, JSON.stringify(rechercheApres));
 
 // ===== Écarter, puis rétablir =====
 
@@ -272,7 +270,7 @@ const abusif = await post(`/api/superowner/drivers/${jamaisValide.id}/reactivate
 check('le raccourci est refusé', abusif.status === 400, `statut ${abusif.status}`);
 check(
   'et renvoie vers la validation',
-  /validation/i.test((await j(abusif))?.error || ''),
+  abusif.status === 400 && /BCE|vérifié/i.test((await j(abusif))?.error || ''),
   (await j(abusif))?.error
 );
 

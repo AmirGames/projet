@@ -11,6 +11,7 @@ import {
   cheminRelatif,
   cheminSurDisque,
   peutLire,
+  signatureSuiviValable,
   signatureValable,
 } from "./fichiers-prives.service";
 import { detecterType } from "../../utils/file-type";
@@ -49,7 +50,24 @@ export async function servirFichierPrive(relatif: string | null, req: Request, r
     const complet = relatif ? cheminSurDisque(relatif) : null;
     if (!relatif || !complet) throw introuvable();
 
-    if (req.query.sig !== undefined || req.query.exp !== undefined) {
+    if (req.query.cap === "suivi") {
+      const orderId = typeof req.query.o === "string" ? req.query.o : "";
+      if (!orderId || !signatureSuiviValable(relatif, orderId, req.query.exp, req.query.sig)) {
+        throw new ApiError(403, "Lien de suivi expiré ou invalide", "INVALID_SIGNATURE");
+      }
+      const livraison = await db.orderDelivery.findFirst({
+        where: {
+          orderId,
+          status: "DELIVERED",
+          proofType: "PHOTO",
+          proofPhoto: { endsWith: `/uploads/${relatif}` },
+        },
+        select: { id: true },
+      });
+      if (!livraison) throw introuvable();
+      // L'identifiant est pseudonymisé par recordAudit et ne donne aucun accès de session.
+      req.userId = `tracking:${orderId}`;
+    } else if (req.query.sig !== undefined || req.query.exp !== undefined) {
       const u = typeof req.query.u === "string" ? req.query.u : "";
       const s = typeof req.query.s === "string" ? req.query.s : "";
       if (!u || !s || !signatureValable(relatif, req.query.exp, req.query.sig, Date.now(), u, s)) {
@@ -68,7 +86,7 @@ export async function servirFichierPrive(relatif: string | null, req: Request, r
     try { content = await readPrivate(relatif); } catch { throw introuvable(); }
     const type = detecterType(content);
     if (!type) throw introuvable();
-    await recordAudit(req.userId!, req.query.download === "1" ? "DOCUMENT_DOWNLOAD" : "DOCUMENT_VIEW", relatif);
+    await recordAudit(req.userId!, req.query.cap === "suivi" ? "PUBLIC_TRACKING_PHOTO_VIEW" : req.query.download === "1" ? "DOCUMENT_DOWNLOAD" : "DOCUMENT_VIEW", relatif);
 
     // Le back-office est servi sur une autre origine : sans cela helmet
     // l'empêche d'afficher la pièce dans une balise <img>.

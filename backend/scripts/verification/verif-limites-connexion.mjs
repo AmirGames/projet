@@ -13,16 +13,16 @@ for (const email of [cible, voisin]) {
 
 // ===== Connexion =====
 
-titre('Connexion : dix essais par quart d\'heure');
+titre('Connexion : cinq essais par quart d\'heure');
 const statuts = [];
-for (let essai = 0; essai < 10; essai++) {
+for (let essai = 0; essai < 5; essai++) {
   statuts.push((await post('/api/auth/login', { email: cible, password: 'PasLeBon' })).status);
 }
-check('les dix premiers essais sont examinés', statuts.every((s) => s === 401), statuts.join(','));
+check('les cinq premiers essais sont examinés', statuts.every((s) => s === 401), statuts.join(','));
 
-const onzieme = await post('/api/auth/login', { email: cible, password: 'PasLeBon' });
-const corps = await j(onzieme);
-check('le onzième est refusé sans être examiné', onzieme.status === 429, `statut=${onzieme.status}`);
+const sixieme = await post('/api/auth/login', { email: cible, password: 'PasLeBon' });
+const corps = await j(sixieme);
+check('le sixième est refusé sans être examiné', sixieme.status === 429, `statut=${sixieme.status}`);
 check(
   'le refus dit quoi faire, pas seulement « erreur »',
   /trop de tentatives/i.test(corps?.error || ''),

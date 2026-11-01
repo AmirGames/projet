@@ -10,6 +10,7 @@
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { createDecipheriv } from "node:crypto";
 
 export const API = process.env.VERIF_API_URL || "http://localhost:3001";
 
@@ -72,13 +73,20 @@ const INSCRIPTIONS = new Set(["/api/auth/signup", "/api/auth/merchant-register"]
 const requete =
   (methode) =>
   async (chemin, corps, jeton) => {
+    // BCE de test valide (jamais vérifié) : les scénarios métier qui ont besoin
+    // d'un livreur doivent passer la nouvelle validation d'inscription. Les
+    // tests du refus d'un BCE invalide l'envoient explicitement.
+    const corpsEffectif = methode === "POST" && chemin === "/api/drivers/register" &&
+      corps && typeof corps === "object" && !Object.hasOwn(corps, "bceNumber")
+      ? { ...corps, bceNumber: "0123.456.749" }
+      : corps;
     const reponse = await fetch(API + chemin, {
       method: methode,
       headers: {
         "Content-Type": "application/json",
         ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}),
       },
-      ...(corps ? { body: JSON.stringify(corps) } : {}),
+      ...(corpsEffectif ? { body: JSON.stringify(corpsEffectif) } : {}),
     });
 
     if (methode === "POST" && chemin === "/api/orders") await retenirJetonDeSuivi(reponse);
@@ -123,6 +131,35 @@ export const del = requete("DELETE");
 export const get = (chemin, jeton) =>
   fetch(API + chemin, { headers: jeton ? { Authorization: `Bearer ${jeton}` } : {} });
 
+/** Dépose un vrai fichier PDF de test par le même endpoint que l'application. */
+export async function deposerDocumentLivreur(type, jeton, options = {}) {
+  const formulaire = new FormData();
+  formulaire.set("type", type);
+  if (options.expiryDate) formulaire.set("expiryDate", options.expiryDate);
+  const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]);
+  formulaire.set("file", new Blob([pdf], { type: "application/pdf" }), `${type}.pdf`);
+  return fetch(`${API}/api/drivers/documents/upload`, {
+    method: "POST",
+    headers: jeton ? { Authorization: `Bearer ${jeton}` } : {},
+    body: formulaire,
+  });
+}
+
+/** Dépose une photo de livraison réelle dans le stockage privé. */
+export async function deposerPhotoLivreur(deliveryId, jeton) {
+  const formulaire = new FormData();
+  const pixel = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64"
+  );
+  formulaire.set("photo", new Blob([pixel], { type: "image/png" }), "depot.png");
+  return fetch(`${API}/api/drivers/deliveries/${deliveryId}/photo`, {
+    method: "POST",
+    headers: jeton ? { Authorization: `Bearer ${jeton}` } : {},
+    body: formulaire,
+  });
+}
+
 // ===== Accès direct à la base =====
 // Certains contrôles doivent regarder derrière l'API : vérifier qu'un mot de
 // passe est bien haché, simuler une perte de données que l'application ne
@@ -136,12 +173,22 @@ function base() {
 }
 
 /** Première colonne de la première ligne, en texte ; '' si aucune ligne. */
-export async function sqlScalaire(requeteSql) {
+export async function sqlScalaire(requeteSql, contexteChiffrement) {
   const lignes = await base().$queryRawUnsafe(requeteSql);
   if (!lignes || lignes.length === 0) return "";
 
   const valeur = Object.values(lignes[0])[0];
-  return valeur === null || valeur === undefined ? "" : String(valeur);
+  if (valeur === null || valeur === undefined) return "";
+  if (contexteChiffrement && typeof valeur === "string" && valeur.startsWith("zupenc:v1:")) {
+    const [id, nonce, tag, corps] = valeur.slice("zupenc:v1:".length).split(":");
+    const encoded = JSON.parse(process.env.DATA_ENCRYPTION_KEYS || "{}")[id];
+    if (!encoded || !nonce || !tag || !corps) throw new Error(`Clé ou enveloppe manquante pour ${contexteChiffrement}`);
+    const decipher = createDecipheriv("aes-256-gcm", Buffer.from(encoded, "base64"), Buffer.from(nonce, "base64url"));
+    decipher.setAAD(Buffer.from(`zupone:v1:${contexteChiffrement}`));
+    decipher.setAuthTag(Buffer.from(tag, "base64url"));
+    return JSON.parse(Buffer.concat([decipher.update(Buffer.from(corps, "base64url")), decipher.final()]).toString("utf8"));
+  }
+  return String(valeur);
 }
 
 /** Exécute une requête qui ne renvoie rien (INSERT, UPDATE, DELETE). */
@@ -154,8 +201,13 @@ export async function sqlScalaire(requeteSql) {
  */
 export async function ouvrirBoutiqueLivrante(storeId, orgId, position = { latitude: 45.764, longitude: 4.8357 }) {
   await sqlExec(`UPDATE "Organization" SET "approvedAt" = NOW(), tier = 'FREE' WHERE id = '${orgId}'`);
+  const jours = Object.fromEntries(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((jour) =>
+    [jour, { closed: false, plages: [{ open: "00:00", close: "23:59" }] }]
+  ));
+  const horaires = JSON.stringify(jours).replace(/'/g, "''");
   await sqlExec(
-    `UPDATE "Store" SET "isOpen" = true, "acceptsDelivery" = true, "minDeliveryAmount" = 0,
+    `UPDATE "Store" SET "isOpen" = true, "operatingHours" = '${horaires}'::jsonb,
+       "acceptsDelivery" = true, "minDeliveryAmount" = 0,
        latitude = ${position.latitude}, longitude = ${position.longitude} WHERE id = '${storeId}'`
   );
 }
@@ -290,7 +342,10 @@ export async function inscrirePlateforme() {
  * donc en base.
  */
 export async function codeDeRemise(deliveryId) {
-  return sqlScalaire(`SELECT "deliveryCode" FROM "OrderDelivery" WHERE id = '${deliveryId}'`);
+  const orderId = await sqlScalaire(`SELECT "orderId" FROM "OrderDelivery" WHERE id = '${deliveryId}'`);
+  if (!orderId) return "";
+  const suivi = await j(await lireSuivi(orderId));
+  return typeof suivi?.codeRemise === "string" ? suivi.codeRemise : "";
 }
 
 /**
@@ -306,12 +361,12 @@ export async function validerLivreur(jetonLivreur, jetonPlateforme) {
   const moi = await j(await get("/api/drivers/me", jetonLivreur));
   const driverId = moi?.data?.id;
 
+  if (driverId && moi?.data?.bceNumber) {
+    await patch(`/api/superowner/drivers/${driverId}/bce`, { status: "VERIFIED" }, jetonPlateforme);
+  }
+
   for (const type of moi?.data?.piecesAttendues || []) {
-    await post(
-      "/api/drivers/documents",
-      { type, documentUrl: `https://exemple.fr/${type}.pdf` },
-      jetonLivreur
-    );
+    await deposerDocumentLivreur(type, jetonLivreur);
   }
 
   const dossier = await j(await get("/api/drivers/documents", jetonLivreur));

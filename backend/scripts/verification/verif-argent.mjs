@@ -46,6 +46,10 @@ const boutique = await j(
 );
 const storeId = boutique.store?.id || boutique.id;
 
+// Les taux belges proposés ne sont pas affectés par défaut. Ce scénario
+// démarre explicitement sans réglage actif pour vérifier le cas à 0 %.
+await sqlExec(`DELETE FROM "TaxSetting" WHERE "storeId" = '${storeId}'`);
+
 const categorie = await j(
   await post("/api/categories", { storeId, name: `Plats ${uniq}` }, T)
 );

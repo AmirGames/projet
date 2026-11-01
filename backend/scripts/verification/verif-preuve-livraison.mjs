@@ -14,6 +14,7 @@ import { attenteClientEcoulee, inscription, declarerPrete,
   sqlExec,
   validerLivreur,
   codeDeRemise,
+  deposerPhotoLivreur,
 } from './outils.mjs';
 
 const MDP = 'Password123!';
@@ -218,11 +219,14 @@ const pendantAttente = await patch(
 check('pendant l’attente, le dépôt est refusé', pendantAttente.status === 409, `statut ${pendantAttente.status}`);
 await attenteClientEcoulee(absente.courseId);
 
+const depot = await deposerPhotoLivreur(absente.courseId, D);
+const photoUrl = (await j(depot))?.data?.photoUrl;
+check('la photo est envoyée au stockage privé', depot.status === 201 && Boolean(photoUrl), `statut ${depot.status}`);
 const photo = await patch(
   `/api/drivers/deliveries/${absente.courseId}`,
   {
     status: 'DELIVERED',
-    photoUrl: 'https://exemple.fr/depot.jpg',
+    photoUrl,
     note: 'Devant la porte, chez le gardien',
   },
   D
@@ -237,15 +241,22 @@ check('la preuve est la photo', typePhoto === 'PHOTO', typePhoto);
 const lien = await sqlScalaire(
   `SELECT "proofPhoto" FROM "OrderDelivery" WHERE id = '${absente.courseId}'`
 );
-check('le lien est conservé', lien === 'https://exemple.fr/depot.jpg', lien);
+check('la preuve pointe vers le stockage privé', lien.includes('/uploads/deliveries/'), lien);
 
 const note = await sqlScalaire(
-  `SELECT "proofNote" FROM "OrderDelivery" WHERE id = '${absente.courseId}'`
+  `SELECT "proofNote" FROM "OrderDelivery" WHERE id = '${absente.courseId}'`,
+  'OrderDelivery.proofNote'
 );
 check('l’endroit du dépôt est noté', note === 'Devant la porte, chez le gardien', note);
 
 const vuAbsent = await j(await lireSuivi(absente.orderId));
 check('le client sait que c’est un dépôt', vuAbsent?.preuveDeLivraison === 'PHOTO', vuAbsent?.preuveDeLivraison);
+check('le suivi fournit une adresse privée signée', typeof vuAbsent?.photoDepot === 'string' && new URL(vuAbsent.photoDepot).searchParams.get('cap') === 'suivi', vuAbsent?.photoDepot);
+if (vuAbsent?.photoDepot) {
+  const photoDuSuivi = new URL(vuAbsent.photoDepot);
+  const lecturePublique = await get(`${photoDuSuivi.pathname}${photoDuSuivi.search}`);
+  check('le client ouvre la photo avec son lien de suivi', lecturePublique.status === 200, `statut ${lecturePublique.status}`);
+}
 
 titre('Une photo qui n’est pas un lien est refusée');
 const troisieme = await courseAuSeuil();
@@ -301,9 +312,11 @@ check('aucun essai ne reste', vuBloque?.data?.essaisRestants === 0, `${vuBloque?
 
 titre('La photo reste la porte de sortie');
 await attenteClientEcoulee(troisieme.courseId);
+const depotSecours = await deposerPhotoLivreur(troisieme.courseId, D);
+const photoSecours = (await j(depotSecours))?.data?.photoUrl;
 const secours = await patch(
   `/api/drivers/deliveries/${troisieme.courseId}`,
-  { status: 'DELIVERED', photoUrl: 'https://exemple.fr/secours.jpg', note: 'Remis en main propre' },
+  { status: 'DELIVERED', photoUrl: photoSecours, note: 'Remis en main propre' },
   D
 );
 check('le dépôt passe', secours.status === 200, `statut ${secours.status}`);
@@ -368,9 +381,11 @@ check(
 );
 
 await attenteClientEcoulee(ancienne.courseId);
+const depotAncien = await deposerPhotoLivreur(ancienne.courseId, D);
+const photoAncienne = (await j(depotAncien))?.data?.photoUrl;
 const parPhoto = await patch(
   `/api/drivers/deliveries/${ancienne.courseId}`,
-  { status: 'DELIVERED', photoUrl: 'https://exemple.fr/ancienne.jpg' },
+  { status: 'DELIVERED', photoUrl: photoAncienne },
   D
 );
 check('la photo la clôt', parPhoto.status === 200, `statut ${parPhoto.status}`);

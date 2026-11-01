@@ -15,6 +15,7 @@ import {
   sqlScalaire,
   terminer,
   validerLivreur,
+  ouvrirBoutiqueLivrante,
   codeDeRemise,
 } from './outils.mjs';
 
@@ -56,6 +57,7 @@ async function creerBoutique(nom, point) {
     )
   );
   const storeId = b.store?.id || b.id;
+  await ouvrirBoutiqueLivrante(storeId, orgId, point);
   const p = await j(await post('/api/products', { storeId, name: 'Plat', price: 12, status: 'ACTIVE' }, T));
   return { storeId, productId: p.product?.id || p.id };
 }
@@ -84,6 +86,7 @@ const bB = await j(
   )
 );
 const boutiqueB = { storeId: bB.store?.id || bB.id };
+await ouvrirBoutiqueLivrante(boutiqueB.storeId, commercantB.organization.id, COMMERCE_B);
 boutiqueB.productId = (
   await j(await post('/api/products', { storeId: boutiqueB.storeId, name: 'Pain', price: 12, status: 'ACTIVE' }, TB))
 ).product?.id;
