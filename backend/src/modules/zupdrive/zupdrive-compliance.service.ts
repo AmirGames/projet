@@ -246,7 +246,7 @@ export class ZupDriveComplianceService {
         statut: true,
         documents: {
           where: { archiveeLe: null },
-          select: { statut: true, dateExpiration: true },
+          select: { type: true, statut: true, dateExpiration: true },
         },
         infractions: { select: { severity: true } },
         // Notes reçues : celles que les passagers donnent au chauffeur.
@@ -258,7 +258,7 @@ export class ZupDriveComplianceService {
     const now = new Date();
     const totalDrivers = drivers.length;
     const driversWithValidDocuments = drivers.filter((d) =>
-      d.documents.every((doc) => doc.statut === "APPROVED" && (!doc.dateExpiration || doc.dateExpiration > now))
+      d.documents.every((doc) => doc.statut === "APPROVED" && (!(doc.type === "licence" || doc.type === "certificat_capacite") || doc.dateExpiration !== null) && (!doc.dateExpiration || doc.dateExpiration > now))
     ).length;
 
     const thirtyDaysAhead = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);

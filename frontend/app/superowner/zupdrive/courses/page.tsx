@@ -23,6 +23,7 @@ interface CourseAdmin {
   departAdresse: string;
   arriveeAdresse: string;
   distanceMetres: number;
+  nombrePassagers: number;
   prixCentimes: number;
   annuleePar: string | null;
   createdAt: string;
@@ -102,6 +103,7 @@ export default function CoursesDrivePage() {
                     {course.departAdresse} → {course.arriveeAdresse}
                     <span className="block text-xs text-gray-500">
                       {t(`region.${course.region}`)} · {kilometres(course.distanceMetres)}
+                      {' · '}{course.nombrePassagers > 4 ? 'XL' : 'Standard'} ({course.nombrePassagers} passagers)
                     </span>
                   </td>
                   <td className="px-4 py-2">{course.passager?.email ?? t('compteSupprime')}</td>

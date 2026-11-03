@@ -21,9 +21,10 @@ import {
   type Region,
 } from '@/i18n/regions';
 import { estCheminRegional, separerRegion } from '@/i18n/chemins-regionaux';
-import { ENTETE_CSP, construireCsp, genererNonce, modeCsp } from '@/lib/csp';
+import { ENTETE_CSP, construireCsp, genererNonce, modeCspPourHote } from '@/lib/csp';
 
 const UN_AN = 60 * 60 * 24 * 365;
+const CSP_PROTECTION_FIXE = "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'";
 
 /**
  * Aiguille chaque requête vers le bon domaine.
@@ -128,6 +129,15 @@ function rediriger(requete: NextRequest, chemin: string) {
 
 export function proxy(requete: NextRequest) {
   const chemin = requete.nextUrl.pathname;
+  // Next réexécute le proxy après une réécriture interne. Les deux en-têtes
+  // correspondent alors exactement au chemin régional retiré au premier
+  // passage. On les reconnaît avant de supprimer les en-têtes fournis par un
+  // client pour éviter de rediriger en boucle vers l'URL régionale d'origine.
+  const regionReecrite = trouverRegion(requete.headers.get(ENTETE_REGION) ?? undefined);
+  const cheminReecrit = requete.headers.get(ENTETE_CHEMIN);
+  const reecritureRegionaleInterne = Boolean(
+    regionReecrite && cheminReecrit === chemin && estCheminRegional(chemin)
+  );
   const espaceHote = CLOISONNEMENT_ACTIF
     ? espaceDuDomaine(requete.headers.get('host') || '')
     : null;
@@ -140,11 +150,21 @@ export function proxy(requete: NextRequest) {
   const entetes = new Headers(requete.headers);
   entetes.delete(ENTETE_REGION);
   entetes.delete(ENTETE_CHEMIN);
+  if (reecritureRegionaleInterne && regionReecrite) {
+    entetes.set(ENTETE_REGION, regionReecrite.code);
+    entetes.set(ENTETE_CHEMIN, chemin);
+  }
 
   // Politique de sécurité des contenus, avec un nonce par page (lib/csp.ts).
-  // Next.js lit le nonce dans l'en-tête de la *requête* ; le navigateur reçoit
-  // le même en-tête dans la *réponse*. Jamais sur l'API ni les rapports eux-mêmes.
-  const mode = modeCsp();
+  // En enforce, Next.js reçoit la CSP complète et pose le nonce sur ses scripts.
+  // En report-only, les scripts runtime Next n'en reçoivent pas : ce mode ne
+  // sert pas encore à vérifier proprement les parcours du pilote.
+  const mode = modeCspPourHote(
+    requete.headers.get('host') || '',
+    [DOMAINES.drive, DOMAINES.chauffeur],
+    process.env.CSP_MODE,
+    process.env.CSP_MODE_ZUPDRIVE,
+  );
   const avecCsp = !chemin.startsWith('/api/') && mode !== 'off';
   const csp = avecCsp
     ? construireCsp({
@@ -161,8 +181,17 @@ export function proxy(requete: NextRequest) {
   }
   const poserCsp = (reponse: NextResponse): NextResponse => {
     if (csp && mode !== 'off') reponse.headers.set(ENTETE_CSP[mode], csp);
+    // Les marques en observation gardent les protections fixes actives. Une
+    // CSP complète en enforce les remplace et évite les politiques partielles.
+    if (mode === 'report-only' && process.env.NODE_ENV === 'production') {
+      reponse.headers.set('Content-Security-Policy', CSP_PROTECTION_FIXE);
+    }
     return reponse;
   };
+
+  if (reecritureRegionaleInterne) {
+    return poserCsp(NextResponse.next({ request: { headers: entetes } }));
+  }
 
   const { region, reste } = separerRegion(chemin);
 

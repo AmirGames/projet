@@ -3,7 +3,17 @@ import { z } from "zod";
 import { db } from "../../services/db";
 import { PagesLegalesService } from "./pages-legales.service";
 
-export type DocumentLegal = "cgu" | "cgv" | "conditions-commercants" | "conditions-livreurs" | "confidentialite";
+export type DocumentLegal =
+  | "cgu"
+  | "cgv"
+  | "conditions-commercants"
+  | "conditions-livreurs"
+  | "confidentialite"
+  | "drive-cgu"
+  | "drive-cgv"
+  | "drive-conditions-chauffeurs"
+  | "drive-conditions-societes"
+  | "drive-confidentialite";
 
 /** Champ à ajouter aux schémas : la case doit avoir été cochée. */
 export const champAcceptation = {

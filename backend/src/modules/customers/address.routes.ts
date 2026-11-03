@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { AddressService, completerIndice, fournisseurActif, indiceValide } from "./address.service";
 import { limiteBornee } from "../../utils/pagination";
+import { signerSelectionAdresseZupDrive } from "../zupdrive/adresse-selection-signee";
 
 const router = Router();
 
@@ -39,8 +40,14 @@ router.get("/search", async (req: Request, res: Response) => {
   }));
 
   const resultat = await AddressService.rechercher(requete, limite, indice);
+  const suggestions = req.query.usage === "zupdrive"
+    ? resultat.suggestions.map((suggestion) => ({
+      ...suggestion,
+      preuveAdresse: signerSelectionAdresseZupDrive(suggestion),
+    }))
+    : resultat.suggestions;
 
-  res.json({ ...resultat, provider: fournisseurActif() });
+  res.json({ ...resultat, suggestions, provider: fournisseurActif() });
 });
 
 export default router;

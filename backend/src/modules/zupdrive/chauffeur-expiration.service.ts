@@ -53,7 +53,7 @@ const SELECTION_PIECE = {
   statut: true,
   dateExpiration: true,
   chauffeur: { select: { region: true, statut: true, societeId: true } },
-  vehicule: { select: { societeId: true, plaque: true } },
+  vehicule: { select: { societeId: true, plaque: true, societe: { select: { region: true } } } },
 } as const;
 
 type PieceSuivie = {
@@ -65,7 +65,7 @@ type PieceSuivie = {
   statut: string;
   dateExpiration: Date | null;
   chauffeur: { region: string | null; statut: string; societeId: string | null } | null;
-  vehicule: { societeId: string; plaque: string } | null;
+  vehicule: { societeId: string; plaque: string; societe: { region: string | null } } | null;
 };
 
 /** La pièce est-elle exigée par le dossier qui la porte ? */
@@ -73,7 +73,7 @@ function exigee(piece: PieceSuivie): boolean {
   const types: string[] = piece.chauffeur
     ? piecesExigees(piece.chauffeur.region, { enSociete: Boolean(piece.chauffeur.societeId) })
     : piece.vehiculeId
-      ? piecesExigeesVehicule()
+      ? piecesExigeesVehicule(piece.vehicule?.societe.region)
       : piecesExigeesSociete();
   return types.includes(piece.type);
 }

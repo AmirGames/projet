@@ -52,20 +52,23 @@ mode estimation ; il ne révèle aucune valeur de secret.
 
 ## CSP progressive et parcours de paiement
 
-`CSP_MODE=report-only` est le défaut d'observation ; `enforce` applique la CSP
-à nonce définie dans `frontend/lib/csp.ts`. Les violations arrivent à
+`CSP_MODE=report-only` reste le défaut partagé pour les domaines hors ZupDrive;
+la politique fixe continue d'y être appliquée. `CSP_MODE_ZUPDRIVE=enforce` est
+le défaut pour `zupdrive.com` et `driver.zupdrive.com`; `report-only` observe la
+CSP complète sans bloquer. Les violations arrivent à
 `POST /api/csp-report` sans être considérées comme une preuve de réussite du
 parcours. `off` est forcé en `enforce` en production. Les directives pour Stripe
 incluent ses frames et connexions 3DS, ainsi que les autres origines utilisées
 par le site. Une valeur CSP inconnue refuse le démarrage en production. Toute
 nouvelle origine doit être justifiée et testée.
 
-Progression recommandée : (1) déployer en report-only et collecter les violations
-sur le checkout et les pages qui intègrent Stripe ; (2) corriger chaque violation
-applicative et répéter la vérification avec cartes de test Stripe, y compris un
-paiement nécessitant 3DS ; (3) déployer `CSP_MODE=enforce`, puis répéter les mêmes
-parcours et surveiller les rapports ; (4) revenir en report-only seulement après
-analyse d'une régression, sans couper les en-têtes de protection. Le script
+Le test `report-only` montre une limite connue : Next ne pose pas les nonces
+sur ses scripts runtime dans ce mode (22 échecs localement; 19 scripts sans
+nonce sur une réponse `zupdrive.com`). Ne pas utiliser `report-only` pour
+mesurer les violations applicatives ZupDrive avant correction. Garder
+`CSP_MODE_ZUPDRIVE=enforce`, exécuter la recette stricte sur le build et le scan
+de préproduction, puis corriger toute régression sous enforce. Le mode partagé
+reste `report-only` pour les autres marques. Le script
 `cd frontend && npm run verif:csp` couvre les pages, le checkout, les nonces,
 l'injection de script et le format de rapport. Il n'émule pas un authentificateur
 3DS distant : cette preuve doit être conservée séparément.
@@ -76,7 +79,7 @@ Commandes locales : `cd backend && npx jest src/config/__tests__/env.test.ts --r
 `npm run db:role` après build (base dédiée uniquement), `npx tsc --noEmit`, `npm run lint`,
 `npm run build`; frontend : `npx jest lib/__tests__/csp.test.ts --runInBand`,
 `npx tsc --noEmit`, `npm run lint`, `npm run build`, puis `npm run verif:csp`
-contre un serveur configuré en report-only et ensuite enforce. Les chemins et
+contre un serveur en observation puis avec `REQUIRE_CSP_ENFORCE=1`. Les chemins et
 résultats effectivement exécutés sont consignés dans
 [le registre courant](etat-projet.md#étape-16--a16-vérification-du-pilote-et-décision-de-lancement)
 et [le compte rendu de recette](RECETTE-PILOTE-A16-2026-10-12.md).

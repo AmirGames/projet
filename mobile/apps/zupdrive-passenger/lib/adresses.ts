@@ -9,20 +9,20 @@ export interface SuggestionAdresse {
   postalCode: string;
   latitude: number | null;
   longitude: number | null;
+  preuveAdresse: string | null;
 }
 
 export async function rechercherAdresses(q: string): Promise<SuggestionAdresse[]> {
   const res = await apiFetch<{ suggestions?: SuggestionAdresse[] }>(
-    `/api/addresses/search?q=${encodeURIComponent(q.trim())}&limit=6`,
+    `/api/addresses/search?q=${encodeURIComponent(q.trim())}&limit=6&usage=zupdrive`,
     null
   );
   return res.suggestions ?? [];
 }
 
 /**
- * Une suggestion devient l'adresse d'un trajet. Sans coordonnées ni code
- * postal le serveur ne peut ni situer ni chiffrer le trajet : on la refuse
- * (null) plutôt que d'envoyer une adresse que l'API rejetterait.
+ * Une suggestion devient l'adresse d'un trajet. Seule la preuve signée par
+ * le géocodeur serveur permet au backend d'utiliser ses coordonnées.
  */
 export function adresseTrajet(s: SuggestionAdresse): AdresseTrajet | null {
   const { latitude, longitude } = s;
@@ -30,6 +30,7 @@ export function adresseTrajet(s: SuggestionAdresse): AdresseTrajet | null {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
   const codePostal = (s.postalCode ?? '').trim();
   const adresse = (s.label ?? '').trim();
-  if (!codePostal || !adresse) return null;
-  return { adresse, latitude, longitude, codePostal };
+  const preuveAdresse = (s.preuveAdresse ?? '').trim();
+  if (!codePostal || !adresse || !preuveAdresse) return null;
+  return { adresse, latitude, longitude, codePostal, preuveAdresse };
 }

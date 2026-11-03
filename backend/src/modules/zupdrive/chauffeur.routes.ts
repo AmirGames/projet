@@ -18,6 +18,7 @@ import { ZupDriveDriverManagementService } from "./zupdrive-driver-management.se
 import { ChatCourseDriveService } from "./chat-course-drive.service";
 import { lectureSchema, messageSchema } from "./chat-course-drive.routes";
 import { COMMENTAIRE_MAX, NOTE_MAX, NOTE_MIN, NoteCourseDriveService } from "./note-course-drive.service";
+import { accepterConditionsDossierDrive } from "./acceptation-conditions-drive";
 
 /**
  * /api/zupdrive/chauffeur — le dossier du chauffeur connecté
@@ -49,8 +50,14 @@ const profilSchema = z
     vehiculeMarque: texte(60),
     vehiculeModele: texte(60),
     vehiculePlaque: texte(15),
+    placesPassagers: z.number().int().min(1).max(6).nullable().optional(),
   })
   .strict();
+const ouvertureDossierSchema = profilSchema.extend({
+  conditionsAcceptees: z.literal(true, {
+    message: "Vous devez accepter les conditions chauffeurs ZupDrive",
+  }),
+});
 
 /** Le dossier tel que le chauffeur le voit : pièces en adresses signées. */
 export function presenterDossier(dossier: Awaited<ReturnType<typeof ChauffeurOnboardingService.dossier>>) {
@@ -84,7 +91,8 @@ router.get("/me", async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/zupdrive/chauffeur/me — ouvrir le dossier (idempotent)
 router.post("/me", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const profil = profilSchema.parse(req.body ?? {});
+    const { conditionsAcceptees: _conditionsAcceptees, ...profil } = ouvertureDossierSchema.parse(req.body ?? {});
+    await accepterConditionsDossierDrive(req, "CHAUFFEUR");
     const dossier = await ChauffeurOnboardingService.commencer(req.userId as string, profil);
     res.status(201).json({ success: true, data: presenterDossier(dossier!) });
   } catch (err) {

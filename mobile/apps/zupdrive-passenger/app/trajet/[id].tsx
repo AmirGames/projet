@@ -210,6 +210,7 @@ export default function SuiviTrajet() {
       <Card title="Trajet">
         <Row label="Départ" value={trajet.departAdresse} />
         <Row label="Destination" value={trajet.arriveeAdresse} />
+        <Row label="Véhicule" value={`${trajet.nombrePassagers > 4 ? 'XL' : 'Standard'} · ${trajet.nombrePassagers} passager(s)`} />
         <Row label="Distance" value={`${kilometres(trajet.distanceMetres)} · ${minutes(trajet.dureeSecondes)}`} />
         <Row label="Prix" value={prix(trajet.prixCentimes)} last />
       </Card>

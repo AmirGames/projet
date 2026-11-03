@@ -35,11 +35,11 @@ import { SocieteDriveService } from "../societe-drive.service";
 import { peutLire } from "../../files/fichiers-prives.service";
 
 const suffixe = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-const REGION = "FLANDRE";
-// Gand (9000) → Gentbrugge (9050) : même région.
-const DEPART = { adresse: "Korenmarkt, 9000 Gent", latitude: 51.0543, longitude: 3.7196, codePostal: "9000" };
-const ARRIVEE = { adresse: "Brusselsesteenweg, 9050 Gentbrugge", latitude: 51.0378, longitude: 3.7598, codePostal: "9050" };
-const TARIF = { priseEnChargeCentimes: 250, parKmCentimes: 180, parMinuteCentimes: 30, minimumCentimes: 800 };
+const REGION = "WALLONIE";
+// Namur (5000) → Jambes (5100) : même commune et même région.
+const DEPART = { adresse: "Place d'Armes, 5000 Namur", latitude: 50.4632, longitude: 4.8665, codePostal: "5000" };
+const ARRIVEE = { adresse: "Avenue Jean Materne, 5100 Jambes", latitude: 50.4555, longitude: 4.8759, codePostal: "5100" };
+const TARIF = { priseEnChargeCentimes: 0, parKmCentimes: 190, parMinuteCentimes: 0, minimumCentimes: 820 };
 // Numéros BCE valables (les deux derniers chiffres valent 97 − base mod 97),
 // propres à cette suite.
 const bce = (graine: number) => {
@@ -52,6 +52,12 @@ const BCE_B = bce((Date.now() % 9_000_000) + 1);
 let tarifAvant: any = null;
 const comptes: string[] = [];
 const fichierPdf = () => ({ file: Buffer.from("%PDF-1.4"), mimeType: "application/pdf" });
+const preuveTitre = (type: string) => ({
+  verificationAutorite: true,
+  referenceAutorite: `Référence ${type} vérifiée par l'équipe de test`,
+  ...(["licence", "certificat_capacite"].includes(type) ? { communeAutorisee: "Namur" } : {}),
+  ...(type === "licence" ? { typeServiceTaxi: "RUE" as const } : {}),
+});
 
 async function compte(nom: string) {
   const user = await db.user.create({
@@ -67,18 +73,20 @@ async function compte(nom: string) {
 async function societeEnRegle(gerantId: string, numero: string, plaque: string) {
   await SocieteDriveService.creer(gerantId, { raisonSociale: `Taxi ${plaque}`, numeroEntreprise: numero, region: REGION, telephone: "+32 9 123 45 67" });
   const tva = await SocieteDriveService.deposerPiece(gerantId, { type: "tva", ...fichierPdf() });
+  const accesProfession = await SocieteDriveService.deposerPiece(gerantId, { type: "certificat_acces_profession", ...fichierPdf() });
   await SocieteDriveService.soumettre(gerantId);
   const societe = (await SocieteDriveService.maSociete(gerantId))!;
   await SocieteDriveService.examinerPiece(societe.id, tva.id, { approuve: true });
+  await SocieteDriveService.examinerPiece(societe.id, accesProfession.id, { approuve: true, ...preuveTitre("certificat_acces_profession") });
   await SocieteDriveService.valider(societe.id, "admin-test");
-  const vehicule = await SocieteDriveService.ajouterVehicule(gerantId, { marque: "Toyota", modele: "Prius", plaque });
-  for (const type of ["licence", "assurance", "controle_technique", "immatriculation"] as const) {
+  const vehicule = await SocieteDriveService.ajouterVehicule(gerantId, { marque: "Toyota", modele: "Prius", plaque, placesPassagers: 4 });
+  for (const type of ["licence", "assurance", "controle_technique", "immatriculation", "identification_police"] as const) {
     const piece = await SocieteDriveService.deposerPieceVehicule(gerantId, vehicule.id, {
       type,
       ...fichierPdf(),
       dateExpiration: new Date(Date.now() + 365 * 86_400_000).toISOString(),
     });
-    await SocieteDriveService.examinerPiece(societe.id, piece.id, { approuve: true });
+    await SocieteDriveService.examinerPiece(societe.id, piece.id, { approuve: true, ...(type === "licence" ? preuveTitre(type) : {}) });
   }
   return { societeId: societe.id, vehiculeId: vehicule.id };
 }
@@ -90,9 +98,16 @@ async function chauffeurDeSociete(gerantId: string, nom: string) {
   await SocieteDriveService.accepterInvitation(qui.id, invitation.id);
   await ChauffeurOnboardingService.modifier(qui.id, { telephone: "+32 470 00 00 00" });
   const chauffeur = await db.chauffeurDrive.findUniqueOrThrow({ where: { userId: qui.id } });
-  for (const type of ["identite", "permis", "bestuurderspas"] as const) {
-    const piece = await ChauffeurOnboardingService.deposerPiece(qui.id, { type, ...fichierPdf() });
-    await ChauffeurOnboardingService.examinerPiece(chauffeur.id, piece.id, { approuve: true });
+  for (const type of ["identite", "permis", "certificat_capacite", "bestuurderspas"] as const) {
+    const piece = await ChauffeurOnboardingService.deposerPiece(qui.id, {
+      type,
+      ...fichierPdf(),
+      ...(type === "certificat_capacite" ? { dateExpiration: "2027-03-31" } : {}),
+    });
+    await ChauffeurOnboardingService.examinerPiece(chauffeur.id, piece.id, {
+      approuve: true,
+      ...(type === "certificat_capacite" ? preuveTitre(type) : {}),
+    });
   }
   await ChauffeurOnboardingService.soumettre(qui.id);
   await ChauffeurOnboardingService.valider(chauffeur.id, "admin-test");
@@ -166,6 +181,7 @@ describe("dossier de la société", () => {
 
     await SocieteDriveService.modifier(qui.id, { numeroEntreprise: bce((Date.now() % 9_000_000) + 7), telephone: "+32 9 000 00 00" });
     await SocieteDriveService.deposerPiece(qui.id, { type: "tva", ...fichierPdf() });
+    await SocieteDriveService.deposerPiece(qui.id, { type: "certificat_acces_profession", ...fichierPdf() });
     await SocieteDriveService.soumettre(qui.id);
     const societe = (await SocieteDriveService.maSociete(qui.id))!;
     expect(societe.statut).toBe("SOUMIS");
@@ -184,21 +200,23 @@ describe("dossier de la société", () => {
 describe("véhicules", () => {
   it("normalise la plaque et n'inscrit un véhicule actif qu'une fois", async () => {
     const plaque = `3-tst-${suffixe.slice(-3)}`;
-    const v = await SocieteDriveService.ajouterVehicule(gerantA.id, { marque: "Skoda", modele: "Octavia", plaque });
+    const v = await SocieteDriveService.ajouterVehicule(gerantA.id, { marque: "Skoda", modele: "Octavia", plaque, placesPassagers: 4 });
     expect(v.plaque).toBe(`3TST${suffixe.slice(-3).toUpperCase()}`);
-    await expect(SocieteDriveService.ajouterVehicule(gerantB.id, { marque: "Skoda", modele: "Octavia", plaque })).rejects.toMatchObject({
+    await expect(SocieteDriveService.ajouterVehicule(gerantB.id, { marque: "Skoda", modele: "Octavia", plaque, placesPassagers: 4 })).rejects.toMatchObject({
       code: "PLATE_ALREADY_REGISTERED",
     });
     // Retiré, il peut être inscrit ailleurs (vendu).
     await SocieteDriveService.retirerVehicule(gerantA.id, v.id);
-    await expect(SocieteDriveService.ajouterVehicule(gerantB.id, { marque: "Skoda", modele: "Octavia", plaque })).resolves.toBeTruthy();
+    await expect(SocieteDriveService.ajouterVehicule(gerantB.id, { marque: "Skoda", modele: "Octavia", plaque, placesPassagers: 4 })).resolves.toBeTruthy();
   });
 
   it("n'est conforme qu'avec toutes ses pièces validées", async () => {
     expect((await db.vehiculeDrive.findUniqueOrThrow({ where: { id: A.vehiculeId } })).conforme).toBe(true);
-    const nouveau = await SocieteDriveService.ajouterVehicule(gerantA.id, { marque: "Kia", modele: "Niro", plaque: `4TST${suffixe.slice(-3)}` });
-    const piece = await SocieteDriveService.deposerPieceVehicule(gerantA.id, nouveau.id, { type: "licence", ...fichierPdf() });
-    await SocieteDriveService.examinerPiece(A.societeId, piece.id, { approuve: true });
+    const nouveau = await SocieteDriveService.ajouterVehicule(gerantA.id, { marque: "Kia", modele: "Niro", plaque: `4TST${suffixe.slice(-3)}`, placesPassagers: 4 });
+    const piece = await SocieteDriveService.deposerPieceVehicule(gerantA.id, nouveau.id, {
+      type: "licence", ...fichierPdf(), dateExpiration: "2030-03-31",
+    });
+    await SocieteDriveService.examinerPiece(A.societeId, piece.id, { approuve: true, ...preuveTitre("licence") });
     expect((await db.vehiculeDrive.findUniqueOrThrow({ where: { id: nouveau.id } })).conforme).toBe(false);
   });
 
@@ -217,7 +235,7 @@ describe("chauffeurs de société", () => {
     expect(dossier.societeId).toBe(A.societeId);
     expect(dossier.region).toBe(REGION);
     expect(dossier.statut).toBe("VALIDE");
-    expect(dossier.piecesExigees).toEqual(["identite", "permis", "bestuurderspas"]);
+    expect(dossier.piecesExigees).toEqual(["identite", "permis", "certificat_capacite"]);
   });
 
   it("une invitation ne s'accepte que par son destinataire, et une société à la fois", async () => {

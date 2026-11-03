@@ -101,7 +101,13 @@ export default function ChampAdresse({
             <TouchableOpacity
               key={f.type}
               style={styles.raccourci}
-              onPress={() => onChoisir({ adresse: f.adresse, latitude: f.latitude, longitude: f.longitude, codePostal: f.codePostal })}
+              onPress={() => onChoisir({
+                adresse: f.adresse,
+                latitude: f.latitude,
+                longitude: f.longitude,
+                codePostal: f.codePostal,
+                preuveAdresse: f.preuveAdresse,
+              })}
               disabled={desactive}
             >
               <Text style={styles.raccourciTexte}>{f.type === 'DOMICILE' ? '🏠 Domicile' : '💼 Travail'}</Text>
@@ -126,7 +132,7 @@ export default function ChampAdresse({
       {recherche ? <ActivityIndicator color={COLORS.primary} style={styles.attente} /> : null}
       {refus ? (
         <Text style={styles.refus}>
-          Cette adresse n'a pas de position précise ou de code postal : choisissez-en une autre.
+          Choisissez une adresse dans les suggestions pour valider sa position.
         </Text>
       ) : null}
       {suggestions.map((s, i) => (

@@ -2,7 +2,7 @@
  * ZupDrive — les sociétés de taxi / VTC et leurs chauffeurs, de bout en bout.
  *
  * Le gérant ouvre le dossier de sa société, inscrit un véhicule et invite un
- * chauffeur (par l'API : son espace, manager.zupdrive.com, vient ensuite).
+ * chauffeur depuis le portail web.
  * Le chauffeur accepte l'invitation depuis son espace, où son dossier se
  * réduit à ses pièces personnelles. L'équipe ZupDrive valide la société et
  * son véhicule dans l'administration. Le chauffeur roule avec le véhicule
@@ -10,14 +10,29 @@
  * tout cela.
  *
  *   VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3001 \
- *   DATABASE_URL=postgresql://… node scripts/verif-zupdrive-societe.mjs
+ *   DATABASE_URL=postgresql://…/zupdrive_e2e?schema=public \
+ *   ZUPDRIVE_E2E_ALLOW_DISPOSABLE_DB=1 node scripts/verif-zupdrive-societe.mjs
  */
 
 import { chromium } from 'playwright';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { baseDeDonnees } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
+const databaseUrl = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
+const locaux = ['localhost', '127.0.0.1', '[::1]'];
+if (
+  process.env.ZUPDRIVE_E2E_ALLOW_DISPOSABLE_DB !== '1' ||
+  !databaseUrl ||
+  !locaux.includes(databaseUrl.hostname) ||
+  databaseUrl.pathname.replace(/^\//, '') !== 'zupdrive_e2e' ||
+  !locaux.includes(new URL(SITE).hostname) ||
+  !locaux.includes(new URL(API).hostname)
+) {
+  throw new Error('Cette recette modifie des comptes et des pièces : utilisez uniquement la base locale jetable zupdrive_e2e, le site et l’API locaux, et définissez ZUPDRIVE_E2E_ALLOW_DISPOSABLE_DB=1.');
+}
 
 const uniq = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const MDP = 'Password123!';
@@ -67,6 +82,9 @@ const inscrire = async (prefixe) => {
     console.error(`Inscription impossible (${prefixe}) : ${JSON.stringify(reponse.donnees)}`);
     process.exit(1);
   }
+  // Le scénario ne teste pas la boîte mail : simule la confirmation reçue
+  // avant l'accès aux invitations, sans désactiver la règle de production.
+  await baseDeDonnees().user.update({ where: { id: reponse.donnees.user.id }, data: { emailVerified: true } });
   return { email, jeton: reponse.donnees.accessToken, id: reponse.donnees.user.id };
 };
 
@@ -86,6 +104,15 @@ const deposer = (chemin, jeton, type, dateExpiration) => {
   return appeler(chemin, { method: 'POST', jeton, formulaire });
 };
 
+const attendrePieceSociete = async (types) => {
+  for (let tour = 0; tour < 40; tour++) {
+    const dossier = await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton });
+    if (types.every((type) => dossier.donnees?.data?.documents?.some((piece) => piece.type === type))) return dossier;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Le portail n’a pas terminé le dépôt des pièces société : ${types.join(', ')}`);
+};
+
 const connecter = async (page, email) => {
   await page.goto(`${SITE}/login`);
   await page.fill('input[type="email"]', email);
@@ -101,7 +128,20 @@ const autreGerant = await inscrire('autre-gerant');
 const chauffeur = await inscrire('chauffeur-societe');
 const adminDrive = await membreEquipe('admin-drive', 'DRIVE');
 
-const nav = await chromium.launch();
+const navigateurDemande = process.env.ZUPDRIVE_E2E_CHROME_EXECUTABLE?.trim();
+const navigateursSysteme = process.platform === 'win32'
+  ? [
+    process.env.ProgramFiles && join(process.env.ProgramFiles, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env['ProgramFiles(x86)'] && join(process.env['ProgramFiles(x86)'], 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+  ].filter((chemin) => chemin && existsSync(chemin))
+  : [];
+const navigateurPlaywright = chromium.executablePath();
+const executableNavigateur = navigateurDemande || (!existsSync(navigateurPlaywright) ? navigateursSysteme[0] : undefined);
+if (executableNavigateur && !existsSync(executableNavigateur)) throw new Error(`Navigateur introuvable : ${executableNavigateur}`);
+if (!executableNavigateur && !existsSync(navigateurPlaywright)) {
+  throw new Error('Chromium est absent : lancez « npx playwright install chromium » ou définissez ZUPDRIVE_E2E_CHROME_EXECUTABLE.');
+}
+const nav = await chromium.launch(executableNavigateur ? { executablePath: executableNavigateur } : undefined);
 const erreurs = [];
 const nouvellePage = async (nom) => {
   const page = await (await nav.newContext()).newPage();
@@ -112,13 +152,19 @@ const nouvellePage = async (nom) => {
   return page;
 };
 
-titre('Le gérant ouvre le dossier de sa société (API)');
-const ouverte = await appeler('/api/zupdrive/societe/me', {
-  method: 'POST',
-  jeton: gerant.jeton,
-  corps: { raisonSociale: `Taxi ${uniq}`, numeroEntreprise: bce(Date.now()), region: 'WALLONIE', telephone: '+32 81 00 00 00' },
-});
-check('le dossier est ouvert', ouverte.statut === 201 && ouverte.donnees?.data?.statut === 'BROUILLON', JSON.stringify(ouverte.donnees));
+titre('Le gérant ouvre le dossier depuis le portail société');
+const pageGerant = await nouvellePage('gérant');
+await connecter(pageGerant, gerant.email);
+await pageGerant.goto(`${SITE}/societe`);
+await pageGerant.getByLabel('Raison sociale').fill(`Taxi ${uniq}`);
+const numeroBce = bce(Date.now());
+await pageGerant.getByLabel('Numéro d’entreprise (BCE)').fill(numeroBce);
+await pageGerant.getByLabel('Téléphone').fill('+32 81 00 00 00');
+await pageGerant.getByRole('button', { name: 'Ouvrir le dossier société' }).click();
+await pageGerant.getByRole('status').getByText('Dossier société ouvert.').waitFor({ timeout: 10000 });
+check('le portail ouvre le dossier de l’entreprise', true);
+const ouverte = await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton });
+check('le dossier est créé en brouillon', ouverte.donnees?.data?.statut === 'BROUILLON' && ouverte.donnees?.data?.numeroEntreprise === numeroBce, JSON.stringify(ouverte.donnees));
 const doublon = await appeler('/api/zupdrive/societe/me', {
   method: 'POST',
   jeton: autreGerant.jeton,
@@ -126,29 +172,45 @@ const doublon = await appeler('/api/zupdrive/societe/me', {
 });
 check('une entreprise ne s’inscrit qu’une fois', doublon.statut === 409, `${doublon.statut}`);
 
-const tva = await deposer('/api/zupdrive/societe/me/documents', gerant.jeton, 'tva');
-check('la pièce de TVA est déposée', tva.statut === 201, JSON.stringify(tva.donnees));
-const soumise = await appeler('/api/zupdrive/societe/me/submit', { method: 'POST', jeton: gerant.jeton });
-check('le dossier est envoyé à l’équipe', soumise.donnees?.data?.statut === 'SOUMIS', JSON.stringify(soumise.donnees));
+const fichiersSociete = pageGerant.locator('input[type="file"]');
+await fichiersSociete.nth(0).setInputFiles({ name: 'tva.jpg', mimeType: 'image/jpeg', buffer: JPEG });
+await attendrePieceSociete(['tva']);
+await pageGerant.getByRole('status').getByText('Document déposé. Il sera vérifié par l’équipe ZupDrive.').waitFor({ timeout: 10000 });
+await fichiersSociete.nth(1).setInputFiles({ name: 'certificat-acces.jpg', mimeType: 'image/jpeg', buffer: JPEG });
+await attendrePieceSociete(['tva', 'certificat_acces_profession']);
+await pageGerant.getByRole('status').getByText('Document déposé. Il sera vérifié par l’équipe ZupDrive.').waitFor({ timeout: 10000 });
+const piecesSocieteDeposees = await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton });
+check(
+  'le portail dépose la TVA et le certificat d’accès',
+  ['tva', 'certificat_acces_profession'].every((type) => piecesSocieteDeposees.donnees?.data?.documents?.some((p) => p.type === type)),
+  JSON.stringify(piecesSocieteDeposees.donnees?.data?.documents?.map((p) => p.type))
+);
+await pageGerant.getByRole('button', { name: 'Soumettre le dossier pour validation' }).click();
+await pageGerant.getByRole('status').getByText('Dossier envoyé à l’équipe ZupDrive.').waitFor({ timeout: 10000 });
+check('le portail soumet le dossier complet', true);
+const soumise = await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton });
+check('la société est en attente de validation', soumise.donnees?.data?.statut === 'SOUMIS', JSON.stringify(soumise.donnees));
 
-const vehicule = await appeler('/api/zupdrive/societe/me/vehicules', {
-  method: 'POST',
-  jeton: gerant.jeton,
-  corps: { marque: 'Toyota', modele: 'Corolla', plaque: PLAQUE.toLowerCase(), numeroLicence: `LVC-${uniq}` },
-});
-check('le véhicule est inscrit, plaque normalisée', vehicule.donnees?.data?.plaque === PLAQUE, JSON.stringify(vehicule.donnees));
+await pageGerant.getByLabel('Marque').fill('Toyota');
+await pageGerant.getByLabel('Modèle').fill('Corolla');
+await pageGerant.getByLabel('Plaque').fill(PLAQUE.toLowerCase());
+await pageGerant.getByLabel('Places passagers').fill('4');
+await pageGerant.getByRole('button', { name: 'Ajouter le véhicule' }).click();
+await pageGerant.getByRole('status').getByText('Véhicule ajouté. Déposez maintenant ses justificatifs.').waitFor({ timeout: 10000 });
+const flotte = await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton });
+const vehicule = { donnees: { data: flotte.donnees?.data?.vehicules?.find((v) => v.plaque === PLAQUE) } };
+check('le portail inscrit le véhicule Standard à quatre places', vehicule.donnees.data?.plaque === PLAQUE && vehicule.donnees.data?.placesPassagers === 4, JSON.stringify(vehicule.donnees.data));
 const vehiculeId = vehicule.donnees?.data?.id;
 for (const type of ['licence', 'assurance', 'controle_technique', 'immatriculation']) {
   const depot = await deposer(`/api/zupdrive/societe/me/vehicules/${vehiculeId}/documents`, gerant.jeton, type, DANS_UN_AN);
   if (depot.statut !== 201) check(`pièce du véhicule ${type}`, false, JSON.stringify(depot.donnees));
 }
 
-const invitation = await appeler('/api/zupdrive/societe/me/invitations', {
-  method: 'POST',
-  jeton: gerant.jeton,
-  corps: { email: chauffeur.email.toUpperCase() },
-});
-check('le chauffeur est invité', invitation.statut === 201, JSON.stringify(invitation.donnees));
+await pageGerant.getByLabel('Adresse e-mail du chauffeur').fill(chauffeur.email.toUpperCase());
+await pageGerant.getByRole('button', { name: 'Inviter un chauffeur' }).click();
+await pageGerant.getByRole('status').getByText('Invitation envoyée. Le chauffeur devra l’accepter depuis son espace.').waitFor({ timeout: 10000 });
+const invitation = await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton });
+check('le portail invite le chauffeur au compte ZupOne', invitation.donnees?.data?.invitations?.some((i) => i.email.toLowerCase() === chauffeur.email), JSON.stringify(invitation.donnees?.data?.invitations));
 
 titre('Le chauffeur accepte l’invitation depuis son espace');
 const page = await nouvellePage('chauffeur');
@@ -174,6 +236,7 @@ await page.waitForSelector('text=Profil enregistré.', { timeout: 10000 });
 await page.locator('li', { hasText: "Carte d'identité" }).locator('input[type="file"]').setInputFiles({ name: 'identite.jpg', mimeType: 'image/jpeg', buffer: JPEG });
 await page.waitForSelector('text=Document déposé, en attente de vérification.', { timeout: 10000 });
 await deposer('/api/zupdrive/chauffeur/me/documents', chauffeur.jeton, 'permis');
+await deposer('/api/zupdrive/chauffeur/me/documents', chauffeur.jeton, 'certificat_capacite', DANS_UN_AN);
 const piecesSociete = await deposer('/api/zupdrive/chauffeur/me/documents', chauffeur.jeton, 'licence');
 check('une pièce de la société ne se dépose pas depuis son dossier', piecesSociete.statut === 400, `${piecesSociete.statut}`);
 await page.reload();
@@ -198,13 +261,45 @@ check('et le chauffeur rattaché', texteFiche.includes(`chauffeur-societe ${uniq
 check('la validation attend l’examen des pièces', await fiche.locator('button:has-text("Valider la société")').isDisabled());
 
 for (let tour = 0; tour < 8; tour++) {
-  const bouton = fiche.getByRole('button', { name: 'Valider', exact: true });
-  if ((await bouton.count()) === 0) break;
-  await bouton.first().click();
-  await pageAdmin.waitForTimeout(800);
+  const lignes = fiche.locator('li');
+  let ligneAValider = null;
+  for (let index = 0; index < await lignes.count(); index++) {
+    const ligne = lignes.nth(index);
+    const bouton = ligne.getByRole('button', { name: 'Valider', exact: true });
+    if (!(await bouton.count())) continue;
+    const texteLigne = await ligne.innerText();
+    const certificatExploitat = texteLigne.includes('profession');
+    const licenceVehicule = texteLigne.includes('Licence LVC / vergunning');
+    if ((certificatExploitat || licenceVehicule) && !(await bouton.isEnabled())) {
+      await ligne.locator('input[type="checkbox"]').check();
+      await ligne.locator('input[placeholder^="Ex. licence"]').fill(`${certificatExploitat ? 'E2E SPW' : 'E2E licence'} ${uniq}`);
+      if (licenceVehicule) {
+        await ligne.locator('select').nth(0).selectOption('Namur');
+        await ligne.locator('select').nth(1).selectOption('STATION');
+      }
+    }
+    if (await bouton.isEnabled()) {
+      ligneAValider = ligne;
+      break;
+    }
+  }
+  if (!ligneAValider) break;
+  const texteLigne = await ligneAValider.innerText();
+  await ligneAValider.getByRole('button', { name: 'Valider', exact: true }).click();
+  await pageAdmin.waitForTimeout(500);
 }
 await pageAdmin.waitForSelector('text=En règle : peut rouler', { timeout: 10000 });
 check('toutes les pièces validées : le véhicule est en règle', true);
+const piecesValidees = (await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton })).donnees?.data;
+const certificatExploitat = piecesValidees?.documents?.find((piece) => piece.type === 'certificat_acces_profession');
+const licenceVehicule = piecesValidees?.vehicules?.[0]?.documents?.find((piece) => piece.type === 'licence');
+check(
+  'les titres officiels gardent leur preuve et leur statut validé',
+  certificatExploitat?.statut === 'APPROVED' && certificatExploitat.noteExamen?.includes(`E2E SPW ${uniq}`) &&
+    licenceVehicule?.statut === 'APPROVED' && licenceVehicule.noteExamen?.includes(`E2E licence ${uniq}`) &&
+    licenceVehicule.noteExamen?.includes('Commune vérifiée : Namur') && licenceVehicule.noteExamen?.includes('Type de taxi vérifié : station'),
+  JSON.stringify({ certificat: certificatExploitat?.noteExamen, licence: licenceVehicule?.noteExamen })
+);
 await fiche.locator('button:has-text("Valider la société")').click();
 await pageAdmin.waitForTimeout(1500);
 const societeValidee = await appeler('/api/zupdrive/societe/me', { jeton: gerant.jeton });
@@ -217,10 +312,13 @@ check('la décision est journalisée', journal === 1, `${journal}`);
 // Le dossier du chauffeur : l'équipe le valide (vérifié en détail dans verif-zupdrive-chauffeur).
 const chauffeurId = dossierChauffeur.donnees?.data?.id;
 for (const piece of dossierChauffeur.donnees?.data?.documents || []) {
+  const preuve = piece.type === 'certificat_capacite'
+    ? { verificationAutorite: true, referenceAutorite: `E2E commune ${uniq}`, communeAutorisee: 'Namur' }
+    : {};
   await appeler(`/api/zupdrive/admin/chauffeurs/${chauffeurId}/documents/${piece.id}`, {
     method: 'PATCH',
     jeton: adminDrive.jeton,
-    corps: { approuve: true },
+    corps: { approuve: true, ...preuve },
   });
 }
 const valide = await appeler(`/api/zupdrive/admin/chauffeurs/${chauffeurId}/approve`, { method: 'POST', jeton: adminDrive.jeton });

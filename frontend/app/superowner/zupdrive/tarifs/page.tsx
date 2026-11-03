@@ -18,11 +18,20 @@ import { appelerZupDrive } from '@/lib/zupdrive';
 
 const CHAMPS = ['priseEnChargeCentimes', 'parKmCentimes', 'parMinuteCentimes', 'minimumCentimes'] as const;
 type Champ = (typeof CHAMPS)[number];
+const TARIF_PILOTE_NAMUR: Record<Champ, string> = {
+  priseEnChargeCentimes: '0,00',
+  parKmCentimes: '1,90',
+  parMinuteCentimes: '0,00',
+  minimumCentimes: '8,20',
+};
 
 interface Tarif extends Record<Champ, number> {
   region: string;
+  categorie: 'STANDARD' | 'XL';
   actif: boolean;
 }
+
+const cleTarif = (tarif: Pick<Tarif, 'region' | 'categorie'>) => `${tarif.region}:${tarif.categorie}`;
 
 /** « 2,50 » → 250 ; null si ce n'est pas un montant (2 décimales au plus). */
 function centimesDe(saisie: string): number | null {
@@ -49,8 +58,8 @@ export default function TarifsDrivePage() {
       setSaisies(
         Object.fromEntries(
           lus.map((tarif) => [
-            tarif.region,
-            { ...Object.fromEntries(CHAMPS.map((c) => [c, enEuros(tarif[c])])), actif: tarif.actif } as Record<Champ, string> & {
+            cleTarif(tarif),
+            { ...Object.fromEntries(CHAMPS.map((c) => [c, tarif.region === 'WALLONIE' ? TARIF_PILOTE_NAMUR[c] : enEuros(tarif[c])])), actif: tarif.actif } as Record<Champ, string> & {
               actif: boolean;
             },
           ])
@@ -65,10 +74,12 @@ export default function TarifsDrivePage() {
     charger();
   }, [charger]);
 
-  const enregistrer = async (region: string) => {
+  const enregistrer = async (tarif: Tarif) => {
+    const region = tarif.region;
+    const cle = cleTarif(tarif);
     setErreur('');
     setMessage('');
-    const saisie = saisies[region];
+    const saisie = saisies[cle];
     const valeurs: Record<string, number | boolean> = { actif: saisie.actif };
     for (const champ of CHAMPS) {
       const centimes = centimesDe(saisie[champ]);
@@ -78,10 +89,10 @@ export default function TarifsDrivePage() {
       }
       valeurs[champ] = centimes;
     }
-    setEnvoi(region);
+    setEnvoi(cle);
     try {
-      await appelerZupDrive(`/api/zupdrive/admin/tarifs/${region}`, { method: 'PUT', corps: valeurs });
-      setMessage(t('enregistre', { region: t(`region.${region}`) }));
+      await appelerZupDrive(`/api/zupdrive/admin/tarifs/${region}${tarif.categorie === 'XL' ? '/XL' : ''}`, { method: 'PUT', corps: valeurs });
+      setMessage(`${tarif.categorie} · ${t(`region.${region}`)} enregistré`);
       await charger();
     } catch (err) {
       setErreur(err instanceof Error ? err.message : t('erreur'));
@@ -105,39 +116,42 @@ export default function TarifsDrivePage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {tarifs.map((tarif) => {
-          const saisie = saisies[tarif.region];
+          const cle = cleTarif(tarif);
+          const saisie = saisies[cle];
           if (!saisie) return null;
           return (
-            <section key={tarif.region} className="space-y-3 rounded-lg border border-gray-200 bg-white p-5" data-region={tarif.region}>
-              <h2 className="text-lg font-semibold text-gray-900">{t(`region.${tarif.region}`)}</h2>
+            <section key={cle} className="space-y-3 rounded-lg border border-gray-200 bg-white p-5" data-region={tarif.region} data-categorie={tarif.categorie}>
+              <h2 className="text-lg font-semibold text-gray-900">{t(`region.${tarif.region}`)} · {tarif.categorie} ({tarif.categorie === 'XL' ? '5–6 passagers' : '1–4 passagers'})</h2>
+              {tarif.region === 'WALLONIE' && <p className="text-sm text-amber-800">{t('tarifReglementeNamur')}</p>}
               {CHAMPS.map((champ) => (
                 <label key={champ} className="block text-sm">
                   <span className="text-gray-500">{t(`champ.${champ}`)}</span>
                   <input
-                    name={`${tarif.region}-${champ}`}
+                    name={`${cle}-${champ}`}
                     inputMode="decimal"
                     value={saisie[champ]}
-                    onChange={(e) => setSaisies({ ...saisies, [tarif.region]: { ...saisie, [champ]: e.target.value } })}
-                    className="mt-1 w-full rounded-sm border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                    readOnly={tarif.region === 'WALLONIE'}
+                    onChange={(e) => setSaisies({ ...saisies, [cle]: { ...saisie, [champ]: e.target.value } })}
+                    className={`mt-1 w-full rounded-sm border border-gray-300 px-3 py-2 text-gray-900 ${tarif.region === 'WALLONIE' ? 'bg-gray-100' : 'bg-white'}`}
                   />
                 </label>
               ))}
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="checkbox"
-                  name={`${tarif.region}-actif`}
+                  name={`${cle}-actif`}
                   checked={saisie.actif}
-                  onChange={(e) => setSaisies({ ...saisies, [tarif.region]: { ...saisie, actif: e.target.checked } })}
+                  onChange={(e) => setSaisies({ ...saisies, [cle]: { ...saisie, actif: e.target.checked } })}
                 />
                 {t('actif')}
               </label>
               <button
                 type="button"
-                onClick={() => enregistrer(tarif.region)}
+                onClick={() => enregistrer(tarif)}
                 disabled={envoi !== null}
                 className="w-full rounded-sm bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
               >
-                {envoi === tarif.region ? t('enregistrement') : t('enregistrer')}
+                {envoi === cle ? t('enregistrement') : t('enregistrer')}
               </button>
             </section>
           );

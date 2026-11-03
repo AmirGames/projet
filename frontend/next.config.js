@@ -37,11 +37,12 @@ const nextConfig = {
    * - Permissions-Policy : ni caméra ni micro (rien ne les utilise), position
    *   et paiement pour le site seul.
    *
-   * Le `script-src` n'est pas ici : il demande un nonce différent à chaque
-   * requête, généré dans proxy.ts (lib/csp.ts). Il est d'abord envoyé en
-   * Content-Security-Policy-Report-Only (CSP_MODE), les violations arrivant sur
-   * /api/csp-report. Les directives ci-dessous restent appliquées dans tous les
-   * cas.
+   * Le `script-src` demande un nonce différent à chaque requête, généré dans
+   * proxy.ts (lib/csp.ts). Sur les domaines ZupDrive, elle est appliquée par
+   * défaut en production ; les autres marques gardent leur CSP_MODE global.
+   * `report-only` reste disponible, mais ne nonce pas les scripts runtime Next
+   * et ne constitue donc pas une recette CSP fiable pour le pilote. En
+   * développement, les directives fixes protègent le serveur local.
    */
   async headers() {
     return [
@@ -51,10 +52,14 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          {
-            key: "Content-Security-Policy",
-            value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
-          },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+          { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+          ...(process.env.NODE_ENV === "production"
+            ? []
+            : [{
+                key: "Content-Security-Policy",
+                value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'",
+              }]),
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(self), payment=(self)",

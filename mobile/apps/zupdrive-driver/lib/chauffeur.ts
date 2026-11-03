@@ -15,6 +15,8 @@ export interface CourseChauffeur {
   passager: string | null;
   departAdresse: string;
   arriveeAdresse: string;
+  nombrePassagers: number;
+  categorieVehicule: 'STANDARD' | 'XL';
   prixCentimes: number;
   devise: string;
 }

@@ -6,6 +6,7 @@ import { emitNotification } from "../realtime/socket";
 import { notifierPlateforme } from "../notifications/notification.service";
 import { deposerVersion, examinerVersion } from "./pieces-drive";
 import { codeErreur } from "../../utils/code-erreur";
+import { exigerVerificationTitreOfficiel, estTitreOfficiel, noteAvecAttestationTitreOfficiel, type PreuveVerificationTitre } from "./verification-titre-officiel";
 
 /**
  * L'inscription d'un chauffeur ZupDrive (licence LVC ou de transport rémunéré
@@ -43,9 +44,12 @@ export const TYPES_PIECE = [
   "controle_technique",
   "assurance",
   "immatriculation",
+  "certificat_capacite",
+  "certificat_acces_profession",
   "bestuurderspas",
   "casier_judiciaire",
   "actionnaires",
+  "identification_police",
 ] as const;
 export type TypePiece = (typeof TYPES_PIECE)[number];
 
@@ -57,9 +61,12 @@ const LIBELLES_PIECE: Record<TypePiece, string> = {
   controle_technique: "Contrôle technique",
   assurance: "Assurance transport rémunéré de personnes",
   immatriculation: "Certificat d'immatriculation (recto et verso)",
+  certificat_capacite: "Certificat communal de capacité du chauffeur de taxi",
+  certificat_acces_profession: "Certificat d'accès à la profession (exploitant)",
   bestuurderspas: "Bestuurderspas",
   casier_judiciaire: "Extrait de casier judiciaire",
   actionnaires: "Identité des personnes détenant des parts de la société",
+  identification_police: "Attestation police et photos des plaques communales avant-droit et intérieure",
 };
 
 export const libelleDeLaPiece = (type: string) => LIBELLES_PIECE[type as TypePiece] || type;
@@ -76,14 +83,15 @@ export const libelleDeLaPiece = (type: string) => LIBELLES_PIECE[type as TypePie
  * Répartition de départ, à faire confirmer par un professionnel du secteur :
  * elle ne se lit qu'ici, pour se corriger en un seul endroit.
  */
-export const TYPES_PIECE_SOCIETE: TypePiece[] = ["tva", "actionnaires"];
-export const TYPES_PIECE_VEHICULE: TypePiece[] = ["licence", "assurance", "controle_technique", "immatriculation"];
-const TYPES_PIECE_CHAUFFEUR_SOCIETE: TypePiece[] = ["identite", "permis", "bestuurderspas", "casier_judiciaire"];
+export const TYPES_PIECE_SOCIETE: TypePiece[] = ["tva", "certificat_acces_profession", "actionnaires"];
+export const TYPES_PIECE_VEHICULE: TypePiece[] = ["licence", "assurance", "controle_technique", "immatriculation", "identification_police"];
+const TYPES_PIECE_CHAUFFEUR_SOCIETE: TypePiece[] = ["identite", "permis", "certificat_capacite", "bestuurderspas", "casier_judiciaire"];
 
 /** Les pièces exigées d'une société pour valider son dossier. */
-export const piecesExigeesSociete = (): TypePiece[] => ["tva"];
+export const piecesExigeesSociete = (): TypePiece[] => ["tva", "certificat_acces_profession"];
 /** Les pièces exigées d'un véhicule de société pour qu'il roule. */
-export const piecesExigeesVehicule = (): TypePiece[] => [...TYPES_PIECE_VEHICULE];
+export const piecesExigeesVehicule = (region?: string | null): TypePiece[] =>
+  TYPES_PIECE_VEHICULE.filter((type) => type !== "identification_police" || region === "WALLONIE");
 
 /**
  * Les pièces exigées d'un chauffeur, selon la région de la licence, et selon
@@ -98,6 +106,10 @@ export function piecesExigees(region: string | null | undefined, options: { enSo
   const communes: TypePiece[] = options.enSociete
     ? ["identite", "permis"]
     : ["identite", "permis", "tva", "licence", "controle_technique", "assurance", "immatriculation"];
+  if (region === "WALLONIE") {
+    communes.push("certificat_capacite");
+    if (!options.enSociete) communes.push("certificat_acces_profession", "identification_police");
+  }
   if (region === "FLANDRE") return [...communes, "bestuurderspas"];
   if (region === "BRUXELLES") return [...communes, "casier_judiciaire"];
   return communes;
@@ -129,6 +141,7 @@ export interface ProfilChauffeur {
   vehiculeMarque?: string | null;
   vehiculeModele?: string | null;
   vehiculePlaque?: string | null;
+  placesPassagers?: number | null;
 }
 
 /** Les champs du profil exigés pour soumettre, avec leur libellé. */
@@ -140,6 +153,7 @@ const CHAMPS_EXIGES_INDEPENDANT: [keyof ProfilChauffeur, string][] = [
   ["vehiculeMarque", "marque du véhicule"],
   ["vehiculeModele", "modèle du véhicule"],
   ["vehiculePlaque", "plaque d'immatriculation"],
+  ["placesPassagers", "nombre de places passagers (1 à 6)"],
 ];
 
 /** Chauffeur de société : la région, l'entreprise, la licence et le véhicule viennent de la société. */
@@ -154,6 +168,7 @@ const CHAMPS_DE_LA_SOCIETE: (keyof ProfilChauffeur)[] = [
   "vehiculeMarque",
   "vehiculeModele",
   "vehiculePlaque",
+  "placesPassagers",
 ];
 
 /** Le chauffeur peut encore modifier son dossier dans ces états. */
@@ -168,7 +183,7 @@ function lireDossier(where: { id: string } | { userId: string }) {
     include: {
       documents: { where: { archiveeLe: null }, orderBy: { createdAt: "asc" } },
       societe: { select: { id: true, raisonSociale: true, region: true, statut: true } },
-      vehicule: { select: { id: true, marque: true, modele: true, plaque: true, conforme: true } },
+      vehicule: { select: { id: true, marque: true, modele: true, plaque: true, placesPassagers: true, conforme: true } },
     },
   });
 }
@@ -181,7 +196,14 @@ function etatDuDossier(dossier: Dossier) {
     dossier.documents.filter((piece) => piece.statut !== "EXPIRED").map((piece) => piece.type)
   );
   const validees = new Set(
-    dossier.documents.filter((piece) => piece.statut === "APPROVED").map((piece) => piece.type)
+    dossier.documents
+      .filter(
+        (piece) =>
+          piece.statut === "APPROVED" &&
+          (!(piece.type === "licence" || piece.type === "certificat_capacite") || piece.dateExpiration !== null) &&
+          (piece.dateExpiration === null || piece.dateExpiration.getTime() > Date.now())
+      )
+      .map((piece) => piece.type)
   );
   const champsManquants = (enSociete ? CHAMPS_EXIGES_SOCIETE : CHAMPS_EXIGES_INDEPENDANT).filter(([champ]) => !dossier[champ]).map(([, libelle]) => libelle);
 
@@ -365,20 +387,26 @@ export class ChauffeurOnboardingService {
   static async examinerPiece(
     chauffeurId: string,
     documentId: string,
-    verdict: { approuve: boolean; note?: string }
+    verdict: { approuve: boolean; note?: string } & PreuveVerificationTitre
   ) {
     const piece = await db.documentChauffeurDrive.findUnique({ where: { id: documentId } });
 
     if (!piece || piece.chauffeurId !== chauffeurId || piece.archiveeLe) {
       throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
     }
+    exigerVerificationTitreOfficiel(piece.type, verdict.approuve, verdict);
     // Validée, la nouvelle version remplace l'ancienne, archivée dans la même
     // transaction : il y a toujours exactement une version en vigueur.
     // Refusée, elle laisse l'ancienne en vigueur, avec son échéance.
     const examinee = await examinerVersion(
       piece,
       { chauffeurId },
-      verdict,
+      {
+        ...verdict,
+        note: verdict.approuve && estTitreOfficiel(piece.type)
+          ? noteAvecAttestationTitreOfficiel(verdict.note, verdict)
+          : verdict.note,
+      },
       "Un refus sans motif ne dit pas au chauffeur quoi corriger"
     );
 
@@ -544,7 +572,7 @@ export class ChauffeurOnboardingService {
 
   /** Les champs du profil, normalisés et vérifiés. */
   private static donneesDuProfil(profil: ProfilChauffeur) {
-    const data: Record<string, string | null> = {};
+    const data: Record<string, string | number | null> = {};
     const texte = (valeur: string | null | undefined) => (valeur?.trim() ? valeur.trim() : null);
 
     if (profil.nomComplet !== undefined) {
@@ -568,6 +596,13 @@ export class ChauffeurOnboardingService {
     }
     if (profil.vehiculePlaque !== undefined) {
       data.vehiculePlaque = texte(profil.vehiculePlaque) ? plaqueNormalisee(profil.vehiculePlaque!) : null;
+    }
+    if (profil.placesPassagers !== undefined) {
+      const places = profil.placesPassagers;
+      if (places !== null && (!Number.isInteger(places) || places < 1 || places > 6)) {
+        throw new ApiError(400, "Le véhicule doit avoir entre 1 et 6 places passagers", "INVALID_PASSENGER_CAPACITY");
+      }
+      data.placesPassagers = places ?? null;
     }
     return data;
   }

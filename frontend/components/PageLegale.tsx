@@ -2,12 +2,36 @@ import type { Metadata } from 'next';
 import Link from '@/components/LienRegional';
 import ReactMarkdown from 'react-markdown';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { headers } from 'next/headers';
 import remarkGfm from 'remark-gfm';
+import { estDomaineZupDrive } from '@/lib/domaines';
 
 // Côté serveur, l'API peut avoir une autre adresse que celle vue du navigateur.
 const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-type Page = { slug: string; titre: string; contenu: string; version: string; publieLe: string | null };
+type Page = { slug: string; titre: string; contenu: string; version: string; publieLe: string | null; parDefaut?: boolean };
+
+const SLUGS_DRIVE: Record<string, string> = {
+  'mentions-legales': 'drive-mentions-legales',
+  cgu: 'drive-cgu',
+  cgv: 'drive-cgv',
+  'conditions-chauffeurs': 'drive-conditions-chauffeurs',
+  'conditions-societes': 'drive-conditions-societes',
+  confidentialite: 'drive-confidentialite',
+  cookies: 'drive-cookies',
+  accessibilite: 'drive-accessibilite',
+};
+
+async function contexteLegale(slug: string) {
+  const entetes = await headers();
+  const hote = entetes.get('x-forwarded-host') || entetes.get('host') || '';
+  const drive = estDomaineZupDrive(hote);
+  return {
+    drive,
+    marque: drive ? 'ZupDrive' : 'ZupEat',
+    slug: drive ? SLUGS_DRIVE[slug] ?? null : slug,
+  };
+}
 
 async function lirePage(slug: string): Promise<Page | null> {
   try {
@@ -22,8 +46,16 @@ async function lirePage(slug: string): Promise<Page | null> {
 }
 
 export async function metadataLegale(slug: string): Promise<Metadata> {
-  const [page, t] = await Promise.all([lirePage(slug), getTranslations('pageLegale')]);
-  return { title: `${page?.titre ?? t('titre')} — ZupEat` };
+  const contexte = await contexteLegale(slug);
+  const [page, t] = await Promise.all([
+    contexte.slug ? lirePage(contexte.slug) : Promise.resolve(null),
+    getTranslations('pageLegale'),
+  ]);
+  const indisponible = !page || (contexte.drive && page.parDefaut);
+  return {
+    title: `${page?.titre ?? t('titre')} — ${contexte.marque}`,
+    ...(indisponible && contexte.drive ? { robots: { index: false, follow: false } } : {}),
+  };
 }
 
 /**
@@ -32,9 +64,16 @@ export async function metadataLegale(slug: string): Promise<Metadata> {
  * de script dans la page.
  */
 export default async function PageLegale({ slug }: { slug: string }) {
-  const [page, t, locale] = await Promise.all([lirePage(slug), getTranslations('pageLegale'), getLocale()]);
+  const contexte = await contexteLegale(slug);
+  const [page, t, locale] = await Promise.all([
+    contexte.slug ? lirePage(contexte.slug) : Promise.resolve(null),
+    getTranslations('pageLegale'),
+    getLocale(),
+  ]);
 
-  if (!page) {
+  // Ne jamais montrer un brouillon ZupDrive au public, et ne jamais servir un
+  // document ZupEat sur un domaine ZupDrive si un chemin n'a pas d'équivalent.
+  if (!page || (contexte.drive && page.parDefaut)) {
     return (
       <>
         <h1>{t('titre')}</h1>

@@ -2937,6 +2937,8 @@ model ChauffeurDrive {
   vehiculeModele String?
   /// Plaque d'immatriculation, en majuscules, sans espaces ni tirets.
   vehiculePlaque String?
+  /// Nombre de passagers, hors chauffeur, documenté pour le véhicule indépendant.
+  placesPassagers Int?
 
   /// BROUILLON, SOUMIS, VALIDE, REFUSE, SUSPENDU.
   statut      String    @default("BROUILLON")
@@ -3069,6 +3071,8 @@ model VehiculeDrive {
   /// retirés (index partiel, migration 0038).
   plaque        String
   numeroLicence String?
+  /// Nombre de passagers, hors chauffeur, confirmé sur les documents du véhicule.
+  placesPassagers Int?
 
   /// Toutes ses pièces exigées sont validées et en cours de validité.
   /// Recalculé par le serveur à chaque examen et à chaque expiration
@@ -3175,6 +3179,28 @@ model TarifDrive {
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+
+  tarifsVehicule TarifVehiculeDrive[]
+}
+
+/// Tarif de la classe XL (5–6 passagers). Le tarif Standard (1–4) reste dans
+/// TarifDrive pour conserver les paramètres historiques ; une classe absente
+/// ou inactive ne peut pas recevoir de devis.
+model TarifVehiculeDrive {
+  region                 String
+  categorie              String   @default("XL")
+  priseEnChargeCentimes  Int
+  parKmCentimes          Int
+  parMinuteCentimes      Int
+  minimumCentimes        Int
+  actif                  Boolean  @default(false)
+
+  tarif TarifDrive @relation(fields: [region], references: [region], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@id([region, categorie])
 }
 
 /// Une course ZupDrive : un passager, un trajet, un prix fixe, un chauffeur.
@@ -3211,8 +3237,13 @@ model CourseDrive {
   /// Estimation au moment de la commande (distance routière estimée).
   distanceMetres   Int
   dureeSecondes    Int
+  /// Nombre de passagers demandé, hors chauffeur (1–4 Standard, 5–6 XL).
+  nombrePassagers  Int      @default(1)
   /// Le prix annoncé au passager et figé à la commande, en centimes d'euro.
   prixCentimes     Int
+  /// Versions des documents ZupDrive acceptés par le passager à la commande.
+  conditionsVersion String?
+  conditionsAccepteesLe DateTime?
   /// Coefficient de majoration (demande/offre) appliqué au prix à la commande.
   /// Nul pour les courses créées avant son enregistrement : inconnu, pas 1.
   surgeFactor      Float?
@@ -3315,6 +3346,8 @@ model AdresseFavoriteDrive {
   latitude   Float
   longitude  Float
   codePostal String
+  /// Renseigné seulement après validation d'une preuve de géocodage serveur.
+  geocodeVerifieLe DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

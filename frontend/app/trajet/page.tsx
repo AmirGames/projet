@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Car, Loader, MapPin, Navigation } from 'lucide-react';
 
 import { AddressAutocomplete, type AdresseChoisie } from '@/components/AddressAutocomplete';
+import AcceptationConditions from '@/components/AcceptationConditions';
 import { CarteCourseDrive } from '@/components/CarteCourseDrive';
 import { useAuth } from '@/lib/auth-context';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -33,6 +34,8 @@ interface Devis {
   distanceMetres: number;
   dureeSecondes: number;
   prixCentimes: number;
+  nombrePassagers: number;
+  categorieVehicule: 'STANDARD' | 'XL';
   /** Le tracé de la route quand le serveur l'a calculé, sinon null. */
   trace: [number, number][] | null;
   /** Le devis signé, à renvoyer pour commander. */
@@ -49,12 +52,13 @@ interface Trajet {
 }
 
 const versTrajet = (a: AdresseChoisie | null): AdresseTrajet | null =>
-  a && a.latitude !== null && a.longitude !== null && a.postalCode
-    ? { adresse: a.label, latitude: a.latitude, longitude: a.longitude, codePostal: a.postalCode }
+  a && a.latitude !== null && a.longitude !== null && a.postalCode && a.preuveAdresse
+    ? { adresse: a.label, latitude: a.latitude, longitude: a.longitude, codePostal: a.postalCode, preuveAdresse: a.preuveAdresse }
     : null;
 
 export default function CommanderTrajetPage() {
   const t = useTranslations('zupdriveTrajet');
+  const tConditions = useTranslations('acceptationConditions');
   const router = useRouter();
   const { user, isLoading } = useAuth();
 
@@ -62,7 +66,9 @@ export default function CommanderTrajetPage() {
   const [saisieArrivee, setSaisieArrivee] = useState('');
   const [depart, setDepart] = useState<AdresseTrajet | null>(null);
   const [arrivee, setArrivee] = useState<AdresseTrajet | null>(null);
+  const [nombrePassagers, setNombrePassagers] = useState(1);
   const [devis, setDevis] = useState<Devis | null>(null);
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   // Une clé par devis : rejouer la commande de ce devis rend la même course.
   const [cle, setCle] = useState('');
   const [trajets, setTrajets] = useState<Trajet[]>([]);
@@ -81,13 +87,20 @@ export default function CommanderTrajetPage() {
     if (user) chargerTrajets();
   }, [user, chargerTrajets]);
 
-  const demanderDevis = async (d = depart, a = arrivee) => {
+  const demanderDevis = async (d = depart, a = arrivee, n = nombrePassagers) => {
     setDevis(null);
     setErreur('');
     if (!d || !a) return;
     setEnvoi('devis');
     try {
-      setDevis(await appelerZupDrive<Devis>('/api/zupdrive/courses/devis', { method: 'POST', corps: { depart: d, arrivee: a } }));
+      setDevis(await appelerZupDrive<Devis>('/api/zupdrive/courses/devis', {
+        method: 'POST',
+        corps: {
+          depart: { preuveAdresse: d.preuveAdresse },
+          arrivee: { preuveAdresse: a.preuveAdresse },
+          nombrePassagers: n,
+        },
+      }));
       setCle(cleAleatoire());
     } catch (err) {
       setErreur(err instanceof Error ? err.message : t('erreur'));
@@ -97,13 +110,13 @@ export default function CommanderTrajetPage() {
   };
 
   const commander = async () => {
-    if (!depart || !arrivee || !devis) return;
+    if (!depart || !arrivee || !devis || !conditionsAcceptees) return;
     setEnvoi('commande');
     setErreur('');
     try {
       const course = await appelerZupDrive<{ id: string }>('/api/zupdrive/courses', {
         method: 'POST',
-        corps: { devis: devis.devis, cleIdempotence: cle },
+        corps: { devis: devis.devis, cleIdempotence: cle, conditionsAcceptees: true },
       });
       router.push(`/trajet/${course.id}`);
     } catch (err) {
@@ -155,6 +168,9 @@ export default function CommanderTrajetPage() {
         {t('titre')}
       </h1>
       <p className="mt-2 text-slate-600">{t('intro')}</p>
+      <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        {t('zonePilote')}
+      </p>
 
       {enCours && (
         <Link
@@ -166,6 +182,21 @@ export default function CommanderTrajetPage() {
       )}
 
       <section className="mt-8 space-y-4 rounded-3xl bg-white p-6 shadow-xs ring-1 ring-gray-200">
+        <label className="block text-sm">
+          <span className="font-medium text-slate-700">Nombre de passagers</span>
+          <select
+            value={nombrePassagers}
+            disabled={envoi !== null}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              setNombrePassagers(n);
+              demanderDevis(depart, arrivee, n);
+            }}
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
+          >
+            {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} {n === 1 ? 'passager' : 'passagers'} · {n <= 4 ? 'Standard' : 'XL'}</option>)}
+          </select>
+        </label>
         <label className="block text-sm">
           <span className="flex items-center gap-1 font-medium text-slate-700">
             <MapPin size={14} /> {t('depart')}
@@ -185,6 +216,7 @@ export default function CommanderTrajetPage() {
             }}
             placeholder={t('departPlaceholder')}
             pays="BE"
+            preuveZupDrive
             clair
             className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-600/20"
           />
@@ -208,6 +240,7 @@ export default function CommanderTrajetPage() {
             }}
             placeholder={t('destinationPlaceholder')}
             pays="BE"
+            preuveZupDrive
             clair
             className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-hidden focus:ring-2 focus:ring-blue-600/20"
           />
@@ -231,10 +264,22 @@ export default function CommanderTrajetPage() {
               {t('estimation', { distance: kilometres(devis.distanceMetres), duree: minutes(devis.dureeSecondes) })}
             </p>
             <p className="mt-1 text-xs text-slate-500">{t('prixFixe')}</p>
+            <p className="mt-1 text-sm font-medium text-slate-700">{devis.categorieVehicule} · {devis.nombrePassagers} passager{devis.nombrePassagers > 1 ? 's' : ''}</p>
+            <div className="mt-4">
+              <AcceptationConditions
+                clair
+                coche={conditionsAcceptees}
+                onChange={setConditionsAcceptees}
+                documents={[
+                  { href: '/cgu', libelle: tConditions('docs.cgu') },
+                  { href: '/cgv', libelle: tConditions('docs.cgv') },
+                ]}
+              />
+            </div>
             <button
               type="button"
               onClick={commander}
-              disabled={envoi !== null || !!enCours}
+              disabled={envoi !== null || !!enCours || !conditionsAcceptees}
               className="mt-4 w-full rounded-full bg-blue-600 px-5 py-4 text-lg font-bold text-white hover:bg-blue-700 disabled:opacity-60"
             >
               {envoi === 'commande' ? t('commandeEnCours') : t('commander', { prix: prix(devis.prixCentimes) })}

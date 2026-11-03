@@ -12,12 +12,14 @@ import { motDePasseValide } from "@/lib/mot-de-passe";
 import { api } from "@/lib/api";
 import { confierSessionCentrale } from "@/lib/sso";
 import Link from "next/link";
+import { useAuth } from '@/lib/auth-context';
 import { SelecteurPays } from "@/components/SelecteurPays";
 import { usePays } from "@/lib/pays-client";
 import { LogoConnexion, type MarqueConnexion } from '@/components/auth/LogoConnexion';
 
-export default function SignupForm({ marque }: { marque: MarqueConnexion }) {
+export default function SignupForm({ marque, retour }: { marque: MarqueConnexion; retour?: string }) {
   const t = useTranslations('auth.signup');
+  const { refreshAuth } = useAuth();
   const [aConfirmer, setAConfirmer] = useState(false);
   const tMdp = useTranslations('motDePasse');
   const tConditions = useTranslations('acceptationConditions');
@@ -69,13 +71,15 @@ export default function SignupForm({ marque }: { marque: MarqueConnexion }) {
       // donne à qui est connecté (le premier compte devient superowner).
       const moi = await api.getMe().catch(() => null);
       localStorage.setItem("isSuperOwner", moi?.user?.isSuperOwner ? "true" : "false");
+      await refreshAuth();
 
       setError("");
 
-      // Redirect to role selection to choose customer/merchant/driver roles —
+      const destination = retour || '/auth/role-selection';
+      // Redirect to the requested internal flow, otherwise to role selection —
       // en passant par zupone.com, qui garde la session pour les autres domaines.
-      if (await confierSessionCentrale(result.accessToken, "/auth/role-selection")) return;
-      router.push("/auth/role-selection");
+      if (await confierSessionCentrale(result.accessToken, destination)) return;
+      router.push(destination);
     } catch (err) {
       setError(t("error"));
       signalerErreur(err);
@@ -190,7 +194,7 @@ export default function SignupForm({ marque }: { marque: MarqueConnexion }) {
         <div className="mt-6 text-center">
           <p className="text-slate-600">
             {t("haveAccount")}{" "}
-            <Link href="/login" className="font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
+            <Link href={retour ? `/login?next=${encodeURIComponent(retour)}` : '/login'} className="font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
               {t("login")}
             </Link>
           </p>

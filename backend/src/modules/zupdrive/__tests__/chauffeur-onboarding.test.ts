@@ -32,6 +32,12 @@ type Ligne = Record<string, any>;
 const tables: { chauffeurs: Ligne[]; documents: Ligne[] } = { chauffeurs: [], documents: [] };
 let sequence = 0;
 const nouvelId = (prefixe: string) => `${prefixe}${String(++sequence).padStart(24, "0")}`;
+const preuveTitre = (type: string) => ({
+  verificationAutorite: true,
+  referenceAutorite: `Référence ${type} vérifiée par l'équipe de test`,
+  ...(["licence", "certificat_capacite"].includes(type) ? { communeAutorisee: "Namur" } : {}),
+  ...(type === "licence" ? { typeServiceTaxi: "RUE" as const } : {}),
+});
 
 const correspond = (ligne: Ligne, where: Ligne = {}) =>
   Object.entries(where).every(([cle, valeur]) => {
@@ -201,6 +207,7 @@ const PROFIL_COMPLET = {
   vehiculeMarque: "Toyota",
   vehiculeModele: "Corolla",
   vehiculePlaque: "t-laa-123",
+  placesPassagers: 4,
 };
 
 let app: ReturnType<typeof createApp>;
@@ -222,6 +229,7 @@ async function deposerTout(qui: string, region = "WALLONIE") {
       .post("/api/zupdrive/chauffeur/me/documents")
       .set(en(qui))
       .field("type", type)
+      .field("dateExpiration", ["certificat_capacite", "licence"].includes(type) ? "2030-03-31" : "")
       .attach("file", JPEG, { filename: "piece.jpg", contentType: "image/jpeg" });
     expect(reponse.status).toBe(201);
   }
@@ -247,6 +255,8 @@ describe("règles", () => {
     expect(piecesExigees("FLANDRE")).not.toContain("casier_judiciaire");
     expect(piecesExigees("BRUXELLES")).toContain("casier_judiciaire");
     expect(piecesExigees("WALLONIE")).not.toContain("bestuurderspas");
+    expect(piecesExigees("WALLONIE")).toContain("certificat_capacite");
+    expect(piecesExigees("WALLONIE")).toContain("certificat_acces_profession");
   });
 });
 
@@ -359,7 +369,7 @@ describe("administration ZupDrive", () => {
       await request(app)
         .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${piece.id}`)
         .set(admin)
-        .send({ approuve: true })
+        .send({ approuve: true, ...(["licence", "certificat_capacite", "certificat_acces_profession"].includes(piece.type) ? preuveTitre(piece.type) : {}) })
         .expect(200);
     }
 
@@ -450,7 +460,7 @@ describe("suspension pour une pièce expirée", () => {
       await request(app)
         .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${piece.id}`)
         .set(admin)
-        .send({ approuve: true })
+        .send({ approuve: true, ...(["licence", "certificat_capacite", "certificat_acces_profession"].includes(piece.type) ? preuveTitre(piece.type) : {}) })
         .expect(200);
     }
     await request(app).post(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/approve`).set(admin).expect(200);
@@ -465,6 +475,7 @@ describe("suspension pour une pièce expirée", () => {
       .post("/api/zupdrive/chauffeur/me/documents")
       .set(en(qui))
       .field("type", "licence")
+      .field("dateExpiration", "2030-03-31")
       .attach("file", JPEG, { filename: "licence.jpg", contentType: "image/jpeg" });
 
   it("laisse le chauffeur déposer la pièce à jour, et le rétablit quand l'équipe la valide", async () => {
@@ -476,7 +487,7 @@ describe("suspension pour une pièce expirée", () => {
     await request(app)
       .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${licence.id}`)
       .set(en("superowner"))
-      .send({ approuve: true })
+      .send({ approuve: true, ...preuveTitre("licence") })
       .expect(200);
 
     expect(chauffeur.statut).toBe("VALIDE");
@@ -523,7 +534,7 @@ describe("renouvellement d'une pièce : l'ancienne version reste en vigueur", ()
       await request(app)
         .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${piece.id}`)
         .set(en("superowner"))
-        .send({ approuve: true })
+        .send({ approuve: true, ...(["licence", "certificat_capacite", "certificat_acces_profession"].includes(piece.type) ? preuveTitre(piece.type) : {}) })
         .expect(200);
     }
     await request(app).post(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/approve`).set(en("superowner")).expect(200);

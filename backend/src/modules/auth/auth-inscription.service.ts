@@ -2,10 +2,12 @@ import type { Request } from "express";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
+import { getEnv } from "../../config/env";
 import { AuthService } from "./auth.service";
 import { SsoService } from "./sso.service";
 import { UserService } from "./user.service";
 import { enregistrerAcceptation } from "../legal/acceptation-conditions.service";
+import { PagesLegalesService } from "../legal/pages-legales.service";
 import { StoreService } from "../stores/store.service";
 import { normaliserGenre } from "../stores/store-type.service";
 import { confirmationExigee, confirmationAEnvoyer, envoyerConfirmation } from "./auth-confirmation.service";
@@ -16,6 +18,17 @@ export const REPONSE_INSCRIPTION_A_CONFIRMER = {
   message: "Si cette adresse peut être inscrite, un e-mail de confirmation vient d'y être envoyé. Ouvrez le lien qu'il contient pour vous connecter.",
   emailVerificationRequired: true,
 };
+
+function estOrigineZupDrive(req: Request): boolean {
+  const origine = req.get("origin");
+  if (!origine) return false;
+  try {
+    const hote = new URL(origine).hostname.toLowerCase();
+    return hote === "zupdrive.com" || hote.endsWith(".zupdrive.com");
+  } catch {
+    return false;
+  }
+}
 
 export type InscriptionClient = { email: string; name?: string | null; password: string };
 
@@ -51,6 +64,10 @@ export const AuthInscriptionService = {
    * jetons de la session ouverte.
    */
   async inscrireClient(req: Request, body: InscriptionClient) {
+    const inscriptionDrive = estOrigineZupDrive(req);
+    if (inscriptionDrive && getEnv().NODE_ENV === "production") {
+      await PagesLegalesService.verifierPrealablesZupDrive();
+    }
     // Pas d'adresse dans les logs : une trace de plus qui dirait qui s'inscrit ou se connecte.
     logger.info("Signup attempt");
 
@@ -88,7 +105,11 @@ export const AuthInscriptionService = {
       user = await db.$transaction(async (tx) => {
         const compte = await tx.user.create({ data: { email: body.email, name: body.name, passwordHash } });
         await enregistrerAcceptation(req, {
-          email: compte.email, userId: compte.id, documents: ["cgu", "cgv", "confidentialite"],
+          email: compte.email,
+          userId: compte.id,
+          documents: inscriptionDrive
+            ? ["drive-cgu", "drive-cgv", "drive-confidentialite"]
+            : ["cgu", "cgv", "confidentialite"],
         }, tx);
         // Ne jamais rattacher une fiche invitée avant la preuve de l'adresse.
         // ON CONFLICT évite aussi la course avec une commande invitée simultanée.

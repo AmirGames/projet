@@ -36,7 +36,7 @@ const ARRIVEE = { adresse: "Avenue Jean Materne, 5100 Jambes", latitude: 50.4555
 /** Un point à `km` kilomètres au nord du départ. */
 const auNord = (km: number) => ({ latitude: DEPART.latitude + km / 111.2, longitude: DEPART.longitude });
 
-const TARIF = { priseEnChargeCentimes: 250, parKmCentimes: 180, parMinuteCentimes: 30, minimumCentimes: 800 };
+const TARIF = { priseEnChargeCentimes: 0, parKmCentimes: 190, parMinuteCentimes: 0, minimumCentimes: 820 };
 
 let tarifAvant: any = null;
 const comptes: string[] = [];
@@ -64,6 +64,7 @@ async function chauffeur(nom: string, extra: Record<string, unknown>) {
       enLigne: true,
       positionLe: new Date(),
       vehiculePlaque: "TLAA123",
+      placesPassagers: 4,
       ...extra,
     },
   });
@@ -129,12 +130,12 @@ beforeEach(async () => {
 
 describe("prix", () => {
   it("applique le minimum", () => {
-    expect(calculerPrix(TARIF, 500, 60)).toBe(800);
+    expect(calculerPrix(TARIF, 500, 60)).toBe(820);
   });
 
   it("n'arrondit qu'une fois, sur le total, au centime le plus proche", () => {
     // 250 + 180 × 3,333 km + 30 × 7,5 min = 250 + 599,94 + 225 = 1074,94 → 1075
-    expect(calculerPrix(TARIF, 3333, 450)).toBe(1075);
+    expect(calculerPrix(TARIF, 3333, 450)).toBe(633);
   });
 
   it("estime la distance routière et la durée", () => {
@@ -155,6 +156,34 @@ describe("prix", () => {
 });
 
 describe("devis et commande", () => {
+  it("refuse à la commande un ancien devis signé hors de Namur", async () => {
+    const devisValide = await CourseDriveService.devis(passager, DEPART, ARRIVEE);
+    const [corps] = devisValide.devis.split(".");
+    const { v: _version, ...contenu } = JSON.parse(Buffer.from(corps, "base64url").toString());
+    const ancienDevisHorsZone = signerDevis({
+      ...contenu,
+      depart: { ...contenu.depart, codePostal: "1300" },
+    });
+
+    await expect(
+      CourseDriveService.commander(passager, {
+        devis: ancienDevisHorsZone,
+        cleIdempotence: `cle-${suffixe}-${++cle}`,
+      })
+    ).rejects.toMatchObject({ code: "PILOT_AREA_NOT_SERVED" });
+
+    const devisCoordonneesHorsZone = signerDevis({
+      ...contenu,
+      depart: { ...contenu.depart, latitude: 50.8467, longitude: 4.3525 },
+    });
+    await expect(
+      CourseDriveService.commander(passager, {
+        devis: devisCoordonneesHorsZone,
+        cleIdempotence: `cle-${suffixe}-${++cle}`,
+      })
+    ).rejects.toMatchObject({ code: "PILOT_AREA_NOT_SERVED" });
+  });
+
   it("refuse un trajet entre deux régions", async () => {
     await expect(
       CourseDriveService.devis(passager, DEPART, { ...ARRIVEE, codePostal: "1000" })

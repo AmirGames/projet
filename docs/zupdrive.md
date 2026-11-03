@@ -1,63 +1,22 @@
-# ZupDrive — marche à suivre pour les chauffeurs
+# ZupDrive — parcours chauffeurs et sociétés taxi
 
-**État au 4 octobre 2026 :** les dossiers chauffeurs et sociétés, véhicules,
-invitations, tarifs, devis, courses et notes de la V1 sont écrits. Le paiement
-en ligne et les règles de facturation des courses relèvent de la V2. La
-présentation publique annonce encore « Bientôt disponible ». Ce document
-décrit les parcours et le code ; les validations et le travail restant sont
-dans [l'état du projet](etat-projet.md).
+**État au 3 novembre 2026.** Le MVP vise un pilote fermé dans la commune de
+Namur. Il inclut les chauffeurs indépendants et les sociétés taxi, avec les
+classes Standard (1–4 passagers) et XL (5–6). Les espaces de dossier sont
+`/chauffeur` et `/societe`; le portail d'administration examine les pièces et
+les véhicules.
 
-ZupDrive est le domaine lié à la gestion des chauffeurs disposant d'une licence LVC ou d'une licence de transport rémunéré de personnes (Belgique).
+Le pilote n'est pas ouvert en production. Les pages légales sont encore des
+brouillons, l'agrément SPW de l'opérateur n'est pas obtenu, l'entité juridique
+exploitante n'est pas encore désignée et Stripe/3DS n'a pas été essayé sur
+l'environnement cible. Les verrouillages de production restent actifs.
 
-Architecture prévue : `zupdrive.com`, `manager.zupdrive.com`, `driver.zupdrive.com`.
-
-## 1. Créer un compte
-
-Inscrivez-vous en ligne pour créer un compte ZupDrive.
-
-## 2. Enregistrer l'entreprise et obtenir un numéro de TVA (BCE)
-
-Prenez rendez-vous auprès d'un guichet d'entreprise et obtenez votre numéro d'entreprise auprès de la Banque Carrefour des Entreprises (BCE). Faites la demande de numéro de TVA auprès d'un guichet d'entreprise compétent via un formulaire.
-
-- Durée : 1 à 3 semaines
-- Coût : 89,50 EUR
-
-## 3. Trouver un véhicule conforme
-
-Obtenez une assurance voiture professionnelle : pour obtenir la licence, l'assurance doit couvrir le transport rémunéré.
-
-- Temps nécessaire : quelques semaines
-- Coût : dépend de la voiture et du risque du partenaire
-- Plaque d'immatriculation T-X (Flandre) ou T-L (Bruxelles et Wallonie) : 35 EUR
-
-Le véhicule doit répondre aux exigences réglementaires.
-
-## 4. Demander la licence LVC ou de transport rémunéré de personnes
-
-Une fois le véhicule, l'assurance et le numéro de TVA obtenus :
-
-| Région | Organisme | Coût |
-|---|---|---|
-| Bruxelles | Bruxelles Mobilité | 650 €/an |
-| Wallonie | SPF Mobilité et Transports | 350 €/an |
-| Flandre | Commune | 250–350 €/an |
-
-## 5. Téléverser les documents
-
-Via l'application ou le site `driver.zupdrive.com` :
-
-- Carte d'identité
-- Bestuurderspas (Flandre)
-- Permis de conduire avec sélection médicale
-- Numéro de TVA
-- Licence LVC ou *vergunning voor individueel bezoldigd personenvervoer*
-- Document de contrôle technique
-- Assurance automobile pour transport rémunéré
-- Certificat d'immatriculation (recto/verso)
-- Documents d'identité de toutes les personnes possédant des parts dans la société
-- Extrait de casier judiciaire (Bruxelles)
-
-Des documents supplémentaires peuvent être requis en fonction de la licence.
+Les conditions officielles applicables aux chauffeurs et aux véhicules de
+Namur, les preuves à recueillir et les confirmations encore attendues de la
+Ville/SPW sont détaillées dans le [périmètre du MVP](zupdrive-mvp-scope.md).
+Cette fiche décrit le parcours et le code; les anciennes estimations de coûts
+et instructions valables pour d'autres régions ne s'appliquent pas au pilote.
+Voir aussi [l'état du projet](etat-projet.md).
 
 ---
 
@@ -191,9 +150,9 @@ Une pièce appartient à **exactement un** dossier : chauffeur, société ou vé
 - **Cloisonnement** : les routes du gérant partent toujours de SA société (par son compte), jamais d'un identifiant de société envoyé par le client. Un véhicule, un chauffeur ou une invitation d'une autre société répond 404. Les pièces de la société et de ses véhicules ne sont lisibles (`/api/files`) que par son gérant et par l'équipe.
 - **Suppression du compte du gérant** : sa société et l'historique de ses courses restent (relation `Restrict`) ; son compte ZupOne n'est pas entièrement effacé.
 
-### API gérant — futur `manager.zupdrive.com`
+### API gérant — utilisée par le portail `/societe`
 
-Toutes les routes exigent une session. L'espace du gérant (pages) est la phase 2 ; d'ici là, l'API est complète.
+Toutes les routes exigent une session. Le portail du gérant est disponible sur `/societe` : ouverture et édition du dossier, dépôt des pièces, gestion des véhicules, invitations et affectations des chauffeurs, puis historique des courses. Après inscription ou connexion depuis ce portail, le retour se fait vers `/societe`.
 
 | Méthode | Route | Effet |
 |---|---|---|
@@ -239,23 +198,32 @@ les versements et la supervision sont décrits dans [`zupdrive-api-admin.md`](./
 - **`/superowner/zupdrive/societes`** (menu « ZupDrive › Sociétés ») : la file de validation. Chaque pièce de la société et de chaque véhicule s'examine dans la page, la conformité de chaque véhicule s'affiche, et les chauffeurs rattachés et les invitations en attente sont listés. `/superowner/zupdrive/societes/:id` ouvre un dossier directement (lien des notifications).
 - **Tableau de bord ZupDrive** : sociétés à examiner et sociétés validées.
 - **`/chauffeur`** : les invitations reçues (accepter, refuser) ; une fois rattaché, la société, le véhicule attribué et « Quitter la société ». Le profil se réduit au nom et au téléphone.
-- **Vérification E2E** : `frontend/scripts/verif-zupdrive-societe.mjs`.
+- **Vérification E2E** : `npm run verif:zupdrive:societe` lance `frontend/scripts/verif-zupdrive-societe.mjs` contre le site et l'API locaux. Cette recette modifie des comptes et téléverse des pièces : elle refuse de tourner sans `ZUPDRIVE_E2E_ALLOW_DISPOSABLE_DB=1` et une URL locale nommée exactement `zupdrive_e2e`. Le 2 novembre 2026, elle passe **38/38 contrôles** sans erreur console. Elle couvre le portail du gérant, les pièces société, la flotte, les invitations, l'accord du chauffeur, la validation interne, l'affectation et le retrait du chauffeur.
 
-## Courses (V1)
+## Courses — pilote Namur
 
-Le passager commande un trajet à **prix fixe** sur `zupdrive.com/trajet`, avec son compte ZupOne. La course est proposée au chauffeur le plus proche, qui l'accepte depuis `driver.zupdrive.com/chauffeur/courses` et la mène à terme. Côté serveur, le paiement en ligne est branché : intention Stripe par course, confirmation par le webhook Stripe (jamais par le client), versement du chauffeur une fois la course terminée et payée ; voir [`zupdrive-api-admin.md`](./zupdrive-api-admin.md#paiement-dune-course--apizupdrivepayment-et-webhook-stripe). Le site l'appelle (`/trajet/[id]`) ; l'app mobile passager (`mobile/apps/zupdrive-passenger`) commande, suit et annule déjà un trajet, y compris le paiement par carte (formulaire Stripe natif, confirmation toujours par le webhook), et la facturation reste à trancher (qui facture le passager, TVA) ; une course payée puis annulée ou sans chauffeur est remboursée automatiquement en totalité (aucun frais d'annulation).
+Le passager commande un trajet à prix annoncé sur le web ou dans l'app mobile,
+avec son compte ZupOne. La course est attribuée à un chauffeur éligible, qui
+l'accepte puis la mène à terme. L'intégration Stripe et les remboursements sont
+présents dans le code; le paiement de production est obligatoire par
+configuration, après validation des essais Stripe TEST, 3DS et webhook sur
+l'environnement cible. Les reversements aux chauffeurs, la facturation et la
+TVA restent à confirmer avant les courses payantes. Voir
+[`zupdrive-api-admin.md`](./zupdrive-api-admin.md#paiement-dune-course--apizupdrivepayment-et-webhook-stripe)
+et le [périmètre du MVP](./zupdrive-mvp-scope.md).
 
 Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course-drive.service.ts`, `course-drive.jobs.ts`, `course-drive.routes.ts`). Modèles : `TarifDrive`, `CourseDrive`, `PropositionCourseDrive`, et `enLigne` / position sur `ChauffeurDrive`. Migration `0031_zupdrive_courses`.
 
 ### Prix
-- Le tarif est fixé **par région** dans le manager (ZupDrive › Tarifs), en centimes entiers. Il comprend une prise en charge, un prix au km, un prix à la minute et un minimum. Une région n'accepte de commandes que si son tarif est « actif ». Chaque modification est journalisée (`ZUPDRIVE_SET_TARIF`).
+- Pour le pilote Namur, l'API impose **1,90 €/km et 8,20 € minimum**, sans prise en charge, attente ni majoration dynamique. Standard et XL utilisent le même barème. L'équipe ne peut pas activer un tarif wallon qui s'en écarte; la configuration est journalisée (`ZUPDRIVE_SET_TARIF`). La Ville doit encore confirmer la publication et l'application du règlement aux courses de plateforme.
+- Le pilote de lancement vise la commune de Namur : l'API devis et commande vérifie le code postal au départ et à l'arrivée ainsi que les coordonnées contre le polygone officiel versionné dans `backend/src/modules/zupdrive/data/limite-commune-namur.json` (GeoJSON, AGDP / SPF Finances, via le Géoportail de la Wallonie, CC BY 4.0). Liste, attribution et limites : [cadrage MVP](./zupdrive-mvp-scope.md).
 - Formule : `max(minimum, priseEnCharge + parKm × km + parMinute × minutes)`, calculée sur les mètres et les secondes exacts, puis **arrondie une seule fois au centime**, sur le total.
 - **Devis signé** : le serveur calcule le devis et le signe (HMAC, `devis-signe.ts`), lié au compte du passager et valable 10 minutes. La commande reprend ce devis tel quel, donc le prix vu est le prix payé, même si l'itinéraire a changé entre-temps (circulation). Un devis retouché ou émis pour un autre compte est refusé (`INVALID_QUOTE`). Un devis expiré est refusé aussi (`QUOTE_EXPIRED`), et la page en redemande un. Une fois commandé, le prix est figé dans la course, avec une copie du tarif appliqué et la source de l'itinéraire.
-- **Région** : elle est déduite du code postal belge (Bruxelles 1000–1299 ; Wallonie 1300–1499 et 4000–7999 ; Flandre 1500–3999 et 8000–9999). Départ et destination doivent être dans la même région, puisqu'une licence ne vaut que dans sa région.
+- **Zone** : le pilote accepte uniquement un départ et une arrivée dans la commune de Namur, vérifiés par code postal et coordonnées. Les autres régions et communes ne sont pas ouvertes pour ce pilote.
 - **Distance et durée** (`itineraire.service.ts`, variable `ROUTING_PROVIDER`) :
-  - `estimation` (par défaut) : vol d'oiseau × 1,3, à 25 km/h, sans service externe ;
+  - `estimation` : vol d'oiseau × 1,3, à 25 km/h, pour développement et démonstration seulement ;
   - `osrm` : la vraie route, calculée par un serveur **OSRM** (`OSRM_API_URL`), un moteur libre et gratuit basé sur OpenStreetMap. Il fournit aussi le tracé affiché sur la carte ;
-  - si OSRM ne répond pas, ou pas en 3 secondes, l'estimation prend le relais : un devis n'est jamais bloqué.
+  - en production, OSRM est obligatoire et le devis échoue si l'itinéraire routier n'est pas disponible; une estimation ne remplace jamais une route réelle pour établir le prix du pilote.
 
 ### Attribution
 - La course est proposée à un seul chauffeur à la fois : le plus proche du départ (15 km au plus) parmi ceux qui sont `VALIDE`, en ligne, de la même région, avec une position de moins de 2 minutes, sans course ni proposition en cours, et pas encore sollicités pour cette course.
@@ -275,11 +243,11 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 ### API
 | Qui | Route | Effet |
 |---|---|---|
-| Passager | `POST /api/zupdrive/courses/devis` | Distance, durée, prix, tracé, devis signé |
+| Passager | `POST /api/zupdrive/courses/devis` | Reçoit deux preuves d'adresse signées par `GET /api/addresses/search?...&usage=zupdrive`, vérifie la zone côté serveur, puis renvoie distance, durée, prix, tracé et devis signé. Les coordonnées fournies séparément par le client ne sont pas acceptées. |
 | Passager | `POST /api/zupdrive/courses` | Commander un devis signé (`devis`, `cleIdempotence`) |
 | Passager | `GET /api/zupdrive/courses`, `GET …/:id`, `POST …/:id/annuler` | Suivre, annuler. La course porte `paiement: { obligatoire, statut }` (statut du paiement enregistré par le webhook Stripe) |
-| Passager | `GET /api/zupdrive/adresses`, `PUT`/`DELETE …/:type` (`DOMICILE` ou `TRAVAIL`) | Ses adresses favorites (`AdresseFavoriteDrive`, une par type, jeton seulement). Supprimées avec le compte, incluses dans l'export RGPD |
-| Passager | `POST /api/zupdrive/sos` (`courseId`, position facultative) | Alerte SOS pendant un trajet `ACCEPTEE`, `ARRIVEE` ou `EN_COURS` : alerte enregistrée d'abord (une par course, rejouable), puis ticket CRITIQUE de support, cloche de l'administration et e-mail à la personne de confiance. Aucune intervention sur place n'est promise : l'app renvoie vers le 17 et le 112 |
+| Passager | `GET /api/zupdrive/adresses`, `PUT`/`DELETE …/:type` (`DOMICILE` ou `TRAVAIL`) | Ses adresses favorites (`AdresseFavoriteDrive`, une par type). Le serveur n'enregistre qu'une preuve valide et masque les favoris créés avant ce contrôle jusqu'à ce qu'ils soient re-sélectionnés. Supprimées avec le compte, incluses dans l'export RGPD |
+| Passager | `POST /api/zupdrive/sos` (`courseId`, position facultative) | Alerte SOS pendant un trajet `ACCEPTEE`, `ARRIVEE` ou `EN_COURS` : alerte enregistrée d'abord (une par course, rejouable), puis ticket CRITIQUE de support, cloche de l'administration et e-mail à la personne de confiance. Aucune intervention sur place n'est promise : en Belgique, l'app indique le 101 pour la police et le 112 pour l'ambulance et les pompiers |
 | Passager | `GET`/`PUT`/`DELETE /api/zupdrive/sos/contact` | Sa personne de confiance (nom, e-mail ; `consentement: true` exigé : le passager confirme l'avoir informée). Supprimée avec le compte, incluse dans l'export |
 | Passager | `GET`/`POST /api/zupdrive/courses/:id/messages` (`texte` ≤ 500, `cleIdempotence`) | Chat avec son chauffeur : écriture seulement pendant `ACCEPTEE`, `ARRIVEE` ou `EN_COURS`, lecture ensuite (`?depuis=` pour la relecture). Participants de la course seulement, 200 messages au plus, relu toutes les 4 s (pas de temps réel). Supprimé à l'effacement du passager, purgé avec l'historique des courses terminées (90 jours) |
 | Chauffeur | `GET`/`POST /api/zupdrive/chauffeur/me/courses/:id/messages` | Le même fil, côté chauffeur (pas encore d'écran chauffeur) |
@@ -322,7 +290,8 @@ Après une course terminée, **le passager note son chauffeur et le chauffeur no
 
 ### Héberger OSRM (itinéraire réel)
 
-OSRM est gratuit, mais il lui faut les données de la région, préparées une fois (une dizaine de minutes pour la Belgique) :
+OSRM est gratuit, mais il lui faut les données de la région préparées une fois.
+La durée dépend du VPS et du volume de données :
 
 ```bash
 mkdir -p osrm && cd osrm
@@ -330,7 +299,25 @@ wget https://download.geofabrik.de/europe/belgium-latest.osm.pbf
 docker run --rm -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-extract -p /opt/car.lua /data/belgium-latest.osm.pbf
 docker run --rm -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-partition /data/belgium-latest.osrm
 docker run --rm -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-customize /data/belgium-latest.osrm
-docker run -d --name osrm -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-routed --algorithm mld /data/belgium-latest.osrm
 ```
 
-Ensuite, dans `.env.production` : `ROUTING_PROVIDER=osrm` et `OSRM_API_URL` (l'adresse du conteneur, joignable depuis l'API). Pour suivre l'évolution des routes, refaire la préparation de temps en temps, par exemple chaque mois. Le serveur public de démonstration d'OSRM n'est pas fait pour la production.
+Après le premier démarrage de la stack (`./deploy/zup.sh up`), joignez le
+conteneur OSRM au réseau Docker interne de l'application. Ne publiez aucun port
+OSRM sur Internet :
+
+```bash
+docker network inspect zupone_default >/dev/null
+docker rm -f osrm 2>/dev/null || true
+docker run -d --name osrm --restart unless-stopped \
+  --network zupone_default --network-alias osrm \
+  -v "$PWD:/data:ro" ghcr.io/project-osrm/osrm-backend \
+  osrm-routed --algorithm mld /data/belgium-latest.osrm
+```
+
+Dans `.env.production`, configurez `ROUTING_PROVIDER=osrm` et
+`OSRM_API_URL=http://osrm:5000`. Le profil de production refuse un devis si
+OSRM ne répond pas; aucun repli sur une distance estimée n'est effectué.
+Rafraîchissez périodiquement les données depuis Geofabrik et redémarrez le
+conteneur après leur préparation. Le serveur public de démonstration d'OSRM
+n'est pas fait pour la production. Après `./deploy/zup.sh down`, relancez
+également OSRM avec la commande ci-dessus avant la recette du pilote.

@@ -184,6 +184,12 @@ export function espaceDuDomaine(hote: string): EspaceHeberge | null {
   return null;
 }
 
+/** Repère ZupDrive pour les pages légales, y compris sur les domaines www/driver. */
+export function estDomaineZupDrive(hote: string): boolean {
+  const domaine = hote.split(',')[0].trim().split(':')[0].toLowerCase();
+  return espaceDuDomaine(hote) === 'drive' || domaine === 'zupdrive.com' || domaine.endsWith('.zupdrive.com');
+}
+
 /**
  * Adresse absolue d'une page sur son domaine, pour les liens qui traversent
  * les espaces (« Voir la boutique », « Espace commerçant »).

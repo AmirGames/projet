@@ -1,30 +1,56 @@
 /**
- * ZupDrive — une course de bout en bout, dans trois navigateurs.
+ * ZupDrive — une course de bout en bout, dans trois sessions Chromium isolées.
  *
  * L'équipe fixe le tarif de la Wallonie dans le manager ; le chauffeur passe
- * en ligne depuis son téléphone (géolocalisation simulée) ; le passager
- * commande un trajet à prix fixe sur zupdrive.com/trajet ; la course est
+ * en ligne (géolocalisation simulée) ; le passager commande un trajet à prix
+ * fixe sur /trajet ; la course est
  * proposée au chauffeur, qui l'accepte et la mène à terme ; le passager la
  * suit à chaque étape ; l'équipe la retrouve dans la liste des courses.
  *
- * Seule la recherche d'adresses (service externe) est simulée : tout le
- * reste passe par le vrai site et la vraie API.
+ * Le site, l'API et l'autocomplétion d'adresse sont réels. Seules les tuiles
+ * cartographiques et la position GPS sont simulées.
  *
  *   VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3001 \
- *   DATABASE_URL=postgresql://… node scripts/verif-zupdrive-courses.mjs
+ *   DATABASE_URL=postgresql://…/zupdrive_e2e?schema=public \
+ *   ZUPDRIVE_E2E_ALLOW_DISPOSABLE_DB=1 node scripts/verif-zupdrive-courses.mjs
  */
 
 import { chromium } from 'playwright';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { baseDeDonnees } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
+const databaseUrl = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
+if (
+  process.env.ZUPDRIVE_E2E_ALLOW_DISPOSABLE_DB !== '1' ||
+  !databaseUrl ||
+  !['localhost', '127.0.0.1', '[::1]'].includes(databaseUrl.hostname) ||
+  databaseUrl.pathname.replace(/^\//, '') !== 'zupdrive_e2e'
+) {
+  throw new Error('Cette recette modifie les comptes et les courses : utilisez uniquement la base locale jetable zupdrive_e2e et définissez ZUPDRIVE_E2E_ALLOW_DISPOSABLE_DB=1.');
+}
 const uniq = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const MDP = 'Password123!';
 
-// Namur → Jambes (Wallonie).
-const DEPART = { label: "Place d'Armes, 5000 Namur", street: "Place d'Armes", city: 'Namur', postalCode: '5000', country: 'BE', latitude: 50.4632, longitude: 4.8665 };
-const ARRIVEE = { label: 'Avenue Jean Materne, 5100 Jambes', street: 'Avenue Jean Materne', city: 'Jambes', postalCode: '5100', country: 'BE', latitude: 50.4555, longitude: 4.8759 };
+// Namur → Jambes (Wallonie), sélectionnés par le vrai géocodeur serveur.
+const REQUETE_DEPART = "Place d'Armes, Namur";
+const REQUETE_ARRIVEE = 'Avenue Jean Materne, Jambes';
+async function adresseSignee(requete, codePostal) {
+  const url = new URL(`${API}/api/addresses/search`);
+  url.searchParams.set('q', requete);
+  url.searchParams.set('country', 'be');
+  url.searchParams.set('usage', 'zupdrive');
+  const reponse = await fetch(url);
+  if (!reponse.ok) throw new Error(`Recherche d'adresse impossible (${reponse.status})`);
+  const resultat = await reponse.json();
+  const suggestion = resultat.suggestions?.find((s) => s.postalCode === codePostal && s.preuveAdresse);
+  if (!suggestion) throw new Error(`Aucune adresse belge signée trouvée pour ${requete} (${codePostal})`);
+  return { ...suggestion, country: suggestion.country || 'Belgique' };
+}
+const DEPART = await adresseSignee(REQUETE_DEPART, '5000');
+const ARRIVEE = await adresseSignee(REQUETE_ARRIVEE, '5100');
 // Le chauffeur attend à un kilomètre au nord du départ.
 const POSITION_CHAUFFEUR = { latitude: DEPART.latitude + 0.009, longitude: DEPART.longitude };
 
@@ -64,7 +90,7 @@ await db.accesEquipe.create({ data: { userId: admin.id, plateforme: 'DRIVE', rol
 
 // Le rôle ADMIN ZupDrive peut dater d'avant la section « Courses et tarifs » :
 // on la coche, comme le ferait le superowner depuis la gestion des rôles.
-await fetch(`${API}/api/health`).catch(() => undefined);
+await fetch(`${API}/health`).catch(() => undefined);
 const roleDrive = await db.platformRole.findUnique({ where: { plateforme_code: { plateforme: 'DRIVE', code: 'ADMIN' } } });
 if (roleDrive && roleDrive.permissions?.['courses-drive'] !== 'write') {
   await db.platformRole.update({
@@ -83,6 +109,7 @@ const chauffeur = await db.chauffeurDrive.create({
     vehiculeMarque: 'Toyota',
     vehiculeModele: 'Corolla',
     vehiculePlaque: 'TLAA123',
+    placesPassagers: 4,
   },
 });
 // Personne d'autre ne doit recevoir la course de ce scénario.
@@ -98,7 +125,23 @@ const jetonDe = async (email) =>
     body: JSON.stringify({ email, password: MDP }),
   }).then((x) => x.json())).accessToken;
 
-const nav = await chromium.launch();
+const navigateurDemande = process.env.ZUPDRIVE_E2E_CHROME_EXECUTABLE?.trim();
+const navigateursSysteme = process.platform === 'win32'
+  ? [
+    process.env.ProgramFiles && join(process.env.ProgramFiles, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env['ProgramFiles(x86)'] && join(process.env['ProgramFiles(x86)'], 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+  ].filter((chemin) => chemin && existsSync(chemin))
+  : [];
+const navigateurPlaywright = chromium.executablePath();
+const executableNavigateur = navigateurDemande ||
+  (!existsSync(navigateurPlaywright) ? navigateursSysteme[0] : undefined);
+if (executableNavigateur && !existsSync(executableNavigateur)) {
+  throw new Error(`Navigateur introuvable : ${executableNavigateur}`);
+}
+if (!executableNavigateur && !existsSync(navigateurPlaywright)) {
+  throw new Error('Chromium est absent : lancez « npx playwright install chromium » ou définissez ZUPDRIVE_E2E_CHROME_EXECUTABLE.');
+}
+const nav = await chromium.launch(executableNavigateur ? { executablePath: executableNavigateur } : undefined);
 const erreurs = [];
 async function ouvrir(nom, options = {}) {
   const contexte = await nav.newContext(options);
@@ -133,25 +176,26 @@ titre('L’équipe ZupDrive fixe le tarif de la Wallonie');
 const pageAdmin = await ouvrir('admin');
 await connecter(pageAdmin, admin.email);
 await pageAdmin.goto(`${SITE}/superowner/zupdrive/tarifs`);
-await pageAdmin.waitForSelector('[data-region="WALLONIE"]', { timeout: 15000 });
-const wallonie = pageAdmin.locator('[data-region="WALLONIE"]');
+await pageAdmin.waitForSelector('[data-region="WALLONIE"][data-categorie="STANDARD"]', { timeout: 15000 });
+const wallonie = pageAdmin.locator('[data-region="WALLONIE"][data-categorie="STANDARD"]');
 check('le menu propose Courses et Tarifs sous ZupDrive', /Tarifs/.test(await pageAdmin.locator('aside').innerText()));
 
-await wallonie.locator('input[name="WALLONIE-priseEnChargeCentimes"]').fill('abc');
+await wallonie.locator('input[name="WALLONIE:STANDARD-priseEnChargeCentimes"]').fill('abc');
 await wallonie.locator('button').click();
-check('un montant invalide est refusé', /montant invalide/.test(await pageAdmin.locator('main').innerText()));
+check('un montant invalide est refusé', /montant invalide/i.test(await pageAdmin.locator('main').innerText()));
 
-await wallonie.locator('input[name="WALLONIE-priseEnChargeCentimes"]').fill('2,50');
-await wallonie.locator('input[name="WALLONIE-parKmCentimes"]').fill('1,8');
-await wallonie.locator('input[name="WALLONIE-parMinuteCentimes"]').fill('0,30');
-await wallonie.locator('input[name="WALLONIE-minimumCentimes"]').fill('8');
-await wallonie.locator('input[name="WALLONIE-actif"]').check();
+await wallonie.locator('input[name="WALLONIE:STANDARD-priseEnChargeCentimes"]').fill('2,50');
+await wallonie.locator('input[name="WALLONIE:STANDARD-parKmCentimes"]').fill('1,8');
+await wallonie.locator('input[name="WALLONIE:STANDARD-parMinuteCentimes"]').fill('0,30');
+await wallonie.locator('input[name="WALLONIE:STANDARD-minimumCentimes"]').fill('8,20');
+await wallonie.locator('input[name="WALLONIE:STANDARD-actif"]').check();
 await wallonie.locator('button').click();
-await pageAdmin.waitForSelector('text=Tarif Wallonie enregistré.', { timeout: 10000 });
+await pageAdmin.waitForSelector('[role="status"]', { timeout: 10000 });
+check('la page confirme l’enregistrement du tarif Standard', /STANDARD/.test(await pageAdmin.locator('[role="status"]').innerText()));
 const tarif = await db.tarifDrive.findUnique({ where: { region: 'WALLONIE' } });
 check(
   'enregistré en centimes exacts',
-  tarif?.priseEnChargeCentimes === 250 && tarif.parKmCentimes === 180 && tarif.parMinuteCentimes === 30 && tarif.minimumCentimes === 800 && tarif.actif,
+  tarif?.priseEnChargeCentimes === 250 && tarif.parKmCentimes === 180 && tarif.parMinuteCentimes === 30 && tarif.minimumCentimes === 820 && tarif.actif,
   JSON.stringify(tarif)
 );
 const journal = await db.systemAuditLog.findFirst({ where: { adminId: admin.id, action: 'ZUPDRIVE_SET_TARIF' } });
@@ -178,19 +222,14 @@ check('en ligne, avec la position du téléphone', positionEnvoyee);
 // ===== Le passager commande =====
 titre('Le passager commande un trajet à prix fixe');
 const pagePassager = await ouvrir('passager');
-await pagePassager.route('**/api/addresses/search**', (route) => {
-  const q = new URL(route.request().url()).searchParams.get('q') || '';
-  const adresse = /jambes|materne/i.test(q) ? ARRIVEE : DEPART;
-  route.fulfill({ json: { suggestions: [adresse], available: true, provider: 'test' } });
-});
 // Les fonds de carte (OpenStreetMap, service externe) : une image vide.
 const TUILE_VIDE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
 await pagePassager.route('**/tile.openstreetmap.org/**', (route) => route.fulfill({ contentType: 'image/png', body: TUILE_VIDE }));
 await connecter(pagePassager, passager.email);
 await pagePassager.goto(`${SITE}/trajet`);
-await pagePassager.fill('#depart', 'Place d’Armes Namur');
+await pagePassager.fill('#depart', REQUETE_DEPART);
 await pagePassager.click(`li button:has-text("${DEPART.street}")`, { timeout: 10000 });
-await pagePassager.fill('#arrivee', 'Avenue Jean Materne Jambes');
+await pagePassager.fill('#arrivee', REQUETE_ARRIVEE);
 await pagePassager.click(`li button:has-text("${ARRIVEE.street}")`, { timeout: 10000 });
 await pagePassager.waitForSelector('[data-devis]', { timeout: 10000 });
 const devisAffiche = await pagePassager.locator('[data-devis]').innerText();
@@ -204,8 +243,8 @@ const devisApi = await fetch(`${API}/api/zupdrive/courses/devis`, {
     Authorization: `Bearer ${await jetonDe(passager.email)}`,
   },
   body: JSON.stringify({
-    depart: { adresse: DEPART.label, latitude: DEPART.latitude, longitude: DEPART.longitude, codePostal: DEPART.postalCode },
-    arrivee: { adresse: ARRIVEE.label, latitude: ARRIVEE.latitude, longitude: ARRIVEE.longitude, codePostal: ARRIVEE.postalCode },
+    depart: { preuveAdresse: DEPART.preuveAdresse },
+    arrivee: { preuveAdresse: ARRIVEE.preuveAdresse },
   }),
 }).then((x) => x.json());
 const prixAttendu = (devisApi.data.prixCentimes / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });

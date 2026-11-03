@@ -7,6 +7,7 @@
  * vérifie et la journalise.
  */
 
+import { useState } from 'react';
 import { Check, Eye, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
@@ -31,6 +32,12 @@ const COULEURS_PIECE: Record<string, string> = {
 
 const date = (valeur: string, locale: string) => new Date(valeur).toLocaleDateString(locale);
 
+type PreuveVerificationTitre = {
+  referenceAutorite: string;
+  communeAutorisee?: string;
+  typeServiceTaxi?: 'RUE' | 'STATION';
+};
+
 export function LignePieceAExaminer({
   piece,
   facultative,
@@ -48,11 +55,22 @@ export function LignePieceAExaminer({
   note: string;
   envoi: boolean;
   onNote: (note: string) => void;
-  onExaminer: (approuve: boolean) => void;
+  onExaminer: (approuve: boolean, preuve?: PreuveVerificationTitre) => void;
   onVoir: () => void;
 }) {
   const locale = useLocale();
   const t = useTranslations('superownerChauffeurs');
+  const [verificationAutorite, setVerificationAutorite] = useState(false);
+  const [referenceAutorite, setReferenceAutorite] = useState('');
+  const [communeAutorisee, setCommuneAutorisee] = useState('');
+  const [typeServiceTaxi, setTypeServiceTaxi] = useState<'' | 'RUE' | 'STATION'>('');
+  const doitVerifierLicence = ['licence', 'certificat_capacite', 'certificat_acces_profession'].includes(piece.type) && piece.statut !== 'APPROVED' && piece.statut !== 'EXPIRED';
+  const doitVerifierCommune = ['licence', 'certificat_capacite'].includes(piece.type);
+  const preuveComplete = !doitVerifierLicence || (
+    verificationAutorite && referenceAutorite.trim().length >= 3 &&
+    (!doitVerifierCommune || communeAutorisee === 'Namur') &&
+    (piece.type !== 'licence' || typeServiceTaxi !== '')
+  );
 
   return (
     <li className="rounded-sm bg-gray-50 px-3 py-2">
@@ -68,7 +86,11 @@ export function LignePieceAExaminer({
             </span>
           </p>
           {piece.dateExpiration && <p className="text-xs text-gray-500">{t('expiresOn', { date: date(piece.dateExpiration, locale) })}</p>}
-          {piece.noteExamen && <p className="text-xs text-red-700">{piece.noteExamen}</p>}
+          {piece.noteExamen && (
+            <p className={`text-xs ${piece.statut === 'REJECTED' ? 'text-red-700' : 'text-gray-600'}`}>
+              {piece.noteExamen}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Aperçu dans la page ; l'adresse signée est redemandée à l'ouverture. */}
@@ -78,14 +100,51 @@ export function LignePieceAExaminer({
           </button>
           {/* Une version expirée ne se valide pas : il faut la version à jour. */}
           {piece.statut !== 'APPROVED' && piece.statut !== 'EXPIRED' && (
-            <button
-              onClick={() => onExaminer(true)}
-              disabled={envoi}
-              className="flex items-center gap-1 rounded-sm bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:opacity-50"
-            >
-              <Check size={12} />
-              {t('approveDocument')}
-            </button>
+            <>
+              {doitVerifierLicence && (
+                <div className="basis-full space-y-2 rounded border border-amber-200 bg-amber-50 p-2">
+                  <label className="flex items-start gap-2 text-xs text-gray-800">
+                    <input type="checkbox" checked={verificationAutorite} onChange={(event) => setVerificationAutorite(event.target.checked)} disabled={envoi} className="mt-0.5" />
+                    <span>{t('officialLicenseCheck')}</span>
+                  </label>
+                  <label className="block text-xs font-medium text-gray-700">
+                    {t('officialReference')}
+                    <input value={referenceAutorite} onChange={(event) => setReferenceAutorite(event.target.value)} disabled={envoi} maxLength={200} placeholder={t('officialReferencePlaceholder')} className="mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-xs" />
+                  </label>
+                  {doitVerifierCommune && (
+                    <label className="block text-xs font-medium text-gray-700">
+                      {t('verifiedMunicipality')}
+                      <select value={communeAutorisee} onChange={(event) => setCommuneAutorisee(event.target.value)} disabled={envoi} className="mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-xs">
+                        <option value="">{t('selectMunicipality')}</option>
+                        <option value="Namur">Namur</option>
+                      </select>
+                    </label>
+                  )}
+                  {piece.type === 'licence' && (
+                    <label className="block text-xs font-medium text-gray-700">
+                      {t('verifiedTaxiService')}
+                      <select value={typeServiceTaxi} onChange={(event) => setTypeServiceTaxi(event.target.value as '' | 'RUE' | 'STATION')} disabled={envoi} className="mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-xs">
+                        <option value="">{t('selectTaxiService')}</option>
+                        <option value="RUE">{t('streetTaxi')}</option>
+                        <option value="STATION">{t('stationTaxi')}</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+              )}
+              <button
+                onClick={() => onExaminer(true, doitVerifierLicence ? {
+                  referenceAutorite: referenceAutorite.trim(),
+                  ...(doitVerifierCommune ? { communeAutorisee } : {}),
+                  ...(piece.type === 'licence' && typeServiceTaxi ? { typeServiceTaxi } : {}),
+                } : undefined)}
+                disabled={envoi || !preuveComplete}
+                className="flex items-center gap-1 rounded-sm bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-500 disabled:opacity-50"
+              >
+                <Check size={12} />
+                {t('approveDocument')}
+              </button>
+            </>
           )}
         </div>
       </div>

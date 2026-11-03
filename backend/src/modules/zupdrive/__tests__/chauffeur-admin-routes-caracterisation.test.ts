@@ -146,9 +146,10 @@ describe("chauffeurs", () => {
   });
   it("PATCH …/documents/:id : corps strict, journal avec rétablissement", async () => {
     expect((await equipe(request(app).patch("/api/zupdrive/admin/chauffeurs/ch1/documents/d1").send({ approuve: true, extra: 1 }))).status).toBe(400);
-    const r = await equipe(request(app).patch("/api/zupdrive/admin/chauffeurs/ch1/documents/d1").send({ approuve: true }));
+    const preuve = { approuve: true, verificationAutorite: true, referenceAutorite: "Licence Namur 123", communeAutorisee: "Namur", typeServiceTaxi: "RUE" as const };
+    const r = await equipe(request(app).patch("/api/zupdrive/admin/chauffeurs/ch1/documents/d1").send(preuve));
     expect(r.body).toEqual({ success: true, data: { id: "d1", type: "licence", statut: "APPROVED", noteExamen: null } });
-    expect(ChauffeurOnboardingService.examinerPiece).toHaveBeenCalledWith("ch1", "d1", { approuve: true });
+    expect(ChauffeurOnboardingService.examinerPiece).toHaveBeenCalledWith("ch1", "d1", preuve);
     audit("ZUPDRIVE_REVIEW_CHAUFFEUR_DOCUMENT", "d1", { chauffeurId: "ch1", type: "licence", avant: "SOUMIS", apres: "APPROVED", note: null, chauffeur: { avant: "SUSPENDU", apres: "VALIDE" } });
   });
   it("décisions : approve, reject, suspend, reactivate", async () => {

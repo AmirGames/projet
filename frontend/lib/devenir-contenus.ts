@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import type { Avantage, ContenuDevenir, Etape, Question } from '@/components/PageDevenir';
-import { EMAIL_CONTACT } from '@/lib/editeur';
+import { EMAIL_CONTACT_DRIVE } from '@/lib/editeur';
 import type { Pays } from '@/lib/pays-infos';
 
 /**
@@ -79,7 +79,10 @@ export async function contenuDevenir(role: RoleDevenir, pays: Pays): Promise<Con
       href:
         pays === 'BE'
           ? '/chauffeur'
-          : `mailto:${EMAIL_CONTACT}?subject=${encodeURIComponent(t('sujetCandidature'))}`,
+          : EMAIL_CONTACT_DRIVE
+            ? `mailto:${EMAIL_CONTACT_DRIVE}?subject=${encodeURIComponent(t('sujetCandidature'))}`
+            : '/mentions-legales',
     },
+    conditions: { libelle: t('conditions'), href: '/conditions-chauffeurs' },
   };
 }

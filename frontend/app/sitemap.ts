@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { PAGES_LEGALES } from '@/lib/editeur';
+import { PAGES_LEGALES, PAGES_LEGALES_DRIVE } from '@/lib/editeur';
 import { adressesRegionales, baseDuSite } from '@/lib/seo-regional';
 import { espaceDuChemin, espaceDuDomaine } from '@/lib/domaines';
 import { estCheminRegional } from '@/i18n/chemins-regionaux';
@@ -36,8 +36,12 @@ function pagesDuDomaine(hote: string) {
     };
   }
 
+  const pagesDeLEspace = PAGES_FIXES.filter((chemin) => chemin === '/' || espaceDuChemin(chemin) === espace);
+  const pagesLegalesDrive = espace === 'drive' || espace === 'chauffeur'
+    ? PAGES_LEGALES_DRIVE.map((page) => page.href)
+    : [];
   return {
-    pages: PAGES_FIXES.filter((chemin) => chemin === '/' || espaceDuChemin(chemin) === espace),
+    pages: [...new Set([...pagesDeLEspace, ...pagesLegalesDrive])],
     boutiques: false,
     regions: false,
   };

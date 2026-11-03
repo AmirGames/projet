@@ -85,4 +85,5 @@ export interface AdresseTrajet {
   latitude: number;
   longitude: number;
   codePostal: string;
+  preuveAdresse: string;
 }

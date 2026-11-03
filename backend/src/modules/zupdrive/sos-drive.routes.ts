@@ -17,7 +17,7 @@ const limiterAlertes = limiterCadence({
   nom: "zupdrive-sos",
   max: 5,
   fenetreMs: 10 * 60_000,
-  message: "Trop d'alertes envoyées. Si vous êtes en danger, appelez le 17 ou le 112.",
+  message: "Trop d'alertes envoyées. En danger en Belgique, appelez le 101 (police) ou le 112 (ambulance et pompiers).",
   cle: (req) => `${req.userId}`,
 });
 const limiterContact = limiterCadence({ nom: "zupdrive-sos-contact", max: 10, fenetreMs: 3_600_000, cle: (req) => `${req.userId}` });

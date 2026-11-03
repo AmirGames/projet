@@ -36,6 +36,7 @@ interface LigneChauffeur {
   region: string | null;
   raisonSociale: string | null;
   vehiculePlaque: string | null;
+  placesPassagers: number | null;
   societe?: SocieteDuChauffeur | null;
   statut: string;
   motifStatut: string | null;
@@ -67,8 +68,9 @@ interface Dossier {
   vehiculeMarque: string | null;
   vehiculeModele: string | null;
   vehiculePlaque: string | null;
+  placesPassagers: number | null;
   societe?: SocieteDuChauffeur | null;
-  vehicule?: { marque: string; modele: string; plaque: string; conforme: boolean } | null;
+  vehicule?: { marque: string; modele: string; plaque: string; placesPassagers: number | null; conforme: boolean } | null;
   statut: string;
   motifStatut: string | null;
   soumisLe: string | null;
@@ -201,13 +203,17 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
     }
   };
 
-  const examiner = async (piece: Piece, approuve: boolean) => {
+  const examiner = async (piece: Piece, approuve: boolean, preuve?: { referenceAutorite: string; communeAutorisee?: string; typeServiceTaxi?: 'RUE' | 'STATION' }) => {
     const note = notes[piece.id]?.trim();
     if (!approuve && !note) {
       setErreur(t('reasonRequired'));
       return;
     }
-    if (await agir(`/documents/${piece.id}`, 'PATCH', approuve ? { approuve } : { approuve, note })) {
+    if (await agir(`/documents/${piece.id}`, 'PATCH', {
+      approuve,
+      ...(note ? { note } : {}),
+      ...(preuve ? { verificationAutorite: true, ...preuve } : {}),
+    })) {
       setNotes(({ [piece.id]: _, ...reste }) => reste);
     }
   };
@@ -330,6 +336,7 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
           ['societe', dossier.societe.raisonSociale],
           ['vehicule', dossier.vehicule ? `${dossier.vehicule.marque} ${dossier.vehicule.modele}` : null],
           ['vehiculePlaque', dossier.vehicule?.plaque ?? null],
+          ['placesPassagers', dossier.vehicule?.placesPassagers || dossier.placesPassagers ? `${dossier.vehicule?.placesPassagers || dossier.placesPassagers} passagers` : null],
           ['soumisLe', dossier.soumisLe ? date(dossier.soumisLe, locale) : null],
           ['valideLe', dossier.valideLe ? date(dossier.valideLe, locale) : null],
         ]
@@ -382,7 +389,7 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                 note={notes[piece.id] ?? ''}
                 envoi={envoi}
                 onNote={(note) => setNotes({ ...notes, [piece.id]: note })}
-                onExaminer={(approuve) => examiner(piece, approuve)}
+                onExaminer={(approuve, verificationAutorite) => examiner(piece, approuve, verificationAutorite)}
                 onVoir={() => setApercu(piece)}
               />
             ))}
@@ -397,7 +404,12 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
         <div className="space-y-3 rounded-lg border border-gray-200 p-4">
           <h4 className="font-semibold text-gray-900">{t('decision')}</h4>
           {dossier.statut === 'SOUMIS' && !dossier.dossierValidable && (
-            <p className="text-xs text-gray-500">{t('approveHint')}</p>
+            <p className="text-xs text-gray-500">
+              {t('approveHint')}{' '}
+              {dossier.piecesAValider
+                .map((type) => dossier.piecesExigees.find((piece) => piece.type === type)?.libelle || type)
+                .join(', ')}
+            </p>
           )}
           {(dossier.statut === 'SOUMIS' || dossier.statut === 'VALIDE') && (
             <textarea

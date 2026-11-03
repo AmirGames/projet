@@ -15,6 +15,7 @@ describe("configuration des capacités", () => {
     expect(resultat.success).toBe(true);
     if (resultat.success) {
       expect(resultat.data.ENABLE_STRIPE).toBe(false);
+      expect(resultat.data.ZUPDRIVE_WALLONIE_AGREMENT_CONFIRME).toBe(false);
       expect(resultat.data.ENABLE_PLATFORM_COURIER_DELIVERY).toBe(false);
     }
   });
@@ -25,6 +26,25 @@ describe("configuration des capacités", () => {
     if (resultat.success) expect(resultat.data.ENABLE_PLATFORM_COURIER_DELIVERY).toBe(true);
   });
 
+  it("exige une référence et une expiration valide pour confirmer l'agrément wallon", () => {
+    expect(envSchema.safeParse({ ...base(), ZUPDRIVE_WALLONIE_AGREMENT_CONFIRME: "true" }).success).toBe(false);
+    expect(envSchema.safeParse({
+      ...base(),
+      ZUPDRIVE_WALLONIE_AGREMENT_CONFIRME: "true",
+      ZUPDRIVE_WALLONIE_AGREMENT_REFERENCE: "SPW-2026-00123",
+      ZUPDRIVE_WALLONIE_AGREMENT_EXPIRES_AT: "2027-06-30",
+    }).success).toBe(true);
+    for (const expiration of ["2025-12-31", "2026-02-30", "30/06/2027"]) {
+      const resultat = envSchema.safeParse({
+        ...base(),
+        ZUPDRIVE_WALLONIE_AGREMENT_CONFIRME: "true",
+        ZUPDRIVE_WALLONIE_AGREMENT_REFERENCE: "SPW-2026-00123",
+        ZUPDRIVE_WALLONIE_AGREMENT_EXPIRES_AT: expiration,
+      });
+      expect(resultat.success).toBe(false);
+    }
+  });
+
   it("refuse Stripe activé sans clés secrète, publique et webhook", () => {
     const resultat = envSchema.safeParse({ ...base(), ENABLE_STRIPE: "true" });
     expect(resultat.success).toBe(false);
@@ -32,6 +52,18 @@ describe("configuration des capacités", () => {
       const chemins = resultat.error.issues.map((issue) => issue.path[0]);
       expect(chemins).toEqual(expect.arrayContaining(["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET"]));
     }
+  });
+
+  it("exige Stripe configuré quand le paiement ZupDrive devient obligatoire", () => {
+    expect(envSchema.safeParse({ ...base(), ZUPDRIVE_PAIEMENT_OBLIGATOIRE: "true" }).success).toBe(false);
+    expect(envSchema.safeParse({
+      ...base(),
+      ZUPDRIVE_PAIEMENT_OBLIGATOIRE: "true",
+      ENABLE_STRIPE: "true",
+      STRIPE_SECRET_KEY: "sk_test_secret",
+      STRIPE_PUBLISHABLE_KEY: "pk_test_public",
+      STRIPE_WEBHOOK_SECRET: "whsec_webhook",
+    }).success).toBe(true);
   });
 
   it("refuse des clés Stripe de modes différents", () => {
@@ -54,6 +86,21 @@ describe("configuration des capacités", () => {
       SMTP_PASSWORD: "relay-password",
     });
     expect(resultat.success).toBe(true);
+  });
+
+  it("refuse les valeurs Stripe d'exemple en production", () => {
+    const resultat = envSchema.safeParse({
+      ...base(),
+      NODE_ENV: "production",
+      ENABLE_STRIPE: "true",
+      STRIPE_SECRET_KEY: "sk_test_your-stripe-secret-key",
+      STRIPE_PUBLISHABLE_KEY: "pk_test_your-stripe-public-key",
+      STRIPE_WEBHOOK_SECRET: "whsec_your-webhook-secret",
+    });
+    expect(resultat.success).toBe(false);
+    if (!resultat.success) {
+      expect(resultat.error.issues.some((issue) => issue.path[0] === "STRIPE_SECRET_KEY" && issue.message.includes("valeur d'exemple"))).toBe(true);
+    }
   });
 
   it("refuse un Cloudinary partiel et une authentification SMTP partielle", () => {

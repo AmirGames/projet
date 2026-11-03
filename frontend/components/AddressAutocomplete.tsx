@@ -17,6 +17,8 @@ export interface AdresseChoisie {
   country: string;
   latitude: number | null;
   longitude: number | null;
+  /** Preuve signée par l'API, présente seulement pour les recherches ZupDrive. */
+  preuveAdresse?: string | null;
 }
 
 /**
@@ -108,6 +110,8 @@ interface Props {
   pays?: string;
   /** Sur une page claire (parcours client) : la liste des suggestions en blanc. */
   clair?: boolean;
+  /** Demande une preuve géocodée requise par les devis ZupDrive. */
+  preuveZupDrive?: boolean;
 }
 
 /**
@@ -128,6 +132,7 @@ export function AddressAutocomplete({
   'aria-describedby': ariaDescribedBy,
   pays,
   clair = false,
+  preuveZupDrive = false,
 }: Props) {
   const t = useTranslations('addressAutocomplete');
   const [suggestions, setSuggestions] = useState<AdresseChoisie[]>([]);
@@ -174,7 +179,7 @@ export function AddressAutocomplete({
 
     try {
       const reponse = await fetch(
-        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}`,
+        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}${preuveZupDrive ? '&usage=zupdrive' : ''}`,
         { signal: controleur.signal }
       );
 
@@ -185,8 +190,10 @@ export function AddressAutocomplete({
 
       const donnees = await reponse.json();
       if (controleur.signal.aborted) return;
-      setSuggestions(donnees.suggestions || []);
-      setServiceIndisponible(donnees.available === false);
+      const trouvees: AdresseChoisie[] = donnees.suggestions || [];
+      const retenues = preuveZupDrive ? trouvees.filter((adresse) => Boolean(adresse.preuveAdresse)) : trouvees;
+      setSuggestions(retenues);
+      setServiceIndisponible(donnees.available === false || (preuveZupDrive && trouvees.length > 0 && retenues.length === 0));
     } catch {
       if (controleur.signal.aborted) return;
       setSuggestions([]);
@@ -197,7 +204,7 @@ export function AddressAutocomplete({
         setChargement(false);
       }
     }
-  }, []);
+  }, [preuveZupDrive]);
 
   // Temporisation : on n'interroge pas le service à chaque frappe.
   useEffect(() => {

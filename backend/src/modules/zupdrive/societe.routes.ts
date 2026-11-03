@@ -7,6 +7,7 @@ import { uploadMiddleware } from "../files/file-upload.middleware";
 import { presenter } from "../files/fichiers-prives.service";
 import { REGIONS, TYPES_PIECE, libelleDeLaPiece } from "./chauffeur-onboarding.service";
 import { SocieteDriveService } from "./societe-drive.service";
+import { accepterConditionsDossierDrive } from "./acceptation-conditions-drive";
 
 /**
  * /api/zupdrive/societe — la société ZupDrive du compte connecté, dont il est
@@ -36,6 +37,11 @@ const profilSocieteSchema = z
       .optional(),
   })
   .strict();
+const ouvertureSocieteSchema = profilSocieteSchema.extend({
+  conditionsAcceptees: z.literal(true, {
+    message: "Vous devez accepter les conditions sociétés ZupDrive",
+  }),
+});
 
 const vehiculeSchema = z
   .object({
@@ -43,6 +49,7 @@ const vehiculeSchema = z
     modele: z.string().trim().min(1).max(60),
     plaque: z.string().trim().min(2).max(20),
     numeroLicence: texte(60),
+    placesPassagers: z.number().int().min(1).max(6),
   })
   .strict();
 
@@ -106,7 +113,8 @@ router.get("/me", async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/zupdrive/societe/me — ouvrir le dossier de la société (idempotent)
 router.post("/me", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const profil = profilSocieteSchema.parse(req.body);
+    const { conditionsAcceptees: _conditionsAcceptees, ...profil } = ouvertureSocieteSchema.parse(req.body);
+    await accepterConditionsDossierDrive(req, "SOCIETE");
     await SocieteDriveService.creer(req.userId as string, profil);
     res.status(201);
     await repondreSociete(res, req.userId as string);

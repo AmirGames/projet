@@ -21,6 +21,8 @@ import {
 import { STATUTS_AVEC_CHAUFFEUR } from "./course-drive.service";
 import { deposerVersion, examinerVersion, type Proprietaire } from "./pieces-drive";
 import { codeErreur } from "../../utils/code-erreur";
+import { exigerVerificationTitreOfficiel, estTitreOfficiel, noteAvecAttestationTitreOfficiel } from "./verification-titre-officiel";
+import type { PreuveVerificationTitre } from "./verification-titre-officiel";
 
 /**
  * Les sociétés ZupDrive (taxi, VTC) : elles détiennent les licences et les
@@ -65,6 +67,7 @@ export interface SaisieVehicule {
   modele?: string;
   plaque?: string;
   numeroLicence?: string | null;
+  placesPassagers?: number;
 }
 
 const CHAMPS_EXIGES: [keyof ProfilSociete, string][] = [
@@ -116,7 +119,12 @@ type Societe = NonNullable<Awaited<ReturnType<typeof lireSociete>>>;
 /** Les pièces exigées de ce dossier qui manquent, ou qui restent à valider. */
 function etatDesPieces(exigees: TypePiece[], documents: Piece[]) {
   const deposees = new Set(documents.filter((p) => p.statut !== "EXPIRED").map((p) => p.type));
-  const validees = new Set(documents.filter((p) => p.statut === "APPROVED").map((p) => p.type));
+  const maintenant = new Date();
+  const validees = new Set(
+    documents
+      .filter((p) => p.statut === "APPROVED" && (!(p.type === "licence" || p.type === "certificat_capacite") || p.dateExpiration !== null) && (!p.dateExpiration || p.dateExpiration > maintenant))
+      .map((p) => p.type)
+  );
   return {
     piecesExigees: exigees,
     piecesManquantes: exigees.filter((type) => !deposees.has(type)),
@@ -125,11 +133,11 @@ function etatDesPieces(exigees: TypePiece[], documents: Piece[]) {
 }
 
 /** Un véhicule roule quand chaque pièce exigée a une version validée, en cours de validité. */
-function vehiculeConforme(vehicule: { retireLe?: Date | null; documents: Piece[] }, maintenant = new Date()) {
+function vehiculeConforme(vehicule: { retireLe?: Date | null; documents: Piece[]; societe?: { region?: string | null } | null }, maintenant = new Date()) {
   if (vehicule.retireLe) return false;
-  return piecesExigeesVehicule().every((type) =>
+  return piecesExigeesVehicule(vehicule.societe?.region).every((type) =>
     vehicule.documents.some(
-      (p) => p.type === type && p.statut === "APPROVED" && (!p.dateExpiration || p.dateExpiration > maintenant)
+      (p) => p.type === type && p.statut === "APPROVED" && (!(p.type === "licence" || p.type === "certificat_capacite") || p.dateExpiration !== null) && (!p.dateExpiration || p.dateExpiration > maintenant)
     )
   );
 }
@@ -148,7 +156,7 @@ function etatDeLaSociete(societe: Societe) {
     dossierValidable: pieces.piecesAValider.length === 0,
     vehicules: societe.vehicules.map((vehicule) => ({
       ...vehicule,
-      ...etatDesPieces(piecesExigeesVehicule(), vehicule.documents),
+      ...etatDesPieces(piecesExigeesVehicule(societe.region), vehicule.documents),
     })),
   };
 }
@@ -304,13 +312,13 @@ export class SocieteDriveService {
     const marque = texte(saisie.marque);
     const modele = texte(saisie.modele);
     const plaque = saisie.plaque ? plaqueNormalisee(saisie.plaque) : "";
-    if (!marque || !modele || !plaque) {
-      throw new ApiError(400, "Indiquez la marque, le modèle et la plaque du véhicule", "MISSING_VEHICLE");
+    if (!marque || !modele || !plaque || !Number.isInteger(saisie.placesPassagers) || saisie.placesPassagers! < 1 || saisie.placesPassagers! > 6) {
+      throw new ApiError(400, "Indiquez marque, modèle, plaque et une capacité de 1 à 6 passagers", "MISSING_VEHICLE");
     }
 
     try {
       const vehicule = await db.vehiculeDrive.create({
-        data: { societeId: societe.id, marque, modele, plaque, numeroLicence: texte(saisie.numeroLicence) },
+        data: { societeId: societe.id, marque, modele, plaque, placesPassagers: saisie.placesPassagers!, numeroLicence: texte(saisie.numeroLicence) },
       });
       logger.info("ZupDrive véhicule added", { societeId: societe.id, vehiculeId: vehicule.id });
       return vehicule;
@@ -338,11 +346,17 @@ export class SocieteDriveService {
       );
     }
 
-    const data: Record<string, string | null> = {};
+    const data: Record<string, string | number | null> = {};
     if (saisie.marque !== undefined) data.marque = texte(saisie.marque) ?? vehicule.marque;
     if (saisie.modele !== undefined) data.modele = texte(saisie.modele) ?? vehicule.modele;
     if (saisie.plaque !== undefined && plaqueNormalisee(saisie.plaque)) data.plaque = plaqueNormalisee(saisie.plaque);
     if (saisie.numeroLicence !== undefined) data.numeroLicence = texte(saisie.numeroLicence);
+    if (saisie.placesPassagers !== undefined) {
+      if (!Number.isInteger(saisie.placesPassagers) || saisie.placesPassagers < 1 || saisie.placesPassagers > 6) {
+        throw new ApiError(400, "Le véhicule doit avoir entre 1 et 6 places passagers", "INVALID_PASSENGER_CAPACITY");
+      }
+      data.placesPassagers = saisie.placesPassagers;
+    }
 
     try {
       return await db.vehiculeDrive.update({ where: { id: vehicule.id }, data });
@@ -654,16 +668,31 @@ export class SocieteDriveService {
   // -------------------------------------------------------------------------
 
   /** L'équipe statue sur une pièce de la société ou de l'un de ses véhicules. */
-  static async examinerPiece(societeId: string, documentId: string, verdict: { approuve: boolean; note?: string }) {
+  static async examinerPiece(
+    societeId: string,
+    documentId: string,
+    verdict: { approuve: boolean; note?: string } & PreuveVerificationTitre
+  ) {
     const piece = await db.documentChauffeurDrive.findUnique({
       where: { id: documentId },
       include: { vehicule: { select: { id: true, societeId: true, plaque: true } } },
     });
     const appartient = piece && !piece.archiveeLe && (piece.societeId === societeId || piece.vehicule?.societeId === societeId);
     if (!piece || !appartient) throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
+    exigerVerificationTitreOfficiel(piece.type, verdict.approuve, verdict);
 
     const proprietaire: Proprietaire = piece.vehiculeId ? { vehiculeId: piece.vehiculeId } : { societeId };
-    const examinee = await examinerVersion(piece, proprietaire, verdict, "Un refus sans motif ne dit pas à la société quoi corriger");
+    const examinee = await examinerVersion(
+      piece,
+      proprietaire,
+      {
+        ...verdict,
+        note: verdict.approuve && estTitreOfficiel(piece.type)
+          ? noteAvecAttestationTitreOfficiel(verdict.note, verdict)
+          : verdict.note,
+      },
+      "Un refus sans motif ne dit pas à la société quoi corriger"
+    );
 
     const objet = piece.vehicule ? `${libelleDeLaPiece(piece.type)} (${piece.vehicule.plaque})` : libelleDeLaPiece(piece.type);
     await this.prevenirGerant(
@@ -750,7 +779,7 @@ export class SocieteDriveService {
       include: {
         documents: { where: { archiveeLe: null } },
         chauffeur: { select: { id: true } },
-        societe: { select: { id: true, raisonSociale: true } },
+        societe: { select: { id: true, raisonSociale: true, region: true } },
       },
     });
     if (!vehicule) return null;

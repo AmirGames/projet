@@ -1,10 +1,15 @@
 import { getTranslations } from 'next-intl/server';
+import { headers } from 'next/headers';
 import Link from '@/components/LienRegional';
-import { EMAIL_CONTACT, PAGES_LEGALES } from '@/lib/editeur';
+import { EMAIL_CONTACT, EMAIL_CONTACT_DRIVE, PAGES_LEGALES, PAGES_LEGALES_DRIVE } from '@/lib/editeur';
+import { estDomaineZupDrive } from '@/lib/domaines';
 
 /** Cadre commun des pages légales : sommaire à gauche, texte lisible à droite. */
 export default async function LayoutLegal({ children }: { children: React.ReactNode }) {
-  const t = await getTranslations('piedDeGroupe');
+  const [t, entetes] = await Promise.all([getTranslations('piedDeGroupe'), headers()]);
+  const drive = estDomaineZupDrive(entetes.get('x-forwarded-host') || entetes.get('host') || '');
+  const pagesLegales = drive ? PAGES_LEGALES_DRIVE : PAGES_LEGALES;
+  const emailContact = drive ? EMAIL_CONTACT_DRIVE : EMAIL_CONTACT;
 
   return (
     <div className="min-h-screen bg-[#FFF9F4] text-slate-800">
@@ -14,7 +19,7 @@ export default async function LayoutLegal({ children }: { children: React.ReactN
             {t('legal')}
           </p>
           <ul className="space-y-2 text-sm">
-            {PAGES_LEGALES.map((page) => (
+            {pagesLegales.map((page) => (
               <li key={page.href}>
                 <Link href={page.href} className="text-slate-600 transition-colors hover:text-[#D94B00] hover:underline">
                   {t(`pages.${page.cle}`)}
@@ -25,9 +30,11 @@ export default async function LayoutLegal({ children }: { children: React.ReactN
         </nav>
         <article className="legal max-w-3xl rounded-3xl border border-orange-100 bg-white px-6 py-8 shadow-sm sm:px-10 sm:py-10">
           {children}
-          <p className="mt-12 border-t border-orange-100 pt-4 text-sm text-slate-500">
-            {t('question')} <a href={`mailto:${EMAIL_CONTACT}`}>{EMAIL_CONTACT}</a>.
-          </p>
+          {emailContact && (
+            <p className="mt-12 border-t border-orange-100 pt-4 text-sm text-slate-500">
+              {t('question')} <a href={`mailto:${emailContact}`}>{emailContact}</a>.
+            </p>
+          )}
         </article>
       </div>
     </div>

@@ -17,19 +17,24 @@ export interface AdresseFavorite {
   codePostal: string;
 }
 
-const choix = { type: true, adresse: true, latitude: true, longitude: true, codePostal: true } as const;
+const choix = { type: true, adresse: true, latitude: true, longitude: true, codePostal: true, geocodeVerifieLe: true } as const;
 
 export class AdresseFavoriteDriveService {
   static lister(userId: string) {
-    return db.adresseFavoriteDrive.findMany({ where: { userId }, select: choix, orderBy: { type: "asc" } });
+    return db.adresseFavoriteDrive.findMany({
+      where: { userId, geocodeVerifieLe: { not: null } },
+      select: choix,
+      orderBy: { type: "asc" },
+    });
   }
 
   /** Crée ou remplace l'adresse du type ; rejouer la même requête donne le même résultat. */
   static enregistrer(userId: string, type: TypeAdresseFavorite, adresse: AdresseFavorite) {
+    const geocodeVerifieLe = new Date();
     return db.adresseFavoriteDrive.upsert({
       where: { userId_type: { userId, type } },
-      create: { userId, type, ...adresse },
-      update: adresse,
+      create: { userId, type, ...adresse, geocodeVerifieLe },
+      update: { ...adresse, geocodeVerifieLe },
       select: choix,
     });
   }

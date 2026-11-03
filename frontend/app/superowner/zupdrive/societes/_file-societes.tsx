@@ -48,12 +48,14 @@ interface Vehicule {
   marque: string;
   modele: string;
   plaque: string;
+  placesPassagers: number | null;
   numeroLicence: string | null;
   conforme: boolean;
   chauffeur: { id: string; nomComplet: string } | null;
   documents: PieceAExaminer[];
   piecesExigees: { type: string; libelle: string }[];
   piecesManquantes: string[];
+  piecesAValider: string[];
 }
 
 interface Dossier {
@@ -70,6 +72,7 @@ interface Dossier {
   valideLe: string | null;
   piecesExigees: { type: string; libelle: string }[];
   piecesManquantes: string[];
+  piecesAValider: string[];
   dossierValidable: boolean;
   documents: PieceAExaminer[];
   vehicules: Vehicule[];
@@ -204,13 +207,17 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
     }
   };
 
-  const examiner = async (piece: PieceAExaminer, approuve: boolean) => {
+  const examiner = async (piece: PieceAExaminer, approuve: boolean, preuve?: { referenceAutorite: string; communeAutorisee?: string; typeServiceTaxi?: 'RUE' | 'STATION' }) => {
     const note = notes[piece.id]?.trim();
     if (!approuve && !note) {
       setErreur(t('reasonRequired'));
       return;
     }
-    if (await agir(`/documents/${piece.id}`, 'PATCH', approuve ? { approuve } : { approuve, note })) {
+    if (await agir(`/documents/${piece.id}`, 'PATCH', {
+      approuve,
+      ...(note ? { note } : {}),
+      ...(preuve ? { verificationAutorite: true, ...preuve } : {}),
+    })) {
       setNotes(({ [piece.id]: _, ...reste }) => reste);
     }
   };
@@ -233,7 +240,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
       note={notes[piece.id] ?? ''}
       envoi={envoi}
       onNote={(note) => setNotes({ ...notes, [piece.id]: note })}
-      onExaminer={(approuve) => examiner(piece, approuve)}
+      onExaminer={(approuve, verificationAutorite) => examiner(piece, approuve, verificationAutorite)}
       onVoir={() => setApercu(piece)}
     />
   );
@@ -366,6 +373,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-medium text-gray-900">
                         {vehicule.marque} {vehicule.modele} · {vehicule.plaque}
+                        <span className="ml-2 text-xs text-gray-500">{vehicule.placesPassagers ?? '—'} places passagers</span>
                         {vehicule.numeroLicence && <span className="ml-2 text-xs text-gray-500">{t('licence', { numero: vehicule.numeroLicence })}</span>}
                       </p>
                       <span
@@ -379,6 +387,14 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
                     <ul className="space-y-2">{vehicule.documents.map((piece) => lignePiece(piece, vehicule.documents, exigees))}</ul>
                     {manque.length > 0 && (
                       <p className="mt-2 text-xs text-amber-700">{tC('missingDocuments', { liste: manque.map((p) => p.libelle).join(', ') })}</p>
+                    )}
+                    {vehicule.piecesAValider.length > 0 && (
+                      <p className="mt-2 text-xs text-amber-700">
+                        {tC('approveHint')}{' '}
+                        {vehicule.piecesAValider
+                          .map((type) => vehicule.piecesExigees.find((piece) => piece.type === type)?.libelle || type)
+                          .join(', ')}
+                      </p>
                     )}
                   </div>
                 );
@@ -416,7 +432,14 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
 
         <div className="space-y-3 rounded-lg border border-gray-200 p-4">
           <h4 className="font-semibold text-gray-900">{tC('decision')}</h4>
-          {dossier.statut === 'SOUMIS' && !dossier.dossierValidable && <p className="text-xs text-gray-500">{tC('approveHint')}</p>}
+          {dossier.statut === 'SOUMIS' && !dossier.dossierValidable && (
+            <p className="text-xs text-gray-500">
+              {tC('approveHint')}{' '}
+              {dossier.piecesAValider
+                .map((type) => dossier.piecesExigees.find((piece) => piece.type === type)?.libelle || type)
+                .join(', ')}
+            </p>
+          )}
           {(dossier.statut === 'SOUMIS' || dossier.statut === 'VALIDE') && (
             <textarea
               value={motif}

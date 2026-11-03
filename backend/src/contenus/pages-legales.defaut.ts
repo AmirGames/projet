@@ -16,6 +16,14 @@ export const SLUGS_LEGAUX = [
   "confidentialite",
   "cookies",
   "accessibilite",
+  "drive-mentions-legales",
+  "drive-cgu",
+  "drive-cgv",
+  "drive-confidentialite",
+  "drive-cookies",
+  "drive-conditions-chauffeurs",
+  "drive-conditions-societes",
+  "drive-accessibilite",
 ] as const;
 
 export type SlugLegal = (typeof SLUGS_LEGAUX)[number];
@@ -336,6 +344,39 @@ Si vous ne parvenez pas à accéder à un contenu ou à un service, écrivez à 
 ## Voies de recours
 
 Les voies de signalement et l'autorité compétente doivent être précisées pour chaque service et pays effectivement exploité.`,
+  },
+
+  "drive-mentions-legales": {
+    titre: "Mentions légales ZupDrive",
+    contenu: `**Brouillon à compléter et à valider avant le pilote ZupDrive.** L'identité de l'exploitant, ses coordonnées et son rôle dans le service de transport doivent être confirmés avant publication.\n\n## Éditeur\n\n- Raison sociale : $raison_sociale\n- Forme juridique : $forme_juridique\n- Adresse d'établissement : $adresse\n- Numéro BCE : $numero_bce\n- Courriel : $email — Téléphone : $telephone\n\n## Service proposé\n\nDécrire précisément le rôle de ZupDrive, celui des chauffeurs indépendants et des sociétés de taxi, ainsi que la partie qui fournit et facture chaque trajet.`,
+  },
+  "drive-cgu": {
+    titre: "Conditions d'utilisation ZupDrive",
+    contenu: `**Brouillon à rédiger et à faire valider avant le pilote ZupDrive.** Préciser le compte passager, la mise en relation, les règles de sécurité, les responsabilités, les réclamations et la résiliation.`,
+  },
+  "drive-cgv": {
+    titre: "Conditions de vente ZupDrive",
+    contenu: `**Brouillon à rédiger et à faire valider avant le pilote ZupDrive.** Décrire la formation du contrat de transport, le tarif applicable à Namur, le paiement, les annulations, les retards, les trajets sans chauffeur et les remboursements.`,
+  },
+  "drive-confidentialite": {
+    titre: "Politique de confidentialité ZupDrive",
+    contenu: `**Brouillon à compléter et à faire valider avant le pilote ZupDrive.** Décrire notamment les données d'identité, les adresses et positions GPS, le suivi de course, les paiements, les destinataires, les durées de conservation et l'exercice des droits.`,
+  },
+  "drive-cookies": {
+    titre: "Cookies ZupDrive",
+    contenu: `**Brouillon à vérifier avant le pilote ZupDrive.** Inventorier les cookies et stockages réellement utilisés sur le site et les applications ZupDrive, leurs finalités, durées et éventuels consentements requis.`,
+  },
+  "drive-conditions-chauffeurs": {
+    titre: "Conditions chauffeurs ZupDrive",
+    contenu: `**Brouillon à rédiger et à faire valider avant d'accepter des chauffeurs.** Définir les exigences réglementaires, la validation des documents, le véhicule autorisé, les courses, la rémunération, les assurances, les suspensions et les responsabilités.`,
+  },
+  "drive-conditions-societes": {
+    titre: "Conditions sociétés de taxi ZupDrive",
+    contenu: `**Brouillon à rédiger et à faire valider avant d'accepter des sociétés.** Définir le mandat de la société, les chauffeurs et véhicules rattachés, les paiements et reversements, les assurances, les obligations de contrôle, les suspensions et les responsabilités.`,
+  },
+  "drive-accessibilite": {
+    titre: "Accessibilité ZupDrive",
+    contenu: `**Brouillon à vérifier après audit d'accessibilité.** Décrire le périmètre du site et des applications ZupDrive, les obstacles connus, les solutions de contact et le plan de correction selon les obligations applicables à l'exploitant.`,
   },
 };
 

@@ -7,14 +7,12 @@
  * demande (la mise en page racine lit cookies() et headers()), ce qu'exige un
  * nonce ; PPR n'est pas activé.
  *
- * Trois modes (variable serveur `CSP_MODE`, jamais NEXT_PUBLIC) :
- * - `report-only` (défaut) : la politique complète est évaluée par le navigateur
- *   mais rien n'est bloqué ; les violations sont envoyées à /api/csp-report.
- *   C'est la phase d'observation ;
- * - `enforce` : la même politique est appliquée ;
+ * Trois modes (variables serveur `CSP_MODE` et `CSP_MODE_ZUPDRIVE`, jamais NEXT_PUBLIC) :
+ * - `enforce` : la politique complète est appliquée ;
+ * - `report-only` (défaut en développement) : la politique est évaluée mais
+ *   rien n'est bloqué ; les violations sont envoyées à /api/csp-report ;
  * - `off` : aucun en-tête CSP dynamique (retour arrière immédiat).
- * Les directives fixes de next.config.js (frame-ancestors, base-uri,
- * object-src) restent appliquées dans tous les cas.
+ * En observation de production, des directives fixes restent appliquées.
  *
  * Origines autorisées, et pourquoi :
  * - Stripe : js.stripe.com (script, cadre), hooks.stripe.com (3-D Secure),
@@ -43,15 +41,34 @@ export const ENTETE_CSP: Record<Exclude<ModeCsp, 'off'>, string> = {
 /** Où le navigateur envoie les violations (route Next.js, voir app/api/csp-report). */
 export const ADRESSE_RAPPORTS_CSP = '/api/csp-report';
 
-export function modeCsp(valeur: string | undefined = process.env.CSP_MODE): ModeCsp {
-  const mode = (valeur || '').trim().toLowerCase();
-  // En production, `off` ne doit jamais retirer la politique complète : les
-  // directives fixes de next.config.js sont une défense complémentaire.
+export function modeCsp(
+  valeur: string | undefined,
+  defautProduction: Exclude<ModeCsp, 'off'> = 'report-only',
+): ModeCsp {
+  const defaut = process.env.NODE_ENV === 'production' ? defautProduction : 'report-only';
+  const mode = (valeur || defaut).trim().toLowerCase() || defaut;
+  // En production, la politique complète est appliquée sur les hôtes choisis. `off` ne
+  // doit jamais retirer cette protection, même si une variable est mal réglée.
   if (mode === 'off' && process.env.NODE_ENV === 'production') return 'enforce';
   if (mode && !['report-only', 'enforce', 'off'].includes(mode) && process.env.NODE_ENV === 'production') {
     throw new Error('CSP_MODE doit valoir report-only, enforce ou off');
   }
   return mode === 'enforce' || mode === 'off' ? mode : 'report-only';
+}
+
+/**
+ * Le frontend sert plusieurs marques. ZupDrive peut activer son CSP complet
+ * par défaut sans basculer les autres produits avant leurs propres validations.
+ */
+export function modeCspPourHote(
+  hote: string,
+  domainesZupDrive: readonly string[],
+  modeGlobal: string | undefined,
+  modeZupDrive: string | undefined,
+): ModeCsp {
+  const nomHote = hote.toLowerCase().replace(/:\d+$/, '').replace(/\.$/, '');
+  const estZupDrive = domainesZupDrive.some((domaine) => domaine && domaine.toLowerCase() === nomHote);
+  return estZupDrive ? modeCsp(modeZupDrive, 'enforce') : modeCsp(modeGlobal, 'report-only');
 }
 
 /** Un nonce imprévisible, différent à chaque requête (Web Crypto : sans Node). */

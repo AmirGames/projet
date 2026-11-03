@@ -411,18 +411,22 @@ Il apparaît dans la liste des commerçants de la plateforme (organisation
 ## Content-Security-Policy (CSP_MODE)
 
 Le site envoie une CSP à nonces (`frontend/lib/csp.ts`, posée par `proxy.ts`).
-`CSP_MODE` (serveur uniquement, `.env.production`) :
+`CSP_MODE` (serveur uniquement, `.env.production`) reste partagé par les marques
+hors ZupDrive. `CSP_MODE_ZUPDRIVE` contrôle `zupdrive.com` et
+`driver.zupdrive.com` séparément :
 
 | Valeur | Effet |
 |---|---|
-| `report-only` (défaut) | observation : rien n'est bloqué, les violations arrivent dans la page Monitoring (erreurs navigateur, message `CSP …`) |
-| `enforce` | la politique est appliquée |
-| `off` | plus d'en-tête CSP dynamique (retour arrière immédiat) |
+| `CSP_MODE=report-only` (défaut partagé) | observation des marques hors ZupDrive avec directives fixes toujours appliquées |
+| `CSP_MODE_ZUPDRIVE=enforce` (défaut ZupDrive) | politique complète appliquée sur les domaines ZupDrive |
+| `report-only` | observation en préproduction : rien n'est bloqué par la CSP complète, les violations arrivent dans la page Monitoring |
+| `off` | désactive la politique dynamique hors production ; en production, le mode `enforce` reste forcé |
 
-Passage à `enforce` : laisser tourner en `report-only` sur tous les domaines,
-dont un paiement Stripe de test et les pages à carte (suivi de livraison,
-zones, ZupDrive), jusqu'à ce qu'il ne reste que des violations d'extensions de
-navigateur. Ajouter toute origine légitime dans `construireCsp`, relancer
-`node scripts/verif-csp.mjs`, puis basculer et redémarrer le conteneur
-`frontend`. Les violations CSP ne comptent pas dans le seuil d'incident
+Garder ZupDrive en `CSP_MODE_ZUPDRIVE=enforce` : les contrôles montrent que
+Next n'ajoute pas de nonce à ses scripts runtime en mode `report-only` (22
+échecs de recette générique et 19 scripts sans nonce avec `Host: zupdrive.com`).
+Ne pas utiliser ce mode pour auditer le domaine avant correction. Avant le
+pilote, exécuter `node scripts/verif-csp.mjs` avec `REQUIRE_CSP_ENFORCE=1` sur
+le build et le scan ZAP sur préproduction sous enforce, avec comptes et parcours
+de paiement. Les autres marques gardent leur réglage partagé. Les violations CSP ne comptent pas dans le seuil d'incident
 « erreurs navigateur ».

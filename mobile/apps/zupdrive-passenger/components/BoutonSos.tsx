@@ -36,7 +36,7 @@ export default function BoutonSos({ token, courseId }: { token: string; courseId
   const envoyer = () =>
     confirmer(
       'Envoyer une alerte ?',
-      "L'équipe ZupDrive et votre personne de confiance (si vous en avez une) seront prévenues avec le détail de votre trajet. En danger immédiat, appelez le 17 ou le 112.",
+      "L'équipe ZupDrive et votre personne de confiance (si vous en avez une) seront prévenues avec le détail de votre trajet. En danger immédiat en Belgique, appelez le 101 (police) ou le 112 (ambulance et pompiers).",
       "Envoyer l'alerte",
       async () => {
         setEnvoi(true);
@@ -44,7 +44,7 @@ export default function BoutonSos({ token, courseId }: { token: string; courseId
         try {
           setAlerte(await declencherSos(token, courseId, await positionDuTelephone()));
         } catch (e) {
-          setErreur(`${messageErreur(e)} Appelez le 17 ou le 112 si vous êtes en danger.`);
+          setErreur(`${messageErreur(e)} En Belgique, appelez le 101 (police) ou le 112 (ambulance et pompiers) si vous êtes en danger.`);
         } finally {
           setEnvoi(false);
         }
@@ -54,11 +54,11 @@ export default function BoutonSos({ token, courseId }: { token: string; courseId
   return (
     <Card title="Besoin d'aide ?">
       <View style={styles.urgences}>
-        <TouchableOpacity style={styles.urgence} onPress={() => appeler('17')} accessibilityLabel="Appeler le 17, police">
-          <Text style={styles.urgenceTexte}>📞 Police : 17</Text>
+        <TouchableOpacity style={styles.urgence} onPress={() => appeler('101')} accessibilityLabel="Appeler le 101, police">
+          <Text style={styles.urgenceTexte}>📞 Police : 101</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.urgence} onPress={() => appeler('112')} accessibilityLabel="Appeler le 112, urgences">
-          <Text style={styles.urgenceTexte}>📞 Urgences : 112</Text>
+          <Text style={styles.urgenceTexte}>📞 Ambulance / pompiers : 112</Text>
         </TouchableOpacity>
       </View>
 
@@ -68,7 +68,7 @@ export default function BoutonSos({ token, courseId }: { token: string; courseId
             {alerte.equipePrevenueLe ? "Alerte envoyée à l'équipe ZupDrive." : "L'alerte est enregistrée ; l'équipe n'a pas encore pu être prévenue."}
             {alerte.contactPrevenuLe ? ' Votre personne de confiance a été prévenue.' : ''}
           </Text>
-          <Text style={styles.aide}>ZupDrive ne peut pas intervenir sur place : en cas de danger, appelez le 17 ou le 112.</Text>
+          <Text style={styles.aide}>ZupDrive ne peut pas intervenir sur place : en danger en Belgique, appelez le 101 (police) ou le 112 (ambulance et pompiers).</Text>
           {!alerte.equipePrevenueLe ? (
             <TouchableOpacity style={styles.retenter} onPress={envoyer} disabled={envoi}>
               <Text style={styles.retenterTexte}>Réessayer d'alerter l'équipe</Text>

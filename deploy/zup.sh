@@ -46,6 +46,11 @@ case "${1:-}" in
     # Le service « migrate » applique les migrations avant l'API : s'il échoue,
     # l'API de la version précédente reste en place et la commande s'arrête ici.
     dc up -d --build --remove-orphans
+    if [ "$(valeur ROUTING_PROVIDER)" = "osrm" ] && [ "$(valeur OSRM_API_URL)" = "http://osrm:5000" ]; then
+      if [ "$(docker inspect --format '{{.State.Running}}' osrm 2>/dev/null || true)" != "true" ]; then
+        echo "⚠️ OSRM privé n'est pas démarré : les devis ZupDrive resteront indisponibles. Voir docs/zupdrive.md."
+      fi
+    fi
     # Caddy ne relit pas son Caddyfile de lui-même : sans cela, une mise à
     # jour de deploy/Caddyfile restait sans effet. Le rechargement ne coupe
     # aucune connexion, et refuse une configuration invalide sans rien casser.
@@ -66,7 +71,15 @@ case "${1:-}" in
     echo -n "API   : "; dc exec -T backend wget -qO- http://127.0.0.1:3001/health; echo
     echo -n "Site  : "; dc exec -T frontend wget -qO- http://127.0.0.1:3000/api/health; echo
     ;;
-  down)  dc down ;;
+  down)
+    # Le conteneur OSRM est installé séparément du Compose principal afin de
+    # garder ses grandes données cartographiques hors des déploiements ZupEat.
+    # Le retirer avant le réseau Compose évite qu'il ne bloque `docker compose down`.
+    if [ "$(valeur ROUTING_PROVIDER)" = "osrm" ] && [ "$(valeur OSRM_API_URL)" = "http://osrm:5000" ]; then
+      docker rm -f osrm >/dev/null 2>&1 || true
+    fi
+    dc down
+    ;;
   restart) shift; dc restart "$@" ;;
   psql)  dc exec postgres psql -U "$PGU" -d "$PGD" ;;
   backup)

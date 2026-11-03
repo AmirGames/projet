@@ -1,23 +1,26 @@
 /**
  * La Content-Security-Policy à nonces (proxy.ts, lib/csp.ts).
  *
- * Prouve que :
+ * En enforce, vérifie que :
  *   - chaque page HTML reçoit une politique avec un nonce neuf, et que TOUS
  *     ses scripts (en ligne ou externes) le portent ;
  *   - l'API et la route de rapports n'en reçoivent pas ;
- *   - le navigateur n'émet aucune violation sur les parcours courants (c'est ce
- *     que mesure la phase d'observation en production, avant `CSP_MODE=enforce`) ;
- *   - un script injecté sans nonce est signalé (report-only) ou bloqué (enforce) ;
+ *   - le navigateur n'émet aucune violation sur les parcours courants ;
+ *   - un script injecté sans nonce est signalé puis bloqué.
+ * Le mode report-only n'est pas une preuve exploitable actuellement : Next.js
+ * n'ajoute pas de nonce à ses scripts runtime, ce qui fait échouer les contrôles ;
  *   - /api/csp-report accepte un rapport et ne renvoie jamais d'erreur.
  *
- *   VERIF_SITE_URL=http://localhost:3000 node scripts/verif-csp.mjs
- *   # puis, serveur relancé avec CSP_MODE=enforce, la même commande.
+ *   CSP_MODE=enforce REQUIRE_CSP_ENFORCE=1 VERIF_SITE_URL=http://localhost:3000 node scripts/verif-csp.mjs
  */
 
 import { chromium } from 'playwright';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
-const PAGES = ['/', '/login', '/signup', '/client', '/checkout', '/driver/login', '/mot-de-passe-oublie', '/devenir-livreur'];
+const EXIGER_ENFORCE = process.env.REQUIRE_CSP_ENFORCE === '1';
+const PAGES = ['/', '/login', '/signup', '/client', '/checkout', '/driver/login', '/mot-de-passe-oublie', '/devenir-livreur', '/zupdrive', '/trajet', '/societe'];
 
 let ok = 0;
 const echecs = [];
@@ -45,10 +48,26 @@ const nonces = new Set();
 for (const chemin of PAGES) {
   const reponse = await fetch(SITE + chemin, { redirect: 'follow' });
   const html = await reponse.text();
-  const { dynamique } = lirePolitique(reponse);
+  const { dynamique, observation, enforce, mode } = lirePolitique(reponse);
   const nonce = /'nonce-([^']+)'/.exec(dynamique || '')?.[1];
   check(`${chemin} : politique avec nonce`, !!nonce, `${reponse.status}`);
+  check(`${chemin} : COOP préserve les popups de paiement`, reponse.headers.get('cross-origin-opener-policy') === 'same-origin-allow-popups');
+  check(`${chemin} : CORP limite l’intégration cross-origin`, reponse.headers.get('cross-origin-resource-policy') === 'same-origin');
+  check(
+    `${chemin} : protections fixes maintenues en report-only`,
+    !observation || (/frame-ancestors 'self'/.test(enforce) && /form-action 'self'/.test(enforce) && /object-src 'none'/.test(enforce)),
+  );
   if (!nonce) continue;
+  check(`${chemin} : form-action limité au site`, /form-action 'self'/.test(dynamique));
+  check(
+    `${chemin} : CSP appliquée en production`,
+    !EXIGER_ENFORCE || (mode === 'enforce' && enforce.includes(`'nonce-${nonce}'`) && !observation?.includes(`'nonce-${nonce}'`)),
+    mode,
+  );
+  check(
+    `${chemin} : aucune CSP partielle concurrente`,
+    !EXIGER_ENFORCE || (enforce.match(/frame-ancestors/g) || []).length === 1,
+  );
   nonces.add(nonce);
 
   const balises = [...html.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
@@ -66,7 +85,19 @@ const api = await fetch(`${SITE}/api/health`);
 check('/api/health : sans politique dynamique', !lirePolitique(api).dynamique);
 
 titre('Navigateur : aucune violation sur les parcours courants');
-const nav = await chromium.launch();
+const candidatsNavigateur = [
+  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+  process.env.CHROMIUM_PATH,
+  process.env.ProgramFiles && join(process.env.ProgramFiles, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+  process.env['ProgramFiles(x86)'] && join(process.env['ProgramFiles(x86)'], 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+  process.env.LOCALAPPDATA && join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+  process.env.LOCALAPPDATA && join(process.env.LOCALAPPDATA, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+];
+const executableNavigateur = candidatsNavigateur.find((chemin) => chemin && existsSync(chemin));
+if (!executableNavigateur && !existsSync(chromium.executablePath())) {
+  throw new Error('Chromium Playwright absent : installez Chromium ou définissez PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.');
+}
+const nav = await chromium.launch(executableNavigateur ? { executablePath: executableNavigateur } : undefined);
 const contexte = await nav.newContext();
 const page = await contexte.newPage();
 const violations = [];

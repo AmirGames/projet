@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import Link from '@/components/LienRegional';
-import { ArrowRight, BadgeCheck, CarFront, Clock3, Crown, Plane, ShieldCheck, UsersRound } from 'lucide-react';
+import { ArrowRight, BadgeCheck, CarFront, Clock3, ShieldCheck, UsersRound } from 'lucide-react';
 import { EMAIL_CONTACT } from '@/lib/editeur';
 import { EnTeteMarque } from '@/components/EnTeteMarque';
 
@@ -17,8 +17,6 @@ export default function AccueilZupDrive() {
   const t = useTranslations('accueilZupdrive');
   const services = [
     { icone: CarFront, titre: t('standardTitle'), texte: t('standardText'), image: '/images/zupdrive/vtc-standard.webp', alt: t('standardImageAlt') },
-    { icone: Crown, titre: t('premiumTitle'), texte: t('premiumText'), image: '/images/zupdrive/vtc-premium.webp', alt: t('premiumImageAlt') },
-    { icone: Plane, titre: t('airportTitle'), texte: t('airportText'), image: '/images/zupdrive/transfert-aeroport.webp', alt: t('airportImageAlt') },
   ];
   const engagements = [
     { icone: BadgeCheck, titre: t('comfortTitle'), texte: t('comfortText') },
@@ -97,8 +95,8 @@ export default function AccueilZupDrive() {
             <h2 className="text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{t('servicesTitle')} <span className="text-[#087DFA]">{t('servicesAccent')}</span></h2>
             <p className="mt-2 text-sm text-gray-500">{t('servicesIntro')}</p>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3 md:gap-5">
-            {services.map(({ icone: Icone, titre, texte, image, alt }, index) => (
+          <div className="mx-auto mt-8 grid max-w-xl gap-4 md:gap-5">
+            {services.map(({ icone: Icone, titre, texte, image, alt }) => (
               <Link key={titre} href="/trajet" className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_28px_rgba(15,23,42,.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,.13)]">
                 <div className="relative h-36 overflow-hidden sm:h-40">
                   <Image src={image} alt={alt} fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover transition duration-500 group-hover:scale-[1.04]" />
@@ -109,7 +107,7 @@ export default function AccueilZupDrive() {
                   <h3 className="mt-2 text-lg font-extrabold tracking-tight">{titre}</h3>
                   <p className="mt-1 min-h-10 text-sm leading-5 text-gray-600">{texte}</p>
                   <ul className="mt-3 space-y-1.5 text-xs text-gray-600">
-                    {(index === 0 ? [t('standardPoint1'), t('standardPoint2'), t('standardPoint3')] : index === 1 ? [t('premiumPoint1'), t('premiumPoint2'), t('premiumPoint3')] : [t('airportPoint1'), t('airportPoint2'), t('airportPoint3')]).map((point) => (
+                    {[t('standardPoint1'), t('standardPoint2'), t('standardPoint3')].map((point) => (
                       <li key={point} className="flex items-center gap-2"><BadgeCheck size={14} className="shrink-0 text-[#087DFA]" aria-hidden="true" />{point}</li>
                     ))}
                   </ul>
@@ -149,7 +147,10 @@ export default function AccueilZupDrive() {
               <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white/15"><CarFront size={30} aria-hidden="true" /></span>
               <div><h2 className="text-xl font-extrabold sm:text-2xl">{t('mobileTitle')}</h2><p className="mt-1 text-sm text-white/85">{t('mobileText')}</p></div>
             </div>
-            <Link href="/trajet" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg bg-white px-5 text-sm font-bold text-[#0754AB] transition hover:bg-blue-50">{t('reserverEnLigne')}<ArrowRight size={16} aria-hidden="true" /></Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/trajet" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg bg-white px-5 text-sm font-bold text-[#0754AB] transition hover:bg-blue-50">{t('reserverEnLigne')}<ArrowRight size={16} aria-hidden="true" /></Link>
+              <Link href="/societe" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border border-white/75 px-5 text-sm font-bold text-white transition hover:bg-white/10">Espace société taxi</Link>
+            </div>
           </div>
         </section>
       </main>

@@ -15,7 +15,8 @@ import { ZupDriveSupportService } from "./zupdrive-support.service";
  * disent ce qui est réellement parti. Une alerte par course : rejouer l'appel
  * (double appui, réseau coupé) rend la même alerte et ne renvoie rien deux fois.
  * ZupDrive ne promet aucune intervention sur place : l'application renvoie le
- * passager vers le 17 et le 112.
+ * passager vers les numéros d'urgence belges : 101 pour la police et 112
+ * pour l'ambulance et les pompiers.
  */
 
 /** Seul un trajet avec un chauffeur en route ou à bord a un sens pour une alerte. */
@@ -143,13 +144,13 @@ export class SosDriveService {
           `Bonjour ${contact.nom},`,
           `${nom} vous a désigné comme personne de confiance et vient de déclencher une alerte de sécurité pendant un trajet ZupDrive.`,
           ...lignes,
-          "Essayez de la joindre. Si vous pensez qu'elle est en danger, appelez le 17 (police) ou le 112 sans attendre. ZupDrive ne peut pas intervenir sur place.",
+          "Essayez de la joindre. Si vous pensez qu'elle est en danger en Belgique, appelez le 101 (police) ou le 112 (ambulance et pompiers) sans attendre. ZupDrive ne peut pas intervenir sur place.",
         ].join("\n"),
         html: [
           `<p>Bonjour ${echapper(contact.nom)},</p>`,
           `<p>${echapper(nom)} vous a désigné comme personne de confiance et vient de déclencher une <strong>alerte de sécurité</strong> pendant un trajet ZupDrive.</p>`,
           `<ul>${lignes.map((l) => `<li>${echapper(l)}</li>`).join("")}</ul>`,
-          `<p>Essayez de la joindre. Si vous pensez qu'elle est en danger, appelez le <strong>17</strong> (police) ou le <strong>112</strong> sans attendre. ZupDrive ne peut pas intervenir sur place.</p>`,
+          `<p>Essayez de la joindre. Si vous pensez qu'elle est en danger en Belgique, appelez le <strong>101</strong> (police) ou le <strong>112</strong> (ambulance et pompiers) sans attendre. ZupDrive ne peut pas intervenir sur place.</p>`,
         ].join(""),
       });
     } catch (err) {

@@ -4,6 +4,7 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { limiterCadence } from "../../middleware/throttle";
 import { CourseDriveService } from "./course-drive.service";
 import { COMMENTAIRE_MAX, NOTE_MAX, NOTE_MIN, NoteCourseDriveService } from "./note-course-drive.service";
+import { exigerAdresseZupDriveSignee } from "./adresse-selection-signee";
 
 /**
  * /api/zupdrive/courses — le passager commande et suit ses trajets
@@ -17,13 +18,14 @@ const router = Router();
 router.use(authMiddleware);
 
 export const adresseSchema = z.object({
-  adresse: z.string().trim().min(3).max(300),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  codePostal: z.string().trim().min(4).max(10),
-});
+  preuveAdresse: z.string().min(20).max(4000),
+}).strict();
 
-const trajetSchema = z.object({ depart: adresseSchema, arrivee: adresseSchema }).strict();
+const trajetSchema = z.object({
+  depart: adresseSchema,
+  arrivee: adresseSchema,
+  nombrePassagers: z.number().int().min(1).max(6).default(1),
+}).strict();
 
 // Un devis par seconde au plus en moyenne ; une commande toutes les minutes.
 const limiterDevis = limiterCadence({
@@ -43,8 +45,10 @@ const limiterCommandes = limiterCadence({
 // POST /api/zupdrive/courses/devis — distance, durée et prix fixe d'un trajet
 router.post("/devis", limiterDevis, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { depart, arrivee } = trajetSchema.parse(req.body);
-    const devis = await CourseDriveService.devis(req.userId as string, depart, arrivee);
+    const demande = trajetSchema.parse(req.body);
+    const depart = exigerAdresseZupDriveSignee(demande.depart.preuveAdresse);
+    const arrivee = exigerAdresseZupDriveSignee(demande.arrivee.preuveAdresse);
+    const devis = await CourseDriveService.devis(req.userId as string, depart, arrivee, demande.nombrePassagers);
     res.json({
       success: true,
       data: {
@@ -52,6 +56,8 @@ router.post("/devis", limiterDevis, async (req: Request, res: Response, next: Ne
         distanceMetres: devis.distanceMetres,
         dureeSecondes: devis.dureeSecondes,
         prixCentimes: devis.prixCentimes,
+        nombrePassagers: devis.nombrePassagers,
+        categorieVehicule: devis.categorieVehicule,
         devise: devis.devise,
         // Le tracé de la route (OSRM), pour la carte ; null en estimation.
         trace: devis.trace,
@@ -72,6 +78,9 @@ router.post("/", limiterCommandes, async (req: Request, res: Response, next: Nex
       .object({
         devis: z.string().min(10).max(8000),
         cleIdempotence: z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/),
+        conditionsAcceptees: z.literal(true, {
+          message: "Vous devez accepter les conditions ZupDrive pour commander",
+        }),
       })
       .strict()
       .parse(req.body);

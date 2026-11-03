@@ -1,4 +1,5 @@
 import { logger } from "../../config/logger";
+import { ApiError } from "../../middleware/errorHandler";
 import { distanceKm } from "../../utils/geo";
 
 /**
@@ -13,8 +14,9 @@ import { distanceKm } from "../../utils/geo";
  *   hébergez votre propre instance (image Docker officielle, données de la
  *   Belgique).
  *
- * Un fournisseur qui ne répond pas, ou pas à temps, ne bloque jamais un devis :
- * l'estimation prend le relais, et la réponse dit laquelle a servi.
+ * En développement et en test, une estimation prend le relais si OSRM ne
+ * répond pas. En production, un tarif au kilomètre ne doit jamais être calculé
+ * sur une distance estimée : le devis échoue sans itinéraire routier réel.
  */
 
 /** Détour moyen de la route par rapport à la ligne droite, en ville. */
@@ -69,17 +71,33 @@ async function parOsrm(base: string, depart: Point, arrivee: Point): Promise<Iti
 export async function calculerItineraire(depart: Point, arrivee: Point): Promise<Itineraire> {
   const fournisseur = process.env.ROUTING_PROVIDER || "estimation";
   const base = process.env.OSRM_API_URL;
+  const production = process.env.NODE_ENV === "production";
+
+  const refuserDevisSansRoute = () => {
+    throw new ApiError(
+      503,
+      "Le calcul d'itinéraire est temporairement indisponible. Réessayez dans quelques instants.",
+      "ROUTING_PROVIDER_UNAVAILABLE"
+    );
+  };
+
+  if (production && fournisseur !== "osrm") {
+    logger.error("Devis ZupDrive refusé : ROUTING_PROVIDER=osrm est requis en production");
+    refuserDevisSansRoute();
+  }
 
   if (fournisseur === "osrm") {
     if (!base) {
-      logger.warn("ROUTING_PROVIDER=osrm sans OSRM_API_URL : estimation utilisée");
+      logger.warn("ROUTING_PROVIDER=osrm sans OSRM_API_URL");
+      if (production) refuserDevisSansRoute();
     } else {
       try {
         return await parOsrm(base, depart, arrivee);
       } catch (err) {
-        logger.warn("Itinéraire OSRM indisponible : estimation utilisée", {
+        logger.warn("Itinéraire OSRM indisponible", {
           error: err instanceof Error ? err.message : err,
         });
+        if (production) refuserDevisSansRoute();
       }
     }
   }

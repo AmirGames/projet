@@ -1,4 +1,4 @@
-import { construireCsp, genererNonce, modeCsp } from "../csp";
+import { construireCsp, genererNonce, modeCsp, modeCspPourHote } from "../csp";
 
 describe("CSP du site", () => {
   const directive = (csp: string, nom: string) =>
@@ -42,19 +42,36 @@ describe("CSP du site", () => {
     expect(directive(construireCsp({ nonce: "n", urlApi: "http://localhost:3001" }), "connect-src")).toContain("ws://localhost:3001");
   });
 
-  it("ferme object-src, base-uri et frame-ancestors, et rapporte à la route du site", () => {
+  it("ferme les sorties de formulaire, object-src, base-uri et frame-ancestors", () => {
     const csp = construireCsp({ nonce: "n" });
+    expect(directive(csp, "form-action")).toEqual(["'self'"]);
     expect(directive(csp, "object-src")).toEqual(["'none'"]);
     expect(directive(csp, "base-uri")).toEqual(["'self'"]);
     expect(directive(csp, "frame-ancestors")).toEqual(["'self'"]);
     expect(directive(csp, "report-uri")).toEqual(["/api/csp-report"]);
   });
 
-  it("choisit le mode : observation par défaut, application ou arrêt sur demande", () => {
-    expect(modeCsp(undefined)).toBe("report-only");
-    expect(modeCsp("n'importe quoi")).toBe("report-only");
-    expect(modeCsp(" ENFORCE ")).toBe("enforce");
-    expect(modeCsp("off")).toBe("off");
+  it("choisit le mode à partir de la configuration ou du défaut fourni", () => {
+    expect(modeCsp(undefined, "report-only")).toBe("report-only");
+    expect(modeCsp("n'importe quoi", "report-only")).toBe("report-only");
+    expect(modeCsp(" ENFORCE ", "report-only")).toBe("enforce");
+    expect(modeCsp("off", "report-only")).toBe("off");
+  });
+
+  it("applique enforce par défaut aux domaines ZupDrive sans basculer les autres marques", () => {
+    const précédent = process.env.NODE_ENV;
+    const env = process.env as Record<string, string | undefined>;
+    env.NODE_ENV = "production";
+    try {
+      const domaines = ["zupdrive.com", "driver.zupdrive.com"];
+      expect(modeCspPourHote("zupdrive.com:443", domaines, "report-only", undefined)).toBe("enforce");
+      expect(modeCspPourHote("driver.zupdrive.com", domaines, "enforce", "report-only")).toBe("report-only");
+      expect(modeCspPourHote("zupeat.com", domaines, "report-only", "enforce")).toBe("report-only");
+      expect(modeCspPourHote("zupeat.com", domaines, "enforce", undefined)).toBe("enforce");
+    } finally {
+      if (précédent === undefined) delete env.NODE_ENV;
+      else env.NODE_ENV = précédent;
+    }
   });
 
   it("ne permet pas de couper toute la CSP en production", () => {
@@ -62,8 +79,9 @@ describe("CSP du site", () => {
     const env = process.env as Record<string, string | undefined>;
     env.NODE_ENV = "production";
     try {
-      expect(modeCsp("off")).toBe("enforce");
-      expect(() => modeCsp("bad-value")).toThrow("CSP_MODE doit valoir");
+      expect(modeCsp(undefined, "enforce")).toBe("enforce");
+      expect(modeCsp("off", "report-only")).toBe("enforce");
+      expect(() => modeCsp("bad-value", "report-only")).toThrow("CSP_MODE doit valoir");
     } finally {
       if (précédent === undefined) delete env.NODE_ENV;
       else env.NODE_ENV = précédent;

@@ -68,7 +68,9 @@ describe("alerte SOS", () => {
     const mail = email.sendEmail.mock.calls[0][0];
     expect(mail.to).toBe("bob@x.fr");
     expect(mail.html).not.toContain("<b>"); // le nom du passager est échappé
-    expect(mail.text).toContain("17");
+    expect(mail.text).toContain("101 (police)");
+    expect(mail.text).toContain("112 (ambulance et pompiers)");
+    expect(mail.text).not.toContain("17 (police)");
   });
 
   it("une course d'un autre compte répond 404 et n'envoie rien", async () => {

@@ -27,6 +27,8 @@ export interface ContenuDevis {
   arrivee: AdresseDevis;
   distanceMetres: number;
   dureeSecondes: number;
+  /** Ancien devis : absent, alors traité comme un passager. */
+  nombrePassagers?: number;
   prixCentimes: number;
   /** Majoration appliquée au prix ; absente des devis émis avant son enregistrement. */
   surgeFactor?: number;
@@ -52,7 +54,8 @@ function cleDeSignature(): Buffer {
 const signature = (corps: string) => createHmac("sha256", cleDeSignature()).update(corps).digest("base64url");
 
 export function signerDevis(contenu: ContenuDevis): string {
-  const corps = Buffer.from(JSON.stringify({ v: 1, ...contenu })).toString("base64url");
+  // v2 invalide les anciens devis qui pouvaient inclure une majoration dynamique.
+  const corps = Buffer.from(JSON.stringify({ v: 2, ...contenu })).toString("base64url");
   return `${corps}.${signature(corps)}`;
 }
 
@@ -75,7 +78,7 @@ export function lireDevis(
   } catch {
     return { ok: false, raison: "INVALIDE" };
   }
-  if (contenu.v !== 1) return { ok: false, raison: "INVALIDE" };
+  if (contenu.v !== 2) return { ok: false, raison: "INVALIDE" };
   if (!(contenu.exp > maintenant)) return { ok: false, raison: "EXPIRE" };
   return { ok: true, contenu };
 }

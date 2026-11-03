@@ -207,8 +207,11 @@ Trois particularités à connaître :
   `<Script>` faite à la main doit lire le nonce (`(await headers()).get('x-nonce')`),
   sans quoi le navigateur le refuse. Toute nouvelle origine externe (script,
   image, API, iframe) s'ajoute dans `construireCsp` avec son test. Mode par
-  `CSP_MODE` : `report-only` (défaut, observation), `enforce`, `off` (en production, `off` est forcé à `enforce`). Vérifier
-  avec `node scripts/verif-csp.mjs`.
+  `CSP_MODE` est partagé par les autres marques (`report-only` par défaut) ;
+  ZupDrive utilise `CSP_MODE_ZUPDRIVE` (`enforce` par défaut en production).
+  `off` est forcé à `enforce` en production. Pour vérifier ZupDrive, exiger
+  `REQUIRE_CSP_ENFORCE=1` avec `node scripts/verif-csp.mjs`, après les parcours
+  Stripe et cartes.
 - **`signalerErreur`** (`lib/erreurs.ts`) remplace `console.error` : elle ne
   journalise pas quand le navigateur quitte la page (les requêtes coupées par
   le départ du visiteur ne sont pas des pannes).

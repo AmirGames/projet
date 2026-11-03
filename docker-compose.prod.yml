@@ -155,6 +155,7 @@ services:
         NEXT_PUBLIC_DOMAINE_VITRINE: ${NEXT_PUBLIC_DOMAINE_VITRINE:-}
         NEXT_PUBLIC_DOMAINE_DRIVE: ${NEXT_PUBLIC_DOMAINE_DRIVE:-}
         NEXT_PUBLIC_DOMAINE_CHAUFFEUR: ${NEXT_PUBLIC_DOMAINE_CHAUFFEUR:-}
+        NEXT_PUBLIC_EMAIL_CONTACT_DRIVE: ${NEXT_PUBLIC_EMAIL_CONTACT_DRIVE:-}
         GIT_SHA: ${GIT_SHA:-inconnue}
     restart: unless-stopped
     environment:
@@ -164,8 +165,9 @@ services:
       # directement, sans ressortir par Internet.
       API_INTERNAL_URL: http://backend:3001
       # Serveur uniquement ; jamais NEXT_PUBLIC. Même mapping/secret que l'API.
-      # Content-Security-Policy à nonces : report-only (observation), enforce ou off.
+      # CSP globale partagée ; ZupDrive a son propre mode, enforce par défaut.
       CSP_MODE: ${CSP_MODE:-report-only}
+      CSP_MODE_ZUPDRIVE: ${CSP_MODE_ZUPDRIVE:-enforce}
       ASSISTANT_HOSTS: ${ASSISTANT_HOSTS:-}
       ASSISTANT_GATEWAY_SECRET: ${ASSISTANT_GATEWAY_SECRET:-}
     depends_on:

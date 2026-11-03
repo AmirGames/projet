@@ -18,10 +18,36 @@ import { libelleDeLaPiece } from "./chauffeur-onboarding.service";
 
 export type Proprietaire = { chauffeurId: string } | { societeId: string } | { vehiculeId: string };
 
-/** La date d'expiration saisie, vérifiée : ni illisible, ni déjà passée. */
-function dateExpirationDeposee(type: string, saisie: string | null | undefined): Date | null {
-  const expiration = saisie ? new Date(saisie) : null;
-  if (expiration && Number.isNaN(expiration.getTime())) {
+function finDeJourBruxelles(saisie: string): Date | null {
+  const jour = /^(\d{4})-(\d{2})-(\d{2})$/.exec(saisie);
+  if (!jour) return null;
+  const annee = Number(jour[1]);
+  const mois = Number(jour[2]);
+  const numeroJour = Number(jour[3]);
+  const date = new Date(Date.UTC(annee, mois - 1, numeroJour));
+  if (date.getUTCFullYear() !== annee || date.getUTCMonth() !== mois - 1 || date.getUTCDate() !== numeroJour) return null;
+
+  // Les échéances sont des jours civils en Belgique, pas des instants à minuit UTC.
+  const midiApproximatif = new Date(Date.UTC(annee, mois - 1, numeroJour, 12));
+  const nomFuseau = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Brussels",
+    timeZoneName: "longOffset",
+  }).formatToParts(midiApproximatif).find((part) => part.type === "timeZoneName")?.value;
+  const offset = /^GMT([+-])(\d{2}):(\d{2})$/.exec(nomFuseau || "");
+  if (!offset) return null;
+  const minutes = (Number(offset[2]) * 60 + Number(offset[3])) * (offset[1] === "+" ? 1 : -1);
+  return new Date(Date.UTC(annee, mois - 1, numeroJour, 23, 59, 59, 999) - minutes * 60_000);
+}
+
+/** La date d'expiration saisie est inclusive jusqu'à la fin du jour belge. */
+export function dateExpirationDeposee(type: string, saisie: string | null | undefined): Date | null {
+  if (["certificat_capacite", "licence"].includes(type) && !saisie) {
+    throw new ApiError(400, `Indiquez la date de fin de validité ou de revalidation annuelle de la pièce « ${libelleDeLaPiece(type)} »`, "MISSING_EXPIRY_DATE");
+  }
+  const expiration = saisie
+    ? finDeJourBruxelles(saisie) || new Date(saisie)
+    : null;
+  if (expiration && (Number.isNaN(expiration.getTime()) || /^\d{4}-\d{2}-\d{2}$/.test(saisie || "") && expiration.getUTCHours() === 0)) {
     throw new ApiError(400, "Date d'expiration invalide", "INVALID_EXPIRY_DATE");
   }
   if (expiration && expiration.getTime() < Date.now()) {
@@ -80,6 +106,9 @@ export async function examinerVersion(
   verdict: { approuve: boolean; note?: string },
   motifManquant = "Un refus sans motif ne dit pas quoi corriger"
 ) {
+  if (verdict.approuve && ["certificat_capacite", "licence"].includes(piece.type) && !piece.dateExpiration) {
+    throw new ApiError(400, `Une date de fin de validité est obligatoire pour « ${libelleDeLaPiece(piece.type)} »`, "MISSING_EXPIRY_DATE");
+  }
   if (verdict.approuve && piece.dateExpiration && piece.dateExpiration.getTime() <= Date.now()) {
     throw new ApiError(400, "Ce document est expiré : il ne peut pas être validé", "DOCUMENT_EXPIRED");
   }

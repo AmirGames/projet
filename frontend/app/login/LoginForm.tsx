@@ -25,7 +25,7 @@ function lireRaison(): string | null {
   }
 }
 
-export default function LoginForm({ marque }: { marque: MarqueConnexion }) {
+export default function LoginForm({ marque, retour }: { marque: MarqueConnexion; retour?: string }) {
   const t = useTranslations('auth.login');
   const router = useRouter();
   const { refreshAuth, isAuthenticated, isLoading, user } = useAuth();
@@ -72,11 +72,11 @@ export default function LoginForm({ marque }: { marque: MarqueConnexion }) {
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
     router.replace(
-      destinationApresConnexion({
+      retour || destinationApresConnexion({
         isSuperOwner: user?.isSuperOwner,
       }),
     );
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [isLoading, isAuthenticated, user, router, retour]);
 
   const renvoyerConfirmation = async () => {
     setLienRenvoye(t("resending"));
@@ -137,7 +137,7 @@ export default function LoginForm({ marque }: { marque: MarqueConnexion }) {
 
       // La destination dépend du domaine ; on y va en passant par zupone.com,
       // qui garde la session pour les autres domaines du site.
-      const destination = destinationApresConnexion({ isSuperOwner });
+      const destination = retour || destinationApresConnexion({ isSuperOwner });
       if (await confierSessionCentrale(result.accessToken, destination)) return;
       router.replace(destination);
     } catch (err) {

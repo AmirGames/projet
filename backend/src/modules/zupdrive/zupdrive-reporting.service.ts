@@ -307,7 +307,7 @@ export class ZupDriveReportingService {
     const drivers = await db.chauffeurDrive.findMany({
       select: {
         id: true,
-        documents: { where: { archiveeLe: null }, select: { statut: true, dateExpiration: true } },
+        documents: { where: { archiveeLe: null }, select: { type: true, statut: true, dateExpiration: true } },
         infractions: { select: { type: true, severity: true } },
         statut: true,
         suspendedAt: true,
@@ -325,7 +325,7 @@ export class ZupDriveReportingService {
     const thirtyDaysAhead = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const fullyCompliant = drivers.filter((d) =>
-      d.documents.every((doc) => doc.statut === "APPROVED" && (!doc.dateExpiration || doc.dateExpiration > now))
+      d.documents.every((doc) => doc.statut === "APPROVED" && (!(doc.type === "licence" || doc.type === "certificat_capacite") || doc.dateExpiration !== null) && (!doc.dateExpiration || doc.dateExpiration > now))
     ).length;
 
     const expiringWithin30Days = drivers.filter((d) =>

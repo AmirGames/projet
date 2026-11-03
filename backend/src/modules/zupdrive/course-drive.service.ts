@@ -4,13 +4,21 @@ import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { distanceKm } from "../../utils/geo";
 import { emitNotification } from "../realtime/socket";
-import { TarificationDriveService, type Point } from "./tarification-drive.service";
+import {
+  adresseDansZonePiloteNamur,
+  calculerPrix,
+  TARIF_PILOTE_NAMUR,
+  tarifPiloteNamurConforme,
+  TarificationDriveService,
+  type Point,
+} from "./tarification-drive.service";
 import { lireDevis, signerDevis, VALIDITE_DEVIS_MS } from "./devis-signe";
 import { NoteCourseDriveService } from "./note-course-drive.service";
 import { MatchingAlgorithmService } from "./matching-algorithm.service";
 import { ZupDrivePaymentService } from "./zupdrive-payment.service";
 import { getEnv } from "../../config/env";
 import { codeErreur } from "../../utils/code-erreur";
+import { PagesLegalesService } from "../legal/pages-legales.service";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -130,8 +138,8 @@ export class CourseDriveService {
    * Le devis d'un trajet pour ce passager : distance, durée, prix fixe, tracé,
    * et le devis signé à renvoyer pour commander (valable 10 minutes).
    */
-  static async devis(passagerId: string, depart: Adresse, arrivee: Adresse) {
-    const calcul = await TarificationDriveService.devis({ depart, arrivee });
+  static async devis(passagerId: string, depart: Adresse, arrivee: Adresse, nombrePassagers = 1) {
+    const calcul = await TarificationDriveService.devis({ depart, arrivee }, true, nombrePassagers);
     const devis = signerDevis({
       passagerId,
       region: calcul.region,
@@ -139,6 +147,7 @@ export class CourseDriveService {
       arrivee,
       distanceMetres: calcul.distanceMetres,
       dureeSecondes: calcul.dureeSecondes,
+      nombrePassagers: calcul.nombrePassagers,
       prixCentimes: calcul.prixCentimes,
       surgeFactor: calcul.surgeFactor,
       devise: calcul.devise,
@@ -171,6 +180,24 @@ export class CourseDriveService {
     if (devis.passagerId !== passagerId) {
       throw new ApiError(400, "Devis invalide", "INVALID_QUOTE");
     }
+    // Défense en profondeur : même un devis signé ancien ou mal configuré ne
+    // peut introduire une majoration ou un autre barème dans le pilote Namur.
+    if (devis.region === "WALLONIE" && (
+      !tarifPiloteNamurConforme(devis.tarif) ||
+      devis.surgeFactor !== 1 ||
+      devis.prixCentimes !== calculerPrix(TARIF_PILOTE_NAMUR, devis.distanceMetres, devis.dureeSecondes)
+    )) {
+      throw new ApiError(400, "Le devis ne respecte pas le tarif réglementaire du pilote Namur", "INVALID_QUOTE");
+    }
+    // Réapplique la zone à la commande : un devis émis avant cette restriction
+    // ou par un ancien client ne doit pas permettre de la contourner.
+    if (!adresseDansZonePiloteNamur(devis.depart) || !adresseDansZonePiloteNamur(devis.arrivee)) {
+      throw new ApiError(
+        400,
+        "Pour le pilote, les adresses doivent avoir un code postal et des coordonnées situés dans la commune de Namur.",
+        "PILOT_AREA_NOT_SERVED"
+      );
+    }
 
     const enCours = await db.courseDrive.findFirst({
       where: { passagerId, statut: { in: STATUTS_ACTIFS } },
@@ -185,6 +212,20 @@ export class CourseDriveService {
     if (!tarif?.actif) {
       throw new ApiError(400, "ZupDrive n'est pas encore ouvert dans cette région", "REGION_NOT_SERVED");
     }
+    if ((devis.nombrePassagers ?? 1) > 4) {
+      const xl = await db.tarifVehiculeDrive.findUnique({
+        where: { region_categorie: { region: devis.region, categorie: "XL" } },
+        select: { actif: true },
+      });
+      if (!xl?.actif) throw new ApiError(409, "La catégorie XL n'est plus disponible", "VEHICLE_CLASS_NOT_SERVED");
+    }
+
+    // Une course en production doit avoir un socle légal publié. La version
+    // acceptée est figée sur la course pour conserver la preuve dans le temps.
+    if (getEnv().NODE_ENV === "production") {
+      await PagesLegalesService.verifierPrealablesZupDrive();
+    }
+    const conditionsVersion = await PagesLegalesService.versionsConditionsTrajetZupDrive();
 
     let course;
     try {
@@ -201,10 +242,17 @@ export class CourseDriveService {
           arriveeLongitude: devis.arrivee.longitude,
           distanceMetres: devis.distanceMetres,
           dureeSecondes: devis.dureeSecondes,
+          nombrePassagers: devis.nombrePassagers ?? 1,
           prixCentimes: devis.prixCentimes,
+          conditionsAccepteesLe: new Date(),
+          conditionsVersion,
           surgeFactor: devis.surgeFactor ?? null,
           devise: devis.devise,
-          tarifApplique: { ...devis.tarif, itineraire: devis.source } as unknown as Prisma.InputJsonValue,
+          tarifApplique: {
+            ...devis.tarif,
+            categorieVehicule: (devis.nombrePassagers ?? 1) > 4 ? "XL" : "STANDARD",
+            itineraire: devis.source,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
     } catch (err) {
@@ -245,6 +293,8 @@ export class CourseDriveService {
       vehicule: _vehicule,
       societeId: _societe,
       vehiculeId: _vehiculeId,
+      conditionsVersion: _conditionsVersion,
+      conditionsAccepteesLe: _conditionsAccepteesLe,
       ...reste
     } = course;
     const [noteChauffeur, maNote, paiement] = await Promise.all([
@@ -420,6 +470,8 @@ export class CourseDriveService {
       arriveeAdresse: c.arriveeAdresse,
       distanceMetres: c.distanceMetres,
       dureeSecondes: c.dureeSecondes,
+      nombrePassagers: c.nombrePassagers,
+      categorieVehicule: c.nombrePassagers > 4 ? "XL" : "STANDARD",
       prixCentimes: c.prixCentimes,
       devise: c.devise,
     });
@@ -637,6 +689,9 @@ export class CourseDriveService {
     }
 
     const dejaSollicites = course.propositions.map((p) => p.chauffeurId);
+    const placesRequises = course.nombrePassagers > 4
+      ? { gte: 5, lte: 6 }
+      : { gte: course.nombrePassagers, lte: 4 };
     const candidats = await db.chauffeurDrive.findMany({
       where: {
         statut: "VALIDE",
@@ -648,7 +703,15 @@ export class CourseDriveService {
         id: { notIn: dejaSollicites },
         courses: { none: { statut: { in: STATUTS_AVEC_CHAUFFEUR } } },
         propositions: { none: { statut: "EN_ATTENTE", expireA: { gt: maintenant } } },
-        ...EN_REGLE_POUR_ROULER,
+        AND: [
+          EN_REGLE_POUR_ROULER,
+          {
+            OR: [
+              { societeId: null, placesPassagers: placesRequises },
+              { societe: { statut: "VALIDE" }, vehicule: { conforme: true, retireLe: null, placesPassagers: placesRequises } },
+            ],
+          },
+        ],
       },
       select: { id: true, latitude: true, longitude: true },
     });

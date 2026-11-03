@@ -13,6 +13,7 @@ export interface AdresseTrajet {
   latitude: number;
   longitude: number;
   codePostal: string;
+  preuveAdresse: string;
 }
 
 export interface Devis {
@@ -20,6 +21,8 @@ export interface Devis {
   distanceMetres: number;
   dureeSecondes: number;
   prixCentimes: number;
+  nombrePassagers: number;
+  categorieVehicule: 'STANDARD' | 'XL';
   devise: string;
   /** Le tracé de la route quand le serveur l'a calculé, sinon null. */
   trace: [number, number][] | null;
@@ -40,6 +43,7 @@ export interface ResumeTrajet {
   departAdresse: string;
   arriveeAdresse: string;
   prixCentimes: number;
+  nombrePassagers: number;
   createdAt: string;
 }
 
@@ -79,10 +83,14 @@ interface Enveloppe<T> {
   data: T;
 }
 
-export async function demanderDevis(token: string, depart: AdresseTrajet, arrivee: AdresseTrajet): Promise<Devis> {
+export async function demanderDevis(token: string, depart: AdresseTrajet, arrivee: AdresseTrajet, nombrePassagers = 1): Promise<Devis> {
   const res = await apiFetch<Enveloppe<Devis>>('/api/zupdrive/courses/devis', token, {
     method: 'POST',
-    body: { depart, arrivee },
+    body: {
+      depart: { preuveAdresse: depart.preuveAdresse },
+      arrivee: { preuveAdresse: arrivee.preuveAdresse },
+      nombrePassagers,
+    },
   });
   return res.data;
 }
@@ -91,10 +99,15 @@ export async function demanderDevis(token: string, depart: AdresseTrajet, arrive
  * Commande le devis signé. La clé d'idempotence est propre au devis : rejouer
  * la même commande (réseau coupé, double appui) rend la même course.
  */
-export async function commanderTrajet(token: string, devis: Devis, cleIdempotence: string): Promise<{ id: string }> {
+export async function commanderTrajet(
+  token: string,
+  devis: Devis,
+  cleIdempotence: string,
+  conditionsAcceptees: boolean
+): Promise<{ id: string }> {
   const res = await apiFetch<Enveloppe<{ id: string }>>('/api/zupdrive/courses', token, {
     method: 'POST',
-    body: { devis: devis.devis, cleIdempotence },
+    body: { devis: devis.devis, cleIdempotence, conditionsAcceptees },
   });
   return res.data;
 }
@@ -158,12 +171,7 @@ export async function mesAdressesFavorites(token: string): Promise<AdresseFavori
 export async function enregistrerAdresseFavorite(token: string, type: TypeAdresseFavorite, adresse: AdresseTrajet): Promise<AdresseFavorite> {
   const res = await apiFetch<Enveloppe<AdresseFavorite>>(`/api/zupdrive/adresses/${type}`, token, {
     method: 'PUT',
-    body: {
-      adresse: adresse.adresse,
-      latitude: adresse.latitude,
-      longitude: adresse.longitude,
-      codePostal: adresse.codePostal,
-    },
+    body: { preuveAdresse: adresse.preuveAdresse },
   });
   return res.data;
 }

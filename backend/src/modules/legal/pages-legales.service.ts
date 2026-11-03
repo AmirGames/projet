@@ -23,7 +23,7 @@ export type PageLegale = {
 export const contientChampLegalACompleter = (contenu: string) => /\[[^\]\n]+\](?!\()/.test(contenu);
 
 const contientAvertissementDeBrouillon = (contenu: string) =>
-  /\bprojet (?:de |d['’])?(?:conditions|notice|déclaration|document)|\bprojet à compléter\b|à (?:définir|confirmer|documenter|valider|compléter)\b/i.test(contenu);
+  /\b(?:projet|brouillon) (?:de |d['’])?(?:conditions|notice|déclaration|document|à)|\bprojet à compléter\b|à (?:définir|confirmer|documenter|valider|compléter|rédiger|vérifier)\b/i.test(contenu);
 
 export const estPageLegalePrete = (page: PageLegale) =>
   !page.parDefaut &&
@@ -32,6 +32,17 @@ export const estPageLegalePrete = (page: PageLegale) =>
 
 /** Ces pages doivent être publiées avant de permettre une commande en production. */
 const PAGES_REQUISES_COMMANDE: SlugLegal[] = ["mentions-legales", "cgu", "cgv", "confidentialite", "cookies"];
+const DOCUMENTS_ZUPDRIVE_TRAJET = ["drive-cgu", "drive-cgv", "drive-confidentialite"] as const satisfies readonly SlugLegal[];
+const PAGES_REQUISES_ZUPDRIVE: SlugLegal[] = [
+  "drive-mentions-legales",
+  "drive-cgu",
+  "drive-cgv",
+  "drive-confidentialite",
+  "drive-cookies",
+  "drive-accessibilite",
+  "drive-conditions-chauffeurs",
+  "drive-conditions-societes",
+];
 
 function estSlugLegal(slug: string): slug is SlugLegal {
   return (SLUGS_LEGAUX as readonly string[]).includes(slug);
@@ -137,5 +148,23 @@ export const PagesLegalesService = {
     if (manquantes.length) {
       throw new ApiError(503, `Commandes indisponibles : pages légales à publier (${manquantes.join(", ")})`, "LEGAL_PAGES_NOT_READY");
     }
+  },
+
+  /** Documents propres au transport, aux chauffeurs et aux sociétés taxi. */
+  async verifierPrealablesZupDrive(): Promise<void> {
+    const pages = await Promise.all(PAGES_REQUISES_ZUPDRIVE.map((slug) => this.enVigueur(slug)));
+    const manquantes = pages.filter((page) => !estPageLegalePrete(page)).map((page) => page.slug);
+    if (manquantes.length) {
+      throw new ApiError(
+        503,
+        `ZupDrive indisponible : pages légales à publier (${manquantes.join(", ")})`,
+        "ZUPDRIVE_LEGAL_PAGES_NOT_READY"
+      );
+    }
+  },
+
+  /** Versions à figer avec la commande du trajet. */
+  async versionsConditionsTrajetZupDrive(): Promise<string> {
+    return this.versionsDe([...DOCUMENTS_ZUPDRIVE_TRAJET]);
   },
 };

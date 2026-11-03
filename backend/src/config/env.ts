@@ -2,6 +2,25 @@ import { z } from "zod";
 import { isAbsolute } from "node:path";
 import { assertPrivacyConfiguration } from "../modules/privacy/crypto";
 
+export function dateCivileEnBruxelles(date: Date = new Date()): string {
+  const parties = new Intl.DateTimeFormat("fr-CA", {
+    timeZone: "Europe/Brussels",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const valeur = (type: Intl.DateTimeFormatPartTypes) => parties.find((partie) => partie.type === type)?.value ?? "";
+  return `${valeur("year")}-${valeur("month")}-${valeur("day")}`;
+}
+
+function dateIsoCivileValide(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const [annee, mois, jour] = match.slice(1).map(Number);
+  const date = new Date(Date.UTC(annee, mois - 1, jour));
+  return date.getUTCFullYear() === annee && date.getUTCMonth() === mois - 1 && date.getUTCDate() === jour;
+}
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   MFA_MODE: z.enum(["enrollment", "enforced"]).default("enrollment"),
@@ -68,8 +87,8 @@ export const envSchema = z.object({
   // valeur inconnue : refus explicite. Aucun adaptateur réel n'est enregistré A07.
   PEPPOL_PROVIDER: z.string().optional(),
   // Itinéraire des courses ZupDrive (distance et durée du devis) :
-  // « estimation » (défaut, sans service externe) ou « osrm » (OSRM_API_URL,
-  // une instance OSRM, idéalement hébergée par vous). Voir itineraire.service.ts.
+  // « estimation » pour développement/test ou « osrm » (OSRM_API_URL) pour
+  // la production; celle-ci refuse le devis sans une route OSRM réelle.
   ROUTING_PROVIDER: z.enum(["estimation", "osrm"]).default("estimation"),
   OSRM_API_URL: z.string().url().optional(),
   // Secret partagé avec le fournisseur d'envoi : signe les accusés de notification ZupDrive (HMAC-SHA256).
@@ -79,6 +98,11 @@ export const envSchema = z.object({
   // ZupDrive : tant que la course n'est pas payée en ligne, aucun chauffeur ne la reçoit (elle expire sans
   // chauffeur comme les autres après RECHERCHE_MAX_MS). Faux par défaut : à activer quand l'écran de paiement est en ligne.
   ZUPDRIVE_PAIEMENT_OBLIGATOIRE: z.string().default("false").transform((v) => v === "true"),
+  // Confirmation explicite de l'agrément wallon d'intermédiation électronique.
+  // Faux par défaut : aucune course réelle en production avant vérification.
+  ZUPDRIVE_WALLONIE_AGREMENT_CONFIRME: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
+  ZUPDRIVE_WALLONIE_AGREMENT_REFERENCE: z.string().trim().optional(),
+  ZUPDRIVE_WALLONIE_AGREMENT_EXPIRES_AT: z.string().optional(),
   // ZupEat : courses rémunérées par des livreurs de la plateforme. Désactivé
   // par défaut en production jusqu'à confirmation de la couverture applicable.
   ENABLE_PLATFORM_COURIER_DELIVERY: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
@@ -152,6 +176,31 @@ export const envSchema = z.object({
     if (config.STRIPE_PUBLISHABLE_KEY && !/^pk_(test|live)_/.test(config.STRIPE_PUBLISHABLE_KEY)) contexte.addIssue({ code: "custom", path: ["STRIPE_PUBLISHABLE_KEY"], message: "Clé Stripe publique invalide" });
     if (config.STRIPE_SECRET_KEY && config.STRIPE_PUBLISHABLE_KEY && config.STRIPE_SECRET_KEY.split("_")[1] !== config.STRIPE_PUBLISHABLE_KEY.split("_")[1]) contexte.addIssue({ code: "custom", path: ["STRIPE_PUBLISHABLE_KEY"], message: "Les clés Stripe doivent appartenir au même mode (test/live)" });
     if (config.STRIPE_WEBHOOK_SECRET && !config.STRIPE_WEBHOOK_SECRET.startsWith("whsec_")) contexte.addIssue({ code: "custom", path: ["STRIPE_WEBHOOK_SECRET"], message: "Secret webhook Stripe invalide" });
+    if (config.NODE_ENV === "production") {
+      for (const name of ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET"] as const) {
+        if (config[name] && /(?:your-|placeholder|example)/i.test(config[name]!)) {
+          contexte.addIssue({ code: "custom", path: [name], message: `${name} contient encore une valeur d'exemple` });
+        }
+      }
+    }
+  }
+  if (config.ZUPDRIVE_PAIEMENT_OBLIGATOIRE && !config.ENABLE_STRIPE) {
+    contexte.addIssue({
+      code: "custom",
+      path: ["ENABLE_STRIPE"],
+      message: "ENABLE_STRIPE=true est requis quand le paiement ZupDrive est obligatoire",
+    });
+  }
+  if (config.ZUPDRIVE_WALLONIE_AGREMENT_CONFIRME) {
+    if (!config.ZUPDRIVE_WALLONIE_AGREMENT_REFERENCE || config.ZUPDRIVE_WALLONIE_AGREMENT_REFERENCE.length < 3) {
+      contexte.addIssue({ code: "custom", path: ["ZUPDRIVE_WALLONIE_AGREMENT_REFERENCE"], message: "Une référence SPW est requise quand l'agrément wallon est confirmé" });
+    }
+    const expiration = config.ZUPDRIVE_WALLONIE_AGREMENT_EXPIRES_AT;
+    if (!expiration || !dateIsoCivileValide(expiration)) {
+      contexte.addIssue({ code: "custom", path: ["ZUPDRIVE_WALLONIE_AGREMENT_EXPIRES_AT"], message: "Une date d'expiration valide (AAAA-MM-JJ) est requise pour l'agrément wallon confirmé" });
+    } else if (expiration < dateCivileEnBruxelles()) {
+      contexte.addIssue({ code: "custom", path: ["ZUPDRIVE_WALLONIE_AGREMENT_EXPIRES_AT"], message: "L'agrément wallon confirmé est expiré" });
+    }
   }
   const cloudinary = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] as const;
   const nbCloudinary = cloudinary.filter((name) => Boolean(config[name]?.trim())).length;

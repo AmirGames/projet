@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm';
 import { Scale, Send, ExternalLink, History, RefreshCw } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { useLocale, useTranslations } from 'next-intl';
+import { CLOISONNEMENT_ACTIF, DOMAINE_DRIVE, lienVersEspace } from '@/lib/domaines';
 
 /**
  * Les pages légales, modifiables sans mise en production.
@@ -123,6 +124,11 @@ export default function PagesLegalesPage() {
   const [enregistrementProfil, setEnregistrementProfil] = useState(false);
 
   const page = pages.find((p) => p.slug === slug);
+  const lienApercu = page
+    ? page.slug.startsWith('drive-')
+      ? DOMAINE_DRIVE && CLOISONNEMENT_ACTIF ? lienVersEspace('drive', `/${page.slug.slice('drive-'.length)}`) : null
+      : `/${page.slug}`
+    : null;
 
   const partirDe = (p: Page, profil: ProfilLegal): Brouillon => ({
     titre: restaurerVariables(p.titre, profil),
@@ -359,13 +365,15 @@ export default function PagesLegalesPage() {
                   })}
                   {page.publieLe ? t('depuis', { date: date(page.publieLe) }) : t('jamaisPublie')}
                 </p>
-                <Link
-                  href={`/${page.slug}`}
-                  target="_blank"
-                  className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900"
-                >
-                  {t('voirPublique')} <ExternalLink size={14} />
-                </Link>
+                {lienApercu && (
+                  <Link
+                    href={lienApercu}
+                    target="_blank"
+                    className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900"
+                  >
+                    {t('voirPublique')} <ExternalLink size={14} />
+                  </Link>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-4">

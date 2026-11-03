@@ -2,8 +2,15 @@ import { headers } from 'next/headers';
 import { espaceDuDomaine } from '@/lib/domaines';
 import LoginForm from './LoginForm';
 import type { MarqueConnexion } from '@/components/auth/LogoConnexion';
+import { cheminInterne } from '@/lib/chemin-interne';
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const retour = cheminInterne(params.next);
   const entetes = await headers();
   const hote = entetes.get('x-forwarded-host') || entetes.get('host') || '';
   const espace = espaceDuDomaine(hote);
@@ -17,6 +24,6 @@ export default async function LoginPage() {
         ? 'zupdrive'
         : 'zupeat';
 
-  return <LoginForm marque={marque} />;
+  return <LoginForm marque={marque} retour={retour} />;
 }
 

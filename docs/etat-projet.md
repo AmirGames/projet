@@ -11,6 +11,169 @@
 
 ## État courant
 
+### Actualisation — 3 novembre 2026 : MVP ZupDrive Namur
+
+Le périmètre retenu est un pilote fermé dans la commune de Namur, avec les
+classes Standard (1–4 passagers) et XL (5–6). Les parcours web/API et les apps
+passager/chauffeur couvrent l'inscription et la validation du chauffeur, les
+devis, la commande, l'attribution, le suivi, les annulations, le paiement
+carte, l'administration, les incidents essentiels et le portail société taxi
+`/societe` (dossier, pièces, véhicules, chauffeurs et courses). Le détail des
+choix et des limites est dans le [périmètre MVP ZupDrive](zupdrive-mvp-scope.md).
+
+La base locale dédiée `privacy_test` contient les 76 migrations Prisma. Le
+2 novembre, les 46 suites ZupDrive passent (605 tests), avec
+`--detectOpenHandles` et sans handle ouvert signalé. Avec les suites de
+recherche d'adresse signée et de configuration d'environnement, la validation
+combinée passe 48/48 suites et 619/619 tests.
+Backend et frontend passent TypeScript; le lint ciblé frontend, le lint et le
+typecheck des deux apps mobiles passent. Le build et le lint backend passent
+également après les derniers changements. Les tests mobiles passent 70/70 :
+21 passager et 49 chauffeur. Les apps Expo ont été exportées pour web, iOS et
+Android; les trois bundles du passager ont été ré-exportés avec la preuve
+d'adresse. Le build Next de
+production réussit avec un cache SWC dédié aux permissions restreintes
+(compilation, TypeScript et génération de 110 routes); le test du portail
+société passe 2/2 avec ce même cache. La configuration ts-jest a été migrée
+hors de l'option dépréciée `globals`; la suite complète repasse sans cet
+avertissement. Le cache Windows par défaut reste
+incompatible avec les ACL de cette session. Aucun binaire natif signé ni course
+réelle sur appareil n'a été vérifié.
+
+La recette navigateur Chrome du 2 novembre passe **27/27 contrôles** sur une
+base PostgreSQL temporaire isolée : tarif Standard, chauffeur en ligne,
+commande Namur–Jambes, attribution, suivi des étapes, fin de course, notes et
+contrôle administratif, sans erreur console. La recherche d'adresse dans le
+navigateur a utilisé l'API réelle et ses preuves signées Photon. La carte et
+ses repères ont fonctionné avec tuiles blanches et position GPS simulées. Le
+paiement Stripe/3DS et les appareils mobiles ne faisaient pas partie de cette
+recette. Les serveurs et la base jetable ont été arrêtés puis supprimés.
+
+La recette navigateur Chrome du portail société taxi passe aussi **38/38
+contrôles** sur une base PostgreSQL temporaire isolée : création du dossier,
+dépôt et examen des pièces, preuve des titres officiels, véhicule Standard,
+invitation et validation du chauffeur, affectation, isolement des pièces et
+retrait du chauffeur. Aucun message d'erreur console n'a été relevé. Les pages
+régionales `/fr-fr/mentions-legales`, `/fr-fr/cgu` et `/fr-fr/restaurants`
+répondent également en HTTP 200 après correction de la boucle de redirection.
+Le script refuse toute base autre que la base locale jetable explicitement
+autorisée. Le build de production Next repasse après ces correctifs.
+
+Le 3 novembre, les pages légales ZupDrive ont été séparées de celles de ZupEat.
+Le site affiche les documents de sa marque, et les brouillons restent masqués
+sur ZupDrive. Les passagers acceptent les conditions du trajet; les chauffeurs
+et sociétés taxi acceptent leurs documents lors de l'ouverture du dossier. Les
+versions et dates sont conservées. En production, inscription, dossier et
+commande restent bloqués tant que les documents ZupDrive ne sont pas publiés.
+Les builds frontend (110 routes) et backend passent. Le typecheck et le lint
+ciblé de l'app passager passent. Aucune suite automatisée n'a été relancée.
+Le porteur du projet indique qu'aucune entité juridique ne portera ZupDrive
+pour l'instant. La demande SPW et les textes juridiques validés restent donc
+en attente de la désignation de l'exploitant.
+
+Le devis de production exige maintenant une route OSRM réelle : si le service
+est absent ou indisponible, l'API refuse le devis au lieu de facturer une
+distance approximative. L'exemple de production configure l'URL d'une instance
+OSRM privée; ce serveur doit être installé et vérifié avant une recette de
+paiement. Le build backend, Prisma, TypeScript et ses cinq bundles API/CLI
+passent après ce changement; le lint ciblé et `git diff --check` passent aussi.
+Aucune suite automatisée n'a été relancée.
+
+La session de travail ne dispose ni de `adb` ni d'un émulateur Android; aucune
+app n'a été installée ou validée sur appareil pendant cette mise à jour. Les
+scénarios restants sont dans le [guide de validation mobile chauffeur](validation-mobile-zupdrive-driver.md).
+
+Le scan ZAP 2.17 du 1er novembre sur `https://zupdrive.com` recensait 0 alerte
+haute, 4 moyennes (CSP incomplète ou en `report-only`), 3 faibles (en-têtes
+cross-origin) et 6 informatives. Le périmètre ZAP était un spider GET passif
+d'une minute sans compte ni scan actif. Le code local règle désormais
+`CSP_MODE_ZUPDRIVE=enforce` par défaut pour les hôtes ZupDrive, sans changer le
+mode partagé des autres marques. En enforce, une seule CSP complète est servie;
+`form-action` est vérifié et COOP/CORP sont ajoutés. COEP reste volontairement à évaluer avec les
+ressources tierces. La recette CSP locale du build de production en enforce passe
+**130/130** sur 11 pages, dont ZupDrive, trajet et société : nonces distincts,
+aucune politique partielle concurrente, aucune violation navigateur et injection
+bloquée. Une requête HTTP locale avec `Host: zupdrive.com` confirme le routage
+vers une CSP complète enforce lorsque la CSP générique reste report-only.
+En mode report-only, les scripts runtime Next ne sont pas noncés : le contrôle
+Chrome générique a 22 échecs et la réponse vérifiée avec `Host: zupdrive.com`
+contient 19 scripts sans nonce. Ne pas utiliser ce mode pour auditer ZupDrive
+avant correction; garder `enforce` et compléter par un scan de préproduction.
+Le style inline reste permis pour React et Leaflet.
+Le rapport précède ces changements : il faut relancer ZAP sur la préproduction,
+y compris avec des comptes et les parcours de paiement, avant de clore l'audit.
+
+Le devis ZupDrive utilise maintenant des sélections d'adresse géocodées et
+signées par le backend (validité 30 minutes). L'API reconstruit l'adresse et
+ses coordonnées depuis la preuve, puis contrôle code postal et polygone de
+Namur; le client ne peut plus substituer ses propres coordonnées. Les favoris
+sont validés à l'enregistrement; les anciens favoris sans marque de validation
+ne sont plus proposés avant re-sélection. Un contrôle ponctuel avec Photon a
+renvoyé une adresse 5002 à Namur (≈443 m dedans, acceptée) et une adresse 5080
+à La Bruyère (≈290 m dehors, refusée); les deux preuves étaient valides. Les
+distances sont approximatives. La recette web complète a ensuite passé 27/27
+contrôles avec l'autocomplétion réelle et les preuves signées. Il reste à
+vérifier des points proches des limites dans l'interface, à faire la recette
+sur appareil et à confirmer la concordance de la zone commerciale avec la
+frontière administrative.
+
+Le 2 novembre, la revue des textes SPW/WALLEX a précisé les justificatifs taxi
+pour Namur. L'examen administratif d'une licence ou d'un certificat de capacité
+demande désormais une référence de vérification, la confirmation de la commune
+de Namur et, pour une licence, le type de service taxi constaté (rue ou station).
+Ces éléments sont enregistrés dans la note d'examen et le journal; le contrôle
+reste humain, sans accès au registre public depuis l'application. TypeScript
+backend/frontend et lint ciblé passent après ce changement. Les dates sans heure expirent
+maintenant à la fin du jour civil en Europe/Bruxelles, et le formulaire du
+chauffeur distingue la revalidation annuelle. Les exigences du SPW et les liens
+officiels à confirmer avec la Ville sont détaillés dans
+[le périmètre ZupDrive](zupdrive-mvp-scope.md).
+
+Le 3 novembre, la revue du règlement communal adopté le 18 mars 2025 a révélé deux conditions
+qui n'étaient pas dans le portail société : identification préalable du véhicule
+par la police et plaques communales avant-droit/intérieure. Le dépôt de cette
+preuve est maintenant exigé pour chaque véhicule de société wallonne et pour le
+véhicule indépendant; sans pièce approuvée, il ne peut pas être conforme. Le
+même texte fixe, pour une réservation par plateforme, 1,90 €/km et un minimum
+de 8,20 €. Le tarif Wallonie est verrouillé sur ces montants, sans prise en
+charge, attente ou majoration dynamique; Standard et XL utilisent le même
+barème. L'admin ne peut pas enregistrer une autre valeur et un devis refuse une
+configuration historique qui ne serait plus conforme. L'entrée en vigueur du
+règlement dépend de sa publication, à faire confirmer par la Ville avant toute
+ouverture. Le conseil a aussi adopté une taxe 2026 de 500 € par véhicule/an,
+avec réductions/exemptions prévues; sa publication et son enrôlement restent à
+vérifier.
+Le typecheck backend/frontend et ESLint ciblé passent après ces changements;
+aucune suite automatisée n'a été relancée dans cette mise à jour.
+Le 3 novembre, un build de production Next 16.4.3 est passé avec Webpack :
+compilation, TypeScript et génération des 110 routes. Il a fallu exécuter les
+workers hors du bac à sable Windows avec le cache SWC privé du profil utilisateur. La
+commande standard `npm run build` sélectionne désormais explicitement le mode
+Webpack documenté : `next build` en mode Turbopack panique au lancement de son
+sous-processus CSS, y compris hors sandbox.
+Le build backend via `cmd.exe` régénère Prisma, passe TypeScript et produit les
+cinq bundles API/CLI avec un code de sortie 0.
+
+Un contrôle opérationnel du parcours SOS a ensuite détecté un ancien numéro
+français (17) dans l'application belge. Il a été remplacé par le 101 pour la
+police et le 112 pour l'ambulance et les pompiers, dans l'app passager, l'API,
+les e-mails et la documentation. Sources : Police Fédérale et 112.be. Vérifié
+par le test SOS backend **11/11**, les tests passager **21/21**, le lint et le
+typecheck de l'app. Le test de préparation pilote vérifie aussi le refus en
+production lorsque l'agrément n'est pas confirmé, documenté ou valide. Les
+tests backend du périmètre passent **48/48 suites et 619/619 tests**; build et lint
+backend sont verts.
+
+La confirmation de l'agrément wallon en production exige désormais une
+référence SPW et une date d'expiration non échue; ces valeurs manquent tant que
+l'agrément n'est pas obtenu. Le pilote n'est pas ouvert. La commission de 20 %
+définie par défaut, le traitement financier des chauffeurs en société,
+l'assistance surveillée et les horaires restent à valider. Stripe
+TEST et son webhook n'ont pas été essayés avec des clés réelles de test. Aucun
+paiement Stripe TEST/3DS, déploiement ZupDrive ni parcours en production n'est
+revendiqué; ces modifications locales ne sont pas encore intégrées à une CI
+réussie.
+
 ### Actualisation — 1 novembre 2026 : parcours API attribution/livraison/versement
 
 Les corrections locales d'attribution, de tournée, de preuve de livraison et

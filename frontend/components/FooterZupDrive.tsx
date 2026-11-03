@@ -3,13 +3,13 @@
 import Link from '@/components/LienRegional';
 import { useTranslations } from 'next-intl';
 import { accueilDe, lienVersEspace } from '@/lib/domaines';
-import { EMAIL_CONTACT, PAGES_LEGALES } from '@/lib/editeur';
+import { EMAIL_CONTACT_DRIVE, PAGES_LEGALES_DRIVE } from '@/lib/editeur';
 
 export function FooterZupDrive() {
   const t = useTranslations('footerZupdrive');
   const legal = useTranslations('piedDeGroupe');
-  const liensLegaux = PAGES_LEGALES
-    .filter(({ cle }) => ['mentions', 'cgu', 'confidentialite', 'cookies', 'accessibilite'].includes(cle))
+  const liensLegaux = PAGES_LEGALES_DRIVE
+    .filter(({ cle }) => ['mentions', 'cgu', 'cgv', 'confidentialite', 'cookies', 'accessibilite'].includes(cle))
     .map((page) => ({
       href: page.href,
       label: legal(`pages.${page.cle}`),
@@ -32,7 +32,7 @@ export function FooterZupDrive() {
     {
       titre: t('help'),
       liens: [
-        { href: `mailto:${EMAIL_CONTACT}`, label: t('contact') },
+        ...(EMAIL_CONTACT_DRIVE ? [{ href: `mailto:${EMAIL_CONTACT_DRIVE}`, label: t('contact') }] : []),
         ...liensLegaux,
       ],
     },

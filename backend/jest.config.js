@@ -1,6 +1,8 @@
 export default {
-  preset: 'ts-jest',
-  transform: { '^.+\\.tsx?$': 'ts-jest', '^.+\\.js$': '<rootDir>/jest.esm-transform.cjs' },
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: { esModuleInterop: true, allowSyntheticDefaultImports: true } }],
+    '^.+\\.js$': '<rootDir>/jest.esm-transform.cjs',
+  },
   transformIgnorePatterns: ['/node_modules/(?!@otplib/|@noble/hashes/|@scure/base/)'],
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
@@ -17,14 +19,6 @@ export default {
     '/node_modules/',
     '/dist/',
   ],
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-      },
-    },
-  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

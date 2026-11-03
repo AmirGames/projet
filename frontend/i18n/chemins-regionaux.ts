@@ -25,6 +25,8 @@ const SEGMENTS_REGIONAUX = [
   "cgv",
   "conditions-commercants",
   "conditions-livreurs",
+  "conditions-chauffeurs",
+  "conditions-societes",
   "confidentialite",
   "cookies",
   "accessibilite",

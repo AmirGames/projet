@@ -24,6 +24,12 @@ const router = Router();
 router.use(authMiddleware, exigerPermission("zupdrive", "DRIVE"));
 
 const idSchema = z.string().min(1).max(64);
+const preuveVerificationTitreSchema = z.object({
+  verificationAutorite: z.boolean().optional(),
+  referenceAutorite: z.string().trim().max(200).optional(),
+  communeAutorisee: z.string().trim().max(80).optional(),
+  typeServiceTaxi: z.enum(["RUE", "STATION"]).optional(),
+});
 
 // GET /api/zupdrive/admin/chauffeurs?statut=SOUMIS&limit=20&offset=0
 router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction) => {
@@ -59,10 +65,8 @@ router.get("/chauffeurs/:id", async (req: Request, res: Response, next: NextFunc
 // PATCH /api/zupdrive/admin/chauffeurs/:id/documents/:documentId — valider ou refuser une pièce
 router.patch("/chauffeurs/:id/documents/:documentId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const body = z
-      .object({ approuve: z.boolean(), note: z.string().trim().max(500).optional() })
-      .strict()
-      .parse(req.body);
+    const body = z.object({ approuve: z.boolean(), note: z.string().trim().max(500).optional() })
+      .merge(preuveVerificationTitreSchema).strict().parse(req.body);
     const chauffeurId = idSchema.parse(req.params.id);
 
     const { avant, piece, retabli } = await ChauffeurOnboardingService.examinerPiece(
@@ -172,10 +176,8 @@ router.get("/societes/:id", async (req: Request, res: Response, next: NextFuncti
 // PATCH /api/zupdrive/admin/societes/:id/documents/:documentId — une pièce de la société ou de l'un de ses véhicules
 router.patch("/societes/:id/documents/:documentId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const body = z
-      .object({ approuve: z.boolean(), note: z.string().trim().max(500).optional() })
-      .strict()
-      .parse(req.body);
+    const body = z.object({ approuve: z.boolean(), note: z.string().trim().max(500).optional() })
+      .merge(preuveVerificationTitreSchema).strict().parse(req.body);
     const societeId = idSchema.parse(req.params.id);
     const { avant, piece, vehicule } = await SocieteDriveService.examinerPiece(
       societeId,
@@ -287,6 +289,29 @@ router.put("/tarifs/:region", async (req: Request, res: Response, next: NextFunc
         : null,
       apres: valeurs,
     });
+    res.json({ success: true, data: apres });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/zupdrive/admin/tarifs/:region/XL — fixer ou désactiver le tarif XL
+router.put("/tarifs/:region/XL", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const region = z.enum(REGIONS).parse(req.params.region);
+    const valeurs = z
+      .object({
+        priseEnChargeCentimes: centimes,
+        parKmCentimes: centimes,
+        parMinuteCentimes: centimes,
+        minimumCentimes: centimes,
+        actif: z.boolean(),
+      })
+      .strict()
+      .parse(req.body);
+
+    const { avant, apres } = await TarificationDriveService.definirXL(region, valeurs);
+    await journaliser(req, "ZUPDRIVE_SET_TARIF_XL", region, { avant, apres: valeurs });
     res.json({ success: true, data: apres });
   } catch (err) {
     next(err);
