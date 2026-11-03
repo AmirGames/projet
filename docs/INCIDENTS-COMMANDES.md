@@ -31,10 +31,12 @@ dans la même transaction. Une réponse concurrente ne peut pas écraser une
 décision déjà publiée. Le client relit ses dossiers ouverts toutes les vingt
 secondes ; la file du support se relit toutes les trente secondes.
 
-Répondre ne modifie pas les paiements. Un remboursement éventuel reste à traiter
-dans les outils de facturation existants, avec leurs propres permissions et
-contrôles. Aucun e-mail, SMS, remboursement ou paiement réel n'est exécuté par
-ce changement.
+Répondre ne modifie pas les paiements. Les membres ayant le droit Facturation
+en modification peuvent désormais examiner et déclencher un remboursement
+depuis ce même écran : articles sélectionnés ou solde d'une commande terminée.
+Les règles, données et vérifications sont décrites dans
+[REMBOURSEMENTS-INCIDENTS.md](REMBOURSEMENTS-INCIDENTS.md). Aucun paiement réel,
+e-mail ou SMS n'a été exécuté pendant ce développement.
 
 ## Données et installation
 

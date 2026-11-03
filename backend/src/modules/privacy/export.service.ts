@@ -20,7 +20,7 @@ export async function collectExport(userId: string) {
     const profile = await tx.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true, emailVerified: true, createdAt: true, updatedAt: true } });
     if (!profile) throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
     const customers = await tx.customer.findMany({ where: { OR: [{ userId }, ...(profile.emailVerified ? [{ email: profile.email, userId: null, deletedAt: null }] : [])] }, omit: { savedAddresses: false }, include: { favorites: true, carts: true, reviews: true, driverRatings: true } });
-    const orders = await tx.order.findMany({ where: { customerId: { in: customers.map((c) => c.id) } }, include: { items: true, payments: true, invoice: true, pourboireApres: true, issues: true } });
+    const orders = await tx.order.findMany({ where: { customerId: { in: customers.map((c) => c.id) } }, include: { items: true, payments: true, invoice: true, pourboireApres: true, issues: { include: { refundOperation: { select: { kind: true, amountCents: true, currency: true, status: true, createdAt: true, completedAt: true } } } } } });
     const courier = await tx.courier.findUnique({ where: { userId }, include: { documents: true, payouts: true, supportMessages: true, deliveries: true, tips: true, ratings: true, offers: true, deliveryIncidents: true } });
     const chauffeur = await tx.chauffeurDrive.findUnique({ where: { userId }, include: { documents: true, courses: true, notes: true } });
     const rides = await tx.courseDrive.findMany({ where: { passagerId: userId }, include: { notes: true, messages: true } });

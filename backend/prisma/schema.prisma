@@ -1232,6 +1232,7 @@ model OrderIssue {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refundOperation RefundOperation?
 
   @@unique([orderId, category])
   @@index([status, createdAt])
@@ -1303,7 +1304,7 @@ model Payment {
   /// commerçant. La différence avec refundedAmount reste à corriger au
   /// prochain relevé (ligne 310), jamais en retouchant un relevé passé.
   refundAccountedAmount Decimal @default(0) @db.Decimal(10, 2)
-  refundOperation RefundOperation?
+  refundOperations RefundOperation[]
 
   // Relations
   order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -4175,10 +4176,22 @@ enum RefundOperationStatus {
   ABANDONED
 }
 
+enum RefundOperationKind {
+  FULL_ORDER
+  ISSUE_ITEMS
+  ISSUE_BALANCE
+}
+
 model RefundOperation {
   id String @id @default(cuid())
-  paymentId String @unique
+  paymentId String
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  kind RefundOperationKind @default(FULL_ORDER)
+  supportIssueId String? @unique
+  supportIssue OrderIssue? @relation(fields: [supportIssueId], references: [id], onDelete: SetNull)
+  /// Quantités et montants calculés au serveur, figés lors de la décision.
+  items Json @default("[]")
+  refundedBeforeCents Int @default(0)
   paymentIntentId String
   amountCents Int
   currency String
@@ -4197,6 +4210,7 @@ model RefundOperation {
   updatedAt DateTime @updatedAt
   history RefundOperationEvent[]
   @@index([status, nextAttemptAt])
+  @@index([paymentId, createdAt])
 }
 
 /// Journal conservé ; un worker dont le bail est perdu ne peut plus écrire.

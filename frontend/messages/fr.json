@@ -1646,7 +1646,6 @@
     "retry": "Réessayer",
     "editTitle": "Modifier le profil du livreur",
     "editInfo": "Le nom et le téléphone peuvent être corrigés ici. L’email de connexion et le véhicule suivent des procédures séparées. Chaque modification est journalisée.",
-    "editReason": "Motif de la modification",
     "saveError": "Impossible d’enregistrer la modification.",
     "saveSuccess": "Le profil du livreur a été mis à jour.",
     "save": "Enregistrer",
@@ -2212,7 +2211,11 @@
     "vehicleDocumentAdd": "Ajouter un fichier",
     "vehicleDocumentUploading": "Envoi…",
     "vehicleDocumentUploaded": "Document envoyé au support.",
-    "vehicleTypes": { "bike": "Vélo", "scooter": "Scooter", "car": "Voiture" }
+    "vehicleTypes": {
+      "bike": "Vélo",
+      "scooter": "Scooter",
+      "car": "Voiture"
+    }
   },
   "driverAuth": {
     "login": "Connexion",
@@ -6227,8 +6230,6 @@
     "mobileTitle": "ZupDrive sur votre smartphone",
     "mobileText": "Réservez et suivez vos trajets simplement depuis votre mobile.",
     "reserverEnLigne": "Réserver en ligne",
-    "navigationLabel": "Navigation ZupDrive",
-    "navAccueil": "Accueil",
     "navEngagements": "Nos engagements",
     "engagementsLabel": "Les engagements ZupDrive",
     "prix": "Un prix annoncé à l’avance",
@@ -7016,7 +7017,7 @@
     "erreurEnvoi": "Impossible d’envoyer la demande.",
     "reessayer": "Réessayer",
     "titreAdmin": "Incidents des commandes clients",
-    "aideAdmin": "Répondez aux signalements des clients. Cette action enregistre une réponse ; un remboursement éventuel doit être traité séparément dans la facturation.",
+    "aideAdmin": "Répondez aux signalements des clients. Le droit Facturation en modification permet de rembourser les articles ou le solde d’une commande terminée. Une réponse seule ne déclenche aucun remboursement.",
     "statut": "Statut",
     "tous": "Tous",
     "actualiser": "Actualiser",
@@ -7038,6 +7039,30 @@
       "OPEN": "En attente du support",
       "RESOLVED": "Réponse apportée",
       "REJECTED": "Demande refusée"
+    },
+    "delaiBancaire": "L’apparition sur votre compte dépend de votre banque, généralement sous 5 à 10 jours.",
+    "ouvrirRemboursement": "Examiner le remboursement",
+    "titreRemboursement": "Remboursement de la commande",
+    "soldeRemboursable": "Solde restant : {montant}",
+    "modeRemboursement": "Type de remboursement",
+    "articlesSelectionnes": "Articles sélectionnés",
+    "soldeIntegral": "Tout le solde restant",
+    "articlesARembourser": "Articles à rembourser",
+    "montantRemboursement": "Montant à rembourser : {montant}",
+    "calculRemboursement": "Les articles sont calculés après répartition de la remise, sans frais ni pourboire. Le solde intégral inclut les frais et le pourboire encore encaissés.",
+    "raisonRemboursement": "Motif de la décision",
+    "confirmerRemboursement": "Je confirme le remboursement de {montant} au client.",
+    "lancerRemboursement": "Confirmer le remboursement",
+    "reprendreDemande": "Reprendre la même demande",
+    "aideVerification": "Le résultat nécessite une vérification. Une nouvelle lecture conserve la demande initiale et ne crée pas de nouvelle décision de remboursement.",
+    "verifierRemboursement": "Vérifier à nouveau",
+    "remboursementStatuts": {
+      "REQUESTED": "Remboursement demandé",
+      "PROCESSING": "Remboursement en cours",
+      "WAITING_STRIPE": "Remboursement en attente de confirmation",
+      "RETRY": "Vérification du remboursement en cours",
+      "SUCCEEDED": "Remboursement effectué",
+      "ABANDONED": "Remboursement à vérifier par le support"
     }
   }
 }

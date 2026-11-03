@@ -450,7 +450,7 @@ describe('incidents accessibles au seul client ou à son jeton', () => {
     db.order.findFirst.mockResolvedValue(commande());
     db.membership.findFirst.mockResolvedValue(null);
     jest.spyOn(OrderIssueService, 'etat').mockResolvedValue({ categories: ['OTHER'], refundPossible: true, items: [], dossiers: [] });
-    jest.spyOn(OrderIssueService, 'signaler').mockResolvedValue({ id: 'd1', category: 'OTHER', message: 'Un problème à examiner.', items: [], requestRefund: false, status: 'OPEN', response: null, resolvedAt: null, createdAt: new Date() });
+    jest.spyOn(OrderIssueService, 'signaler').mockResolvedValue({ id: 'd1', category: 'OTHER', message: 'Un problème à examiner.', items: [], requestRefund: false, status: 'OPEN', response: null, resolvedAt: null, createdAt: new Date(), refundOperation: null });
   });
   afterEach(() => { jest.restoreAllMocks(); });
   it.each([undefined, 'user-inconnu', 'user-livreur', 'user-plateforme'])('refuse un signalement à %s sans jeton client', async (userId) => {

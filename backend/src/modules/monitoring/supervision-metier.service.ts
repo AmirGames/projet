@@ -193,9 +193,9 @@ export async function mesurer(maintenant = new Date()): Promise<MesuresMetier> {
         },
       }),
       db.payment.count({ where: { status: "SUCCEEDED", OR: [
-        { refundOperation: { is: { status: "ABANDONED" } } },
+        { refundOperations: { some: { status: "ABANDONED" } } },
         { order: { OR: [{ status: "REJECTED" }, { deletedAt: { not: null } }] },
-          OR: [{ refundOperation: { is: null } }, { refundOperation: { is: { status: { not: "SUCCEEDED" }, createdAt: { lt: avant(DELAIS_METIER.webhookBloque) } } } }] },
+          OR: [{ refundOperations: { none: {} } }, { refundOperations: { some: { status: { not: "SUCCEEDED" }, createdAt: { lt: avant(DELAIS_METIER.webhookBloque) } } } }] },
       ] } }),
       // Seulement une fois les reversements activés, et après l'arrêté du lundi.
       debutReversements && maintenant >= finDeSemaineCloseLe

@@ -50,6 +50,8 @@ import { db } from "../../../services/db";
 import { RefundService } from "../refund.service";
 import { paymentService } from "../payment.service";
 import { OrderAcceptanceService } from "../../orders/order-acceptance.service";
+import { OrderIssueRefundService, remboursementIncidentSchema } from "../../orders/order-issue-refund.service";
+import { OrderIssueService } from "../../orders/order-issue.service";
 
 // Base réelle, jamais une base de production. Activée explicitement en CI.
 const integration =
@@ -60,6 +62,7 @@ integration("A03 — transactions PostgreSQL et Stripe simulé", () => {
   let orderId: string;
   let paymentId: string;
   let intentionId: string;
+  let adminId: string;
   let externe: any[] = [];
   let montant = 3574; // 32,74 € + 3 € de pourboire
   let statut = "succeeded";
@@ -76,7 +79,7 @@ integration("A03 — transactions PostgreSQL et Stripe simulé", () => {
     metadata: { orderId },
   });
   const operation = () =>
-    db.refundOperation.findUniqueOrThrow({ where: { paymentId } });
+    db.refundOperation.findUniqueOrThrow({ where: { idempotencyKey: `a03-remboursement-${paymentId}` } });
   const evenement = async (
     type = "payment_intent.succeeded",
     objet: any = intention(),
@@ -127,6 +130,7 @@ integration("A03 — transactions PostgreSQL et Stripe simulé", () => {
       data: { orgId: org.id, name: prefixe, slug: prefixe },
     });
     storeId = store.id;
+    adminId = (await db.user.create({ data: { email: `${prefixe}@example.test`, passwordHash: await bcrypt.hash('TestRefundLocal!', 4) } })).id;
   });
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -208,7 +212,9 @@ integration("A03 — transactions PostgreSQL et Stripe simulé", () => {
       },
     });
     const store = await db.store.findUnique({ where: { id: storeId } });
+    await db.order.deleteMany({ where: { storeId } });
     if (store) await db.organization.delete({ where: { id: store.orgId } });
+    await db.user.delete({ where: { id: adminId } });
     await db.$disconnect();
   });
 
@@ -537,5 +543,69 @@ integration("A03 — transactions PostgreSQL et Stripe simulé", () => {
         expect.objectContaining({ orderId, stripeRefundId: null }),
       ]),
     );
+  });
+
+  async function incidentComplet() {
+    await db.order.update({ where: { id: orderId }, data: { status: 'COMPLETED', paymentStatus: 'SUCCEEDED', submittedAt: new Date() } });
+    await db.payment.update({ where: { id: paymentId }, data: { status: 'SUCCEEDED' } });
+    const product = await db.product.create({ data: { storeId, name: 'Pizza test', sku: randomUUID(), price: 16.37 } });
+    const ligne = await db.orderItem.create({ data: { orderId, productId: product.id, quantity: 2, price: 16.37, total: 32.74 } });
+    const dossier = await db.orderIssue.create({ data: { orderId, category: 'MISSING_ITEM', requestRefund: true, message: 'Il manque une pizza.' } });
+    const demande = remboursementIncidentSchema.parse({ mode: 'ITEMS', items: [{ lineId: ligne.id, quantity: 1 }], reason: 'Article manquant confirmé.', expectedAmountCents: 1637 });
+    return { dossier, demande };
+  }
+
+  it('incident : six demandes et workers concurrents ne rendent qu’une fois l’article', async () => {
+    const { dossier, demande } = await incidentComplet();
+    const operations = await Promise.all(Array.from({ length: 6 }, () => OrderIssueRefundService.demander(dossier.id, adminId, demande)));
+    expect(new Set(operations.map((o) => o.id)).size).toBe(1);
+    expect(await db.systemAuditLog.count({ where: { target: dossier.id, action: 'ORDER_ISSUE_REFUND_REQUESTED' } })).toBe(1);
+    await Promise.all(Array.from({ length: 6 }, () => RefundService.traiterLesDus(1, new Date(), operations[0].id)));
+    expect(api.refunds.create).toHaveBeenCalledTimes(1);
+    const paiement = await db.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    expect(paiement.status).toBe('SUCCEEDED');
+    expect(Number(paiement.refundedAmount)).toBe(16.37);
+    const publicEtat = await OrderIssueService.etat(orderId);
+    expect(publicEtat.dossiers[0].refundOperation).toMatchObject({ status: 'SUCCEEDED', amountCents: 1637 });
+    expect(JSON.stringify(publicEtat)).not.toContain(intentionId);
+  });
+
+  it('incident : deux dossiers concurrents ne réservent pas le même solde', async () => {
+    const { dossier, demande } = await incidentComplet();
+    const autre = await db.orderIssue.create({ data: { orderId, category: 'OTHER', requestRefund: true, message: 'Autre demande à vérifier.' } });
+    const resultats = await Promise.allSettled([OrderIssueRefundService.demander(dossier.id, adminId, demande), OrderIssueRefundService.demander(autre.id, adminId, demande)]);
+    expect(resultats.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(await db.refundOperation.count({ where: { paymentId } })).toBe(1);
+    expect(api.refunds.create).not.toHaveBeenCalled();
+  });
+
+  it('incident : l’article puis le solde rendent exactement le paiement, même avec un webhook retardé', async () => {
+    const { dossier, demande } = await incidentComplet();
+    const partiel = await OrderIssueRefundService.demander(dossier.id, adminId, demande);
+    await RefundService.traiterLesDus(1, new Date(), partiel.id);
+    const autre = await db.orderIssue.create({ data: { orderId, category: 'WRONG_ORDER', requestRefund: true, message: 'Commande incorrecte confirmée.' } });
+    const solde = await OrderIssueRefundService.demander(autre.id, adminId, remboursementIncidentSchema.parse({ mode: 'BALANCE', items: [], reason: 'Remboursement du solde validé.', expectedAmountCents: 1937 }));
+    await RefundService.traiterLesDus(1, new Date(), solde.id);
+    await evenement('refund.updated', { ...externe[0], status: 'pending' });
+    await RefundService.traiterLesDus(20, new Date(Date.now() + 1));
+    const paiement = await db.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    expect(Number(paiement.refundedAmount)).toBe(35.74);
+    expect(paiement.status).toBe('REFUNDED');
+    expect(externe.reduce((s, r) => s + r.amount, 0)).toBe(3574);
+    expect(api.refunds.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('incident : audit impossible annule aussi la réservation financière', async () => {
+    const { dossier, demande } = await incidentComplet();
+    await expect(OrderIssueRefundService.demander(dossier.id, 'acteur-inexistant', demande)).rejects.toBeDefined();
+    expect(await db.refundOperation.count({ where: { paymentId } })).toBe(0);
+  });
+
+  it('incident : un refus et une décision de remboursement concurrents restent incompatibles', async () => {
+    const { dossier, demande } = await incidentComplet();
+    const resultats = await Promise.allSettled([OrderIssueRefundService.demander(dossier.id, adminId, demande), OrderIssueService.repondre(dossier.id, adminId, 'REJECTED', 'Demande refusée après examen.')]);
+    expect(resultats.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const relu = await db.orderIssue.findUniqueOrThrow({ where: { id: dossier.id }, include: { refundOperation: true } });
+    expect(relu.status === 'REJECTED' && !!relu.refundOperation).toBe(false);
   });
 });

@@ -1646,7 +1646,6 @@
     "retry": "Retry",
     "editTitle": "Edit courier profile",
     "editInfo": "You can correct the name and phone here. Login email and vehicle changes follow separate review flows. Every change is audited.",
-    "editReason": "Reason for this change",
     "saveError": "The change couldn't be saved.",
     "saveSuccess": "The courier profile has been updated.",
     "save": "Save",
@@ -2212,7 +2211,11 @@
     "vehicleDocumentAdd": "Add file",
     "vehicleDocumentUploading": "Uploading…",
     "vehicleDocumentUploaded": "Document sent to support.",
-    "vehicleTypes": { "bike": "Bike", "scooter": "Scooter", "car": "Car" }
+    "vehicleTypes": {
+      "bike": "Bike",
+      "scooter": "Scooter",
+      "car": "Car"
+    }
   },
   "driverAuth": {
     "login": "Login",
@@ -6227,8 +6230,6 @@
     "mobileTitle": "ZupDrive on your smartphone",
     "mobileText": "Book and follow your rides easily from your phone.",
     "reserverEnLigne": "Book online",
-    "navigationLabel": "ZupDrive navigation",
-    "navAccueil": "Home",
     "navEngagements": "Our commitments",
     "engagementsLabel": "ZupDrive commitments",
     "prix": "Know your fare upfront",
@@ -7016,7 +7017,7 @@
     "erreurEnvoi": "Could not submit the request.",
     "reessayer": "Try again",
     "titreAdmin": "Customer order incidents",
-    "aideAdmin": "Respond to customer reports. This action records a response; any refund must be processed separately in billing.",
+    "aideAdmin": "Respond to customer reports. Billing write access allows refunds for selected items or the remaining balance of a completed order. A reply alone does not issue a refund.",
     "statut": "Status",
     "tous": "All",
     "actualiser": "Refresh",
@@ -7038,6 +7039,30 @@
       "OPEN": "Awaiting support",
       "RESOLVED": "Response provided",
       "REJECTED": "Request declined"
+    },
+    "delaiBancaire": "The time to appear in your account depends on your bank, usually 5 to 10 days.",
+    "ouvrirRemboursement": "Review refund",
+    "titreRemboursement": "Order refund",
+    "soldeRemboursable": "Remaining balance: {montant}",
+    "modeRemboursement": "Refund type",
+    "articlesSelectionnes": "Selected items",
+    "soldeIntegral": "Entire remaining balance",
+    "articlesARembourser": "Items to refund",
+    "montantRemboursement": "Refund amount: {montant}",
+    "calculRemboursement": "Item refunds include their share of the discount and exclude fees and tips. The entire balance includes fees and tips still paid.",
+    "raisonRemboursement": "Decision reason",
+    "confirmerRemboursement": "I confirm a refund of {montant} to the customer.",
+    "lancerRemboursement": "Confirm refund",
+    "reprendreDemande": "Resume the same request",
+    "aideVerification": "The result requires review. Checking again preserves the original request and does not create a new refund decision.",
+    "verifierRemboursement": "Check again",
+    "remboursementStatuts": {
+      "REQUESTED": "Refund requested",
+      "PROCESSING": "Refund in progress",
+      "WAITING_STRIPE": "Refund awaiting confirmation",
+      "RETRY": "Refund verification in progress",
+      "SUCCEEDED": "Refund completed",
+      "ABANDONED": "Refund requires support review"
     }
   }
 }

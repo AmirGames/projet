@@ -12,6 +12,7 @@ export const incidentCommandeSchema = z.object({
 const CHAMPS_PUBLICS = {
   id: true, category: true, message: true, items: true, requestRefund: true,
   status: true, response: true, resolvedAt: true, createdAt: true,
+  refundOperation: { select: { kind: true, amountCents: true, currency: true, status: true, createdAt: true, completedAt: true } },
 } as const;
 const CHAMPS_COMMANDE = {
   id: true, status: true, paymentStatus: true, submittedAt: true, createdAt: true,
@@ -74,15 +75,19 @@ export const OrderIssueService = {
     const where = { ...(status ? { status } : {}), order: { deletedAt: null } };
     const [dossiers, total] = await Promise.all([
       db.orderIssue.findMany({ where, orderBy: [{ createdAt: "desc" }, { id: "asc" }], skip, take,
-        include: { order: { select: { id: true, status: true, paymentStatus: true, store: { select: { name: true } } } } } }),
+        include: { refundOperation: CHAMPS_PUBLICS.refundOperation, order: { select: { id: true, status: true, paymentStatus: true, store: { select: { name: true } } } } } }),
       db.orderIssue.count({ where }),
     ]);
     return { dossiers, total };
   },
   async repondre(id: string, adminId: string, status: "RESOLVED" | "REJECTED", response: string) {
     return db.$transaction(async (tx) => {
-      const dossier = await tx.orderIssue.findUnique({ where: { id } });
+      const initial = await tx.orderIssue.findUnique({ where: { id } });
+      if (!initial) throw new ApiError(404, "Dossier introuvable", "NOT_FOUND");
+      await tx.order.updateMany({ where: { id: initial.orderId }, data: { updatedAt: new Date() } });
+      const dossier = await tx.orderIssue.findUnique({ where: { id }, include: { refundOperation: { select: { id: true } } } });
       if (!dossier) throw new ApiError(404, "Dossier introuvable", "NOT_FOUND");
+      if (status === "REJECTED" && dossier.refundOperation) throw new ApiError(409, "Un remboursement est déjà engagé pour ce dossier.", "ISSUE_REFUND_ALREADY_REQUESTED");
       if (dossier.status !== "OPEN") {
         if (dossier.status === status && dossier.response === response) return dossier;
         throw new ApiError(409, "Ce dossier a déjà reçu une réponse", "ISSUE_ALREADY_HANDLED");

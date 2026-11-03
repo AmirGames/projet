@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 const db: any = {
-  order: { findFirst: jest.fn() },
+  order: { findFirst: jest.fn(), updateMany: jest.fn() },
   orderIssue: { create: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), updateMany: jest.fn() },
   systemAuditLog: { create: jest.fn() }, $transaction: jest.fn(),
 };
@@ -77,5 +77,10 @@ describe('incidents de commandes', () => {
   it('ne permet pas de remplacer une réponse déjà publiée', async () => {
     db.orderIssue.findUnique.mockResolvedValue({ id: 'd1', status: 'RESOLVED', response: 'Première réponse.' });
     await expect(OrderIssueService.repondre('d1', 'admin', 'REJECTED', 'Autre réponse.')).rejects.toMatchObject({ code: 'ISSUE_ALREADY_HANDLED' });
+  });
+  it('ne permet pas de refuser un dossier dont le remboursement est engagé', async () => {
+    db.orderIssue.findUnique.mockResolvedValue({ id: 'd1', orderId: 'o1', status: 'OPEN', refundOperation: { id: 'r1' } });
+    await expect(OrderIssueService.repondre('d1', 'admin', 'REJECTED', 'Votre demande est refusée.')).rejects.toMatchObject({ code: 'ISSUE_REFUND_ALREADY_REQUESTED' });
+    expect(db.orderIssue.updateMany).not.toHaveBeenCalled();
   });
 });

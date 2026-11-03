@@ -8,8 +8,31 @@ import { paymentService } from "./payment.service";
 import { userIdRequis } from "../auth/utilisateur-requis";
 import { RefundService } from "./refund.service";
 import { isSuperOwner } from "../superowner/shared";
+import { OrderIssueRefundService, remboursementIncidentSchema } from "../orders/order-issue-refund.service";
 
 const router = Router();
+
+// Sous /orders : droit Facturation réel, même depuis l'écran de support.
+router.get("/orders/issues/:id/refund", authMiddleware, isSuperOwner, async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "no-store");
+    res.json({ data: await OrderIssueRefundService.apercu(String(req.params.id)) });
+  } catch (err) { next(err); }
+});
+router.post("/orders/issues/:id/refund", authMiddleware, isSuperOwner, async (req, res, next) => {
+  try {
+    const body = remboursementIncidentSchema.parse(req.body);
+    const operation = await OrderIssueRefundService.demander(String(req.params.id), userIdRequis(req), body);
+    // Le worker reprend la demande durable après le commit, sans appel externe dans la transaction.
+    res.status(202).json({ data: operation });
+  } catch (err) { next(err); }
+});
+router.post("/orders/issues/:id/refund/retry", authMiddleware, isSuperOwner, async (req, res, next) => {
+  try {
+    const { reason } = z.object({ reason: z.string().trim().min(5).max(300) }).strict().parse(req.body);
+    res.status(202).json({ data: await OrderIssueRefundService.reprendre(String(req.params.id), userIdRequis(req), reason) });
+  } catch (err) { next(err); }
+});
 
 // POST /superowner/orders/:id/refund - Rembourser une commande annulée par le support
 //
@@ -64,8 +87,10 @@ router.get("/orders/refunds/review", authMiddleware, isSuperOwner, async (req, r
 
 router.post("/orders/:id/refund/retry", authMiddleware, isSuperOwner, async (req, res, next) => {
   try {
-    const { raison } = z.object({ raison: z.string().trim().min(3).max(300) }).parse(req.body);
-    const operation = await RefundService.reprendre(req.params.id as string, raison, userIdRequis(req));
+    const { raison, operationId } = z.object({ raison: z.string().trim().min(3).max(300), operationId: z.string().min(1).max(100).optional() }).parse(req.body);
+    const operation = operationId
+      ? await RefundService.reprendre(req.params.id as string, raison, userIdRequis(req), operationId)
+      : await RefundService.reprendre(req.params.id as string, raison, userIdRequis(req));
     res.status(202).json({ success: true, operationId: operation.id, operationStatus: operation.status });
   } catch (err) { next(err); }
 });

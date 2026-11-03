@@ -100,6 +100,15 @@ describe("permissions de l'équipe", () => {
     expect(await passer("superowner", membre("ADMIN"), "POST", "/orders/x/refund")).toBe(200);
   });
 
+  it('réserve les remboursements d’incidents à la facturation, y compris les reprises', async () => {
+    for (const path of ['/orders/issues/d1/refund', '/orders/issues/d1/refund/retry']) {
+      expect(sectionDeLaRoute('superowner', path, 'POST')).toBe('billing');
+      expect(await passer('superowner', membre('SUPPORT'), 'POST', path)).toBe(403);
+      expect(await passer('superowner', membre('FACTURATION'), 'POST', path)).toBe(200);
+      expect(await passer('superowner', membre(null, 'ADMIN'), 'POST', path)).toBe(403);
+    }
+  });
+
   it("laisse suspendre sans laisser fermer", async () => {
     expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/suspend")).toBe(200);
     expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/unsuspend")).toBe(200);

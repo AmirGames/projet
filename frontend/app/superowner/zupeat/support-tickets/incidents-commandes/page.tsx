@@ -4,16 +4,27 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { jetonAcces } from '@/lib/jeton-session';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { chargerAcces, type AccesPlateforme } from '@/lib/acces-plateforme';
+import { EtatRemboursement, type RemboursementCommande } from '@/components/EtatRemboursement';
+import { RemboursementIncident } from '@/components/RemboursementIncident';
 
 interface Dossier {
   id: string; category: string; message: string; status: string; response: string | null; requestRefund: boolean;
   items: { lineId: string; name: string; quantity: number }[];
+  refundOperation?: RemboursementCommande | null;
   order: { id: string; status: string; paymentStatus: string; store: { name: string } };
 }
 const URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api/superowner/support-tickets/order-issues';
 
 export default function IncidentsCommandesPage() {
   const t = useTranslations('incidentsCommande');
+  const [acces, setAcces] = useState<AccesPlateforme | null>(null);
+  useEffectChargement(() => {
+    let actif = true;
+    chargerAcces().then((lu) => { if (actif) setAcces(lu); }).catch(() => { if (actif) setAcces(null); });
+    return () => { actif = false; };
+  }, []);
+  const peutRembourser = !!acces?.isSuperOwner || acces?.permissions.billing === 'write';
   const [dossiers, setDossiers] = useState<Dossier[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -61,15 +72,17 @@ export default function IncidentsCommandesPage() {
       <p className="whitespace-pre-wrap">{d.message}</p>
       {d.items.map((i) => <p key={i.lineId} className="text-sm">{i.quantity} × {i.name}</p>)}
       {d.requestRefund && <p className="text-sm font-semibold text-orange-800">{t('remboursementDemande')}</p>}
+      <EtatRemboursement operation={d.refundOperation} />
       {d.response && <p className="whitespace-pre-wrap text-sm">{t('reponseSupport')} {d.response}</p>}
-      {d.status === 'OPEN' && <Reponse key={d.id} id={d.id} onSaved={() => void charger()} />}
+      {d.status === 'OPEN' && <Reponse key={d.id} id={d.id} remboursementEngage={!!d.refundOperation} onSaved={() => void charger()} />}
+      {d.requestRefund && d.status !== 'REJECTED' && peutRembourser && <RemboursementIncident issueId={d.id} onSaved={() => void charger()} />}
     </article>)}
     <div className="flex gap-3"><button type="button" className="rounded border px-3 py-2 disabled:opacity-50" disabled={offset === 0} onClick={() => setOffset((n) => Math.max(0, n - 20))}>{t('precedent')}</button>
       <button type="button" className="rounded border px-3 py-2 disabled:opacity-50" disabled={offset + 20 >= total} onClick={() => setOffset((n) => n + 20)}>{t('suivant')}</button></div>
   </main>;
 }
 
-function Reponse({ id, onSaved }: { id: string; onSaved: () => void }) {
+function Reponse({ id, remboursementEngage, onSaved }: { id: string; remboursementEngage: boolean; onSaved: () => void }) {
   const t = useTranslations('incidentsCommande');
   const [response, setResponse] = useState('');
   const [status, setStatus] = useState('RESOLVED');
@@ -88,7 +101,7 @@ function Reponse({ id, onSaved }: { id: string; onSaved: () => void }) {
   };
   return <div className="space-y-2 border-t pt-3 text-sm">
     <label className="block">{t('repondre')}<textarea className="mt-1 block w-full rounded border p-2" value={response} minLength={5} maxLength={2000} disabled={envoi} onChange={(e) => setResponse(e.target.value)} /></label>
-    <label>{t('decision')} <select className="rounded border bg-white p-2" value={status} disabled={envoi} onChange={(e) => setStatus(e.target.value)}>{['RESOLVED', 'REJECTED'].map((s) => <option key={s} value={s}>{t(`statuts.${s}`)}</option>)}</select></label>
+    <label>{t('decision')} <select className="rounded border bg-white p-2" value={status} disabled={envoi} onChange={(e) => setStatus(e.target.value)}>{(remboursementEngage ? ['RESOLVED'] : ['RESOLVED', 'REJECTED']).map((s) => <option key={s} value={s}>{t(`statuts.${s}`)}</option>)}</select></label>
     <button type="button" className="ml-3 rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50" disabled={envoi || response.trim().length < 5} onClick={envoyer}>{t('envoyerReponse')}</button>
     {erreur && <p role="alert" className="text-red-700">{erreur}</p>}
   </div>;

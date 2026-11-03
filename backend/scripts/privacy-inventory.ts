@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import { ENCRYPTED_FIELDS } from "../src/modules/privacy/encrypted-fields";
 
 const auth = new Set(["User", "MfaFactor", "SessionConnexion", "JetonRafraichissement", "CodeConnexion", "AccesEquipe", "Membership", "Staff", "PushDevice", "ApiKey", "InvitationSocieteDrive"]);
-const finances = new Set(["Order", "OrderItem", "Payment", "Invoice", "PlatformInvoice", "CourierPayout", "MerchantPayout", "CourierTip"]);
+const finances = new Set(["Order", "OrderItem", "Payment", "RefundOperation", "RefundOperationEvent", "Invoice", "PlatformInvoice", "CourierPayout", "MerchantPayout", "CourierTip"]);
 const service = new Set(["Customer", "CustomerCart", "FavoriteStore", "Review", "ReviewReport", "CourierRating", "Courier", "OrderDelivery", "DeliveryOffer", "ChauffeurDrive", "CourseDrive", "NoteCourseDrive", "PropositionCourseDrive"]);
 const documents = new Set(["CourierDocument", "OrganizationDocument", "DocumentChauffeurDrive"]);
 const support = new Set(["MerchantTicket", "TicketMessage", "CourierSupportMessage", "DeliveryIncident", "OrderIssue"]);

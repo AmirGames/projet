@@ -5,7 +5,7 @@ import { IncidentCommande } from '../IncidentCommande';
 
 jest.mock('next-intl', () => {
   const traduire = (key) => key.split('.').reduce((o, k) => o[k], mockMessages.incidentsCommande);
-  return { useTranslations: () => traduire };
+  return { useTranslations: () => traduire, useLocale: () => 'fr' };
 });
 jest.mock('@/lib/jeton-session', () => ({ jetonAcces: () => null }));
 jest.mock('@/lib/suivi-commande', () => ({ jetonDeSuivi: () => 'invite', cheminCommande: (id, token, suite) => `/api/orders/${id}${suite}?t=${token}` }));
@@ -65,4 +65,23 @@ test('relit la réponse du support et ne présente pas une réponse comme un rem
   await waitFor(() => expect(screen.getByText(/Nous avons examiné la demande/)).toBeInTheDocument());
   expect(screen.getByText(/Réponse apportée/)).toBeInTheDocument();
   expect(screen.queryByText('Remboursement effectué')).not.toBeInTheDocument();
+});
+
+test('continue à suivre le remboursement après la réponse au dossier', async () => {
+  jest.useFakeTimers();
+  let statut = null;
+  global.fetch.mockImplementation(async () => ({ ok: true, json: async () => ({ data: { ...etat, dossiers: [{ ...dossier, status: 'RESOLVED', response: 'Remboursement examiné.',
+    refundOperation: statut ? { status: statut, amountCents: 900, currency: 'eur' } : null }] } }) }));
+  render(<IncidentCommande orderId="o1" />);
+  await screen.findByText(/Remboursement examiné/);
+  statut = 'WAITING_STRIPE';
+  await act(async () => { jest.advanceTimersByTime(20_000); });
+  await screen.findByText(/Remboursement en attente de confirmation/);
+  statut = 'SUCCEEDED';
+  await act(async () => { jest.advanceTimersByTime(20_000); });
+  expect(await screen.findByText(/Remboursement effectué/)).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('9,00');
+  const lectures = global.fetch.mock.calls.length;
+  await act(async () => { jest.advanceTimersByTime(60_000); });
+  expect(global.fetch).toHaveBeenCalledTimes(lectures);
 });

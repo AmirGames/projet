@@ -5,10 +5,12 @@ import { useTranslations } from 'next-intl';
 import { jetonAcces } from '@/lib/jeton-session';
 import { cheminCommande, jetonDeSuivi } from '@/lib/suivi-commande';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { EtatRemboursement, type RemboursementCommande } from './EtatRemboursement';
 
 interface Dossier {
   id: string; category: string; message: string; requestRefund: boolean;
   status: string; response: string | null;
+  refundOperation?: RemboursementCommande | null;
 }
 interface Etat {
   categories: string[]; refundPossible: boolean;
@@ -44,7 +46,7 @@ export function IncidentCommande({ orderId }: { orderId: string }) {
     void charger(controller.signal);
     return () => controller.abort();
   }, [charger]);
-  const enAttente = etat?.dossiers.some((d) => d.status === 'OPEN') ?? false;
+  const enAttente = etat?.dossiers.some((d) => d.status === 'OPEN' || d.requestRefund && d.status !== 'REJECTED' && d.refundOperation?.status !== 'SUCCEEDED') ?? false;
   useEffect(() => {
     if (!enAttente) return;
     const controller = new AbortController();
@@ -85,7 +87,8 @@ export function IncidentCommande({ orderId }: { orderId: string }) {
     {etat?.dossiers.map((d) => <article key={d.id} className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
       <p className="font-semibold">{t(`categories.${d.category}`)} · {t(`statuts.${d.status}`)}</p>
       <p className="mt-1 whitespace-pre-wrap">{d.message}</p>
-      {d.requestRefund && <p className="mt-1">{t('remboursementDemande')}</p>}
+      {d.requestRefund && !d.refundOperation && <p className="mt-1">{t('remboursementDemande')}</p>}
+      <EtatRemboursement operation={d.refundOperation} />
       {d.response && <p className="mt-2 whitespace-pre-wrap">{t('reponseSupport')} {d.response}</p>}
     </article>)}
     {etat && !etat.categories.length && !etat.dossiers.length && <p className="mt-2 text-sm">{t('indisponible')}</p>}

@@ -58,6 +58,8 @@ export const RefundService = {
       commande.paymentStatus !== "SUCCEEDED"
     )
       return null;
+    if (await tx.refundOperation.findFirst({ where: { paymentId: paiement.id, kind: { not: "FULL_ORDER" } } }))
+      throw new ApiError(409, "Utilisez le dossier d'incident pour rembourser le solde restant.", "REFUND_USE_ISSUE");
     const montant = cents(paiement.amount);
     if (
       montant <= 0 ||
@@ -88,7 +90,7 @@ export const RefundService = {
       skipDuplicates: true,
     });
     const operation = await tx.refundOperation.findUnique({
-      where: { paymentId: paiement.id },
+      where: { idempotencyKey: `a03-remboursement-${paiement.id}` },
     });
     if (!operation)
       throw new ApiError(
@@ -129,7 +131,7 @@ export const RefundService = {
   },
 
   /** Une reprise humaine conserve impérativement la même clé et firstCallAt. */
-  async reprendre(orderId: string, reason: string, adminId: string) {
+  async reprendre(orderId: string, reason: string, adminId: string, operationId?: string) {
     return db.$transaction(async (tx) => {
       await tx.order.updateMany({
         where: { id: orderId },
@@ -138,10 +140,10 @@ export const RefundService = {
       const paiement = await tx.payment.findUnique({ where: { orderId } });
       let operation = paiement
         ? await tx.refundOperation.findUnique({
-            where: { paymentId: paiement.id },
+            where: operationId ? { id: operationId } : { idempotencyKey: `a03-remboursement-${paiement.id}` },
           })
         : null;
-      if (!operation)
+      if (!operation || operation.paymentId !== paiement?.id)
         throw new ApiError(
           409,
           "Aucun remboursement à reprendre.",
@@ -254,6 +256,7 @@ export const RefundService = {
 
   /** Réconciliation hors transaction ; aucun ancien payload webhook ne fait foi. */
   async executer(operation: RefundOperation, maintenant: Date) {
+    if (operation.kind && operation.kind !== "FULL_ORDER") return this.executerIncident(operation, maintenant);
     const intention = await stripe.paymentIntents.retrieve(
       operation.paymentIntentId,
     );
@@ -417,6 +420,54 @@ export const RefundService = {
     );
   },
 
+  /** Chaque incident a un payload immuable ; les autres remboursements restent distincts. */
+  async executerIncident(operation: RefundOperation, maintenant: Date) {
+    const paiement = await db.payment.findUniqueOrThrow({ where: { id: operation.paymentId } });
+    const intention = await stripe.paymentIntents.retrieve(operation.paymentIntentId);
+    const montantPaiement = cents(paiement.amount);
+    if (intention.id !== operation.paymentIntentId || intention.status !== "succeeded" ||
+        intention.currency !== operation.currency || intention.amount_received !== montantPaiement ||
+        paiement.stripePaymentIntentId !== operation.paymentIntentId || paiement.currency.toLowerCase() !== operation.currency) {
+      throw new ApiError(409, "Paiement Stripe incohérent.", "REFUND_AMOUNT_MISMATCH");
+    }
+    const liste = await remboursements(operation.paymentIntentId);
+    if (liste.some((r) => r.currency !== operation.currency || idStripe(r.payment_intent) !== operation.paymentIntentId))
+      throw new ApiError(409, "Remboursement Stripe incohérent.", "REFUND_AMOUNT_MISMATCH");
+    const rendu = liste.filter((r) => r.status === "succeeded").reduce((s, r) => s + r.amount, 0);
+    const reserves = liste.filter((r) => ["pending", "requires_action"].includes(r.status ?? ""));
+    if (rendu + reserves.reduce((s, r) => s + r.amount, 0) > montantPaiement)
+      throw new ApiError(409, "Cumul Stripe incohérent.", "REFUND_AMOUNT_MISMATCH");
+    const correspondants = liste.filter((r) => r.id === operation.stripeRefundId || r.metadata?.refundOperationId === operation.id);
+    if (correspondants.length > 1) throw new ApiError(409, "Plusieurs remboursements correspondent au dossier.", "REFUND_REFERENCE_AMBIGUOUS");
+    const connu = correspondants[0];
+    if (connu) {
+      if (connu.amount !== operation.amountCents) throw new ApiError(409, "Montant Stripe incohérent.", "REFUND_AMOUNT_MISMATCH");
+      const status = connu.status === "succeeded" ? "SUCCEEDED" : ["failed", "canceled"].includes(connu.status ?? "") ? "ABANDONED" : "WAITING_STRIPE";
+      await this.terminer(operation, status, { stripeRefundId: connu.id, refundedCents: rendu,
+        lastError: status === "ABANDONED" ? "REFUND_FAILED_MANUAL_REVIEW" : null }, maintenant);
+      return;
+    }
+    if (operation.stripeRefundId) throw new ApiError(409, "Remboursement enregistré absent de Stripe.", "REFUND_REFERENCE_MISSING");
+    // Un remboursement externe ou une autre demande en attente impose une nouvelle décision humaine.
+    if (rendu !== operation.refundedBeforeCents || reserves.length || rendu + operation.amountCents > montantPaiement) {
+      await this.terminer(operation, "ABANDONED", { refundedCents: rendu, lastError: "REFUND_EXTERNAL_CHANGE" }, maintenant);
+      return;
+    }
+    if (operation.firstCallAt && maintenant.getTime() - operation.firstCallAt.getTime() >= FENETRE_CREATION_MS)
+      throw new ApiError(409, "Résultat externe incertain après expiration de la clé.", "REFUND_IDEMPOTENCY_WINDOW_EXPIRED");
+    const autorise = await db.refundOperation.updateMany({ where: { id: operation.id, version: operation.version, status: "PROCESSING" },
+      data: { firstCallAt: operation.firstCallAt ?? maintenant } });
+    if (!autorise.count) return;
+    const remboursement = await stripe.refunds.create({ payment_intent: operation.paymentIntentId, amount: operation.amountCents,
+      reason: "requested_by_customer", metadata: { refundOperationId: operation.id } }, { idempotencyKey: operation.idempotencyKey });
+    if (remboursement.amount !== operation.amountCents || remboursement.currency !== operation.currency || idStripe(remboursement.payment_intent) !== operation.paymentIntentId)
+      throw new ApiError(409, "Réponse Stripe incohérente.", "REFUND_AMOUNT_MISMATCH");
+    const status = remboursement.status === "succeeded" ? "SUCCEEDED" : ["failed", "canceled"].includes(remboursement.status ?? "") ? "ABANDONED" : "WAITING_STRIPE";
+    await this.terminer(operation, status, { stripeRefundId: remboursement.id,
+      refundedCents: rendu + (status === "SUCCEEDED" ? remboursement.amount : 0),
+      lastError: status === "ABANDONED" ? "REFUND_FAILED_MANUAL_REVIEW" : null }, maintenant);
+  },
+
   async terminer(
     operation: RefundOperation,
     status: RefundOperationStatus,
@@ -478,12 +529,12 @@ export const RefundService = {
                 : {}),
               refundedAmount: rendu ? rendu / 100 : null,
               ...(rendu ? { refundedAt: actuel.refundedAt ?? maintenant } : {}),
-              ...(status === "SUCCEEDED" ? { status: "REFUNDED" } : {}),
+              ...(rendu >= cents(actuel.amount) ? { status: "REFUNDED" } : {}),
             },
           });
         }
       }
-      if (status === "SUCCEEDED")
+      if (rendu !== undefined && rendu >= cents(paiement.amount))
         await tx.order.update({
           where: { id: paiement.orderId },
           data: { paymentStatus: "REFUNDED" },
@@ -503,7 +554,11 @@ export const RefundService = {
     const { count } = await db.refundOperation.updateMany({
       where: {
         paymentIntentId,
-        status: { in: ["REQUESTED", "RETRY", "WAITING_STRIPE", "ABANDONED"] },
+        OR: [
+          { status: { in: ["REQUESTED", "RETRY", "WAITING_STRIPE", "ABANDONED"] } },
+          // Une restitution partielle réussie peut être suivie d'un remboursement externe.
+          { kind: { not: "FULL_ORDER" }, status: "SUCCEEDED" },
+        ],
       },
       data: { status: "RETRY", nextAttemptAt: new Date() },
     });
@@ -520,7 +575,7 @@ export const RefundService = {
               OR: [{ status: "REJECTED" }, { deletedAt: { not: null } }],
             },
           },
-          { refundOperation: { is: { status: { not: "SUCCEEDED" } } } },
+          { refundOperations: { some: { status: { not: "SUCCEEDED" } } } },
           { stripeRefundId: { not: null } },
         ],
       },
@@ -533,7 +588,7 @@ export const RefundService = {
         stripeRefundId: true,
         refundedAmount: true,
         order: { select: { status: true, deletedAt: true } },
-        refundOperation: {
+        refundOperations: {
           include: { history: { orderBy: { createdAt: "desc" }, take: 20 } },
         },
       },
