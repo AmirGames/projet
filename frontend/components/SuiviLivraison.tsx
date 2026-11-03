@@ -95,8 +95,6 @@ interface Props {
 /** Les états de la course qui ont un libellé (`statut.*` des traductions). */
 const STATUTS_CONNUS = ['PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'FAILED'];
 
-/** Vitesse moyenne d'un deux-roues en ville, embouteillages compris. */
-const KM_PAR_MINUTE = 0.25;
 
 const distanceLisible = (km: number) =>
   km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace('.', ',')} km`;
@@ -146,7 +144,6 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
     return course.distanceRestanteKm ?? null;
   }, [positionDirecte, course.destination, course.distanceRestanteKm]);
 
-  const minutes = restante != null ? Math.max(1, Math.round(restante / KM_PAR_MINUTE)) : null;
 
   // Part du trajet déjà parcourue, pour situer le livreur sur le plan.
   const avancement = useMemo(() => {
@@ -181,12 +178,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           <p className="text-sm text-gray-500">{STATUTS_CONNUS.includes(course.status) ? t(`statut.${course.status}`) : course.status}</p>
         </div>
 
-        {minutes != null && !livree && (
-          <div className="text-right shrink-0">
-            <p className="text-2xl font-bold text-orange-500">{t('minutes', { n: minutes })}</p>
-            <p className="text-xs text-gray-500">{t('estime')}</p>
-          </div>
-        )}
+
       </div>
 
       {/* Le code de remise : c'est lui qui prouve que le repas a bien changé de

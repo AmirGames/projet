@@ -11,6 +11,23 @@ import { TaxService } from "../catalog/tax.service";
 import { avecLaVraieNote } from "../reviews/review.service";
 import { regrouperParCategorie } from "./vitrine-menu";
 
+/** Index léger de tous les plats commandables, indépendant des aperçus de menu. */
+async function avecPlatsRecherchables<T extends { id: string }>(boutiques: T[]) {
+  if (!boutiques.length) return [];
+  const plats = await db.product.findMany({
+    where: { storeId: { in: boutiques.map((b) => b.id) }, status: "ACTIVE", deletedAt: null, isAvailable: true },
+    select: { id: true, name: true, storeId: true },
+    orderBy: { id: "asc" },
+  });
+  const parBoutique = new Map<string, { id: string; name: string }[]>();
+  for (const plat of plats) {
+    const liste = parBoutique.get(plat.storeId) ?? [];
+    liste.push({ id: plat.id, name: plat.name });
+    parBoutique.set(plat.storeId, liste);
+  }
+  return boutiques.map((b) => ({ ...b, searchProducts: parBoutique.get(b.id) ?? [] }));
+}
+
 /**
  * La vitrine publique : ce que le client voit d'un commerce sans compte —
  * liste, proximité, recherche, fiche avec menu, moyens de paiement, frais.
@@ -52,7 +69,7 @@ export const VitrineClientService = {
       orderBy: { name: "asc" }
     });
 
-    return (await avecLaVraieNote(stores)).map((store) => ({
+    return avecPlatsRecherchables((await avecLaVraieNote(stores)).map((store) => ({
       ...store,
       // Ce que disent à la fois le planning hebdomadaire et le bouton
       // rapide, croisés — pas juste le bouton, sinon un jour fermé dans les
@@ -60,7 +77,7 @@ export const VitrineClientService = {
       isOpenNow: StoreHoursService.isOpenNow(store),
       // La famille (Pizzas, Sushis…) pour filtrer, et le libellé précis.
       ...genreDuCommerce(store),
-    }));
+    })));
   },
 
   /** Les commerces autour d'un point, avec leur verdict de livraison. */
@@ -142,10 +159,10 @@ export const VitrineClientService = {
           a.distance - b.distance
       );
 
-    return avecLaVraieNote(avecLivraison);
+    return avecPlatsRecherchables(await avecLaVraieNote(avecLivraison));
   },
 
-  /** Recherche par nom, description ou ville. */
+  /** Recherche par commerce ou plat disponible ; la ville est un filtre. */
   async rechercher(searchQuery: string, city: string | undefined, limite: number) {
     const stores = await db.store.findMany({
       where: {
@@ -154,8 +171,9 @@ export const VitrineClientService = {
         OR: [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
-          ...(city ? [{ city: { contains: city, mode: "insensitive" as const } }] : []),
-        ]
+          { products: { some: { name: { contains: searchQuery, mode: "insensitive" }, status: "ACTIVE", deletedAt: null, isAvailable: true } } },
+        ],
+        ...(city ? { city: { contains: city, mode: "insensitive" as const } } : {}),
       },
       include: {
         org: {

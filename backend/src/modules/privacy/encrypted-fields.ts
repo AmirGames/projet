@@ -7,6 +7,7 @@ export const ENCRYPTED_FIELDS: Record<string, string[]> = {
   Courier: ["iban", "bic", "accountHolder", "phone", "vehiclePlate", "licensePlate", "bceNumber", "pushSubscription"],
   Customer: ["phone", "address", "city", "postalCode", "savedAddresses", "notes"],
   Order: ["customerName", "customerPhone", "deliveryAddress", "deliveryCity", "deliveryPostal", "notes", "rejectionNote"],
+  OrderIssue: ["message", "response"],
   Payment: ["stripeClientSecret"],
   MerchantArchive: ["organizationData", "storesData", "ordersData", "customersData"],
   Invoice: ["emetteurJson", "destinataireJson"],

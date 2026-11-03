@@ -68,11 +68,11 @@ const livreurEnFinDeCourse = (id: string, extra: Record<string, unknown> = {}) =
 });
 
 /** Trois requêtes sur les livreurs : libres, en tournée (ajout), bientôt libres. */
-function livreurs({ libres = [], bientot = [] }: { libres?: any[]; bientot?: any[] }) {
+function livreurs({ libres = [], bientot = [], tournees = [] }: { libres?: any[]; bientot?: any[]; tournees?: any[] }) {
   db.courier.findMany.mockImplementation(async (args: any) => {
     if (args.where.currentOrderId === null) return libres;
     // La requête « bientôt libres » exclut des ids ; celle de la tournée (ajout) non.
-    return args.where.id ? bientot : [];
+    return args.where.id ? bientot : tournees;
   });
 }
 
@@ -92,6 +92,92 @@ beforeEach(() => {
 });
 
 const offre = () => db.deliveryOffer.upsert.mock.calls[0]?.[0]?.create;
+
+describe("dispatch selon le délai de livraison", () => {
+  const enTournee = (preteDansMinutes = 0) => ({
+    ...livreurLibre("tournee"),
+    deliveries: [{ ...course({ id: "existante", status: "ACCEPTED" }),
+      order: { status: preteDansMinutes ? "PREPARING" : "READY", estimatedReadyAt: new Date(Date.now() + preteDansMinutes * 60_000) } }],
+  });
+
+  it("ne privilégie plus une tournée dont le restaurant prend encore quinze minutes", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    livreurs({ libres: [livreurLibre("libre")], tournees: [enTournee(15)] });
+    await DispatchService.proposerAuSuivant("course-2");
+    expect(offre()).toMatchObject({ driverId: "libre", ajout: false });
+  });
+
+  it("refuse l'ajout d'une commande non prête qui retarderait la livraison déjà engagée", async () => {
+    const nouvelle = course();
+    nouvelle.order = { ...nouvelle.order, status: "PREPARING", estimatedReadyAt: new Date(Date.now() + 20 * 60_000) } as any;
+    db.orderDelivery.findUnique.mockResolvedValue(nouvelle);
+    livreurs({ tournees: [enTournee()] });
+    expect(await DispatchService.proposerAuSuivant("course-2")).toBeNull();
+    expect(db.deliveryOffer.upsert).not.toHaveBeenCalled();
+  });
+
+  it("choisit une tournée proche si elle livre plus vite que le livreur libre éloigné", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    livreurs({ libres: [{ ...livreurLibre("loin"), latitude: 48.9 }], tournees: [enTournee()] });
+    await DispatchService.proposerAuSuivant("course-2");
+    expect(offre()).toMatchObject({ driverId: "tournee", ajout: true });
+  });
+
+  it("n'ajoute pas de retrait pendant une attente chez un client injoignable", async () => {
+    const occupe = enTournee();
+    occupe.deliveries[0] = { ...occupe.deliveries[0], status: "PICKED_UP", customerWaitStartedAt: new Date() } as any;
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    livreurs({ tournees: [occupe] });
+    expect(await DispatchService.proposerAuSuivant("course-2")).toBeNull();
+    expect(db.deliveryOffer.upsert).not.toHaveBeenCalled();
+  });
+
+  it("ne regroupe pas une commande prête avec une voisine encore en préparation", async () => {
+    const voisine = { ...course({ id: "voisine" }), order: { ...course().order, status: "PREPARING", estimatedReadyAt: new Date(Date.now() + 20 * 60_000) } };
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    db.orderDelivery.findMany.mockImplementation(async (args: any) => args.where.id ? [voisine] : []);
+    livreurs({ libres: [livreurLibre("libre")] });
+    await DispatchService.proposerAuSuivant("course-2");
+    expect(db.deliveryOffer.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("regroupe les commandes prêtes et exclut les courses réservées dans la requête", async () => {
+    const voisine = course({ id: "voisine" });
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    db.orderDelivery.findMany.mockImplementation(async (args: any) => args.where.id ? [voisine] : []);
+    livreurs({ libres: [livreurLibre("libre")] });
+    await DispatchService.proposerAuSuivant("course-2");
+    expect(db.deliveryOffer.upsert).toHaveBeenCalledTimes(2);
+    expect(offre().batchId).toEqual(expect.any(String));
+    expect(db.orderDelivery.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ reservedDriverId: null, driverId: null }) }));
+  });
+
+  it("ne cumule pas deux attentes acceptables séparément au détriment du premier client du lot", async () => {
+    const voisine = (id: string, minutes: number) => ({ ...course({ id }), order: {
+      ...course().order, status: "PREPARING", estimatedReadyAt: new Date(Date.now() + minutes * 60_000),
+    } });
+    db.orderDelivery.findUnique.mockResolvedValue(course());
+    db.orderDelivery.findMany.mockImplementation(async (args: any) => args.where.id ? [voisine("quatre-minutes", 4), voisine("huit-minutes", 8)] : []);
+    livreurs({ libres: [livreurLibre("libre")] });
+    await DispatchService.proposerAuSuivant("course-2");
+    expect(db.deliveryOffer.upsert.mock.calls.map((c: any) => c[0].create.deliveryId)).toEqual(["course-2", "quatre-minutes"]);
+  });
+
+  it("la préparation départage les véhicules selon la remise finale, pas la seule arrivée au restaurant", async () => {
+    const nouvelle = { ...course({ deliveryLat: 48.88 }), order: { ...course().order, status: "PREPARING", estimatedReadyAt: new Date(Date.now() + 15 * 60_000) } };
+    db.orderDelivery.findUnique.mockResolvedValue(nouvelle);
+    livreurs({ libres: [livreurLibre("scooter"), { ...livreurLibre("voiture"), vehicleType: "car", latitude: 48.86 }] });
+    await DispatchService.proposerAuSuivant("course-2");
+    expect(offre()).toMatchObject({ driverId: "voiture" });
+  });
+
+  it("un vélo reste choisi s'il livre avant le scooter plus éloigné", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue(course({ deliveryLat: 48.855 }));
+    livreurs({ libres: [{ ...livreurLibre("velo"), vehicleType: "bike" }, { ...livreurLibre("scooter"), latitude: 48.89 }] });
+    await DispatchService.proposerAuSuivant("course-2");
+    expect(offre()).toMatchObject({ driverId: "velo", horsLimite: false });
+  });
+});
 
 describe("proposition à un livreur bientôt libre", () => {
   it("sans livreur libre, la course est proposée à celui qui termine sa livraison", async () => {

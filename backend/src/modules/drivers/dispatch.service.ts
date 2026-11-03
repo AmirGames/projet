@@ -10,13 +10,13 @@ import { obfusquerAdresse } from "../../utils/address-obfuscation";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { randomUUID } from "crypto";
 import {
-  detourPourRejoindre,
   ordonner,
   REGLES_TOURNEE_PAR_DEFAUT,
   ReglesTournee,
   versCourseTournee,
 } from "./tournee.service";
 import { exceptionOuverte, limiteVehiculeKm, peutLivrer } from "./vehicule-distance.service";
+import { evaluerRegroupement, planifierTournee, positionExploitable, RETARD_REGROUPEMENT_MAX_SECONDES, versCoursePlanifiable } from "./planification-livraison.service";
 import {
   bientotLibreActif,
   libreDansSecondes,
@@ -47,6 +47,7 @@ const COURSE_A_PROPOSER = {
       tipAmount: true,
       deliveryMode: true,
       status: true,
+      estimatedReadyAt: true,
       store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
     },
   },
@@ -55,7 +56,8 @@ const COURSE_A_PROPOSER = {
 /**
  * Attribution des courses aux livreurs.
  *
- * Une course part au livreur disponible le plus proche du point de retrait.
+ * Les livreurs libres, bientôt libres et en tournée sont comparés selon
+ * l'heure de remise estimée et le retard ajouté aux clients déjà engagés.
  * Il a un délai pour répondre ; passé ce délai elle va au suivant, et ainsi de
  * suite jusqu'à ce que quelqu'un accepte ou que la liste soit épuisée.
  *
@@ -278,7 +280,7 @@ export class DispatchService {
     });
 
     return candidats
-      .filter((livreur) => estUnPoint(livreur))
+      .filter((livreur) => positionExploitable(livreur))
       .map((livreur) => ({
         ...livreur,
         distance: distanceKm(retrait, livreur as Point),
@@ -575,8 +577,8 @@ export class DispatchService {
   }
 
   /**
-   * Livreurs déjà en course sur le trajet de celle-ci, du plus petit détour
-   * au plus grand (voir tournee.service.ts). Un livreur qui a déjà une
+   * Livreurs déjà en course sur le trajet de celle-ci, classés par délai de
+   * remise et retard ajouté aux autres clients. Un livreur qui a déjà une
    * proposition en attente n'en reçoit pas une deuxième.
    */
   static async livreursEnTournee(course: {
@@ -586,10 +588,11 @@ export class DispatchService {
     pickupLng: number | null;
     deliveryLat: number | null;
     deliveryLng: number | null;
-  }, regles: ReglesTournee) {
+    order?: { status?: string; estimatedReadyAt?: Date | null } | null;
+  }, regles: ReglesTournee, maintenant = Date.now()) {
     // Une course par livreur : pas de tournée.
     if (regles.maxCourses <= 1) return [];
-    const nouvelle = versCourseTournee({ ...course, status: "ACCEPTED" });
+    const nouvelle = versCoursePlanifiable({ ...course, status: "ACCEPTED" });
     if (!estUnPoint(nouvelle.retrait) || !estUnPoint(nouvelle.remise)) return [];
 
     const livreurs = await db.courier.findMany({
@@ -614,23 +617,30 @@ export class DispatchService {
         user: { select: { email: true } },
         deliveries: {
           where: { status: { in: STATUTS_EN_COURSE } },
-          select: { id: true, status: true, pickupLat: true, pickupLng: true, deliveryLat: true, deliveryLng: true },
+          select: {
+            id: true, status: true, pickupLat: true, pickupLng: true, deliveryLat: true, deliveryLng: true, ordreRemise: true, customerWaitStartedAt: true,
+            order: { select: { status: true, estimatedReadyAt: true } },
+          },
         },
       },
     });
 
     return livreurs
+      .filter((livreur) => positionExploitable(livreur))
+      // Une attente chez un client doit se terminer avant tout nouveau
+      // retrait. La réservation « bientôt libre » reste le parcours adapté.
+      .filter((livreur) => livreur.deliveries.every((c) => !c.customerWaitStartedAt))
       .map((livreur) => {
-        const depart = estUnPoint(livreur) ? (livreur as Point) : null;
-        const detour = detourPourRejoindre(depart, livreur.deliveries.map(versCourseTournee), nouvelle, regles);
+        const depart = livreur as Point;
+        const estimation = evaluerRegroupement(depart, livreur.deliveries.map(versCoursePlanifiable), nouvelle, regles, livreur.vehicleType, maintenant);
         return {
           ...livreur,
-          detour,
-          distance: depart ? distanceKm(depart, nouvelle.retrait) : 0,
+          estimation,
+          distance: distanceKm(depart, nouvelle.retrait),
         };
       })
-      .filter((l): l is typeof l & { detour: number } => l.detour != null)
-      .sort((a, b) => a.detour - b.detour);
+      .filter((l): l is typeof l & { estimation: NonNullable<typeof l.estimation> } => l.estimation != null)
+      .sort((a, b) => a.estimation.scoreSecondes - b.estimation.scoreSecondes || a.id.localeCompare(b.id));
   }
 
   /**
@@ -727,10 +737,10 @@ export class DispatchService {
   /**
    * Propose la course au prochain livreur.
    *
-   * Dans l'ordre : le livreur désigné par le commerçant ; un livreur déjà en
-   * course qui passe par là (« + 1 course sur votre trajet ») ; sinon le
-   * livreur libre le plus proche, avec, s'il y en a, les autres commandes
-   * qui attendent et vont au même endroit (un lot de trois au plus).
+   * Le livreur désigné par le commerçant reste prioritaire s'il est éligible.
+   * Sinon, on compare les remises estimées des livreurs libres, bientôt
+   * libres et en tournée, en protégeant les clients déjà engagés. Les lots
+   * respectent aussi les préparations et le plafond de retard estimé.
    *
    * Renvoie la proposition créée, ou null quand personne ne reste : au
    * commerçant de relancer plus tard, quand d'autres livreurs seront en ligne.
@@ -801,7 +811,7 @@ export class DispatchService {
     const toutBientotLibres = await this.livreursBientotLibres(retrait, reglages, maintenant);
     const bientotLibres = toutBientotLibres.filter((l) => sollicitable(course, l.id));
     const presDeLaFin = new Set(toutBientotLibres.map((l) => l.id));
-    const toutesTournees = (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => !presDeLaFin.has(l.id));
+    const toutesTournees = (await this.livreursEnTournee(course, reglages.tournee, maintenant)).filter((l) => !presDeLaFin.has(l.id));
     const enTournee = toutesTournees.filter((l) => sollicitable(course, l.id));
 
     // Le véhicule couvre-t-il le trajet commerce → client ? (vehicule-distance.service.ts)
@@ -827,18 +837,30 @@ export class DispatchService {
       );
     }
 
-    // Les véhicules adaptés d'abord (en tournée, puis les livreurs libres et
-    // ceux qui se libèrent, classés par heure d'arrivée au commerce : à
-    // égalité, le livreur déjà libre), les autres seulement une fois
-    // l'exception ouverte.
-    const arrivee = (l: { distance: number; vehicleType: string; libreDansSecondes?: number }) =>
-      secondesAvantRetrait(l.distance, l.libreDansSecondes ?? 0, l.vehicleType);
+    // Même critère pour les trois catégories : remise estimée + retard
+    // cumulé aux clients existants. Une tournée n'a plus priorité d'office.
+    const nouvelle = versCoursePlanifiable({ ...course, status: "ACCEPTED" });
+    const estimer = (l: { distance: number; vehicleType: string; latitude: number | null; longitude: number | null; libreDansSecondes: number; bientotLibre: boolean; deliveries?: { deliveryLat: number | null; deliveryLng: number | null }[] }) => {
+      const derniere = l.bientotLibre ? l.deliveries?.[0] : null;
+      const depart = derniere ? { latitude: derniere.deliveryLat, longitude: derniere.deliveryLng } : l;
+      const plan = positionExploitable(depart) ? planifierTournee(depart, [nouvelle], l.vehicleType, maintenant, l.libreDansSecondes) : null;
+      // Destination non géocodée : conserver le dispatch simple, sans lot.
+      const secondes = plan?.remises.get(course.id) ?? Math.max(
+        secondesAvantRetrait(l.distance * 1.3, l.libreDansSecondes, l.vehicleType),
+        course.order?.status !== "READY" && course.order?.estimatedReadyAt ? (course.order.estimatedReadyAt.getTime() - maintenant) / 1000 : 0
+      );
+      return { scoreSecondes: secondes, livraisonSecondes: plan?.remises.get(course.id) ?? null, retardMaxSecondes: 0 };
+    };
     const libresOuBientot = [
-      ...candidats.map((l) => Object.assign(l, { libreDansSecondes: 0 })),
-      ...bientotLibres,
-    ].sort((a, b) => arrivee(a) - arrivee(b) || a.libreDansSecondes - b.libreDansSecondes);
-    const ordre = [...enTournee, ...libresOuBientot];
-    const choisi = prefere || ordre.find(adapte) || (ouverte ? ordre[0] : undefined);
+      ...candidats.map((l) => ({ ...l, libreDansSecondes: 0, bientotLibre: false })),
+      ...bientotLibres.map((l) => ({ ...l, bientotLibre: true })),
+    ].map((l) => ({ ...l, estimation: estimer(l), ajout: false }));
+    const ordre = [
+      ...enTournee.map((l) => ({ ...l, libreDansSecondes: 0, ajout: true, bientotLibre: false })),
+      ...libresOuBientot,
+    ].sort((a, b) => a.estimation.scoreSecondes - b.estimation.scoreSecondes
+      || Number(a.bientotLibre) - Number(b.bientotLibre) || a.id.localeCompare(b.id));
+    const choisi = (prefere ? ordre.find((l) => l.id === prefere.id) : undefined) || ordre.find(adapte) || (ouverte ? ordre[0] : undefined);
 
     if (!choisi) {
       logger.info("Aucun livreur disponible pour la course", {
@@ -848,8 +870,8 @@ export class DispatchService {
       return null;
     }
 
-    const ajout = !prefere && (enTournee as unknown[]).includes(choisi);
-    const bientotLibre = bientotLibres.find((l) => l === choisi) ?? null;
+    const ajout = choisi.ajout;
+    const bientotLibre = choisi.bientotLibre ? choisi : null;
     const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
 
     // Un livreur libre : les autres commandes qui attendent et vont au même
@@ -857,7 +879,7 @@ export class DispatchService {
     // Les autres commandes du lot, elles, restent dans la limite du véhicule.
     const lot = ajout || bientotLibre
       ? [course]
-      : await this.composerLot(course, choisi.id, sollicitable, reglages.tournee, (c) =>
+      : await this.composerLot(course, choisi, sollicitable, reglages.tournee, maintenant, (c) =>
           peutLivrer(choisi.vehicleType, trajetDe(c), reglages)
         );
     const batchId = lot.length > 1 ? randomUUID() : null;
@@ -916,6 +938,12 @@ export class DispatchService {
       deliveryId,
       driverId: choisi.id,
       approche,
+      estimation: {
+        methode: "distance-preparation-v1",
+        livraisonSecondes: choisi.estimation.livraisonSecondes,
+        retardMaxSecondes: choisi.estimation.retardMaxSecondes,
+        scoreSecondes: choisi.estimation.scoreSecondes,
+      },
       trajet: trajets,
       ...(ajout ? { ajout: true } : {}),
       ...(bientotLibre ? { bientotLibre: true, libreDansSecondes: bientotLibre.libreDansSecondes } : {}),
@@ -932,16 +960,18 @@ export class DispatchService {
    * tournee.service.ts). La course elle-même d'abord, trois en tout au plus.
    */
   private static async composerLot<
-    C extends { id: string; status: string; pickupLat: number | null; pickupLng: number | null; deliveryLat: number | null; deliveryLng: number | null; offers: Sollicitation[] },
+    C extends { id: string; status: string; pickupLat: number | null; pickupLng: number | null; deliveryLat: number | null; deliveryLng: number | null; offers: Sollicitation[]; order?: { status?: string; estimatedReadyAt?: Date | null } | null },
   >(
     course: C,
-    driverId: string,
+    livreur: { id: string; latitude: number | null; longitude: number | null; vehicleType: string },
     sollicitable: (c: { offers: Sollicitation[] }, driverId: string) => boolean,
     regles: ReglesTournee,
+    maintenant: number,
     accepte: (c: C) => boolean = () => true
   ): Promise<C[]> {
     const lot: C[] = [course];
-    if (regles.maxCourses <= 1) return lot;
+    if (regles.maxCourses <= 1 || !positionExploitable(livreur)) return lot;
+    const depart = livreur as Point;
     const retrait = { latitude: course.pickupLat, longitude: course.pickupLng };
     if (!estUnPoint(retrait)) return lot;
 
@@ -950,6 +980,7 @@ export class DispatchService {
         id: { not: course.id },
         status: "PENDING",
         driverId: null,
+        reservedDriverId: null,
         createdAt: { gt: new Date(Date.now() - RECHERCHE_MAX_MS) },
         order: { status: { in: ["ACCEPTED", "PREPARING", "READY"] } },
         offers: { none: { status: "PENDING", expiresAt: { gt: new Date() } } },
@@ -961,17 +992,26 @@ export class DispatchService {
       take: 30,
     })) as unknown as C[];
 
-    // À chaque tour, la commande qui rallonge le moins le lot.
-    let restantes = enAttente.filter((c) => sollicitable(c, driverId) && accepte(c));
+    // Plafond cumulatif : chaque commande du lot est comparée à sa remise
+    // sans regroupement, pas seulement à la dernière insertion.
+    const delaisRespectes = (courses: typeof lot) => {
+      const plan = planifierTournee(depart, courses.map((c) => versCoursePlanifiable({ ...c, status: "ACCEPTED" })), livreur.vehicleType, maintenant);
+      return plan != null && courses.every((c) => {
+        const seule = planifierTournee(depart, [versCoursePlanifiable({ ...c, status: "ACCEPTED" })], livreur.vehicleType, maintenant);
+        return seule != null && plan.remises.get(c.id)! - seule.remises.get(c.id)! <= RETARD_REGROUPEMENT_MAX_SECONDES;
+      });
+    };
+    let restantes = enAttente.filter((c) => sollicitable(c, livreur.id) && accepte(c));
     while (lot.length < regles.maxCourses && restantes.length > 0) {
-      const tournee = lot.map((c) => versCourseTournee({ ...c, status: "ACCEPTED" }));
+      const tournee = lot.map((c) => versCoursePlanifiable({ ...c, status: "ACCEPTED" }));
       const classees = restantes
         .map((c) => ({
           c,
-          detour: detourPourRejoindre(retrait as Point, tournee, versCourseTournee({ ...c, status: "ACCEPTED" }), regles),
+          estimation: evaluerRegroupement(depart, tournee, versCoursePlanifiable({ ...c, status: "ACCEPTED" }), regles, livreur.vehicleType, maintenant),
+          delaisRespectes: delaisRespectes([...lot, c]),
         }))
-        .filter((x): x is { c: C; detour: number } => x.detour != null)
-        .sort((a, b) => a.detour - b.detour);
+        .filter((x) => x.estimation != null && x.delaisRespectes)
+        .sort((a, b) => a.estimation!.scoreSecondes - b.estimation!.scoreSecondes || a.c.id.localeCompare(b.c.id));
       if (classees.length === 0) break;
       lot.push(classees[0].c);
       restantes = restantes.filter((c) => c !== classees[0].c);

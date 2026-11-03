@@ -42,6 +42,8 @@ export interface CourseTournee {
   remise: Point;
   /** Déjà récupérée : il ne reste que la remise. */
   recuperee: boolean;
+  /** Une remise déjà annoncée garde sa place, même après un ajout. */
+  ordreRemise?: number | null;
 }
 
 interface Arret {
@@ -74,7 +76,15 @@ export function ordonner(depart: Point | null, courses: CourseTournee[]) {
     // Tous les retraits d'abord : le livreur ne connaît l'adresse d'un client
     // qu'une fois toutes les commandes de la tournée en main.
     const retraits = restants.filter((a) => a.type === "RETRAIT");
-    const possibles = retraits.length > 0 ? retraits : restants.filter((a) => recuperees.has(a.deliveryId));
+    let possibles = retraits.length > 0 ? retraits : restants.filter((a) => recuperees.has(a.deliveryId));
+    if (retraits.length === 0) {
+      const figees = possibles.filter((a) => courses.find((c) => c.id === a.deliveryId)?.ordreRemise != null);
+      if (figees.length > 0) {
+        possibles = [figees.reduce((a, b) =>
+          courses.find((c) => c.id === a.deliveryId)!.ordreRemise! <= courses.find((c) => c.id === b.deliveryId)!.ordreRemise! ? a : b
+        )];
+      }
+    }
     // Sans point de départ (GPS inconnu), le premier arrêt possible ouvre la marche.
     const suivant = ici
       ? possibles.reduce((best, a) => (distanceKm(ici!, a.point) < distanceKm(ici!, best.point) ? a : best))
@@ -127,11 +137,13 @@ export function versCourseTournee(c: {
   pickupLng: number | null;
   deliveryLat: number | null;
   deliveryLng: number | null;
+  ordreRemise?: number | null;
 }): CourseTournee {
   return {
     id: c.id,
     retrait: { latitude: c.pickupLat, longitude: c.pickupLng } as Point,
     remise: { latitude: c.deliveryLat, longitude: c.deliveryLng } as Point,
     recuperee: c.status === "PICKED_UP",
+    ordreRemise: c.ordreRemise,
   };
 }

@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import { Outbox } from "../jobs/outbox.service";
 import { TYPE_EMAIL_SUIVI_COMMANDE } from "../notifications/outbox-handlers";
 import { db } from "../../services/db";
+import { PreparationCuisineService } from "./preparation-cuisine.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitWebhook } from "../webhooks/webhook.service";
@@ -315,6 +316,7 @@ export class OrderAcceptanceService {
 
     const maintenant = new Date();
     const finDePreparation = new Date(maintenant.getTime() + preparationMinutes * MINUTE);
+    const preparationCalmSample = await PreparationCuisineService.echantillonCalme(storeId, commande.pickupTime, maintenant);
     const pret =
       commande.deliveryType === "PICKUP" && commande.pickupTime && commande.pickupTime > finDePreparation
         ? commande.pickupTime
@@ -328,6 +330,7 @@ export class OrderAcceptanceService {
         status: "ACCEPTED",
         acceptedAt: maintenant,
         preparationMinutes,
+        preparationCalmSample,
         estimatedReadyAt: pret,
       },
     });

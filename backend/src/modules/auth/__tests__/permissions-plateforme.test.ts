@@ -23,6 +23,11 @@ import {
   PERMISSIONS_PAR_DEFAUT,
 } from "../permissions-plateforme.service";
 
+it('rattache les incidents de commandes aux droits du support', () => {
+  expect(sectionDeLaRoute('superowner', '/support-tickets/order-issues', 'GET')).toBe('support-tickets');
+  expect(sectionDeLaRoute('superowner', '/support-tickets/order-issues/c1/response', 'PUT')).toBe('support-tickets');
+});
+
 const roles = [
   { code: "SUPER_ADMIN", label: "SuperAdmin", permissions: {} },
   { code: "ADMIN", label: "Administrateur", permissions: { billing: "write", organizations: "read" } },

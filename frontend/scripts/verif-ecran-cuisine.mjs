@@ -222,7 +222,7 @@ const carte = (id) => page.locator('article', { hasText: numero(id) });
 
 titre('Accepter avec un temps de préparation');
 
-await carte(aAccepter).getByRole('button', { name: '30 minutes' }).click();
+await carte(aAccepter).getByRole('spinbutton', { name: 'Durée en minutes (1 à 240)' }).fill('30');
 await carte(aAccepter).getByRole('button', { name: 'Accepter · 30 min' }).click();
 check('la commande est acceptée en base', (await attendreStatut(aAccepter, 'ACCEPTED')) === 'ACCEPTED');
 const fiche = await base.order.findUnique({ where: { id: aAccepter }, select: { preparationMinutes: true } });

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Check, Phone, X, AlertTriangle } from 'lucide-react';
+import { usePreparationCuisine } from '@/lib/use-preparation-cuisine';
+import { ChoixPreparation } from '@/components/ChoixPreparation';
 import {
   MOTIFS_DU_COMMERCANT,
-  TEMPS_DE_PREPARATION,
   EVENEMENT_COMMANDES_CHANGEES,
   accepterCommande,
   refuserCommande,
@@ -41,20 +42,29 @@ const ETAPES = [{ valeur: 'PREPARING' }, { valeur: 'READY' }, { valeur: 'COMPLET
  * avec un motif. Acceptée : la faire avancer, ou l'annuler sur un imprévu.
  * Refusée : dire pourquoi, et s'il reste un remboursement à faire.
  */
-export function ReponseCommande({
+interface PropsReponse {
+  storeId: string;
+  commande: CommandeARepondre;
+  surChangement: () => void;
+}
+
+export function ReponseCommande(props: PropsReponse) {
+  return <FormulaireReponseCommande key={`${props.storeId}:${props.commande.id}`} {...props} />;
+}
+
+function FormulaireReponseCommande({
   storeId,
   commande,
   surChangement,
-}: {
-  storeId: string;
-  commande: CommandeARepondre;
-  /** La commande a changé : relire la liste ou le détail. */
-  surChangement: () => void;
-}) {
+}: PropsReponse) {
   const t = useTranslations('reponseCommande');
   const tMotif = useTranslations('motifsRefus');
   const tDelai = useTranslations('delai');
-  const [preparation, setPreparation] = useState(20);
+  const { etat: cuisine, indisponible } = usePreparationCuisine(storeId, commande.status === 'PENDING');
+  const [preparation, setPreparation] = useState<string | null>(null);
+  const valeurPreparation = preparation ?? String(cuisine?.minutes ?? 20);
+  const minutesPreparation = Number(valeurPreparation);
+  const preparationValide = (preparation !== null || cuisine !== null) && Number.isInteger(minutesPreparation) && minutesPreparation >= 1 && minutesPreparation <= 240;
   const [refus, setRefus] = useState(false);
   const [motif, setMotif] = useState<MotifDeRefus | ''>('');
   const [note, setNote] = useState('');
@@ -190,33 +200,15 @@ export function ReponseCommande({
           formulaireDeRefus
         ) : (
           <>
-            <div>
-              <p className="text-xs text-gray-500 mb-2">{t('tempsPreparation')}</p>
-              <div className="grid grid-cols-6 gap-1">
-                {TEMPS_DE_PREPARATION.map((minutes) => (
-                  <button
-                    key={minutes}
-                    type="button"
-                    onClick={() => setPreparation(minutes)}
-                    className={`rounded px-1 py-2 text-xs font-medium border transition-colors ${
-                      preparation === minutes
-                        ? 'bg-green-600 border-green-500 text-white'
-                        : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
-                    }`}
-                  >
-                    {t('minutes', { n: minutes })}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ChoixPreparation storeId={storeId} valeur={valeurPreparation} surChangement={setPreparation} envoi={envoi} cuisine={cuisine} indisponible={indisponible} invalide={preparation !== null && !preparationValide} />
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => agir(() => accepterCommande(storeId, commande.id, preparation))}
-                disabled={envoi}
+                onClick={() => preparationValide && agir(() => accepterCommande(storeId, commande.id, minutesPreparation))}
+                disabled={envoi || !preparationValide}
                 className="flex-1 inline-flex items-center justify-center gap-1 rounded-sm bg-green-600 text-white hover:bg-green-700 px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
-                <Check size={16} /> {envoi ? '...' : t('accepter')}
+                <Check size={16} /> {envoi ? '...' : preparationValide ? t('accepterEtAnnoncer', { n: minutesPreparation }) : t('accepter')}
               </button>
               <button
                 type="button"

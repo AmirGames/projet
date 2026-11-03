@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { z } from "zod";
 import { ApiError } from "../../middleware/errorHandler";
 import { StoreHoursService } from "../delivery/store-hours.service";
 import { DeliveryZoneService } from "../delivery/delivery-zone.service";
@@ -9,6 +10,11 @@ import { VitrineClientService } from "./vitrine-client.service";
 // app.ts). L'ordre compte ici : /stores/nearby et /stores/search passent avant
 // /stores/:id.
 const router = Router();
+const rechercheSchema = z.object({
+  q: z.string().trim().min(1).max(120),
+  city: z.string().trim().min(1).max(100).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
 
 /** « be », « fr »… : le pays de la région du site, en deux lettres. */
 const paysDemande = (brut: unknown) =>
@@ -60,18 +66,18 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
 // GET /api/client/stores/search - Search stores by name, city, cuisine
 router.get("/stores/search", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { q, city, limit = 20 } = req.query;
+    const { q, city, limit } = rechercheSchema.parse(req.query);
 
     if (!q) {
       throw new ApiError(400, "Paramètre 'q' requis", "INVALID_REQUEST");
     }
 
-    const searchQuery = (q as string).toLowerCase();
+    const searchQuery = q.toLowerCase();
 
     const data = await VitrineClientService.rechercher(
       searchQuery,
-      city ? (city as string) : undefined,
-      parseInt(limit as string)
+      city,
+      limit
     );
 
     res.json({

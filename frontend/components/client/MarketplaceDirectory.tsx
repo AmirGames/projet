@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Bike, Check, ChevronDown, Clock3, Search, Star, Store as StoreIcon, X } from 'lucide-react';
 import { euro } from '@/lib/format';
+import { pertinenceCommerce, comparerRecommandations, minutesCommerce, fraisCommerce } from '@/lib/decouverte-commerces';
 import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -29,6 +30,7 @@ interface Commerce {
   famille?: string | null;
   genreLibelle?: string | null;
   products?: { id: string; name: string }[];
+  searchProducts?: { id: string; name: string }[];
   settings?: { banner?: string | null; logo?: string | null } | null;
   livraison?: {
     livrable: boolean;
@@ -45,19 +47,10 @@ interface Famille {
 }
 
 type Tri = 'recommended' | 'rating' | 'delivery' | 'distance';
-type Filtre = 'freeDelivery' | 'fast' | 'topRated' | 'open';
+type Filtre = 'freeDelivery' | 'fast' | 'topRated' | 'open' | 'deliverable';
 
-const normaliser = (texte: string) =>
-  texte.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr').trim();
-
-const minutesDe = (commerce: Commerce) =>
-  commerce.livraison?.deliveryMinutes ??
-  (commerce.estimatedDeliveryTime ? Number.parseInt(commerce.estimatedDeliveryTime, 10) || null : null);
-
-const fraisDe = (commerce: Commerce) => {
-  if (commerce.livraison) return commerce.livraison.livrable ? commerce.livraison.frais : null;
-  return commerce.deliveryCost;
-};
+const minutesDe = minutesCommerce;
+const fraisDe = fraisCommerce;
 
 const livraisonOfferte = (commerce: Commerce) => {
   if (commerce.livraison) return commerce.livraison.livrable && commerce.livraison.frais === 0;
@@ -77,6 +70,7 @@ export function MarketplaceDirectory() {
   const [recherche, setRecherche] = useState('');
   const [famille, setFamille] = useState('');
   const [filtres, setFiltres] = useState<Set<Filtre>>(new Set());
+  const [fraisMaximum, setFraisMaximum] = useState('');
   const [tri, setTri] = useState<Tri>('recommended');
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(false);
@@ -118,30 +112,22 @@ export function MarketplaceDirectory() {
   }, []);
 
   const resultat = useMemo(() => {
-    const terme = normaliser(recherche);
+    const pertinences = new Map(commerces.map((c) => [c.id, pertinenceCommerce(c, recherche)]));
     const filtered = commerces.filter((commerce) => {
       const correspondCategorie = !famille || commerce.famille === famille;
-      const contenu = [
-        commerce.name,
-        commerce.city,
-        commerce.genreLibelle,
-        commerce.description,
-        ...(commerce.products || []).map((produit) => produit.name),
-      ].filter(Boolean).join(' ');
-      const correspondRecherche = !terme || normaliser(contenu).includes(terme);
+      const correspondRecherche = pertinences.get(commerce.id)! > 0;
       const correspondFiltres =
         (!filtres.has('freeDelivery') || livraisonOfferte(commerce)) &&
         (!filtres.has('fast') || (minutesDe(commerce) != null && minutesDe(commerce)! <= 30)) &&
         (!filtres.has('topRated') || (!!commerce.totalRatings && (commerce.rating || 0) >= 4.8)) &&
-        (!filtres.has('open') || commerce.isOpenNow !== false);
+        (!filtres.has('open') || commerce.isOpenNow === true) &&
+        (!filtres.has('deliverable') || commerce.livraison?.livrable === true) &&
+        (!fraisMaximum || (fraisDe(commerce) != null && fraisDe(commerce)! <= Number(fraisMaximum)));
       return correspondCategorie && correspondRecherche && correspondFiltres;
     });
 
     const comparateurs: Record<Tri, (a: Commerce, b: Commerce) => number> = {
-      recommended: (a, b) =>
-        Number(b.isOpenNow !== false) - Number(a.isOpenNow !== false) ||
-        Number(b.livraison?.livrable !== false) - Number(a.livraison?.livrable !== false) ||
-        (b.rating || 0) - (a.rating || 0),
+      recommended: (a, b) => comparerRecommandations(a, b, pertinences.get(a.id), pertinences.get(b.id)),
       rating: (a, b) => (b.rating || 0) - (a.rating || 0),
       delivery: (a, b) =>
         (minutesDe(a) ?? 999) - (minutesDe(b) ?? 999) ||
@@ -149,7 +135,7 @@ export function MarketplaceDirectory() {
       distance: (a, b) => (a.distance ?? 999) - (b.distance ?? 999),
     };
     return [...filtered].sort(comparateurs[tri]);
-  }, [commerces, famille, filtres, recherche, tri]);
+  }, [commerces, famille, filtres, recherche, tri, fraisMaximum]);
 
   const basculerFiltre = (cle: Filtre) =>
     setFiltres((actuels) => {
@@ -164,6 +150,7 @@ export function MarketplaceDirectory() {
     setFamille('');
     setFiltres(new Set());
     setTri('recommended');
+    setFraisMaximum('');
   };
 
   const filtresRapides: { cle: Filtre; libelle: string; icone: typeof Bike }[] = [
@@ -171,6 +158,7 @@ export function MarketplaceDirectory() {
     { cle: 'fast', libelle: t('fast'), icone: Clock3 },
     { cle: 'topRated', libelle: t('topRated'), icone: Star },
     { cle: 'open', libelle: t('openNow'), icone: Check },
+    { cle: 'deliverable', libelle: t('deliverable'), icone: Bike },
   ];
 
   return (
@@ -216,6 +204,13 @@ export function MarketplaceDirectory() {
       </section>
 
       <section className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-12" aria-labelledby="results-title">
+        <label className="mb-5 flex flex-wrap items-center gap-3 text-sm font-semibold">
+          {t('maxDeliveryFee')}
+          <select value={fraisMaximum} onChange={(event) => setFraisMaximum(event.target.value)} className="rounded-lg border border-neutral-300 bg-white px-3 py-2">
+            <option value="">{t('anyFee')}</option>
+            {[0, 3, 5].map((montant) => <option key={montant} value={montant}>{euro(montant)}</option>)}
+          </select>
+        </label>
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
             <h2 id="results-title" className="text-2xl font-black tracking-tight">{familles.find((item) => item.code === famille)?.libelle || t('allShops')}</h2>

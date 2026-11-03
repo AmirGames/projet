@@ -23,10 +23,12 @@ export async function runRetention(now = new Date()) {
   const pendingErasure = await db.privacyDeferredOrderErasure.findMany({ where: { orderId: { notIn: holds("Order") } }, select: { orderId: true }, take: 500 });
   if (pendingErasure.length) await db.$transaction(async (tx) => {
     const ids = pendingErasure.map((r) => r.orderId);
+    await tx.orderIssue.deleteMany({ where: { orderId: { in: ids } } });
     await tx.order.updateMany({ where: { id: { in: ids } }, data: { customerId: null, customerName: "Client supprimé", customerEmail: "supprime@zupeat.invalid", customerPhone: "", deliveryAddress: null, deliveryCity: null, deliveryPostal: null, deliveryLat: null, deliveryLng: null, notes: null, rejectionNote: null, trackingTokenHash: null } });
     await tx.privacyDeferredOrderErasure.deleteMany({ where: { orderId: { in: ids } } });
   });
   result.deferredOrderErasures = pendingErasure.length;
+  result.orderIssues = (await db.orderIssue.deleteMany({ where: { orderId: { notIn: holds("Order") }, status: { in: ["RESOLVED", "REJECTED"] }, resolvedAt: { lt: before(RETENTION.support, now) } } })).count;
   result.courierGps = (await db.courier.updateMany({ where: { lastLocationUpdate: { lt: before(RETENTION.gps, now) } }, data: { latitude: null, longitude: null } })).count;
   result.chauffeurGps = (await db.chauffeurDrive.updateMany({ where: { positionLe: { lt: before(RETENTION.gps, now) } }, data: { latitude: null, longitude: null } })).count;
   result.deliveryGps = (await db.orderDelivery.updateMany({ where: { id: { notIn: [...held.map((i) => i.deliveryId), ...holds("OrderDelivery")] }, status: { in: terminal }, updatedAt: { lt: before(RETENTION.gps, now) } }, data: { driverLat: null, driverLng: null } })).count;

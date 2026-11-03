@@ -26,23 +26,29 @@ interface CommandeEnAttente {
   store?: { id: string; name: string };
 }
 
-/** Deux notes courtes, assez fortes pour s'entendre en cuisine. */
+/** Carillon doux : notes plus graves, son pur et attaque progressive. */
 function sonner(contexte: AudioContext) {
   const debut = contexte.currentTime;
 
-  [880, 1175].forEach((frequence, rang) => {
+  [659, 523].forEach((frequence, rang) => {
     const oscillateur = contexte.createOscillator();
     const volume = contexte.createGain();
+    const depart = debut + rang * 0.22;
 
-    oscillateur.type = 'square';
+    oscillateur.type = 'sine';
     oscillateur.frequency.value = frequence;
-    volume.gain.setValueAtTime(0.0001, debut + rang * 0.25);
-    volume.gain.exponentialRampToValueAtTime(0.3, debut + rang * 0.25 + 0.02);
-    volume.gain.exponentialRampToValueAtTime(0.0001, debut + rang * 0.25 + 0.22);
+    volume.gain.setValueAtTime(0, depart);
+    volume.gain.linearRampToValueAtTime(0.1, depart + 0.045);
+    volume.gain.exponentialRampToValueAtTime(0.0001, depart + 0.55);
+    volume.gain.linearRampToValueAtTime(0, depart + 0.6);
 
     oscillateur.connect(volume).connect(contexte.destination);
-    oscillateur.start(debut + rang * 0.25);
-    oscillateur.stop(debut + rang * 0.25 + 0.24);
+    oscillateur.onended = () => {
+      oscillateur.disconnect();
+      volume.disconnect();
+    };
+    oscillateur.start(depart);
+    oscillateur.stop(depart + 0.62);
   });
 }
 

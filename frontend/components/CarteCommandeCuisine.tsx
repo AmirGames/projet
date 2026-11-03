@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Phone, Search, Truck } from 'lucide-react';
 
+import { ChoixPreparation } from '@/components/ChoixPreparation';
+import { usePreparationCuisine } from '@/lib/use-preparation-cuisine';
 import { euro, montantCommercant } from '@/lib/format';
 import { numeroCourt } from '@/lib/numero-commande';
 import {
   MOTIFS_DU_COMMERCANT,
-  TEMPS_DE_PREPARATION,
   EVENEMENT_COMMANDES_CHANGEES,
   accepterCommande,
   refuserCommande,
@@ -86,7 +87,11 @@ export function CarteCommandeCuisine({
   surChoisirLivreur: (orderId: string) => void;
 }) {
   const t = useTranslations('merchantOrders.cuisine');
-  const [preparation, setPreparation] = useState(20);
+  const { etat: cuisine, indisponible } = usePreparationCuisine(storeId, commande.status === 'PENDING');
+  const [preparation, setPreparation] = useState<string | null>(null);
+  const valeurPreparation = preparation ?? String(cuisine?.minutes ?? 20);
+  const minutesPreparation = Number(valeurPreparation);
+  const preparationValide = (preparation !== null || cuisine !== null) && Number.isInteger(minutesPreparation) && minutesPreparation >= 1 && minutesPreparation <= 240;
   const [refus, setRefus] = useState(false);
   const [motif, setMotif] = useState<MotifDeRefus | ''>('');
   const [note, setNote] = useState('');
@@ -301,27 +306,7 @@ export function CarteCommandeCuisine({
         </div>
       ) : enAttente ? (
         <>
-          <div>
-            <p className="mb-1.5 text-xs font-bold text-gray-500">{t('preteDansCombien')}</p>
-            <div className="grid grid-cols-6 gap-1">
-              {TEMPS_DE_PREPARATION.map((minutes) => (
-                <button
-                  key={minutes}
-                  type="button"
-                  aria-pressed={preparation === minutes}
-                  aria-label={t('minutes', { minutes })}
-                  onClick={() => setPreparation(minutes)}
-                  className={`rounded-[10px] border py-2 text-[13px] font-bold tabular-nums transition ${
-                    preparation === minutes
-                      ? 'border-gray-900 bg-gray-900 text-white'
-                      : 'border-gray-200 bg-white hover:border-gray-400'
-                  }`}
-                >
-                  {minutes}′
-                </button>
-              ))}
-            </div>
-          </div>
+          <ChoixPreparation storeId={storeId} valeur={valeurPreparation} surChangement={setPreparation} envoi={envoi} cuisine={cuisine} indisponible={indisponible} invalide={preparation !== null && !preparationValide} />
           <div className="grid grid-cols-[1fr_2fr] gap-2">
             <button
               type="button"
@@ -333,11 +318,11 @@ export function CarteCommandeCuisine({
             </button>
             <button
               type="button"
-              onClick={() => agir(() => accepterCommande(storeId, commande.id, preparation))}
-              disabled={envoi}
+              onClick={() => preparationValide && agir(() => accepterCommande(storeId, commande.id, minutesPreparation))}
+              disabled={envoi || !preparationValide}
               className={`${boutonPrincipal} bg-orange-600 hover:bg-orange-700`}
             >
-              {envoi ? '…' : t('accepterEn', { minutes: preparation })}
+              {envoi ? '…' : t('accepterEn', { minutes: minutesPreparation })}
             </button>
           </div>
         </>

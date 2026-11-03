@@ -2,6 +2,7 @@ import type { ClientTransaction } from "../../services/db";
 
 export async function effacerCommandesClient(tx: ClientTransaction, customerId: string, orderIds: string[], holds: string[]) {
   const geles = orderIds.filter((id) => holds.includes(id));
+  await tx.orderIssue.deleteMany({ where: { orderId: { in: orderIds.filter((id) => !geles.includes(id)) } } });
   if (geles.length) {
     await tx.privacyDeferredOrderErasure.createMany({ data: geles.map((orderId) => ({ orderId })), skipDuplicates: true });
     await tx.order.updateMany({ where: { customerId, id: { in: geles } }, data: { customerId: null, trackingTokenHash: null } });

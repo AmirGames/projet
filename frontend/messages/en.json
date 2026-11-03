@@ -5580,6 +5580,10 @@
     "heures": "in {h} h {m}"
   },
   "reponseCommande": {
+    "dureeLibre": "Time in minutes (1 to 240)",
+    "delaiAnnonceClient": "Choose a preparation time: it will be shared with the customer after acceptance. For a scheduled pickup, the announced time also respects the chosen slot.",
+    "dureeInvalide": "Enter a whole number between 1 and 240 minutes.",
+    "accepterEtAnnoncer": "Accept and announce {n} min",
     "actionImpossible": "Action not possible",
     "rembourse": "Paid online: the customer has been refunded.",
     "remise": "Order handed over.",
@@ -6882,6 +6886,9 @@
     "error": "Unable to confirm the factor."
   },
   "clientDirectory": {
+    "deliverable": "Delivers to my address",
+    "maxDeliveryFee": "Maximum delivery fee",
+    "anyFee": "Any fee",
     "eyebrow": "Your local shops",
     "title": "All shops",
     "subtitle": "Great places near you, ready to discover and order from.",
@@ -6943,5 +6950,94 @@
     "privacy": "Privacy",
     "copyright": "© {year} ZupEat. All rights reserved.",
     "madeForLocal": "Made for local shops."
+  },
+  "estimationLivraison": {
+    "titre": "Your delivery",
+    "fourchette": "Estimated arrival between {debut} and {fin}",
+    "actualisation": "Updating. An arrival time will appear when the information is current.",
+    "indicatif": "This is an estimate and changes with preparation and travel.",
+    "etapes": {
+      "CONFIRMATION": "The restaurant still needs to confirm your order.",
+      "PREPARATION": "Your order is being prepared.",
+      "RECHERCHE_LIVREUR": "We are looking for a courier.",
+      "LIVREUR_EN_APPROCHE": "The courier is heading to the restaurant.",
+      "COLLECTE": "The courier is collecting orders for the delivery route.",
+      "AUTRE_LIVRAISON": "The courier is finishing another delivery before heading to you.",
+      "EN_ROUTE": "The courier is on the way to you.",
+      "ATTENTE_CLIENT": "The courier is waiting for you at the delivery address.",
+      "LIVREE": "Your order has been delivered.",
+      "ANNULEE": "This delivery is no longer proceeding.",
+      "LIVRAISON_COMMERCANT": "The restaurant is handling your delivery."
+    },
+    "motifs": {
+      "GPS_INDISPONIBLE": "The courier’s location is out of date. The estimate will update with the next signal.",
+      "PREPARATION_INCONNUE": "We need a confirmed preparation time before estimating arrival.",
+      "PREPARATION_EN_RETARD": "Preparation is taking longer than expected. A new estimate will be available when possible.",
+      "TRAJET_INCONNU": "There is not enough route information to estimate an arrival time yet."
+    }
+  },
+  "cuisinePreparation": {
+    "minutes": "min",
+    "moins": "Decrease by 5 minutes",
+    "plus": "Increase by 5 minutes",
+    "historique": "Observed usual time: {n} min",
+    "parDefaut": "Default time: {n} min",
+    "enCours": "{n} order(s) being prepared",
+    "rushActif": "Busy kitchen: +{n} min until {heure}",
+    "indisponible": "Suggestion unavailable. Adjust the time manually before accepting.",
+    "reglages": "Capacity and busy kitchen mode",
+    "aideReglages": "These settings affect future suggestions without changing times already announced. Set the capacity to match your kitchen. Only managers can change these settings.",
+    "base": "Initial preparation time, in minutes",
+    "capacite": "Orders prepared in parallel",
+    "mode": "Kitchen mode",
+    "conserver": "Keep current mode",
+    "normal": "Return to normal mode",
+    "rushPendant": "Busy kitchen for {n} min",
+    "supplement": "Extra minutes during busy mode",
+    "enregistrer": "Save settings",
+    "enregistre": "Settings saved. Future suggestions are updated.",
+    "erreur": "Could not save settings."
+  },
+  "incidentsCommande": {
+    "titre": "A problem with your order?",
+    "signaler": "Report a problem",
+    "motif": "Reason",
+    "articles": "Which items are missing?",
+    "quantite": "Quantity",
+    "description": "Describe the problem",
+    "demanderRemboursement": "Request a refund review",
+    "examen": "Support will review your request. Refunds are not automatic. You can report a problem within 7 days of ordering; missing items and wrong orders can be reported after handover.",
+    "envoyer": "Submit report",
+    "annuler": "Cancel",
+    "reponseSupport": "Support response:",
+    "remboursementDemande": "Refund review requested.",
+    "indisponible": "No new report is available for this order.",
+    "erreurChargement": "Could not load your reports.",
+    "erreurEnvoi": "Could not submit the request.",
+    "reessayer": "Try again",
+    "titreAdmin": "Customer order incidents",
+    "aideAdmin": "Respond to customer reports. This action records a response; any refund must be processed separately in billing.",
+    "statut": "Status",
+    "tous": "All",
+    "actualiser": "Refresh",
+    "nombre": "{n} case(s)",
+    "aucun": "No cases match this filter.",
+    "commande": "Order",
+    "precedent": "Previous",
+    "suivant": "Next",
+    "repondre": "Response to the customer",
+    "decision": "Decision",
+    "envoyerReponse": "Save response",
+    "categories": {
+      "MISSING_ITEM": "Missing item",
+      "WRONG_ORDER": "Wrong order",
+      "LATE_ORDER": "Late order",
+      "OTHER": "Other problem"
+    },
+    "statuts": {
+      "OPEN": "Awaiting support",
+      "RESOLVED": "Response provided",
+      "REJECTED": "Request declined"
+    }
   }
 }

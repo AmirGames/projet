@@ -17,7 +17,7 @@ import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useRef, useState } from 'react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import type { Map as CarteLeaflet, CircleMarker } from 'leaflet';
-import { MapPin, Clock, Truck, AlertCircle } from 'lucide-react';
+import { MapPin, AlertCircle } from 'lucide-react';
 import L from 'leaflet';
 import type { Socket } from 'socket.io-client';
 import { connexionTempsReel, suivreSalon } from '@/lib/temps-reel';
@@ -74,17 +74,14 @@ const aDesCoordonnees = (d: DeliveryTracking | null | undefined): d is AvecCoord
   estUneCoordonnee(d.deliveryLat) &&
   estUneCoordonnee(d.deliveryLng);
 
-const estimatedTimeFromDistance = (km: number): number => {
-  // Moyenne 30 km/h en ville + temps de manœuvre
-  return Math.max(2, Math.round(km * 2));
-};
-
-export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
+export function SuiviLivraisonClient({ orderId, delivery }: Props) {
   const t = useTranslations('suiviLivraisonClient');
   const mapRef = useRef<CarteLeaflet | null>(null);
   const markersRef = useRef<{ [key: string]: CircleMarker }>({});
   const lineRef = useRef<L.Polyline | null>(null);
   const [currentDelivery, setCurrentDelivery] = useState<DeliveryTracking>(delivery);
+  const [snapshot, setSnapshot] = useState(delivery);
+  if (snapshot !== delivery) { setSnapshot(delivery); setCurrentDelivery(delivery); }
   const [error, setError] = useState('');
   const socketRef = useRef<Socket | null>(null);
   // La destination lue par le gestionnaire WebSocket, sans valeur figée.
@@ -289,9 +286,6 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
         )
       : undefined;
 
-  const timeRemaining =
-    distance !== undefined ? estimatedTimeFromDistance(distance) : undefined;
-
   const carteAffichable = aDesCoordonnees(delivery);
 
   return (
@@ -317,19 +311,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
           </div>
         )}
 
-        {currentDelivery.status === 'ACCEPTED' && (
-          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-sm p-3">
-            <Truck size={18} className="text-blue-600 shrink-0" />
-            <div>
-              <p className="text-blue-600 font-semibold text-sm">
-                {t('enRoute', { nom: driverName || t('livreur') })}
-              </p>
-              <p className="text-gray-500 text-xs">{t('acceptee')}</p>
-            </div>
-          </div>
-        )}
-
-        {timeRemaining && distance !== undefined && (
+        {distance !== undefined && (
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded-sm p-3">
               <p className="text-gray-500 text-xs mb-1">{t('distance')}</p>
@@ -338,17 +320,11 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
                 {distance.toFixed(1)} km
               </p>
             </div>
-            <div className="bg-gray-50 rounded-sm p-3">
-              <p className="text-gray-500 text-xs mb-1">{t('tempsEstime')}</p>
-              <p className="text-gray-900 font-bold text-lg flex items-center gap-1">
-                <Clock size={16} className="text-green-500" />
-                {t('minutes', { n: timeRemaining })}
-              </p>
-            </div>
+
           </div>
         )}
 
-        {currentDelivery.status === 'COMPLETED' && (
+        {['COMPLETED', 'DELIVERED'].includes(currentDelivery.status) && (
           <div className="bg-green-50 border border-green-200 rounded-sm p-3 text-center">
             <p className="text-green-600 font-semibold">{t('livree')}</p>
           </div>

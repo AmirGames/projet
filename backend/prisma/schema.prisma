@@ -779,6 +779,10 @@ model Store {
 
   // Quick store status
   isOpen        Boolean   @default(true)
+  kitchenDefaultMinutes Int @default(20)
+  kitchenParallelOrders Int @default(3)
+  kitchenRushExtraMinutes Int @default(0)
+  kitchenRushUntil DateTime?
 
   // Delivery options
   acceptsDelivery Boolean @default(true)   // Accept delivery orders
@@ -1144,6 +1148,11 @@ model Order {
   /// L'heure à laquelle la commande sera prête : maintenant plus la
   /// préparation, ou le créneau choisi pour un retrait programmé.
   estimatedReadyAt   DateTime?
+  /// Heure réelle du passage à READY ; les anciennes commandes ne sont pas reconstruites.
+  readyAt DateTime?
+  /// Acceptée sans surcharge observée ni mode rush, hors retrait programmé.
+  preparationCalmSample Boolean @default(false)
+  issues OrderIssue[]
 
   /// Le refus, et son motif : TOO_BUSY, PRODUCT_UNAVAILABLE,
   /// EXCEPTIONAL_CLOSURE, OTHER — ou NO_RESPONSE quand le commerçant n'a pas
@@ -1187,6 +1196,7 @@ model Order {
   @@index([deletedAt])
   @@index([submittedAt])
   @@index([merchantPayoutId])
+  @@index([storeId, preparationCalmSample, readyAt], map: "Order_kitchen_samples_idx")
   @@unique([storeId, idempotencyKey])
 }
 
@@ -1196,6 +1206,37 @@ model Order {
 /// l'acceptation, pendant la course — quand le jeton remis au navigateur n'est
 /// plus connu du serveur, qui n'en garde que l'empreinte. Chaque lien reçoit
 /// donc son propre jeton, dont seule l'empreinte SHA-256 est enregistrée ici.
+enum OrderIssueCategory {
+  MISSING_ITEM
+  WRONG_ORDER
+  LATE_ORDER
+  OTHER
+}
+
+enum OrderIssueStatus {
+  OPEN
+  RESOLVED
+  REJECTED
+}
+
+model OrderIssue {
+  id String @id @default(cuid())
+  orderId String
+  category OrderIssueCategory
+  message String
+  items Json @default("[]")
+  requestRefund Boolean @default(false)
+  status OrderIssueStatus @default(OPEN)
+  response String?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, category])
+  @@index([status, createdAt])
+}
+
 model OrderTrackingToken {
   id        String   @id @default(cuid())
   orderId   String

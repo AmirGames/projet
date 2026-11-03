@@ -5580,6 +5580,10 @@
     "heures": "dans {h} h {m}"
   },
   "reponseCommande": {
+    "dureeLibre": "Durée en minutes (1 à 240)",
+    "delaiAnnonceClient": "Choisissez un délai : il sera communiqué au client après acceptation. Pour un retrait programmé, l’heure annoncée respecte aussi le créneau choisi.",
+    "dureeInvalide": "Saisissez un nombre entier entre 1 et 240 minutes.",
+    "accepterEtAnnoncer": "Accepter et annoncer {n} min",
     "actionImpossible": "Action impossible",
     "rembourse": "Payée en ligne : le client a été remboursé.",
     "remise": "Commande remise.",
@@ -6882,6 +6886,9 @@
     "error": "Impossible de confirmer le facteur."
   },
   "clientDirectory": {
+    "deliverable": "Livre à mon adresse",
+    "maxDeliveryFee": "Frais de livraison maximum",
+    "anyFee": "Tous les tarifs",
     "eyebrow": "Vos commerces de quartier",
     "title": "Toutes les boutiques",
     "subtitle": "Les belles adresses près de chez vous, à découvrir et à commander.",
@@ -6943,5 +6950,94 @@
     "privacy": "Confidentialité",
     "copyright": "© {year} ZupEat. Tous droits réservés.",
     "madeForLocal": "Pensé pour les commerces de proximité."
+  },
+  "estimationLivraison": {
+    "titre": "Votre livraison",
+    "fourchette": "Arrivée estimée entre {debut} et {fin}",
+    "actualisation": "Actualisation en cours. L’heure d’arrivée sera affichée dès que les informations seront à jour.",
+    "indicatif": "Cette fourchette est indicative et évolue avec la préparation et le trajet.",
+    "etapes": {
+      "CONFIRMATION": "Le restaurant doit encore confirmer votre commande.",
+      "PREPARATION": "Votre commande est en préparation.",
+      "RECHERCHE_LIVREUR": "Nous recherchons un livreur.",
+      "LIVREUR_EN_APPROCHE": "Le livreur rejoint le restaurant.",
+      "COLLECTE": "Le livreur récupère les commandes de sa tournée.",
+      "AUTRE_LIVRAISON": "Le livreur termine une autre livraison avant de vous rejoindre.",
+      "EN_ROUTE": "Le livreur est en route vers vous.",
+      "ATTENTE_CLIENT": "Le livreur vous attend à l’adresse de livraison.",
+      "LIVREE": "Votre commande a été livrée.",
+      "ANNULEE": "Cette livraison ne se poursuit pas.",
+      "LIVRAISON_COMMERCANT": "La livraison est assurée par le restaurant."
+    },
+    "motifs": {
+      "GPS_INDISPONIBLE": "La position du livreur n’est pas à jour. L’estimation sera recalculée au prochain signal.",
+      "PREPARATION_INCONNUE": "Nous attendons un délai de préparation confirmé pour estimer votre arrivée.",
+      "PREPARATION_EN_RETARD": "Une préparation prend plus de temps que prévu. Une nouvelle estimation sera proposée dès que possible.",
+      "TRAJET_INCONNU": "Les informations de trajet ne permettent pas encore de calculer une heure d’arrivée."
+    }
+  },
+  "cuisinePreparation": {
+    "minutes": "min",
+    "moins": "Diminuer de 5 minutes",
+    "plus": "Augmenter de 5 minutes",
+    "historique": "Temps habituel observé : {n} min",
+    "parDefaut": "Durée par défaut : {n} min",
+    "enCours": "{n} commande(s) en préparation",
+    "rushActif": "Cuisine chargée : +{n} min jusqu’à {heure}",
+    "indisponible": "Suggestion indisponible. Ajustez manuellement le délai avant d’accepter.",
+    "reglages": "Capacité et mode cuisine chargée",
+    "aideReglages": "Ces réglages modifient les prochaines suggestions, sans changer les délais déjà annoncés. Réglez la capacité selon votre cuisine. Modification réservée au responsable.",
+    "base": "Durée de départ, en minutes",
+    "capacite": "Commandes préparées en parallèle",
+    "mode": "Mode de la cuisine",
+    "conserver": "Conserver le mode actuel",
+    "normal": "Revenir au mode normal",
+    "rushPendant": "Cuisine chargée pendant {n} min",
+    "supplement": "Minutes supplémentaires pendant le rush",
+    "enregistrer": "Enregistrer les réglages",
+    "enregistre": "Réglages enregistrés. Les prochaines suggestions sont actualisées.",
+    "erreur": "Impossible d’enregistrer les réglages."
+  },
+  "incidentsCommande": {
+    "titre": "Un problème avec votre commande ?",
+    "signaler": "Signaler un problème",
+    "motif": "Motif",
+    "articles": "Quels articles manquent ?",
+    "quantite": "Quantité",
+    "description": "Décrivez le problème",
+    "demanderRemboursement": "Demander un examen pour remboursement",
+    "examen": "Le support examinera votre demande. Aucun remboursement n’est automatique. Vous pouvez signaler un problème pendant 7 jours après la commande ; les articles manquants et erreurs de commande se signalent après remise.",
+    "envoyer": "Envoyer le signalement",
+    "annuler": "Annuler",
+    "reponseSupport": "Réponse du support :",
+    "remboursementDemande": "Demande de remboursement à examiner.",
+    "indisponible": "Aucun nouveau signalement disponible pour cette commande.",
+    "erreurChargement": "Impossible de charger le suivi des signalements.",
+    "erreurEnvoi": "Impossible d’envoyer la demande.",
+    "reessayer": "Réessayer",
+    "titreAdmin": "Incidents des commandes clients",
+    "aideAdmin": "Répondez aux signalements des clients. Cette action enregistre une réponse ; un remboursement éventuel doit être traité séparément dans la facturation.",
+    "statut": "Statut",
+    "tous": "Tous",
+    "actualiser": "Actualiser",
+    "nombre": "{n} dossier(s)",
+    "aucun": "Aucun dossier pour ce filtre.",
+    "commande": "Commande",
+    "precedent": "Précédent",
+    "suivant": "Suivant",
+    "repondre": "Réponse au client",
+    "decision": "Décision",
+    "envoyerReponse": "Enregistrer la réponse",
+    "categories": {
+      "MISSING_ITEM": "Article manquant",
+      "WRONG_ORDER": "Mauvaise commande",
+      "LATE_ORDER": "Commande en retard",
+      "OTHER": "Autre problème"
+    },
+    "statuts": {
+      "OPEN": "En attente du support",
+      "RESOLVED": "Réponse apportée",
+      "REJECTED": "Demande refusée"
+    }
   }
 }

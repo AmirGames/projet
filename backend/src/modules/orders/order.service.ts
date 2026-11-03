@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { horodatagePreparation } from "./preparation-cuisine.service";
 import type { Order, OrderStatus, Prisma } from "@prisma/client";
 import { codeErreur } from "../../utils/code-erreur";
 import { type Appelant, commandeVisible, genererJetonDeSuivi } from "./suivi-commande.service";
@@ -918,7 +919,7 @@ export class OrderService {
       // invalide la vérification de transition.
       const ecrit = await db.order.updateMany({
         where: { id, status: avant.status },
-        data: { status },
+        data: { status, ...horodatagePreparation(avant.status, status) },
       });
       if (ecrit.count !== 1) {
         throw new ApiError(409, "La commande a changé entre-temps, rechargez-la.", "ORDER_STATE_CONFLICT");

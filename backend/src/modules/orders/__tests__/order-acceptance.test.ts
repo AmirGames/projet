@@ -14,6 +14,7 @@ const db: any = {
 };
 
 jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../preparation-cuisine.service", () => ({ PreparationCuisineService: { echantillonCalme: jest.fn(async () => true) } }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));

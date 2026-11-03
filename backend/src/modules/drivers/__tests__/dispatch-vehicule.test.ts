@@ -207,13 +207,13 @@ describe("distance de livraison selon le véhicule (attribution)", () => {
     expect(proposeA()).toMatchObject({ driverId: "velo", horsLimite: true });
   });
 
-  it("une course courte reste proposée au plus proche, vélo compris, sans marque hors limite", async () => {
+  it("une course courte privilégie la remise la plus rapide, sans marque hors limite", async () => {
     db.orderDelivery.findUnique.mockResolvedValue(course({ deliveryLat: 48.875 })); // ~2,8 km
     livreursEnLigne([livreur("velo", "bike", 0.0005), livreur("scooter", "scooter", 0.003)]);
 
     await DispatchService.proposerAuSuivant("course-1");
 
-    expect(proposeA()).toMatchObject({ driverId: "velo", horsLimite: false });
+    expect(proposeA()).toMatchObject({ driverId: "scooter", horsLimite: false });
   });
 
   it("une course d'un scooter hors limite (au-delà de 7 km) passe d'abord à une voiture", async () => {

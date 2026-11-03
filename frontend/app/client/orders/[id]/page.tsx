@@ -2,13 +2,15 @@
 
 
 import { jetonAcces } from '@/lib/jeton-session';
+import { EstimationLivraison, type EstimationLivraisonClient } from '@/components/EstimationLivraison';
+import { IncidentCommande } from '@/components/IncidentCommande';
 import DetailDuTotal from '@/components/DetailDuTotal';
 import { PourboireApresLivraison } from '@/components/PourboireApresLivraison';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, MapPin, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { SuiviLivraison, type Course } from '@/components/SuiviLivraison';
 import { useOrderTracking } from '@/lib/use-order-tracking';
 import { useDonneesModifiees } from '@/lib/temps-reel';
@@ -24,6 +26,7 @@ import { numeroCourt } from '@/lib/numero-commande';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
+  estimationLivraison?: EstimationLivraisonClient | null;
   id: string;
   status: string;
   customerName?: string;
@@ -64,7 +67,7 @@ export default function OrderTrackingPage() {
   const router = useRouter();
   const orderId = params.id as string;
 
-  const { orderStatus, deliveryLocation, eta, gpsPerdu, livreurProche, retard, isConnected, notification } =
+  const { orderStatus, deliveryLocation, gpsPerdu, livreurProche, retard, isConnected, notification } =
     useOrderTracking(orderId);
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -93,7 +96,7 @@ export default function OrderTrackingPage() {
       .catch(() => {});
   }, [order?.status, orderId]);
 
-  const loadOrderData = useCallback(async () => {
+  const loadOrderData = useCallback(async (signal?: AbortSignal) => {
     const token = jetonAcces();
     if (!token) {
       router.push('/login');
@@ -104,30 +107,35 @@ export default function OrderTrackingPage() {
       // Le compte ouvre la commande ; le jeton de suivi gardé à la commande
       // couvre celle passée ici sans être connecté.
       const orderResponse = await fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId))}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        signal, headers: { Authorization: `Bearer ${token}` }
       });
+      if (signal?.aborted) return;
 
       if (orderResponse.ok) {
         // Cette route renvoie la commande directement, pas enveloppée dans
         // « data » : la page lisait une propriété inexistante et n'affichait
         // donc jamais la commande.
         const orderData = await orderResponse.json();
+        if (signal?.aborted) return;
         setOrder(orderData.data ?? orderData);
       } else if (orderResponse.status === 404) {
         setError(t('introuvable'));
       }
 
       const deliveryResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        signal, headers: { Authorization: `Bearer ${token}` }
       });
+      if (signal?.aborted) return;
 
       if (deliveryResponse.ok) {
         const deliveryData = await deliveryResponse.json();
+        if (signal?.aborted) return;
         setDelivery(deliveryData.data);
       }
 
       setLoading(false);
     } catch (err) {
+      if (signal?.aborted) return;
       signalerErreur('Error loading order:', err);
       setError(t('erreurChargement'));
       setLoading(false);
@@ -144,10 +152,18 @@ export default function OrderTrackingPage() {
 
   // La décision sur un dépôt peut arriver après la livraison, sans changement de statut.
   useEffect(() => {
-    if (!delivery?.reclamation?.possible && !(delivery?.reclamation?.deposee && !delivery?.reclamation?.traiteeLe)) return;
-    const timer = setInterval(() => loadOrderData(), 20000);
-    return () => clearInterval(timer);
-  }, [delivery?.reclamation?.possible, delivery?.reclamation?.deposee, delivery?.reclamation?.traiteeLe, loadOrderData]);
+    if (!order?.id) return;
+    const active = !['COMPLETED', 'REJECTED'].includes(order.status);
+    if (!active && !delivery?.reclamation?.possible && !(delivery?.reclamation?.deposee && !delivery?.reclamation?.traiteeLe)) return;
+    const controleur = new AbortController();
+    let enCours = false;
+    const timer = setInterval(async () => {
+      if (enCours) return;
+      enCours = true;
+      try { await loadOrderData(controleur.signal); } finally { enCours = false; }
+    }, 20000);
+    return () => { controleur.abort(); clearInterval(timer); };
+  }, [order?.id, order?.status, delivery?.reclamation?.possible, delivery?.reclamation?.deposee, delivery?.reclamation?.traiteeLe, loadOrderData]);
 
 
   // Le statut change en direct : on relit la commande entière, pour l'heure
@@ -379,6 +395,9 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
+            <EstimationLivraison key={order.id} estimation={order.estimationLivraison} />
+            <IncidentCommande key={`incidents-${order.id}`} orderId={order.id} />
+
             {/* Suivi : le bloc précédent affichait des coordonnées GPS brutes,
                 et un bouton « Appeler » qui n'appelait rien. */}
             {delivery && (
@@ -445,17 +464,6 @@ export default function OrderTrackingPage() {
                   <p className="font-semibold">{order.deliveryAddress}</p>
                 </div>
               </div>
-
-              {/* ETA */}
-              {eta && (
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-orange-800 text-sm mb-1">{t('tempsEstime')}</p>
-                  <p className="text-gray-900 text-2xl font-bold flex items-center gap-2">
-                    <Clock size={24} />
-                    {t('minutes', { n: eta })}
-                  </p>
-                </div>
-              )}
 
               <PourboireApresLivraison
                 orderId={order.id}

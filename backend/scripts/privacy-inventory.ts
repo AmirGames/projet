@@ -5,7 +5,7 @@ const auth = new Set(["User", "MfaFactor", "SessionConnexion", "JetonRafraichiss
 const finances = new Set(["Order", "OrderItem", "Payment", "Invoice", "PlatformInvoice", "CourierPayout", "MerchantPayout", "CourierTip"]);
 const service = new Set(["Customer", "CustomerCart", "FavoriteStore", "Review", "ReviewReport", "CourierRating", "Courier", "OrderDelivery", "DeliveryOffer", "ChauffeurDrive", "CourseDrive", "NoteCourseDrive", "PropositionCourseDrive"]);
 const documents = new Set(["CourierDocument", "OrganizationDocument", "DocumentChauffeurDrive"]);
-const support = new Set(["MerchantTicket", "TicketMessage", "CourierSupportMessage", "DeliveryIncident"]);
+const support = new Set(["MerchantTicket", "TicketMessage", "CourierSupportMessage", "DeliveryIncident", "OrderIssue"]);
 const trace = new Set(["PrivacyAuditEvent", "SystemAuditLog", "SecurityEvent", "AcceptationConditions", "ErasureRecord", "PrivacyErasureRequest", "PrivacyLegalHold", "Backup", "MerchantArchive", "Notification", "Webhook", "WebhookDelivery", "MarketingCampaign"]);
 const company = new Set(["Organization", "Store", "SocieteDrive", "VehiculeDrive"]);
 const classify = (model: string) => auth.has(model) ? "identite_et_acces" : finances.has(model) ? "operation_et_comptabilite" : service.has(model) ? "profil_prestation_localisation" : documents.has(model) ? "document_sensible" : support.has(model) ? "support_incident" : trace.has(model) ? "trace_copie_integration" : company.has(model) ? "societe_et_representant" : "metier_revue_contexte";

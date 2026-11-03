@@ -1,6 +1,7 @@
 'use client';
 
 
+import Link from 'next/link';
 import { jetonAcces } from '@/lib/jeton-session';
 import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -39,6 +40,7 @@ interface TicketsResponse {
 
 export default function SupportTicketsPage() {
   const t = useTranslations('superownerSupportTickets');
+  const tIncidents = useTranslations('incidentsCommande');
   const locale = useLocale();
 
   /** L'état du ticket, en français ou anglais selon la langue : la base le
@@ -176,6 +178,7 @@ export default function SupportTicketsPage() {
 
   return (
     <div className="space-y-6">
+      <Link href="/superowner/zupeat/support-tickets/incidents-commandes" className="inline-block rounded-lg border border-orange-300 bg-orange-50 px-4 py-2 font-semibold text-orange-900">{tIncidents('titreAdmin')}</Link>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">

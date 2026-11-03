@@ -6,6 +6,7 @@ import { finAttente } from "../drivers/delivery-proof.service";
 import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient, retardPourLeClient } from "../drivers/retard-livraison";
 import { presenter, presenterPourSuivi } from "../files/fichiers-prives.service";
 import type { Compte } from "../auth/auth.middleware";
+import { CHAMPS_COURSE_ESTIMATION, CHAMPS_LIVREUR_ESTIMATION, estimationCommandeAutorisee } from "../drivers/estimation-client.service";
 
 /**
  * Le suivi d'une commande, et qui a le droit de le lire.
@@ -165,6 +166,8 @@ const CHAMPS = {
   },
   delivery: {
     select: {
+      ...CHAMPS_COURSE_ESTIMATION,
+      reservedDriverId: true,
       status: true,
       deliveryCode: true,
       proofType: true,
@@ -177,7 +180,7 @@ const CHAMPS = {
       assignedAt: true,
       deliveryTime: true,
       incidents: INCIDENTS_POUR_LE_CLIENT,
-      driver: { select: { userId: true } },
+      driver: { select: { userId: true, ...CHAMPS_LIVREUR_ESTIMATION } },
     },
   },
 } as const;
@@ -406,7 +409,8 @@ export async function commandeVisible(id: string, appelant: Appelant, jeton?: un
 
   const acces = await evaluerAcces(commande, appelant, jeton);
   if (!acces) return null;
-  return acces.vue === "complete" ? vueComplete(commande, acces.avecCode) : vuePublique(commande);
+  const vue = acces.vue === "complete" ? vueComplete(commande, acces.avecCode) : vuePublique(commande);
+  return { ...vue, estimationLivraison: await estimationCommandeAutorisee(commande) };
 }
 
 // ---------------------------------------------------------------------------

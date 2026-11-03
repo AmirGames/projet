@@ -2,6 +2,8 @@
 
 
 import { jetonAcces } from '@/lib/jeton-session';
+import { EstimationLivraison, type EstimationLivraisonClient } from '@/components/EstimationLivraison';
+import { IncidentCommande } from '@/components/IncidentCommande';
 import DetailDuTotal from '@/components/DetailDuTotal';
 import { PourboireApresLivraison } from '@/components/PourboireApresLivraison';
 import { signalerErreur } from '@/lib/erreurs';
@@ -40,6 +42,7 @@ interface OrderItem {
 }
 
 interface Order {
+  estimationLivraison?: EstimationLivraisonClient | null;
   id: string;
   status: 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'REJECTED';
   /** Absents de la vue réduite du suivi sans compte. */
@@ -100,13 +103,14 @@ interface Delivery {
  * la session du client s'il est connecté. Sans l'un ni l'autre, l'API répond
  * 404 — le numéro de commande seul ne suffit plus.
  */
-function lireSuivi(orderId: string, suite = '') {
+function lireSuivi(orderId: string, suite = '', signal?: AbortSignal) {
   let session: string | null = null;
   try {
     session = jetonAcces();
   } catch {}
 
   return fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId), suite)}`, {
+    signal,
     headers: session ? { Authorization: `Bearer ${session}` } : undefined,
   });
 }
@@ -237,17 +241,30 @@ export default function TrackOrderPage() {
     const reclamationEnCours = order.reclamation?.deposee && !order.reclamation.traiteeLe;
     if (['COMPLETED', 'REJECTED'].includes(order.status) && !order.reclamation?.possible && !reclamationEnCours) return;
 
+    const controleur = new AbortController();
+    let enCours = false;
     const minuteur = setInterval(async () => {
+      if (enCours) return;
+      enCours = true;
       try {
-        const reponse = await lireSuivi(order.id);
-        if (reponse.ok) setOrder(await reponse.json());
+        const [reponse, suivi] = await Promise.all([
+          lireSuivi(order.id, '', controleur.signal),
+          order.deliveryType === 'DELIVERY' ? lireSuivi(order.id, '/delivery', controleur.signal) : Promise.resolve(null),
+        ]);
+        const commande = reponse.ok ? await reponse.json() : null;
+        const course = suivi?.ok ? await suivi.json() : null;
+        if (controleur.signal.aborted) return;
+        if (commande) setOrder(commande);
+        if (course && 'data' in course) setDelivery(course.data);
       } catch {
-        // Hors ligne : on réessaiera au prochain passage.
+        // Hors ligne : l'estimation expirera, puis la lecture sera réessayée.
+      } finally {
+        enCours = false;
       }
     }, 20000);
 
-    return () => clearInterval(minuteur);
-  }, [order?.id, order?.status, order?.reclamation?.possible, order?.reclamation?.deposee, order?.reclamation?.traiteeLe]);
+    return () => { controleur.abort(); clearInterval(minuteur); };
+  }, [order?.id, order?.status, order?.deliveryType, order?.reclamation?.possible, order?.reclamation?.deposee, order?.reclamation?.traiteeLe]);
 
   const getStatusIndex = (status: string) => {
     return statusSteps.findIndex(s => s.status === status);
@@ -402,6 +419,9 @@ export default function TrackOrderPage() {
                 </div>
               </div>
             )}
+
+            <EstimationLivraison key={order.id} estimation={order.estimationLivraison} />
+            <IncidentCommande key={`incidents-${order.id}`} orderId={order.id} />
 
             {/* Real-Time Delivery Tracking */}
             {order.deliveryType === 'DELIVERY' &&

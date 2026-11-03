@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
 import express, { NextFunction, Request, Response } from "express";
 import request from "supertest";
 
@@ -7,6 +7,7 @@ const db: any = {
   orderDelivery: { findUnique: jest.fn() },
   orderTrackingToken: { create: jest.fn() },
   membership: { findFirst: jest.fn() },
+  courier: { findUnique: jest.fn() },
 };
 
 jest.mock("../../../services/db", () => ({ db }));
@@ -53,6 +54,7 @@ jest.mock("../../auth/auth.middleware", () => ({
 
 import ordersRouter from "../order.routes";
 import { empreinteDuJeton, genererJetonDeSuivi } from "../suivi-commande.service";
+import { OrderIssueService } from '../order-issue.service';
 
 const app = express();
 app.use(express.json());
@@ -161,6 +163,29 @@ function sansSecret(corps: any) {
 }
 
 describe("GET /api/orders/:id", () => {
+  it("rend l'estimation aux invités sans révéler les autres commandes de la tournée", async () => {
+    const c = commande();
+    db.order.findFirst.mockResolvedValue({ ...c, delivery: {
+      ...c.delivery, id: "course-cible", pickupLat: 48.8, pickupLng: 2.3, deliveryLat: 48.86, deliveryLng: 2.33, ordreRemise: 2,
+      driver: {
+        userId: "user-livreur", vehicleType: "bike", latitude: 48.81, longitude: 2.31, lastLocationUpdate: new Date(), gpsLostAt: null,
+        deliveries: [{ id: "AUTRE-COMMANDE-PRIVEE", status: "PICKED_UP", pickupLat: 48.8, pickupLng: 2.3,
+          deliveryLat: 48.823456, deliveryLng: 2.323456, ordreRemise: 1, customerWaitStartedAt: null, customerWaitLeftAt: null,
+          order: { status: "READY", estimatedReadyAt: null } }],
+      },
+    } });
+    const reponse = await request(app).get(`${URL_COMMANDE}?t=${jeton}`);
+    expect(reponse.status).toBe(200);
+    expect(reponse.body.estimationLivraison).toMatchObject({ etape: "AUTRE_LIVRAISON", fourchette: { debut: expect.any(String), fin: expect.any(String) } });
+    expect(JSON.stringify(reponse.body)).not.toMatch(/AUTRE-COMMANDE-PRIVEE|48\.823456|2\.323456|vehicleType|user-livreur/);
+  });
+  it("ne consulte pas le livreur réservé avant d'avoir contrôlé le jeton", async () => {
+    const c = commande();
+    db.order.findFirst.mockResolvedValue({ ...c, delivery: { ...c.delivery, reservedDriverId: "reserve", driver: null } });
+    const reponse = await request(app).get(URL_COMMANDE);
+    expect(reponse.status).toBe(404);
+    expect(db.courier.findUnique).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     db.order.findFirst.mockResolvedValue(commande());
     db.membership.findFirst.mockResolvedValue(null);
@@ -417,6 +442,30 @@ describe("GET /api/orders/:id/delivery", () => {
     const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${jeton}`);
     expect(reponse.status).toBe(200);
     expect(reponse.body.data).toBeNull();
+  });
+});
+
+describe('incidents accessibles au seul client ou à son jeton', () => {
+  beforeEach(() => {
+    db.order.findFirst.mockResolvedValue(commande());
+    db.membership.findFirst.mockResolvedValue(null);
+    jest.spyOn(OrderIssueService, 'etat').mockResolvedValue({ categories: ['OTHER'], refundPossible: true, items: [], dossiers: [] });
+    jest.spyOn(OrderIssueService, 'signaler').mockResolvedValue({ id: 'd1', category: 'OTHER', message: 'Un problème à examiner.', items: [], requestRefund: false, status: 'OPEN', response: null, resolvedAt: null, createdAt: new Date() });
+  });
+  afterEach(() => { jest.restoreAllMocks(); });
+  it.each([undefined, 'user-inconnu', 'user-livreur', 'user-plateforme'])('refuse un signalement à %s sans jeton client', async (userId) => {
+    const req = request(app).post(`${URL_COMMANDE}/incidents`).send({ category: 'OTHER', message: 'Un problème à examiner.' });
+    if (userId) req.set('Authorization', `Bearer ${userId}`);
+    expect((await req).status).toBe(404);
+    expect(OrderIssueService.signaler).not.toHaveBeenCalled();
+  });
+  it('permet le dépôt au propriétaire et la lecture à un invité possédant le jeton', async () => {
+    const lecture = await request(app).get(`${URL_COMMANDE}/incidents?t=${jeton}`);
+    expect(lecture.status).toBe(200);
+    expect(lecture.headers['cache-control']).toBe('no-store');
+    const depot = await request(app).post(`${URL_COMMANDE}/incidents`).set('Authorization', 'Bearer user-client').send({ category: 'OTHER', message: 'Un problème à examiner.' });
+    expect(depot.status).toBe(200);
+    expect(OrderIssueService.signaler).toHaveBeenCalledWith('cmd_1234567890abcdefghij', expect.objectContaining({ category: 'OTHER', requestRefund: false, items: [] }));
   });
 });
 

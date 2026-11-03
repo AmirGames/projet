@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { incidentCommandeSchema, OrderIssueService } from "./order-issue.service";
 import { z } from "zod";
 import { OrderStatus } from "@prisma/client";
 import { PourboireService } from "./pourboire.service";
@@ -490,6 +491,27 @@ router.get("/:id/delivery", limiterSuivi, async (req: Request, res: Response, ne
  * prévient la plateforme, qui tranche. 404 pour tout autre appelant ; 409
  * CLAIM_ALREADY_FILED ou CLAIM_NOT_POSSIBLE.
  */
+router.get("/:id/incidents", limiterSuivi, async (req, res, next) => {
+  try {
+    const orderId = String(req.params.id);
+    const appelant = await appelantFacultatif(req, res);
+    if (!(await estLeClientDeLaCommande(orderId, appelant, jetonDeSuivi(req)))) throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+    res.set("Cache-Control", "no-store");
+    res.json({ data: await OrderIssueService.etat(orderId) });
+  } catch (err) { next(err); }
+});
+
+router.post("/:id/incidents", limiterSuivi, async (req, res, next) => {
+  try {
+    const orderId = String(req.params.id);
+    const appelant = await appelantFacultatif(req, res);
+    if (!(await estLeClientDeLaCommande(orderId, appelant, jetonDeSuivi(req)))) throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+    const body = incidentCommandeSchema.parse(req.body);
+    res.set("Cache-Control", "no-store");
+    res.json({ data: await OrderIssueService.signaler(orderId, body) });
+  } catch (err) { next(err); }
+});
+
 router.post("/:id/reclamation-livraison", limiterSuivi, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orderId = req.params.id as string;

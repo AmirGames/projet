@@ -115,9 +115,25 @@ const produit = (extra: any = {}) => ({
 beforeEach(() => {
   jest.clearAllMocks();
   for (const m of Object.values(db)) for (const f of Object.values(m as any)) (f as any).mockReset();
+  db.product.findMany.mockResolvedValue([]);
 });
 
 describe("vitrine publique", () => {
+  it("indexe les plats disponibles au-delà de l'aperçu du menu", async () => {
+    db.store.findMany.mockResolvedValue([boutique()]);
+    db.product.findMany.mockResolvedValue([{ id: "sixieme", name: "Pizza végétarienne", storeId: "s1" }]);
+    const r = await request(app).get("/api/client/stores");
+    expect(r.status).toBe(200);
+    expect(r.body.data[0].searchProducts).toEqual([{ id: "sixieme", name: "Pizza végétarienne" }]);
+    expect(db.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { storeId: { in: ["s1"] }, status: "ACTIVE", deletedAt: null, isAvailable: true },
+      select: { id: true, name: true, storeId: true },
+    }));
+  });
+  it.each(["q=", "q=pizza&limit=-1", "q=pizza&limit=1000", "q=pizza&limit=abc"])("borne la recherche publique : %s", async (query) => {
+    expect((await request(app).get(`/api/client/stores/search?${query}`)).status).toBe(400);
+    expect(db.store.findMany).not.toHaveBeenCalled();
+  });
   it("GET /stores : filtre les commerces validés, hors démo, selon le pays", async () => {
     db.store.findMany.mockResolvedValue([boutique()]);
     const r = await request(app).get("/api/client/stores?pays=BE");
@@ -167,8 +183,9 @@ describe("vitrine publique", () => {
         OR: [
           { name: { contains: "pizza", mode: "insensitive" } },
           { description: { contains: "pizza", mode: "insensitive" } },
-          { city: { contains: "Lyon", mode: "insensitive" } },
+          { products: { some: { name: { contains: "pizza", mode: "insensitive" }, status: "ACTIVE", deletedAt: null, isAvailable: true } } },
         ],
+        city: { contains: "Lyon", mode: "insensitive" },
       },
       take: 5,
     }));

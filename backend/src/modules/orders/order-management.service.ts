@@ -1,4 +1,5 @@
 import type { OrderStatus, Prisma } from "@prisma/client";
+import { horodatagePreparation } from "./preparation-cuisine.service";
 import { encaissePourLaPlateforme, fraisDeServiceDus, totalCommercant } from "../delivery/delivery-mode.service";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
@@ -229,7 +230,7 @@ export class OrderManagementService {
       // la décision de verifierTransition n'est plus valable.
       const ecrit = await db.order.updateMany({
         where: { id: orderId, storeId, status: order.status },
-        data: { status },
+        data: { status, ...horodatagePreparation(order.status, status) },
       });
       if (ecrit.count !== 1) {
         throw new ApiError(409, "La commande a changé entre-temps, rechargez-la.", "ORDER_STATE_CONFLICT");

@@ -5,6 +5,9 @@ import { OrderAcceptanceService, MOTIFS_DU_COMMERCANT } from "./order-acceptance
 import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 import { limiteBornee, decalage } from "../../utils/pagination";
+import { exigerBoutique } from "../auth/autorisation-boutique";
+import { PreparationCuisineService } from "./preparation-cuisine.service";
+import { emitMerchantEvent } from "../realtime/socket";
 
 const router = Router();
 
@@ -36,6 +39,28 @@ const rejectSchema = z.object({
 
 const addNoteSchema = z.object({
   notes: z.string().max(1000),
+});
+
+router.get("/:storeId/preparation", authMiddleware, async (req, res, next) => {
+  try {
+    const storeId = String(req.params.storeId);
+    await exigerBoutique(req, storeId);
+    res.json(await PreparationCuisineService.etat(storeId));
+  } catch (err) { next(err); }
+});
+
+router.put("/:storeId/preparation", authMiddleware, async (req, res, next) => {
+  try {
+    const storeId = String(req.params.storeId);
+    await exigerBoutique(req, storeId, "manage");
+    const body = z.object({
+      minutesParDefaut: z.number().int().min(5).max(120), commandesParalleles: z.number().int().min(1).max(30),
+      supplementRush: z.number().int().min(0).max(120), dureeRush: z.union([z.literal(0), z.literal(30), z.literal(60), z.literal(120)]).nullable(),
+    }).strict().parse(req.body);
+    const resultat = await PreparationCuisineService.modifier(storeId, body);
+    emitMerchantEvent(storeId, "cuisine-maj", { storeId });
+    res.json(resultat);
+  } catch (err) { next(err); }
 });
 
 // GET /orders/:storeId - List all orders
