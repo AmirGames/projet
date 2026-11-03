@@ -285,7 +285,7 @@ function AssistantSessionWidget({ isLoading }: { isLoading: boolean }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gray-950 text-white px-4 py-3 shadow-xl focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-blue-600 print:hidden"
+        className="fixed bottom-20 left-4 z-50 flex items-center gap-2 rounded-full bg-gray-950 text-white px-4 py-3 shadow-xl focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-blue-600 print:hidden sm:bottom-5 sm:left-5"
       >
         <MessageCircle size={22} aria-hidden="true" />
         <span className="hidden sm:inline">{t('titre')}</span>

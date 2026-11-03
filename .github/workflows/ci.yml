@@ -480,4 +480,3 @@ jobs:
         if: failure()
         run: |
           for f in api site adresses; do echo "=== $f"; tail -n 100 "$RUNNER_TEMP/$f.log" || true; done
-
